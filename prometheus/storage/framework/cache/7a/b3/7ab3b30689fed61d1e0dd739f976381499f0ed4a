@@ -1,0 +1,1 @@
+1788733700a:1:{i:0;a:9:{s:2:"id";i:2;s:4:"name";s:5:"staff";s:12:"display_name";s:5:"Staff";s:11:"description";N;s:10:"created_at";s:27:"2025-12-17T10:02:15.000000Z";s:10:"updated_at";s:27:"2025-12-17T10:02:15.000000Z";s:9:"read_only";b:0;s:23:"disable_activity_checks";b:1;s:5:"pivot";a:3:{s:9:"user_type";s:15:"App\Models\User";s:7:"user_id";i:47;s:7:"role_id";i:2;}}}

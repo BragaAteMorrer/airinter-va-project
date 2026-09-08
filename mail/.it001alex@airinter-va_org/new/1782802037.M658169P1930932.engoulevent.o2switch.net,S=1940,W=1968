@@ -1,0 +1,28 @@
+Return-Path: <it001alex@airinter-va.org>
+Delivered-To: it001alex@airinter-va.org
+Received: from engoulevent.o2switch.net
+	by engoulevent.o2switch.net with LMTP
+	id igwQJ3VmQ2q0dh0AWBU5WA
+	(envelope-from <it001alex@airinter-va.org>)
+	for <it001alex@airinter-va.org>; Tue, 30 Jun 2026 08:47:17 +0200
+Return-path: <it001alex@airinter-va.org>
+Envelope-to: it001alex@airinter-va.org
+Delivery-date: Tue, 30 Jun 2026 08:47:17 +0200
+Received: from [109.234.164.58] (port=39700 helo=www.airinter-va.org)
+	by engoulevent.o2switch.net with esmtpsa  (TLS1.3) tls TLS_AES_256_GCM_SHA384
+	(Exim 4.99.4)
+	(envelope-from <it001alex@airinter-va.org>)
+	id 1weSFW-000000086Jl-3UvC
+	for it001alex@airinter-va.org;
+	Tue, 30 Jun 2026 08:47:17 +0200
+Date: Tue, 30 Jun 2026 08:47:17 +0200
+To: it001alex@airinter-va.org
+From: it001alex@airinter-va.org
+Subject: Air Inter VA - Membres
+Message-ID: <3EFjrOfNigXo2xmyVDJKdwWV0MrYud9ltxjgkQUFos@www.airinter-va.org>
+X-Mailer: PHPMailer 7.0.0 (https://github.com/PHPMailer/PHPMailer)
+MIME-Version: 1.0
+Content-Type: text/html; charset=UTF-8
+
+<div style="margin:auto;padding:8px;width:600px;border: solid 1px #000000;border-radius:4px;"><p style="text-align:center;"><img src="https://www.airinter-va.org/skins/skin6-papinou-06/img/" style="max-width:580px;" /></p><hr /><p style="text-align:left;font:12pt Arial;"><b>BragaAteMorrer</b> (<b>nene.almeida78@gmail.com</b>) demande son inscription comme membre de Air Inter VA<p>(N'oubliez pas de vous connecter avant d'accepter ou de refuser.)</p><hr />Accepter l'inscription : <a href="https://www.airinter-va.org/user.php?lng=fr&suite=go&upseudo=BragaAteMorrer&amp;tconfig=0#z2">https://www.airinter-va.org/user.php?lng=fr&suite=go&upseudo=BragaAteMorrer</a><br />Refuser l'inscription : <a href="https://www.airinter-va.org/user.php?lng=fr&suite=no&upseudo=BragaAteMorrer&amp;tconfig=0#z2">https://www.airinter-va.org/user.php?lng=fr&suite=no&upseudo=BragaAteMorrer</a>
+

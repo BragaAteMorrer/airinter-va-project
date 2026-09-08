@@ -1,0 +1,31 @@
+{
+    "name": "VENDOR/$LOWER_NAME$-module",
+    "type": "phpvms-module",
+    "description": "",
+    "authors": [
+        {
+            "name": "",
+            "email": ""
+        }
+    ],
+    "require": {
+        "composer/installers": "~1.0"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "$MODULE_NAMESPACE$\\$STUDLY_NAME$\\Providers\\AppServiceProvider",
+                "$MODULE_NAMESPACE$\\$STUDLY_NAME$\\Providers\\EventServiceProvider",
+                "$MODULE_NAMESPACE$\\$STUDLY_NAME$\\Providers\\RouteServiceProvider"
+            ],
+            "aliases": {
+
+            }
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "$MODULE_NAMESPACE$\\$STUDLY_NAME$\\": "."
+        }
+    }
+}

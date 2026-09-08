@@ -1,0 +1,439 @@
+Return-Path: <>
+Delivered-To: noreply@airinter-va.org
+Received: from engoulevent.o2switch.net
+	by engoulevent.o2switch.net with LMTP
+	id yNMjDu1DV2lsUyIAWBU5WA
+	(envelope-from <>)
+	for <noreply@airinter-va.org>; Fri, 02 Jan 2026 05:05:01 +0100
+Return-path: <>
+Envelope-to: noreply@airinter-va.org
+Delivery-date: Fri, 02 Jan 2026 05:05:01 +0100
+Received: from aqua.dogwood.relay.mailchannels.net ([23.83.211.5]:15283)
+	by engoulevent.o2switch.net with esmtps  (TLS1.3) tls TLS_AES_256_GCM_SHA384
+	(Exim 4.99)
+	id 1vbWPG-00000009RH5-3S9p
+	for noreply@airinter-va.org;
+	Fri, 02 Jan 2026 05:05:01 +0100
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=mailchannels.net;
+	s=bounce; t=1767326657;
+	bh=mHcaYgfdYPDWDdMOuUPhdCe0tjWO1BPP3x82LwsBOms=;
+	h=Date:From:Subject:To:From;
+	b=mRum+xt5/NAqDPBOZnaMe6EB8dageA6plurDuBA696okSEsiQ3oVK0TQE5EnShXgh
+	 nYJH8NvLmc59uv1DLSeRz/+Jm5ZIcz8Z5v4Rkz5kfVH0+bTnPMu0mqeefpSuSn6EsU
+	 NbCnsTMPHEp6QCpym6XkVjTcmOU4Njm5gMutIfqDljIJbjT1KzVAl5WWwWLX3AQ5gS
+	 FYFaqJU0m3tWkbQs11W+4w8JDvAq/Hi0xhFcU2JfsMGlpvr/IRICPFMO0lK7en1gm7
+	 2+NyIIonNsekSdMoZG/5YAPzqMpDpy/sXtGb7JI2ttiGrRWlSNa6d7NmBNziZtL/uu
+	 tZYpe70FufFEA==
+Received: from relay.mailchannels.net (localhost [127.0.0.1])
+	by relay.mailchannels.net (Postfix) with ESMTP id 78A2E780F1D
+	for <noreply@airinter-va.org>; Fri, 02 Jan 2026 04:04:17 +0000 (UTC)
+Received: by relay.mailchannels.net (Postfix)
+	id 77B27780F40; Fri, 02 Jan 2026 04:04:17 +0000 (UTC)
+Date: Fri, 02 Jan 2026 04:04:17 +0000 (UTC)
+From: Mail Delivery System <MAILER-DAEMON@mailchannels.net>
+Subject: Undelivered Mail Returned to Sender
+To: noreply@airinter-va.org
+Auto-Submitted: auto-replied
+MIME-Version: 1.0
+Content-Type: multipart/report; report-type=delivery-status;
+	boundary="E70A7780F1D.1767326657/relay.mailchannels.net"
+Content-Transfer-Encoding: 8bit
+Message-Id: <20260102040417.77B27780F40@relay.mailchannels.net>
+X-Spam-Status: No, score=-105.0
+X-Spam-Score: -1049
+X-Spam-Bar: ---------------------------------------------------
+X-Ham-Report: =?ISO-8859-1?Q?Spam_detection_software=2C_running_on_the_system_=22scan=2Ejabatus=2Ef?=
+	=?ISO-8859-1?Q?r=22=2C=0A_has_NOT_identified_this_incoming_email_as_?=
+	=?ISO-8859-1?Q?spam=2E__The_original=0A_message_has_been_attached_to?=
+	=?ISO-8859-1?Q?_this_so_you_can_view_it_or_label=0A_similar_future_e?=
+	=?ISO-8859-1?Q?mail=2E__If_you_have_any_questions=2C_see=0A_the_admi?=
+	=?ISO-8859-1?Q?nistrator_of_that_system_for_details=2E=0A_Content_pr?=
+	=?ISO-8859-1?Q?eview=3A__This_is_the_mail_system_at_host_relay=2Emai?=
+	=?ISO-8859-1?Q?lchannels=2Enet=2E_I'm=0A____sorry_to_have_to_inform_?=
+	=?ISO-8859-1?Q?you_that_your_message_could_not_be_delivered_to_one=0A_?=
+	=?ISO-8859-1?Q?___or_more_recipients=2E_It's_attached_below=2E_For_f?=
+	=?ISO-8859-1?Q?urther_assistance=2C_please_send=0A____mail_to_postma?=
+	=?ISO-8859-1?Q?ster=2E_=0A_Content_analysis_details=3A___=28-105=2E0?=
+	=?ISO-8859-1?Q?_points=2C_5=2E0_required=29=0A__pts_rule_name_______?=
+	=?ISO-8859-1?Q?_______descrip
+X-Spam-Flag: NO
+
+This is a MIME-encapsulated message.
+
+--E70A7780F1D.1767326657/relay.mailchannels.net
+Content-Description: Notification
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+This is the mail system at host relay.mailchannels.net.
+
+I'm sorry to have to inform you that your message could not
+be delivered to one or more recipients. It's attached below.
+
+For further assistance, please send mail to postmaster.
+
+If you do so, please include this problem report. You can
+delete your own text from the attached returned message.
+
+                   The mail system
+
+<peyrezabes@aol.com>: host mx-aol.mail.gm0.yahoodns.net[67.195.228.86] said:
+    554 30 Sorry, your message to peyrezabes@aol.com cannot be delivered. This
+    mailbox is disabled (554.30). (in reply to end of DATA command)
+
+--E70A7780F1D.1767326657/relay.mailchannels.net
+Content-Description: Delivery report
+Content-Type: message/delivery-status
+
+Reporting-MTA: dns; relay.mailchannels.net
+X-Postfix-Queue-ID: E70A7780F1D
+X-Postfix-Sender: rfc822; noreply@airinter-va.org
+Arrival-Date: Fri, 02 Jan 2026 04:04:15 +0000 (UTC)
+
+Final-Recipient: rfc822; peyrezabes@aol.com
+Original-Recipient: rfc822;peyrezabes@aol.com
+Action: failed
+Status: 5.0.0
+Remote-MTA: dns; mx-aol.mail.gm0.yahoodns.net
+Diagnostic-Code: smtp; 554 30 Sorry, your message to peyrezabes@aol.com cannot
+    be delivered. This mailbox is disabled (554.30).
+
+--E70A7780F1D.1767326657/relay.mailchannels.net
+Content-Description: Undelivered Message
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+
+Return-Path: <noreply@airinter-va.org>
+Received: from relay.mailchannels.net (localhost [127.0.0.1])
+	by relay.mailchannels.net (Postfix) with ESMTP id E70A7780F1D;
+	Fri, 02 Jan 2026 04:04:15 +0000 (UTC)
+Received: from smtp-3.jabatus.fr (trex-green-8.trex.outbound.svc.cluster.local [100.113.120.63])
+	(Authenticated sender: o2switch)
+	by relay.mailchannels.net (Postfix) with ESMTPA id DD1CD780FAC
+	for <peyrezabes@aol.com>; Fri, 02 Jan 2026 04:04:14 +0000 (UTC)
+ARC-Seal: i=1; a=rsa-sha256; d=mailchannels.net; s=arc-2022; cv=none;
+	t=1767326655;
+	b=mv//2oH6GBW74aUnOzhSyRWgGqz1dImBCeYTrf38/TRgsAk+7QJu53bDe94dYwVBuwD7mD
+	UoPoaFL233mVt/gz1kjxESvagxM4v0OH/maEwyqAyIHQMtXaBj9npEeMw6zFg2yEkrW8OJ
+	Wu7jZ54oKejvqA9BndhjJT3QIybvEtTjxvut2vIg4hJwsMLHlSNtj2DgIfmGupwNQkKneS
+	4MuqY6DWfaZTNkTrf3/vFPcVSLkdWLl4yf0d4lHuS9mI8Fw7EF0aIY9+Sc4CPvnl5j2y8D
+	F6HdrvpzfMw7NFZ52bpU3Yylz2Vx8JSvRPdqBl5XHMDvYie4gORwIYDH8+/bug==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed;
+ d=mailchannels.net;
+	s=arc-2022; t=1767326655;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type:
+	 dkim-signature; bh=MsTlQd/06R6Hvf/jN5Hl+ogL+C7lo4o/C6Vf/6yulJw=;
+	b=nVAkAJhkjWwBhc2gI0GHFw0n9oBd9w7x5by9WvRfkG7aP5h4DQ+Fvt3smIIPfSuIskbrlS
+	9kfhgwDGOp61qoyH/5MBsfdebeJLW/UcSPkW2ZisOpTe46G7ODTUkPsRbyv3fTIu71EOJI
+	vITGeAo6M2XCMTBedAzHSxeGjznEIU3WSgvzX8wqSwEELl8+SUCqaxop56a/WS8anz//Ih
+	N5iAI8kZlDppv3NXOog4Zd26u5VBc1vPZHYDf4SkbMS5EHfr5XFvKGc8zPmoqRcierU25I
+	aVkh5yFaaeKlr8pT9i9Q0hpXPsqD53h/wD6AVHa+kfx6F0CuX2k/CRBNMN3xfg==
+ARC-Authentication-Results: i=1;
+	rspamd-85db7f4c96-jhfj7;
+	auth=pass smtp.auth=o2switch smtp.mailfrom=noreply@airinter-va.org
+X-Sender-Id: o2switch|x-authenticated-sender|engoulevent.o2switch.net:
+ noreply@airinter-va.org
+X-MC-Relay: Neutral
+X-MC-Copy: stored-urls
+X-MailChannels-SenderId:
+ o2switch|x-authenticated-sender|engoulevent.o2switch.net:
+ noreply@airinter-va.org
+X-MailChannels-Auth-Id: o2switch
+X-Abiding-Rock: 32bd91134983f9c6_1767326655569_2606908947
+X-MC-Loop-Signature: 1767326655568:3831854454
+X-MC-Ingress-Time: 1767326655568
+Received: from smtp-3.jabatus.fr ([UNAVAILABLE]. [109.234.163.204])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+	by 100.113.120.63 (trex/7.1.3);
+	Fri, 02 Jan 2026 04:04:15 +0000
+X-Spam-Status: No
+X-MailPropre-MailScanner-From: noreply@airinter-va.org
+X-MailPropre-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
+	score=-1.448, required 5, autolearn=disabled, DTSDEST 0.01,
+	HTML_MESSAGE 0.00, SENDCHKTO 0.01, SPFCHKSTO 0.01,
+	SPF_HELO_NONE 0.00, SPF_PASS -1.50, TOKNS 0.01, TOKNSDEF 0.01)
+X-MailPropre-MailScanner: Not scanned: please contact your Internet E-Mail Service Provider for details
+X-MailPropre-MailScanner-ID: 3D6E228010B.A023D
+X-MailPropre-MailScanner-Information: Please contact the ISP for more information
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+	d=airinter-va.org; s=default; h=Content-Type:Date:MIME-Version:Message-ID:
+	Subject:To:From:Sender:Reply-To:Cc:Content-Transfer-Encoding:Content-ID:
+	Content-Description:Resent-Date:Resent-From:Resent-Sender:Resent-To:Resent-Cc
+	:Resent-Message-ID:In-Reply-To:References:List-Id:List-Help:List-Unsubscribe:
+	List-Subscribe:List-Post:List-Owner:List-Archive;
+	bh=MsTlQd/06R6Hvf/jN5Hl+ogL+C7lo4o/C6Vf/6yulJw=; b=UP8Jf0W/FwMCq3Wz8daOPU31io
+	kykqCR8MpLcq4u913p4qCh4WpKx2ZY4nfukToKoaM3MBv6MNvhQRinwP0Pg527AeGbCJzbpUH94f2
+	OyIH27r2k723vpErhiVLluS2e/LLonB+9Ye9vpJxkrCv8/pflGa08U9AsixHACNjXEhNVD2JcJvDY
+	LYze3mExdLTwAIbrbQyAUdJ8z3KMaG8B2l9m8dn50CCLCMLlOSawQq3O7x1nhk5W9A9c3O9YUvZd+
+	3MY9wxbykw2B65EgF8B9Wg2omobylxGMkArE2kPugGH7Y0rIFmnFZ9wQOJH5SC2lc0Bcu0jftSzSE
+	cpHvH1mA==;
+From: Air Inter VA <noreply@airinter-va.org>
+To: peyrezabes@aol.com
+Subject: New PIREP Submitted
+Message-ID: <ff6503723c7fc9be1671ff7b25854a33@airinter-va.org>
+MIME-Version: 1.0
+Date: Fri, 02 Jan 2026 04:04:10 +0000
+Content-Type: multipart/alternative; boundary=ZEyrYDrV
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - engoulevent.o2switch.net
+X-AntiAbuse: Original Domain - aol.com
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - airinter-va.org
+X-Get-Message-Sender-Via: engoulevent.o2switch.net: authenticated_id: noreply@airinter-va.org
+X-Authenticated-Sender: engoulevent.o2switch.net: noreply@airinter-va.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
+
+--ZEyrYDrV
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+Air Inter VA: https://prometheus.airinter-va.org
+
+# New PIREP Submitted=
+
+
+  A new PIREP has been submitted by IT001 Alex KRATZ
+
+  View PIRE=
+P: https://prometheus.airinter-va.org/admin/pireps/1paz2O1lpY5Q7aYg/edit
+=
+
+  Thanks,
+  Air Inter VA
+
+=C2=A9 2026 Air Inter VA. All rights res=
+erved.
+
+--ZEyrYDrV
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.=
+w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns=3D"http://www.=
+w3.org/1999/xhtml">
+<head>
+<title>Air Inter VA</title>
+<meta name=3D"=
+viewport" content=3D"width=3Ddevice-width, initial-scale=3D1.0">
+<meta ht=
+tp-equiv=3D"Content-Type" content=3D"text/html; charset=3DUTF-8">
+<meta n=
+ame=3D"color-scheme" content=3D"light">
+<meta name=3D"supported-color-sch=
+emes" content=3D"light">
+<style>
+@media only screen and (max-width: 600=
+px) {
+.inner-body {
+width: 100% !important;
+}
+
+.footer {
+width:=
+ 100% !important;
+}
+}
+
+@media only screen and (max-width: 500px) {=
+
+.button {
+width: 100% !important;
+}
+}
+</style>
+</head>
+<body=
+ style=3D"box-sizing: border-box; font-family: -apple-system, BlinkMacSyste=
+mFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji=
+', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative; -webkit-text-si=
+ze-adjust: none; background-color: #ffffff; color: #718096; height: 100%; l=
+ine-height: 1.4; margin: 0; padding: 0; width: 100% !important;">
+
+<tab=
+le class=3D"wrapper" width=3D"100%" cellpadding=3D"0" cellspacing=3D"0" rol=
+e=3D"presentation" style=3D"box-sizing: border-box; font-family: -apple-sys=
+tem, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, =
+'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relativ=
+e; -premailer-cellpadding: 0; -premailer-cellspacing: 0; -premailer-width: =
+100%; background-color: #edf2f7; margin: 0; padding: 0; width: 100%;">
+<t=
+r>
+<td align=3D"center" style=3D"box-sizing: border-box; font-family: -ap=
+ple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-=
+serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: =
+relative;">
+<table class=3D"content" width=3D"100%" cellpadding=3D"0" cel=
+lspacing=3D"0" role=3D"presentation" style=3D"box-sizing: border-box; font-=
+family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, A=
+rial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';=
+ position: relative; -premailer-cellpadding: 0; -premailer-cellspacing: 0; =
+-premailer-width: 100%; margin: 0; padding: 0; width: 100%;">
+<tr>
+<td =
+class=3D"header" style=3D"box-sizing: border-box; font-family: -apple-syste=
+m, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'A=
+pple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative;=
+ padding: 25px 0; text-align: center;">
+<a href=3D"https://prometheus.air=
+inter-va.org" style=3D"box-sizing: border-box; font-family: -apple-system, =
+BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Appl=
+e Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative; co=
+lor: #3d4852; font-size: 19px; font-weight: bold; text-decoration: none; di=
+splay: inline-block;">
+Air Inter VA
+</a>
+</td>
+</tr>
+
+<!-- Emai=
+l Body -->
+<tr>
+<td class=3D"body" width=3D"100%" cellpadding=3D"0" cel=
+lspacing=3D"0" style=3D"box-sizing: border-box; font-family: -apple-system,=
+ BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'App=
+le Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative; -=
+premailer-cellpadding: 0; -premailer-cellspacing: 0; -premailer-width: 100%=
+; background-color: #edf2f7; border-bottom: 1px solid #edf2f7; border-top: =
+1px solid #edf2f7; margin: 0; padding: 0; width: 100%; border: hidden !impo=
+rtant;">
+<table class=3D"inner-body" align=3D"center" width=3D"570" cellp=
+adding=3D"0" cellspacing=3D"0" role=3D"presentation" style=3D"box-sizing: b=
+order-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Robo=
+to, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'S=
+egoe UI Symbol'; position: relative; -premailer-cellpadding: 0; -premailer-=
+cellspacing: 0; -premailer-width: 570px; background-color: #ffffff; border-=
+color: #e8e5ef; border-radius: 2px; border-width: 1px; box-shadow: 0 2px 0 =
+rgba(0, 0, 150, 0.025), 2px 4px 0 rgba(0, 0, 150, 0.015); margin: 0 auto; p=
+adding: 0; width: 570px;">
+<!-- Body content -->
+<tr>
+<td class=3D"co=
+ntent-cell" style=3D"box-sizing: border-box; font-family: -apple-system, Bl=
+inkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple =
+Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative; max-=
+width: 100vw; padding: 32px;">
+<h1 style=3D"box-sizing: border-box; font-=
+family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, A=
+rial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';=
+ position: relative; color: #3d4852; font-size: 18px; font-weight: bold; ma=
+rgin-top: 0; text-align: left;">New PIREP Submitted</h1>
+<p style=3D"box-=
+sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe =
+UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI E=
+moji', 'Segoe UI Symbol'; position: relative; font-size: 16px; line-height:=
+ 1.5em; margin-top: 0; text-align: left;">A new PIREP has been submitted by=
+ IT001 Alex KRATZ</p>
+  <table class=3D"action" align=3D"center" width=3D=
+"100%" cellpadding=3D"0" cellspacing=3D"0" role=3D"presentation" style=3D"b=
+ox-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Seg=
+oe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe U=
+I Emoji', 'Segoe UI Symbol'; position: relative; -premailer-cellpadding: 0;=
+ -premailer-cellspacing: 0; -premailer-width: 100%; margin: 30px auto; padd=
+ing: 0; text-align: center; width: 100%;">
+<tr>
+<td align=3D"center" st=
+yle=3D"box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFo=
+nt, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', =
+'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative;">
+<table width=
+=3D"100%" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" role=3D"presenta=
+tion" style=3D"box-sizing: border-box; font-family: -apple-system, BlinkMac=
+SystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color =
+Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative;">
+<tr>=
+
+<td align=3D"center" style=3D"box-sizing: border-box; font-family: -appl=
+e-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-se=
+rif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: re=
+lative;">
+<table border=3D"0" cellpadding=3D"0" cellspacing=3D"0" role=3D=
+"presentation" style=3D"box-sizing: border-box; font-family: -apple-system,=
+ BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'App=
+le Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative;">=
+
+<tr>
+<td style=3D"box-sizing: border-box; font-family: -apple-system, =
+BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Appl=
+e Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative;">=
+
+<a href=3D"https://prometheus.airinter-va.org/admin/pireps/1paz2O1lpY5Q7=
+aYg/edit" class=3D"button button-primary" target=3D"_blank" rel=3D"noopener=
+" style=3D"box-sizing: border-box; font-family: -apple-system, BlinkMacSyst=
+emFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoj=
+i', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative; -webkit-text-s=
+ize-adjust: none; border-radius: 4px; color: #fff; display: inline-block; o=
+verflow: hidden; text-decoration: none; background-color: #2d3748; border-b=
+ottom: 8px solid #2d3748; border-left: 18px solid #2d3748; border-right: 18=
+px solid #2d3748; border-top: 8px solid #2d3748;">View PIREP</a>
+</td>
+=
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+<p=
+ style=3D"box-sizing: border-box; font-family: -apple-system, BlinkMacSyste=
+mFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji=
+', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative; font-size: 16px=
+; line-height: 1.5em; margin-top: 0; text-align: left;">Thanks,<br>
+Air I=
+nter VA</p>
+
+
+
+</td>
+</tr>
+</table>
+</td>
+</tr>
+
+<tr>=
+
+<td style=3D"box-sizing: border-box; font-family: -apple-system, BlinkMa=
+cSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color=
+ Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative;">
+<tabl=
+e class=3D"footer" align=3D"center" width=3D"570" cellpadding=3D"0" cellspa=
+cing=3D"0" role=3D"presentation" style=3D"box-sizing: border-box; font-fami=
+ly: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial=
+, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; pos=
+ition: relative; -premailer-cellpadding: 0; -premailer-cellspacing: 0; -pre=
+mailer-width: 570px; margin: 0 auto; padding: 0; text-align: center; width:=
+ 570px;">
+<tr>
+<td class=3D"content-cell" align=3D"center" style=3D"box=
+-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe=
+ UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI =
+Emoji', 'Segoe UI Symbol'; position: relative; max-width: 100vw; padding: 3=
+2px;">
+<p style=3D"box-sizing: border-box; font-family: -apple-system, Bl=
+inkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple =
+Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; position: relative; line=
+-height: 1.5em; margin-top: 0; color: #b0adc5; font-size: 12px; text-align:=
+ center;">=C2=A9 2026 Air Inter VA. All rights reserved.</p>
+
+</td>
+<=
+/tr>
+</table>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</b=
+ody>
+</html>
+--ZEyrYDrV--
+
+
+--E70A7780F1D.1767326657/relay.mailchannels.net--

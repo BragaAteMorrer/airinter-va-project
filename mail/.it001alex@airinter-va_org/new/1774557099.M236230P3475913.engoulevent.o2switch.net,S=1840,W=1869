@@ -1,0 +1,29 @@
+Return-Path: <it001alex@airinter-va.org>
+Delivered-To: it001alex@airinter-va.org
+Received: from engoulevent.o2switch.net
+	by engoulevent.o2switch.net with LMTP
+	id YHAvCquXxWnJCTUAWBU5WA
+	(envelope-from <it001alex@airinter-va.org>)
+	for <it001alex@airinter-va.org>; Thu, 26 Mar 2026 21:31:39 +0100
+Return-path: <it001alex@airinter-va.org>
+Envelope-to: it001alex@airinter-va.org
+Delivery-date: Thu, 26 Mar 2026 21:31:39 +0100
+Received: from [109.234.164.58] (port=37216 helo=www.airinter-va.org)
+	by engoulevent.o2switch.net with esmtpsa  (TLS1.3) tls TLS_AES_256_GCM_SHA384
+	(Exim 4.99.1)
+	(envelope-from <it001alex@airinter-va.org>)
+	id 1w5rMg-0000000EaEf-34n8;
+	Thu, 26 Mar 2026 21:31:38 +0100
+Date: Thu, 26 Mar 2026 21:31:38 +0100
+To: christ061@hotmail.com
+From: it001alex@airinter-va.org
+Cc: it001alex@airinter-va.org
+Subject: Air Inter VA - Inscription membre
+Message-ID: <mhtoXnXQ2j4mTAd5jrBKidZfhZRSR7TbIXwj5Ncus@www.airinter-va.org>
+X-Mailer: PHPMailer 7.0.0 (https://github.com/PHPMailer/PHPMailer)
+MIME-Version: 1.0
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+<div style="margin:auto;padding:8px;width:600px;border: solid 1px #000000;border-radius:4px;"><p style="text-align:center;"><img src="https://www.airinter-va.org/img/as d'image" style="max-width:600px;" /></p><hr /><p style="text-align:left;font:12pt Arial;">C'est avec plaisir, IT195Christophe, que nous vous informons que le webmestre a réalisé votre inscription en tant que membre de Air Inter VA<br /><br />Votre nom (ou pseudo) : <b>IT195Christophe</b><br />Votre mot de passe : <b>lF:43:wlH7</b><br /><br />Pour compléter votre inscription connectez-vous sur : <a href="https://www.airinter-va.org/connect.php?lng=fr&pseudo=IT195Christophe&uid=lF:43:wlH7&tconfig=0">Air Inter VA</a><br />Cordialement<br />IT001Alex<br /></p></div>
+

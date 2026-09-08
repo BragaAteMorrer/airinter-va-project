@@ -1,0 +1,1 @@
+{"error":0,"exit_code":0,"data":[{"homedir":"/home/jewe0363","type":"main","user":"jewe0363"},{"user":"jewe0363_logs","type":"logaccess","homedir":"/etc/apache2/logs/domlogs/jewe0363"}],"timeout":0,"action":"fetch","statusmsg":"Ran adminbin Cpanel/ftp/LISTSTORE","mode":"simple","status":1,"version":"2.4"}

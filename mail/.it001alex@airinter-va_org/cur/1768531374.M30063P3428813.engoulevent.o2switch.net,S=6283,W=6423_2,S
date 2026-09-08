@@ -1,0 +1,140 @@
+Return-Path: <>
+Delivered-To: it001alex@airinter-va.org
+Received: from engoulevent.o2switch.net
+	by engoulevent.o2switch.net with LMTP
+	id OOmbAa6laWnNUTQAWBU5WA
+	(envelope-from <>)
+	for <it001alex@airinter-va.org>; Fri, 16 Jan 2026 03:42:54 +0100
+Return-path: <>
+Envelope-to: it001alex@airinter-va.org
+Delivery-date: Fri, 16 Jan 2026 03:42:54 +0100
+Received: from fraise.jabatus.fr ([109.234.163.114]:37696)
+	by engoulevent.o2switch.net with esmtps  (TLS1.3) tls TLS_AES_256_GCM_SHA384
+	(Exim 4.99.1)
+	id 1vgZnV-0000000ENm7-3Br0
+	for it001alex@airinter-va.org;
+	Fri, 16 Jan 2026 03:42:53 +0100
+Received: by smtp-1.jabatus.fr (Postfix)
+	id 640E8E01AC; Fri, 16 Jan 2026 03:42:12 +0100 (CET)
+Date: Fri, 16 Jan 2026 03:42:12 +0100 (CET)
+From: Mail Delivery System <MAILER-DAEMON@smtp-1.jabatus.fr>
+Subject: Successful Mail Delivery Report
+To: it001alex@airinter-va.org
+Auto-Submitted: auto-replied
+MIME-Version: 1.0
+Content-Type: multipart/report; report-type=delivery-status;
+	boundary="84522E01D3.1768531332/smtp-1.jabatus.fr"
+Content-Transfer-Encoding: 8bit
+Message-Id: <20260116024212.640E8E01AC@smtp-1.jabatus.fr>
+X-Spam-Status: No, score=-0.7
+X-Spam-Score: -6
+X-Spam-Bar: /
+X-Ham-Report: Spam detection software, running on the system "scan.jabatus.fr",
+ has NOT identified this incoming email as spam.  The original
+ message has been attached to this so you can view it or label
+ similar future email.  If you have any questions, see
+ the administrator of that system for details.
+ Content preview:  This is the mail system at host smtp-1.jabatus.fr. Your message
+    was successfully delivered to the destination(s) listed below. If the message
+    was delivered to mailbox you will receive no further notifications. Otherwise
+    you may still receive notificat [...] 
+ Content analysis details:   (-0.7 points, 5.0 required)
+  pts rule name              description
+ ---- ---------------------- --------------------------------------------------
+  0.0 URIBL_BLOCKED          ADMINISTRATOR NOTICE: The query to URIBL was
+                             blocked.  See
+                             http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
+                              for more information.
+                             [URIs: airinter-va.org]
+ -1.0 ALL_TRUSTED            Passed through trusted hosts only via SMTP
+  0.1 SUKA_49                BODY: No description available.
+  0.1 SUKA_24                BODY: No description available.
+  0.1 SUKA_0                 BODY: No description available.
+X-Spam-Flag: NO
+
+This is a MIME-encapsulated message.
+
+--84522E01D3.1768531332/smtp-1.jabatus.fr
+Content-Description: Notification
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+This is the mail system at host smtp-1.jabatus.fr.
+
+Your message was successfully delivered to the destination(s)
+listed below. If the message was delivered to mailbox you will
+receive no further notifications. Otherwise you may still receive
+notifications of mail delivery errors from other systems.
+
+                   The mail system
+
+<ercheron52@modulonet.fr>: delivery via smtp-in.sfr.fr[93.17.128.165]:25: 250
+    2.0.0 Ok: queued as 4dskdw1sTLzMpnkD
+
+--84522E01D3.1768531332/smtp-1.jabatus.fr
+Content-Description: Delivery report
+Content-Type: message/delivery-status
+
+Reporting-MTA: dns; smtp-1.jabatus.fr
+X-Postfix-Queue-ID: 84522E01D3
+X-Postfix-Sender: rfc822; it001alex@airinter-va.org
+Arrival-Date: Fri, 16 Jan 2026 03:42:04 +0100 (CET)
+
+Final-Recipient: rfc822; ercheron52@modulonet.fr
+Original-Recipient: rfc822;ercheron52@modulonet.fr
+Action: relayed
+Status: 2.0.0
+Remote-MTA: dns; smtp-in.sfr.fr
+Diagnostic-Code: smtp; 250 2.0.0 Ok: queued as 4dskdw1sTLzMpnkD
+
+--84522E01D3.1768531332/smtp-1.jabatus.fr
+Content-Description: Message Headers
+Content-Type: text/rfc822-headers
+Content-Transfer-Encoding: 8bit
+
+Return-Path: <it001alex@airinter-va.org>
+X-Spam-Status: No
+X-MailPropre-MailScanner-From: it001alex@airinter-va.org
+X-MailPropre-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
+	score=-3.409, required 5, autolearn=disabled, KFJEZRH02 0.01,
+	KFJEZRJ02 0.01, OK_SPX -2.00, SPF_HELO_NONE 0.00, SPF_PASS -1.50,
+	SUKA_10 0.01, SUKA_13 0.01, SUKA_28 0.01, SUKA_54 0.01, SUKB_10 0.01,
+	SUKC_2 0.01, VM03 0.01)
+X-MailPropre-MailScanner: Not scanned: please contact your Internet E-Mail Service Provider for details
+X-MailPropre-MailScanner-ID: EEA6EE01CC.ADA2F
+X-MailPropre-MailScanner-Information: Please contact the ISP for more information
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+	d=airinter-va.org; s=default; h=Content-Transfer-Encoding:Content-Type:
+	Message-ID:Subject:To:From:Date:MIME-Version:Sender:Reply-To:Cc:Content-ID:
+	Content-Description:Resent-Date:Resent-From:Resent-Sender:Resent-To:Resent-Cc
+	:Resent-Message-ID:In-Reply-To:References:List-Id:List-Help:List-Unsubscribe:
+	List-Subscribe:List-Post:List-Owner:List-Archive;
+	bh=bKHVW+8TlNJkULsG4aVMWzumby1lG3/3hd5xchl2Mgk=; b=enyoJ/DclhTZlofekDrzwZjfOD
+	R9oO9OssBaW0dtM5aIqBMU+lf54kezDYmQHlynBCYoRne/XK4ghKaxjIUoa+blnsgQjY2xAxIyqxk
+	IF0/8d1Bf6/mhMY/2Gv2YQolhewNhnnBH2tTvLxnbwVekUgspLDs6T7eGN2A4e7KzDvqbdVbZ0a+L
+	AoZlYjDG0ryxvKRAdlBuIeycnDilWRQTutHDvk1YTkx/ZpJuydzsn7XKDoDnTFvnyUmh5SWdIlYnA
+	aXeelA5GmOS9B5bAd6MqdbK0UTo6sVudL8TbbaMyOoVg6Wpx+FQTMu8LompjN1cIBAw+oR+H1ZqfZ
+	R7j6j/Dg==;
+MIME-Version: 1.0
+Date: Fri, 16 Jan 2026 03:42:03 +0100
+From: it001alex@airinter-va.org
+To: it001alex@airinter-va.org
+Subject: Renaissance AIR INTER VA
+Message-ID: <9d77f8e7cdb398a3ba390afde93a4686@airinter-va.org>
+X-Sender: it001alex@airinter-va.org
+Disposition-Notification-To: it001alex@airinter-va.org
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 8bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - engoulevent.o2switch.net
+X-AntiAbuse: Original Domain - modulonet.fr
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - airinter-va.org
+X-Get-Message-Sender-Via: engoulevent.o2switch.net: authenticated_id: it001alex@airinter-va.org
+X-Authenticated-Sender: engoulevent.o2switch.net: it001alex@airinter-va.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
+
+--84522E01D3.1768531332/smtp-1.jabatus.fr--

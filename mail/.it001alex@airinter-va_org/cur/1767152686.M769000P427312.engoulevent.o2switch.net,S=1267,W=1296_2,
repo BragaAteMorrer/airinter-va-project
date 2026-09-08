@@ -1,0 +1,29 @@
+Return-Path: <it001alex@airinter-va.org>
+Delivered-To: it001alex@airinter-va.org
+Received: from engoulevent.o2switch.net
+	by engoulevent.o2switch.net with LMTP
+	id z8D3LC6cVGkwhQYAWBU5WA
+	(envelope-from <it001alex@airinter-va.org>)
+	for <it001alex@airinter-va.org>; Wed, 31 Dec 2025 04:44:46 +0100
+Return-path: <it001alex@airinter-va.org>
+Envelope-to: it001alex@airinter-va.org
+Delivery-date: Wed, 31 Dec 2025 04:44:46 +0100
+Received: from [109.234.164.58] (port=41642 helo=www.airinter-va.org)
+	by engoulevent.o2switch.net with esmtpsa  (TLS1.3) tls TLS_AES_256_GCM_SHA384
+	(Exim 4.99)
+	(envelope-from <it001alex@airinter-va.org>)
+	id 1van8d-00000001n9w-2zjC
+	for it001alex@airinter-va.org;
+	Wed, 31 Dec 2025 04:44:46 +0100
+Date: Wed, 31 Dec 2025 04:44:46 +0100
+To: it001alex@airinter-va.org
+From: it001alex@airinter-va.org
+Subject: Enregistrement d.un nouveau compte.
+Message-ID: <nYUgLobjWFMf0XrimaCua0LjPyF77dN0Wpfu5dme4V8@www.airinter-va.org>
+X-Mailer: PHPMailer 7.0.0 (https://github.com/PHPMailer/PHPMailer)
+MIME-Version: 1.0
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Bonjour IT001Alex<br /><br />L'utilisateur JohnDoe vient de créer un nouveau compte sur le site : Air Inter VA<br /><br />Adresse IP : 76.36.18.163<br /><br />
+

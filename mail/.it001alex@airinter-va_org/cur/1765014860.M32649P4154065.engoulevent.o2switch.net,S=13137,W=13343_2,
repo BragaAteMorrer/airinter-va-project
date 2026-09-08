@@ -1,0 +1,206 @@
+Return-Path: <maurice_teglia@hotmail.com>
+Delivered-To: it001alex@airinter-va.org
+Received: from engoulevent.o2switch.net
+	by engoulevent.o2switch.net with LMTP
+	id CP0cAUz9M2nRYj8AWBU5WA
+	(envelope-from <maurice_teglia@hotmail.com>)
+	for <it001alex@airinter-va.org>; Sat, 06 Dec 2025 10:54:20 +0100
+Return-path: <maurice_teglia@hotmail.com>
+Envelope-to: it001alex@airinter-va.org
+Delivery-date: Sat, 06 Dec 2025 10:54:20 +0100
+Received: from mail-westeuropeazolkn19011031.outbound.protection.outlook.com ([52.103.33.31]:39244 helo=AS8PR04CU009.outbound.protection.outlook.com)
+	by engoulevent.o2switch.net with esmtps  (TLS1.3) tls TLS_AES_256_GCM_SHA384
+	(Exim 4.98.2)
+	(envelope-from <maurice_teglia@hotmail.com>)
+	id 1vRozU-0000000HQit-0NqJ
+	for it001alex@airinter-va.org;
+	Sat, 06 Dec 2025 10:54:19 +0100
+ARC-Seal: i=1; a=rsa-sha256; s=arcselector10001; d=microsoft.com; cv=none;
+ b=yFvBmk+mHx31QIlNcH5L6ZmYsYXXg5PBNMU7RRliexzV7U6PDky9kauXbr0ibciYzE6WCmOv+vOR7gXYrf87rG80WtZ3IA+yA4qxrcO80dB8fZAtPcP9rUHctg4N62BPXn6cQjwdn5z2Z8doDEDXNp7EOe3UFBJvTlyp5R2NZhTcjwiXO1DNEY4i7AFftxyjVLgmb/wHkWwZElYEErB1Ki4NLwcBl+2CgvSOLsok0io/chCwSMrgg8CO93i5xT/5pSA22wm8LTmiu1wwfxln47Adkj1OZUjfNGL7P1VympMsuax1aIX6qQkQgJmxHpF+vQs/scPMfx4HvYqbJeMNNw==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=microsoft.com;
+ s=arcselector10001;
+ h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-AntiSpam-MessageData-ChunkCount:X-MS-Exchange-AntiSpam-MessageData-0:X-MS-Exchange-AntiSpam-MessageData-1;
+ bh=hGs7/K4gEi3ons0gnLRislabwy1F3nuF2qVieAdbfkc=;
+ b=fcnA9OzGwPMG3lfxElXp2/7zMJIgRDaBSYYRCymx9w+vAJJSj9IYEUn3rdy1eD44Hmk8lQYjEM4VdfL213TuUsZoZO/0orodwGmsMPPec0lAu8UfhNLv1rynavGrYUVqfxO3mcV/uKzSrQevHPVSskhi0EH4jOLhhpdAkfBci/3fZy2SqYqvCmjTOfEGCdCr+AXu2Nv4ZCTlvdRmUtqibecKjfgJtIYBaAH6XResdBemmz4ADkxJoADz6zxbgwhpaqfY6T3tfoSfmvVJCTe8K0O1/xSiiJp8IRr5md1Nw1dVrQtgeC4cWOCqO+CJxlIygWm/nCslxvF599KEGLQD+A==
+ARC-Authentication-Results: i=1; mx.microsoft.com 1; spf=none; dmarc=none;
+ dkim=none; arc=none
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=hotmail.com;
+ s=selector1;
+ h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-SenderADCheck;
+ bh=hGs7/K4gEi3ons0gnLRislabwy1F3nuF2qVieAdbfkc=;
+ b=o4PEVrRNLKbY5wsQR+TUv7hKwngq8krQ95meifrsJgMLQ2oicb4G113kgxcXCrSsjP++b6UpND0I+7GjRFI7t8eNTwZg8h5FoWy8SRJzoYKLYWbm4kI2dkKeVDevWdEPLIEg00RtlYK3QpNHWOezsKrTKszw9UZ2oizFQcMVCt1trFYKSaY3RcoC89WiFMXbKQalGvg1C+xDyFNhJG1SsV9GlTlIpOMyq6N7zE+eGIWWvzbJO5dxf3+6/tWknmeww7Vt6uQKH7kMBgNjl3TsykUizagbYm8Cn85fvxvqWZJvTNWepXqJva8OkQqxyf+vRFXKylO5pYjMAEMqjnNpOA==
+Received: from AM0PR10MB2659.EURPRD10.PROD.OUTLOOK.COM (2603:10a6:208:12e::26)
+ by PAVPR10MB7515.EURPRD10.PROD.OUTLOOK.COM (2603:10a6:102:2f6::18) with
+ Microsoft SMTP Server (version=TLS1_2,
+ cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.9388.11; Sat, 6 Dec
+ 2025 09:53:36 +0000
+Received: from AM0PR10MB2659.EURPRD10.PROD.OUTLOOK.COM
+ ([fe80::2617:457:e74a:1a26]) by AM0PR10MB2659.EURPRD10.PROD.OUTLOOK.COM
+ ([fe80::2617:457:e74a:1a26%5]) with mapi id 15.20.9388.011; Sat, 6 Dec 2025
+ 09:53:36 +0000
+From: =?iso-8859-1?Q?Maurice_T=E9glia?= <maurice_teglia@hotmail.com>
+To: "it001alex@airinter-va.org" <it001alex@airinter-va.org>
+Subject: Confirmation ITVA
+Thread-Topic: Confirmation ITVA
+Thread-Index: AQHcZpYqEJv0xz0EOUeBrZcNhReY7g==
+Date: Sat, 6 Dec 2025 09:53:36 +0000
+Message-ID:
+ <AM0PR10MB26592096979C46C37CB7FC19E6A4A@AM0PR10MB2659.EURPRD10.PROD.OUTLOOK.COM>
+Accept-Language: fr-FR, en-US
+Content-Language: fr-FR
+X-MS-Has-Attach:
+X-MS-TNEF-Correlator:
+msip_labels:
+x-ms-exchange-messagesentrepresentingtype: 1
+x-ms-publictraffictype: Email
+x-ms-traffictypediagnostic: AM0PR10MB2659:EE_|PAVPR10MB7515:EE_
+x-ms-office365-filtering-correlation-id: b2e93dcd-bde4-481c-ebe8-08de34ad5374
+x-ms-exchange-slblob-mailprops:
+ QG/aTLqFmeirOd9znnn8Amcb16bF/LTa3pmAGRBM+PbhpJodNok7NwxzrWz/2PdvUss52SxnrNnX8E1NBh6qEBxMnbmCqhx0owND2p+LG9o1TaLuXYDwLzarF3qtilrA3yEFz0bMjsodKF2TgBaXEuPDVicoUo5rXykKeHD0RrKIxk40dCICaKDFm8BUasEZ3j8oCkfWg27EhsPpTpr6X7g5P8peXeBL1irE/bEzpWJulMiweo0aKCGkVmI2T5Xnt8DJeTFYoyf78z+Byx+2/AwBT44+Bhbtpy5KXBKN8CWxuSIMLc+GNra+pkqiHsq5QdlnUGELNh7jF36pV12uHQGGbN8KGJHcfx912kxzKpoMI4l0kULZMM7onybq/hji1KRe4iYDqM1PFDBYN4C2Fi5TRJy3Oj6UMipuw0sHfFdhHCUqrtC/a80Xq2sg5d382aDBa811vCBManf44a3//RPk3jJDWEF2Q2cLXIRBMExmDO97umBiE5OjBes2R2pyg/nA61/Qp6QNWdoLbqMlZ3qr61frPOw6MrGmBS21pLet2M4oWrtSG1+QirPusteJd66e7yZurbUHD6OQaiw/q6oiD4zA9UmZBzf+j1AMwbqcS0B82pmLaD4hjGrnRCuqo2B/1p7Fp1FX3R8f8GVjGiWDhWNvviQa
+x-microsoft-antispam:
+ BCL:0;ARA:14566002|8060799015|461199028|9000799056|15030799006|15080799012|9400799040|1680799066|8062599012|12050799012|19110799012|51005399006|13031999003|31061999003|56899033|1602099012|13041999003|40105399003|440099028|3412199025|4302099013|10035399007|102099032;
+x-microsoft-antispam-message-info:
+ =?iso-8859-1?Q?6pr4F8Qjpe+UFqE/OmZsc/dNbqX/WuBLC/TejMytvFhvSanBoMPD2PJBkJ?=
+ =?iso-8859-1?Q?laKWRuUuORUD38Em1hVF44X5KZbmJY8JdLgIDfHQE7QF1Mfg0Yok09TSmP?=
+ =?iso-8859-1?Q?quDOu0xuKdD3+kb+tWemGlL9Me/oGY81CBA4mXd1uMkW95ow084BbdG+ZK?=
+ =?iso-8859-1?Q?WY1fMXi7cv/aN3vmFNjK9LP69asHpV30hs9aadb51XTh0FqKXdJLvXc7GW?=
+ =?iso-8859-1?Q?hGwsqYJ6NovLLrSeOu71tkGIX9cHKSI+jS7N3DM8+Djir4AuKrZ13IKh9+?=
+ =?iso-8859-1?Q?5X3V+cKY1NZcPqBcUPXmothlQqSLp/P5ybhNZ+7Fx9V3Dz1gUZxJlBs3Wm?=
+ =?iso-8859-1?Q?fKCtZHWRqGOKjjaye7ADrP1I18xdl5+MR2j0DkOY9x6m6ALaqVZ4JqKl19?=
+ =?iso-8859-1?Q?yiNWF6RAiq99QbENliaLWrzYV8SaiXzeVt4fT7FiPrhbyHJmc+IuZYVVO6?=
+ =?iso-8859-1?Q?znwJQBERPJ1F2nuIQ1wd1ZIWRygruUXjsONr3I8cKZxJz8AILFIG6g9iKe?=
+ =?iso-8859-1?Q?dpTiIJryvPByhlWD877siMFyjc9/5NekZvSK5wa3H4itgtjqMidWuF8fRW?=
+ =?iso-8859-1?Q?cW3GpAF2T8gnMnDBj0xv2VQ3SIHtJa0aq40f54PWlmTbb5NmAcFi1dmWfh?=
+ =?iso-8859-1?Q?QiKZKdK/L1Loz5l4AQWdiWN1y6fOLI0oUz/nwC5GEQkUuQnhHjHQQpTiOn?=
+ =?iso-8859-1?Q?eAoZVmTnEOc99gPDKbJbHQHHr2q5iM7Jks9xjXd1zilnUb9Z0vqacqwFOR?=
+ =?iso-8859-1?Q?wkrL83SSarVpseyB5CPN1SDzuhU4Um/5mCSYujvFwdY5Na3z3MjVfyLDpc?=
+ =?iso-8859-1?Q?+umOzoNJR+2teChugeQsz4SSmKT20LNR1vZfTX06AkkHVWxMd/tIVOuJxp?=
+ =?iso-8859-1?Q?ueLas0KBxbRwBB66/vErqHXscN8bJ+ndF+yu0p7PsmxqNjYLqx/TZILCgE?=
+ =?iso-8859-1?Q?clFJ3AynbHZotRdHmu2nUQphetnjd6wIv1BrohrK5qEs9kQ/4Yq9/rDnvg?=
+ =?iso-8859-1?Q?7EQTjWep2AfyEjipsLCIUWwkckorAMGrucKs9xmx3UeDVmmbJTUtdRIAEw?=
+ =?iso-8859-1?Q?UKzCWYvzzfrBPp0iE91lbbTFrao4JXWYT0k+blGSFhWcvOlmHIawFlWcxR?=
+ =?iso-8859-1?Q?OmWYvp/1kxtcEo4uSsFTxMXOHsBJS6tlQoJsR/vJDhUHhAaPkzMnqDDFzO?=
+ =?iso-8859-1?Q?w/lebF1iOnhvCIql1w17uo8uGiAB5sCbYeuP4D+efj8DqunFFffuG7tGK8?=
+ =?iso-8859-1?Q?YdpQdxo0x8CKA4eWCXnsP/aD9pMMWiRbho/WWYV2zkDysT0Y2IUYLqBW9+?=
+ =?iso-8859-1?Q?z1tX3hiHRL2N2YRvskk9lTvcpouG01QlNerOcHYZbGhL+iW1nrJSEFzJ4R?=
+ =?iso-8859-1?Q?4khK/IVn2iYOnQf2zOAxBvy8TlMzWlTcBGF+y3XpQSNj0JncVgCCXNfbDW?=
+ =?iso-8859-1?Q?A8LbR0AMIy/tY5shnb/2tSB5FD0TOmCg3tNVBhEvxo+MufiuO3anD5qmtp?=
+ =?iso-8859-1?Q?ub3Te1xA54z+rczPFn1lDY5S9sc1vqY7gx2uSsJ7GE1A=3D=3D?=
+x-ms-exchange-antispam-messagedata-chunkcount: 1
+x-ms-exchange-antispam-messagedata-0:
+ =?iso-8859-1?Q?RufvR3vB7k20CD3OJ9rjeMwiesvrr2XE5aSVMtyN7OwpqMVY1Hg5+zF+Lo?=
+ =?iso-8859-1?Q?s1JlADu/LXkukCHdoiMNsZwd4uRBoXqOtFladGL88aWr5C2rSvk5fQB5/o?=
+ =?iso-8859-1?Q?YvEoUKlBmIrtHutSiovTnbuCUctC4nych4fmT0AuKk0Hy+x8/884fzkw7d?=
+ =?iso-8859-1?Q?FQvP87Osxfe0lyDHIFrhXV9bqnU3DqzMRFJuFALNpKmBTwTo9odc+MlbLA?=
+ =?iso-8859-1?Q?dqRbUspW5zZT+QZzaquzCIG20PvJw9Wnp+Xcuk134PwVurDVHdk2k26q6J?=
+ =?iso-8859-1?Q?VL6HZKgHJKCJH7gcacu2VIh5So52UjSSoIktNgwcZ4p5V+/h8ro620oJQu?=
+ =?iso-8859-1?Q?8B5AwweZYkwZWyC+Sl1oYtPIK/wJL4AiTPefaXngdoySE5Vx4Y8An6Qfp1?=
+ =?iso-8859-1?Q?kS/rk37XelDeOAEXfLC+vF+TqyXQeX2FC/c9V/n8jHJ/LBJPMfXdmUeUTl?=
+ =?iso-8859-1?Q?gY6aExyZhb4bTcvIDuS2mZMumWfrFLv1mottCppJFJ0QBzl80zUaXVobac?=
+ =?iso-8859-1?Q?lLE0WzCytoUOT+lfHfapKj84qtL8U1MY0FZJDHRFvHzkubCHvxW0pBE0xJ?=
+ =?iso-8859-1?Q?mSOxcigUo9mjcqXIpmYSrBCGB7dA5Cfw5q9BBmPS1pcWA6nPOY00RnAON4?=
+ =?iso-8859-1?Q?6y+yRIPzGDN5nyOYXUsrPzTbSdmAqT+PBrf1H39IgVtjLNogn7srGMre8P?=
+ =?iso-8859-1?Q?vK0mCWtZrjWaaymOafKrT5K6vTPm3DBQ34DshHmJAs1l4m9g7mOaMnnbP0?=
+ =?iso-8859-1?Q?GmOvNfNdA+c1z62h947gAwL+cPjuX1tr9mIFGvJ1vjNG5t1+eAnmsOdkvd?=
+ =?iso-8859-1?Q?86AbWvj2FUR6eSsHMwLdqKZd9HvuEnJEQ2lF+EHzWue7TMa4MxaCRWihyk?=
+ =?iso-8859-1?Q?OXMUPz7SGVbwpx/EvuR+ntvVmzYhnGyczTiUVin+71VPpUcBZuAoov9ofv?=
+ =?iso-8859-1?Q?Lagijzox1PkEEjT/TaoWdkQb5caE8VAZTozV/OzK3Psanmbmbb4qRy1Qqb?=
+ =?iso-8859-1?Q?AuXftMs9wptgrQcdDIVL0qzGgoadY1oqOPmJEHIzh1TX0naZR0mT06zP/O?=
+ =?iso-8859-1?Q?VeZ780sqTheoMyHvXrB9mN3xkPGQltffwIlU/9G0IxSIgaDT7s5/7V8LJx?=
+ =?iso-8859-1?Q?ZeCx7O79zqAnBFGg1I6/TPbtnhjB2fM4oUZuoKjWr4JQme6GLH5Vh48xGf?=
+ =?iso-8859-1?Q?+6gTSBfb4Vvn8wvSaRb6wlTTzKhqc6R0jYCAPJcNNsFlCI8YOfMoVjdWVf?=
+ =?iso-8859-1?Q?e3jedYgdgooQMfpKLNKEiRKlbjeDSGrJW0HaXalnzbf5zD7Nw0wyavZ+a+?=
+ =?iso-8859-1?Q?9BB6SW2m2Vpeg7/wnd9oycTFlkupd0mIwOj5Nq+Qw/SK2h4=3D?=
+Content-Type: multipart/alternative;
+	boundary="_000_AM0PR10MB26592096979C46C37CB7FC19E6A4AAM0PR10MB2659EURP_"
+MIME-Version: 1.0
+X-OriginatorOrg: sct-15-20-8534-18-msonline-outlook-89c8f.templateTenant
+X-MS-Exchange-CrossTenant-AuthAs: Internal
+X-MS-Exchange-CrossTenant-AuthSource: AM0PR10MB2659.EURPRD10.PROD.OUTLOOK.COM
+X-MS-Exchange-CrossTenant-RMS-PersistedConsumerOrg: 00000000-0000-0000-0000-000000000000
+X-MS-Exchange-CrossTenant-Network-Message-Id: b2e93dcd-bde4-481c-ebe8-08de34ad5374
+X-MS-Exchange-CrossTenant-originalarrivaltime: 06 Dec 2025 09:53:36.7170
+ (UTC)
+X-MS-Exchange-CrossTenant-fromentityheader: Hosted
+X-MS-Exchange-CrossTenant-id: 84df9e7f-e9f6-40af-b435-aaaaaaaaaaaa
+X-MS-Exchange-CrossTenant-rms-persistedconsumerorg: 00000000-0000-0000-0000-000000000000
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: PAVPR10MB7515
+X-Spam-Status: No, score=-25.1
+X-Spam-Score: -250
+X-Spam-Bar: -------------------------
+X-Ham-Report: =?ISO-8859-1?Q?Spam_detection_software=2C_running_on_the_system_=22scan=2Ejabatus=2Ef?=
+	=?ISO-8859-1?Q?r=22=2C=0A_has_NOT_identified_this_incoming_email_as_?=
+	=?ISO-8859-1?Q?spam=2E__The_original=0A_message_has_been_attached_to?=
+	=?ISO-8859-1?Q?_this_so_you_can_view_it_or_label=0A_similar_future_e?=
+	=?ISO-8859-1?Q?mail=2E__If_you_have_any_questions=2C_see=0A_the_admi?=
+	=?ISO-8859-1?Q?nistrator_of_that_system_for_details=2E=0A_Content_pr?=
+	=?ISO-8859-1?Q?eview=3A__Je_souhaite_continuer_=E0_=EAtre_membre_=3A_?=
+	=?ISO-8859-1?Q?OUI_Je_souhaite_continuer=0A____=E0_recevoir_la_Newsl?=
+	=?ISO-8859-1?Q?etter_d'Air_Inter_VA_=3A_OUI_Merci_et_bonnes_f=EAtes_?=
+	=?ISO-8859-1?Q?de_fin=0A____d'ann=E9e_!_=5Bhttps=3A//s-install=2Eavc?=
+	=?ISO-8859-1?Q?dn=2Enet/ipm/preview/icons/icon-envelope-tick-round-o?=
+	=?ISO-8859-1?Q?range-animated-no-repeat-v1=2Egif=5D=3Chttps=3A//www=2Ea?=
+	=?ISO-8859-1?Q?vast=2Ecom/sig-email=3Futm=5Fmedium=3Demail&utm=5Fsou?=
+	=?ISO-8859-1?Q?rce=3Dlink&u
+X-Spam-Flag: NO
+
+--_000_AM0PR10MB26592096979C46C37CB7FC19E6A4AAM0PR10MB2659EURP_
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
+
+Je souhaite continuer =E0 =EAtre membre : OUI
+Je souhaite continuer =E0 recevoir la Newsletter d'Air Inter VA : OUI
+
+Merci et bonnes f=EAtes de fin d'ann=E9e !
+
+[https://s-install.avcdn.net/ipm/preview/icons/icon-envelope-tick-round-ora=
+nge-animated-no-repeat-v1.gif]<https://www.avast.com/sig-email?utm_medium=
+=3Demail&utm_source=3Dlink&utm_campaign=3Dsig-email&utm_content=3Dwebmail> =
+ Sans virus.www.avast.com<https://www.avast.com/sig-email?utm_medium=3Demai=
+l&utm_source=3Dlink&utm_campaign=3Dsig-email&utm_content=3Dwebmail>
+
+--_000_AM0PR10MB26592096979C46C37CB7FC19E6A4AAM0PR10MB2659EURP_
+Content-Type: text/html; charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
+
+<html>
+<head>
+<meta http-equiv=3D"Content-Type" content=3D"text/html; charset=3Diso-8859-=
+1">
+<style type=3D"text/css" style=3D"display:none;"> P {margin-top:0;margin-bo=
+ttom:0;} </style>
+</head>
+<body dir=3D"ltr">
+<div class=3D"elementToProof">Je souhaite continuer =E0 =EAtre membre : OUI=
+<br>
+Je souhaite continuer =E0 recevoir la Newsletter d'Air Inter VA : OUI&nbsp;=
+</div>
+<div class=3D"elementToProof"><br>
+</div>
+<div style=3D"font-family: Calibri, Helvetica, sans-serif; font-size: 12pt;=
+ color: rgb(0, 0, 0);" class=3D"elementToProof">
+Merci et bonnes f=EAtes de fin d'ann=E9e !</div>
+<div id=3D"DAB4FAD8-2DD7-40BB-A1B8-4E2AA1F9FDF2"><br>
+<table style=3D"border-top: 1px solid #D3D4DE;">
+<tbody>
+<tr>
+<td style=3D"width: 55px; padding-top: 13px;"><a href=3D"https://www.avast.=
+com/sig-email?utm_medium=3Demail&amp;utm_source=3Dlink&amp;utm_campaign=3Ds=
+ig-email&amp;utm_content=3Dwebmail" target=3D"_blank"><img alt=3D"" width=
+=3D"46" height=3D"29" style=3D"width: 46px; height: 29px;" src=3D"https://s=
+-install.avcdn.net/ipm/preview/icons/icon-envelope-tick-round-orange-animat=
+ed-no-repeat-v1.gif"></a></td>
+<td style=3D"width: 470px; padding-top: 12px; color: #41424e; font-size: 13=
+px; font-family: Arial, Helvetica, sans-serif; line-height: 18px;">
+Sans virus.<a href=3D"https://www.avast.com/sig-email?utm_medium=3Demail&am=
+p;utm_source=3Dlink&amp;utm_campaign=3Dsig-email&amp;utm_content=3Dwebmail"=
+ target=3D"_blank" style=3D"color: #4453ea;">www.avast.com</a></td>
+</tr>
+</tbody>
+</table>
+<a href=3D"#DAB4FAD8-2DD7-40BB-A1B8-4E2AA1F9FDF2" width=3D"1" height=3D"1">=
+</a></div>
+</body>
+</html>
+
+--_000_AM0PR10MB26592096979C46C37CB7FC19E6A4AAM0PR10MB2659EURP_--

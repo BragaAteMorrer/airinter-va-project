@@ -1,0 +1,189 @@
+Return-Path: <contact@pfotenwerkstatt.net>
+Delivered-To: it001alex@airinter-va.org
+Received: from engoulevent.o2switch.net
+	by engoulevent.o2switch.net with LMTP
+	id EisnGQWQ02nvJSgAWBU5WA
+	(envelope-from <contact@pfotenwerkstatt.net>)
+	for <it001alex@airinter-va.org>; Mon, 06 Apr 2026 12:50:45 +0200
+Return-path: <contact@pfotenwerkstatt.net>
+Envelope-to: it001alex@airinter-va.org
+Delivery-date: Mon, 06 Apr 2026 12:50:45 +0200
+Received: from pmt1.pfotenwerkstatt.net ([87.106.255.29]:60063)
+	by engoulevent.o2switch.net with esmtps  (TLS1.2) tls TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+	(Exim 4.99.1)
+	(envelope-from <contact@pfotenwerkstatt.net>)
+	id 1w9hXU-0000000B1FH-1dSQ
+	for it001alex@airinter-va.org;
+	Mon, 06 Apr 2026 12:50:45 +0200
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; s=will88; d=pfotenwerkstatt.net;
+ h=Date:To:From:Subject:Message-ID:List-Unsubscribe:MIME-Version:Content-Type:
+ Content-Transfer-Encoding; i=contact@pfotenwerkstatt.net;
+ bh=wUt3JqdGLOlqeOQcHTciPOweOscLM1Vyzol8Njdjz7M=;
+ b=Yc+j6fhbr3iIHsv7Lauj2eAAeydctOry3DkjxQemGmm0tP8gSvJEASXU43wf3oksu1fnY95NBdBQ
+   nhex52idJC4pdpocp2OfpQ0/VXwoXpga25b74T4Cw8Lby8+zz5LejtHEKB8AdrRkXtyJLXveqZD3
+   V7SjM/8V7xP8mJ/HpZU=
+Date: Mon, 6 Apr 2026 10:49:26 +0000
+To: it001alex@airinter-va.org
+From: O2switch <contact@pfotenwerkstatt.net>
+Subject: =?UTF-8?Q?Prot=C3=A9gez_votre_site_airinter-va.org_renouvellement_certifi?=
+ =?UTF-8?Q?cat_SSL?=
+Message-ID: <a60c0bf122b27851b5becf37920daad4@pfotenwerkstatt.net>
+List-Unsubscribe: mailto:bounce385-TtD5Wm2HPALvuBr@pfotenwerkstatt.net?subject=list-unsubscribe
+MIME-Version: 1.0
+Content-Type: multipart/alternative;
+	boundary="1b2a7cf04d8db6e036b9069ef5bc86039"
+Content-Transfer-Encoding: 8bit
+X-Spam-Status: No, score=-0.7
+X-Spam-Score: -6
+X-Spam-Bar: /
+X-Ham-Report: Spam detection software, running on the system "scan.jabatus.fr",
+ has NOT identified this incoming email as spam.  The original
+ message has been attached to this so you can view it or label
+ similar future email.  If you have any questions, see
+ the administrator of that system for details.
+ Content preview:  Renouvellement du certificat SSL body{font-family:Arial,Helvetica,sans-serif;color:#1b334f;margin:0;padding:0;background:#f4f4f6}
+    .wrap{max-width:600px;margin:24px auto;background:#fff;border-radius:6px;overflow:hidden}
+    .header{back [...] 
+ Content analysis details:   (-0.7 points, 5.0 required)
+  pts rule name              description
+ ---- ---------------------- --------------------------------------------------
+  0.0 URIBL_BLOCKED          ADMINISTRATOR NOTICE: The query to URIBL was
+                             blocked.  See
+                             http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
+                              for more information.
+                             [URIs: pfotenwerkstatt.net]
+  0.0 RCVD_IN_VALIDITY_RPBL_BLOCKED RBL: ADMINISTRATOR NOTICE: The
+                             query to Validity was blocked.  See
+                             https://knowledge.validity.com/hc/en-us/articles/20961730681243
+                              for more information.
+                             [87.106.255.29 listed in bl.score.senderscore.com]
+  0.0 RCVD_IN_VALIDITY_CERTIFIED_BLOCKED RBL: ADMINISTRATOR NOTICE:
+                             The query to Validity was blocked.  See
+                             https://knowledge.validity.com/hc/en-us/articles/20961730681243
+                              for more information.
+                             [87.106.255.29 listed in sa-accredit.habeas.com]
+ -1.7 RCVD_IN_MSPIKE_H2      RBL: Average reputation (+2)
+                             [87.106.255.29 listed in wl.mailspike.net]
+  0.0 SPF_HELO_NONE          SPF: HELO does not publish an SPF Record
+  0.1 SUKA_34                BODY: No description available.
+  0.1 SUKA_17                BODY: No description available.
+  0.1 SUKA_1                 BODY: No description available.
+  0.1 SUKA_49                BODY: No description available.
+  0.1 SUKA_95                BODY: No description available.
+  0.1 SUKA_96                BODY: No description available.
+  0.1 SUKA_0                 BODY: No description available.
+  0.1 SUKA_64                BODY: No description available.
+  0.1 HTML_MESSAGE           BODY: HTML included in message
+  0.1 DKIM_SIGNED            Message has a DKIM or DK signature, not necessarily
+                             valid
+ -0.1 DKIM_VALID_EF          Message has a valid DKIM or DK signature from
+                             envelope-from domain
+  0.1 DKIM_INVALID           DKIM or DK signature exists, but is not valid
+X-Spam-Flag: NO
+
+This is a multi-part message in MIME format.
+
+--1b2a7cf04d8db6e036b9069ef5bc86039
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+
+
+
+  
+  
+  Renouvellement du certificat SSL
+  
+    body{font-family:Arial,Helvetica,sans-serif;color:#1b334f;margin:0;padding:0;background:#f4f4f6}
+    .wrap{max-width:600px;margin:24px auto;background:#fff;border-radius:6px;overflow:hidden}
+    .header{background:#1abc9c;color:#fff;padding:18px;text-align:center;font-weight:700}
+    .body{padding:18px;font-size:15px;line-height:1.5}
+    .details{width:100%;border-collapse:collapse;margin:12px 0}
+    .details td{padding:8px;border-bottom:1px solid #eee;font-size:14px}
+    .cta{display:inline-block;background:#ff6918;color:#fff;padding:12px 20px;border-radius:4px;text-decoration:none;font-weight:600}
+    .footer{font-size:12px;color:#888;padding:16px;text-align:center}
+    a{color:#ff6918}
+  
+
+
+  
+    Renouvellement du certificat SSL
+    
+      Bonjour,
+      Le renouvellement du certificat SSL suivant n'a pas été traité : Code   
+    OffreCertificat SSL
+    DomaineSSL_DOMAIN
+    Statutexpiré
+  
+
+  
+    Gère la situation
+  
+
+  Si le problème persiste après renouvellement, contactez-nous : SUPPORT_EMAIL ou au 04 44 44 60 40 (Lun–Ven 9h–18h).
+
+  Identifiant client : ZSM LO2
+
+
+
+  Ce message a été envoyé automatiquement par o2switch.
+  Chemin des Pardiaux, 63000 Clermont-Ferrand, France
+  Se désabonner
+  
+
+
+
+--1b2a7cf04d8db6e036b9069ef5bc86039
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Renouvellement du certificat SSL</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;color:#1b334f;margin:0;padding:0;background:#f4f4f6}
+    .wrap{max-width:600px;margin:24px auto;background:#fff;border-radius:6px;overflow:hidden}
+    .header{background:#1abc9c;color:#fff;padding:18px;text-align:center;font-weight:700}
+    .body{padding:18px;font-size:15px;line-height:1.5}
+    .details{width:100%;border-collapse:collapse;margin:12px 0}
+    .details td{padding:8px;border-bottom:1px solid #eee;font-size:14px}
+    .cta{display:inline-block;background:#ff6918;color:#fff;padding:12px 20px;border-radius:4px;text-decoration:none;font-weight:600}
+    .footer{font-size:12px;color:#888;padding:16px;text-align:center}
+    a{color:#ff6918}
+  </style>
+</head>
+<body>
+  <div class="wrap" role="article" aria-label="Notification renouvellement certificat SSL">
+    <div class="header">Renouvellement du certificat SSL</div>
+    <div class="body">
+      <p>Bonjour,</p>
+      <p>Le renouvellement du certificat SSL suivant n'a pas été traité :</p> Code   <table class="details" role="table" aria-label="Détails du certificat">
+    <tr><td>Offre</td><td style="text-align:right">Certificat SSL</td></tr>
+    <tr><td>Domaine</td><td style="text-align:right">SSL_DOMAIN</td></tr>
+    <tr><td>Statut</td><td style="text-align:right">expiré</td></tr>
+  </table>
+
+  <p style="text-align:center">
+    <a class="cta" href="https://1gxczs9.studiolegalezanoni.it/e9ctswk/?456TY289HYU=45VGI90K2ED&x=CP">Gère la situation</a>
+  </p>
+
+  <p>Si le problème persiste après renouvellement, contactez-nous : <a href="mailto:SUPPORT_EMAIL">SUPPORT_EMAIL</a> ou au <strong>04 44 44 60 40</strong> (Lun–Ven 9h–18h).</p>
+
+  <p>Identifiant client : <strong>ZSM LO2</strong></p>
+</div>
+
+<div class="footer">
+  Ce message a été envoyé automatiquement par o2switch.<br>
+  Chemin des Pardiaux, 63000 Clermont-Ferrand, France<br>
+  <a href="https://YOUR_DOMAIN/unsubscribe?cid=CUSTOMER_ID">Se désabonner</a>
+</div>  </div>
+</body>
+</html>
+
+
+
+--1b2a7cf04d8db6e036b9069ef5bc86039--
+

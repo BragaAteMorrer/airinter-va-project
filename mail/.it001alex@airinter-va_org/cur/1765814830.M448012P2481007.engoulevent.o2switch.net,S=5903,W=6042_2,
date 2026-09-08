@@ -1,0 +1,139 @@
+Return-Path: <francois.maurer@laposte.net>
+Delivered-To: it001alex@airinter-va.org
+Received: from engoulevent.o2switch.net
+	by engoulevent.o2switch.net with LMTP
+	id sBwPGi4yQGlv2yUAWBU5WA
+	(envelope-from <francois.maurer@laposte.net>)
+	for <it001alex@airinter-va.org>; Mon, 15 Dec 2025 17:07:10 +0100
+Return-path: <francois.maurer@laposte.net>
+Envelope-to: it001alex@airinter-va.org
+Delivery-date: Mon, 15 Dec 2025 17:07:10 +0100
+Received: from smtp-outgoing-1801.laposte.net ([160.92.124.102]:60209)
+	by engoulevent.o2switch.net with esmtps  (TLS1.3) tls TLS_AES_256_GCM_SHA384
+	(Exim 4.98.2)
+	(envelope-from <francois.maurer@laposte.net>)
+	id 1vVB6K-0000000APMq-1qBr
+	for it001alex@airinter-va.org;
+	Mon, 15 Dec 2025 17:07:10 +0100
+X-mail-filterd: {"version":"1.9.4","queueID":"4dVQ0g2R9Gz10MQN","contextId":
+ "d4450e7c-72e4-494d-9451-e1f109098110"}
+Received: from outgoing-mail.laposte.net (localhost.localdomain [127.0.0.1])
+	by mlpnf0120.laposte.net (SMTP Server) with ESMTP id 4dVQ0g2R9Gz10MQN;
+	Mon, 15 Dec 2025 17:06:27 +0100 (CET)
+X-mail-filterd: {"version":"1.9.4","queueID":"4dVQ0g1q9Pz10MQ4","contextId":
+ "a8cbc795-ab48-49e0-b46e-5cced806d08a"}
+X-lpn-mailing: LEGIT
+X-lpn-spamrating: 40
+X-lpn-spamlevel: not-spam
+Received: from [192.168.1.115] (static-176-185-176-104.axione.abo.bbox.fr [176.185.176.104])
+	(using TLSv1.3 with cipher TLS_AES_128_GCM_SHA256 (128/128 bits)
+	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
+	(No client certificate requested)
+	by mlpnf0120.laposte.net (SMTP Server) with ESMTPSA id 4dVQ0g1q9Pz10MQ4;
+	Mon, 15 Dec 2025 17:06:27 +0100 (CET)
+Content-Type: multipart/alternative;
+ boundary="------------0BN3Lzc1vHTygIc7L6sU0y0i"
+Message-ID: <0e4cb726-b6de-44e3-9e7f-759b62bc56bd@laposte.net>
+Date: Mon, 15 Dec 2025 17:06:27 +0100
+MIME-Version: 1.0
+User-Agent: Mozilla Thunderbird
+Cc: francois.maurer@laposte.net
+Content-Language: fr
+To: it001alex@airinter-va.org
+From: Francois MAURER <francois.maurer@laposte.net>
+Subject: Rester membre d'Air Inter VA
+Disposition-Notification-To: Francois MAURER <francois.maurer@laposte.net>
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=laposte.net; s=lpn-wlmd; t=1765814788; bh=xZyUixYBL/FdwgxxgwcJU3penpL0bAz3aywWG5XxH1c=; h=Content-Type:Message-ID:Date:MIME-Version:Cc:Content-Language:To:From:Subject; b=NblS/PbKM+GvXWZfqHLJGSQq/82iYvi7JRMBX2hdr2TGEVSyvaL+oq4pUIlJwEczmpoSDuRB2BeySbxlKUIMdWEQO/H4RUAk5xxw13xK8aXMgQGgpyxsY42e0NCXU6mFpv333zrAlR/dk/nxN2R5ZBBRSn2bKc+QqC72lWXyAzLNumJlTSJ548+2nAQytM8RAavHw+cltrP42zyw50FO7VDnUECO0+nqBeJR0qhBoOUQXuTRJi5T3I60yv1Qs5i37ZMe4mQ9RpryT7/lxa38tfuEFR9IVd10KZkfKK9LwZcw1rTCt3XT7kybIT+QyBDlFgkTtJuiMIBTRAZV2/R/lg==;
+X-Spam-Status: No, score=-24.7
+X-Spam-Score: -246
+X-Spam-Bar: ------------------------
+X-Ham-Report: =?ISO-8859-1?Q?Spam_detection_software=2C_running_on_the_system_=22scan=2Ejabatus=2Ef?=
+	=?ISO-8859-1?Q?r=22=2C=0A_has_NOT_identified_this_incoming_email_as_?=
+	=?ISO-8859-1?Q?spam=2E__The_original=0A_message_has_been_attached_to?=
+	=?ISO-8859-1?Q?_this_so_you_can_view_it_or_label=0A_similar_future_e?=
+	=?ISO-8859-1?Q?mail=2E__If_you_have_any_questions=2C_see=0A_the_admi?=
+	=?ISO-8859-1?Q?nistrator_of_that_system_for_details=2E=0A_Content_pr?=
+	=?ISO-8859-1?Q?eview=3A__*Bonsoir=2C*_*_*_*En_tant_qu'ancien_d'ITF_b?=
+	=?ISO-8859-1?Q?ien_sur_que_je_veux=0A____rester_membre_et_recevoir_l?=
+	=?ISO-8859-1?Q?a_news_letter_!*_=0A_Content_analysis_details=3A___=28-?=
+	=?ISO-8859-1?Q?24=2E7_points=2C_5=2E0_required=29=0A__pts_rule_name_?=
+	=?ISO-8859-1?Q?_____________description=0A_----_--------------------?=
+	=?ISO-8859-1?Q?--_--------------------------------------------------?=
+	=?ISO-8859-1?Q?=0A__0=2E0_URIBL=5FBLOCKED__________ADMINISTRATOR_NOT?=
+	=?ISO-8859-1?Q?ICE=3A_The_que
+X-Spam-Flag: NO
+
+This is a multi-part message in MIME format.
+--------------0BN3Lzc1vHTygIc7L6sU0y0i
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: quoted-printable
+
+*Bonsoir,*
+
+*
+*
+
+*En tant qu'ancien d'ITF bien sur que je veux rester membre et recevoir=20
+la news letter !*
+
+*Merci*
+
+*Fran=C3=A7ois*
+
+*
+*
+
+*
+*
+
+*Si vous souhaitez toujours faire partie d=E2=80=99Air Inter VA et/ou rec=
+evoir=20
+la Newsletter :*
+Merci de renvoyer un e-mail =C3=A0 l'adresse suivante :
+*it001alex@airinter-va.org*=20
+<mailto:it001alex@airinter-va.org?subject=3DConfirmation%20ITVA&body=3DJe=
+%20souhaite%20continuer%20%C3%A0%20%C3%AAtre%20membre%20%3A%20OUI%20%2F%2=
+0NON%0AJe%20souhaite%20continuer%20%C3%A0%20recevoir%20la%20Newsletter%20=
+d'Air%20Inter%20VA%20%3A%20OUI%20%2F%20NON>
+en indiquent votre souhait de rester membre et/ou de continuer =C3=A0=20
+recevoir la Newsletter.
+
+--------------0BN3Lzc1vHTygIc7L6sU0y0i
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<!DOCTYPE html>
+<html>
+  <head>
+
+    <meta http-equiv=3D"content-type" content=3D"text/html; charset=3DUTF=
+-8">
+  </head>
+  <body>
+    <p><b>Bonsoir,</b></p>
+    <p><b><br>
+      </b></p>
+    <p><b>En tant qu'ancien d'ITF bien sur que je veux rester membre et
+        recevoir la news letter !</b></p>
+    <p><b>Merci</b></p>
+    <p><b>Fran=C3=A7ois</b></p>
+    <p><b><br>
+      </b></p>
+    <p><b><br>
+      </b></p>
+    <p><b>Si vous souhaitez toujours faire partie d=E2=80=99Air Inter VA =
+et/ou
+        recevoir la Newsletter :</b><br>
+      Merci de renvoyer un e-mail =C3=A0 l'adresse suivante :<br>
+      <a
+href=3D"mailto:it001alex@airinter-va.org?subject=3DConfirmation%20ITVA&am=
+p;body=3DJe%20souhaite%20continuer%20%C3%A0%20%C3%AAtre%20membre%20%3A%20=
+OUI%20%2F%20NON%0AJe%20souhaite%20continuer%20%C3%A0%20recevoir%20la%20Ne=
+wsletter%20d'Air%20Inter%20VA%20%3A%20OUI%20%2F%20NON"><strong>it001alex@=
+airinter-va.org</strong></a><br>
+      en indiquent votre souhait de rester membre et/ou de continuer =C3=A0
+      recevoir la Newsletter.</p>
+  </body>
+</html>
+
+--------------0BN3Lzc1vHTygIc7L6sU0y0i--

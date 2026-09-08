@@ -1,0 +1,29 @@
+Return-Path: <it001alex@airinter-va.org>
+Delivered-To: it001alex@airinter-va.org
+Received: from engoulevent.o2switch.net
+	by engoulevent.o2switch.net with LMTP
+	id kGljIG2RNWn3NRcAWBU5WA
+	(envelope-from <it001alex@airinter-va.org>)
+	for <it001alex@airinter-va.org>; Sun, 07 Dec 2025 15:38:37 +0100
+Return-path: <it001alex@airinter-va.org>
+Envelope-to: it001alex@airinter-va.org
+Delivery-date: Sun, 07 Dec 2025 15:38:37 +0100
+Received: from [109.234.164.58] (port=40546 helo=www.airinter-va.org)
+	by engoulevent.o2switch.net with esmtpsa  (TLS1.3) tls TLS_AES_256_GCM_SHA384
+	(Exim 4.98.2)
+	(envelope-from <it001alex@airinter-va.org>)
+	id 1vSFuG-00000006OQp-1Nkz
+	for it001alex@airinter-va.org;
+	Sun, 07 Dec 2025 15:38:37 +0100
+Date: Sun, 7 Dec 2025 15:38:37 +0100
+To: it001alex@airinter-va.org
+From: it001alex@airinter-va.org
+Subject: Mauvais Login ou Mot de passe .
+Message-ID: <s7H3vgs6DUYn1Plxem1Liy07XHnRtn6Iq9L13qjGsk@www.airinter-va.org>
+X-Mailer: PHPMailer 6.9.3 (https://github.com/PHPMailer/PHPMailer)
+MIME-Version: 1.0
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Bonjour <br /><br />Un utilisateur a tenté de se connecter avec le pseudo <strong>IT001Alex</strong> et le mot de passe <strong>141047***</strong><br /><br />Adresse IP : 76.36.18.163<br /><br />
+

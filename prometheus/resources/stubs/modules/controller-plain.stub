@@ -1,0 +1,14 @@
+<?php
+
+namespace $CLASS_NAMESPACE$;
+
+use App\Contracts\Controller;
+
+/**
+ * Class $CLASS$
+ * @package $CLASS_NAMESPACE$
+ */
+class $CLASS$ extends Controller
+{
+
+}

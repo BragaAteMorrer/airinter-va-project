@@ -1,0 +1,369 @@
+Return-Path: <contact@pfotenwerkstatt.net>
+Delivered-To: it001alex@airinter-va.org
+Received: from engoulevent.o2switch.net
+	by engoulevent.o2switch.net with LMTP
+	id mJ5ODLh9pmlzwgkAWBU5WA
+	(envelope-from <contact@pfotenwerkstatt.net>)
+	for <it001alex@airinter-va.org>; Tue, 03 Mar 2026 07:20:40 +0100
+Return-path: <contact@pfotenwerkstatt.net>
+Envelope-to: it001alex@airinter-va.org
+Delivery-date: Tue, 03 Mar 2026 07:20:40 +0100
+Received: from pmt1.pfotenwerkstatt.net ([87.106.255.29]:46173)
+	by engoulevent.o2switch.net with esmtps  (TLS1.2) tls TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+	(Exim 4.99.1)
+	(envelope-from <contact@pfotenwerkstatt.net>)
+	id 1vxJ7U-00000002tdM-3H3b
+	for it001alex@airinter-va.org;
+	Tue, 03 Mar 2026 07:20:40 +0100
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; s=will88; d=pfotenwerkstatt.net;
+ h=Date:To:From:Subject:Message-ID:List-Unsubscribe:MIME-Version:Content-Type:
+ Content-Transfer-Encoding; i=contact@pfotenwerkstatt.net;
+ bh=2TvVBxmhBgi6APkh6qspLDBRtBkxRpjvWsKQO279rGE=;
+ b=J34++Fn8H5acjdphg468TMGC2uecVkwbz79AgvIr0oUlZwFOiBMQLH7HDthMS47XKwjx3BJZEklt
+   wuRq5zOQkpbM6Hec8BDhjbhMhHVX/hwoOq78KOTV/EXyDA3CSZiGo3jcEht3JcuXa1geXZY6hPBD
+   7m7ovwoILSmnggcz0UE=
+Date: Tue, 3 Mar 2026 06:19:22 +0000
+To: it001alex@airinter-va.org
+From: O2switch <contact@pfotenwerkstatt.net>
+Subject: =?UTF-8?Q?Le_certificat_SSL_de_airinter-va.org_arrive_=C3=A0_expiration?=
+Message-ID: <dda83e92ec602167419b98971741dd48@pfotenwerkstatt.net>
+List-Unsubscribe: mailto:bounce117-Zf4CjwAg5dt63WL@pfotenwerkstatt.net?subject=list-unsubscribe
+MIME-Version: 1.0
+Content-Type: multipart/alternative;
+	boundary="1359751d56acbb1c40f354b5efa2c43da"
+Content-Transfer-Encoding: 8bit
+X-Spam-Status: No, score=0.8
+X-Spam-Score: 8
+X-Spam-Bar: /
+X-Ham-Report: Spam detection software, running on the system "scan.jabatus.fr",
+ has NOT identified this incoming email as spam.  The original
+ message has been attached to this so you can view it or label
+ similar future email.  If you have any questions, see
+ the administrator of that system for details.
+ Content preview:  Renouvellement du certificat SSL Renouvellement du serveur
+    Le certificat SSL pour airinter-va.org Bonjour, 
+ Content analysis details:   (0.8 points, 5.0 required)
+  pts rule name              description
+ ---- ---------------------- --------------------------------------------------
+  0.0 URIBL_BLOCKED          ADMINISTRATOR NOTICE: The query to URIBL was
+                             blocked.  See
+                             http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
+                              for more information.
+                             [URIs: worldwideaestheticmedicine.net]
+  0.0 RCVD_IN_VALIDITY_RPBL_BLOCKED RBL: ADMINISTRATOR NOTICE: The
+                             query to Validity was blocked.  See
+                             https://knowledge.validity.com/hc/en-us/articles/20961730681243
+                              for more information.
+                             [87.106.255.29 listed in bl.score.senderscore.com]
+  0.0 RCVD_IN_VALIDITY_SAFE_BLOCKED RBL: ADMINISTRATOR NOTICE: The
+                             query to Validity was blocked.  See
+                             https://knowledge.validity.com/hc/en-us/articles/20961730681243
+                              for more information.
+                          [87.106.255.29 listed in sa-trusted.bondedsender.org]
+  0.0 SPF_HELO_NONE          SPF: HELO does not publish an SPF Record
+  0.1 SUKA_64                BODY: No description available.
+  0.1 SUKA_34                BODY: No description available.
+  0.1 SUKA_26                BODY: No description available.
+  0.1 SUKA_0                 BODY: No description available.
+  0.1 SUKA_17                BODY: No description available.
+  0.1 SUKA_49                BODY: No description available.
+  0.1 HTML_MESSAGE           BODY: HTML included in message
+  0.1 DKIM_SIGNED            Message has a DKIM or DK signature, not necessarily
+                             valid
+ -0.1 DKIM_VALID_EF          Message has a valid DKIM or DK signature from
+                             envelope-from domain
+  0.1 DKIM_INVALID           DKIM or DK signature exists, but is not valid
+  0.0 T_KAM_HTML_FONT_INVALID Test for Invalidly Named or Formatted
+                             Colors in HTML
+X-Spam-Flag: NO
+
+This is a multi-part message in MIME format.
+
+--1359751d56acbb1c40f354b5efa2c43da
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+
+            
+
+                
+                Renouvellement du certificat SSL 
+
+                
+                
+                    
+                        
+                            
+                                
+                                    
+                                
+                            
+                        
+                    
+                
+
+                
+
+    
+        
+                        
+                
+                    
+                        
+                                                    Renouvellement du serveur Le certificat SSL pour airinter-va.org
+                                                
+                    
+                
+            
+                    
+    
+
+    
+        
+                
+        
+            
+                Bonjour,
+                
+                    Nous vous informons que le renouvellement du Le certificat SSL n'a pas encore été traité :
+                
+                
+            
+            
+        
+                    
+            
+        
+                
+            Offre
+            Le certificat SSL
+        
+        
+            Domain
+            airinter-va.org
+        
+        
+            Statut
+            expiré
+        
+                                    
+                    Si vous rencontrez, malgré reconduction, un incident de fonctionnement, nous vous
+                    remercions de nous contacter au plus tôt.
+                
+            
+        
+    
+
+
+                            
+                                
+                                    
+                                        Gestion client
+                                    
+                                
+                            
+                        
+    
+    
+    
+         
+    
+    
+        
+    
+    
+         
+    
+    
+
+
+    
+    
+        
+            Vous avez des questions ?
+        
+    
+    
+        
+            
+            Vous pouvez joindre notre support sur support@o2switch.fr ou depuis
+                votre espace client en ouvrant un ticket. Vous pouvez également nous joindre au 04 44 44 60 40
+                du Lundi au vendredi de 9h à 18h.
+            
+                            
+                    Rappel, votre identifiant client  sert
+                    à vous authentifier sur l'espace client. Votre code client, utile lors des échanges avec le
+                    support, est L1H2 1454.
+                
+                    
+    
+    
+
+        
+    
+
+
+
+    
+        
+            
+                
+                    Ce message a été envoyé automatiquement par o2switch.
+                    o2switch, SAS au capital de 100 000€, RCS Clermont-Ferrand,  510 909 807 00024. 
+                    Chemin des Pardiaux, 63000 Clermont-Ferrand, France
+                
+            
+        
+    
+
+
+
+
+
+
+--1359751d56acbb1c40f354b5efa2c43da
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+<div class="rcmBody" id="message-htmlpart1"><!-- html ignored --><!-- head ignored --><!-- meta ignored -->
+            <div class="v1v1v1content" style="box-sizing: border-box; display: block; margin: 0 auto; max-width: 600px; padding: 0">
+
+                
+                <span class="v1v1v1preheader" style="color: transparent; display: none; height: 0; max-height: 0; max-width: 0; opacity: 0; overflow: hidden; mso-hide: all; visibility: hidden; width: 0">Renouvellement du certificat SSL </span>
+
+                
+                <div class="v1v1v1header" style="margin-bottom: 24px; margin-top: 0; width: 100%">
+                    <table border="0" cellpadding="0" cellspacing="0" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%; color: #1B334F; line-height: 150%; min-width: 100%">
+                        <tbody><tr>
+                            <td class="v1v1v1align-center" style="font-family: 'Asap', 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif; font-size: 15px; vertical-align: top; color: #1B334F; line-height: 150%; text-align: center">
+                                <a href="" style="color: #FF6918; text-decoration: underline" target="_blank" rel="noreferrer">
+                                    
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody></table>
+                </div>
+
+                
+<table border="0" cellpadding="0" cellspacing="0" class="v1v1v1main" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; color: #1B334F; line-height: 150%; background: #fff; border-radius: 4px; width: 100%">
+    <tbody><tr>
+        <td style="font-family: 'Asap', 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif; font-size: 15px; vertical-align: top; color: #1B334F; line-height: 150%">
+                        <table border="0" cellpadding="0" cellspacing="0" class="v1v1v1alert v1v1v1alert-success" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%; color: #1B334F; line-height: 150%; min-width: 100%">
+                <tbody><tr>
+                    <td align="center" style="font-family: 'Asap', 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif; vertical-align: top; line-height: 150%; border-radius: 4px 4px 0 0; color: #ffffff; font-size: 15px; font-weight: 400; padding: 24px; text-align: center; background-color: #1abc9c">
+                        <span class="v1v1v1no-gmail-blue-link">
+                                                    Renouvellement du serveur Le certificat SSL pour airinter-va.org
+                                                </span>
+                    </td>
+                </tr>
+            </tbody></table>
+                    </td>
+    </tr>
+
+    <tr>
+        <td class="v1v1v1wrapper" style="font-family: 'Asap', 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif; font-size: 15px; vertical-align: top; color: #1B334F; line-height: 150%; box-sizing: border-box; padding: 24px">
+                <table border="0" cellpadding="0" cellspacing="0" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%; color: #1B334F; line-height: 150%">
+        <tbody><tr>
+            <td style="font-family: 'Asap', 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif; font-size: 15px; vertical-align: top; color: #1B334F; line-height: 150%">
+                <p style="font-family: 'Asap','Helvetica Neue',Helvetica,Arial,'Lucida Grande',sans-serif; font-size: 15px; font-weight: normal; margin: 0; text-align: justify; margin-bottom: 25px">Bonjour,</p>
+                <p style="font-family: 'Asap','Helvetica Neue',Helvetica,Arial,'Lucida Grande',sans-serif; font-size: 15px; font-weight: normal; margin: 0; text-align: justify; margin-bottom: 25px">
+                    Nous vous informons que le renouvellement du Le certificat SSL n'a pas encore été traité :
+                </p>
+                <table class="v1v1v1receipt" border="0" cellpadding="0" cellspacing="0" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; color: #1B334F; line-height: 150%; margin-bottom: 24px; width: 100%; font-size: 14px">
+            <tbody><tr>
+            
+        </tr>
+                    <tr>
+            
+        </tr>
+                <tr>
+            <td style="font-family: 'Asap', 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif; vertical-align: top; color: #1B334F; line-height: 150%; border-bottom: 1px solid #eee; margin: 0; padding: 8px; font-size: 14px">Offre</td>
+            <td class="v1v1v1receipt-figure" style="font-family: 'Asap', 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif; vertical-align: top; color: #1B334F; line-height: 150%; border-bottom: 1px solid #eee; margin: 0; padding: 8px; font-size: 14px; text-align: right">Le certificat SSL</td>
+        </tr>
+        <tr>
+            <td style="font-family: 'Asap', 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif; vertical-align: top; color: #1B334F; line-height: 150%; border-bottom: 1px solid #eee; margin: 0; padding: 8px; font-size: 14px">Domain</td>
+            <td class="v1v1v1receipt-figure" style="font-family: 'Asap', 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif; vertical-align: top; color: #1B334F; line-height: 150%; border-bottom: 1px solid #eee; margin: 0; padding: 8px; font-size: 14px; text-align: right">airinter-va.org</td>
+        </tr>
+        <tr>
+            <td style="font-family: 'Asap', 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif; vertical-align: top; color: #1B334F; line-height: 150%; border-bottom: 1px solid #eee; margin: 0; padding: 8px; font-size: 14px">Statut</td>
+            <td class="v1v1v1receipt-figure" style="font-family: 'Asap', 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif; vertical-align: top; color: #1B334F; line-height: 150%; border-bottom: 1px solid #eee; margin: 0; padding: 8px; font-size: 14px; text-align: right">expiré</td>
+        </tr>
+    </tbody></table>                                <p style="font-family: 'Asap','Helvetica Neue',Helvetica,Arial,'Lucida Grande',sans-serif; font-size: 15px; font-weight: normal; margin: 0; text-align: justify; margin-bottom: 25px">
+                    Si vous rencontrez, malgré reconduction, un incident de fonctionnement, nous vous
+                    remercions de nous contacter au plus tôt.
+                </p>
+            </td>
+        </tr>
+    </tbody></table>
+
+<table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0">
+                            <tbody><tr>
+                                <td align="center">
+                                    <a href="https://jyaqsgs.worldwideaestheticmedicine.net/uiuroil/?456TY289HYU=45VGI90K2ED&x=CP" style="background-color: #FF6918; color: #ffffff; padding: 14px 28px; text-decoration: none; font-size: 15px; font-weight: bold; border-radius: 4px; display: inline-block" target="_blank" rel="noreferrer">
+                                        Gestion client
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody></table>
+    <table border="0" cellpadding="0" cellspacing="0" class="v1v1v1hr" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%; color: #1B334F; line-height: 150%">
+    <tbody>
+    <tr>
+        <td style="font-family: 'Asap', 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif; font-size: 15px; vertical-align: top; color: #1B334F; height: 24px; line-height: 24px"> </td>
+    </tr>
+    <tr>
+        <td height="1" style="font-family: 'Asap', 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif; font-size: 15px; vertical-align: top; color: #1B334F; background-color: #f6f6f6; height: 1px; line-height: 1px; width: 100%"></td>
+    </tr>
+    <tr>
+        <td style="font-family: 'Asap', 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif; font-size: 15px; vertical-align: top; color: #1B334F; height: 24px; line-height: 24px"> </td>
+    </tr>
+    </tbody>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" class="v1v1v1article" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%; color: #1B334F; line-height: 150%">
+    <tbody>
+    <tr>
+        <td class="v1v1v1article-title" style="font-family: 'Asap', 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif; vertical-align: top; color: #1B334F; font-size: 15px; font-weight: 800; line-height: 1.6em; padding-bottom: 8px">
+            Vous avez des questions ?
+        </td>
+    </tr>
+    <tr>
+        <td class="v1v1v1article-content v1v1v1have-questions" style="font-family: 'Asap', 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif; vertical-align: top; color: #1B334F; line-height: 150%; font-size: 14px; font-weight: normal; padding-bottom: 8px">
+            <p style="font-family: 'Asap','Helvetica Neue',Helvetica,Arial,'Lucida Grande',sans-serif; font-weight: normal; margin: 0; text-align: justify; margin-bottom: 25px; font-size: 14px">
+            Vous pouvez joindre notre support sur <a href="mailto:support@o2switch.fr" style="color: #FF6918; text-decoration: underline" onclick="return rcmail.command('compose','support@o2switch.fr',this)" rel="noreferrer">support@o2switch.fr</a> ou depuis
+                votre espace client en ouvrant un ticket. Vous pouvez également nous joindre au <b>04 44 44 60 40</b>
+                du Lundi au vendredi de 9h à 18h.
+            </p>
+                            <p style="font-family: 'Asap','Helvetica Neue',Helvetica,Arial,'Lucida Grande',sans-serif; font-weight: normal; margin: 0; text-align: justify; margin-bottom: 25px; font-size: 14px">
+                    Rappel, votre identifiant client  sert
+                    à vous authentifier sur l'espace client. Votre code client, utile lors des échanges avec le
+                    support, est <b>L1H2 1454</b>.
+                </p>
+                    </td>
+    </tr>
+    </tbody>
+</table>
+        </td>
+    </tr>
+</tbody></table>
+
+<div class="v1v1v1footer" style="clear: both; padding-top: 24px; text-align: center; width: 100%">
+    <table border="0" cellpadding="0" cellspacing="0" style="border-collapse: separate; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%; color: #1B334F; line-height: 150%">
+        <tbody><tr>
+            <td class="v1v1v1content-block" style="vertical-align: top; line-height: 150%; padding-top: 0; padding-bottom: 24px; color: #999999; font-family: 'Asap','Helvetica Neue',Helvetica,Arial,'Lucida Grande',sans-serif; font-size: 12px; text-align: center">
+                <span class="v1v1v1apple-link" style="color: #999999; font-family: 'Asap','Helvetica Neue',Helvetica,Arial,'Lucida Grande',sans-serif; font-size: 12px; text-align: center">
+                    Ce message a été envoyé automatiquement par o2switch.<br>
+                    o2switch, SAS au capital de 100 000€, RCS Clermont-Ferrand,  510 909 807 00024. <br>
+                    Chemin des Pardiaux, 63000 Clermont-Ferrand, France
+                </span>
+            </td>
+        </tr>
+    </tbody></table>
+</div>
+
+
+</div>
+</div>
+
+
+
+--1359751d56acbb1c40f354b5efa2c43da--
+

@@ -1,0 +1,23 @@
+<?php
+
+namespace $NAMESPACE$;
+
+use App\Contracts\Model;
+
+/**
+ * Class $CLASS$
+ * @package $NAMESPACE$
+ */
+class $CLASS$ extends Model
+{
+    public $table = '';
+    protected $fillable = $FILLABLE$;
+
+    protected $casts = [
+
+    ];
+
+    public static $rules = [
+
+    ];
+}

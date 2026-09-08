@@ -1,0 +1,267 @@
+Return-Path: <>
+Delivered-To: it001alex@airinter-va.org
+Received: from engoulevent.o2switch.net
+	by engoulevent.o2switch.net with LMTP
+	id Pyn1I47WaWkTzz4AWBU5WA
+	(envelope-from <>)
+	for <it001alex@airinter-va.org>; Fri, 16 Jan 2026 07:11:26 +0100
+Return-path: <>
+Envelope-to: it001alex@airinter-va.org
+Delivery-date: Fri, 16 Jan 2026 07:11:26 +0100
+Received: from sonic315-26.consmr.mail.bf2.yahoo.com ([74.6.134.200]:41904)
+	by engoulevent.o2switch.net with esmtps  (TLS1.3) tls TLS_AES_128_GCM_SHA256
+	(Exim 4.99.1)
+	id 1vgd3N-0000000HG70-3WsE
+	for it001alex@airinter-va.org;
+	Fri, 16 Jan 2026 07:11:26 +0100
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=yahoo.com; s=bounce; t=1768543843; bh=IppdHf7uPUoVe1KeRE4WXanaM+rmB4MrZjHmwU8O6I0=; h=Date:From:To:Subject:From:Subject:Reply-To; b=Tf8cGpP69TjUIHWyCt4niWInTlRm5ytSIGukSiHrK4EcvDwdWNMLKdziuh6gG2ZQX5aDDwf3mKuXRjVm81zSr1KWEFwWSbuimsgHUwUZi75Ne7fRD4L0t4BIJn5wzAVBuuOKhoBVzH1JOhIYkr4reUlmawLo7MG+93H87uONFTY=
+X-SONIC-DKIM-SIGN: v=1; a=rsa-sha256; c=relaxed/relaxed; d=yahoo.com; s=s2048; t=1768543843; bh=UIKLIFBP/e2NSX8CVdFE2kaRLd66ibsCVigA0TR7cco=; h=X-Sonic-MF:Date:From:To:Subject:From:Subject; b=SMdK1SNU2hXiWL8vJtQdiWcqMmsK9OVONNZIZzFFhMPyEuoy4459whTw03T+Jlz7HS8h1IGBVHIQJuMKTwwxOabmnl1CWICFOq7/wg9bXxi8oDugAPH2weakpw2ywMeCajvVM5FWKGtm7OmhT22wGHnm4PGBLzFgkg/E+DUHSvIN0Lbqhd15m5A0+KnzLBYcR2/7FsIKtIFvdLvn8ykRpDGrn7zhiJMpELwwfuw7KTL3pctCgJKxM8QQw05sljI7wlKmvuI8ZECBzHsJy7mFoPUbVGg8vK75WEmMsVeTS+PDNaGPWLwlj0nWpzXq37f+8JLyefVIjvBygVXOiiNofA==
+X-Sonic-MF: 
+X-Sonic-ID: ac62a5f6-42a7-4961-a1f0-997664122830
+Received: from sonic.gate.mail.ne1.yahoo.com by sonic315.consmr.mail.bf2.yahoo.com with HTTP; Fri, 16 Jan 2026 06:10:43 +0000
+Date: Fri, 16 Jan 2026 06:10:39 +0000
+From: MAILER-DAEMON@yahoo.com
+To: it001alex@airinter-va.org
+Message-ID: <454484093.25044.1768543839376@mpq209.consmr.mail.bf2.yahoo.com>
+Subject: Failure Notice
+Content-Type: multipart/report; report-type=delivery-status;
+ boundary="-=Part.61d4.742d99c91e10151f.19bc56d6490.45228003519cd0bf=-"
+X-Spam-Status: No, score=-23.1
+X-Spam-Score: -230
+X-Spam-Bar: -----------------------
+X-Ham-Report: Spam detection software, running on the system "scan.jabatus.fr",
+ has NOT identified this incoming email as spam.  The original
+ message has been attached to this so you can view it or label
+ similar future email.  If you have any questions, see
+ the administrator of that system for details.
+ Content preview:  I'm afraid I wasn't able to deliver the following message.
+    This is a permanent error; I've given up. Sorry it didn't work out. Subject:
+    Renaissance AIR INTER VA To: sbarthelemy2003@yahoo.fr --- Below this line
+    is a copy of the message. 
+ Content analysis details:   (-23.1 points, 5.0 required)
+  pts rule name              description
+ ---- ---------------------- --------------------------------------------------
+  -25 ABUSIX_WHITE           RBL: Listed for spam.
+                             [74.6.134.200 listed in white.abusix.jabatus]
+  0.0 URIBL_BLOCKED          ADMINISTRATOR NOTICE: The query to URIBL was
+                             blocked.  See
+                             http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
+                              for more information.
+                             [URIs: airinter-va.org]
+  0.1 RCVD_IN_DNSWL_NONE     RBL: Sender listed at https://www.dnswl.org/,
+                              no trust
+                             [74.6.134.200 listed in list.dnswl.org]
+  0.0 SPF_HELO_NONE          SPF: HELO does not publish an SPF Record
+  0.1 SUKA_10                BODY: No description available.
+  0.1 SUKA_34                BODY: No description available.
+  0.1 SUKA_28                BODY: No description available.
+  0.1 SUKA_33                BODY: No description available.
+  0.1 SUKA_13                BODY: No description available.
+  0.0 RCVD_IN_VALIDITY_CERTIFIED_BLOCKED RBL: ADMINISTRATOR NOTICE:
+                             The query to Validity was blocked.  See
+                             https://knowledge.validity.com/hc/en-us/articles/20961730681243
+                              for more information.
+                             [74.6.134.200 listed in sa-accredit.habeas.com]
+  0.0 RCVD_IN_VALIDITY_RPBL_BLOCKED RBL: ADMINISTRATOR NOTICE: The
+                             query to Validity was blocked.  See
+                             https://knowledge.validity.com/hc/en-us/articles/20961730681243
+                              for more information.
+                             [74.6.134.200 listed in bl.score.senderscore.com]
+  0.1 DKIM_SIGNED            Message has a DKIM or DK signature, not necessarily
+                             valid
+  0.1 MIME_HEADER_CTYPE_ONLY 'Content-Type' found without required
+                             MIME headers
+  0.1 DKIM_INVALID           DKIM or DK signature exists, but is not valid
+  1.0 FREEMAIL_REPLY         From and body contain different freemails
+X-Spam-Flag: NO
+
+---=Part.61d4.742d99c91e10151f.19bc56d6490.45228003519cd0bf=-
+Content-Type: text/plain; charset=UTF-8
+
+I'm afraid I wasn't able to deliver the following message.
+This is a permanent error; I've given up. Sorry it didn't work out.
+
+Subject: Renaissance AIR INTER VA
+To: sbarthelemy2003@yahoo.fr
+
+--- Below this line is a copy of the message.
+
+---=Part.61d4.742d99c91e10151f.19bc56d6490.45228003519cd0bf=-
+Content-Type: message/rfc822
+
+X-PQ-Received: mpq-producer--production-bf1-5549fb9cd8-rvz8k; Fri Jan 16 06:10:39 UTC 2026
+X-PQ-Received: mpq-producer--production-bf1-5549fb9cd8-82vkb; Fri Jan 16 06:10:39 UTC 2026
+Received: from 10.197.35.9
+ by atlas317.free.mail.bf1.yahoo.com pod-id NONE with HTTPS; Fri, 16 Jan 2026 06:10:38 +0000
+Return-Path: <it001alex@airinter-va.org>
+X-Originating-Ip: [23.83.222.47]
+Received-SPF: pass (domain of airinter-va.org designates 23.83.222.47 as permitted sender)
+Authentication-Results: atlas317.free.mail.bf1.yahoo.com;
+ dkim=pass header.i=@airinter-va.org header.s=default arc_overridden_status=NOT_OVERRIDDEN;
+ spf=pass smtp.mailfrom=airinter-va.org arc_overridden_status=NOT_OVERRIDDEN;
+ dmarc=pass(p=NONE) header.from=airinter-va.org arc_overridden_status=NOT_OVERRIDDEN;
+X-Apparently-To: sbarthelemy2003@yahoo.fr; Fri, 16 Jan 2026 06:10:38 +0000
+X-Rocket-Delivery: lmaYJBw4ZBupFmXpc_PcdxCBEjPNpvBulHdhzocmRUIfjXgPuCnWVZJWZzq87eqYrHNdPAUrpiZtXO2QThIBQ_dA28Kg3HpQDVqZEoQfB2EkUe7mj9vx3z7ZfR_Ibjuckvj1wawjrTa_4lvHkQB.Et.dRCW3fQ8AydkSYNj4WTE0WxrObS8TzYzQQj9gChNAyZeT4MEj2.jBKnD3IRdpitljf_M.g29e4M.oDw71mqrPh64jl1r6Lc.I1mIx9zeMRk0o6wGoxxl8QJ_S1xy2v3uKQPDorBi6mK1e8tpNI.UFwfdOwM1Rc_9xZRijxccijrXtEdnC1Jx6CCxjARsCgc7FyJHNIVD8zf0Kcl.Q8TLJvvvSpeLdRRNRUN4SNxTVHz4drfnx9SfqNGqDB_YIaDfvndo7u0lMUCOQc0BJ0EqVSLf76TWaG3G23lnIE57Jy1uMq0JNakw-
+X-YMailISG: e2dbbKYWLDudDAL1zpRVHvWpUiZS5zeOxoXggfDnFAhL7yO3
+ VCpY0apt3btB6.pRH_H6RJnC2AnN6gUiHAjjtcgZxaONNSJeYLkS.K1iTRjE
+ I.XoVR8lxp1Rmg.PtxhEekfzBp6nBOCvDVfiJnMvOuMbfCGABbfs1UhKwqHf
+ 7GUPvsBNkoSNa2MKvB.IOgiaMxu6QaOfogJI4v0jgYzldKvF0QNj.R5VzHSs
+ julh57mnklEZPQyVE2BizNzVBKIF2YqxzRU8WTNiIGCT9VxvIbiI_oNr1HYq
+ UHnhizI1dffFzltxQEwRe1Hw.efVAvwlgCsNNbaZWpzeHkZLpi3lm_lcLs.S
+ ZqrRwhXACTW0Ux2pbPF8zsE.rTGJjcjNRBOg6mIomsBs70vmVNbzbnKLPMbk
+ 7x0VMxtLKGGYnTUXPWMfDLv4NvrksJyhH0_OMFMrdVnODslzWml_5Ue4jFcW
+ olecaeE_TzEIeA1Dbe3hUzOjc18ViSIyPH2rMQw6axIOE2mboJZY.7wJFyw3
+ FDHRC.WlKbGszuTGlx9qwQAXtRqGzHons7SZvZEleoZAnCMft1fXj_u1T85e
+ SbgooT71ZzPQvvcBnorDjSOX.k5t_tGkgX2.Znwke2CZjxAdrP9Ho5BJu2SS
+ fDNuToLc2UmBf7cEru.v6.7mzoiKOu2eFMeUCB.ZZhmjLncHXk4Li7Gh_lo1
+ uhthZkm765WKTXBP1qnzpwV35L83GdnFSGNuZPBCk7JrHRz0WS1hCx5nBofJ
+ zCQXRyztq7mU_rC5283CTogpgng2zgVFRWtvx.k_bbQLyrH5LaGl964tYDhe
+ vmJ4HTKBIaIhjFHIiFqQs_o_5PbDb_VxqD9OrrElVvYxc3Kef3J.tsbXZ1Rr
+ 5D7MPOgnyyS8JvVh7ZtHkGV99Y49NmtXbRQgqjN1302m3hUI53iC9Z3KSh7E
+ J2kQRP9aAO24D3MVGXfmRZVs42lCF6gDD8WYpbiZRdmC_JRGvAP6VTEshWob
+ CIPToQnXoQ3WI7Z0d7.wzEArY9wPIvcJmJgrYP2MK6PqRr70hGZbW6GQKRQJ
+ FQqVmwpn5PqyUOEEhfWak3HK_CMa.UvBEzrUhMhBEaZXUOXOK4J5r56PjelA
+ 4GMrdi9QlSM7FkW5gIolp69hWdI85js_SxRyQp4A9_QsutAOECdKA_ZZVtUF
+ 2Q4Gk6rDkakuuhLK1iXs8VLt_Q58S0if0g1ItdzhNiQsGP1N0K3GSVXDcutF
+ 8ruwvqp2vm6btu6aDpV82sRqSitQC2TJO5a.cVt64qE2GnOhyCbZp7zQyKPu
+ Xhmwt5rG8T0s5cJX.4cR7ZKVurqanKJ5KYviQJz7vrzidg0rzTFy.oK6kQQw
+ X5w_Yud91O7ZP33W6b5kYK37HuQePYoRLxYJxVSGUYyeWDDFfJlhfiTYlg8-
+Received: from 23.83.222.47 (EHLO cyan.ash.relay.mailchannels.net)
+ by 10.197.35.9 with SMTPs
+ (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256);
+ Fri, 16 Jan 2026 06:10:38 +0000
+X-Sender-Id: o2switch|x-authenticated-sender|engoulevent.o2switch.net:
+ it001alex@airinter-va.org
+Received: from relay.mailchannels.net (localhost [127.0.0.1])
+	by relay.mailchannels.net (Postfix) with ESMTP id 1D1DB78102F;
+	Fri, 16 Jan 2026 02:42:11 +0000 (UTC)
+Received: from smtp-3.jabatus.fr (100-116-82-78.trex-nlb.outbound.svc.cluster.local [100.116.82.78])
+	(Authenticated sender: o2switch)
+	by relay.mailchannels.net (Postfix) with ESMTPA id 091DA781166;
+	Fri, 16 Jan 2026 02:42:08 +0000 (UTC)
+ARC-Seal: i=1; a=rsa-sha256; d=mailchannels.net; s=arc-2022; cv=none;
+	t=1768531329;
+	b=JQ32kRnQ948teOyDqtSqgXA8jprxVK+IB8LUbboskrO8WUL2bREtXmxbwY6fY+70CwAkLS
+	Ao0/X5SufPeNc9fSX79WCJ6JBmoo7oA6izmFrEdC6LfsQH8JVgPHhN7oCfd0qfJ01Adtbz
+	i20p/VFmghU6P7V9WBpoMh0VL3RB/LiVp2QcoDkNKQuLsWW/QZetJ0qmlcTVjYzZ9NmX6C
+	0IB9/ngGLgadzn5tU/wTh3dLZk+7liUjdK6NvmEEJzOYuX0GbpS03c9BfvZ2+mlgs7MDjW
+	EcodJUOpW9En6mmGbOVd+qq0xtF2Bt66dynfCLnjT9UtyBBebEym6361sjVIzg==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed;
+ d=mailchannels.net;
+	s=arc-2022; t=1768531329;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type:
+	 content-transfer-encoding:content-transfer-encoding:dkim-signature;
+	bh=bKHVW+8TlNJkULsG4aVMWzumby1lG3/3hd5xchl2Mgk=;
+	b=1zU09lD+x8/w3ZD+z/G1ocnIaaSoNGGJDJ4xuE44zBdfc7AZTJwUNOqyHj9BtO7dVB4z8K
+	qBzUj82v4zXA8pZDm6rqyRxHwkSuks+J3suPfW80YJN0o+N5qG9jVzIVPmruyHT4J4VdJy
+	JlCGHHbC4gIIsEFXF2lB2IjPsY6Z5rL0Krzo5V0Mp4ERKDEtsKBb+LDAKcEqXctqbTnZcL
+	URHoC5hTulliuCdexrDdk7h4gzVPtHwsPIkVXOWlPYHJWYPTfItr3tmifqskSZCwqwiVlu
+	KSiNk7SJfV+USs5Gawm0ZM4r6g8xVekKRbApyXS20W0FEo2O2ozl5XsQTDS/qQ==
+ARC-Authentication-Results: i=1;
+	rspamd-84bff5b669-pvvcn;
+	auth=pass smtp.auth=o2switch smtp.mailfrom=it001alex@airinter-va.org
+X-Sender-Id: o2switch|x-authenticated-sender|engoulevent.o2switch.net:
+ it001alex@airinter-va.org
+X-MC-Relay: Neutral
+X-MC-Copy: stored-urls
+X-MailChannels-SenderId:
+ o2switch|x-authenticated-sender|engoulevent.o2switch.net:
+ it001alex@airinter-va.org
+X-MailChannels-Auth-Id: o2switch
+X-Cooperative-Eight: 6f3c097250e500d0_1768531330761_3233429406
+X-MC-Loop-Signature: 1768531330761:3826212621
+X-MC-Ingress-Time: 1768531330761
+Received: from smtp-3.jabatus.fr ([UNAVAILABLE]. [109.234.163.204])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+	by 100.116.82.78 (trex/7.1.3);
+	Fri, 16 Jan 2026 02:42:10 +0000
+X-Spam-Status: No
+X-MailPropre-MailScanner-From: it001alex@airinter-va.org
+X-MailPropre-MailScanner-SpamCheck: not spam, SpamAssassin (cached,
+	score=-1.409, required 5, autolearn=disabled, KFJEZRH02 0.01,
+	KFJEZRJ02 0.01, SPF_HELO_NONE 0.00, SPF_PASS -1.50, SUKA_10 0.01,
+	SUKA_13 0.01, SUKA_28 0.01, SUKA_54 0.01, SUKB_10 0.01, SUKC_2 0.01,
+	VM03 0.01)
+X-MailPropre-MailScanner: Not scanned: please contact your Internet E-Mail Service Provider for details
+X-MailPropre-MailScanner-ID: EEE1E280418.A9225
+X-MailPropre-MailScanner-Information: Please contact the ISP for more information
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+	d=airinter-va.org; s=default; h=Content-Transfer-Encoding:Content-Type:
+	Message-ID:Subject:To:From:Date:MIME-Version:Sender:Reply-To:Cc:Content-ID:
+	Content-Description:Resent-Date:Resent-From:Resent-Sender:Resent-To:Resent-Cc
+	:Resent-Message-ID:In-Reply-To:References:List-Id:List-Help:List-Unsubscribe:
+	List-Subscribe:List-Post:List-Owner:List-Archive;
+	bh=bKHVW+8TlNJkULsG4aVMWzumby1lG3/3hd5xchl2Mgk=; b=enyoJ/DclhTZlofekDrzwZjfOD
+	R9oO9OssBaW0dtM5aIqBMU+lf54kezDYmQHlynBCYoRne/XK4ghKaxjIUoa+blnsgQjY2xAxIyqxk
+	IF0/8d1Bf6/mhMY/2Gv2YQolhewNhnnBH2tTvLxnbwVekUgspLDs6T7eGN2A4e7KzDvqbdVbZ0a+L
+	AoZlYjDG0ryxvKRAdlBuIeycnDilWRQTutHDvk1YTkx/ZpJuydzsn7XKDoDnTFvnyUmh5SWdIlYnA
+	aXeelA5GmOS9B5bAd6MqdbK0UTo6sVudL8TbbaMyOoVg6Wpx+FQTMu8LompjN1cIBAw+oR+H1ZqfZ
+	R7j6j/Dg==;
+MIME-Version: 1.0
+Date: Fri, 16 Jan 2026 03:42:03 +0100
+From: it001alex@airinter-va.org
+To: it001alex@airinter-va.org
+Subject: Renaissance AIR INTER VA
+Message-ID: <9d77f8e7cdb398a3ba390afde93a4686@airinter-va.org>
+X-Sender: it001alex@airinter-va.org
+Disposition-Notification-To: it001alex@airinter-va.org
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 8bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - engoulevent.o2switch.net
+X-AntiAbuse: Original Domain - yahoo.fr
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - airinter-va.org
+X-Get-Message-Sender-Via: engoulevent.o2switch.net: authenticated_id: it001alex@airinter-va.org
+X-Authenticated-Sender: engoulevent.o2switch.net: it001alex@airinter-va.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
+
+Bonjour,
+
+Vous recevez ce message car vous êtes toujours membre d’Air Inter 
+Virtual Airline.
+Non, Air Inter VA n’est pas morte ! Ce sont simplement les aléas de la 
+vie qui font que certaines priorités prennent parfois le dessus sur 
+d’autres…
+
+Après quelques années de contretemps (mieux vaut tard que jamais, 
+dit-on), le site "Air Inter VA" et son "Centre des Opérations de Vol - 
+OCC" (anciennement Prométhée) ont été complètement mis à jour et 
+améliorés de manière significative.
+
+Les nouvelles versions du site et de l'OCC offrent un design grandement 
+modernisé ainsi qu’une interface simplifiée afin de faciliter l’accès 
+aux informations, la gestion des activités et surtout des 
+fonctionnalités accrues pour les pilotes (OCC).
+Vous pouvez en avoir un aperçu en vous rendant sur :
+
+1) Pour le site principal d'Air Inter VA :
+https://www.airinter-va.org
+
+2) Pour accéder à l'OCC (consulter "L'OCC en détails" pour voir toutes 
+les fonctionnalités une fois enregistré) :
+https://prometheus.airinter-va.org
+
+Si vous souhaitez toujours faire partie d’Air Inter VA, merci de me 
+renvoyer un e-mail à l'adresse suivante :
+it001alex@airinter-va.org
+Ou en renvoyant un message via la messagerie du site : 
+https://www.airinter-va.org
+En indiquant votre souhait de rester membre.
+
+Dans le cas contraire, (si vous ne souhaitez plus faire partie d’Air 
+Inter VA) :
+Aucune action de votre part n’est nécessaire. Vous serez automatiquement 
+supprimé de notre liste de membres et de la liste de diffusion au 1er 
+février 2026.
+
+À bientôt peut-être pour de nouvelles aventures !
+
+Alex
+IT001
+
+---=Part.61d4.742d99c91e10151f.19bc56d6490.45228003519cd0bf=---

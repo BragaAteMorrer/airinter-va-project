@@ -1,0 +1,16 @@
+{
+    "name": "$STUDLY_NAME$",
+    "alias": "$LOWER_NAME$",
+    "description": "",
+    "keywords": [],
+    "active": 1,
+    "order": 0,
+    "providers": [
+        "$MODULE_NAMESPACE$\\$STUDLY_NAME$\\Providers\\AppServiceProvider",
+        "$MODULE_NAMESPACE$\\$STUDLY_NAME$\\Providers\\EventServiceProvider",
+        "$MODULE_NAMESPACE$\\$STUDLY_NAME$\\Providers\\RouteServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": []
+}

@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <title><?php echo $__env->yieldContent('title'); ?> - <?php echo e(config('app.name')); ?> admin</title>
+
+  <meta charset="utf-8"/>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' name='viewport'/>
+  <meta name="viewport" content="width=device-width"/>
+
+  
+  <meta name="base-url" content="<?php echo e(url('')); ?>">
+  <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
+  <meta name="api-key" content="<?php echo e(Auth::check() ? Auth::user()->api_key: ''); ?>">
+  
+
+  <script src="<?php echo e(public_asset('/assets/global/js/jquery.js')); ?>"></script>
+
+  <link rel="shortcut icon" type="image/png" href="<?php echo e(public_asset('/assets/img/favicon.png')); ?>"/>
+
+  <link href='https://fonts.googleapis.com/css?family=Muli:400,300' rel='stylesheet' type='text/css'/>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,700,300" rel="stylesheet" type="text/css"/>
+
+  <link rel="stylesheet" href="<?php echo e(public_mix('/assets/global/css/vendor.css')); ?>"/>
+  <link rel="stylesheet" href="<?php echo e(public_mix('/assets/admin/css/vendor.css')); ?>"/>
+  <link rel="stylesheet" href="<?php echo e(public_asset('/assets/admin/css/admin.css')); ?>"/>
+
+  <style type="text/css">
+    <?php echo $__env->yieldContent('css'); ?>
+  </style>
+
+  <script>
+    const BASE_URL = '<?php echo e(url('/')); ?>';
+      <?php if(Auth::user()): ?>
+    const PHPVMS_USER_API_KEY = "<?php echo e(Auth::user()->api_key); ?>";
+      <?php else: ?>
+    const PHPVMS_USER_API_KEY = false;
+    <?php endif; ?>
+    <?php echo $__env->yieldContent('scripts_head'); ?>
+  </script>
+
+</head>
+<body>
+
+<div class="wrapper">
+  <?php echo $__env->make('admin.sidebar', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+
+  <div class="main-panel">
+    <nav class="navbar navbar-default">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar bar1"></span>
+            <span class="icon-bar bar2"></span>
+            <span class="icon-bar bar3"></span>
+          </button>
+          <a class="navbar-brand" href="#"><?php echo $__env->yieldContent('title'); ?></a>
+        </div>
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav navbar-right">
+            <?php echo $__env->yieldContent('actions'); ?>
+          </ul>
+
+        </div>
+      </div>
+    </nav>
+
+
+    <div class="content">
+      <div class="container-fluid">
+        <div class="row">
+          
+
+          <div class="col-12">
+            <?php echo $__env->make('admin.flash.message', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+            <?php echo $__env->yieldContent('content'); ?>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <div class="container-fluid">
+        <nav class="pull-left">
+          <ul>
+          </ul>
+        </nav>
+      </div>
+    </footer>
+  </div>
+</div>
+</body>
+
+<script defer src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<script defer src="<?php echo e(public_mix('/assets/admin/js/vendor.js')); ?>"></script>
+<script defer src="<?php echo e(public_mix('/assets/admin/js/app.js')); ?>"></script>
+
+<script>
+  /**
+   * Initialize any plugins on the page
+   */
+  const initPlugins = () => {
+    $('.select2').select2({width: 'resolve'});
+    $('input').iCheck({
+      checkboxClass: 'icheckbox_square-blue',
+      radioClass: 'icheckbox_square-blue'
+    });
+
+    $('[data-toggle="popover"]').popover();
+  };
+
+  $(document).ready(function () {
+    initPlugins();
+
+    //let storage = getStorage('phpvms.admin');
+    const storage = new phpvms.Storage('phpvms.admin', {
+      "menu": [],
+    });
+
+    // see what menu items should be open
+    const menu = storage.getList('menu');
+    for (const id of menu) {
+      console.log('found ' + id);
+      const elem = $(".collapse#" + id);
+      elem.addClass("in").trigger("show.bs.collapse");
+
+      const caret = $("a." + id + " b");
+      caret.addClass("pe-7s-angle-down");
+      caret.removeClass("pe-7s-angle-right");
+    }
+
+    $(".collapse").on("hide.bs.collapse", function () {
+      const id = $(this).attr('id');
+      const elem = $("a." + id + " b");
+      elem.removeClass("pe-7s-angle-down");
+      elem.addClass("pe-7s-angle-right");
+
+      // console.log('hiding ' + id);
+      storage.removeFromList('menu', id);
+      storage.save();
+    });
+
+    $(".collapse").on("show.bs.collapse", function () {
+      const id = $(this).attr('id');
+      const caret = $("a." + id + " b");
+      caret.addClass("pe-7s-angle-down");
+      caret.removeClass("pe-7s-angle-right");
+
+      // console.log('showing ' + id);
+      storage.addToList('menu', id);
+      storage.save();
+    });
+  });
+</script>
+
+<?php echo $__env->yieldContent('scripts'); ?>
+
+</html>
+<?php /**PATH /home/jewe0363/prometheus/resources/views/admin/app.blade.php ENDPATH**/ ?>

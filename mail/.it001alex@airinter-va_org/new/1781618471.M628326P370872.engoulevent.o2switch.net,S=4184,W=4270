@@ -1,0 +1,86 @@
+Return-Path: <demmerle.gil@wanadoo.fr>
+Delivered-To: it001alex@airinter-va.org
+Received: from engoulevent.o2switch.net
+	by engoulevent.o2switch.net with LMTP
+	id WqAfJCdXMWq4qAUAWBU5WA
+	(envelope-from <demmerle.gil@wanadoo.fr>)
+	for <it001alex@airinter-va.org>; Tue, 16 Jun 2026 16:01:11 +0200
+Return-path: <demmerle.gil@wanadoo.fr>
+Envelope-to: it001alex@airinter-va.org
+Delivery-date: Tue, 16 Jun 2026 16:01:11 +0200
+Received: from smtp-21.smtpout.orange.fr ([80.12.242.21]:46301 helo=smtp.smtpout.orange.fr)
+	by engoulevent.o2switch.net with esmtps  (TLS1.3) tls TLS_AES_128_GCM_SHA256
+	(Exim 4.99.4)
+	(envelope-from <demmerle.gil@wanadoo.fr>)
+	id 1wZULc-00000001XWk-0et0
+	for it001alex@airinter-va.org;
+	Tue, 16 Jun 2026 16:01:11 +0200
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=wanadoo.fr;
+	s=t20230301; t=1781618421;
+	bh=dctOPiBuN/KeUx23obPtfLoWzyMjL2b+gHIZtMOo8b8=;
+	h=Date:From:To:Message-ID:Subject:MIME-Version;
+	b=LETsAAXz3Ptp131AaXPsnemA7Wnj+9Z9ceLvLki9mX7M4fKylOO9QcTm5N9dqgEq2
+	 GOjQz/3lgl3DD1dyjn24UX1DQ72Pw0yquMHF7QSoAu8GXRzu1ERpuqEbwQnBSlmI8C
+	 Be55si+FtSF8LqmJR3qvTDX6H9trlPONdE3i51I3gkMYo5IXyUsGYJNB3NOgZnm/cW
+	 /b5Cvvvvbg20MGTofP+LudkrsPiaKmPRSAFud3xncJGQHITysgCgwkTZ41kOoIoSkz
+	 qAy9SaC0lMeQiy1qAEeuBKk6Rb5LVL7Ivy/S6z7uFQR6vn1aXRsXKyo3GZxcXliMLD
+	 b7uFyuUzeswBw==
+X-ME-Helo: opme11oxm20nd1.op.nd1.pom.fr.intraorange
+X-ME-Auth: ZGVtbWVybGUuZ2lsQHdhbmFkb28uZnI=
+X-ME-Date: Tue, 16 Jun 2026 16:00:21 +0200
+X-ME-IP: 10.110.57.20
+Date: Tue, 16 Jun 2026 16:00:21 +0200 (CEST)
+From: =?UTF-8?Q?demmerl=C3=A9_gilles?= <demmerle.gil@wanadoo.fr>
+Reply-To: =?UTF-8?Q?demmerl=C3=A9_gilles?= <demmerle.gil@wanadoo.fr>
+To: it001alex@airinter-va.org
+Message-ID: <990235870.2463186.1781618421714.JavaMail.open-xchange@opme11oxm20nd1.op.nd1.pom.fr.intraorange>
+Subject: Correction
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+X-Priority: 3
+Importance: Medium
+X-Mailer: Open-Xchange Mailer v7.6.3-Rev77
+X-Originating-IP: 2a01:cb08:1275:ab00:29ec:16aa:b0c4:6c12
+X-Originating-Client: open-xchange-appsuite
+X-Spam-Status: No, score=0.2
+X-Spam-Score: 2
+X-Spam-Bar: /
+X-Ham-Report: Spam detection software, running on the system "scan.jabatus.fr",
+ has NOT identified this incoming email as spam.  The original
+ message has been attached to this so you can view it or label
+ similar future email.  If you have any questions, see
+ the administrator of that system for details.
+ Content preview:  Lire repere 12 page 12 (Boites _ d_chets) cot_ pilote seulement
+    Avec mes excuses G.D. 
+ Content analysis details:   (0.2 points, 5.0 required)
+  pts rule name              description
+ ---- ---------------------- --------------------------------------------------
+  0.1 RCVD_IN_DNSWL_NONE     RBL: Sender listed at https://www.dnswl.org/,
+                              no trust
+                             [80.12.242.21 listed in list.dnswl.org]
+ -0.0 SPF_HELO_PASS          SPF: HELO matches SPF record
+  0.1 DKIM_SIGNED            Message has a DKIM or DK signature, not necessarily
+                             valid
+ -0.1 DKIM_VALID_EF          Message has a valid DKIM or DK signature from
+                             envelope-from domain
+  0.0 RCVD_IN_VALIDITY_RPBL_BLOCKED RBL: ADMINISTRATOR NOTICE: The
+                             query to Validity was blocked.  See
+                             https://knowledge.validity.com/hc/en-us/articles/20961730681243
+                              for more information.
+                             [80.12.242.21 listed in bl.score.senderscore.com]
+  0.0 RCVD_IN_VALIDITY_SAFE_BLOCKED RBL: ADMINISTRATOR NOTICE: The
+                             query to Validity was blocked.  See
+                             https://knowledge.validity.com/hc/en-us/articles/20961730681243
+                              for more information.
+                           [80.12.242.21 listed in sa-trusted.bondedsender.org]
+  0.1 DKIM_INVALID           DKIM or DK signature exists, but is not valid
+  0.0 FORGED_SPF_HELO        No description available.
+X-Spam-Flag: NO
+
+Lire repere 12 page 12 (Boites =C3=A0 d=C3=A9chets) cot=C3=A9 pilote seulem=
+ent=20
+
+Avec mes excuses=20
+
+G.D.

@@ -1,0 +1,206 @@
+Return-Path: <gildas.ferrandez@gmx.fr>
+Delivered-To: it001alex@airinter-va.org
+Received: from engoulevent.o2switch.net
+	by engoulevent.o2switch.net with LMTP
+	id kNBeEwqFHmpeMg0AWBU5WA
+	(envelope-from <gildas.ferrandez@gmx.fr>)
+	for <it001alex@airinter-va.org>; Tue, 02 Jun 2026 09:23:54 +0200
+Return-path: <gildas.ferrandez@gmx.fr>
+Envelope-to: it001alex@airinter-va.org
+Delivery-date: Tue, 02 Jun 2026 09:23:54 +0200
+Received: from mout.gmx.net ([212.227.15.18]:34857)
+	by engoulevent.o2switch.net with esmtps  (TLS1.3) tls TLS_AES_256_GCM_SHA384
+	(Exim 4.99.4)
+	(envelope-from <gildas.ferrandez@gmx.fr>)
+	id 1wUJTW-00000003cdG-3obx
+	for it001alex@airinter-va.org;
+	Tue, 02 Jun 2026 09:23:54 +0200
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=gmx.fr;
+	s=s31663417; t=1780384986; x=1780989786; i=gildas.ferrandez@gmx.fr;
+	bh=nXbBRmi1hCLjaR3HG7Uq2fNY/5eGiqFBKbEs1fK05T8=;
+	h=X-UI-Sender-Class:MIME-Version:Message-ID:From:To:Subject:
+	 Content-Type:Date:In-Reply-To:References:
+	 Content-Transfer-Encoding:cc:content-transfer-encoding:
+	 content-type:date:from:message-id:mime-version:reply-to:subject:
+	 to;
+	b=bbpGS/e1ZMTkHe4/G/y8yegqfkiSokWs3V/bcPV46HewdI/J4xc8gNPnmLrJdtgf
+	 HurzLry3yoUviKyHinWukLGhOgeqt4tBHLURgfhgtFnQ//lJ5i1VaOZqtHQsq5fe0
+	 ta1E7PYHwmZEVUozOUR/RPci7kotZoPnwBfwmLvkrR/H71g4evHnWwb+zkk87O+Y1
+	 lT28G3+m2c5RAycFyZ4a/FJEdvbd9F27U8QjzyR0Re5K4OEFN6Hp55GSqidxcBcTz
+	 D9Kw/gby2w2Jb4XtmMj5Cd/iRhWH6tNGiKLylpfENP8rENwJfSNalpSyBb/DSr+2K
+	 OA4GF4+Zl+XHVQhO9g==
+X-UI-Sender-Class: 724b4f7f-cbec-4199-ad4e-598c01a50d3a
+Received: from [88.160.224.220] ([88.160.224.220]) by web-mail.gmx.net
+ (3c-app-mailcom-bs13.server.lan [172.19.170.181]) (via HTTP); Tue, 2 Jun
+ 2026 09:23:05 +0200
+MIME-Version: 1.0
+Message-ID: <trinity-dd383903-777e-4951-92d1-745469b4c6ed-1780384985741@3c-app-mailcom-bs13>
+From: gildas Ferrandez <gildas.ferrandez@gmx.fr>
+To: it001alex@airinter-va.org
+Subject: Re: Air Inter VA - Inscription membre
+Content-Type: text/html; charset=UTF-8
+Date: Tue, 2 Jun 2026 09:23:05 +0200
+Importance: normal
+Sensitivity: Normal
+In-Reply-To: <GWrVdoFkDOakRsiKdqLY2H1YgRWjJAqXj1dBrDwSA@www.airinter-va.org>
+References: <GWrVdoFkDOakRsiKdqLY2H1YgRWjJAqXj1dBrDwSA@www.airinter-va.org>
+Content-Transfer-Encoding: quoted-printable
+X-UI-Message-Type: mail
+X-Priority: 3
+X-Provags-ID: V03:K1:regpuLvnILztfyQfz0JE0zcDxtfJpvDA7JK7H3K2LJwonEbnoLzyYO89uTeARrOwb455C
+ +ZaF9dSRCSRxNXraOhJJApGQL19PxGpxu2AsILYf8C00yuMfowJvPwWT1VCOtHvXOMJpfiDr2AEA
+ 84ccMvfVLrNlcM1e82L2lx+DG/GZQKRP8eiFI0+Vt1365VQiHV1Q2xKzZnwophjk8+I4XtdfE7fF
+ GdEkvVs+/gRx/Yi+pqkUGcnkcaP0A7xvzfKPBflUQP6rH1ekhwuA7xWWtey2w5wxcgLwat2nIVei
+ qU=
+UI-OutboundReport: notjunk:1;M01:P0:SJmE295Hqao=;oqmM1nxdp904NMB9Mzm6mq9He75
+ GqgqsyXDloqtNslsLEbaPWJ0q/OILraNwfMHYtxtqB6lGKMIE/oftRUCCCl4fNnw+Oky+iFbS
+ RzUr8vClAvn66RPzP5Dvfr3N4qGQCs+TAcXwlxmw8yq11siCIIFuwinSrnuvVK78EQEPNxpjt
+ s9VvTmkA0+8wDa6vVdu/cNeTRt/5HvZSGeqLWn2dkLC6p2cLXGHwHVLvuAeL9IYkRwiqPUA23
+ CRyLdoVYXe/EVqTa4EpWi2gwGI1H6ryq4Bi8drNdvGg1q4f6XYniTv2bkSXEznO0JTivgGWEF
+ uVyPciinqoEju3LYgEvo+gysOx3pbUiaqQefUyagBMBH21AYe6j2Dr9RYlO7yK3RrA2lWhC5C
+ hHJEGYb7h+JGOdqc1+xuWbJQt0TZrZQE8fiCcDdEqIJdSvhZn0IBE3logykvIvFeCTrmQ9Yul
+ Rst5/edDQAFZsOvmrKrAZGX5Pz2ANZjQPDHwZXzvf0lldnEirvgCuCY31uMqEQusmQb27St86
+ PMInRkGxL9DByZlxlmIGeKL/+yY+5aQw3L5xtMDirrVieETDNUSGwd5iZTGdvxjoFK8h+d5JZ
+ DW4PGGzM8/khR3ufXzyxE4KYDmOVByNxm1kcSf6GsF4cMOCuVYz3OINdpxB4GztAdspSrsdPl
+ Y1oqE1XXTUnh8IZhRHxYCxNFlhp6CJMazA6hwAX70SEkZ/m+Ok16/pJOuBi60IejXj1lPdsEA
+ folhkLYDWGC40VSHIyKqaz+YE9t1LNoH9ma6Zgen8w99RllgUA+k4KycLF/jwE4TetfvRhHmA
+ 3uTHrpGeKcD6DH9L6MjmF/gIwCOauHRnP1+q5tCxyhqbGyXTBpBdJX6OTm9grltGKS6IsAHTF
+ V7BTe5BCrXJYRMEXKYu1ihHq0Qxcom+3hQrOYGdnN7dm23UQoYx9293JMvAh/bjM+aJOpeXIz
+ P5eRU2rw0hvpvXmYw7ter4LVcjvJH+I81d9LyHkjpuWG7aAZ+MrioVpyRDUdts7xuslsiNTGZ
+ Sff+ZRaw4SE7F0i8sUtwjaYARioJELXoHrwKIGs5yR3iekriFqxFWmNO5zU1esQQ0/iprUVyf
+ qmIV3oKQZdaB/64HzGW7+27bLkSlCMKEtOrHOckvCYieQkJ7APqNiEX64HTZhIjvWPOW18vRu
+ 0rWCwkqwUGo+drt6ENi64Dawyt4dteuxs6viynYqW2lFO+xBGPl5+nENz4fNB/lPqZzLv0vwQ
+ TjhkWL7IBU6iJJZxnQWz3r7r7wJ2/i3n6igZziW8Bh4y1stAMF6EU8INmVwGvMay9NS+bQCUs
+ S7g9HejLdX4nkPF287VE+MKRS5RvMohG2pQGwzlRmQFeru7+GVqPe6x2PSyw0DiAxoiXbXnZ8
+ D+dnRyee+g2PcfZCjHJnEWD+ZKNlozxZviJNGfGDNAqtWn1fr7G+ezN0YPGlGDClRYfrWbGQR
+ Rv6HuLWzNncYTZmZVrg3OKqRKh1Uq1bN5zAXNwGJqW8UAcD2gCUQhz46RD7AvouZnRbKmCv1m
+ MvjP5yp8Quf4NLCoyJ8ALIgIeo7YzU2/9hAnch8QDOQlIPtgD617R0UFa/7Fmis1E1QxLQeDg
+ oSL1+eplEW7fx8BhG1dtAdqPPN5H9+iklfeKoKnCBkkamgtIn760xbH939hAHVRnutuINTO44
+ 1gUJdQzDFlsK+kF+Mo5GeD3l9bLLrN0KQIXFqYzgXjeA6iPZu+tMSshrBdTw3dzhuuypM/6U6
+ JfiluSZ52TlTRrwck1M46JImF5M5y6GTwr76vNhBHgjckjwgWNTi8vaLvEIYXhTFCnZmZwKP1
+ EKw+Pcyx+tgODPdZP/j83rsDansSwqUDl7jbKJ5li2nXQXP1pq6avxAzrHfMWym+d5As4AVDT
+ XR4kOV55pq83J7BW/GFkZeUJZUbiwY6S3z+2cDzZzMmxAwHMG7XE0uBxaU5bdD0bMPj2lX6pH
+ omzY7BR92Fej/5fsB7pI8B7KzaNJc80FMiT9Ix5HZeg8Dv3dEqlmhBYqi5jxCDSUSWnwDZVaG
+ Lvlvtiu0ckcn9KIaK85UP9wkI90cusY59e3WUUhyTShLG9ywNGdRp2sx5WYW4TXWHOzKryM/Q
+ cFvrpc7eo+Hr4Aajf1nzImGxCmDl7VgEL5fx9Zk+qvQbmiNuqDIA8+OJEn04vOPQ5ZJEUtTsN
+ qNDr2dH4FmXp9QRzBkPfV016Ec5NeIx/fqM45FYluFK3w+OCIh75HshNmVEfL/yM6144PkTGr
+ q4vOFah9ltYANMeAJd6p653DXK4/hhOSi9o4R/DF/gvSOqgaZdFmfGyQ1m4D95Y51EIoMWq2p
+ O2BQZ/zNBymjWpjVIGG8TiqkmMeh51Fe2cFHhCWGsqm4HG3RFUg3pLnhCeUfLEhM70ehSI3jA
+ arkejOPgH2C30l/DbZEpKqcRskwcuZgWbg3lneInFED81vzRDZHIvw3N9jcQmhL8DyTWCuWDG
+ YHbNmr8Vj+KDZypE4YfO/Le6xkk98+HuFVvwD0cC/yzeRv8wasnraGD+aL/BKOj7arzoSnv1A
+ CQ2mKmhnmBDheAHRghPTd9gQ3u91yTIQGVrBx7rwlO+X+iSJNNAtNdEilZVyNqMsWI23Xd3YH
+ 9CKPEs77/TJ3a4aS7jCgE3uYKwTTqYu3Kr62CDjIGVpHDmGSLdlAAVsBEKb6mLMn9ODuvgJBt
+ 3HFpYeechw4gBrTQWLZSBvackwwD9SIzMhnWdU0Cy9hM7O8jbI8h2JZUvgqOFIr/tfJ4zn5Hw
+ MdhlMLFGs1rWHWWjwfbS/zMORa3A4bf5wG22ieIJmGd0taKI+AkW5IW2JT4g34D1JbizgbkKY
+ 6ePh7FGbfjj93s11wnj0Sh+szhmYCxjBUYN+4wQw73efpANxvKqOcE4r+YNIEC5JWAK/nmQyu
+ A/4AqqnKdJh0Veo0mGS89fsjPWlDYYgkbCs9IPsQLaquSS2DCdxB4ECHlZvY2ogXs9/VJpPmE
+ Xc1BTNgQ63uMTwfI/hB3lJ6beMzYhxGyKLR8XNhR4RBrV8DkZCu1t/GipRPCLz/C8+UFxX+pE
+ n23gDTrvZ+svCOBgWhakbPIRLzi4u/mQ4lQM2jJTxIMXwy3RxTpzyLdPvzkI9+bAtp97V1bnQ
+ puzahFRGyhCLFHsWTSLag+S9K5tzbj1Gzqp8FAv9VWZ/BlmgvFzACZTNkemMEPucQK7wFHSVx
+ z1AFjNDMD4j8/2GMpvkgbtY3EvFMS56Y/VzVCYvcw6JZATwpqTwhP2vc9v30xMDK1RAl2xEtg
+ 4u3bYyDIL4qEbA605DYEMTFlQdewcE2lUpBjV4+Jg1rJWx54yptkB3PAuARMYnbtNn2/qk8q3
+ WIVVDIzBwdyDY/DaiwItaxzsa9mCG3apLINARXm+KbZR9yQSiNDe83gCL6GeGGC8UhT32Y6yW
+ al42CSH3QDIMzDLw9sSKcMVjOhbZnJmKHu8ag3yCpAkXd5+QsVRtEqiPbINCLd5B7FC6kRbAP
+ KjBEaN5YzlC5hooCuHIbe0LaequtiiKX1ZNqzFH8SZ9ZB+8HiG42KXJpvT5YI7PJNwl5pdtPu
+ O8d7+H8YAMn6s5n6a8mjVQjffDrzJqMn3ej5tAQZH/a27SvlY2UPHJ8ClILd1YDS/a2c0M++D
+ YVcr7ii1xoLUYXBBL1hEmvEjdWhc8JgQlh5Gow2Aco5S2NWh2v9+lvUx0Tkz+H51rHZexSy62
+ sWPBb+s23zy8sI/7sTEHu2q+1UTQFHdNpqnARht7iN4bW82ON5QxoDJuz7XYqnSV6mvJ1MdAH
+ 3jahor0OfVmVsQ/jOg6Eb9WQ0s7uGKvvbvvwY8jiRjBXYGTwFvKmXeTxw+/AsbRiUIRPhCEKg
+ LXVlf1M+Q5NirAAo9R3K4v+nKKDFoH6aqqaT9QDOSONxik9Z71WawXeVspLe06E0lyLVF29gi
+ RegLaZ2LZoOeSCZfiJxP8JsYX1UG+H+soDy4yCsRxsrEDTLWCa6h2ym0Kg9m1vHF36mNfLtw8
+ qVnDF8bjGKnA3oML998+66QLETTw/U/ZrTrFtbyU+OrNOZ0+OcEDDGAi0VqZNM9OtY/LDLjrI
+ sVjQqweuPzplKjg5czZFjANKI3xV1peD+W8d8J14CgQTz62mZt7kErAHzC5PH2n051NmLAnvx
+ jaowc5ChnsSyiZyxaKeGUeHeWyYWBbcBgvmCh6+zqkY0jYXZOFFHk/esoqKBu/nef5MALzbX2
+ TM3bjhsgJAotYttP878ctJJVBPl17Zi1jyN8IkFD4ho+uWLwTT949cfZt2RXphTCd0DdRtTzg
+ OolxvKPlrvMRfWJOHdZxMPh3sXcT9C+lu+ce0BY9qUR1vcgHa+pCDnuo8RPORLr7yXqq/TZMg
+ +4yNB7N62i9FLx1G0rYFjCfVgOF2BqC32umpNl5ml1w06EHUYmCbc2K7JsNmItLw3Cgr3zLhG
+ tnWRLn/tL5RVOVHdrBXEpz9o7DuSg8kGdEiI0ZxZOE+HB6wNCrAFShqP+Kzt9fBuYEM+Lsdm5
+ Z6omrtMtV47IdIoSxxzbdNNSaKXFjIIpDfY5+bsa0a+mXan34Ti+kapl5Qee2SqL8+oMjdEAD
+ 4ATRII9BUu7CUGQDxQx5P8/UCbcCxj7ofUjinFtZDTIGtX40Z+1cIDf9Ywzig3y0NQfvq1oUu
+ 6h/oNcquXNkl4KRx2Yn9/LzfTAIVvt9HzOhXwNsd7rBSx3V32jvGKENXFh+/mkFlxeL+NQXhf
+ rkYXoyISfUPaEJVccJtZBX7vAziTm2HYnm7k9BPtbW1KzrQNO+hSBSTdodnX0PeFZKU59EDJi
+ 939DS7LTOAN7Ni2dPV0AIqcRFE0XP8Yp55dh7TlLMdKRQNTHWzJewsUvqdkwH+uRwJRGntcPk
+ T/RCWW8ozA27745zUb2jzyboKJMU2t65HuI/PRmzZD+Aca7amQEiBxcF257F59HzRaOUj3qa4
+ Oqn5OOgcjFZ998KjrgMF+umPVW9XvMmwhpa+61olRQu9vsiVlAstJvV4dLL5lY4MdqQ7Eipoc
+ 6tgfn1JwlcfRIEolU1TC+NpRsYFXhScPAThTFHj/49XScfeiikubx5ZUOIh0+1/VTHTib6fFy
+ SinEosWN4s6eKcDRIKz2tejnu2MxWpZgk2Z29BcyzIHgz4SBVhdu0N/XiYMaaWYqtHWV9/9an
+ blM1PxMP9+1gk7HQg=
+X-Spam-Status: No, score=0.1
+X-Spam-Score: 1
+X-Spam-Bar: /
+X-Ham-Report: Spam detection software, running on the system "scan.jabatus.fr",
+ has NOT identified this incoming email as spam.  The original
+ message has been attached to this so you can view it or label
+ similar future email.  If you have any questions, see
+ the administrator of that system for details.
+ Content preview:  merci Envoy_: mardi 2 juin 2026 _ 04:15 De: it001alex@airinter-va.org
+    _: Air Inter VA - Inscription membre C'est avec plaisir, IT196Gildas, que
+    nous vous informons que le webmestre a r_alis_ votre inscription en tant
+    que membre de Air Inter VA 
+ Content analysis details:   (0.1 points, 5.0 required)
+  pts rule name              description
+ ---- ---------------------- --------------------------------------------------
+  0.0 URIBL_BLOCKED          ADMINISTRATOR NOTICE: The query to URIBL was
+                             blocked.  See
+                             http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
+                              for more information.
+                             [URIs: gmx.fr]
+  0.0 SPF_HELO_NONE          SPF: HELO does not publish an SPF Record
+ -0.7 RCVD_IN_DNSWL_LOW      RBL: Sender listed at https://www.dnswl.org/,
+                             low trust
+                             [212.227.15.18 listed in list.dnswl.org]
+ -1.7 RCVD_IN_MSPIKE_H2      RBL: Average reputation (+2)
+                             [212.227.15.18 listed in wl.mailspike.net]
+  0.1 HTML_MESSAGE           BODY: HTML included in message
+  1.0 HTML_IMAGE_ONLY_16     BODY: HTML: images with 1200-1600 bytes of
+                             words
+  0.6 MIME_HTML_ONLY         BODY: Message only has text/html MIME parts
+ -0.1 DKIM_VALID_EF          Message has a valid DKIM or DK signature from
+                             envelope-from domain
+  0.1 DKIM_SIGNED            Message has a DKIM or DK signature, not necessarily
+                             valid
+  0.0 RCVD_IN_VALIDITY_RPBL_BLOCKED RBL: ADMINISTRATOR NOTICE: The
+                             query to Validity was blocked.  See
+                             https://knowledge.validity.com/hc/en-us/articles/20961730681243
+                              for more information.
+                             [212.227.15.18 listed in bl.score.senderscore.com]
+  0.0 RCVD_IN_VALIDITY_SAFE_BLOCKED RBL: ADMINISTRATOR NOTICE: The
+                             query to Validity was blocked.  See
+                             https://knowledge.validity.com/hc/en-us/articles/20961730681243
+                              for more information.
+                          [212.227.15.18 listed in sa-trusted.bondedsender.org]
+  0.5 HTML_MIME_NO_HTML_TAG  HTML-only message, but there is no HTML
+                             tag
+  0.1 DKIM_INVALID           DKIM or DK signature exists, but is not valid
+  0.1 T_REMOTE_IMAGE         Message contains an external image
+X-Spam-Flag: NO
+
+merci<br>
+<br>
+<div name=3D"quote" style=3D'margin:10px 5px 5px 10px; padding: 10px 0 10p=
+x 10px; border-left:2px solid #C3D9E5; word-wrap: break-word; -webkit-nbsp-=
+mode: space; -webkit-line-break: after-white-space;'>
+    <div style=3D"margin:0 0 10px 0;">
+        <b>Envoy=C3=A9:</b>&nbsp;mardi 2 juin 2026 &agrave; 04:15<br/>
+        <b>De:</b>&nbsp;it001alex@airinter-va=2Eorg<br/>
+        <b>=C3=80:</b>&nbsp;gildas=2Eferrandez@gmx=2Efr<br/>
+        <b>Cc:</b>&nbsp;it001alex@airinter-va=2Eorg<br/>
+        <b>Objet:</b>&nbsp;Air Inter VA - Inscription membre
+    </div>
+    <div name=3D"quoted-content">
+        <div style=3D"margin: auto;padding: 8=2E0px;width: 600=2E0px;borde=
+r: solid 1=2E0px rgb(0,0,0);"><p style=3D"text-align: center;"><img src=3D"=
+https://www=2Eairinter-va=2Eorg/img/as d&#39;image" style=3D"max-width: 600=
+=2E0px;"/></p><hr/><p style=3D"text-align: left;font: 12=2E0pt Arial;">C&#3=
+9;est avec plaisir, IT196Gildas, que nous vous informons que le webmestre a=
+ r&eacute;alis&eacute; votre inscription en tant que membre de Air Inter VA=
+<br/><br/>Votre nom (ou pseudo) : <b>IT196Gildas</b><br/>Votre mot de passe=
+ : <b>vC}54*gwP6</b><br/><br/>Pour compl&eacute;ter votre inscription conne=
+ctez-vous sur : <a href=3D"https://www=2Eairinter-va=2Eorg/connect=2Ephp?ln=
+g=3Dfr&amp;pseudo=3DIT196Gildas&amp;uid=3DvC}54*gwP6&amp;tconfig=3D0" targe=
+t=3D"_blank">Air Inter VA</a><br/>Cordialement<br/>IT001Alex<br/></p></div>
+
+
+    </div>
+</div>
+<br/>

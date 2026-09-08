@@ -1,0 +1,107 @@
+Return-Path: <software@cleanchannel.pt>
+Delivered-To: it001alex@airinter-va.org
+Received: from engoulevent.o2switch.net
+	by engoulevent.o2switch.net with LMTP
+	id xNuFLqdxfWoxQhcAWBU5WA
+	(envelope-from <software@cleanchannel.pt>)
+	for <it001alex@airinter-va.org>; Thu, 13 Aug 2026 09:26:31 +0200
+Return-path: <software@cleanchannel.pt>
+Envelope-to: it001alex@airinter-va.org
+Delivery-date: Thu, 13 Aug 2026 09:26:31 +0200
+Received: from mx.cleanchannel.pt ([198.244.130.83]:49951)
+	by engoulevent.o2switch.net with esmtps  (TLS1.3) tls TLS_AES_256_GCM_SHA384
+	(Exim 4.99.5)
+	(envelope-from <software@cleanchannel.pt>)
+	id 1wuPpS-00000006NMX-31zx
+	for it001alex@airinter-va.org;
+	Thu, 13 Aug 2026 09:26:31 +0200
+X-KumoRef: eyJfQF8iOiJcXF8vIiwicmVjaXBpZW50IjoiaXQwMDFhbGV4QGFpcmludGVyLXZhLm9yZyJ9
+DKIM-Signature: v=1; a=rsa-sha256; d=cleanchannel.pt; s=s202608; c=relaxed/relaxed;
+	bh=PFyzQ8pc/jmQH/BDitGCcWntv8CkaOPl74aPBUbnVT8=;
+	h=from:to:subject:date:message-id:mime-version:content-type:
+		content-transfer-encoding:list-unsubscribe:list-unsubscribe-post:reply-to;
+	t=1786605941;
+	b=r++BfTfGFks53lNkMrc71ik+p7u7hqajArcAIlL5bRM9W4REKJTDx8EYKdD3Be1LNacucyBcn
+	F/fITTflLUJcadlmCRXVyRriTjlqIUGD1tRjCzTaaykmp78+72qUPoj362T7PTP991p3ZJjyjmN
+	ZwqMKz66Ec3ZdTdg4xAJU7pom1DQ91jDxfw+/XwxPFL4jXfK+GCbUNezY8ktj0kSojg7cs2N/XX
+	STq26zMH8SpOWJ4neogTmsPPf424M82v/TmJ4WcYijKM81fQT88FrqEus83nidU0L65DZ0ndvgM
+	aMvYzVsILZHgk2BkTXYnecM4bp3T0k2qGpwC+b5z9DSQ==;
+List-Unsubscribe-Post: List-Unsubscribe=One-Click
+List-Unsubscribe: <mailto:unsubscribe@cleanchannel.pt>
+Received: from vmi2915582.contaboserver.net (2.59.156.117)
+  by mx.28corp.com (KumoMTA 198.244.151.164) 
+  with ESMTPSA (TLSv1_3:TLS13_AES_256_GCM_SHA384)  id 30af8dc596e811f180c6fa163e9c06fb for <it001alex@airinter-va.org>;
+  Thu, 13 Aug 2026 07:25:41 +0000
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: quoted-printable
+From: La Grow BOX <software@cleanchannel.pt>
+To: it001alex@airinter-va.org
+Subject: Le Lean sans les outils qui s'essoufflent
+Date: Thu, 13 Aug 2026 09:25:40 +0200
+Message-ID: <178660594077.1906717.15116600473962926857@cleanchannel.pt>
+X-Spam-Status: No, score=3.9
+X-Spam-Score: 39
+X-Spam-Bar: +++
+X-Ham-Report: Spam detection software, running on the system "scan.jabatus.fr",
+ has NOT identified this incoming email as spam.  The original
+ message has been attached to this so you can view it or label
+ similar future email.  If you have any questions, see
+ the administrator of that system for details.
+ Content preview:  Bonjour, Je travaille avec des entreprises industrielles qui
+    ont d_j_ tent_ le Lean - tableaux, 5S, formations - et vu tout s'essouffler
+    au bout de quelques mois. Le plus souvent, la cause n'est pas dans le [...]
+    
+ Content analysis details:   (3.9 points, 5.0 required)
+  pts rule name              description
+ ---- ---------------------- --------------------------------------------------
+  0.0 SPF_HELO_NONE          SPF: HELO does not publish an SPF Record
+  0.1 SUKA_13                BODY: No description available.
+  0.1 SUKA_50                BODY: No description available.
+  3.6 RCVD_IN_SBL_CSS        RBL: Received via a relay in Spamhaus SBL-CSS
+                             [198.244.130.83 listed in zen.spamhaus.org]
+  0.1 DKIM_SIGNED            Message has a DKIM or DK signature, not necessarily
+                             valid
+ -0.1 DKIM_VALID_EF          Message has a valid DKIM or DK signature from
+                             envelope-from domain
+  0.0 RCVD_IN_VALIDITY_SAFE_BLOCKED RBL: ADMINISTRATOR NOTICE: The
+                             query to Validity was blocked.  See
+                             https://knowledge.validity.com/hc/en-us/articles/20961730681243
+                              for more information.
+                         [198.244.130.83 listed in sa-trusted.bondedsender.org]
+  0.0 RCVD_IN_VALIDITY_RPBL_BLOCKED RBL: ADMINISTRATOR NOTICE: The
+                             query to Validity was blocked.  See
+                             https://knowledge.validity.com/hc/en-us/articles/20961730681243
+                              for more information.
+                            [198.244.130.83 listed in bl.score.senderscore.com]
+  0.1 DKIM_INVALID           DKIM or DK signature exists, but is not valid
+X-Spam-Flag: NO
+
+Bonjour,
+
+
+Je travaille avec des entreprises industrielles qui ont d=C3=A9j=C3=A0 tent=
+=C3=A9 le Lean - tableaux, 5S, formations - et vu tout s'essouffler au bout=
+ de quelques mois. Le plus souvent, la cause n'est pas dans les outils, mai=
+s dans le management du quotidien.
+
+
+C'est notre travail =C3=A0 La Grow BOX : routines de management et r=C3=A9s=
+olution de probl=C3=A8mes avec vos =C3=A9quipes, sur le terrain.
+
+
+=C3=87a vaut le coup d'en parler ? =C3=89crivez-moi directement =C3=A0 pier=
+re.sirot@lagrowbox.hqform.com (c'est la bo=C3=AEte que je consulte tous les=
+ jours).
+
+
+Cordialement,
+
+
+Pierre SIROT
+
+La Grow BOX =C2=B7 SIRET FR75 948 639 554
+
+
+(Envoy=C3=A9 par Scalinth. Pour ne plus recevoir : remove@lagrowbox.hqform.=
+com)

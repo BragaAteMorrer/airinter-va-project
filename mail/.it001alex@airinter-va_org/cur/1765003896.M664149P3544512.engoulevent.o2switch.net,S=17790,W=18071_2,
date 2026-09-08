@@ -1,0 +1,281 @@
+Return-Path: <aligator638@hotmail.com>
+Delivered-To: it001alex@airinter-va.org
+Received: from engoulevent.o2switch.net
+	by engoulevent.o2switch.net with LMTP
+	id 0PFmJ3jSM2nAFTYAWBU5WA
+	(envelope-from <aligator638@hotmail.com>)
+	for <it001alex@airinter-va.org>; Sat, 06 Dec 2025 07:51:36 +0100
+Return-path: <aligator638@hotmail.com>
+Envelope-to: it001alex@airinter-va.org
+Delivery-date: Sat, 06 Dec 2025 07:51:36 +0100
+Received: from mail-westeuropeazolkn19013084.outbound.protection.outlook.com ([52.103.33.84]:23778 helo=AM0PR02CU008.outbound.protection.outlook.com)
+	by engoulevent.o2switch.net with esmtps  (TLS1.3) tls TLS_AES_256_GCM_SHA384
+	(Exim 4.98.2)
+	(envelope-from <aligator638@hotmail.com>)
+	id 1vRm8f-0000000EsDB-0Zgc
+	for it001alex@airinter-va.org;
+	Sat, 06 Dec 2025 07:51:36 +0100
+ARC-Seal: i=1; a=rsa-sha256; s=arcselector10001; d=microsoft.com; cv=none;
+ b=eOYepK4R9iFfLhe4QhRWkF80AdfshtZwgkcXc6wyRJVFW55H0B9UGsBAWwbRuq4yMxq5EZZH5R/84H9OOXPXFQtuSgkUMeVQtKwJxFQiGNXlPGY0END90pJESnl9DOHtNsxA8v1wnFFUuT53qUMedqZ8KO4r70S1Mzu/7TdGN4FFDBFJQ9U7hDEvo9foDlIbCiC5RX8OszoTlI4t4Tq6jFldc2xMGCHdM4EVQLms6+bUa7JSwzTIRcuGuURaTzuoQQt7q8dgShBMPNCWabTvJOgNP6ZWdECgWbH8GgpWfBlnu7lsdRqBtIxHSSJCEc2wagvriChGdcmvKsUso+K8pQ==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=microsoft.com;
+ s=arcselector10001;
+ h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-AntiSpam-MessageData-ChunkCount:X-MS-Exchange-AntiSpam-MessageData-0:X-MS-Exchange-AntiSpam-MessageData-1;
+ bh=Go02IZKmhmrqMIDQnFSv1fPno5ykHf27ZxE8c+Nl9ZQ=;
+ b=qVZlBskx3xupvnmYdegkmRmbt47sbHz0zLAq1SGBYbBHU76GOdv56Lk1IVv1biNz9bq4Lv/TxjOgfVOCmpyDvTuj+SlKEl3IkBat5UHjQcZ/JqlZqhHJ0yyCe3YbKVtZSWWRfeYTN15MVNNTRvcldciBlrbC6i5WkC6WVMOYnSHFqLFRZG8AdrCzJylI0RpdwXMIfnadiENhk2ekh4+HDhf+JRbEP8vQ/wJXKVng0aqHD+IJO4LSXK9JsohUynmJ/GX4G0pw2+FuOGOVzNPXTBmwuMegE50fW50um6x+pW/gZ+9qqNKum0LXNkABemQ6fv/+5eZQEUiBSsG0wVvbIw==
+ARC-Authentication-Results: i=1; mx.microsoft.com 1; spf=none; dmarc=none;
+ dkim=none; arc=none
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=hotmail.com;
+ s=selector1;
+ h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-SenderADCheck;
+ bh=Go02IZKmhmrqMIDQnFSv1fPno5ykHf27ZxE8c+Nl9ZQ=;
+ b=gTvMOR59rmdh4/YqwoBh1mfvvtXEwyaZs41dKDiDw1XLTHqU26/R1pmENWMI7QEKZ6D3aWustupZYixaBRhegtzewzaa4r+IBOj5uSWQsbmxINpU7PX9bKD0vHjG48ZYGTFIB5SoGPlh5N5MT1PY9fePrHLtG/MUV1r5d5kMS7KiVJ3aMQhqupYUY/beXUEldIQgyR3w3RLmWr9jTES2dcGJpP/+WUcAHwglxN7VdxgoWZGVBfHjP9IKvCXeEKh3etim5472JAW7T5iIBs6+bEpgTV2h26Bg11L8IZ3LhGtGKqhPCTJAar+4SBjCA+TM2hoNkpSa0vm59m9+KlfTfA==
+Received: from VI0PR08MB11646.eurprd08.prod.outlook.com
+ (2603:10a6:800:308::19) by PA6PR08MB10547.eurprd08.prod.outlook.com
+ (2603:10a6:102:3d8::18) with Microsoft SMTP Server (version=TLS1_2,
+ cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.9388.12; Sat, 6 Dec
+ 2025 06:50:53 +0000
+Received: from VI0PR08MB11646.eurprd08.prod.outlook.com
+ ([fe80::e185:a349:de1e:34bf]) by VI0PR08MB11646.eurprd08.prod.outlook.com
+ ([fe80::e185:a349:de1e:34bf%5]) with mapi id 15.20.9366.012; Sat, 6 Dec 2025
+ 06:50:53 +0000
+Message-ID:
+ <VI0PR08MB1164666ED8B08A73E07F157E2F9A4A@VI0PR08MB11646.eurprd08.prod.outlook.com>
+Subject: Re: Air Inter VA ... Point de situation . retour aux commandes
+From: aligator638@hotmail.com
+To: it001alex@airinter-va.org
+Date: Sat, 06 Dec 2025 09:50:45 +0300
+In-Reply-To: <MVYGvH3iQRQwhMtqQ6fDmn8Vc2O440K8i3iN59uWPM@www.airinter-va.org>
+References: <MVYGvH3iQRQwhMtqQ6fDmn8Vc2O440K8i3iN59uWPM@www.airinter-va.org>
+Content-Type: multipart/alternative; boundary="=-02SPR3WQneacK+9iL2aM"
+User-Agent: Evolution 3.44.4-0ubuntu2 
+X-ClientProxiedBy: VI1PR03CA0047.eurprd03.prod.outlook.com
+ (2603:10a6:803:50::18) To VI0PR08MB11646.eurprd08.prod.outlook.com
+ (2603:10a6:800:308::19)
+X-Microsoft-Original-Message-ID:
+ <9e1569690aff640c32d0fef0a8d97aed34a69326.camel@hotmail.com>
+MIME-Version: 1.0
+X-MS-Exchange-MessageSentRepresentingType: 1
+X-MS-PublicTrafficType: Email
+X-MS-TrafficTypeDiagnostic: VI0PR08MB11646:EE_|PA6PR08MB10547:EE_
+X-MS-Office365-Filtering-Correlation-Id: a609aea3-2ddf-4ffd-9515-08de3493cba2
+X-MS-Exchange-SLBlob-MailProps:
+	9IecXKUgicB5Y5xtj3Bi4po1AHQXatGh/+CuKf5ivskdqYFJWa6vd3iSFR8ME2jml8l+gXnjfFgbo2d8xi0L4FEtVePOEgvHkzXRHqq2uyN6pIs6nuuEXY9VACYYTZd8I9rdy07H4pe5LZ2470GMMuPZbPLKJtMFt4qWPjQsYNe4XBIQFrVVnMynt9kUGYfgzXSwovIFX08rNpECcPn3liEEeKBmbGohjpRKZE8IWnIVetOI5VJ3628QYFqKQgVYSY7ynVTJdknp7tZe93X0sQm64X8CXQhjl/Rijc25/UN9CTt7bTD2x+CWd//TIhJMCf3vZCnrb4MbRASDq3ZofLm0wSupjx/+5Cmwh7/LR+AT3KG7gU1aSm4qETyISoW8Lo6uGcLabQs6VSstr4yCOsDRmePBSLhfL3tA49+E0be8OWPFh2kqnwcOiXdY03InGI072j9F6+eiRVTpfEx4WROzgP/r8jYSFe0ou2qXgAozGqZPdu7922ofTsBD4gzboYMmbrekmD8l5sW3QAFK94JVeDbJI+0EL2rBq3hPBgmyjRuQBKdJQKVHIaUKe8xZkLPuPo8+JaiNMMJf2oTwBVP0Yocuz60V5EbqHliZ8HUk4j7s+vK4MB85rXqJQKKVP/zydMcKJnEK4twEW3rpV8fcWs1a+BOs/tWzwraT07zJv+/8G5q0SxHiVckx1avGyGiot/TjllLqao/6nXGcUV1JDmZ4ouzuZSFHz2w0miewgOQD3FTdyg==
+X-Microsoft-Antispam:
+	BCL:0;ARA:14566002|51005399006|5072599009|461199028|15080799012|12050799012|12121999013|9400799040|23021999003|8060799015|41001999006|19110799012|3412199025|440099028|10035399007|40105399003|56899033;
+X-Microsoft-Antispam-Message-Info:
+	=?utf-8?B?aS9udWFNYW0relNvd0NBUDBQS0ZEZ1dyeVcxNFVyUWYrNDh2Wjd6VEFDSnhy?=
+ =?utf-8?B?WnlMUTMrMG5aZFBFekdsVldYR1JLVEtaa3l4WVZJaGpGZ2czOGF0MGk5ckt0?=
+ =?utf-8?B?NktKWHQwQWtPT2JyVDZkdDFwdWlLSkRTNHVLeXRIOWZOMnVPMFFhVUJnYWx3?=
+ =?utf-8?B?OEZFNjN0NmJXdUlUdFdZUG5ZRVpQSnhSdUpLNmNid09nQlk1YjVNT0ozNlJS?=
+ =?utf-8?B?ZmdaZ0Y0R0tKQjhrWlFhSExKUnJJcWtITFZiVDZETDJXa25hUEVZRHNzUDVa?=
+ =?utf-8?B?dW05dWtMTEcxYms0Q0hyb3I3Y3RwbHhmTnpsNlhZbXcwNDJMVUQyNXZPU2Zv?=
+ =?utf-8?B?RjNUa2N2aGk4RGIrQWxVcnlzYVZuQzRmYTRCSURQc2pQNGUxZkRXSmtSYmlY?=
+ =?utf-8?B?SHVKZzUybWl1RXdUanhrOUp1OHdLa0tvU0xvN0R6WlBibURZQ0ZwVUFyckJy?=
+ =?utf-8?B?VVJQZmV0cGJPSE54S0NXRTY4MnQvZXpkbnlhNXMzTTRGZ3I5ZmZEWXBtWnl0?=
+ =?utf-8?B?M2sycmhBRmsxMjVxU0dhQ0dJRldJblQxNkNuVFJiRU1UVHRCNGZPZGtMTXY2?=
+ =?utf-8?B?bUZLYU9QMDl0eDdlOHFxVE9EY1RVV1NBUExGazVlSVRyRkV2Q3g3MXN5T3Fh?=
+ =?utf-8?B?ZjlnU0pJN1RBQWNnSG5MQTlxaGdMU0ZXQnRsMXdzdlAxb3EvU3VSSEZOMmdq?=
+ =?utf-8?B?OURRSWU5NjZYVGIyeUdUUHBUbzFJMjdHRHpLMXNVSDV4aHFyeU4wdEYxbFFR?=
+ =?utf-8?B?RzZTWkpHZGVBRGhGbGY5eGFqQy85dDVDQjVvalpKVUJuemVVMHRucG5UTmdl?=
+ =?utf-8?B?dkpqK1Vwb0RVYkVrSEUyK0p3SkNyTjdnd0gwVGpxZFFDT1lUNE1oTzNocFZD?=
+ =?utf-8?B?dWM1eExtSEgzTlJWc1FCMnVBNTllNHJwMXFzaXp4OC9sdCtjRHZKT3ltZnNH?=
+ =?utf-8?B?UU1tU0lRODlwTnVSSFZ6MkQwQXk1dlVIVTIycW54TmpuUUVBckM1MUhhWDVO?=
+ =?utf-8?B?NUtnMi8vV0xtdkZLK2t3bGtFYTE5ZHI2TS9Ndi8vTnhZeU1vVmMvdGRKbm1T?=
+ =?utf-8?B?eW12OHlSaTFJOWlxMGU5QXlTbjRkeWxyblBXRGhjVVFWN0NsSnMvQmZpUWEx?=
+ =?utf-8?B?am0xZTV4MTQ4NHpKeDJNRVVZUmdjaVRDa05mUkhUWFFXMEFla3JnZVJjU3Yx?=
+ =?utf-8?B?SUQyb1BsUHg4bHJhYTFLQlBUTFUrWkpoc2I5K2NCWk14Y091MzBZSnAwb0hy?=
+ =?utf-8?B?SURRY0ZqVUFhZS95WGNXeUV2VWlRcEFTMi9tc3hDNVFRNUVQb1RwZG1VSXlx?=
+ =?utf-8?B?VmhGTkMwWUZKaFN3MS9FVkd6KzhHQnppZmxhY1IrRVJEY0o2eUlsZjB2Qndi?=
+ =?utf-8?B?WDJHRlM2RGE1VDlMZ2xUU2JOM3greDFSVUpJVHlsVHhHSVI2K0s5SGVUMEhK?=
+ =?utf-8?B?REMzeFlCcWhybmh1ZUQ1NmtGK3ZkQm0yUzlacU5lSyt4VWpKREpWUzRQcFlW?=
+ =?utf-8?B?TFI3Q1Q3RWduTExISHdIQWhnWjRCek9PSjVRYzArb0ZoYTdhTUlVVUNXbFZ4?=
+ =?utf-8?B?Q3AxS0ZYQzBFWk5LejJRSzRvRW0zR2Z0MVhHSitZMnJvY1RqNDFKRWo1anRy?=
+ =?utf-8?B?SHl2ZytUM3NGRjVtSjdVenBiOGZObC9IMmkrWEQzM1J0QndabDIvTGowdDll?=
+ =?utf-8?B?elJQR2J0UWZtdytoclZVRDVnOUYrTW9RUWM0dVZlZVBsOTlhekMySVpPTlh2?=
+ =?utf-8?Q?dpcYISFh4dLJfQLokvA10U1+GIR4aFQigV/dEJa?=
+X-MS-Exchange-AntiSpam-MessageData-ChunkCount: 1
+X-MS-Exchange-AntiSpam-MessageData-0:
+	=?utf-8?B?bmkrMERMWEJwQ3k4V3ptYXhWSjRaNHNIejN3UUdnNktFM2ZuZWRlVmY2WUpt?=
+ =?utf-8?B?WVFyeS9IWjdMajk5TEZZT3RCMWhTR05oWXpTeFE4QWhQa20xOVIrb0dlVU83?=
+ =?utf-8?B?RDlrS1QrZmhIR2xsODFJUFNBb3RCempweEt1NXZieldaamdhbnNlME9OVGxI?=
+ =?utf-8?B?elFCcVNWUWN5dEpOd0ZyM21nVm5kRm5TenkzZUxBUjYwYWJmc25ucnFMbDdK?=
+ =?utf-8?B?RUlPNW03d2ZmZzFWYytjTGF0b2RtRlpyTlFkeWI0a0NLMGpFTzJFVjEyRmcv?=
+ =?utf-8?B?WEFBakhqS1dOcUxIdzFXNmc3NjQ4cmNWS1hTQnNEOHVoWklXUFZ4WFVSMlVO?=
+ =?utf-8?B?VXY1VHEyTDV0aGdpbWl2QmVrNzFuREtBQyttSE1VbWVQY3ZSKzBudXVyQ2dG?=
+ =?utf-8?B?NmI4ZzlSdllhdXI2aE9DV25xeStXQXlVbElXb0E1WXN5T1lIb3lrMmppMXdv?=
+ =?utf-8?B?Yk1VY2VZT2pPZmtXOUVhZUg5WTN0R1p4ZCtIYTcrb0d6ZExpT2E2RGdZRlJ6?=
+ =?utf-8?B?dGc2N1lUaGZITnJ6NUsvSTQ5TDhGSFFSc1dreDQzcEY3TEtUbUkyNmVJWnhF?=
+ =?utf-8?B?OUtPTW5YbG1KRkYyVEQ3bjBPUHhDS2R0VEUzYmYranB5TDViUU1KYW5VbnlL?=
+ =?utf-8?B?WDVnS0h6QlJvU09Bc3QxVmpxNVRta2RZeVZaOVk4SHR0K29zM0ZSRmVUcWZh?=
+ =?utf-8?B?elZuTitDNWt3ZklsZlFrM3NGRGxtOVpWR2VWWEllZGZSV1A0K2JvZmN5dmZ3?=
+ =?utf-8?B?TzlWc0tVdzlHY0NUUWl2cU1WOHQ4VFB0YitSVTYvR1RuUEpQQTV3V1JoaWlw?=
+ =?utf-8?B?RUdGZkQ1b2FKakc2MUJiVHRETFdmd1RVcFRQTFV3TWRLM0huL2JheHExUEpo?=
+ =?utf-8?B?bE92bEExVUhQL3QzMStFRzBjVVkwMUtEcjFabXlpTE1TOTh1cmJ5UHZTdzNn?=
+ =?utf-8?B?L0o5Zzkva1UzbDdXaXBMQ2t2ekZEYTB1dHFKbGFZUzNMZXQrM2lHTXZYRkN4?=
+ =?utf-8?B?VHZMSW5zMXloV0NKUWdEblg1QzhYSHZ5THhkNTR6ZFVBTTZiUSt3Wk50K1VH?=
+ =?utf-8?B?TjhsSnNVaTYzS2ZoZTdoNWV5enNVcWYvSW9YNnZBT2NaOVo5TXRUc3c2NDNq?=
+ =?utf-8?B?T2RUYkhsbSt4VDVXTTdtdytPbENVV25YNFlob1pzeDBWSGQ5bjBWTzJyS0sz?=
+ =?utf-8?B?QmVBVTl1cUo1cDhmeng0ekJUdFk5WWdoR3NaR1F0bFkwZ0VBMS8xclpvMFVK?=
+ =?utf-8?B?YzV1NVNucWNHSEtrdHVzSEZ6MWhyNXNQU1gzVnJQSVZuTFdiS2lQYWVhempR?=
+ =?utf-8?B?TGsxTHFaM1d5UmNkcnZVaGV1WlkvdWVOdzNLS1VGK3ZQRUcrOGlVaXBJL3Er?=
+ =?utf-8?B?OGRwRDBuQWJiYkh0TGcyelgzYS9FaTlmRllWbmx2eTFTMFNxcDFDYWxjS3Zy?=
+ =?utf-8?B?akdnL09JSm5DQWdONWU0QW9iellnUElRVVIzV0ZkM3p2d2N3RzJ2VXVtaWZV?=
+ =?utf-8?B?eVNSSDBqdTFRTnQxekhseGRYRHhkbGYxcEFBa2hpL2x2VUh1c00xZnVyTGVr?=
+ =?utf-8?B?SlBTd0ljdXVFdFBCZ29UWXBkYTk1ajBUdjc1RHpuMjN0OFlHR2FlTDBPOGZ4?=
+ =?utf-8?B?d012WE5qQm5iTGRDR3NSa0l0cHRqdTJocEowaGdyREFkb1N0REM5ZExmWjN3?=
+ =?utf-8?Q?v4FtuTHR9poWKSgPRtTm?=
+X-OriginatorOrg: sct-15-20-8534-20-msonline-outlook-c6e85.templateTenant
+X-MS-Exchange-CrossTenant-Network-Message-Id: a609aea3-2ddf-4ffd-9515-08de3493cba2
+X-MS-Exchange-CrossTenant-AuthSource: VI0PR08MB11646.eurprd08.prod.outlook.com
+X-MS-Exchange-CrossTenant-AuthAs: Internal
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 06 Dec 2025 06:50:53.1236
+ (UTC)
+X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
+X-MS-Exchange-CrossTenant-Id: 84df9e7f-e9f6-40af-b435-aaaaaaaaaaaa
+X-MS-Exchange-CrossTenant-RMS-PersistedConsumerOrg:
+	00000000-0000-0000-0000-000000000000
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: PA6PR08MB10547
+X-Spam-Status: No, score=-25.6
+X-Spam-Score: -255
+X-Spam-Bar: -------------------------
+X-Ham-Report: =?ISO-8859-1?Q?Spam_detection_software=2C_running_on_the_system_=22scan=2Ejabatus=2Ef?=
+	=?ISO-8859-1?Q?r=22=2C=0A_has_NOT_identified_this_incoming_email_as_?=
+	=?ISO-8859-1?Q?spam=2E__The_original=0A_message_has_been_attached_to?=
+	=?ISO-8859-1?Q?_this_so_you_can_view_it_or_label=0A_similar_future_e?=
+	=?ISO-8859-1?Q?mail=2E__If_you_have_any_questions=2C_see=0A_the_admi?=
+	=?ISO-8859-1?Q?nistrator_of_that_system_for_details=2E=0A_Content_pr?=
+	=?ISO-8859-1?Q?eview=3A__D=C3=A9sol=C3=A9_pas_le_temps_de_chatter=2C_?=
+	=?ISO-8859-1?Q?mais_oui_aux_2_questions=2E=0A____A+_Eric_=0A_Content?=
+	=?ISO-8859-1?Q?_analysis_details=3A___=28-25=2E6_points=2C_5=2E0_req?=
+	=?ISO-8859-1?Q?uired=29=0A__pts_rule_name______________description=0A_?=
+	=?ISO-8859-1?Q?----_----------------------_-------------------------?=
+	=?ISO-8859-1?Q?-------------------------=0A__-25_ABUSIX=5FWHITE_____?=
+	=?ISO-8859-1?Q?______RBL=3A_Listed_for_spam=2E=0A___________________?=
+	=?ISO-8859-1?Q?__________=5B
+X-Spam-Flag: NO
+
+--=-02SPR3WQneacK+9iL2aM
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+D=C3=A9sol=C3=A9 pas le temps de chatter, mais oui aux 2 questions.
+
+A+
+
+Eric
+
+On Sat, 2025-12-06 at 04:56 +0100, it001alex@airinter-va.org wrote:
+> Si ce message ne s'affiche pas correctement, consulter notre version
+>                en ligne en utilisant le lien suivant :
+> https://www.airinter-va.org/newsletter.php?lng=3Dfr&pg=3D5935&nlpseudo=3D=
+AFR639&nlgrp=3Dall_subscribers
+> Lettre d'information=20
+> Bonjour,
+>=20
+> Vous recevez ce message car vous =C3=AAtes toujours abonn=C3=A9 =C3=A0 la=
+ Newsletter
+> et/ou membre d=E2=80=99Air Inter Virtual Airline.
+> Non, Air Inter VA n=E2=80=99est pas morte ! Ce sont simplement les al=C3=
+=A9as de
+> la vie qui font que certaines priorit=C3=A9s prennent parfois le dessus
+> sur d=E2=80=99autres=E2=80=A6
+>=20
+> Apr=C3=A8s quelques ann=C3=A9es de contretemps (mieux vaut tard que jamai=
+s,
+> dit-on), le site Air Inter VA et son syst=C3=A8me de gestion Prom=C3=A9th=
+=C3=A9e
+> sont actuellement en cours de mise =C3=A0 jour compl=C3=A8te.
+>=20
+> Les nouvelles versions du site et de Prom=C3=A9th=C3=A9e offriront un des=
+ign
+> modernis=C3=A9 ainsi qu=E2=80=99une interface simplifi=C3=A9e, afin de fa=
+ciliter
+> l=E2=80=99acc=C3=A8s aux informations, la gestion des activit=C3=A9s, etc=
+...
+> Il reste encore beaucoup de travail et certaines pages sont
+> manquantes ou erron=C3=A9es, mais nous sommes sur la bonne voie. Vous
+> pouvez d=E2=80=99ores et d=C3=A9j=C3=A0 avoir un premier aper=C3=A7u en v=
+ous rendant sur
+> www.airinter-va.org
+>=20
+> Si vous souhaitez toujours faire partie d=E2=80=99Air Inter VA et/ou rece=
+voir
+> la Newsletter :
+> Merci de renvoyer un e-mail =C3=A0 l'adresse suivante :
+> it001alex@airinter-va.org
+> en indiquent votre souhait de rester membre et/ou de continuer =C3=A0
+> recevoir la Newsletter.
+>=20
+> Dans le cas contraire, ou si vous ne souhaitez plus faire partie
+> d=E2=80=99Air Inter VA :
+> Aucune action de votre part n=E2=80=99est n=C3=A9cessaire. Vous serez
+> automatiquement supprim=C3=A9 de notre liste de membres et de la liste de
+> diffusion de la Newsletter au 1er Janvier 2026.
+>=20
+> =C3=80 bient=C3=B4t peut-=C3=AAtre pour de nouvelles aventures !
+>=20
+> Alex
+> IT001
+>=20
+> Pour vous d=C3=A9sinscrire de cette lettre d'information, veuillez suivre
+>                               ce lien :
+> https://www.airinter-va.org/newsletter.php?lng=3Dfr&action=3Dunsub&nlsecu=
+re=3Don&nlpseudo=3DAFR639&nlmail=3Daligator638@hotmail.com
+
+--=-02SPR3WQneacK+9iL2aM
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+<html><head>
+<meta http-equiv=3D"Content-Type" content=3D"text/html; charset=3Dutf-8"></=
+head><body><div>D=C3=A9sol=C3=A9 pas le temps de chatter, mais oui aux 2 qu=
+estions.</div><div><br></div><div>A+</div><div><br></div><div>Eric</div><di=
+v><span></span></div><div><br></div><div>On Sat, 2025-12-06 at 04:56 +0100,=
+ it001alex@airinter-va.org wrote:</div><blockquote type=3D"cite" style=3D"m=
+argin:0 0 0 .8ex; border-left:2px #729fcf solid;padding-left:1ex"><p style=
+=3D"text-align:center;">Si ce message ne s'affiche pas correctement, consul=
+ter notre version en ligne en utilisant le lien suivant :<br><a href=3D"htt=
+ps://www.airinter-va.org/newsletter.php?lng=3Dfr&amp;pg=3D5935&amp;nlpseudo=
+=3DAFR639&amp;nlgrp=3Dall_subscribers">https://www.airinter-va.org/newslett=
+er.php?lng=3Dfr&amp;pg=3D5935&amp;nlpseudo=3DAFR639&amp;nlgrp=3Dall_subscri=
+bers</a></p><div><fieldset style=3D"padding:15px;"><legend> Lettre d'inform=
+ation </legend><p style=3D"text-align: justify;">Bonjour,<br><br>Vous recev=
+ez ce message car vous =C3=AAtes toujours abonn=C3=A9 =C3=A0 la Newsletter =
+et/ou membre d=E2=80=99<strong>Air Inter Virtual Airline</strong>.<br>Non, =
+Air Inter VA n=E2=80=99est pas morte ! Ce sont simplement les al=C3=A9as de=
+ la vie qui font que certaines priorit=C3=A9s prennent parfois le dessus su=
+r d=E2=80=99autres=E2=80=A6<br><br>Apr=C3=A8s quelques ann=C3=A9es de contr=
+etemps (mieux vaut tard que jamais, dit-on), le site <b>Air Inter VA</b> et=
+ son syst=C3=A8me de gestion <b>Prom=C3=A9th=C3=A9e</b> sont actuellement e=
+n cours de mise =C3=A0 jour compl=C3=A8te.<br><br>Les nouvelles versions du=
+ site et de Prom=C3=A9th=C3=A9e offriront un design modernis=C3=A9 ainsi qu=
+=E2=80=99une interface simplifi=C3=A9e, afin de faciliter l=E2=80=99acc=C3=
+=A8s aux informations, la gestion des activit=C3=A9s, etc...<br>Il reste en=
+core beaucoup de travail et certaines pages sont manquantes ou erron=C3=A9e=
+s, mais nous sommes sur la bonne voie. Vous pouvez d=E2=80=99ores et d=C3=
+=A9j=C3=A0 avoir un premier aper=C3=A7u en vous rendant sur <strong><span s=
+tyle=3D"text-decoration:underline;"><a href=3D"https://www.airinter-va.org"=
+ target=3D"_blank"><span style=3D"color:#0000cc;">www.airinter-va.org</span=
+></a></span></strong><br><br><b>Si vous souhaitez toujours faire partie d=
+=E2=80=99Air Inter VA et/ou recevoir la Newsletter :</b><br>Merci de renvoy=
+er un e-mail =C3=A0 l'adresse suivante :<br><a href=3D"mailto:it001alex@air=
+inter-va.org?subject=3DConfirmation%20ITVA&amp;body=3DJe%20souhaite%20conti=
+nuer%20%C3%A0%20%C3%AAtre%20membre%20%3A%20OUI%20%2F%20NON%0AJe%20souhaite%=
+20continuer%20%C3%A0%20recevoir%20la%20Newsletter%20d'Air%20Inter%20VA%20%3=
+A%20OUI%20%2F%20NON"><strong>it001alex@airinter-va.org</strong></a><br>en i=
+ndiquent votre souhait de rester membre et/ou de continuer =C3=A0 recevoir =
+la Newsletter.<br><br><b>Dans le cas contraire, ou si vous ne souhaitez plu=
+s faire partie d=E2=80=99Air Inter VA :</b><br>Aucune action de votre part =
+n=E2=80=99est n=C3=A9cessaire. Vous serez automatiquement supprim=C3=A9 de =
+notre liste de membres et de la liste de diffusion de la Newsletter au <spa=
+n style=3D"text-decoration:underline;">1er Janvier 2026</span>.<br><br>=C3=
+=80 bient=C3=B4t peut-=C3=AAtre pour de nouvelles aventures !<br><br>Alex<b=
+r>IT001</p></fieldset></div><p style=3D"text-align:center;font-size:0.75em;=
+">Pour vous d=C3=A9sinscrire de cette lettre d'information, veuillez suivre=
+ ce lien :<br><a href=3D"https://www.airinter-va.org/newsletter.php?lng=3Df=
+r&amp;action=3Dunsub&amp;nlsecure=3Don&amp;nlpseudo=3DAFR639&amp;nlmail=3Da=
+ligator638@hotmail.com">https://www.airinter-va.org/newsletter.php?lng=3Dfr=
+&amp;action=3Dunsub&amp;nlsecure=3Don&amp;nlpseudo=3DAFR639&amp;nlmail=3Dal=
+igator638@hotmail.com</a></p></blockquote></body></html>
+
+--=-02SPR3WQneacK+9iL2aM--

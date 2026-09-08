@@ -1,0 +1,108 @@
+Return-Path: <reinebourret@gmail.com>
+Delivered-To: it001alex@airinter-va.org
+Received: from engoulevent.o2switch.net
+	by engoulevent.o2switch.net with LMTP
+	id 6HoFKa4hNWlZwj4AWBU5WA
+	(envelope-from <reinebourret@gmail.com>)
+	for <it001alex@airinter-va.org>; Sun, 07 Dec 2025 07:41:50 +0100
+Return-path: <reinebourret@gmail.com>
+Envelope-to: it001alex@airinter-va.org
+Delivery-date: Sun, 07 Dec 2025 07:41:50 +0100
+Received: from mail-ed1-f51.google.com ([209.85.208.51]:55715)
+	by engoulevent.o2switch.net with esmtps  (TLS1.3) tls TLS_AES_128_GCM_SHA256
+	(Exim 4.98.2)
+	(envelope-from <reinebourret@gmail.com>)
+	id 1vS8Sr-0000000HFyR-0Leb
+	for it001alex@airinter-va.org;
+	Sun, 07 Dec 2025 07:41:50 +0100
+Received: by mail-ed1-f51.google.com with SMTP id 4fb4d7f45d1cf-640d0ec9651so6246556a12.3
+        for <it001alex@airinter-va.org>; Sat, 06 Dec 2025 22:41:30 -0800 (PST)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gmail.com; s=20230601; t=1765089668; x=1765694468; darn=airinter-va.org;
+        h=to:subject:message-id:date:from:mime-version:from:to:cc:subject
+         :date:message-id:reply-to;
+        bh=sY5gjokfV9XvgsVABAxeLnmNrOQmyVDLHQFCqmSdenM=;
+        b=Oyd3SCb9XbLykdAR2kuv64aLC5MD0a4GHU2ORxrE7m3nuKAzpqFdPv7v2dNGJBlGwd
+         bVrySkFNOYlsyHBw8jttKg3CuwKXiSQSwpikTri2AEZ05LM8db+B8lWOuaZy/RXii6QK
+         wNhpgFygckaUlUhppn6quGEG8B+nZFpzm7V3xffVnWjS94dFq9x5T0+O0SxGve6B4Urv
+         XNjVQP1j1esKvynPSDiNNyon8vt7ZKGZ86+9cqsrt5JGRpYx2jlNG/aK0AIReWDUNSLm
+         qS+4b26KB/4ArPbB7dr8EUZqTMn1n08ohXrnlLaYXvoEzKwCI5dGlYeon819cCFhHBwS
+         Snaw==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20230601; t=1765089668; x=1765694468;
+        h=to:subject:message-id:date:from:mime-version:x-gm-gg
+         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to;
+        bh=sY5gjokfV9XvgsVABAxeLnmNrOQmyVDLHQFCqmSdenM=;
+        b=fwFNYA1PjZKJUAisCZ1CRcLr+mfdWuRAHYM6qZRLY9KVcxsA/BGATYQdMxyGxxyt4W
+         KdY0azGe3GBoPMXbVZhD6BRsAFkBcyrdrtUKQbm5PlkaB/xFWTLuxfJSEK/3yIj7dFKd
+         EyJm0WZi19nuSV+9+i1GtF7V+QUvujHPVw7VYh5wx4xy0ET/mP5wfDXK4dsUw9kuKYoG
+         PXQDR9iKxf4CPVIFvZWWZRT6EhNTcYZEj3BPiF0tV8TL3s4L8g5HY5wDqSlJwfbTrKdY
+         aGoiS1Jnubd3vicAlGG/qnbzVhWrIMeF8E/gEmKJGSHz+UqIUNYmj92AIr+TuL/g34bW
+         TH5w==
+X-Gm-Message-State: AOJu0Yw6dy4/AaKOuaVswiZhRrrEsrGwfm3CRXAsNB07uCdl7ZXXXGPe
+	JJ5yeR6SmrJoCMw8lg93smqqp8UHSJkd9hJa7ODNoOlRpT4lq/7WzUrGWS/tUsca1Nhq/iETrS2
+	KGh/j1S5XVk4ZcpySFPRY+GilVsjNTQ8dqw==
+X-Gm-Gg: ASbGncuzZi7BNrvWImGxx4tdAfmY7odlNHfawa+e60mnAdMlaBWPbKwfrwHNdQl6r+0
+	p8B9BseXfBgePZZ/O1VGprgSbxmDHZQlPbyxftyfsVWXM5GX8F8H5mCDDv69eUDsH5hnLMI8rz+
+	Q/ST3qOFmb/k6yQjlok9fYip5GaD0MGekYRH4Yuh8QEqvYymg9IkrpHXltKKHgngDk3MtVfKqlg
+	MK89yYYdhAKQHtGv4jcazCnBfdlCzRaNlFuwxaa+qP7e78KxUiwU8qGIWezICw4mcKfIRhEC6Qw
+	wHRPDAFzhEQjM3jFBCQvIpg6WqEtbk+CPmjDiMUd2zK8+0h5dOd1Bu5s6Qe0
+X-Google-Smtp-Source: AGHT+IE/R8G91ZiZkoLsYG1ZcJLASTWRcNSosTEbthCY7rDBBPGcmtZAPrAYIi4ieXx3VmvP90rF3N9hfeyVoyhEUQ8=
+X-Received: by 2002:a05:6402:5344:10b0:649:2667:1841 with SMTP id
+ 4fb4d7f45d1cf-64926671c1fmr1750157a12.6.1765089667856; Sat, 06 Dec 2025
+ 22:41:07 -0800 (PST)
+MIME-Version: 1.0
+From: Reine BOURRET <reinebourret@gmail.com>
+Date: Sun, 7 Dec 2025 07:40:57 +0100
+X-Gm-Features: AQt7F2rwj2bhHua3ZnoaeS81FWlNwqIZM5EXQ2MbO6rxYCKO3tvZKV4YJsJqt_o
+Message-ID: <CAEF64SwZ=bwrD8m-kFD71ezfY0aDYjYDi4d0MHBKAyk64dBaDg@mail.gmail.com>
+Subject: Confirmation ITVA
+To: it001alex@airinter-va.org
+Content-Type: multipart/alternative; boundary="000000000000a63e1b064556f665"
+X-Spam-Status: No, score=-26.4
+X-Spam-Score: -263
+X-Spam-Bar: --------------------------
+X-Ham-Report: =?ISO-8859-1?Q?Spam_detection_software=2C_running_on_the_system_=22scan=2Ejabatus=2Ef?=
+	=?ISO-8859-1?Q?r=22=2C=0A_has_NOT_identified_this_incoming_email_as_?=
+	=?ISO-8859-1?Q?spam=2E__The_original=0A_message_has_been_attached_to?=
+	=?ISO-8859-1?Q?_this_so_you_can_view_it_or_label=0A_similar_future_e?=
+	=?ISO-8859-1?Q?mail=2E__If_you_have_any_questions=2C_see=0A_the_admi?=
+	=?ISO-8859-1?Q?nistrator_of_that_system_for_details=2E=0A_Content_pr?=
+	=?ISO-8859-1?Q?eview=3A__Je_souhaite_continuer_=C3=A0_=C3=AAtre_memb?=
+	=?ISO-8859-1?Q?re_=3A_OUI_/_NON_*OUI!*_Je=0A____souhaite_continuer_=C3=A0?=
+	=?ISO-8859-1?Q?_recevoir_la_Newsletter_d'Air_Inter_VA_=3A_OUI_/_NON*?=
+	=?ISO-8859-1?Q?=0A___OUI_*_*Tr=C3=A8s_contente_de_vous_savoir_rena=C3=AE?=
+	=?ISO-8859-1?Q?tre=2E_Ce_serait_merveilleux_si_Air=0A____Inter_r=C3=A9?=
+	=?ISO-8859-1?Q?el_renaissait_ainsi=2E*_*Amiti=C3=A9s_a=C3=A9ronautiq?=
+	=?ISO-8859-1?Q?ues*_*_Reine_Bourret*=0A____=0A_Content_analysis_deta?=
+	=?ISO-8859-1?Q?ils=3
+X-Spam-Flag: NO
+
+--000000000000a63e1b064556f665
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+Je souhaite continuer =C3=A0 =C3=AAtre membre : OUI / NON *OUI!*
+Je souhaite continuer =C3=A0 recevoir la Newsletter d'Air Inter VA : OUI / =
+NON*
+OUI *
+
+*Tr=C3=A8s contente de vous savoir rena=C3=AEtre.  Ce serait merveilleux si=
+ Air Inter
+r=C3=A9el renaissait ainsi.*
+*Amiti=C3=A9s a=C3=A9ronautiques*
+*    Reine Bourret*
+
+--000000000000a63e1b064556f665
+Content-Type: text/html; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+<div dir=3D"ltr">Je souhaite continuer =C3=A0 =C3=AAtre membre : OUI / NON =
+<b><font size=3D"4">OUI!</font></b><br>Je souhaite continuer =C3=A0 recevoi=
+r la Newsletter d&#39;Air Inter VA : OUI / NON<b> OUI=C2=A0</b><div><b><br>=
+</b></div><div><b>Tr=C3=A8s contente de vous savoir rena=C3=AEtre.=C2=A0 Ce=
+ serait merveilleux si Air Inter r=C3=A9el renaissait ainsi.</b></div><div>=
+<b>Amiti=C3=A9s a=C3=A9ronautiques</b></div><div><b>=C2=A0 =C2=A0 Reine Bou=
+rret</b></div><div><b><br></b></div></div>
+
+--000000000000a63e1b064556f665--

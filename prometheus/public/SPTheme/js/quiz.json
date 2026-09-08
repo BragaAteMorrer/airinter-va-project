@@ -1,0 +1,177 @@
+[
+    {
+        "registertest_on": 0,
+        "questions": [
+            {
+                "question": "What is the name of the first supersonic passenger airliner?",
+                "answers": [
+                    {
+                        "answer": "Concorde",
+                        "true": 1
+                    },
+                    {
+                        "answer": "Tupolew",
+                        "true": 0
+                    },
+                    {
+                        "answer": "Aeronautic",
+                        "true": 0
+                    }
+                ]
+            },
+            {
+                "question": "What is the maximum indicated airspeed below 10000 feet?",
+                "answers": [
+                    {
+                        "answer": "300 knots",
+                        "true": 0
+                    },
+                    {
+                        "answer": "280 knots",
+                        "true": 0
+                    },
+                    {
+                        "answer": "250 knots",
+                        "true": 1
+                    }
+                ]
+            },
+            {
+                "question": "Winds are 250\/17ktn, which runway you would prefer?",
+                "answers": [
+                    {
+                        "answer": "RWY 27R",
+                        "true": 1
+                    },
+                    {
+                        "answer": "RWY 09R",
+                        "true": 0
+                    },
+                    {
+                        "answer": "RWY 33R",
+                        "true": 0
+                    }
+                ]
+            },
+            {
+                "question": "Where is the white navigation light located on an aircraft?",
+                "answers": [
+                    {
+                        "answer": "Left Wing",
+                        "true": 0
+                    },
+                    {
+                        "answer": "Tail",
+                        "true": 1
+                    },
+                    {
+                        "answer": "Right Wing",
+                        "true": 0
+                    }
+                ]
+            },
+            {
+                "question": "What color are taxiway centerline lights?",
+                "answers": [
+                    {
+                        "answer": "Blue",
+                        "true": 0
+                    },
+                    {
+                        "answer": "Green",
+                        "true": 1
+                    },
+                    {
+                        "answer": "Yellow",
+                        "true": 0
+                    }
+                ]
+            },
+            {
+                "question": "When landing what do you use to slow the plane?",
+                "answers": [
+                    {
+                        "answer": "Parking Brakes",
+                        "true": 0
+                    },
+                    {
+                        "answer": "Flaps",
+                        "true": 0
+                    },
+                    {
+                        "answer": "Reverse Thrust",
+                        "true": 1
+                    }
+                ]
+            },
+            {
+                "question": "What is the standard altimeter setting in Europe?",
+                "answers": [
+                    {
+                        "answer": "1012",
+                        "true": 0
+                    },
+                    {
+                        "answer": "1010",
+                        "true": 0
+                    },
+                    {
+                        "answer": "1013",
+                        "true": 1
+                    }
+                ]
+            },
+            {
+                "question": "When approaching a runway with PAPIs, which indication is slightly below glideslope?",
+                "answers": [
+                    {
+                        "answer": "Red | White | White | White",
+                        "true": 0
+                    },
+                    {
+                        "answer": "Red |  Red  | White | White",
+                        "true": 0
+                    },
+                    {
+                        "answer": "Red |  Red  |  Red  | White",
+                        "true": 1
+                    }
+                ]
+            },
+            {
+                "question": "What is wrong? EDDP 011420Z 03005KT 350V060 9999 SCT027 OVC130 16\/09 Q1019 NOSIG",
+                "answers": [
+                    {
+                        "answer": "Clouds Scattered 2700ft",
+                        "true": 0
+                    },
+                    {
+                        "answer": "Visibility 10KM or below",
+                        "true": 1
+                    },
+                    {
+                        "answer": "Recorded 1st on 1420z",
+                        "true": 0
+                    }
+                ]
+            },
+            {
+                "question": "What is considered a navigation aid?",
+                "answers": [
+                    {
+                        "answer": "VOR, NDB, Waypoints",
+                        "true": 1
+                    },
+                    {
+                        "answer": "Airport Identifier",
+                        "true": 0
+                    },
+                    {
+                        "answer": "DME and VORTAC",
+                        "true": 0
+                    }
+                ]
+            }
+        ]
+    }
+]

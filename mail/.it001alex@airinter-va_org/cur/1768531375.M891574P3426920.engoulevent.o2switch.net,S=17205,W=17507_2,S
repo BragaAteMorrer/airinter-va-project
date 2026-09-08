@@ -1,0 +1,302 @@
+Return-Path: <>
+Delivered-To: it001alex@airinter-va.org
+Received: from engoulevent.o2switch.net
+	by engoulevent.o2switch.net with LMTP
+	id GC/yNK+laWloSjQAWBU5WA
+	(envelope-from <>)
+	for <it001alex@airinter-va.org>; Fri, 16 Jan 2026 03:42:55 +0100
+Return-path: <>
+Envelope-to: it001alex@airinter-va.org
+Delivery-date: Fri, 16 Jan 2026 03:42:55 +0100
+Received: from mail-westus2azolkn19010091.outbound.protection.outlook.com ([52.103.10.91]:11802 helo=CO1PR03CU002.outbound.protection.outlook.com)
+	by engoulevent.o2switch.net with esmtps  (TLS1.3) tls TLS_AES_256_GCM_SHA384
+	(Exim 4.99.1)
+	id 1vgZnW-0000000ENm9-3g2i
+	for it001alex@airinter-va.org;
+	Fri, 16 Jan 2026 03:42:55 +0100
+ARC-Seal: i=1; a=rsa-sha256; s=arcselector10001; d=microsoft.com; cv=none;
+ b=YjvXgjXqb8LYFL2nVOMnO+iK//YK4NkfUHYfA4NfwcNOXBaKAMzXeUOs0yGkJ9DHxCH2OvFN+69k64W064e6btSuvRjlciF4uRfn1h8GBt47so328GiL/Qrkbp3ruD2aWfQONc5bjjp8R/duUl+8HZE4cOTImHi0lyK5xqTIczXokuQz8soCpkauEZXFfGAd0d/rE6uyOw/bIMs6QdSex52MuWe5L/InHCdG/9vVwMb+emTFUayzWAfkgly+jEtZkKqnNHKx3ePw6xg1ucoKm7KyJpP226BVSOZJVVqwG9Pjh/5CJytMLQ+UQT/D9NYBe9mBXF/vKtf5dBGoTwsaFw==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=microsoft.com;
+ s=arcselector10001;
+ h=From:Date:Subject:Message-ID:Content-Type:MIME-Version:X-MS-Exchange-AntiSpam-MessageData-ChunkCount:X-MS-Exchange-AntiSpam-MessageData-0:X-MS-Exchange-AntiSpam-MessageData-1;
+ bh=CjTa1D1X1HFvQJs7JatbMyaPPw0PBukxLUO+HOBT3a0=;
+ b=CJDMJcNxzc/zSKy4JXbAkqW2U09HC6ywHgIRtdCUhDOuGVjzDOBd/n8bdMi1RRh6ytvqv6a1DxYzKgveMF4F51Nk8QQzrs/zfkQWoIAiHD2AxeA1YSJiYABlg6e9h9T8CO4yWkSvlo+bqiGPPNgyZbgJbjUJNatsD7oIlaVsDX0P7k6+5bDtCMogRv2EQLL7fZqbvcY0p++2E+INeIMiy8F8BMNetTHVRL0/Dm74H6QeesWpJqo4cnElM5FIDNa2CuB/gf/JYG6yyjH2UDCEDw3z/rvUP497F7U9WiKTaU16qdQFfQK4npzwlp0tqVVzGj0QV4/g0tuS5nxqfyB4IQ==
+ARC-Authentication-Results: i=1; mx.microsoft.com 1; spf=none; dmarc=none;
+ dkim=none; arc=none
+MIME-Version: 1.0
+From: <postmaster@outlook.com>
+To: <it001alex@airinter-va.org>
+Date: Fri, 16 Jan 2026 02:42:10 +0000
+Content-Type: multipart/report; report-type=delivery-status;
+	boundary="90c2e097-ffad-4405-b406-460059a79382"
+Content-Language: en-US
+Message-ID:
+ <4f319a75-2887-4353-8c8a-d08bf5ed3392@SA1PR22MB4319.namprd22.prod.outlook.com>
+In-Reply-To: <9d77f8e7cdb398a3ba390afde93a4686@airinter-va.org>
+References: <9d77f8e7cdb398a3ba390afde93a4686@airinter-va.org>
+Subject: Delivered: Renaissance AIR INTER VA
+Auto-Submitted: auto-replied
+X-MS-PublicTrafficType: Email
+X-MS-TrafficTypeDiagnostic: SA1PR22MB4319:EE_
+X-Microsoft-Antispam:
+	BCL:0;ARA:14566002|12050799012|8060799015|6092099016|12121999013|461199028|8022599003|41001999006|56899033|3412199025|440099028|26115399003|19111999003;
+X-Microsoft-Antispam-Message-Info:
+	=?us-ascii?Q?mLHAuqpICDUsIMC/EJfZ66Y4vkBloBOfWbXPPA/liv7R3jS+9iU2SDwzD1Bn?=
+ =?us-ascii?Q?bi1KPPTPztwm0uhh5YXHKNFVQyrKet4TGTvaAGKcUmZY4v8ibG1gE3fI1TVu?=
+ =?us-ascii?Q?Mk6SmIMO1YpiVOSnrJQTQ4G65wx4yseEmNAbIoAmzRZ0EkzndjGaLYnneQ0P?=
+ =?us-ascii?Q?ohKjVmzEnVffP9yrXn+2mAVyM3g5u7jMRwJPC8Z7q5Cv84/MiuOpdidolTfE?=
+ =?us-ascii?Q?BLt4RzoOGAna68ra7x1NUcdmKj0i2Nn5EYmGXMUF6F8sr7RWQ8owbxa25k9F?=
+ =?us-ascii?Q?QcCl1ACTngEhL0aBovMJWTnzybj3h8uV2tCOo6HrbdbVy1FJC5DtXT9qf2yL?=
+ =?us-ascii?Q?GRCm67/Mzgu9NoOgCnectphIFGT4gz3LOWGT72qj3oN7SAFYV7J9p4eysrpN?=
+ =?us-ascii?Q?MnRTItFYSljPOmn8xziAb9rpHuk4OXXu+Y+1yJYwSPfUKYUp4QwiyRuwYPwf?=
+ =?us-ascii?Q?izyihgw562RnyGXWfrJzwWrmnadkg8KRhN2f/dXNqOuROE7XXqHtO8d+XXDy?=
+ =?us-ascii?Q?6qrrkG5Xmy+Zjg0GKv6X+G7WGO95P0ueuh947rOpQLmAZzdzR/eopvDmrPBs?=
+ =?us-ascii?Q?t3cUY0sR1mUwDbOCQONNCdNaQZy544//DPIatoeBdnEfssWgu/8fFFaWhdnr?=
+ =?us-ascii?Q?YPdzSEXUpr/6Sj93uXC4xah6pdMSkU7uvr2s52ShVv2Y8ceU5YsUCkCWsKOL?=
+ =?us-ascii?Q?fM5Z/h1ESGnWpaIoFQ0oassrhhE0D2rUIR2K+GHAz0Q6WgBJ75PRI/QXfudF?=
+ =?us-ascii?Q?lcW2zZxJnQFoIzzeJT5/Mq9+grvlXUKlxFQD/spq5Y7H3rdLdJlzUdoxfvzn?=
+ =?us-ascii?Q?AWnTGo/cLfx3dNqshyS1gZL9RgNGjIuk4P4Zo4CVWK//QabWD30zAgA5N9Il?=
+ =?us-ascii?Q?DlrrylrORzcqFFLz/aXjlvLcKGQDqe1RIvpmMrJkF4Q9y13M5Lpl/P8pIBF+?=
+ =?us-ascii?Q?4pd94zdf6Gje/bEE1F1RRKuBJTO8b4z3/JY/KXjdDozP9Je7DxbyUUhLV4KF?=
+ =?us-ascii?Q?jOiYx38xZr1WFuuSyvTHbcaB6oxRYoPSGhTTl/794667ShClDG5dD1WGX/FI?=
+ =?us-ascii?Q?o3CHgyi26CDCOAJVsH45Up7dZK9lAeNY0jEjo4nDLhKZj46c/RzlCxelhS48?=
+ =?us-ascii?Q?Oud5UyDUAgZs6S7ZP5bjJ9HT1YmGNK7H/jrNem1WgOtbFEvu6BByyB4I7aOJ?=
+ =?us-ascii?Q?NY1a+BU6XEvPKMtJQ83yFmG7eWeVzhIQZ/WRUQ=3D=3D?=
+X-MS-Exchange-AntiSpam-MessageData-ChunkCount: 1
+X-MS-Exchange-AntiSpam-MessageData-0:
+	DmukgA1kpiKoURP7Yh3L1YMDPNTvQUC5uJluFjW+70bJKsdZOsFR4UM8Epa5djMY1vSRr3aCxAMec2SqWPGK19xfQsxhm/zE1SHylUuJKPicC1GCJFBXRwXWGMM2pt96A/tGYyNMsiw217mFWa5wx1sGyOkW0ay9p/J35in2O52EZr4VjkLk82n1ycusdAim4h9mL/EwD2Zd7Iw2whhmHP0D74BLEI0r6YAy6l0p2jdAet1uDZOYpthgbBfzmXXEFuBmEwJnGmarLCwgleEXK98PCDTeBaLDGLXzkvo7e83H/X4MtAPAxLzzW+268d2F2tcdqfJdJnnebfNZ8m5EVw==
+X-OriginatorOrg: outlook.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 16 Jan 2026 02:42:10.2940
+ (UTC)
+X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
+X-MS-Exchange-CrossTenant-AuthSource: SA1PR22MB4319.namprd22.prod.outlook.com
+X-MS-Exchange-CrossTenant-AuthAs: Internal
+X-MS-Exchange-CrossTenant-Network-Message-Id:
+	a150467d-9c23-4277-9915-08de54a8d8df
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: SA1PR22MB4319
+X-Spam-Status: No, score=-26.1
+X-Spam-Score: -260
+X-Spam-Bar: --------------------------
+X-Ham-Report: Spam detection software, running on the system "scan.jabatus.fr",
+ has NOT identified this incoming email as spam.  The original
+ message has been attached to this so you can view it or label
+ similar future email.  If you have any questions, see
+ the administrator of that system for details.
+ Content preview:  Your message has been delivered to the following recipients:
+    martin.malo@live.fr<mailto:martin.malo@live.fr> Subject: Renaissance AIR
+   INTER VA 
+ Content analysis details:   (-26.1 points, 5.0 required)
+  pts rule name              description
+ ---- ---------------------- --------------------------------------------------
+  0.0 URIBL_BLOCKED          ADMINISTRATOR NOTICE: The query to URIBL was
+                             blocked.  See
+                             http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
+                              for more information.
+                             [URIs: jabatus.fr]
+  -25 ABUSIX_WHITE           RBL: Listed for spam.
+                             [52.103.10.91 listed in white.abusix.jabatus]
+  0.1 RCVD_IN_DNSWL_NONE     RBL: Sender listed at https://www.dnswl.org/,
+                              no trust
+                             [52.103.10.91 listed in list.dnswl.org]
+ -1.7 RCVD_IN_MSPIKE_H2      RBL: Average reputation (+2)
+                             [52.103.10.91 listed in wl.mailspike.net]
+ -0.0 SPF_HELO_PASS          SPF: HELO matches SPF record
+  0.1 SUKA_24                BODY: No description available.
+  0.1 SUKCP_01               BODY: No description available.
+  0.1 SUKA_49                BODY: No description available.
+  0.1 SUKA_0                 BODY: No description available.
+  0.0 RCVD_IN_VALIDITY_CERTIFIED_BLOCKED RBL: ADMINISTRATOR NOTICE:
+                             The query to Validity was blocked.  See
+                             https://knowledge.validity.com/hc/en-us/articles/20961730681243
+                              for more information.
+                             [52.103.10.91 listed in sa-accredit.habeas.com]
+  0.0 RCVD_IN_VALIDITY_RPBL_BLOCKED RBL: ADMINISTRATOR NOTICE: The
+                             query to Validity was blocked.  See
+                             https://knowledge.validity.com/hc/en-us/articles/20961730681243
+                              for more information.
+                             [52.103.10.91 listed in bl.score.senderscore.com]
+  0.1 HTML_MESSAGE           BODY: HTML included in message
+  0.0 FORGED_SPF_HELO        No description available.
+X-Spam-Flag: NO
+
+--90c2e097-ffad-4405-b406-460059a79382
+Content-Type: multipart/alternative; differences=Content-Type;
+	boundary="db88553e-91ae-4605-b175-2653e7075994"
+
+--db88553e-91ae-4605-b175-2653e7075994
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
+
+Your message has been delivered to the following recipients:
+
+martin.malo@live.fr<mailto:martin.malo@live.fr>
+
+Subject: Renaissance AIR INTER VA
+
+--db88553e-91ae-4605-b175-2653e7075994
+Content-Type: text/html; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
+
+<html>
+<Head></head><body>
+<p><b><font color=3D"#000066" size=3D"3" face=3D"Arial">Your message has be=
+en delivered to the following recipients:</font></b></p>
+<font color=3D"#000000" size=3D"2" face=3D"Tahoma"><p><a href=3D"mailto:mar=
+tin.malo@live.fr">martin.malo@live.fr</a></p>
+<p>Subject: Renaissance AIR INTER VA</p>
+</font>
+</body>
+</html>=
+
+--db88553e-91ae-4605-b175-2653e7075994--
+
+--90c2e097-ffad-4405-b406-460059a79382
+Content-Type: message/delivery-status
+
+Reporting-MTA: dns;SA1PR22MB4319.namprd22.prod.outlook.com
+Received-From-MTA: dns;vert.jabatus.fr
+Arrival-Date: Fri, 16 Jan 2026 02:42:07 +0000
+
+Original-Recipient: rfc822;martin.malo@live.fr
+Final-Recipient: rfc822;martin.malo@live.fr
+Action: delivered
+Status: 2.0.0
+Diagnostic-Code: smtp;250 2.0.0 OK
+
+
+--90c2e097-ffad-4405-b406-460059a79382
+Content-Type: text/rfc822-headers
+
+Received: from AS4P195CA0024.EURP195.PROD.OUTLOOK.COM (2603:10a6:20b:5d6::11)
+ by SA1PR22MB4319.namprd22.prod.outlook.com (2603:10b6:806:38e::11) with
+ Microsoft SMTP Server (version=TLS1_2,
+ cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.20.9520.4; Fri, 16 Jan
+ 2026 02:42:07 +0000
+Received: from AM1PEPF000252E0.eurprd07.prod.outlook.com
+ (2603:10a6:20b:5d6:cafe::36) by AS4P195CA0024.outlook.office365.com
+ (2603:10a6:20b:5d6::11) with Microsoft SMTP Server (version=TLS1_3,
+ cipher=TLS_AES_256_GCM_SHA384) id 15.20.9520.8 via Frontend Transport; Fri,
+ 16 Jan 2026 02:42:03 +0000
+Authentication-Results: spf=pass (sender IP is 109.234.163.246)
+ smtp.mailfrom=airinter-va.org; dkim=pass (signature was verified)
+ header.d=airinter-va.org;dmarc=pass action=none
+ header.from=airinter-va.org;compauth=pass reason=100
+Received-SPF: Pass (protection.outlook.com: domain of airinter-va.org
+ designates 109.234.163.246 as permitted sender)
+ receiver=protection.outlook.com; client-ip=109.234.163.246;
+ helo=vert.jabatus.fr; pr=C
+Received: from vert.jabatus.fr (109.234.163.246) by
+ AM1PEPF000252E0.mail.protection.outlook.com (10.167.16.58) with Microsoft
+ SMTP Server (version=TLS1_3, cipher=TLS_AES_256_GCM_SHA384) id 15.20.9542.4
+ via Frontend Transport; Fri, 16 Jan 2026 02:42:06 +0000
+X-IncomingTopHeaderMarker:
+ OriginalChecksum:22EE655ED812F225DABE9FA24ADFD148941AB03837F946D2B4CCB98C61315D4D;UpperCasedChecksum:FDBEE35C308BDADF0716C671D61254BC67E7AC7BA4932DC639DC7C444E46E7A2;SizeAsReceived:2385;Count:27
+X-Spam-Status: No
+X-MailPropre-MailScanner-From: it001alex@airinter-va.org
+X-MailPropre-MailScanner-SpamCheck: not spam, SpamAssassin (cached,
+	score=-3.409, required 5, autolearn=disabled, KFJEZRH02 0.01,
+	KFJEZRJ02 0.01, OK_SPX -2.00, SPF_HELO_NONE 0.00, SPF_PASS -1.50,
+	SUKA_10 0.01, SUKA_13 0.01, SUKA_28 0.01, SUKA_54 0.01, SUKB_10 0.01,
+	SUKC_2 0.01, VM03 0.01)
+X-MailPropre-MailScanner: Not scanned: please contact your Internet E-Mail Service Provider for details
+X-MailPropre-MailScanner-ID: F0A1BE01CF.AC9BD
+X-MailPropre-MailScanner-Information: Please contact the ISP for more information
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+	d=airinter-va.org; s=default; h=Content-Transfer-Encoding:Content-Type:
+	Message-ID:Subject:To:From:Date:MIME-Version:Sender:Reply-To:Cc:Content-ID:
+	Content-Description:Resent-Date:Resent-From:Resent-Sender:Resent-To:Resent-Cc
+	:Resent-Message-ID:In-Reply-To:References:List-Id:List-Help:List-Unsubscribe:
+	List-Subscribe:List-Post:List-Owner:List-Archive;
+	bh=bKHVW+8TlNJkULsG4aVMWzumby1lG3/3hd5xchl2Mgk=; b=enyoJ/DclhTZlofekDrzwZjfOD
+	R9oO9OssBaW0dtM5aIqBMU+lf54kezDYmQHlynBCYoRne/XK4ghKaxjIUoa+blnsgQjY2xAxIyqxk
+	IF0/8d1Bf6/mhMY/2Gv2YQolhewNhnnBH2tTvLxnbwVekUgspLDs6T7eGN2A4e7KzDvqbdVbZ0a+L
+	AoZlYjDG0ryxvKRAdlBuIeycnDilWRQTutHDvk1YTkx/ZpJuydzsn7XKDoDnTFvnyUmh5SWdIlYnA
+	aXeelA5GmOS9B5bAd6MqdbK0UTo6sVudL8TbbaMyOoVg6Wpx+FQTMu8LompjN1cIBAw+oR+H1ZqfZ
+	R7j6j/Dg==;
+MIME-Version: 1.0
+Date: Fri, 16 Jan 2026 03:42:03 +0100
+From: it001alex@airinter-va.org
+To: it001alex@airinter-va.org
+Subject: Renaissance AIR INTER VA
+Message-ID: <9d77f8e7cdb398a3ba390afde93a4686@airinter-va.org>
+X-Sender: it001alex@airinter-va.org
+Disposition-Notification-To: it001alex@airinter-va.org
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 8bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - engoulevent.o2switch.net
+X-AntiAbuse: Original Domain - live.fr
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - airinter-va.org
+X-Get-Message-Sender-Via: engoulevent.o2switch.net: authenticated_id: it001alex@airinter-va.org
+X-Authenticated-Sender: engoulevent.o2switch.net: it001alex@airinter-va.org
+X-Source:
+X-Source-Args:
+X-Source-Dir:
+X-IncomingHeaderCount: 27
+Return-Path: it001alex@airinter-va.org
+X-EOPAttributedMessage: 0
+X-EOPTenantAttributedMessage: 84df9e7f-e9f6-40af-b435-aaaaaaaaaaaa:0
+X-MS-PublicTrafficType: Email
+X-MS-TrafficTypeDiagnostic: AM1PEPF000252E0:EE_|SA1PR22MB4319:EE_
+X-MS-UserLastLogonTime: 12/11/2019 9:36:40 AM
+X-MS-Office365-Filtering-Correlation-Id: ee65961c-29df-45d3-ba61-08de54a8d6bd
+X-MS-Exchange-EOPDirect: true
+X-Sender-IP: 109.234.163.246
+X-SID-PRA: IT001ALEX@AIRINTER-VA.ORG
+X-SID-Result: PASS
+X-Microsoft-Antispam:
+	BCL:0;ARA:1444111002|84100799003|970799060|461199028|21090799003|22090799003|32080799006|1360799030|1370799030|1380799030|3412199025|1290799030|440099028|26104999006|1710799026;
+X-Microsoft-Antispam-Message-Info:
+	=?utf-8?B?cHo4V25HSXhQbU1uS0Zja25YWlB5U0tVcEFWNWdVL2pQcll5N3VOd3ZyaVR5?=
+ =?utf-8?B?bmlvRXlXVTdkRk11bWluNW5TMVNiSHVBaXNuNG94T3RFTUpGZ3hxbkxlZ21t?=
+ =?utf-8?B?aGMzU0FXbWtrZkRQcitwSTlJcVZuTG5EcUlVU3JtUW1tOXE1SzkzWDFYRHhk?=
+ =?utf-8?B?YWFEWDdQanpWaE02SmdCRkRRZkh4SmxjZkN2STZLSStRbmN3bVBFSGpvcEph?=
+ =?utf-8?B?eGl1aWU1cmFMenRpa0F1Y3M5VnEyUEtyQVlpV1RkUlZpVG5HSnlXS0RxZDB3?=
+ =?utf-8?B?UFZ6SHJ6MWY0Tys0RzFSNi94V2ZEaFQ1eDdpRVEvbzRCSlh5VzZVMWZFVXl2?=
+ =?utf-8?B?dEcvL1JxY1g1elRaUmJWTTRwMHh6Qyt6Slh0cjVzSGNJTHF5c3Nzb3ZzcHJl?=
+ =?utf-8?B?V3hBckhma09GT2U3UWpNMThiSU1lVnVyNEpqTjdKSzdrcUFvdEl6UEhvUGhB?=
+ =?utf-8?B?dC8vdUpOUWFzeWtHc0xoM3hhUDFHeDAybnJiK1lTblZOT0NsMFpCVGkvbHdC?=
+ =?utf-8?B?a2JQb2pHVXdkNkpramZvTDVZTU9WbHBwZndmdlRJdUlWWW1jTHBSL0tJcW8w?=
+ =?utf-8?B?L2hUZzRQMzAwbnFOd3lkU2EwVCt5SjErc3luc0lqYTIzU3IyaldwRFZXVm9p?=
+ =?utf-8?B?b3JNODhuVUlxYXBrK29ZWnhBMVBMZ3NNRVE2elNBNkM0NWpGWDdhb3pIbXVy?=
+ =?utf-8?B?WTdJL3RIQ3JUZGR0NkVham9FbUdYd2JCL1FLeTBtVlRPTVZQU0tuUnljcmlo?=
+ =?utf-8?B?WjRuamthWjFYMHBaMldiemVsRC9tRjgwN20rQmNYdEZPdHZwVDl3N1UvTzJX?=
+ =?utf-8?B?M2w3bHFDVHZwSnNNbzh4Yjg5SDdxamlra1ZLdnlsUnppOVEyQ0hMTWdtWTFS?=
+ =?utf-8?B?ZFZ1b0JmNjRRRjhRV2lNUkw4YzRhT0NjOUZlcU9adlFoVytPRkx4UTQ0SmFV?=
+ =?utf-8?B?Mm1KREd6MGM2OVIxRzk2Y0ZRUWdkL2kxUG1nVFRRN21BV2Yxc1FMb0dOMXhC?=
+ =?utf-8?B?YzUycDFNMVN2T2ZLL213NXEwVG12cEhFOTYvaC9NUzJSU08wMWdQZHZUUHc3?=
+ =?utf-8?B?TjZxc3J4RDZWOG16eEZUeGNzYVVTQXJwdmE4VFcrVVBPM0tyM2F6ZHl1eUpB?=
+ =?utf-8?B?eGFXQTVPVFVLVGt1WUlFOHVmZTJ2KzUzcVF6NVB5SVBvWlhkc0dFbmVIcU9X?=
+ =?utf-8?B?OURSUEJ5TUl5VjVPNmZEdFdKaExaSWJmcjBmK0preEtUUGF6K1dETnhDeUhY?=
+ =?utf-8?B?YUw4OGlzKzBmc2EzS1U3WmJPdW5PL0dqbHJGSXg0ZUpvcjh6WklocnFyZFZ0?=
+ =?utf-8?B?SGUrSlRnUFVIQjJ5bHpjblRENWExUUhxS24zanJQeVA5OVJCVTZWTjZqYmI3?=
+ =?utf-8?B?a2VORlJyQit1S25oKzJaTUJrZXg5Vnk4UGhyVzZTamZTS3dtMy9GVWMxRVRQ?=
+ =?utf-8?B?N25BcWlXUW9uU2xzT09BQmxKRk92ZEE1MnhOVDBZcDJHT1dCNDM3YlNIaVgx?=
+ =?utf-8?B?dDM1TDdSUzRJenliM1BsVENrdWFnY2lYMTAreTBRWmppUzV4T2p2VU5mWWNP?=
+ =?utf-8?B?cnJCN0U5Y083Z2FodWtiWkY3cDRtQ28xM0hCU3JldzRlc3VNUEYrbU9PdjU1?=
+ =?utf-8?B?YWhHdDJUanIwREt2N3RrRnJvSmVnU2FlUXRkdjlXOWFCK1pRMTdFOHFQSENH?=
+ =?utf-8?B?c1dHdEpYTDBJbFBnVmxiS29zOFJHTUxoVUIxS1NJSGdGU3h4VFRvaWE2dXRm?=
+ =?utf-8?B?WGVLMHhJQW5CemVLU3BxUVhGd2ttYUswbUZzSG9tK2VjK0wxbkdCNFlXUjdI?=
+ =?utf-8?B?dStrcVN0b1QrWWlnMDAxWVhCVEdmVDR3SE0yRllpUk5DS015eGhMMXZJbnEw?=
+ =?utf-8?B?bTQzR1orazZIVkpYV0dQb0pDSExGSmlFMXFIbFBEdndUaDNOTnRLZGRTT0JO?=
+ =?utf-8?B?b3pvcFJQQjJqSCt1UThUaUYzNUsxT2R5VjdGK0FDT2F3bWY1bXlGVEpqdC9z?=
+ =?utf-8?B?L0cvMUZSZFRGWWxjeWoxcFRqdTgrOGRMMVI3bEJRQ2o3dG15b01UdS9zRm9w?=
+ =?utf-8?B?TWE3MmwzOHpPdUVXMXhRMXZHaVRiNmtNWFd5ZnJwNlh1RU9GQkgxMDVkbnZD?=
+ =?utf-8?B?M3BVV1IxbGI1V2pLWmhCUlNlZ3ZkN01OdlFXeVc3aFRwTmQ0NHd2ZjlHdk5J?=
+ =?utf-8?B?eC9FUlo1OXFMUU1oSlExRkdaYW9Ma3A3T2UrU0k1azlhUGJoQmFBSk5RU244?=
+ =?utf-8?Q?t38h8XaZG+b9qBrsE18cMM8Bl+/gNiRHK/8/Gxbw24=3D?=
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 16 Jan 2026 02:42:06.6240
+ (UTC)
+X-MS-Exchange-CrossTenant-Network-Message-Id: ee65961c-29df-45d3-ba61-08de54a8d6bd
+X-MS-Exchange-CrossTenant-Id: 84df9e7f-e9f6-40af-b435-aaaaaaaaaaaa
+X-MS-Exchange-CrossTenant-AuthSource:
+	AM1PEPF000252E0.eurprd07.prod.outlook.com
+X-MS-Exchange-CrossTenant-AuthAs: Anonymous
+X-MS-Exchange-CrossTenant-FromEntityHeader: Internet
+X-MS-Exchange-CrossTenant-RMS-PersistedConsumerOrg:
+	00000000-0000-0000-0000-000000000000
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: SA1PR22MB4319
+
+--90c2e097-ffad-4405-b406-460059a79382--

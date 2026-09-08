@@ -1,0 +1,202 @@
+Return-Path: <>
+Delivered-To: it001alex@airinter-va.org
+Received: from engoulevent.o2switch.net
+	by engoulevent.o2switch.net with LMTP
+	id KIfuG6+laWnNUTQAWBU5WA
+	(envelope-from <>)
+	for <it001alex@airinter-va.org>; Fri, 16 Jan 2026 03:42:55 +0100
+Return-path: <>
+Envelope-to: it001alex@airinter-va.org
+Delivery-date: Fri, 16 Jan 2026 03:42:55 +0100
+Received: from beetle.banana.relay.mailchannels.net ([23.83.217.15]:36171)
+	by engoulevent.o2switch.net with esmtps  (TLS1.3) tls TLS_AES_256_GCM_SHA384
+	(Exim 4.99.1)
+	id 1vgZnW-0000000ENm6-3zz8
+	for it001alex@airinter-va.org;
+	Fri, 16 Jan 2026 03:42:55 +0100
+X-Sender-Id: o2switch|mailer-daemon|109.234.163.204|3072431703
+Received: from relay.mailchannels.net (localhost [127.0.0.1])
+	by relay.mailchannels.net (Postfix) with ESMTP id 1EB5E78136A;
+	Fri, 16 Jan 2026 02:42:12 +0000 (UTC)
+Received: from smtp-3.jabatus.fr (100-116-82-78.trex-nlb.outbound.svc.cluster.local [100.116.82.78])
+	(Authenticated sender: o2switch)
+	by relay.mailchannels.net (Postfix) with ESMTPA id 83997780BD7
+	for <it001alex@airinter-va.org>; Fri, 16 Jan 2026 02:42:11 +0000 (UTC)
+ARC-Seal: i=1; a=rsa-sha256; d=mailchannels.net; s=arc-2022; cv=none;
+	t=1768531331;
+	b=iNfGfFDrHWvbA4GCnhAWZAKlWeTIGAmTZm2aRhu7T5rk0JDgW53TcdmyXuz6OKnAxYijqf
+	64YmMWurWB31wUuUa/X1rn5gCBJso55+uir7fvI+41OjMruSSSI8vzBkU4OdsS72czxXvm
+	0GaOHFnEos66luyxhZdiJn+i3UhAp49q1TlzaI0tIoVzjwqb0jZnGklm+yhWtj2gtwsTz0
+	GoxaaUeQPVJSMbje4/Qc+tmglbgGBxTkwdiSo4M5akuvXUtTkInEkqKL5zB56tEnQg4CYu
+	j3e8cs/q3AgxmIsW/mQarN+ygTHCEsV5t9njT2tXfOJZqeIleEPqYFu2E8vSfg==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed;
+ d=mailchannels.net;
+	s=arc-2022; t=1768531331;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type:
+	 content-transfer-encoding:content-transfer-encoding;
+	bh=DV9P0+/zDYmUuks1u4jOLxfVNP5uZs25/G63CzO6QDw=;
+	b=r3EoTHJdaDzn5YchaNydt3zX9YJ8OL/OfhaNEkh8ojttdFxtC4jK9VL1cUYoEWajQH03cR
+	QLip4xd2CUn4W42V4zMkKf5ic7LweqQ+jYQ5Rds+xAjVry6MSVGKswikSTlM+oJzA2lORb
+	DAt5+aEkruTghsGVAoe6rDOTTnETceX+VSXfdyA8vhwsKQ+j5bAdvCAB6NTpJl3iMT0GEs
+	cKRJgtJ2zEarDB5svYLtKf3dHMSAWKzqg5NIF6NLt8xkcBpwIQNXXrEcCVvURo3B+ORUuj
+	8aueR9kMHvsDTYruBXt4XxjEeemO/wjZoFfXbOc1C0CWTtfqbNethadAM2nxqw==
+ARC-Authentication-Results: i=1;
+	rspamd-84bff5b669-zwjsb;
+	auth=pass smtp.auth=o2switch smtp.mailfrom=
+X-Sender-Id: o2switch|mailer-daemon|109.234.163.204|3072431703
+X-MC-Relay: Junk
+X-MC-Copy: stored-urls
+X-MailChannels-SenderId: o2switch|mailer-daemon|109.234.163.204|3072431703
+X-MailChannels-Auth-Id: o2switch
+X-Plucky-Descriptive: 4528afed29966357_1768531332029_3724280992
+X-MC-Loop-Signature: 1768531332029:2564661377
+X-MC-Ingress-Time: 1768531332028
+Received: from smtp-3.jabatus.fr ([UNAVAILABLE]. [109.234.163.204])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+	by 100.116.82.78 (trex/7.1.3);
+	Fri, 16 Jan 2026 02:42:12 +0000
+Received: by smtp-3.jabatus.fr (Postfix)
+	id 04A5F280456; Fri, 16 Jan 2026 03:42:10 +0100 (CET)
+Date: Fri, 16 Jan 2026 03:42:10 +0100 (CET)
+From: Mail Delivery System <MAILER-DAEMON@smtp-3.jabatus.fr>
+Subject: Successful Mail Delivery Report
+To: it001alex@airinter-va.org
+Auto-Submitted: auto-replied
+MIME-Version: 1.0
+Content-Type: multipart/report; report-type=delivery-status;
+	boundary="E2F772803EF.1768531330/smtp-3.jabatus.fr"
+Content-Transfer-Encoding: 8bit
+Message-Id: <20260116024210.04A5F280456@smtp-3.jabatus.fr>
+X-Spam-Status: No, score=-185.1
+X-Spam-Score: -1850
+X-Spam-Bar: ---------------------------------------------------
+X-Ham-Report: Spam detection software, running on the system "scan.jabatus.fr",
+ has NOT identified this incoming email as spam.  The original
+ message has been attached to this so you can view it or label
+ similar future email.  If you have any questions, see
+ the administrator of that system for details.
+ Content preview:  This is the mail system at host smtp-3.jabatus.fr. Your message
+    was successfully delivered to the destination(s) listed below. If the message
+    was delivered to mailbox you will receive no further notifications. Otherwise
+    you may still receive notificat [...] 
+ Content analysis details:   (-185.1 points, 5.0 required)
+  pts rule name              description
+ ---- ---------------------- --------------------------------------------------
+  0.0 URIBL_BLOCKED          ADMINISTRATOR NOTICE: The query to URIBL was
+                             blocked.  See
+                             http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
+                              for more information.
+                             [URIs: airinter-va.org]
+  -25 ABUSIX_WHITE           RBL: Listed for spam.
+                             [23.83.217.15 listed in white.abusix.jabatus]
+  -80 XMO2S                  No description available.
+  -80 WHLISHOSW              No description available.
+  0.1 RCVD_IN_DNSWL_NONE     RBL: Sender listed at https://www.dnswl.org/,
+                              no trust
+                             [23.83.217.15 listed in list.dnswl.org]
+ -0.0 RCVD_IN_MSPIKE_H3      RBL: Good reputation (+3)
+                             [23.83.217.15 listed in wl.mailspike.net]
+  0.0 SPF_HELO_NONE          SPF: HELO does not publish an SPF Record
+  0.1 SUKA_0                 BODY: No description available.
+  0.1 SUKA_24                BODY: No description available.
+  0.1 SUKA_49                BODY: No description available.
+  0.0 RCVD_IN_VALIDITY_RPBL_BLOCKED RBL: ADMINISTRATOR NOTICE: The
+                             query to Validity was blocked.  See
+                             https://knowledge.validity.com/hc/en-us/articles/20961730681243
+                              for more information.
+                             [23.83.217.15 listed in bl.score.senderscore.com]
+  0.0 RCVD_IN_VALIDITY_CERTIFIED_BLOCKED RBL: ADMINISTRATOR NOTICE:
+                             The query to Validity was blocked.  See
+                             https://knowledge.validity.com/hc/en-us/articles/20961730681243
+                              for more information.
+                           [23.83.217.15 listed in sa-trusted.bondedsender.org]
+ -0.0 RCVD_IN_MSPIKE_WL      Mailspike good senders
+X-Spam-Flag: NO
+
+This is a MIME-encapsulated message.
+
+--E2F772803EF.1768531330/smtp-3.jabatus.fr
+Content-Description: Notification
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+This is the mail system at host smtp-3.jabatus.fr.
+
+Your message was successfully delivered to the destination(s)
+listed below. If the message was delivered to mailbox you will
+receive no further notifications. Otherwise you may still receive
+notifications of mail delivery errors from other systems.
+
+                   The mail system
+
+<peyrezabes@aol.com>: delivery via smtp.mailchannels.net[54.203.146.40]:25: 250
+    2.0.0 Ok: queued as 1842B8C1074
+
+--E2F772803EF.1768531330/smtp-3.jabatus.fr
+Content-Description: Delivery report
+Content-Type: message/delivery-status
+
+Reporting-MTA: dns; smtp-3.jabatus.fr
+X-Postfix-Queue-ID: E2F772803EF
+X-Postfix-Sender: rfc822; it001alex@airinter-va.org
+Arrival-Date: Fri, 16 Jan 2026 03:42:05 +0100 (CET)
+
+Final-Recipient: rfc822; peyrezabes@aol.com
+Original-Recipient: rfc822;peyrezabes@aol.com
+Action: relayed
+Status: 2.0.0
+Remote-MTA: dns; smtp.mailchannels.net
+Diagnostic-Code: smtp; 250 2.0.0 Ok: queued as 1842B8C1074
+
+--E2F772803EF.1768531330/smtp-3.jabatus.fr
+Content-Description: Message Headers
+Content-Type: text/rfc822-headers
+Content-Transfer-Encoding: 8bit
+
+Return-Path: <it001alex@airinter-va.org>
+X-Spam-Status: No
+X-MailPropre-MailScanner-From: it001alex@airinter-va.org
+X-MailPropre-MailScanner-SpamCheck: not spam, SpamAssassin (not cached,
+	score=-1.409, required 5, autolearn=disabled, KFJEZRH02 0.01,
+	KFJEZRJ02 0.01, SPF_HELO_NONE 0.00, SPF_PASS -1.50, SUKA_10 0.01,
+	SUKA_13 0.01, SUKA_28 0.01, SUKA_54 0.01, SUKB_10 0.01, SUKC_2 0.01,
+	VM03 0.01)
+X-MailPropre-MailScanner: Not scanned: please contact your Internet E-Mail Service Provider for details
+X-MailPropre-MailScanner-ID: 12DF1280453.A7AE5
+X-MailPropre-MailScanner-Information: Please contact the ISP for more information
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+	d=airinter-va.org; s=default; h=Content-Transfer-Encoding:Content-Type:
+	Message-ID:Subject:To:From:Date:MIME-Version:Sender:Reply-To:Cc:Content-ID:
+	Content-Description:Resent-Date:Resent-From:Resent-Sender:Resent-To:Resent-Cc
+	:Resent-Message-ID:In-Reply-To:References:List-Id:List-Help:List-Unsubscribe:
+	List-Subscribe:List-Post:List-Owner:List-Archive;
+	bh=bKHVW+8TlNJkULsG4aVMWzumby1lG3/3hd5xchl2Mgk=; b=enyoJ/DclhTZlofekDrzwZjfOD
+	R9oO9OssBaW0dtM5aIqBMU+lf54kezDYmQHlynBCYoRne/XK4ghKaxjIUoa+blnsgQjY2xAxIyqxk
+	IF0/8d1Bf6/mhMY/2Gv2YQolhewNhnnBH2tTvLxnbwVekUgspLDs6T7eGN2A4e7KzDvqbdVbZ0a+L
+	AoZlYjDG0ryxvKRAdlBuIeycnDilWRQTutHDvk1YTkx/ZpJuydzsn7XKDoDnTFvnyUmh5SWdIlYnA
+	aXeelA5GmOS9B5bAd6MqdbK0UTo6sVudL8TbbaMyOoVg6Wpx+FQTMu8LompjN1cIBAw+oR+H1ZqfZ
+	R7j6j/Dg==;
+MIME-Version: 1.0
+Date: Fri, 16 Jan 2026 03:42:03 +0100
+From: it001alex@airinter-va.org
+To: it001alex@airinter-va.org
+Subject: Renaissance AIR INTER VA
+Message-ID: <9d77f8e7cdb398a3ba390afde93a4686@airinter-va.org>
+X-Sender: it001alex@airinter-va.org
+Disposition-Notification-To: it001alex@airinter-va.org
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 8bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - engoulevent.o2switch.net
+X-AntiAbuse: Original Domain - aol.com
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - airinter-va.org
+X-Get-Message-Sender-Via: engoulevent.o2switch.net: authenticated_id: it001alex@airinter-va.org
+X-Authenticated-Sender: engoulevent.o2switch.net: it001alex@airinter-va.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
+
+--E2F772803EF.1768531330/smtp-3.jabatus.fr--

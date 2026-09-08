@@ -1,0 +1,28 @@
+Return-Path: <it001alex@airinter-va.org>
+Delivered-To: it001alex@airinter-va.org
+Received: from engoulevent.o2switch.net
+	by engoulevent.o2switch.net with LMTP
+	id QFYuHcKJMGl64j8AWBU5WA
+	(envelope-from <it001alex@airinter-va.org>)
+	for <it001alex@airinter-va.org>; Wed, 03 Dec 2025 20:04:34 +0100
+Return-path: <it001alex@airinter-va.org>
+Envelope-to: it001alex@airinter-va.org
+Delivery-date: Wed, 03 Dec 2025 20:04:34 +0100
+Received: from [109.234.164.58] (port=47096 helo=www.airinter-va.org)
+	by engoulevent.o2switch.net with esmtpsa  (TLS1.3) tls TLS_AES_256_GCM_SHA384
+	(Exim 4.98.2)
+	(envelope-from <it001alex@airinter-va.org>)
+	id 1vQs9N-0000000HanZ-3pRx
+	for it001alex@airinter-va.org;
+	Wed, 03 Dec 2025 20:04:34 +0100
+Date: Wed, 3 Dec 2025 19:04:34 +0000
+To: it001alex@airinter-va.org
+From: it001alex@airinter-va.org
+Subject: Air Inter VA - compteur
+Message-ID: <e51OfXKpvYkv4TA7VU985SE59lgnRmoxwWqAfPEPH4@www.airinter-va.org>
+X-Mailer: PHPMailer 6.9.3 (https://github.com/PHPMailer/PHPMailer)
+MIME-Version: 1.0
+Content-Type: text/html; charset=UTF-8
+
+Air Inter VA - Message du compteur le 03/12/2025 19:04:34.<br />Bonne nouvelle, je viens juste de passer la valeur 588000.
+

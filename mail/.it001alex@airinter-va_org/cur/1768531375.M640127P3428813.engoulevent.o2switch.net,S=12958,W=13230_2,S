@@ -1,0 +1,272 @@
+Return-Path: <>
+Delivered-To: it001alex@airinter-va.org
+Received: from engoulevent.o2switch.net
+	by engoulevent.o2switch.net with LMTP
+	id eJr5Ja+laWnNUTQAWBU5WA
+	(envelope-from <>)
+	for <it001alex@airinter-va.org>; Fri, 16 Jan 2026 03:42:55 +0100
+Return-path: <>
+Envelope-to: it001alex@airinter-va.org
+Delivery-date: Fri, 16 Jan 2026 03:42:55 +0100
+Received: from aqua.dogwood.relay.mailchannels.net ([23.83.211.5]:7025)
+	by engoulevent.o2switch.net with esmtps  (TLS1.3) tls TLS_AES_256_GCM_SHA384
+	(Exim 4.99.1)
+	id 1vgZnX-0000000ENmA-0med
+	for it001alex@airinter-va.org;
+	Fri, 16 Jan 2026 03:42:55 +0100
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/simple; d=mailchannels.net;
+	s=bounce; t=1768531332;
+	bh=tS7MwefZbwASCvacl6jthOb39LZ8XX4KYvhXU+bS7WE=;
+	h=Date:From:Subject:To:From;
+	b=HhOeDeuNkZ9BwAtIct6h4lpNrd5aO82iUuqPi031XeEnpkomQbDs1mvKdf6xHWs6d
+	 6KO3LEpY6QM3+3vBUmai3YC99eocjtllIhVgujmClSOmRM9zm9x4+l5MRI+/Un/NSN
+	 0yIAdnDWof1d+1/PS1NHZpnOxzXGCXhp0TBGIG3ZsLHRNhG3MGukbUczAW0f7ma3JM
+	 LYPt8V+AY3eKWloBxXVhgmoFn1tY/x5GxF1i5sXQY2pWxkGOtlGWllnqmpYNeLaWYk
+	 Frv2d45izo1B4uPswovlyyrFu+tFkXGfoufdXCDtTc5SSVYvxe9FFdA1UI3Z7v2ayE
+	 oR71qbNd1Bw0w==
+Received: from relay.mailchannels.net (localhost [127.0.0.1])
+	by relay.mailchannels.net (Postfix) with ESMTP id 429FB22171F
+	for <it001alex@airinter-va.org>; Fri, 16 Jan 2026 02:42:12 +0000 (UTC)
+Received: by relay.mailchannels.net (Postfix)
+	id 41657221F8A; Fri, 16 Jan 2026 02:42:12 +0000 (UTC)
+Date: Fri, 16 Jan 2026 02:42:12 +0000 (UTC)
+From: Mail Delivery System <MAILER-DAEMON@mailchannels.net>
+Subject: Undelivered Mail Returned to Sender
+To: it001alex@airinter-va.org
+Auto-Submitted: auto-replied
+MIME-Version: 1.0
+Content-Type: multipart/report; report-type=delivery-status;
+	boundary="0255822171F.1768531332/relay.mailchannels.net"
+Content-Transfer-Encoding: 8bit
+Message-Id: <20260116024212.41657221F8A@relay.mailchannels.net>
+X-Spam-Status: No, score=-106.3
+X-Spam-Score: -1062
+X-Spam-Bar: ---------------------------------------------------
+X-Ham-Report: Spam detection software, running on the system "scan.jabatus.fr",
+ has NOT identified this incoming email as spam.  The original
+ message has been attached to this so you can view it or label
+ similar future email.  If you have any questions, see
+ the administrator of that system for details.
+ Content preview:  This is the mail system at host relay.mailchannels.net. I'm
+    sorry to have to inform you that your message could not be delivered to one
+    or more recipients. It's attached below. For further assistance, please send
+    mail to postmaster. 
+ Content analysis details:   (-106.3 points, 5.0 required)
+  pts rule name              description
+ ---- ---------------------- --------------------------------------------------
+  0.0 URIBL_BLOCKED          ADMINISTRATOR NOTICE: The query to URIBL was
+                             blocked.  See
+                             http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
+                              for more information.
+                             [URIs: airinter-va.org]
+  -25 ABUSIX_WHITE           RBL: Listed for spam.
+                             [23.83.211.5 listed in white.abusix.jabatus]
+  -80 WHLISHOSW              No description available.
+  0.1 RCVD_IN_DNSWL_NONE     RBL: Sender listed at https://www.dnswl.org/,
+                              no trust
+                             [23.83.211.5 listed in list.dnswl.org]
+  0.0 SPF_HELO_NONE          SPF: HELO does not publish an SPF Record
+  0.1 SUKA_10                BODY: No description available.
+  0.1 SUKA_34                BODY: No description available.
+  0.1 SUKA_20                BODY: No description available.
+  0.1 SUKA_28                BODY: No description available.
+  0.1 SUKA_33                BODY: No description available.
+  0.1 SUKA_13                BODY: No description available.
+ -1.7 RCVD_IN_MSPIKE_H2      RBL: Average reputation (+2)
+                             [23.83.211.5 listed in wl.mailspike.net]
+  0.0 RCVD_IN_VALIDITY_CERTIFIED_BLOCKED RBL: ADMINISTRATOR NOTICE:
+                             The query to Validity was blocked.  See
+                             https://knowledge.validity.com/hc/en-us/articles/20961730681243
+                              for more information.
+                             [23.83.211.5 listed in sa-accredit.habeas.com]
+  0.0 RCVD_IN_VALIDITY_RPBL_BLOCKED RBL: ADMINISTRATOR NOTICE: The
+                             query to Validity was blocked.  See
+                             https://knowledge.validity.com/hc/en-us/articles/20961730681243
+                              for more information.
+                             [23.83.211.5 listed in bl.score.senderscore.com]
+  0.1 DKIM_SIGNED            Message has a DKIM or DK signature, not necessarily
+                             valid
+  0.1 DKIM_INVALID           DKIM or DK signature exists, but is not valid
+X-Spam-Flag: NO
+
+This is a MIME-encapsulated message.
+
+--0255822171F.1768531332/relay.mailchannels.net
+Content-Description: Notification
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+
+This is the mail system at host relay.mailchannels.net.
+
+I'm sorry to have to inform you that your message could not
+be delivered to one or more recipients. It's attached below.
+
+For further assistance, please send mail to postmaster.
+
+If you do so, please include this problem report. You can
+delete your own text from the attached returned message.
+
+                   The mail system
+
+<alinbeau1@gmx.com>: host mx01.gmx.net[212.227.17.4] said: 550-Requested action
+    not taken: mailbox unavailable 550 For explanation visit
+    https://postmaster.gmx.net/en/case?c=r1601&i=ip&v=23.83.223.167&r=1MbD9c-1wDRdM02Ia-00gmlh
+    (in reply to RCPT TO command)
+
+--0255822171F.1768531332/relay.mailchannels.net
+Content-Description: Delivery report
+Content-Type: message/delivery-status
+
+Reporting-MTA: dns; relay.mailchannels.net
+X-Postfix-Queue-ID: 0255822171F
+X-Postfix-Sender: rfc822; it001alex@airinter-va.org
+Arrival-Date: Fri, 16 Jan 2026 02:42:10 +0000 (UTC)
+
+Final-Recipient: rfc822; alinbeau1@gmx.com
+Original-Recipient: rfc822;alinbeau1@gmx.com
+Action: failed
+Status: 5.0.0
+Remote-MTA: dns; mx01.gmx.net
+Diagnostic-Code: smtp; 550-Requested action not taken: mailbox unavailable 550
+    For explanation visit
+    https://postmaster.gmx.net/en/case?c=r1601&i=ip&v=23.83.223.167&r=1MbD9c-1wDRdM02Ia-00gmlh
+
+--0255822171F.1768531332/relay.mailchannels.net
+Content-Description: Undelivered Message
+Content-Type: message/rfc822
+Content-Transfer-Encoding: 8bit
+
+Return-Path: <it001alex@airinter-va.org>
+Received: from relay.mailchannels.net (localhost [127.0.0.1])
+	by relay.mailchannels.net (Postfix) with ESMTP id 0255822171F;
+	Fri, 16 Jan 2026 02:42:10 +0000 (UTC)
+Received: from smtp-3.jabatus.fr (100-115-15-174.trex-nlb.outbound.svc.cluster.local [100.115.15.174])
+	(Authenticated sender: o2switch)
+	by relay.mailchannels.net (Postfix) with ESMTPA id 12899221FF4
+	for <alinbeau1@gmx.com>; Fri, 16 Jan 2026 02:42:08 +0000 (UTC)
+ARC-Seal: i=1; a=rsa-sha256; d=mailchannels.net; s=arc-2022; cv=none;
+	t=1768531329;
+	b=8psf2T3DzhN9kJE3FKQqDgg4/jlZQljlXBEPvtnNnLo9OF7LSKUhbBGCrSKiowyjP5SISz
+	9LLl1fnVh+NcmNxVI1gDGAARs/wDvTjmSuqXHjziJ4d/QCp1cuUVSb6TK0i3UAfSErR4gY
+	Qb+rKgoMvIktkOV021z95nWjr02NyfX5hPMM4MYcteiaWqzD9ORhLd7GsnlU+DYAd5Fvx7
+	xyGZqeLzUmI1C/Yqz4B98zeqDnF80JQm2ijOooMdlF08WRn84XKLpvv5TDNhpOnGBN1CHZ
+	Wg6Y73v0brb1NvY2r5riCPlpAXPL84GKkLiiUz8hVf5Fst49gf5tQzwdBHt4QQ==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed;
+ d=mailchannels.net;
+	s=arc-2022; t=1768531329;
+	h=from:from:reply-to:subject:subject:date:date:message-id:message-id:
+	 to:to:cc:mime-version:mime-version:content-type:content-type:
+	 content-transfer-encoding:content-transfer-encoding:dkim-signature;
+	bh=bKHVW+8TlNJkULsG4aVMWzumby1lG3/3hd5xchl2Mgk=;
+	b=1zU09lD+x8/w3ZD+z/G1ocnIaaSoNGGJDJ4xuE44zBdfc7AZTJwUNOqyHj9BtO7dVB4z8K
+	qBzUj82v4zXA8pZDm6rqyRxHwkSuks+J3suPfW80YJN0o+N5qG9jVzIVPmruyHT4J4VdJy
+	JlCGHHbC4gIIsEFXF2lB2IjPsY6Z5rL0Krzo5V0Mp4ERKDEtsKBb+LDAKcEqXctqbTnZcL
+	URHoC5hTulliuCdexrDdk7h4gzVPtHwsPIkVXOWlPYHJWYPTfItr3tmifqskSZCwqwiVlu
+	KSiNk7SJfV+USs5Gawm0ZM4r6g8xVekKRbApyXS20W0FEo2O2ozl5XsQTDS/qQ==
+ARC-Authentication-Results: i=1;
+	rspamd-84bff5b669-zr7hw;
+	auth=pass smtp.auth=o2switch smtp.mailfrom=it001alex@airinter-va.org
+X-Sender-Id: o2switch|x-authenticated-sender|engoulevent.o2switch.net:
+ it001alex@airinter-va.org
+X-MC-Relay: Neutral
+X-MC-Copy: stored-urls
+X-MailChannels-SenderId:
+ o2switch|x-authenticated-sender|engoulevent.o2switch.net:
+ it001alex@airinter-va.org
+X-MailChannels-Auth-Id: o2switch
+X-Versed-Eight: 019b299c54bd321b_1768531329576_4192651787
+X-MC-Loop-Signature: 1768531329576:3544584704
+X-MC-Ingress-Time: 1768531329575
+Received: from smtp-3.jabatus.fr ([UNAVAILABLE]. [109.234.163.204])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384)
+	by 100.115.15.174 (trex/7.1.3);
+	Fri, 16 Jan 2026 02:42:09 +0000
+X-Spam-Status: No
+X-MailPropre-MailScanner-From: it001alex@airinter-va.org
+X-MailPropre-MailScanner-SpamCheck: not spam, SpamAssassin (cached,
+	score=-1.409, required 5, autolearn=disabled, KFJEZRH02 0.01,
+	KFJEZRJ02 0.01, SPF_HELO_NONE 0.00, SPF_PASS -1.50, SUKA_10 0.01,
+	SUKA_13 0.01, SUKA_28 0.01, SUKA_54 0.01, SUKB_10 0.01, SUKC_2 0.01,
+	VM03 0.01)
+X-MailPropre-MailScanner: Not scanned: please contact your Internet E-Mail Service Provider for details
+X-MailPropre-MailScanner-ID: ED9662803F0.A7679
+X-MailPropre-MailScanner-Information: Please contact the ISP for more information
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/relaxed;
+	d=airinter-va.org; s=default; h=Content-Transfer-Encoding:Content-Type:
+	Message-ID:Subject:To:From:Date:MIME-Version:Sender:Reply-To:Cc:Content-ID:
+	Content-Description:Resent-Date:Resent-From:Resent-Sender:Resent-To:Resent-Cc
+	:Resent-Message-ID:In-Reply-To:References:List-Id:List-Help:List-Unsubscribe:
+	List-Subscribe:List-Post:List-Owner:List-Archive;
+	bh=bKHVW+8TlNJkULsG4aVMWzumby1lG3/3hd5xchl2Mgk=; b=enyoJ/DclhTZlofekDrzwZjfOD
+	R9oO9OssBaW0dtM5aIqBMU+lf54kezDYmQHlynBCYoRne/XK4ghKaxjIUoa+blnsgQjY2xAxIyqxk
+	IF0/8d1Bf6/mhMY/2Gv2YQolhewNhnnBH2tTvLxnbwVekUgspLDs6T7eGN2A4e7KzDvqbdVbZ0a+L
+	AoZlYjDG0ryxvKRAdlBuIeycnDilWRQTutHDvk1YTkx/ZpJuydzsn7XKDoDnTFvnyUmh5SWdIlYnA
+	aXeelA5GmOS9B5bAd6MqdbK0UTo6sVudL8TbbaMyOoVg6Wpx+FQTMu8LompjN1cIBAw+oR+H1ZqfZ
+	R7j6j/Dg==;
+MIME-Version: 1.0
+Date: Fri, 16 Jan 2026 03:42:03 +0100
+From: it001alex@airinter-va.org
+To: it001alex@airinter-va.org
+Subject: Renaissance AIR INTER VA
+Message-ID: <9d77f8e7cdb398a3ba390afde93a4686@airinter-va.org>
+X-Sender: it001alex@airinter-va.org
+Disposition-Notification-To: it001alex@airinter-va.org
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 8bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - engoulevent.o2switch.net
+X-AntiAbuse: Original Domain - gmx.com
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - airinter-va.org
+X-Get-Message-Sender-Via: engoulevent.o2switch.net: authenticated_id: it001alex@airinter-va.org
+X-Authenticated-Sender: engoulevent.o2switch.net: it001alex@airinter-va.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
+
+Bonjour,
+
+Vous recevez ce message car vous êtes toujours membre d’Air Inter 
+Virtual Airline.
+Non, Air Inter VA n’est pas morte ! Ce sont simplement les aléas de la 
+vie qui font que certaines priorités prennent parfois le dessus sur 
+d’autres…
+
+Après quelques années de contretemps (mieux vaut tard que jamais, 
+dit-on), le site "Air Inter VA" et son "Centre des Opérations de Vol - 
+OCC" (anciennement Prométhée) ont été complètement mis à jour et 
+améliorés de manière significative.
+
+Les nouvelles versions du site et de l'OCC offrent un design grandement 
+modernisé ainsi qu’une interface simplifiée afin de faciliter l’accès 
+aux informations, la gestion des activités et surtout des 
+fonctionnalités accrues pour les pilotes (OCC).
+Vous pouvez en avoir un aperçu en vous rendant sur :
+
+1) Pour le site principal d'Air Inter VA :
+https://www.airinter-va.org
+
+2) Pour accéder à l'OCC (consulter "L'OCC en détails" pour voir toutes 
+les fonctionnalités une fois enregistré) :
+https://prometheus.airinter-va.org
+
+Si vous souhaitez toujours faire partie d’Air Inter VA, merci de me 
+renvoyer un e-mail à l'adresse suivante :
+it001alex@airinter-va.org
+Ou en renvoyant un message via la messagerie du site : 
+https://www.airinter-va.org
+En indiquant votre souhait de rester membre.
+
+Dans le cas contraire, (si vous ne souhaitez plus faire partie d’Air 
+Inter VA) :
+Aucune action de votre part n’est nécessaire. Vous serez automatiquement 
+supprimé de notre liste de membres et de la liste de diffusion au 1er 
+février 2026.
+
+À bientôt peut-être pour de nouvelles aventures !
+
+Alex
+IT001
+
+--0255822171F.1768531332/relay.mailchannels.net--
