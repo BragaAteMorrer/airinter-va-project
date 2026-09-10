@@ -1,0 +1,55 @@
+name: promethee-local
+services:
+  db:
+    image: mariadb:11.4
+    environment:
+      MARIADB_DATABASE: promethee
+      MARIADB_USER: promethee
+      MARIADB_PASSWORD: local-promethee-only
+      MARIADB_ROOT_PASSWORD: local-root-only
+    volumes:
+      - promethee-db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+  web:
+    build:
+      context: .
+      dockerfile: dev/Dockerfile
+    ports:
+      - "127.0.0.1:8088:8000"
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "false"
+      APP_URL: http://localhost:8088
+      DB_HOST: db
+      DB_DATABASE: promethee
+      DB_USERNAME: promethee
+      DB_PASSWORD: local-promethee-only
+      DB_PREFIX: phpvms7_
+      MAIL_MAILER: log
+      PROMETHEE_LOCAL: "true"
+      PROMETHEE_LOCAL_PASSWORD: promethee-local
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - promethee-storage:/var/www/html/storage
+      - promethee-bootstrap:/var/www/html/bootstrap/cache
+  acars:
+    build:
+      context: .
+      dockerfile: acars/Dockerfile
+    ports:
+      - "127.0.0.1:1974:1974"
+    environment:
+      PROMETHEE_ACARS_URL: http://0.0.0.0:1974
+    depends_on:
+      web:
+        condition: service_started
+volumes:
+  promethee-db:
+  promethee-storage:
+  promethee-bootstrap:

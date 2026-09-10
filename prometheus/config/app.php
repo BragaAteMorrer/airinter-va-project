@@ -45,6 +45,7 @@ return [
          * Application Service Providers...
          */
         App\Providers\AppServiceProvider::class,
+        Modules\Promethee\Providers\PrometheeServiceProvider::class,
         App\Providers\AuthServiceProvider::class,
         App\Providers\BindServiceProviders::class,
         App\Providers\BroadcastServiceProvider::class,
