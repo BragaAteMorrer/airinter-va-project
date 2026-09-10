@@ -1,0 +1,115 @@
+:root {
+  --ops-bg: #eef2f5;
+  --ops-dark: #0e2a44;
+  --ops-blue: #0b5cad;
+  --ops-red: #d92732;
+  --ops-yellow: #f2c14e;
+  --radius: 8px;
+  --shadow: 0 8px 22px #0b223512;
+}
+main { max-width: 1680px; }
+.sidebar { background: #0e2a44; }
+.system-name { padding-top: 28px; }
+.brand-mark { border-radius: 2px; }
+.topbar { height: 66px; }
+.ops-header { display: flex; justify-content: space-between; align-items: stretch; gap: 24px; margin: 0 0 22px; }
+.ops-header.compact { align-items: center; }
+.ops-header h1 { font-size: 32px; line-height: 1.1; margin-bottom: 8px; }
+.ops-header p { max-width: 760px; }
+.ops-clock { min-width: 190px; border: 1px solid var(--line); background: var(--panel); border-top: 4px solid var(--ops-red); border-radius: var(--radius); padding: 14px 18px; text-align: right; }
+.ops-clock span, .ops-clock small { display: block; color: var(--muted); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; }
+.ops-clock strong { display: block; font: 34px/1.2 Consolas, monospace; color: var(--ops-dark); letter-spacing: -1px; }
+.control-strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 0 0 22px; }
+.control-strip article { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--ops-blue); border-radius: var(--radius); padding: 14px 16px; }
+.control-strip article:nth-child(2) { border-left-color: var(--ops-red); }
+.control-strip article:nth-child(4) { border-left-color: var(--ops-yellow); }
+.control-strip span, .control-strip small { display: block; color: var(--muted); font-size: 10px; }
+.control-strip strong { display: block; font-size: 30px; line-height: 1.25; color: var(--ink); letter-spacing: -.8px; }
+.dispatch-grid { display: grid; grid-template-columns: minmax(0,1fr) 320px; gap: 18px; margin-bottom: 22px; }
+.board-main { padding: 0; }
+.board-main .panel-heading { padding: 22px 24px; margin: 0; border-bottom: 1px solid var(--line); }
+.flight-stack { display: grid; }
+.dispatch-flight { display: grid; grid-template-columns: minmax(180px,1fr) 90px 80px 100px; align-items: center; gap: 14px; padding: 14px 24px; border-bottom: 1px solid var(--line); }
+.dispatch-flight:last-child { border-bottom: 0; }
+.dispatch-flight strong, .dispatch-flight span { display: block; }
+.dispatch-flight time { font: 19px Consolas, monospace; color: var(--ops-dark); }
+.dispatch-flight .load { display: inline-flex; align-items: center; justify-content: center; width: 58px; height: 28px; background: #edf4fb; border: 1px solid #cfdeec; border-radius: 999px; color: var(--ops-blue); font-weight: 700; }
+.signal-panel { display: flex; flex-direction: column; gap: 10px; }
+.signal-panel h2 { margin: 2px 0 8px; }
+.signal { display: grid; grid-template-columns: 54px 1fr; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--line); background: #f7f9fb; border-radius: var(--radius); color: var(--ink); }
+.signal:hover { text-decoration: none; border-color: var(--ops-blue); }
+.signal b { display: grid; place-items: center; height: 42px; background: var(--ops-dark); color: white; border-radius: 5px; font: 700 12px Consolas, monospace; }
+.signal span { font-weight: 700; }
+.three-columns { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; margin-bottom: 22px; }
+.route-list { display: grid; gap: 8px; }
+.route-list div { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.route-list span, .mini-bulletin span { color: var(--muted); font-size: 12px; }
+.mini-bulletin { display: grid; gap: 8px; }
+.mini-bulletin strong { font-size: 30px; }
+.ops-layout { display: grid; grid-template-columns: 1.15fr .85fr; gap: 18px; margin-bottom: 22px; }
+.ops-timeline, .report-feed { display: grid; gap: 10px; }
+.ops-timeline article { display: grid; grid-template-columns: 70px 95px 1fr 65px; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+.ops-timeline time { font: 18px Consolas, monospace; color: var(--ops-blue); }
+.ops-timeline small { color: var(--muted); text-align: right; }
+.report-feed article { display: grid; grid-template-columns: 90px 1fr auto; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+.report-feed small { color: var(--muted); text-align: right; }
+.route-board { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
+.route-board article { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; background: #f8fafc; }
+.route-board i { height: 2px; background: linear-gradient(90deg,var(--ops-blue),var(--ops-red)); }
+.route-board span { grid-column: 1/-1; color: var(--muted); font-size: 11px; }
+.flight-filter { margin-bottom: 18px; }
+.flight-cards { display: grid; grid-template-columns: repeat(auto-fill,minmax(300px,1fr)); gap: 16px; }
+.line-card { display: grid; gap: 16px; }
+.line-card-head { display: flex; justify-content: space-between; gap: 12px; }
+.line-card h2 { font-size: 24px; margin: 5px 0 0; }
+.airport-pair { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; font: 700 23px Consolas, monospace; color: var(--ops-dark); }
+.airport-pair i { height: 3px; background: linear-gradient(90deg,var(--ops-blue),#fff,var(--ops-red)); border: 1px solid var(--line); }
+.line-meta { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 0; }
+.line-meta div { border: 1px solid var(--line); border-radius: 6px; padding: 8px; background: #f8fafc; }
+.line-meta dt { font-size: 9px; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; }
+.line-meta dd { margin: 0; font-weight: 700; }
+.fare-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.fare-chips span { border: 1px solid var(--line); background: #f5f8fb; border-radius: 999px; padding: 4px 8px; font-size: 10px; color: var(--muted); }
+
+html[data-era="2000"] .ops-clock,
+html[data-era="2000"] .control-strip article,
+html[data-era="2000"] .signal,
+html[data-era="2000"] .line-meta div,
+html[data-era="2000"] .route-board article { border-radius: 0; box-shadow: 2px 2px 0 #7f93b3; }
+html[data-era="2000"] .control-strip article { background: linear-gradient(#fff,#d9e7fb); }
+html[data-era="2000"] .signal b { background: #003399; border: 2px outset #9fb7df; }
+html[data-era="2000"] .airport-pair i,
+html[data-era="2000"] .route-board i { background: #003399; border: 0; height: 4px; }
+
+html[data-era="minitel"] .ops-clock,
+html[data-era="minitel"] .control-strip article,
+html[data-era="minitel"] .signal,
+html[data-era="minitel"] .line-meta div,
+html[data-era="minitel"] .route-board article { background: #07130c; border-color: #285e39; border-radius: 0; box-shadow: none; }
+html[data-era="minitel"] .ops-clock strong,
+html[data-era="minitel"] .dispatch-flight time,
+html[data-era="minitel"] .airport-pair { color: #99edb1; }
+html[data-era="minitel"] .signal b { background: #99edb1; color: #07130c; border-radius: 0; }
+html[data-era="minitel"] .dispatch-flight .load,
+html[data-era="minitel"] .fare-chips span { background: #102618; border-color: #285e39; color: #99edb1; }
+html[data-era="minitel"] .airport-pair i,
+html[data-era="minitel"] .route-board i { background: #99edb1; border: 0; }
+
+@media (max-width:1100px) {
+  .control-strip { grid-template-columns: repeat(3,1fr); }
+  .dispatch-grid, .ops-layout, .three-columns { grid-template-columns: 1fr; }
+  .dispatch-flight { grid-template-columns: minmax(160px,1fr) 80px 70px 90px; }
+  .route-board { grid-template-columns: 1fr; }
+}
+@media (max-width:760px) {
+  .ops-header { display: grid; }
+  .ops-clock { text-align: left; }
+  .control-strip { grid-template-columns: 1fr 1fr; }
+  .dispatch-flight { grid-template-columns: 1fr auto; }
+  .dispatch-flight .load, .dispatch-flight a { justify-self: start; }
+  .ops-timeline article, .report-feed article { grid-template-columns: 1fr; }
+  .ops-timeline small, .report-feed small { text-align: left; }
+  .flight-cards { grid-template-columns: 1fr; }
+  .airport-pair { font-size: 19px; }
+  .line-meta { grid-template-columns: 1fr; }
+}

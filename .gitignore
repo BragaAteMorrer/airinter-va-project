@@ -1,0 +1,20 @@
+# Hosting exports contain private account data; existing history is unchanged.
+/mail/
+/etc/
+/.cpanel/
+/.caldav/
+/.cagefs/
+/.softaculous/
+/.spamassassin/
+/logs/
+/.bash_history
+/prometheus/*.sql
+/prometheus/*.zip
+/prometheus/.env
+/prometheus/vendor/
+/prometheus/node_modules/
+/prometheus/bootstrap/cache/*.php
+/prometheus/storage/
+/.local/
+/acars/bin/
+/acars/obj/

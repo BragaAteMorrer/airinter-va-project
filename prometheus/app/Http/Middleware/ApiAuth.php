@@ -35,7 +35,7 @@ class ApiAuth implements Middleware
         // Try to find the user via API key. Cache this lookup
         $user = User::where('api_key', $api_key)->first();
         if ($user === null) {
-            return $this->unauthorized('User not found with key "'.$api_key.'"');
+            return $this->unauthorized('User not found');
         }
 
         if ($user->state !== UserState::ACTIVE && $user->state !== UserState::ON_LEAVE) {
