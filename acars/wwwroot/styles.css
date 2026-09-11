@@ -9,6 +9,11 @@
   --accent2: #3b78d8;
   font-family: Inter, Segoe UI, Arial, sans-serif;
 }
+@font-face {
+  font-family: "Minitel";
+  src: url("/fonts/Minitel.ttf") format("truetype");
+  font-display: swap;
+}
 * { box-sizing: border-box; }
 body { margin: 0; min-height: 100vh; display: grid; grid-template-columns: 260px 1fr; background: var(--bg); color: var(--text); }
 button, input, select { font: inherit; }
@@ -22,6 +27,9 @@ main { padding: 28px; }
 header { display: flex; align-items: start; justify-content: space-between; gap: 18px; margin-bottom: 28px; }
 h1 { margin: 4px 0 0; font-size: 44px; }
 h2 { margin: 0 0 18px; font-size: 24px; }
+.hint { color: var(--muted); max-width: 760px; margin: -6px 0 18px; }
+.legacy { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+.legacy summary { cursor: pointer; color: var(--muted); margin-bottom: 12px; }
 .kicker, label span, .cards span { color: var(--muted); }
 .status { display: grid; gap: 8px; min-width: 320px; }
 .status span { border: 1px solid var(--line); padding: 8px 10px; border-radius: 6px; background: #111927; }
@@ -54,10 +62,227 @@ body[data-era="web2000"] .rail { background: #eef2ff; }
 body[data-era="web2000"] button, body[data-era="web2000"] input, body[data-era="web2000"] select { background: linear-gradient(#fff,#d8e2f8); color: #101828; border-radius: 2px; }
 body[data-era="web2000"] pre, body[data-era="web2000"] .cards div, body[data-era="web2000"] .status span { background: white; color: #101828; border-radius: 2px; }
 
+/* Modern console: depth and focus feedback without making a flight tool noisy. */
+body[data-era="modern"] {
+  --bg: #091525;
+  --panel: rgb(19 37 59 / 88%);
+  --line: #294565;
+  --text: #edf5ff;
+  --muted: #9ab1ca;
+  --accent: #ff4d55;
+  --accent2: #59a3ff;
+  background: radial-gradient(circle at 82% 0%, #164775 0, transparent 35rem), var(--bg);
+}
+body[data-era="modern"] .rail { background: rgb(10 27 47 / 88%); backdrop-filter: blur(18px); }
+body[data-era="modern"] .tab, body[data-era="modern"] button, body[data-era="modern"] select, body[data-era="modern"] input { transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease; }
+body[data-era="modern"] .tab:hover, body[data-era="modern"] button:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgb(0 0 0 / 22%); }
+body[data-era="modern"] .cards div, body[data-era="modern"] pre, body[data-era="modern"] .status span { box-shadow: 0 12px 28px rgb(0 0 0 / 17%); }
+body[data-era="modern"] .cards div:hover { border-color: var(--accent2); transform: translateY(-2px); }
+
+/* A deliberate 2000–2004 application look: chrome, bevels and fixed panes. */
+body[data-era="web2000"] {
+  background-color: #b7c5d9;
+  background-image: repeating-linear-gradient(135deg, rgb(255 255 255 / 18%) 0 1px, transparent 1px 5px);
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+}
+body[data-era="web2000"] .rail {
+  background: linear-gradient(90deg, #d9e6f5, #f8fcff 16%, #d5e2f2);
+  border-right: 3px ridge #fff;
+  box-shadow: 2px 0 #7189aa;
+}
+body[data-era="web2000"] .mark { color: #003399; text-shadow: 1px 1px #fff; }
+body[data-era="web2000"] .tab, body[data-era="web2000"] button {
+  border: 2px outset #dceeff;
+  background: linear-gradient(#fff 0%, #c9dcf4 45%, #88add8 50%, #bcd4ef 100%);
+  color: #132d5b;
+  font-size: 11px;
+  font-weight: 700;
+  text-shadow: 1px 1px #fff;
+}
+body[data-era="web2000"] .tab.active, body[data-era="web2000"] button:hover { border-style: inset; background: linear-gradient(#b4cde9, #ecf5ff); color: #001d65; }
+body[data-era="web2000"] input, body[data-era="web2000"] select { border: 2px inset #aac0dc; }
+body[data-era="web2000"] pre, body[data-era="web2000"] .cards div, body[data-era="web2000"] .status span { border: 2px ridge #eef5ff; box-shadow: 2px 3px 0 #8297b5; }
+
+/* The local ACARS becomes a fast 40-column Videotex-inspired terminal. */
+body[data-era="minitel"] {
+  --bg: #020502;
+  --panel: #060b08;
+  --line: #f3ecc1;
+  --text: #f3ecc1;
+  --muted: #76dfcb;
+  --accent: #fff25b;
+  --accent2: #ff6767;
+  display: block;
+  max-width: 42rem;
+  margin: 0 auto;
+  border-inline: 2px solid #f3ecc1;
+  box-shadow: 0 0 0 4px #172116, 0 0 42px rgb(243 236 193 / 16%);
+  font-family: "Minitel", "Courier New", monospace;
+  font-size: 16px;
+  line-height: 1.25;
+  color-scheme: dark;
+  background-color: #020502;
+  background-image: repeating-linear-gradient(0deg, rgb(243 236 193 / 5%) 0 1px, transparent 1px 4px);
+  text-shadow: 0 0 5px rgb(243 236 193 / 22%);
+}
+body[data-era="minitel"] .rail, body[data-era="minitel"] main { padding: 10px 16px; background: transparent; border: 0; }
+body[data-era="minitel"] .rail { gap: 6px; border-bottom: 1px solid var(--line); }
+body[data-era="minitel"] .mark { color: var(--accent); font-family: inherit; font-size: 16px; line-height: 1.25; letter-spacing: 0; }
+body[data-era="minitel"] .mark::before { content: "3615 "; color: var(--muted); }
+body[data-era="minitel"] nav { display: block; }
+body[data-era="minitel"] .tab { display: block; width: 100%; padding: 2px 0; border: 0; background: transparent; color: var(--text); font-family: inherit; font-size: 16px; line-height: 1.25; text-transform: uppercase; box-shadow: none; }
+body[data-era="minitel"] .tab::before { content: "> "; color: var(--muted); }
+body[data-era="minitel"] .tab.active, body[data-era="minitel"] .tab:hover { background: transparent; color: var(--accent); border: 0; }
+body[data-era="minitel"] .tab.active::before { content: ">*"; color: var(--accent2); }
+body[data-era="minitel"] select, body[data-era="minitel"] input, body[data-era="minitel"] button { min-height: 20px; padding: 1px 3px; border: 1px solid var(--line); border-radius: 0; background: #060b08; color: var(--text); font-family: inherit; font-size: 16px; line-height: 1.25; box-shadow: none; }
+body[data-era="minitel"] main { min-height: 0; }
+body[data-era="minitel"] header { display: block; margin-bottom: 10px; }
+body[data-era="minitel"] h1, body[data-era="minitel"] h2, body[data-era="minitel"] .kicker, body[data-era="minitel"] label, body[data-era="minitel"] .cards span, body[data-era="minitel"] .hint { font-family: inherit; font-size: 16px; line-height: 1.25; letter-spacing: 0; }
+body[data-era="minitel"] h1, body[data-era="minitel"] h2 { color: var(--accent); font-weight: 400; text-transform: uppercase; }
+body[data-era="minitel"] h1 { font-size: 16px; margin: 5px 0; }
+body[data-era="minitel"] h1::before { content: "* "; color: var(--accent2); }
+body[data-era="minitel"] h2 { font-size: 16px; margin: 0 0 8px; }
+body[data-era="minitel"] .status { display: block; min-width: 0; }
+body[data-era="minitel"] .status span, body[data-era="minitel"] .cards div, body[data-era="minitel"] pre, body[data-era="minitel"] .list { margin: 0; padding: 5px 0; min-height: 0; border: 0; border-bottom: 1px dotted #718272; border-radius: 0; background: transparent; box-shadow: none; color: var(--text); font-family: inherit; font-size: 16px; line-height: 1.25; }
+body[data-era="minitel"] .grid, body[data-era="minitel"] .cards { display: block; margin: 0; }
+body[data-era="minitel"] label { display: block; padding: 3px 0; color: var(--muted); }
+body[data-era="minitel"] label input { margin-top: 2px; }
+body[data-era="minitel"] .tools { display: block; margin: 0; }
+body[data-era="minitel"] .tools > * { width: 100%; margin: 2px 0; }
+body[data-era="minitel"] .flight { display: flex; justify-content: space-between; border: 0; border-bottom: 1px dotted #718272; }
+body[data-era="minitel"] button:hover { background: var(--text); color: #060b08; }
+body[data-era="minitel"] button:focus-visible, body[data-era="minitel"] input:focus-visible, body[data-era="minitel"] select:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
+
+@keyframes minitel-acars-line { from { opacity: 0; transform: translateY(.55em); } to { opacity: 1; transform: translateY(0); } }
+body[data-era="minitel"].minitel-enter .panel.active > *, body[data-era="minitel"].minitel-enter header > * { animation: minitel-acars-line 90ms steps(2, end) both; animation-delay: calc(var(--minitel-line, 0) * 40ms); }
+
+@media (prefers-reduced-motion: reduce) { body[data-era] * { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
 @media (max-width: 820px) {
   body { grid-template-columns: 1fr; }
   .rail { position: static; border-right: 0; border-bottom: 1px solid var(--line); }
   header { display: grid; }
   .status { min-width: 0; }
   .cards { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+}
+
+/* Keep the companion in the same square terminal format as the portal. */
+body[data-era="minitel"] {
+  --minitel-terminal-size: min(42rem, calc(100vw - 2rem), calc(100vh - 2rem));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 10rem minmax(0, 1fr);
+  width: var(--minitel-terminal-size);
+  height: var(--minitel-terminal-size);
+  min-height: 0;
+  margin: 1rem auto;
+  overflow: hidden;
+  border: 2px solid var(--line);
+  box-shadow: 0 0 0 5px #172116, 0 0 42px rgb(243 236 193 / 16%);
+}
+
+body[data-era="minitel"] .rail {
+  grid-row: 1;
+  padding: 7px 12px;
+  overflow: hidden;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+}
+
+body[data-era="minitel"] .rail nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0;
+}
+
+body[data-era="minitel"] .rail .tab { width: auto; }
+
+body[data-era="minitel"] main {
+  grid-row: 2;
+  min-height: 0;
+  padding: 8px 12px 14px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--line) #060b08;
+  scrollbar-width: thin;
+}
+
+body[data-era="minitel"] main::-webkit-scrollbar { width: 8px; }
+body[data-era="minitel"] main::-webkit-scrollbar-track { background: #060b08; }
+body[data-era="minitel"] main::-webkit-scrollbar-thumb { background: var(--line); }
+
+@media (max-width: 820px) {
+  body[data-era="minitel"] {
+    --minitel-terminal-size: min(calc(100vw - 1rem), calc(100vh - 1rem));
+    grid-template-rows: 9rem minmax(0, 1fr);
+    margin: .5rem auto;
+  }
+  body[data-era="minitel"] .rail nav { grid-template-columns: 1fr; }
+  body[data-era="minitel"] .rail .tab,
+  body[data-era="minitel"] .mark,
+  body[data-era="minitel"] h1,
+  body[data-era="minitel"] h2 { font-size: 12px; }
+}
+
+/* Same eight-colour Videotex vocabulary as the Promethee portal. */
+body[data-era="minitel"] {
+  --minitel-black: #000;
+  --minitel-blue: #00f;
+  --minitel-red: #f00;
+  --minitel-green: #0f0;
+  --minitel-yellow: #ff0;
+  --minitel-magenta: #f0f;
+  --minitel-cyan: #0ff;
+  --minitel-white: #fff;
+  --bg: var(--minitel-black);
+  --panel: var(--minitel-black);
+  --line: var(--minitel-white);
+  --text: var(--minitel-white);
+  --muted: var(--minitel-cyan);
+  --accent: var(--minitel-yellow);
+  --accent2: var(--minitel-magenta);
+  position: relative;
+  background: var(--minitel-black);
+  background-image: none;
+  text-shadow: none;
+  border-color: #8a8a8a;
+  box-shadow: 0 0 0 5px #6f6f6f, 0 0 0 10px #111;
+}
+body[data-era="minitel"] .rail,
+body[data-era="minitel"] main,
+body[data-era="minitel"] pre,
+body[data-era="minitel"] .list,
+body[data-era="minitel"] .cards div,
+body[data-era="minitel"] .status span { background: var(--minitel-black); box-shadow: none; }
+body[data-era="minitel"] .mark { display: inline-block; padding: 2px 6px; background: var(--minitel-blue); color: var(--minitel-white); }
+body[data-era="minitel"] .mark::before { color: var(--minitel-yellow); }
+body[data-era="minitel"] h1, body[data-era="minitel"] h2 { color: var(--minitel-yellow); }
+body[data-era="minitel"] .kicker, body[data-era="minitel"] label, body[data-era="minitel"] .cards span, body[data-era="minitel"] .hint { color: var(--minitel-cyan); }
+body[data-era="minitel"] button, body[data-era="minitel"] input, body[data-era="minitel"] select { border-color: var(--minitel-green); background: var(--minitel-green); color: var(--minitel-black); }
+body[data-era="minitel"] button:hover { border-color: var(--minitel-yellow); background: var(--minitel-yellow); color: var(--minitel-black); }
+body[data-era="minitel"] .tab.active, body[data-era="minitel"] .tab:hover { color: var(--minitel-yellow); }
+body[data-era="minitel"] .tab.active::before { color: var(--minitel-magenta); }
+
+body[data-era="minitel"] #minitel-screen {
+  position: absolute;
+  z-index: 20;
+  inset: 0;
+  display: block;
+  margin: 0;
+  padding: clamp(18px, 5%, 38px);
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: var(--minitel-black);
+  color: var(--minitel-yellow);
+  box-shadow: none;
+  font: 16px/1.25 "Minitel", "Courier New", monospace;
+  text-shadow: none;
+  white-space: pre;
+  transition: opacity 90ms steps(2, end);
+}
+body[data-era="minitel"] #minitel-screen.is-complete { opacity: 0; }
+
+@media (max-width: 820px) {
+  body[data-era="minitel"] #minitel-screen { padding: 16px; font-size: 12px; }
 }

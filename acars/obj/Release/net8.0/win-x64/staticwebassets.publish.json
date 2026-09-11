@@ -1,0 +1,77 @@
+{
+  "Version": 1,
+  "Hash": "FTfhmSb/EguW13RdBM3w3osmbLmgFu36acsMISkHKu4=",
+  "Source": "Promethee.Acars",
+  "BasePath": "_content/Promethee.Acars",
+  "Mode": "Default",
+  "ManifestType": "Publish",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "Promethee.Acars\\wwwroot",
+      "Source": "Promethee.Acars",
+      "ContentRoot": "\\\\wsl.localhost\\Ubuntu\\home\\bragaatemorrer\\Projet_perso\\airinter-va-project\\acars\\wwwroot\\",
+      "BasePath": "_content/Promethee.Acars",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": [
+    {
+      "Identity": "\\\\wsl.localhost\\Ubuntu\\home\\bragaatemorrer\\Projet_perso\\airinter-va-project\\acars\\wwwroot\\app.js",
+      "SourceId": "Promethee.Acars",
+      "SourceType": "Discovered",
+      "ContentRoot": "\\\\wsl.localhost\\Ubuntu\\home\\bragaatemorrer\\Projet_perso\\airinter-va-project\\acars\\wwwroot\\",
+      "BasePath": "_content/Promethee.Acars",
+      "RelativePath": "app.js",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\app.js"
+    },
+    {
+      "Identity": "\\\\wsl.localhost\\Ubuntu\\home\\bragaatemorrer\\Projet_perso\\airinter-va-project\\acars\\wwwroot\\index.html",
+      "SourceId": "Promethee.Acars",
+      "SourceType": "Discovered",
+      "ContentRoot": "\\\\wsl.localhost\\Ubuntu\\home\\bragaatemorrer\\Projet_perso\\airinter-va-project\\acars\\wwwroot\\",
+      "BasePath": "_content/Promethee.Acars",
+      "RelativePath": "index.html",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\index.html"
+    },
+    {
+      "Identity": "\\\\wsl.localhost\\Ubuntu\\home\\bragaatemorrer\\Projet_perso\\airinter-va-project\\acars\\wwwroot\\styles.css",
+      "SourceId": "Promethee.Acars",
+      "SourceType": "Discovered",
+      "ContentRoot": "\\\\wsl.localhost\\Ubuntu\\home\\bragaatemorrer\\Projet_perso\\airinter-va-project\\acars\\wwwroot\\",
+      "BasePath": "_content/Promethee.Acars",
+      "RelativePath": "styles.css",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\styles.css"
+    }
+  ]
+}

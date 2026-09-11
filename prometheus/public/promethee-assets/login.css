@@ -1,0 +1,628 @@
+@font-face {
+    font-family: Minitel;
+    src: url("fonts/Minitel.ttf") format("truetype");
+    font-display: swap
+}
+
+:root {
+    --navy: #0c2856;
+    --blue: #1765e9;
+    --red: #ec434c;
+    --paper: #f3f6fb;
+    --panel: #fff;
+    --ink: #102b56;
+    --muted: #61718d;
+    --line: #d7e1ef
+}
+
+* {
+    box-sizing: border-box
+}
+
+body.promethee-auth {
+    min-height: 100vh;
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: Inter, "Segoe UI", Arial, sans-serif
+}
+
+.login-shell {
+    min-height: 100vh;
+    padding: clamp(18px, 4vw, 48px);
+    background: radial-gradient(circle at 88% 0, #dce9ff 0, transparent 32rem), var(--paper)
+}
+
+.login-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    width: min(1120px, 100%);
+    margin: 0 auto 28px
+}
+
+.login-wordmark {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--navy);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .14em
+}
+
+.login-wordmark:before {
+    width: 40px;
+    height: 32px;
+    content: "";
+    display: block;
+
+    background-image: url("../promethee-assets/logos/air-inter-1970s.png");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+
+    flex-shrink: 0;
+}
+
+.login-era {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700
+}
+
+.login-era select {
+    min-height: 38px;
+    padding: 0 34px 0 12px;
+    border: 1px solid #bdcce2;
+    border-radius: 9px;
+    background: #fff;
+    color: var(--ink);
+    font: inherit
+}
+
+.login-layout {
+    display: grid;
+    grid-template-columns: minmax(240px, .9fr) minmax(340px, 1fr);
+    width: min(1120px, 100%);
+    min-height: 560px;
+    margin: auto;
+    overflow: hidden;
+    border: 1px solid #d8e3f1;
+    border-radius: 22px;
+    background: var(--panel);
+    box-shadow: 0 22px 60px #0d2b561f
+}
+
+.login-intro {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: clamp(30px, 5vw, 58px);
+    background: linear-gradient(145deg, #092b5e, #1765e9);
+    color: #fff
+}
+
+.login-intro small {
+    color: #b8d1ff;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .16em
+}
+
+.login-intro h1 {
+    max-width: 430px;
+    margin: 16px 0;
+    font-size: clamp(34px, 4vw, 56px);
+    line-height: 1.03;
+    letter-spacing: -2px
+}
+
+.login-intro p {
+    max-width: 390px;
+    margin: 0;
+    color: #d3e4ff;
+    line-height: 1.65
+}
+
+.login-route {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    margin-top: 44px;
+    color: #d8e8ff;
+    font-size: 12px
+}
+
+.login-route b {
+    display: grid;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+    border-radius: 10px;
+    background: #ffffff24;
+    color: #fff
+}
+
+.login-panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: clamp(30px, 5vw, 70px)
+}
+
+.login-panel .alert {
+    margin-bottom: 20px
+}
+
+.login-form-heading {
+    margin-bottom: 28px
+}
+
+.login-form-heading h2 {
+    margin: 0 0 8px;
+    font-size: 28px;
+    letter-spacing: -1px
+}
+
+.login-form-heading p {
+    margin: 0;
+    color: var(--muted)
+}
+
+.login-form label {
+    display: block;
+    margin-bottom: 7px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 750
+}
+
+.login-form .field {
+    margin-bottom: 19px
+}
+
+.login-form input {
+    width: 100%;
+    min-height: 47px;
+    padding: 10px 13px;
+    border: 1px solid #c9d6e7;
+    border-radius: 9px;
+    background: #fff;
+    color: var(--ink);
+    font: inherit
+}
+
+.login-form input:focus {
+    outline: 0;
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px #1765e921
+}
+
+.login-form input:disabled {
+    cursor: not-allowed;
+    background: #edf1f7;
+    color: #90a0b6
+}
+
+.login-submit {
+    width: 100%;
+    min-height: 47px;
+    border: 0;
+    border-radius: 9px;
+    background: var(--blue);
+    color: #fff;
+    font: inherit;
+    font-weight: 800;
+    cursor: pointer
+}
+
+.login-submit:hover:not(:disabled) {
+    box-shadow: 0 8px 18px #1765e947;
+    transform: translateY(-1px)
+}
+
+.login-submit:disabled {
+    cursor: not-allowed;
+    opacity: .48
+}
+
+.login-links {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    margin-top: 21px;
+    font-size: 12px
+}
+
+.login-links a {
+    color: var(--blue)
+}
+
+.oauth-login {
+    display: grid;
+    gap: 9px;
+    margin-top: 14px
+}
+
+.oauth-login a {
+    display: block;
+    padding: 10px;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+    text-decoration: none
+}
+
+.minitel-access {
+    margin: 0 0 20px;
+    padding: 13px;
+    border: 1px solid #b8c8df;
+    border-radius: 9px;
+    background: #f7faff
+}
+
+.minitel-access[hidden] {
+    display: none
+}
+
+.minitel-access p {
+    margin: 0 0 8px;
+    color: #39557d;
+    font-size: 12px
+}
+
+.minitel-access strong {
+    color: #163d78
+}
+
+.minitel-access-status {
+    min-height: 17px;
+    margin-top: 7px;
+    font-size: 11px
+}
+
+.login-footer {
+    width: min(1120px, 100%);
+    margin: 24px auto 0;
+    color: var(--muted);
+    font-size: 11px;
+    text-align: center
+}
+
+html[data-login-era="2000"] {
+    --paper: #b9c8dc;
+    --panel: #f7fbff;
+    --ink: #102858;
+    --muted: #425d86;
+    --line: #7189af
+}
+
+[data-login-era="2000"] .login-shell {
+    background-color: #b9c8dc;
+    background-image: repeating-linear-gradient(135deg, #fff3 0 1px, transparent 1px 5px);
+    font-family: Tahoma, Verdana, Arial, sans-serif
+}
+
+[data-login-era="2000"] .login-topbar {
+    max-width: 960px;
+    padding: 6px 10px;
+    border: 2px ridge #f7fbff;
+    background: linear-gradient(#fff, #c4d6ed)
+}
+
+[data-login-era="2000"] .login-layout {
+    max-width: 960px;
+    min-height: 500px;
+    border: 3px ridge #eff7ff;
+    border-radius: 0;
+    box-shadow: 3px 4px 0 #677f9e
+}
+
+[data-login-era="2000"] .login-intro {
+    background: linear-gradient(#2d68b3, #0b367b 55%, #1c559e);
+    border-right: 2px ridge #d7e7fb
+}
+
+[data-login-era="2000"] .login-intro h1 {
+    font-family: Verdana, Arial, sans-serif;
+    font-size: 34px;
+    letter-spacing: -1px;
+    text-shadow: 2px 2px #071d4d
+}
+
+[data-login-era="2000"] .login-panel {
+    background: linear-gradient(135deg, #fff, #e5eef9)
+}
+
+[data-login-era="2000"] .login-form input,
+[data-login-era="2000"] .login-era select {
+    border: 2px inset #aac0dc;
+    border-radius: 0
+}
+
+[data-login-era="2000"] .login-submit {
+    border: 2px outset #dceeff;
+    border-radius: 2px;
+    background: linear-gradient(#fff, #c2d9f4 45%, #699bd2 50%, #b7d3ee);
+    color: #123267;
+    text-shadow: 1px 1px #fff
+}
+
+[data-login-era="2000"] .login-submit:active {
+    border-style: inset
+}
+
+html[data-login-era="minitel"] {
+    background: #000
+}
+
+[data-login-era="minitel"] body.promethee-auth {
+    background: #000;
+    color: #fff;
+    font-family: Minitel, "Courier New", monospace
+}
+
+[data-login-era="minitel"] .login-shell {
+    display: grid;
+    width: min(42rem, calc(100vw - 2rem), calc(100vh - 2rem));
+    height: min(42rem, calc(100vw - 2rem), calc(100vh - 2rem));
+    min-height: 0;
+    margin: 1rem auto;
+    padding: 0;
+    overflow: auto;
+    border: 2px solid #888;
+    background: #000;
+    box-shadow: 0 0 0 5px #6f6f6f, 0 0 0 10px #111
+}
+
+[data-login-era="minitel"] .login-topbar {
+    width: 100%;
+    margin: 0;
+    padding: 7px 12px;
+    border-bottom: 1px solid #fff;
+    background: #000
+}
+
+[data-login-era="minitel"] .login-wordmark {
+    color: #fff;
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 1.25;
+    letter-spacing: .08em
+}
+
+[data-login-era="minitel"] .login-wordmark:before {
+    width: auto;
+    height: auto;
+    content: "3615";
+    background: #00f;
+    color: #fff;
+    padding: 1px 5px;
+    transform: none
+}
+
+[data-login-era="minitel"] .login-era {
+    color: #0ff;
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 1.25
+}
+
+[data-login-era="minitel"] .login-era select {
+    min-height: 24px;
+    padding: 1px 4px;
+    border: 1px solid #0f0;
+    border-radius: 0;
+    background: #0f0;
+    color: #000;
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 1.25
+}
+
+[data-login-era="minitel"] .login-layout {
+    display: block;
+    width: 100%;
+    min-height: 0;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: #000
+}
+
+[data-login-era="minitel"] .login-intro {
+    min-height: 0;
+    padding: 12px;
+    border-bottom: 1px solid #fff;
+    background: #000
+}
+
+[data-login-era="minitel"] .login-intro small,
+[data-login-era="minitel"] .login-intro p,
+[data-login-era="minitel"] .login-route {
+    display: none
+}
+
+[data-login-era="minitel"] .login-intro h1 {
+    margin: 0;
+    color: #ff0;
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 1.25;
+    letter-spacing: 0;
+    text-shadow: none
+}
+
+[data-login-era="minitel"] .login-intro h1:before {
+    content: "* ";
+    color: #f00
+}
+
+[data-login-era="minitel"] .login-panel {
+    display: block;
+    padding: 12px;
+    background: #000
+}
+
+[data-login-era="minitel"] .login-form-heading {
+    margin-bottom: 11px
+}
+
+[data-login-era="minitel"] .login-form-heading h2 {
+    margin: 0;
+    padding: 2px 5px;
+    background: #00f;
+    color: #fff;
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 1.25;
+    letter-spacing: 0
+}
+
+[data-login-era="minitel"] .login-form-heading p {
+    margin: 7px 0 0;
+    color: #0ff;
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 1.25
+}
+
+[data-login-era="minitel"] .minitel-access {
+    padding: 8px 0;
+    border: 0;
+    border-bottom: 1px dotted #fff;
+    border-radius: 0;
+    background: #000
+}
+
+[data-login-era="minitel"] .minitel-access p {
+    color: #ff0;
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 1.25
+}
+
+[data-login-era="minitel"] .minitel-access strong {
+    color: #fff
+}
+
+[data-login-era="minitel"] .minitel-access-status {
+    color: #f0f;
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 1.25
+}
+
+[data-login-era="minitel"] .login-form .field {
+    margin-bottom: 9px
+}
+
+[data-login-era="minitel"] .login-form label {
+    margin-bottom: 2px;
+    color: #0ff;
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 1.25
+}
+
+[data-login-era="minitel"] .login-form input {
+    min-height: 25px;
+    padding: 1px 4px;
+    border: 1px solid #0f0;
+    border-radius: 0;
+    background: #0f0;
+    color: #000;
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 1.25
+}
+
+[data-login-era="minitel"] .login-form input:disabled {
+    border-color: #666;
+    background: #222;
+    color: #888
+}
+
+[data-login-era="minitel"] .login-submit {
+    min-height: 26px;
+    border: 1px solid #0f0;
+    border-radius: 0;
+    background: #0f0;
+    color: #000;
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 1.25
+}
+
+[data-login-era="minitel"] .login-submit:hover:not(:disabled) {
+    border-color: #ff0;
+    background: #ff0;
+    box-shadow: none;
+    transform: none
+}
+
+[data-login-era="minitel"] .login-links {
+    margin-top: 12px;
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 1.25
+}
+
+[data-login-era="minitel"] .login-links a {
+    color: #0ff;
+    text-decoration: none
+}
+
+[data-login-era="minitel"] .oauth-login,
+[data-login-era="minitel"] .login-footer {
+    display: none
+}
+
+@media(max-width:760px) {
+    .login-shell {
+        padding: 14px
+    }
+
+    .login-topbar {
+        margin-bottom: 14px
+    }
+
+    .login-layout {
+        grid-template-columns: 1fr;
+        min-height: 0
+    }
+
+    .login-intro {
+        min-height: 220px;
+        padding: 30px
+    }
+
+    [data-login-era="minitel"] .login-shell {
+        width: min(calc(100vw - 1rem), calc(100vh - 1rem));
+        height: min(calc(100vw - 1rem), calc(100vh - 1rem));
+        margin: .5rem auto
+    }
+
+    [data-login-era="minitel"] .login-wordmark,
+    [data-login-era="minitel"] .login-era,
+    [data-login-era="minitel"] .login-era select,
+    [data-login-era="minitel"] .login-intro h1,
+    [data-login-era="minitel"] .login-form-heading h2,
+    [data-login-era="minitel"] .login-form-heading p,
+    [data-login-era="minitel"] .minitel-access p,
+    [data-login-era="minitel"] .minitel-access-status,
+    [data-login-era="minitel"] .login-form label,
+    [data-login-era="minitel"] .login-form input,
+    [data-login-era="minitel"] .login-submit,
+    [data-login-era="minitel"] .login-links {
+        font-size: 12px
+    }
+}

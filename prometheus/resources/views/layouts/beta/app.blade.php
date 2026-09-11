@@ -19,6 +19,7 @@
   <link href="{{ public_asset('/assets/frontend/css/bootstrap.min.css') }}" rel="stylesheet"/>
   <link href="{{ public_mix('/assets/frontend/css/now-ui-kit.css') }}" rel="stylesheet"/>
   <link href="{{ public_asset('/assets/frontend/css/styles.css') }}" rel="stylesheet"/>
+  <link href="{{ public_asset('/promethee-assets/global-shell.css') }}" rel="stylesheet"/>
 
   {{-- Start of the required files in the head block --}}
   <link href="{{ public_mix('/assets/global/css/vendor.css') }}" rel="stylesheet"/>
@@ -27,7 +28,7 @@
   {{-- End of the required stuff in the head block --}}
 
 </head>
-<body>
+<body class="promethee-shell">
 <!-- Navbar -->
 <nav class="navbar navbar-expand-lg " style="background: #067ec1;">
   <a class="navbar-brand text-white" href="{{ url('/') }}" style="margin-left: 20px;">

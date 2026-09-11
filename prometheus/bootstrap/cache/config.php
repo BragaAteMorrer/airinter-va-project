@@ -3459,7 +3459,7 @@
       'width' => '200',
       'height' => '200',
     ),
-    'login_redirect' => '/dashboard',
+    'login_redirect' => '/',
     'registration_redirect' => '/profile',
     'metar_lookup' => 'App\\Services\\Metar\\AviationWeather',
     'airport_lookup' => 'App\\Services\\AirportLookup\\VaCentralLookup',

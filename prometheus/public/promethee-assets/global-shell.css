@@ -1,0 +1,43 @@
+/* Prométhée shell for legacy phpVMS pages: same language, existing workflows. */
+:root { --pm-navy:#102a56; --pm-blue:#155eef; --pm-red:#e5484d; --pm-paper:#f4f7fb; --pm-panel:#fff; --pm-line:#dce5f2; --pm-ink:#172b4d; --pm-muted:#60708a; }
+body.promethee-shell, body.admin-promethee { background:var(--pm-paper); color:var(--pm-ink); font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif; }
+body.promethee-login { min-height:100vh; background:radial-gradient(circle at 82% 8%,rgb(73 137 255 / 32%),transparent 30rem),linear-gradient(135deg,#081d40,#155eef)!important; color:var(--pm-ink); font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif; }
+.promethee-login .page-header { min-height:100vh; background:transparent; }
+.promethee-login .card, .promethee-login .login-page .card { border:1px solid rgb(255 255 255 / 36%); border-radius:16px; box-shadow:0 22px 55px rgb(0 14 45 / 28%); }
+.promethee-shell .navbar { min-height:70px; margin:0; border:0; background:linear-gradient(110deg,#0a2045,#155eef)!important; box-shadow:0 7px 22px rgb(11 35 76 / 18%); }
+.promethee-shell .navbar-brand img { max-height:42px; width:auto!important; }
+.promethee-shell .navbar a, .promethee-shell .navbar .nav-link { color:#fff!important; font-size:13px; }
+.promethee-shell #top_anchor { height:26px!important; }
+.promethee-shell .container-fluid { max-width:1500px; width:calc(100% - 48px)!important; }
+.promethee-shell .card, .promethee-shell .panel, .promethee-shell .table-responsive { border:1px solid var(--pm-line); border-radius:14px; background:var(--pm-panel); box-shadow:0 10px 28px rgb(20 48 93 / 8%); overflow:hidden; }
+.promethee-shell .card { margin-bottom:20px; }
+.promethee-shell .card .card-body { padding:22px; }
+.promethee-shell .card-primary, .promethee-shell .nav-tabs { background:var(--pm-navy)!important; border:0!important; }
+.promethee-shell .btn, .promethee-shell button { border-radius:9px; border-color:var(--pm-blue); background:var(--pm-blue); font-weight:700; }
+.promethee-shell .btn:hover, .promethee-shell button:hover { background:#104bd1; border-color:#104bd1; }
+.promethee-shell table { background:#fff; }
+.promethee-shell thead th { background:#f2f6fc; color:var(--pm-muted); font-size:11px; letter-spacing:.08em; text-transform:uppercase; border-color:var(--pm-line); }
+.promethee-shell td { border-color:var(--pm-line)!important; }
+.promethee-shell .footer { margin-top:42px; border-top:1px solid var(--pm-line); background:#fff; }
+
+body.admin-promethee .wrapper { min-height:100vh; }
+body.admin-promethee .sidebar { background:linear-gradient(165deg,#0a2045,#12346c); box-shadow:8px 0 28px rgb(11 35 76 / 13%); }
+body.admin-promethee .sidebar .logo { min-height:84px!important; background:transparent!important; border-bottom:1px solid rgb(255 255 255 / 16%); display:grid; place-items:center; }
+body.admin-promethee .sidebar .nav li>a { color:#c7d6eb; border-radius:8px; margin:3px 12px; padding:12px; transition:background .15s ease; }
+body.admin-promethee .sidebar .nav li.active>a, body.admin-promethee .sidebar .nav li>a:hover { background:linear-gradient(90deg,rgb(76 135 246 / 42%),rgb(255 255 255 / 9%)); color:#fff; }
+body.admin-promethee .sidebar .nav i, body.admin-promethee .sidebar .nav p { color:inherit; }
+body.admin-promethee .main-panel { background:var(--pm-paper); }
+body.admin-promethee .navbar.navbar-default { min-height:70px; border:0; background:rgb(255 255 255 / 88%); box-shadow:0 1px 0 var(--pm-line); }
+body.admin-promethee .navbar .navbar-brand { color:var(--pm-navy); font-weight:800; }
+body.admin-promethee .admin-kicker { display:block; margin-bottom:2px; color:var(--pm-blue); font-size:9px; font-weight:800; letter-spacing:.13em; }
+body.admin-promethee .navbar-nav>li>a { color:var(--pm-muted); font-size:12px; font-weight:700; }
+body.admin-promethee .navbar-nav>li>a:hover { color:var(--pm-blue); }
+body.admin-promethee .content { padding-top:22px; }
+body.admin-promethee .card, body.admin-promethee .panel, body.admin-promethee .content .well { border:1px solid var(--pm-line); border-radius:14px; box-shadow:0 10px 28px rgb(20 48 93 / 8%); background:#fff; }
+body.admin-promethee .card .content, body.admin-promethee .panel-body { padding:20px; }
+body.admin-promethee .btn { border-radius:9px; font-weight:700; }
+body.admin-promethee .btn-info, body.admin-promethee .btn-primary { background:var(--pm-blue); border-color:var(--pm-blue); }
+body.admin-promethee .table>thead>tr>th { color:var(--pm-muted); background:#f2f6fc; font-size:11px; letter-spacing:.08em; text-transform:uppercase; border-bottom-color:var(--pm-line); }
+body.admin-promethee .table>tbody>tr>td { border-top-color:var(--pm-line); }
+body.admin-promethee .footer { border-top:1px solid var(--pm-line); background:#fff; }
+@media(max-width:991px){.promethee-shell .container-fluid{width:calc(100% - 24px)!important}.promethee-shell .navbar-brand{margin-left:0!important}.admin-promethee .sidebar{overflow-y:auto}.admin-promethee .main-panel{width:100%}}

@@ -2,7 +2,8 @@ using System.Runtime.InteropServices;
 
 namespace Promethee;
 public record Sample(Guid SampleId, DateTimeOffset RecordedAt, double Lat, double Lon, double Altitude,
-    double Agl, double Ias, double Gs, double Vs, double Heading, double Fuel, bool OnGround, double Bank, bool GearDown, double TouchdownVelocity);
+    double Agl, double Ias, double Gs, double Vs, double Heading, double Fuel, bool OnGround, double Bank, bool GearDown, double TouchdownVelocity,
+    double Flaps, bool ThrustStable, double LocalizerDots, double GlideslopeDots, bool ParkingBrake);
 
 public sealed class SimConnectReader : IDisposable
 {
@@ -16,7 +17,7 @@ public sealed class SimConnectReader : IDisposable
         ("PLANE ALT ABOVE GROUND","feet"),("AIRSPEED INDICATED","knots"),("GROUND VELOCITY","knots"),
         ("VERTICAL SPEED","feet per minute"),("PLANE HEADING DEGREES TRUE","degrees"),
         ("FUEL TOTAL QUANTITY WEIGHT","pounds"),("SIM ON GROUND","bool"),("PLANE BANK DEGREES","degrees"),
-        ("GEAR TOTAL PCT EXTENDED","percent"),("PLANE TOUCHDOWN NORMAL VELOCITY","feet per second")];
+        ("GEAR TOTAL PCT EXTENDED","percent"),("PLANE TOUCHDOWN NORMAL VELOCITY","feet per second"),("FLAPS HANDLE PERCENT","percent"),("AUTOPILOT THROTTLE ARM","bool"),("NAV CDI:1","number"),("NAV GSI:1","number"),("BRAKE PARKING POSITION","bool")];
     public SimConnectReader()
     {
         callback = Receive;
@@ -54,7 +55,7 @@ public sealed class SimConnectReader : IDisposable
         if (id!=8 || length<40+definitions.Length*8 || Marshal.ReadInt32(data,12)!=1) return;
         var v=new double[definitions.Length]; Marshal.Copy(IntPtr.Add(data,40),v,0,v.Length);
         if (v.Any(x=>!double.IsFinite(x)) || Math.Abs(v[0])>90 || Math.Abs(v[1])>180) return;
-        Latest=new Sample(Guid.NewGuid(),DateTimeOffset.UtcNow,v[0],v[1],v[2],v[3],v[4],v[5],v[6],v[7],v[8],v[9]!=0,v[10],v[11]>=99,v[12]);
+        Latest=new Sample(Guid.NewGuid(),DateTimeOffset.UtcNow,v[0],v[1],v[2],v[3],v[4],v[5],v[6],v[7],v[8],v[9]!=0,v[10],v[11]>=99,v[12],v[13],v[14]!=0,v[15],v[16],v[17]!=0);
         Status="Simulateur connecté";
         Received?.Invoke(Latest);
     }

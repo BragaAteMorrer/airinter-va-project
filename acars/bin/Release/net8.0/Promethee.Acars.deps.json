@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "Promethee.Acars/1.0.0": {
+        "runtime": {
+          "Promethee.Acars.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Promethee.Acars/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
