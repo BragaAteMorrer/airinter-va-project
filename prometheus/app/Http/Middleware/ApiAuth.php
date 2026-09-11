@@ -12,6 +12,8 @@ use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class ApiAuth implements Middleware
 {
@@ -23,19 +25,39 @@ class ApiAuth implements Middleware
      */
     public function handle(Request $request, Closure $next)
     {
-        // Check if Authorization header is in place
+        // A short-lived ACARS bearer token is preferred for the desktop client.
+        // Keep the historical API-key flow for existing third-party clients.
         $api_key = $request->header('x-api-key', null);
-        if ($api_key === null) {
-            $api_key = $request->header('Authorization', null);
-            if ($api_key === null) {
-                return $this->unauthorized('X-API-KEY header missing');
+        $authorization = $request->header('Authorization', '');
+        $user = null;
+
+        if (Str::startsWith($authorization, 'Bearer ')) {
+            $token = trim(Str::after($authorization, 'Bearer '));
+            if ($token !== '') {
+                $tokenRecord = DB::table('acars_access_tokens')
+                    ->where('token_hash', hash('sha256', $token))
+                    ->whereNull('revoked_at')
+                    ->where('expires_at', '>', now())
+                    ->first();
+
+                if ($tokenRecord !== null) {
+                    $user = User::find($tokenRecord->user_id);
+                    DB::table('acars_access_tokens')->where('id', $tokenRecord->id)->update([
+                        'last_used_at' => now(),
+                    ]);
+                }
             }
+        } elseif ($api_key === null && $authorization !== '') {
+            // phpVMS historically accepted a raw Authorization header as an API key.
+            $api_key = $authorization;
         }
 
-        // Try to find the user via API key. Cache this lookup
-        $user = User::where('api_key', $api_key)->first();
+        if ($user === null && $api_key !== null) {
+            $user = User::where('api_key', $api_key)->first();
+        }
+
         if ($user === null) {
-            return $this->unauthorized('User not found');
+            return $this->unauthorized('Invalid credentials');
         }
 
         if ($user->state !== UserState::ACTIVE && $user->state !== UserState::ON_LEAVE) {

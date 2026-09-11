@@ -36,11 +36,20 @@
 
     <section id="connect" class="panel active">
       <h2>Connexion phpVMS</h2>
-      <form id="configForm" class="grid">
+      <p class="hint">Connexion pilote sécurisée : votre mot de passe n'est jamais enregistré. La session ACARS expire automatiquement après 12 heures.</p>
+      <form id="loginForm" class="grid">
         <label>Serveur phpVMS<input name="server" value="http://127.0.0.1:8088"></label>
-        <label>Clé API pilote<input name="apiKey" type="password" autocomplete="off"></label>
+        <label>Identifiant pilote ou e-mail<input name="login" autocomplete="username"></label>
+        <label>Mot de passe<input name="password" type="password" autocomplete="current-password"></label>
         <button>Connecter</button>
       </form>
+      <details class="legacy"><summary>Utiliser une clé API existante</summary>
+        <form id="configForm" class="grid">
+          <label>Serveur phpVMS<input name="server" value="http://127.0.0.1:8088"></label>
+          <label>Clé API pilote<input name="apiKey" type="password" autocomplete="off"></label>
+          <button>Connecter avec la clé API</button>
+        </form>
+      </details>
       <pre id="userBox"></pre>
     </section>
 
@@ -68,6 +77,7 @@
     <section id="record" class="panel">
       <h2>Enregistrement</h2>
       <div class="cards">
+        <div><span>Phase ACARS</span><strong id="phase">-</strong></div>
         <div><span>Position</span><strong id="pos">-</strong></div>
         <div><span>IAS</span><strong id="ias">-</strong></div>
         <div><span>AGL</span><strong id="agl">-</strong></div>
@@ -75,13 +85,13 @@
       </div>
       <div class="tools">
         <input id="pirepId" placeholder="ID PIREP">
-        <input id="maxIas" type="number" min="1" max="1999" placeholder="IAS max optionnelle">
         <button id="startBtn">Démarrer</button>
         <button id="pauseBtn">Pause</button>
         <button id="resumeBtn">Reprendre</button>
         <button id="syncBtn">Synchroniser</button>
         <button id="fileBtn">Déposer</button>
       </div>
+      <p class="hint">Les messages OUT, OFF, ON et IN sont envoyés automatiquement. Pour obtenir IN, immobilisez l'avion au parking et serrez le frein de parc 15 secondes.</p>
       <pre id="recordBox"></pre>
     </section>
   </main>

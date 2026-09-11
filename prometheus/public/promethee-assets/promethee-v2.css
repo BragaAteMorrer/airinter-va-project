@@ -1,3 +1,9 @@
+@font-face {
+  font-family: "Minitel";
+  src: url("fonts/Minitel.ttf") format("truetype");
+  font-display: swap;
+}
+
 :root {
   --ops-bg: #eef2f5;
   --ops-dark: #0e2a44;
@@ -58,6 +64,32 @@ main { max-width: 1680px; }
 .route-board i { height: 2px; background: linear-gradient(90deg,var(--ops-blue),var(--ops-red)); }
 .route-board span { grid-column: 1/-1; color: var(--muted); font-size: 11px; }
 .flight-filter { margin-bottom: 18px; }
+.flight-filter { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); align-items: end; }
+.flight-filter .filter-wide { grid-column: span 2; }
+.flight-filter button, .flight-filter > a { align-self: end; min-height: 40px; }
+.directory-filter { margin-bottom: 22px; }
+.network-map-panel { padding-bottom: 16px; }
+.network-map-panel .panel-heading { margin-bottom: 10px; }
+.map-help { margin: 0; max-width: 430px; font-size: 11px; text-align: right; }
+.map-selection { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding: 9px 12px; margin: 0 0 12px; border: 1px solid var(--line); border-radius: 6px; background: #f8fafc; font-size: 11px; }
+.map-selection b { color: var(--ops-dark); font-family: Consolas, monospace; }
+.map-selection a { margin-left: auto; font-size: 11px; }
+.network-map { display: block; width: 100%; height: clamp(420px, 62vh, 620px); border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+.network-map.leaflet-container { font: inherit; background: #dfe9f0; }
+.map-background { fill: #edf4fa; }
+.map-grid { fill: none; stroke: #bbcede; stroke-width: 1; stroke-dasharray: 3 7; }
+.map-route { stroke: var(--ops-blue); stroke-width: 1.4; stroke-opacity: .32; }
+.map-airport { fill: var(--ops-blue); stroke: #fff; stroke-width: 1.5; cursor: pointer; transition: r .15s ease, fill .15s ease; }
+.map-airport:hover { fill: var(--ops-red); }
+.map-airport.selected-departure { fill: var(--ops-blue); stroke: #fff; stroke-width: 3; }
+.map-airport.selected-arrival { fill: var(--ops-red); stroke: #fff; stroke-width: 3; }
+.map-legend { display: flex; align-items: center; gap: 8px; margin: 10px 0 0; font-size: 10px; }
+.map-legend i { width: 9px; height: 9px; border-radius: 50%; background: var(--ops-blue); display: inline-block; }
+.map-legend .legend-route { width: 22px; height: 2px; border-radius: 0; background: var(--ops-blue); opacity: .5; margin-left: 10px; }
+.live-map, .replay-map { position: relative; min-height: 360px; overflow: hidden; border-radius: 6px; background: radial-gradient(circle at 45% 45%,#d9ebf6 0 2px,transparent 3px), linear-gradient(135deg,#c8e0ec,#edf3f5); background-size: 34px 34px,auto; }
+.live-aircraft { position: absolute; color: var(--ops-red); font-size: 21px; transform: translate(-50%,-50%); text-decoration: none; text-shadow: 0 1px 1px #fff; }
+.live-aircraft span { display: block; font: 10px Consolas,monospace; color: var(--ops-dark); background: #ffffffe8; padding: 1px 3px; border-radius: 2px; }
+.replay-dot { position:absolute; width:15px; height:15px; border-radius:50%; transform:translate(-50%,-50%); background:var(--ops-red); border:3px solid white; box-shadow:0 1px 5px #1236; }
 .flight-cards { display: grid; grid-template-columns: repeat(auto-fill,minmax(300px,1fr)); gap: 16px; }
 .line-card { display: grid; gap: 16px; }
 .line-card-head { display: flex; justify-content: space-between; gap: 12px; }
@@ -94,6 +126,11 @@ html[data-era="minitel"] .dispatch-flight .load,
 html[data-era="minitel"] .fare-chips span { background: #102618; border-color: #285e39; color: #99edb1; }
 html[data-era="minitel"] .airport-pair i,
 html[data-era="minitel"] .route-board i { background: #99edb1; border: 0; }
+html[data-era="minitel"] .map-background, html[data-era="minitel"] .map-selection { background: #07130c; }
+html[data-era="minitel"] .map-grid { stroke: #285e39; }
+html[data-era="minitel"] .map-route { stroke: #99edb1; }
+html[data-era="minitel"] .map-airport { fill: #99edb1; stroke: #07130c; }
+html[data-era="minitel"] .map-airport.selected-arrival { fill: #ffbb57; }
 
 @media (max-width:1100px) {
   .control-strip { grid-template-columns: repeat(3,1fr); }
@@ -110,6 +147,1003 @@ html[data-era="minitel"] .route-board i { background: #99edb1; border: 0; }
   .ops-timeline article, .report-feed article { grid-template-columns: 1fr; }
   .ops-timeline small, .report-feed small { text-align: left; }
   .flight-cards { grid-template-columns: 1fr; }
+  .flight-filter .filter-wide { grid-column: auto; }
+  .map-help { text-align: left; }
+  .map-selection a { margin-left: 0; }
   .airport-pair { font-size: 19px; }
   .line-meta { grid-template-columns: 1fr; }
+}
+
+/* --------------------------------------------------------------------------
+   Promethee visual eras
+   The portal intentionally keeps the same information architecture in every
+   era. These rules change the visual language, never the meaning or order of
+   the interface.
+   -------------------------------------------------------------------------- */
+
+/* Modern: calm, dense enough for operations, and comfortable on touch screens */
+html[data-era="modern"] {
+  --ops-blue: #155eef;
+  --ops-dark: #102a56;
+  --ops-red: #e5484d;
+  --ops-yellow: #e8a100;
+  --paper: #f4f7fb;
+  --panel: #ffffff;
+  --line: #dce5f2;
+  --ink: #172b4d;
+  --muted: #60708a;
+  --radius: 16px;
+  --shadow: 0 14px 38px rgb(20 48 93 / 9%);
+}
+
+[data-era="modern"] body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 82% -12%, rgb(73 137 255 / 16%), transparent 32rem),
+    radial-gradient(circle at 8% 70%, rgb(228 75 80 / 7%), transparent 27rem),
+    var(--paper);
+}
+
+[data-era="modern"] .sidebar {
+  background: linear-gradient(165deg, #0a2045 0%, #102f62 62%, #12346c 100%);
+  box-shadow: 8px 0 28px rgb(11 35 76 / 10%);
+}
+
+[data-era="modern"] .brand-mark {
+  border-radius: 8px;
+  box-shadow: 0 6px 14px rgb(0 0 0 / 24%);
+}
+
+[data-era="modern"] .nav-link {
+  border: 1px solid transparent;
+  transition: background-color .18s ease, border-color .18s ease, transform .18s ease;
+}
+
+[data-era="modern"] .nav-link:hover {
+  border-color: rgb(255 255 255 / 14%);
+  transform: translateX(2px);
+}
+
+[data-era="modern"] .nav-link.selected {
+  background: linear-gradient(90deg, rgb(76 135 246 / 38%), rgb(255 255 255 / 8%));
+  box-shadow: inset 3px 0 #69a2ff;
+}
+
+[data-era="modern"] .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  height: 70px;
+  background: rgb(255 255 255 / 84%);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+[data-era="modern"] .theme-control select,
+[data-era="modern"] input,
+[data-era="modern"] select,
+[data-era="modern"] textarea {
+  border-color: #cbd8eb;
+  border-radius: 10px;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+[data-era="modern"] input:hover,
+[data-era="modern"] select:hover,
+[data-era="modern"] textarea:hover { border-color: #9ab8e8; }
+
+[data-era="modern"] .hero {
+  background:
+    linear-gradient(118deg, rgb(8 36 87 / 98%), rgb(21 94 239 / 94%)),
+    #155eef;
+  border: 1px solid rgb(255 255 255 / 18%);
+  box-shadow: 0 18px 38px rgb(21 61 143 / 18%);
+}
+
+[data-era="modern"] .panel,
+[data-era="modern"] .stat,
+[data-era="modern"] .ops-clock,
+[data-era="modern"] .control-strip article,
+[data-era="modern"] .route-board article {
+  box-shadow: var(--shadow);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+[data-era="modern"] .stat:hover,
+[data-era="modern"] .control-strip article:hover,
+[data-era="modern"] .route-board article:hover {
+  border-color: #b6caf0;
+  box-shadow: 0 18px 40px rgb(20 48 93 / 13%);
+  transform: translateY(-2px);
+}
+
+[data-era="modern"] .signal {
+  border-radius: 12px;
+  background: rgb(255 255 255 / 75%);
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+
+[data-era="modern"] .signal:hover {
+  box-shadow: 0 10px 24px rgb(21 94 239 / 12%);
+  transform: translateY(-2px);
+}
+
+[data-era="modern"] button,
+[data-era="modern"] .button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 10px;
+  box-shadow: 0 5px 12px rgb(21 94 239 / 22%);
+  transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease;
+}
+
+[data-era="modern"] button:hover,
+[data-era="modern"] .button:hover {
+  box-shadow: 0 9px 18px rgb(21 94 239 / 28%);
+  transform: translateY(-1px);
+}
+
+[data-era="modern"] button:active,
+[data-era="modern"] .button:active { transform: translateY(1px); }
+
+[data-era="modern"] .button.outline,
+[data-era="modern"] button.outline {
+  border: 1px solid #bdd0ef;
+  background: #fff;
+  box-shadow: none;
+}
+
+[data-era="modern"] tbody tr { transition: background-color .14s ease; }
+[data-era="modern"] tbody tr:hover { background: #f3f7ff; }
+
+/* 2000–2004: constrained portal layout, blue chrome, bevels and glossy UI. */
+html[data-era="2000"] {
+  --paper: #aebbd0;
+  --panel: #f7fbff;
+  --ink: #102552;
+  --muted: #425b83;
+  --line: #6b82a8;
+  --radius: 0;
+  --shadow: 2px 3px 0 #657b9d;
+}
+
+[data-era="2000"] body {
+  background-color: #b8c7dc;
+  background-image:
+    linear-gradient(45deg, rgb(255 255 255 / 20%) 25%, transparent 25%),
+    linear-gradient(-45deg, rgb(255 255 255 / 20%) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgb(74 101 145 / 12%) 75%),
+    linear-gradient(-45deg, transparent 75%, rgb(74 101 145 / 12%) 75%);
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+  background-size: 8px 8px;
+  font-family: Tahoma, Verdana, Arial, sans-serif;
+}
+
+[data-era="2000"] .sidebar {
+  background:
+    linear-gradient(90deg, #051a51 0%, #183b81 45%, #255da5 52%, #102f69 100%);
+  border-right: 3px ridge #e8f1ff;
+  box-shadow: 3px 0 0 #365a9a;
+}
+
+[data-era="2000"] .brand-mark {
+  background: linear-gradient(160deg, #eaf6ff 0 16%, #4f98e9 17% 50%, #d92732 51% 82%, #8d0717 83%);
+  border: 2px outset #d4e7ff;
+  border-radius: 0;
+  box-shadow: 1px 1px #071b4b;
+}
+
+[data-era="2000"] .topbar {
+  height: 58px;
+  border-top: 2px solid #fff;
+  border-bottom: 2px ridge #7690b7;
+  background: linear-gradient(#ffffff 0%, #e9f2fd 43%, #b6cce8 47%, #d9e7f6 100%);
+}
+
+[data-era="2000"] main {
+  max-width: 1040px;
+  padding-top: 24px;
+}
+
+[data-era="2000"] .nav-link {
+  border: 2px outset #7ea1d0;
+  background: linear-gradient(90deg, #173f87, #2f6ab6 56%, #19478f);
+  color: #fff;
+  text-shadow: 1px 1px #071d4d;
+}
+
+[data-era="2000"] .nav-link:hover {
+  background: linear-gradient(90deg, #2d61aa, #4384d1 56%, #2d61aa);
+  text-decoration: none;
+}
+
+[data-era="2000"] .nav-link.selected {
+  border-style: inset;
+  background: #dceafe;
+  color: #112b62;
+  text-shadow: none;
+}
+
+[data-era="2000"] .hero,
+[data-era="2000"] .panel,
+[data-era="2000"] .stat,
+[data-era="2000"] .ops-clock,
+[data-era="2000"] .control-strip article,
+[data-era="2000"] .route-board article {
+  border: 2px outset #eef6ff;
+  box-shadow: 2px 3px 0 #6680a8;
+}
+
+[data-era="2000"] .hero {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 23%), transparent 34%),
+    linear-gradient(135deg, #092e7b 0%, #216ac2 48%, #6da9e0 100%);
+}
+
+[data-era="2000"] .panel-heading,
+[data-era="2000"] th {
+  border-bottom: 1px solid #8ca3c7;
+}
+
+[data-era="2000"] th {
+  background: linear-gradient(#fff, #cbdcf0 48%, #aec6e2 51%, #dce9f8);
+  color: #132b5e;
+  text-shadow: 1px 1px #fff;
+}
+
+[data-era="2000"] .signal,
+[data-era="2000"] .line-meta div,
+[data-era="2000"] input,
+[data-era="2000"] select,
+[data-era="2000"] textarea {
+  border: 2px inset #bacce5;
+  border-radius: 0;
+  background: #fff;
+}
+
+[data-era="2000"] .signal b,
+[data-era="2000"] .round-link {
+  border: 2px outset #b8d0f0;
+  border-radius: 2px;
+  background: linear-gradient(#3e82d1, #0b408c);
+  color: #fff;
+  text-shadow: 1px 1px #061f50;
+}
+
+[data-era="2000"] button,
+[data-era="2000"] .button {
+  min-height: 31px;
+  border: 2px outset #dceeff;
+  border-radius: 2px;
+  background:
+    linear-gradient(rgb(255 255 255 / 82%), transparent 43%),
+    linear-gradient(#9bc2f1, #3979bf 48%, #1f579f 51%, #5d95d1);
+  color: #fff;
+  font-family: Tahoma, Verdana, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-shadow: 1px 1px #0c356e;
+}
+
+[data-era="2000"] button:hover,
+[data-era="2000"] .button:hover { filter: saturate(1.18) brightness(1.06); }
+[data-era="2000"] button:active,
+[data-era="2000"] .button:active { border-style: inset; }
+
+[data-era="2000"] .button.outline,
+[data-era="2000"] button.outline {
+  background: linear-gradient(#fff, #d1e0f1);
+  color: #173a73;
+  text-shadow: 1px 1px #fff;
+}
+
+[data-era="2000"] .tag {
+  border: 1px solid #7893bd;
+  border-radius: 2px;
+  background: linear-gradient(#fff, #d6e3f4);
+  color: #173a73;
+}
+
+/* Minitel: a clear but faithful 40-column Videotex-inspired terminal. */
+html[data-era="minitel"] {
+  --minitel-green: #f6f1c1;
+  --minitel-cyan: #68e3d0;
+  --minitel-yellow: #fff25b;
+  --minitel-red: #ff6767;
+  --paper: #060b08;
+  --panel: #060b08;
+  --ink: var(--minitel-green);
+  --muted: #9fb19a;
+  --line: #4f6553;
+  --radius: 0;
+  --shadow: none;
+  --sans: "Minitel", "Courier New", monospace;
+}
+
+[data-era="minitel"] body {
+  overflow-x: hidden;
+  background-color: #010301;
+  background-image:
+    repeating-linear-gradient(0deg, rgb(246 241 193 / 5%) 0 1px, transparent 1px 4px),
+    radial-gradient(ellipse at center, #0b160d 0%, #020502 72%);
+  color: var(--minitel-green);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.25;
+  image-rendering: pixelated;
+  text-shadow: 0 0 5px rgb(246 241 193 / 20%);
+}
+
+[data-era="minitel"] .sidebar,
+[data-era="minitel"] .workspace {
+  position: relative;
+  width: min(100%, 42rem);
+  margin: 0 auto;
+  padding: 0;
+  background: #060b08;
+  border-inline: 2px solid var(--minitel-green);
+  box-shadow: 0 0 0 4px #182218, 0 0 42px rgb(246 241 193 / 16%);
+}
+
+[data-era="minitel"] .sidebar {
+  display: block;
+  min-height: auto;
+  color: var(--minitel-green);
+  border-bottom: 0;
+}
+
+[data-era="minitel"] .brand {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  padding: 12px 16px 8px;
+  color: var(--minitel-yellow);
+  text-decoration: none;
+}
+
+[data-era="minitel"] .brand-mark {
+  width: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--minitel-yellow);
+  font: 16px/1.25 var(--sans);
+  letter-spacing: .1em;
+  transform: none;
+}
+
+[data-era="minitel"] .brand-mark br { display: none; }
+[data-era="minitel"] .brand-mark::before { content: "3615 "; color: var(--minitel-cyan); }
+[data-era="minitel"] .brand-logo-shell {
+  display: block;
+  width: auto;
+  height: auto;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+[data-era="minitel"] .brand-logo { display: none; }
+[data-era="minitel"] .brand-logo-minitel {
+  display: block;
+  color: var(--minitel-yellow);
+  font: 16px/1.25 var(--sans);
+  letter-spacing: .1em;
+}
+[data-era="minitel"] .brand-logo-minitel::before { content: "3615 "; color: var(--minitel-cyan); }
+[data-era="minitel"] .brand-caption { display: none; }
+
+[data-era="minitel"] .system-name {
+  margin: 0;
+  padding: 0 16px 10px;
+  border-bottom: 1px solid var(--minitel-green);
+}
+
+[data-era="minitel"] .system-name .eyebrow,
+[data-era="minitel"] .system-name small { display: none; }
+
+[data-era="minitel"] .system-name strong {
+  margin: 0;
+  color: var(--minitel-green);
+  font: 16px/1.25 var(--sans);
+  letter-spacing: 0;
+}
+
+[data-era="minitel"] .system-name strong::before { content: "* "; color: var(--minitel-red); }
+
+[data-era="minitel"] .sidebar nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 6px 16px 10px;
+  gap: 0;
+}
+
+[data-era="minitel"] .nav-link {
+  display: block;
+  min-width: 0;
+  margin: 0;
+  padding: 3px 0;
+  border: 0;
+  border-radius: 0;
+  color: var(--minitel-green);
+  font: 16px/1.25 var(--sans);
+  text-transform: uppercase;
+}
+
+[data-era="minitel"] .nav-link span { display: none; }
+[data-era="minitel"] .nav-link b { display: none; }
+[data-era="minitel"] .nav-link::before { content: "> "; color: var(--minitel-cyan); }
+[data-era="minitel"] .nav-link:hover,
+[data-era="minitel"] .nav-link:focus { background: transparent; color: var(--minitel-yellow); text-decoration: none; }
+[data-era="minitel"] .nav-link.selected { background: transparent; color: var(--minitel-yellow); box-shadow: none; }
+[data-era="minitel"] .nav-link.selected::before { content: ">*"; color: var(--minitel-red); }
+
+[data-era="minitel"] .sidebar-bottom { display: none; }
+
+[data-era="minitel"] .topbar {
+  height: auto;
+  min-height: 0;
+  padding: 8px 16px;
+  border-block: 1px solid var(--minitel-green);
+  background: #060b08;
+}
+
+[data-era="minitel"] .breadcrumb,
+[data-era="minitel"] .topbar time { display: none; }
+
+[data-era="minitel"] .theme-control { width: 100%; color: var(--minitel-cyan); font: 16px/1.25 var(--sans); }
+[data-era="minitel"] .theme-control::before { content: "MODE : "; }
+[data-era="minitel"] .theme-control select { margin: 0; padding: 0; width: auto; min-height: 20px; }
+
+[data-era="minitel"] main {
+  max-width: 40rem;
+  padding: 12px 16px 18px;
+}
+
+[data-era="minitel"] h1,
+[data-era="minitel"] h2,
+[data-era="minitel"] h3,
+[data-era="minitel"] p,
+[data-era="minitel"] .eyebrow,
+[data-era="minitel"] .date-stamp,
+[data-era="minitel"] label,
+[data-era="minitel"] .muted {
+  font-family: var(--sans);
+  letter-spacing: 0;
+}
+
+[data-era="minitel"] h1,
+[data-era="minitel"] h2,
+[data-era="minitel"] h3 {
+  color: var(--minitel-yellow);
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+[data-era="minitel"] h1 { font-size: 16px; line-height: 1.25; margin: 0 0 8px; }
+[data-era="minitel"] h1::before { content: "* "; color: var(--minitel-red); }
+[data-era="minitel"] h2 { font-size: 16px; line-height: 1.25; }
+[data-era="minitel"] h3 { font-size: 16px; }
+[data-era="minitel"] p { color: var(--minitel-green); font-size: 16px; line-height: 1.25; }
+[data-era="minitel"] .eyebrow,
+[data-era="minitel"] .date-stamp { color: var(--minitel-cyan); font-size: 16px; line-height: 1.25; }
+
+[data-era="minitel"] .page-heading,
+[data-era="minitel"] .ops-header,
+[data-era="minitel"] .ops-header.compact {
+  display: block;
+  margin: 0 0 10px;
+}
+
+[data-era="minitel"] .date-stamp { margin-top: 4px; white-space: normal; }
+
+[data-era="minitel"] .hero,
+[data-era="minitel"] .panel,
+[data-era="minitel"] .stat,
+[data-era="minitel"] .ops-clock,
+[data-era="minitel"] .control-strip article,
+[data-era="minitel"] .signal,
+[data-era="minitel"] .route-board article,
+[data-era="minitel"] .line-meta div,
+[data-era="minitel"] .callout,
+[data-era="minitel"] .fare-bands article {
+  padding: 8px 0;
+  border: 0;
+  border-bottom: 1px solid #6e866f;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+[data-era="minitel"] .hero {
+  display: block;
+  min-height: 0;
+  margin-bottom: 10px;
+  color: var(--minitel-green);
+}
+
+[data-era="minitel"] .hero h2 { font-size: 16px; margin: 5px 0; }
+[data-era="minitel"] .hero p { color: var(--minitel-green); }
+[data-era="minitel"] .hero .tag { margin-bottom: 4px; }
+[data-era="minitel"] .network-art { display: none; }
+
+[data-era="minitel"] .stats-grid,
+[data-era="minitel"] .control-strip,
+[data-era="minitel"] .three-columns,
+[data-era="minitel"] .two-columns,
+[data-era="minitel"] .dispatch-grid,
+[data-era="minitel"] .ops-layout,
+[data-era="minitel"] .pilot-grid,
+[data-era="minitel"] .fare-bands,
+[data-era="minitel"] .route-board,
+[data-era="minitel"] .flight-cards {
+  display: block;
+  margin: 0;
+}
+
+[data-era="minitel"] .stat,
+[data-era="minitel"] .control-strip article,
+[data-era="minitel"] .panel,
+[data-era="minitel"] .fare-bands article { margin: 0; }
+
+[data-era="minitel"] .stat > span,
+[data-era="minitel"] .control-strip span,
+[data-era="minitel"] .control-strip small,
+[data-era="minitel"] .route-list span,
+[data-era="minitel"] .mini-bulletin span { color: var(--minitel-cyan); font-size: 16px; }
+
+[data-era="minitel"] .stat strong,
+[data-era="minitel"] .control-strip strong,
+[data-era="minitel"] .mini-bulletin strong,
+[data-era="minitel"] .ops-clock strong {
+  color: var(--minitel-yellow);
+  font: 16px/1.25 var(--sans);
+  letter-spacing: 0;
+}
+
+[data-era="minitel"] .panel-heading { display: block; margin: 0 0 4px; }
+[data-era="minitel"] .panel-heading a { white-space: normal; }
+[data-era="minitel"] .signal { display: block; color: var(--minitel-green); }
+[data-era="minitel"] .signal b { display: inline; height: auto; padding: 0; background: transparent; color: var(--minitel-red); font: 16px/1.25 var(--sans); }
+[data-era="minitel"] .signal b::after { content: " - "; color: var(--minitel-green); }
+[data-era="minitel"] .signal span { display: inline; font-weight: 400; }
+
+[data-era="minitel"] .dispatch-flight,
+[data-era="minitel"] .ops-timeline article,
+[data-era="minitel"] .report-feed article,
+[data-era="minitel"] .route-list div {
+  display: block;
+  padding: 5px 0;
+  border-bottom: 1px dotted #526a54;
+}
+
+[data-era="minitel"] .dispatch-flight time,
+[data-era="minitel"] .airport-pair,
+[data-era="minitel"] .ops-timeline time { color: var(--minitel-cyan); font: 16px/1.25 var(--sans); }
+[data-era="minitel"] .dispatch-flight .load { width: auto; height: auto; margin-left: 8px; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--minitel-yellow); font: 16px/1.25 var(--sans); }
+
+[data-era="minitel"] .line-card,
+[data-era="minitel"] .line-card-head,
+[data-era="minitel"] .airport-pair,
+[data-era="minitel"] .line-meta,
+[data-era="minitel"] .pilot-numbers,
+[data-era="minitel"] .member-form,
+[data-era="minitel"] .report-summary,
+[data-era="minitel"] .bulletin-header,
+[data-era="minitel"] .bulletin-footer {
+  display: block;
+}
+
+[data-era="minitel"] .airport-pair i,
+[data-era="minitel"] .route-board i { display: inline; height: auto; border: 0; background: transparent; }
+[data-era="minitel"] .airport-pair i::after { content: " -> "; color: var(--minitel-yellow); }
+[data-era="minitel"] .line-meta div { padding: 2px 0; }
+[data-era="minitel"] .line-meta dt,
+[data-era="minitel"] .line-meta dd { display: inline; font-size: 16px; }
+[data-era="minitel"] .line-meta dt { color: var(--minitel-cyan); }
+[data-era="minitel"] .line-meta dt::after { content: " : "; }
+
+[data-era="minitel"] a { color: var(--minitel-cyan); }
+[data-era="minitel"] a:hover,
+[data-era="minitel"] a:focus { color: var(--minitel-yellow); text-decoration: none; }
+[data-era="minitel"] a:focus-visible,
+[data-era="minitel"] button:focus-visible,
+[data-era="minitel"] input:focus-visible,
+[data-era="minitel"] select:focus-visible,
+[data-era="minitel"] textarea:focus-visible { outline: 2px solid var(--minitel-red); outline-offset: 2px; }
+
+[data-era="minitel"] button,
+[data-era="minitel"] .button,
+[data-era="minitel"] input,
+[data-era="minitel"] select,
+[data-era="minitel"] textarea {
+  min-height: 20px;
+  margin: 0;
+  padding: 1px 3px;
+  border: 1px solid var(--minitel-green);
+  border-radius: 0;
+  background: #060b08;
+  color: var(--minitel-green);
+  box-shadow: none;
+  font: 16px/1.25 var(--sans);
+  text-transform: uppercase;
+}
+
+[data-era="minitel"] button:hover,
+[data-era="minitel"] .button:hover { background: var(--minitel-green); color: #060b08; filter: none; }
+[data-era="minitel"] .button::before { content: "ENVOI "; color: var(--minitel-yellow); }
+[data-era="minitel"] .button:hover::before { color: #060b08; }
+[data-era="minitel"] .button.outline::before { content: "SOMMAIRE "; }
+
+[data-era="minitel"] .tag,
+[data-era="minitel"] .fare-chips span,
+[data-era="minitel"] .calendar-event,
+[data-era="minitel"] .round-link,
+[data-era="minitel"] .avatar-text {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--minitel-cyan);
+  font: 16px/1.25 var(--sans);
+}
+
+[data-era="minitel"] .table-wrap { border-block: 1px solid #6e866f; }
+[data-era="minitel"] table { font: 16px/1.25 var(--sans); white-space: normal; }
+[data-era="minitel"] th,
+[data-era="minitel"] td { padding: 3px 2px; border-bottom: 1px dotted #526a54; background: transparent; color: var(--minitel-green); font: inherit; text-transform: uppercase; }
+[data-era="minitel"] th { color: var(--minitel-yellow); font-weight: 400; }
+[data-era="minitel"] .calendar { display: block; border: 0; }
+[data-era="minitel"] .weekday { display: none; }
+[data-era="minitel"] .calendar-day { height: auto; min-height: 0; padding: 4px 0; border: 0; border-bottom: 1px dotted #526a54; }
+[data-era="minitel"] .calendar-day.outside { color: var(--muted); background: transparent; }
+[data-era="minitel"] .calendar-day.today > span { width: auto; height: auto; border-radius: 0; background: transparent; color: var(--minitel-red); }
+[data-era="minitel"] .avatar-text { width: auto; height: auto; margin: 0; text-align: left; }
+[data-era="minitel"] .bulletin { max-width: none; margin: 0; padding: 0; border: 0; background: transparent; color: var(--minitel-green); }
+[data-era="minitel"] .bulletin * { color: inherit; font-family: var(--sans); }
+[data-era="minitel"] .bulletin > h1,
+[data-era="minitel"] .bulletin-header,
+[data-era="minitel"] .bulletin-footer { border-color: var(--minitel-green); }
+
+/* Fast row-by-row arrival gives the terminal an immediate Videotex feel. */
+@keyframes minitel-line-arrival {
+  from { opacity: 0; transform: translateY(.55em); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+[data-era="minitel"] body.minitel-enter .page-heading,
+[data-era="minitel"] body.minitel-enter .hero,
+[data-era="minitel"] body.minitel-enter .stats-grid > *,
+[data-era="minitel"] body.minitel-enter .control-strip > *,
+[data-era="minitel"] body.minitel-enter .panel,
+[data-era="minitel"] body.minitel-enter .signal,
+[data-era="minitel"] body.minitel-enter .dispatch-flight,
+[data-era="minitel"] body.minitel-enter .route-board article {
+  animation: minitel-line-arrival 90ms steps(2, end) both;
+  animation-delay: calc(var(--minitel-line, 0) * 38ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-era="modern"] *,
+  [data-era="2000"] *,
+  [data-era="minitel"] * { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+}
+
+@media (max-width: 760px) {
+  [data-era="minitel"] .sidebar,
+  [data-era="minitel"] .workspace { width: 100%; border-inline-width: 1px; }
+  [data-era="minitel"] .sidebar nav { grid-template-columns: 1fr; }
+  [data-era="minitel"] main { padding-inline: 10px; }
+  [data-era="2000"] main { padding-inline: 16px; }
+}
+
+/*
+   The Minitel is deliberately presented as one square terminal. The actual
+   Videotex grid remains text-led inside it; long operational pages scroll in
+   the lower screen rather than changing the terminal proportions.
+*/
+html[data-era="minitel"] {
+  background: #010301;
+}
+
+[data-era="minitel"] body {
+  --minitel-terminal-size: min(42rem, calc(100vw - 2rem), calc(100vh - 2rem));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 10rem minmax(0, 1fr);
+  width: var(--minitel-terminal-size);
+  height: var(--minitel-terminal-size);
+  min-height: 0;
+  margin: 1rem auto;
+  overflow: hidden;
+  position: relative;
+  border: 2px solid var(--minitel-green);
+  box-shadow: 0 0 0 5px #182218, 0 0 46px rgb(246 241 193 / 18%);
+}
+
+[data-era="minitel"] .sidebar,
+[data-era="minitel"] .workspace {
+  width: 100%;
+  height: auto;
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+[data-era="minitel"] .sidebar {
+  grid-row: 1;
+  overflow: hidden;
+  border-bottom: 1px solid var(--minitel-green);
+}
+
+[data-era="minitel"] .brand {
+  padding: 7px 12px 2px;
+}
+
+[data-era="minitel"] .system-name {
+  padding: 0 12px 3px;
+}
+
+[data-era="minitel"] .sidebar nav {
+  grid-template-columns: 1fr 1fr;
+  padding: 2px 12px 4px;
+}
+
+[data-era="minitel"] .nav-link { padding-block: 1px; }
+
+[data-era="minitel"] .workspace {
+  grid-row: 2;
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
+
+[data-era="minitel"] .topbar,
+[data-era="minitel"] .footer { flex: 0 0 auto; }
+
+[data-era="minitel"] .topbar {
+  padding: 4px 12px;
+  border-top: 0;
+}
+
+[data-era="minitel"] main {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 8px 12px 14px;
+  scrollbar-color: var(--minitel-green) #060b08;
+  scrollbar-width: thin;
+}
+
+[data-era="minitel"] main::-webkit-scrollbar { width: 8px; }
+[data-era="minitel"] main::-webkit-scrollbar-track { background: #060b08; }
+[data-era="minitel"] main::-webkit-scrollbar-thumb { background: var(--minitel-green); }
+
+[data-era="minitel"] .footer {
+  padding: 4px 12px;
+  border-top-color: var(--minitel-green);
+}
+
+[data-era="minitel"] .footer span:not(:first-child),
+[data-era="minitel"] .tricolor { display: none; }
+
+@media (max-width: 760px) {
+  [data-era="minitel"] body {
+    --minitel-terminal-size: min(calc(100vw - 1rem), calc(100vh - 1rem));
+    grid-template-rows: 9rem minmax(0, 1fr);
+    margin: .5rem auto;
+  }
+
+  [data-era="minitel"] .sidebar nav { grid-template-columns: 1fr 1fr; }
+  [data-era="minitel"] .nav-link { font-size: 12px; }
+  [data-era="minitel"] .brand-logo-minitel,
+  [data-era="minitel"] .system-name strong,
+  [data-era="minitel"] .theme-control,
+  [data-era="minitel"] .theme-control select { font-size: 12px; }
+}
+
+/* The eight saturated Videotex colours, used as colours—not as a neon theme. */
+[data-era="minitel"] body {
+  --minitel-black: #000000;
+  --minitel-blue: #0000ff;
+  --minitel-red: #ff0000;
+  --minitel-green: #00ff00;
+  --minitel-yellow: #ffff00;
+  --minitel-magenta: #ff00ff;
+  --minitel-cyan: #00ffff;
+  --minitel-white: #ffffff;
+  --paper: var(--minitel-black);
+  --panel: var(--minitel-black);
+  --ink: var(--minitel-white);
+  --muted: var(--minitel-cyan);
+  --line: var(--minitel-white);
+  background: var(--minitel-black);
+  background-image: none;
+  color: var(--minitel-white);
+  text-shadow: none;
+  border-color: #8a8a8a;
+  box-shadow: 0 0 0 5px #6f6f6f, 0 0 0 10px #111;
+}
+
+[data-era="minitel"] .sidebar,
+[data-era="minitel"] .workspace,
+[data-era="minitel"] .topbar,
+[data-era="minitel"] .hero,
+[data-era="minitel"] .panel,
+[data-era="minitel"] .stat,
+[data-era="minitel"] .control-strip article,
+[data-era="minitel"] .signal,
+[data-era="minitel"] .route-board article,
+[data-era="minitel"] .line-meta div,
+[data-era="minitel"] .callout,
+[data-era="minitel"] .fare-bands article {
+  background: var(--minitel-black);
+}
+
+[data-era="minitel"] .brand-logo-shell { padding: 0; }
+[data-era="minitel"] .brand-logo-minitel {
+  padding: 3px 8px;
+  background: var(--minitel-blue);
+  color: var(--minitel-white);
+  font-weight: 400;
+  letter-spacing: .16em;
+}
+[data-era="minitel"] .brand-logo-minitel::before { color: var(--minitel-yellow); }
+
+[data-era="minitel"] .topbar,
+[data-era="minitel"] .tag,
+[data-era="minitel"] .panel-heading h2 {
+  background: var(--minitel-blue);
+  color: var(--minitel-white);
+}
+
+[data-era="minitel"] .panel-heading h2 { display: inline-block; padding-inline: 4px; }
+[data-era="minitel"] .system-name strong,
+[data-era="minitel"] h1,
+[data-era="minitel"] h2,
+[data-era="minitel"] h3,
+[data-era="minitel"] th { color: var(--minitel-yellow); }
+[data-era="minitel"] h1::before,
+[data-era="minitel"] .system-name strong::before { color: var(--minitel-red); }
+[data-era="minitel"] .eyebrow,
+[data-era="minitel"] .date-stamp,
+[data-era="minitel"] .theme-control,
+[data-era="minitel"] .stat > span,
+[data-era="minitel"] .control-strip span,
+[data-era="minitel"] .control-strip small,
+[data-era="minitel"] .route-list span,
+[data-era="minitel"] .mini-bulletin span { color: var(--minitel-cyan); }
+[data-era="minitel"] p,
+[data-era="minitel"] td,
+[data-era="minitel"] .signal,
+[data-era="minitel"] .signal span { color: var(--minitel-white); }
+[data-era="minitel"] a,
+[data-era="minitel"] .dispatch-flight time,
+[data-era="minitel"] .airport-pair,
+[data-era="minitel"] .ops-timeline time { color: var(--minitel-cyan); }
+[data-era="minitel"] a:hover,
+[data-era="minitel"] a:focus { color: var(--minitel-yellow); }
+
+[data-era="minitel"] button,
+[data-era="minitel"] .button,
+[data-era="minitel"] input,
+[data-era="minitel"] select,
+[data-era="minitel"] textarea {
+  border-color: var(--minitel-green);
+  background: var(--minitel-green);
+  color: var(--minitel-black);
+}
+[data-era="minitel"] button:hover,
+[data-era="minitel"] .button:hover {
+  background: var(--minitel-yellow);
+  border-color: var(--minitel-yellow);
+  color: var(--minitel-black);
+}
+[data-era="minitel"] .button::before,
+[data-era="minitel"] .button:hover::before { color: inherit; }
+[data-era="minitel"] .signal b { color: var(--minitel-magenta); }
+[data-era="minitel"] .nav-link::before { color: var(--minitel-cyan); }
+[data-era="minitel"] .nav-link.selected,
+[data-era="minitel"] .nav-link:hover,
+[data-era="minitel"] .nav-link:focus { color: var(--minitel-yellow); }
+[data-era="minitel"] .nav-link.selected::before { color: var(--minitel-magenta); }
+[data-era="minitel"] .footer { color: var(--minitel-white); }
+
+/* Boot page: it is a real <pre>, filled line after line by promethee.js. */
+[data-era="minitel"] #minitel-screen {
+  position: absolute;
+  z-index: 20;
+  inset: 0;
+  display: block;
+  margin: 0;
+  padding: clamp(18px, 5%, 38px);
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: var(--minitel-black);
+  color: var(--minitel-yellow);
+  box-shadow: none;
+  font: 16px/1.25 "Minitel", "Courier New", monospace;
+  letter-spacing: 0;
+  text-shadow: none;
+  white-space: pre;
+  transition: opacity 90ms steps(2, end);
+}
+
+[data-era="minitel"] #minitel-screen.is-complete { opacity: 0; }
+
+@media (max-width: 760px) {
+  [data-era="minitel"] #minitel-screen { font-size: 12px; padding: 16px; }
+}
+
+/* Navigation stays reachable in every era, including long admin menus. */
+html[data-era="modern"] .sidebar,
+html[data-era="2000"] .sidebar {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+[data-era="minitel"] .sidebar {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+[data-era="minitel"] .brand,
+[data-era="minitel"] .system-name { flex: 0 0 auto; }
+
+[data-era="minitel"] .sidebar nav {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--minitel-green) var(--minitel-black);
+  scrollbar-width: thin;
+}
+
+[data-era="minitel"] .sidebar nav::-webkit-scrollbar { width: 7px; }
+[data-era="minitel"] .sidebar nav::-webkit-scrollbar-track { background: var(--minitel-black); }
+[data-era="minitel"] .sidebar nav::-webkit-scrollbar-thumb { background: var(--minitel-green); }
+
+/* The historic Air Inter mark is a bitmap-like service logo, not terminal text. */
+[data-era="minitel"] .brand {
+  justify-content: center;
+  align-items: end;
+  min-height: 39px;
+  padding: 3px 12px 0;
+}
+
+[data-era="minitel"] .brand-logo-shell {
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  width: min(36ch, 100%);
+  height: 35px;
+}
+
+[data-era="minitel"] .brand-logo-minitel {
+  display: block;
+  width: min(100%, 235px);
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  color: transparent;
+  font-size: 0;
+  letter-spacing: 0;
+  object-fit: contain;
+  object-position: center bottom;
+}
+
+[data-era="minitel"] .brand-logo-minitel::before { content: none; }
+
+/* Geospatial operational views share one real map surface. */
+.ops-leaflet-map { height: clamp(360px, 58vh, 620px); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #dfe9f0; }
+.ops-leaflet-map.leaflet-container { font: inherit; }
+.aircraft-marker { display: grid; place-items: center; width: 28px !important; height: 28px !important; color: var(--ops-red); font-size: 25px; line-height: 1; text-shadow: 0 1px 2px #fff; transform: rotate(35deg); }
+[data-era="minitel"] .ops-leaflet-map { height: 280px; border-color: var(--minitel-green); border-radius: 0; filter: grayscale(1) contrast(1.2) brightness(.62) sepia(.45) hue-rotate(62deg); }
+
+@media (max-width: 760px) {
+  [data-era="minitel"] .brand-logo-shell { height: 28px; }
+  [data-era="minitel"] .brand-logo-minitel { width: min(100%, 190px); height: 25px; }
 }

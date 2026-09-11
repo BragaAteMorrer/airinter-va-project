@@ -109,7 +109,7 @@ class RouteServiceProvider extends ServiceProvider
         ], function () {
             Route::group([
                 'namespace'  => 'Frontend',
-                'prefix'     => '',
+                'prefix'     => 'legacy',
                 'as'         => 'frontend.',
                 'middleware' => (config('phpvms.registration.email_verification', false) ? ['auth', 'verified'] : ['auth']),
             ], function () {
@@ -150,7 +150,7 @@ class RouteServiceProvider extends ServiceProvider
 
             Route::group([
                 'namespace' => 'Frontend',
-                'prefix'    => '',
+                'prefix'    => 'legacy',
                 'as'        => 'frontend.',
             ], function () {
                 Route::get('/', 'HomeController@index')->name('home');
@@ -594,12 +594,16 @@ class RouteServiceProvider extends ServiceProvider
                 Route::get('news', 'NewsController@index');
                 Route::get('status', 'StatusController@status');
                 Route::get('version', 'StatusController@status');
+                // Password grant for the first-party desktop ACARS only. It returns
+                // a 12-hour bearer token; the password is never stored by either side.
+                Route::post('acars/session', 'AcarsSessionController@store')->middleware('throttle:5,1');
             });
 
             /*
              * These need to be authenticated with a user's API key
              */
             Route::group(['middleware' => ['api.auth']], function () {
+                Route::delete('acars/session', 'AcarsSessionController@destroy');
                 Route::get('airlines', 'AirlineController@index');
                 Route::get('airlines/{id}', 'AirlineController@get');
 
