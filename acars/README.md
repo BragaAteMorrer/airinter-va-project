@@ -28,3 +28,41 @@ docker compose -f compose.promethee.yml up --build -d
 5. Synchroniser, puis déposer le PIREP après IN.
 
 Les positions et événements non envoyés sont conservés localement après une coupure. Après un redémarrage, le pilote doit explicitement reprendre le vol : l'application ne rattache jamais silencieusement des données à un ancien PIREP.
+
+## Créer la distribution Windows (.exe)
+
+Depuis PowerShell à la racine du dépôt :
+
+```powershell
+.\acars\build-release.ps1 -Version 1.0.0
+```
+
+Le script produit `dist\Promethee-ACARS-win-x64-1.0.0.zip`. C'est le fichier à publier : il contient un unique `Promethee.Acars.exe`, autonome (le pilote n'a pas besoin d'installer .NET). Après extraction, il suffit de lancer cet EXE : il ouvre directement une fenêtre Windows native, sans navigateur ni serveur local.
+
+### Prérequis pilote
+
+- Windows 10/11 64 bits et Microsoft Flight Simulator démarré ;
+- SimConnect installé avec MSFS/son SDK. Si le DLL n'est pas trouvé automatiquement, définir `PROMETHEE_SIMCONNECT_DLL` vers le `SimConnect.dll` 64 bits avant de lancer l'EXE ;
+- accès HTTPS au site phpVMS (HTTP n'est accepté que pour `localhost`).
+
+Ne pas ajouter le cache local au ZIP : les sessions et positions en attente sont enregistrées séparément dans `%LOCALAPPDATA%\AirInter\Promethee` sur chaque poste.
+
+### Installateur Windows
+
+Pour produire un `Setup.exe` avec raccourcis Bureau et menu Démarrer, installer une fois [Inno Setup 6](https://jrsoftware.org/isdl.php), puis lancer :
+
+```powershell
+.\acars\build-installer.ps1 -Version 1.0.0
+```
+
+Le setup est créé dans `dist\Promethee-ACARS-Setup-1.0.0.exe`.
+
+### Verrouiller le serveur phpVMS (administrateur)
+
+Avant de distribuer le client, l'administrateur Windows configure l'unique serveur autorisé depuis une console PowerShell **ouverte en administrateur** :
+
+```powershell
+.\acars\set-server.ps1 -Server 'https://va.exemple.fr'
+```
+
+L'adresse est enregistrée dans `HKLM\SOFTWARE\AirInter\PrometheeACARS`. Les pilotes peuvent la consulter mais ne peuvent pas la modifier dans l'ACARS.

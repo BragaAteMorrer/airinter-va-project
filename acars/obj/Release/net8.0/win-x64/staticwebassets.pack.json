@@ -5,6 +5,10 @@
       "PackagePath": "staticwebassets\\app.js"
     },
     {
+      "Id": "\\\\wsl.localhost\\Ubuntu\\home\\bragaatemorrer\\Projet_perso\\airinter-va-project\\acars\\wwwroot\\fonts\\Minitel.ttf",
+      "PackagePath": "staticwebassets\\fonts\\Minitel.ttf"
+    },
+    {
       "Id": "\\\\wsl.localhost\\Ubuntu\\home\\bragaatemorrer\\Projet_perso\\airinter-va-project\\acars\\wwwroot\\index.html",
       "PackagePath": "staticwebassets\\index.html"
     },

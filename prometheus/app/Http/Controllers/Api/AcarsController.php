@@ -172,8 +172,11 @@ class AcarsController extends Controller
 
             try {
                 if (!empty($position['id'])) {
+                    // The id is supplied by the ACARS client for retry idempotency. Keep
+                    // the PIREP in the lookup so a pilot cannot overwrite a point of
+                    // another PIREP by guessing its UUID.
                     Acars::updateOrInsert(
-                        ['id' => $position['id']],
+                        ['id' => $position['id'], 'pirep_id' => $id],
                         $position
                     );
                 } else {
@@ -237,7 +240,7 @@ class AcarsController extends Controller
             try {
                 if (isset($log['id'])) {
                     Acars::updateOrInsert(
-                        ['id' => $log['id']],
+                        ['id' => $log['id'], 'pirep_id' => $id],
                         $log
                     );
                 } else {
@@ -292,7 +295,7 @@ class AcarsController extends Controller
             try {
                 if (isset($log['id'])) {
                     Acars::updateOrInsert(
-                        ['id' => $log['id']],
+                        ['id' => $log['id'], 'pirep_id' => $id],
                         $log
                     );
                 } else {

@@ -1,0 +1,1 @@
+\\wsl.localhost\Ubuntu\home\bragaatemorrer\Projet_perso\airinter-va-project\dist\Promethee-ACARS-win-x64-2.0.0\Promethee.Acars.exe

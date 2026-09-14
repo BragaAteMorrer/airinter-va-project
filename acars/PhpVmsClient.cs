@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Net.Http;
 using System.Text.Json;
 
 namespace Promethee;
@@ -34,8 +35,16 @@ public sealed class PhpVmsClient
         };
         request.Headers.Add("Accept", "application/json");
         using var response = await http.SendAsync(request);
-        if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException("Connexion refusée. Vérifiez vos identifiants et l'activation de l'accès ACARS.");
+        if (!response.IsSuccessStatusCode) {
+            var reason = response.StatusCode switch {
+                System.Net.HttpStatusCode.NotFound => "Le serveur ne contient pas l'API ACARS. Déployez la mise à jour phpVMS.",
+                System.Net.HttpStatusCode.TooManyRequests => "Trop de tentatives. Attendez une minute avant de réessayer.",
+                System.Net.HttpStatusCode.InternalServerError => "Erreur serveur ACARS. L'administrateur doit vérifier les logs et les migrations.",
+                System.Net.HttpStatusCode.Unauthorized => "Identifiants invalides ou compte pilote non activé/autorisé.",
+                _ => $"Connexion ACARS refusée (HTTP {(int)response.StatusCode})."
+            };
+            throw new InvalidOperationException(reason);
+        }
 
         var json = await response.Content.ReadFromJsonAsync<JsonElement>();
         var data = json.TryGetProperty("data", out var wrapped) ? wrapped : json;

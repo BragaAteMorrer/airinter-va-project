@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Promethee.Acars")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9e5420f79012fc4ee8758908952145c69347484b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+92ed77e6de118519e849aef56f69cb7e79d11c0a")]
 [assembly: System.Reflection.AssemblyProductAttribute("Promethee.Acars")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Promethee.Acars")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

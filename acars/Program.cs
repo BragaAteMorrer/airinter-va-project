@@ -1,17 +1,28 @@
 using System.Text.Json;
+using System.Net;
+using System.Net.Sockets;
 using Promethee;
 
+var configuredUrl = Environment.GetEnvironmentVariable("PROMETHEE_ACARS_URL");
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions {
     Args = args,
     ContentRootPath = AppContext.BaseDirectory,
     WebRootPath = Path.Combine(AppContext.BaseDirectory, "wwwroot")
 });
-builder.WebHost.UseUrls(Environment.GetEnvironmentVariable("PROMETHEE_ACARS_URL") ?? "http://127.0.0.1:1974");
+builder.WebHost.UseUrls(configuredUrl ?? FindAvailableLocalUrl());
 builder.Services.AddSingleton<PhpVmsClient>();
 builder.Services.AddSingleton<SimConnectReader>();
 builder.Services.AddSingleton<FlightRecorder>();
 builder.Services.AddHostedService<TelemetryWorker>();
 var app = builder.Build();
+
+// The client is a local web application; open its cockpit automatically for pilots.
+if (!string.Equals(Environment.GetEnvironmentVariable("PROMETHEE_ACARS_NO_BROWSER"), "1", StringComparison.Ordinal)) {
+    app.Lifetime.ApplicationStarted.Register(() => {
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(app.Urls.First()) { UseShellExecute = true }); }
+        catch { /* A browser is optional; the URL is still shown in the console. */ }
+    });
+}
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
@@ -25,6 +36,7 @@ app.MapGet("/api/status", (PhpVmsClient client, SimConnectReader sim, FlightReco
             sim = sim.Status,
             latest = sim.Latest,
             flight = recorder.Flight,
+            track = recorder.Track,
             pending = recorder.Pending.Count + recorder.PendingEvents.Count,
             warning = recorder.Warning
         });
@@ -52,8 +64,9 @@ app.MapPost("/api/prefile", async (JsonElement body, PhpVmsClient client) =>
 
 app.MapPost("/api/start", (StartRequest input, PhpVmsClient client, SimConnectReader sim, FlightRecorder recorder) =>
 {
+    if (string.IsNullOrWhiteSpace(input.PirepId)) throw new InvalidOperationException("Saisissez l'identifiant du PIREP pré-déposé.");
     if (sim.Latest is null) throw new InvalidOperationException("Le simulateur ne fournit pas encore de position.");
-    recorder.Start(client.Server, input.PirepId, sim.Latest);
+    recorder.Start(client.Server, input.PirepId.Trim(), sim.Latest);
     return Results.Ok();
 });
 
@@ -65,6 +78,26 @@ app.MapPost("/api/sync", async (PhpVmsClient client, FlightRecorder recorder) =>
     var count = await TelemetryWorker.SendPending(client, recorder);
     return Results.Json(new { sent = count });
 });
+
+app.MapGet("/api/report", (FlightRecorder recorder) =>
+{
+    lock (recorder.Gate) {
+        var flight = recorder.Flight ?? throw new InvalidOperationException("Aucun vol en cours.");
+        var block = flight.BlockOff is null ? 0 : (int)Math.Round(((flight.BlockOn ?? DateTimeOffset.UtcNow) - flight.BlockOff.Value).TotalMinutes);
+        return Results.Json(new {
+            pirepId = flight.PirepId, phase = flight.Phase, distance = Math.Round(flight.Distance, 2),
+            airborneMinutes = (int)Math.Round(flight.AirborneSeconds / 60), blockMinutes = block,
+            fuelUsed = Math.Round(flight.FuelUsed), landingRate = flight.LandingRate, issues = flight.Issues
+        });
+    }
+});
+app.MapGet("/api/history", (FlightRecorder recorder) => Results.Json(recorder.History));
+app.MapGet("/api/rules", (FlightRecorder recorder) => Results.Json(recorder.Rules));
+app.MapPost("/api/rules", (AcarsRules rules, FlightRecorder recorder) => { recorder.SetRules(rules); return Results.Ok(recorder.Rules); });
+app.MapGet("/api/diagnostics", (PhpVmsClient client, SimConnectReader sim, FlightRecorder recorder) =>
+    Results.Json(new { generatedAt = DateTimeOffset.UtcNow, server = client.Server, connected = client.Connected,
+        simulator = sim.Status, latest = sim.Latest, flight = recorder.Flight, pendingPositions = recorder.Pending.Count,
+        pendingEvents = recorder.PendingEvents.Count, warning = recorder.Warning }));
 
 app.MapPost("/api/file", async (PhpVmsClient client, FlightRecorder recorder) =>
 {
@@ -91,6 +124,18 @@ app.MapPost("/api/file", async (PhpVmsClient client, FlightRecorder recorder) =>
 
 app.MapFallbackToFile("index.html");
 app.Run();
+
+static string FindAvailableLocalUrl()
+{
+    for (var port = 1974; port <= 1984; port++) {
+        try {
+            using var probe = new TcpListener(IPAddress.Loopback, port);
+            probe.Start();
+            return $"http://127.0.0.1:{port}";
+        } catch (SocketException) { }
+    }
+    throw new InvalidOperationException("Les ports locaux 1974 à 1984 sont déjà utilisés. Fermez une autre instance de Promethee ACARS.");
+}
 
 public sealed record ConfigRequest(string Server, string ApiKey);
 public sealed record LoginRequest(string Server, string Login, string Password);
