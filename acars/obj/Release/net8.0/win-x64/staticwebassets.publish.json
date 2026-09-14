@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "FTfhmSb/EguW13RdBM3w3osmbLmgFu36acsMISkHKu4=",
+  "Hash": "dKZMhCaqscj3j4Y7psy/PBakpc6pDL5j0m+KzMyP8/U=",
   "Source": "Promethee.Acars",
   "BasePath": "_content/Promethee.Acars",
   "Mode": "Default",
@@ -34,6 +34,25 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot\\app.js"
+    },
+    {
+      "Identity": "\\\\wsl.localhost\\Ubuntu\\home\\bragaatemorrer\\Projet_perso\\airinter-va-project\\acars\\wwwroot\\fonts\\Minitel.ttf",
+      "SourceId": "Promethee.Acars",
+      "SourceType": "Discovered",
+      "ContentRoot": "\\\\wsl.localhost\\Ubuntu\\home\\bragaatemorrer\\Projet_perso\\airinter-va-project\\acars\\wwwroot\\",
+      "BasePath": "_content/Promethee.Acars",
+      "RelativePath": "fonts/Minitel.ttf",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\fonts\\Minitel.ttf"
     },
     {
       "Identity": "\\\\wsl.localhost\\Ubuntu\\home\\bragaatemorrer\\Projet_perso\\airinter-va-project\\acars\\wwwroot\\index.html",

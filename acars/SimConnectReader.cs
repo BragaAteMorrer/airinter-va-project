@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.IO;
 
 namespace Promethee;
 public record Sample(Guid SampleId, DateTimeOffset RecordedAt, double Lat, double Lon, double Altitude,

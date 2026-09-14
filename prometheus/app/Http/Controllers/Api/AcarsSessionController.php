@@ -25,7 +25,7 @@ class AcarsSessionController extends Controller
             'password' => ['required', 'string', 'max:1024'],
         ]);
 
-        $user = $this->findUser($credentials['login'], $userSvc);
+        $user = $this->findUser(trim($credentials['login']), $userSvc);
         if ($user === null || !Hash::check($credentials['password'], $user->password)
             || !in_array($user->state, [UserState::ACTIVE, UserState::ON_LEAVE], true)) {
             return response()->json([
@@ -70,7 +70,9 @@ class AcarsSessionController extends Controller
     private function findUser(string $login, UserService $userSvc): ?User
     {
         if (str_contains($login, '@')) {
-            return User::where('email', $login)->first();
+            // Some installations use a case-sensitive database collation while
+            // e-mail addresses must be accepted case-insensitively by ACARS.
+            return User::whereRaw('LOWER(email) = ?', [mb_strtolower($login)])->first();
         }
 
         try {

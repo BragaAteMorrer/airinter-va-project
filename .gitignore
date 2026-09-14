@@ -18,3 +18,5 @@
 /.local/
 #/acars/bin/
 #/acars/obj/
+dist/
+acars/release/
