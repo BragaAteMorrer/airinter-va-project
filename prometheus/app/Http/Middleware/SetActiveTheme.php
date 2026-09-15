@@ -55,8 +55,19 @@ class SetActiveTheme implements Middleware
             $theme = 'seven';
         }
 
-        if (!empty($theme)) {
-            Theme::set($theme);
+        // SPTheme is still stored in the production settings, but its Blade
+        // views are no longer installed. Use the complete Promethee shell
+        // instead of letting every legacy page fail with a missing view.
+        if ($theme === 'SPTheme') {
+            $theme = 'beta';
         }
+
+        $themesPath = config('themes.themes_path');
+        if (!is_dir($themesPath.DIRECTORY_SEPARATOR.$theme)) {
+            Log::warning("Configured theme [{$theme}] is unavailable; using the Promethee theme instead.");
+            $theme = 'beta';
+        }
+
+        Theme::set($theme);
     }
 }

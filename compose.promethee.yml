@@ -22,7 +22,8 @@ services:
       - "127.0.0.1:8088:8000"
     environment:
       APP_ENV: local
-      APP_DEBUG: "false"
+      APP_DEBUG: "true"
+      DEBUG_TOOLBAR: "true"
       APP_URL: http://localhost:8088
       DB_HOST: db
       DB_DATABASE: promethee

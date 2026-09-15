@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 COPY acars/ ./
-RUN dotnet publish Promethee.Acars.csproj -c Release -o /out --self-contained false
+RUN dotnet publish Promethee.Acars.csproj -f net8.0 -c Release -o /out --self-contained false
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
