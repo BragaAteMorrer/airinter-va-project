@@ -1,7 +1,12 @@
 using System.Text.Json;
 using System.Net;
 using System.Net.Sockets;
+using Microsoft.AspNetCore.Builder;
 using Promethee;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 var configuredUrl = Environment.GetEnvironmentVariable("PROMETHEE_ACARS_URL");
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions {

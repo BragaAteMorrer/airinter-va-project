@@ -7,6 +7,8 @@ use App\Events\ProfileUpdated;
 use App\Models\User;
 use App\Models\UserField;
 use App\Models\UserFieldValue;
+use App\Models\Pirep;
+use App\Models\Enums\PirepState;
 use App\Repositories\AirlineRepository;
 use App\Repositories\AirportRepository;
 use App\Repositories\UserRepository;
@@ -83,11 +85,17 @@ class ProfileController extends Controller
         }
 
         $userFields = $this->userRepo->getUserFields($user, true);
+        $pireps = Pirep::with(['aircraft', 'arr_airport', 'dpt_airport'])
+            ->where('user_id', $user->id)
+            ->where('state', PirepState::ACCEPTED)
+            ->orderByDesc('submitted_at')
+            ->paginate(15);
 
         return view('profile.index', [
             'user'       => $user,
             'userFields' => $userFields,
             'acars'      => $this->acarsEnabled(),
+            'pireps'     => $pireps,
         ]);
     }
 

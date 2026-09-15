@@ -40,6 +40,54 @@ main { max-width: 1680px; }
 .dispatch-flight strong, .dispatch-flight span { display: block; }
 .dispatch-flight time { font: 19px Consolas, monospace; color: var(--ops-dark); }
 .dispatch-flight .load { display: inline-flex; align-items: center; justify-content: center; width: 58px; height: 28px; background: #edf4fb; border: 1px solid #cfdeec; border-radius: 999px; color: var(--ops-blue); font-weight: 700; }
+.departure-board { overflow: hidden; background: #202224; border: 7px solid #45484b; border-radius: 12px; box-shadow: inset 0 0 0 2px #111315, 0 10px 26px #09131c33; }
+.departure-board .panel-heading { align-items: center; padding: 19px 24px 16px; margin: 0; border-color: #484b4d; background: linear-gradient(180deg,#2c2e30,#202224); }
+.departure-board .eyebrow { color: #f1c928; }
+.departure-board .panel-heading h2 { color: #f7ca22; font-family: Impact, "Arial Narrow", sans-serif; font-size: 29px; font-weight: 400; letter-spacing: .7px; text-transform: uppercase; }
+.departure-board .panel-heading h2::before { content: "✈"; display: inline-grid; place-items: center; width: 31px; height: 31px; margin-right: 8px; border-radius: 4px; background: #f1c928; color: #161719; font-family: Arial, sans-serif; font-size: 19px; vertical-align: -2px; }
+.departure-board .panel-heading a { color: #f1c928; font-weight: 700; }
+.departure-board .flight-stack { gap: 5px; padding: 39px 16px 17px; background: radial-gradient(ellipse at top,#3b3e40 0,#202224 48%,#161718 100%); position: relative; }
+.departure-board .flight-stack::before { content: "HEURE                         VOL / DESTINATION                            CHARGE"; position: absolute; top: 15px; left: 24px; right: 24px; overflow: hidden; color: #f1c928; font: 700 11px/1 Arial, sans-serif; letter-spacing: .4px; white-space: nowrap; }
+.departure-board .dispatch-flight { grid-template-columns: minmax(180px,1fr) 82px 72px 92px; gap: 12px; min-height: 42px; padding: 5px 8px; border: 0; color: #eef0ec; }
+.departure-board .dispatch-flight:hover { background: #383b3d; }
+.departure-board .dispatch-flight > div, .departure-board .dispatch-flight time, .departure-board .dispatch-flight .load { min-width: 0; overflow: hidden; color: #f3f2e9; font: 700 18px/1.45 "Courier New", Consolas, monospace; letter-spacing: .18em; text-transform: uppercase; text-shadow: 0 1px #000; white-space: nowrap; background-color: #171819; background-image: linear-gradient(#3d3f40 0 48%,#0c0d0e 50% 100%), repeating-linear-gradient(90deg,transparent 0 calc(1.14em - 2px),#050606 calc(1.14em - 2px) 1.14em); background-size: 100% 100%,1.14em 100%; border: 1px solid #101112; border-radius: 2px; box-shadow: inset 0 1px #5b5d5e, inset 0 -1px #000; padding: 3px 3px 2px 7px; }
+.departure-board .dispatch-flight > div { display: flex; align-items: baseline; gap: 10px; }
+.departure-board .dispatch-flight > div strong { color: #f1c928; font: inherit; letter-spacing: inherit; }
+.departure-board .dispatch-flight > div span { overflow: hidden; text-overflow: clip; color: #f3f2e9; font: inherit; letter-spacing: inherit; }
+.departure-board .dispatch-flight time { order: -1; color: #f6cf2d; }
+.departure-board .dispatch-flight .load { display: block; width: auto; height: auto; color: #f1c928; text-align: center; }
+.departure-board .dispatch-flight > a { color: #f1c928; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.departure-board .empty { margin: 0; padding: 27px 12px; color: #d8d8d0; font-family: "Courier New", monospace; }
+.departure-board .flight-stack::before { content: "HEURE       DESTINATION                 INDICATIF       DURÉE     CHARGE"; }
+.departure-board .dispatch-flight { grid-template-columns: 82px minmax(180px,1fr) 112px 78px 72px; }
+.departure-board .dispatch-flight > :not(.board-cell) { display: none; }
+.departure-board .dispatch-flight .board-cell { min-width: 0; overflow: hidden; color: #f3f2e9; font: 700 18px/1.45 "Courier New", Consolas, monospace; letter-spacing: .18em; text-transform: uppercase; text-shadow: 0 1px #000; white-space: nowrap; background-color: #171819; background-image: linear-gradient(#3d3f40 0 48%,#0c0d0e 50% 100%), repeating-linear-gradient(90deg,transparent 0 calc(1.14em - 2px),#050606 calc(1.14em - 2px) 1.14em); background-size: 100% 100%,1.14em 100%; border: 1px solid #101112; border-radius: 2px; box-shadow: inset 0 1px #5b5d5e, inset 0 -1px #000; padding: 3px 3px 2px 7px; }
+.departure-board .dispatch-flight .board-cell.flight-ident { color: #f1c928; text-decoration: none; }
+.departure-board .dispatch-flight .board-cell.load { display: block; width: auto; height: auto; color: #f1c928; text-align: center; }
+
+/* Airport departure-board treatment: staggered flap rows, live scan and tactile cells. */
+@keyframes airport-board-row-arrival {
+  from { opacity: 0; transform: translateY(10px) scaleY(.92); filter: brightness(.55); }
+  65% { opacity: 1; transform: translateY(-1px) scaleY(1.02); }
+  to { opacity: 1; transform: translateY(0) scaleY(1); filter: brightness(1); }
+}
+@keyframes airport-board-scan {
+  from { transform: translateX(-125%); }
+  to { transform: translateX(125%); }
+}
+@keyframes airport-board-cell-flip {
+  0%, 86%, 100% { filter: brightness(1); }
+  90% { filter: brightness(1.75); }
+  94% { filter: brightness(.7); }
+}
+html:not([data-era="minitel"]) .departure-board .flight-stack { isolation: isolate; }
+html:not([data-era="minitel"]) .departure-board .flight-stack::after { content: ""; position: absolute; z-index: 0; inset: 0 auto 0 0; width: 34%; pointer-events: none; background: linear-gradient(90deg,transparent,#f6cf2d12,transparent); animation: airport-board-scan 5.8s ease-in-out infinite; }
+html:not([data-era="minitel"]) .departure-board .dispatch-flight { position: relative; z-index: 1; animation: airport-board-row-arrival 520ms cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--board-row, 0) * 55ms + 110ms); transition: transform 180ms ease, filter 180ms ease, background 180ms ease; }
+html:not([data-era="minitel"]) .departure-board .dispatch-flight:hover { transform: translateX(5px); filter: brightness(1.14); }
+html:not([data-era="minitel"]) .departure-board .dispatch-flight .board-cell { position: relative; transition: color 140ms ease, box-shadow 140ms ease, transform 140ms ease; animation: airport-board-cell-flip 6.5s steps(1,end) infinite; animation-delay: calc(var(--board-row, 0) * 140ms); }
+html:not([data-era="minitel"]) .departure-board .dispatch-flight:hover .board-cell { box-shadow: inset 0 1px #85898c, inset 0 -1px #000, 0 0 12px #f1c92830; transform: translateY(-1px); }
+html:not([data-era="minitel"]) .departure-board .dispatch-flight .destination { letter-spacing: .1em; }
+html:not([data-era="minitel"]) .departure-board .dispatch-flight .duration { letter-spacing: .08em; text-align: center; }
 .signal-panel { display: flex; flex-direction: column; gap: 10px; }
 .signal-panel h2 { margin: 2px 0 8px; }
 .signal { display: grid; grid-template-columns: 54px 1fr; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--line); background: #f7f9fb; border-radius: var(--radius); color: var(--ink); }
@@ -1143,7 +1191,25 @@ html[data-era="2000"] .sidebar {
 .aircraft-marker { display: grid; place-items: center; width: 28px !important; height: 28px !important; color: var(--ops-red); font-size: 25px; line-height: 1; text-shadow: 0 1px 2px #fff; transform: rotate(35deg); }
 [data-era="minitel"] .ops-leaflet-map { height: 280px; border-color: var(--minitel-green); border-radius: 0; filter: grayscale(1) contrast(1.2) brightness(.62) sepia(.45) hue-rotate(62deg); }
 
+/* The split-flap departure board keeps its physical-board appearance in every display era. */
+html[data-era] .departure-board { margin-bottom: 22px; background: #202224; border-color: #45484b; }
+html[data-era] .departure-board .panel-heading { display: flex; background: linear-gradient(180deg,#2c2e30,#202224); }
+html[data-era] .departure-board .panel-heading h2 { display: block; padding: 0; background: transparent; color: #f7ca22; }
+html[data-era] .departure-board .dispatch-flight { display: grid; border: 0; }
+html[data-era] .departure-board .dispatch-flight time { color: #f6cf2d; }
+html[data-era] .departure-board .dispatch-flight .load { color: #f1c928; }
+
 @media (max-width: 760px) {
+  .departure-board { border-width: 4px; border-radius: 7px; }
+  .departure-board .panel-heading { padding: 15px 16px 13px; }
+  .departure-board .panel-heading h2 { font-size: 23px; }
+  .departure-board .panel-heading h2::before { width: 25px; height: 25px; font-size: 15px; }
+  .departure-board .flight-stack { padding: 34px 9px 10px; }
+  .departure-board .flight-stack::before { top: 13px; left: 16px; font-size: 9px; content: "HEURE      VOL / DESTINATION"; }
+  .departure-board .dispatch-flight { grid-template-columns: minmax(0,1fr) 72px; gap: 6px; padding: 4px; }
+  .departure-board .dispatch-flight > div, .departure-board .dispatch-flight time, .departure-board .dispatch-flight .load { font-size: 14px; }
+  .departure-board .dispatch-flight .load, .departure-board .dispatch-flight > a { grid-row: 2; }
+  .departure-board .dispatch-flight > a { align-self: center; }
   [data-era="minitel"] .brand-logo-shell { height: 28px; }
   [data-era="minitel"] .brand-logo-minitel { width: min(100%, 190px); height: 25px; }
 }

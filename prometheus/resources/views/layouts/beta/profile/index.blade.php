@@ -217,6 +217,57 @@ show the details/edit fields only for the currently logged in user
     </table>
   </div>
 </div>
+
+<div class="clearfix" style="height: 35px;"></div>
+<div class="row">
+  <div class="col-sm-12">
+    <h3 class="description">Carnet Prométhée</h3>
+    <div class="card">
+      <div class="card-body">
+        <h5>Derniers vols acceptés</h5>
+        @if($pireps->isEmpty())
+          <p class="text-muted mb-0">Aucun PIREP accepté pour le moment.</p>
+        @else
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead>
+              <tr>
+                <th>Vol</th>
+                <th>Ligne</th>
+                <th>Avion</th>
+                <th>Durée</th>
+                <th>Atterrissage</th>
+                <th>Date</th>
+                <th class="text-right">Détail</th>
+              </tr>
+              </thead>
+              <tbody>
+              @foreach($pireps as $pirep)
+                <tr>
+                  <td><a href="{{ route('frontend.pireps.show', [$pirep->id]) }}">{{ $pirep->ident }}</a></td>
+                  <td>{{ $pirep->dpt_airport_id }} → {{ $pirep->arr_airport_id }}</td>
+                  <td>{{ optional($pirep->aircraft)->registration ?? optional($pirep->aircraft)->ident ?? '—' }}</td>
+                  <td>@minutestotime($pirep->flight_time)</td>
+                  <td>{{ $pirep->landing_rate ? number_format($pirep->landing_rate).' ft/min' : '—' }}</td>
+                  <td>{{ optional($pirep->submitted_at)->format('d/m/Y') ?? '—' }}</td>
+                  <td class="text-right">
+                    <a class="btn btn-sm btn-outline-primary" href="{{ route('frontend.pireps.show', [$pirep->id]) }}">
+                      Consulter le PIREP
+                    </a>
+                  </td>
+                </tr>
+              @endforeach
+              </tbody>
+            </table>
+          </div>
+          <div class="text-center mt-3">
+            {{ $pireps->withQueryString()->links('pagination.bootstrap-4') }}
+          </div>
+        @endif
+      </div>
+    </div>
+  </div>
+</div>
 @endsection
 
 @section('scripts')

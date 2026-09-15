@@ -13,16 +13,22 @@
         "packagesPath": "C:\\Users\\nenea\\.nuget\\packages\\",
         "outputPath": "\\\\wsl.localhost\\Ubuntu\\home\\bragaatemorrer\\Projet_perso\\airinter-va-project\\acars\\obj\\",
         "projectStyle": "PackageReference",
+        "crossTargeting": true,
         "configFilePaths": [
           "C:\\Users\\nenea\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
+          "net8.0",
           "net8.0-windows"
         ],
         "sources": {
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          },
           "net8.0-windows7.0": {
             "targetAlias": "net8.0-windows",
             "projectReferences": {}
@@ -35,6 +41,29 @@
         }
       },
       "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.AspNetCore.App": {
+              "privateAssets": "none"
+            },
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.101/PortableRuntimeIdentifierGraph.json"
+        },
         "net8.0-windows7.0": {
           "targetAlias": "net8.0-windows",
           "dependencies": {
