@@ -1,8 +1,8 @@
 @extends('auth.login_layout')
 @section('title', __('common.login'))
 @section('content')
-  <div class="login-form-heading"><h2>Connexion pilote</h2><p>Accédez à votre carnet de vol et aux opérations.</p></div>
-  <div id="minitel-access" class="minitel-access" hidden><p><strong>ACCÈS MINITEL :</strong> composez le service avant de vous identifier.</p><label for="minitel-access-code">CODE DU SERVICE</label><input id="minitel-access-code" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="3615 AIR INTER"><div id="minitel-access-status" class="minitel-access-status" aria-live="polite"></div></div>
+  <div class="login-form-heading"><h2>{{ __('promethee.pilot_login') }}</h2><p>{{ __('promethee.login_intro') }}</p></div>
+  <div id="minitel-access" class="minitel-access" hidden><p><strong>{{ __('promethee.minitel_access') }}</strong> {{ __('promethee.minitel_instruction') }}</p><label for="minitel-access-code">{{ __('promethee.service_code') }}</label><input id="minitel-access-code" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="3615 AIR INTER"><div id="minitel-access-status" class="minitel-access-status" aria-live="polite"></div></div>
   <form method="post" action="{{ url('/login') }}" class="login-form">
     @csrf
     <div class="field"><label for="email">@lang('common.email') @lang('common.or') @lang('common.pilot_id')</label><input data-auth-control type="text" name="email" id="email" value="{{ old('email') }}" required autofocus>@if($errors->has('email'))<div class="text-danger small mt-1">{{ $errors->first('email') }}</div>@endif</div>

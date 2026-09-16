@@ -310,6 +310,13 @@ class PirepController extends Controller
 
         $pirep = $this->pirepRepo->update($attrs, $id);
 
+        // Prométhée progression is idempotent; evaluating here makes a newly
+        // accepted report immediately eligible while the scheduled task is a
+        // safety net for imports and legacy reports.
+        if ((int) $pirep->state === PirepState::ACCEPTED) {
+            app(\Modules\Promethee\Services\ProgressionService::class)->recalculate($pirep->user, 'pirep_validation');
+        }
+
         // A route change in the PIREP, so update the saved points in the ACARS table
         if ($pirep->route !== $orig_route) {
             $this->pirepSvc->saveRoute($pirep);

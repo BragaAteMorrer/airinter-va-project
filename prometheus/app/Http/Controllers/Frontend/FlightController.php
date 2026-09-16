@@ -16,6 +16,7 @@ use App\Repositories\SubfleetRepository;
 use App\Repositories\UserRepository;
 use App\Services\FlightService;
 use App\Services\GeoService;
+use App\Services\AirportService;
 use App\Services\ModuleService;
 use App\Services\UserService;
 use Illuminate\Http\Request;
@@ -31,6 +32,7 @@ class FlightController extends Controller
 {
     public function __construct(
         private readonly AirlineRepository $airlineRepo,
+        private readonly AirportService $airportSvc,
         private readonly AirportRepository $airportRepo,
         private readonly FlightRepository $flightRepo,
         private readonly FlightService $flightSvc,
@@ -240,6 +242,8 @@ class FlightController extends Controller
                 return $query->withTrashed();
             },
             'subfleets.airline',
+            'fares',
+            'field_values',
             'simbrief' => function ($query) use ($user) {
                 $query->where('user_id', $user->id);
             },
@@ -247,7 +251,7 @@ class FlightController extends Controller
 
         $flight = $this->flightRepo->with($with_flight)->find($id);
         if (empty($flight)) {
-            Flash::error('Flight not found!');
+            Flash::error(__('promethee.flight_not_found'));
 
             return redirect(route('frontend.dashboard.index'));
         }
@@ -258,12 +262,28 @@ class FlightController extends Controller
 
         $map_features = $this->geoSvc->flightGeoJson($flight);
 
+        // Keep the operational weather with the flight, including the alternate
+        // when one is planned. A missing report must not prevent the sheet from
+        // being displayed: the view gives the pilot a clear status instead.
+        $weather = collect([
+            'departure' => $flight->dpt_airport_id,
+            'arrival' => $flight->arr_airport_id,
+            'alternate' => $flight->alt_airport_id,
+        ])->filter()->mapWithKeys(function (string $icao, string $role) {
+            return [$role => [
+                'icao' => $icao,
+                'metar' => $this->airportSvc->getMetar($icao),
+                'taf' => $this->airportSvc->getTaf($icao),
+            ]];
+        });
+
         // See if the user has a bid for this flight
         $bid = Bid::where(['user_id' => $user->id, 'flight_id' => $flight->id])->first();
 
         return view('flights.show', [
             'flight'       => $flight,
             'map_features' => $map_features,
+            'weather'      => $weather,
             'bid'          => $bid,
             'acars_plugin' => $this->moduleSvc->isModuleActive('VMSAcars'),
         ]);

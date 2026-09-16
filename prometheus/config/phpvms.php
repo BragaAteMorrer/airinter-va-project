@@ -28,7 +28,9 @@ return [
     /*
      * Where to redirect after logging in
      */
-    'login_redirect' => '/dashboard',
+    // Promethee owns the local portal at the application root. The stock
+    // phpVMS dashboard is intentionally exposed under /legacy/dashboard.
+    'login_redirect' => '/',
 
     /*
      * Where to redirect after registration

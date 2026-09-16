@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="{{ app()->getLocale() }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -13,12 +13,12 @@
 </head>
 <body class="promethee-auth">
   <main class="login-shell">
-    <header class="login-topbar"><span class="login-wordmark">AIR INTER · PROMÉTHÉE</span><label class="login-era">ÉCRAN <select id="login-era" aria-label="Style d'affichage"><option value="modern">Moderne</option><option value="2000">Années 2000</option><option value="minitel">Minitel</option></select></label></header>
+    <header class="login-topbar"><span class="login-wordmark">AIR INTER · PROMÉTHÉE</span><label class="login-era">{{ __('promethee.display') }} <select id="login-era" aria-label="{{ __('promethee.display_style') }}"><option value="modern">{{ __('promethee.modern') }}</option><option value="2000">{{ __('promethee.year_2000') }}</option><option value="minitel">{{ __('promethee.minitel') }}</option></select></label></header>
     <div class="login-layout">
-      <aside class="login-intro"><div><small>COMPAGNIE VIRTUELLE</small><h1>Pourquoi vivre sans ailes !</h1><p>Entrez dans l’espace pilote Air Inter et préparez votre prochaine rotation.</p></div><div class="login-route"><b>AI</b><span>RÉSEAU INTÉRIEUR FRANÇAIS</span></div></aside>
+      <aside class="login-intro"><div><small>{{ __('promethee.company_virtual') }}</small><h1>Pourquoi vivre sans ailes !</h1><p>{{ __('promethee.login_welcome') }}</p></div><div class="login-route"><b>AI</b><span>{{ __('promethee.french_domestic_network') }}</span></div></aside>
       <section class="login-panel">@include('flash.message')@yield('content')</section>
     </div>
-    <footer class="login-footer">© {{ date('Y') }} {{ config('app.name') }} · Propulsé par phpVMS</footer>
+    <footer class="login-footer">© {{ date('Y') }} {{ config('app.name') }} · {{ __('promethee.powered_by') }}</footer>
   </main>
   <script src="{{ public_asset('/promethee-assets/login.js') }}" defer></script>
   @yield('scripts')

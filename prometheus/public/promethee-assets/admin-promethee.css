@@ -1,0 +1,88 @@
+/* Prométhée command centre — a visual layer for phpVMS' legacy back-office. */
+:root { --admin-navy:#092044; --admin-navy-soft:#123a73; --admin-blue:#155eef; --admin-red:#e5484d; --admin-ink:#172b4d; --admin-muted:#64748b; --admin-paper:#f4f7fb; --admin-panel:#fff; --admin-line:#dce5f2; --admin-radius:14px; }
+body.admin-promethee { background:var(--admin-paper); color:var(--admin-ink); font-family:Inter,"Segoe UI",Roboto,Arial,sans-serif; }
+body.admin-promethee .wrapper { min-height:100vh; background:var(--admin-paper); }
+
+/* Navigation */
+body.admin-promethee .sidebar { width:268px; background:linear-gradient(160deg,var(--admin-navy) 0%,#0e2e61 64%,var(--admin-navy-soft) 100%)!important; box-shadow:8px 0 28px rgb(8 31 68 / 16%); z-index:20; }
+/* Paper Dashboard paints two opaque white pseudo-elements over every sidebar.
+   Remove those inherited layers: this is what makes the command-centre colour
+   visible instead of looking washed out. */
+body.admin-promethee .sidebar::before,body.admin-promethee .sidebar::after { display:none!important; content:none!important; }
+body.admin-promethee .sidebar .sidebar-wrapper { height:100%; overflow-x:hidden; overflow-y:auto; }
+body.admin-promethee .sidebar .sidebar-wrapper { box-shadow:inset -1px 0 0 rgb(255 255 255 / 12%); }
+body.admin-promethee .sidebar .logo { min-height:93px!important; margin:0!important; padding:16px 18px; border-bottom:1px solid rgb(255 255 255 / 15%); background:transparent!important; }
+body.admin-promethee .admin-brand { display:flex; align-items:center; gap:12px; color:#fff; text-decoration:none; }
+body.admin-promethee .admin-brand:hover { color:#fff; text-decoration:none; }
+body.admin-promethee .admin-brand img { display:block; width:52px; max-height:58px; object-fit:contain; filter:drop-shadow(0 3px 8px rgb(0 0 0 / 22%)); }
+body.admin-promethee .admin-brand b { display:block; color:#fff; font-size:19px; font-weight:800; letter-spacing:-.45px; }
+body.admin-promethee .admin-brand small { display:block; margin-top:2px; color:#9db6d8; font-size:9px; font-weight:700; letter-spacing:.11em; text-transform:uppercase; }
+body.admin-promethee .sidebar .nav { margin-top:13px; }
+body.admin-promethee .sidebar .nav li>a { display:flex; align-items:center; min-height:43px; margin:3px 12px!important; padding:11px 12px!important; border:1px solid transparent; border-radius:8px; color:#c9d7e9!important; font-size:12px; font-weight:650; line-height:1.25; transition:background .16s ease,border-color .16s ease,transform .16s ease; }
+body.admin-promethee .sidebar .nav li>a:hover,body.admin-promethee .sidebar .nav li.active>a { border-color:rgb(255 255 255 / 12%); background:linear-gradient(90deg,rgb(75 134 245 / 42%),rgb(255 255 255 / 8%))!important; color:#fff!important; text-decoration:none; transform:translateX(2px); }
+body.admin-promethee .sidebar .nav li.active>a { box-shadow:inset 3px 0 #f15a5f; }
+body.admin-promethee .sidebar .nav li.active>a::before,body.admin-promethee .sidebar .nav li.active>a::after { display:none!important; }
+body.admin-promethee .sidebar .nav i { width:24px; margin-right:6px; color:inherit!important; font-size:19px; text-align:center; }
+body.admin-promethee .sidebar .nav h5 { margin:0; color:inherit; font-size:10px; font-weight:800; letter-spacing:.11em; text-transform:uppercase; }
+body.admin-promethee .sidebar .nav h5 b { float:right; margin:-4px 0 0 9px; font-size:18px; }
+body.admin-promethee .sidebar .nav .collapse .nav { margin:1px 0 7px; }
+body.admin-promethee .sidebar .nav .collapse .nav li>a { min-height:36px; margin-left:26px!important; color:#adc2dc!important; font-size:11px; }
+body.admin-promethee .sidebar .nav .collapse .nav li>a:hover { color:#fff!important; }
+body.admin-promethee .sidebar .badge { margin-left:auto; background:var(--admin-red); color:#fff; font-size:9px; }
+body.admin-promethee .admin-version { color:#a9c1de!important; font-size:10px; letter-spacing:.05em; }
+
+/* App frame */
+body.admin-promethee .main-panel { width:calc(100% - 268px); min-height:100vh; background:radial-gradient(circle at 88% -10%,rgb(81 137 255 / 13%),transparent 34rem),var(--admin-paper); }
+body.admin-promethee .navbar.navbar-default { min-height:76px; margin:0; border:0; border-bottom:1px solid var(--admin-line); border-radius:0; background:rgb(255 255 255 / 92%); box-shadow:0 1px 0 rgb(255 255 255 / 90%); }
+body.admin-promethee .navbar .container-fluid,body.admin-promethee .content>.container-fluid { max-width:1540px; }
+body.admin-promethee .navbar-header { min-height:76px; }
+body.admin-promethee .navbar .navbar-brand { height:auto; padding:17px 15px; color:var(--admin-ink)!important; font-size:23px; font-weight:800; line-height:1.08; }
+body.admin-promethee .admin-kicker { display:block; margin-bottom:5px; color:var(--admin-blue); font-size:9px; font-weight:800; letter-spacing:.15em; }
+body.admin-promethee .admin-page-title { display:block; }
+body.admin-promethee .navbar-nav>li>a { padding-top:29px; padding-bottom:27px; color:var(--admin-muted)!important; font-size:11px; font-weight:750; }
+body.admin-promethee .navbar-nav>li>a i { margin-right:4px; font-size:15px; vertical-align:-1px; }
+body.admin-promethee .navbar-nav>li>a:hover { color:var(--admin-blue)!important; }
+body.admin-promethee .content { padding:28px 0 45px; }
+body.admin-promethee .content .content { padding:0; }
+
+/* Reusable legacy components */
+body.admin-promethee .card,body.admin-promethee .panel,body.admin-promethee .well { border:1px solid var(--admin-line); border-radius:var(--admin-radius); background:var(--admin-panel); box-shadow:0 12px 30px rgb(20 48 93 / 8%); overflow:hidden; }
+body.admin-promethee .card { margin-bottom:20px; }
+body.admin-promethee .card .content,body.admin-promethee .panel-body { padding:22px 24px; }
+body.admin-promethee .card .header { margin:0 0 16px; padding:0 0 14px; border-bottom:1px solid var(--admin-line); }
+body.admin-promethee .card .title,body.admin-promethee .panel-title { margin:0; color:var(--admin-ink); font-size:18px; font-weight:800; letter-spacing:-.35px; }
+body.admin-promethee .border-blue-bottom { border-bottom:0; border-top:3px solid var(--admin-blue); }
+body.admin-promethee .alert { margin-bottom:20px; padding:14px 18px; border:1px solid transparent; border-radius:10px; box-shadow:0 8px 22px rgb(20 48 93 / 5%); font-size:13px; }
+body.admin-promethee .alert-danger { border-color:#ffd1d5; background:#fff3f4; color:#9d2331; }
+body.admin-promethee .alert a { font-weight:800; }
+body.admin-promethee .form-control,body.admin-promethee select.form-control { height:41px; border:1px solid #cbd8e8; border-radius:8px; box-shadow:none; color:var(--admin-ink); }
+body.admin-promethee textarea.form-control { height:auto; }
+body.admin-promethee .form-control:focus { border-color:var(--admin-blue); box-shadow:0 0 0 3px rgb(21 94 239 / 13%); }
+body.admin-promethee .table { margin-bottom:15px; border-color:var(--admin-line); }
+body.admin-promethee .table>thead>tr>th { padding:12px 11px; border-bottom:1px solid var(--admin-line); background:#f5f8fc; color:var(--admin-muted); font-size:10px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+body.admin-promethee .table>tbody>tr>td,body.admin-promethee .table>tbody>tr>th { padding:13px 11px; border-top-color:var(--admin-line); color:var(--admin-ink); vertical-align:middle; }
+body.admin-promethee .table>tbody>tr:hover { background:#f8fbff; }
+body.admin-promethee label { color:var(--admin-ink); font-size:12px; font-weight:750; }
+body.admin-promethee .btn { border-radius:8px; box-shadow:none; font-weight:750; transition:transform .15s ease,box-shadow .15s ease,background .15s ease; }
+body.admin-promethee .btn:hover { box-shadow:0 5px 13px rgb(21 94 239 / 22%); transform:translateY(-1px); }
+body.admin-promethee .btn-primary,body.admin-promethee .btn-info { border-color:var(--admin-blue); background:var(--admin-blue); }
+body.admin-promethee .btn-success { border-color:#149769; background:#149769; }
+body.admin-promethee .btn-danger { border-color:var(--admin-red); background:var(--admin-red); }
+body.admin-promethee .btn-warning { border-color:#d98c12; background:#d98c12; }
+body.admin-promethee .pagination>li>a,body.admin-promethee .pagination>li>span { margin:0 2px; border-color:var(--admin-line); border-radius:7px; color:var(--admin-blue); }
+body.admin-promethee .pagination>.active>a,body.admin-promethee .pagination>.active>span { border-color:var(--admin-blue); background:var(--admin-blue); }
+
+/* Dashboard counters become compact operational signals. */
+body.admin-promethee .icon-big { color:var(--admin-blue); }
+body.admin-promethee .icon-big i { font-size:42px; }
+body.admin-promethee .numbers p { margin:3px 0 4px; color:var(--admin-muted); font-size:10px; font-weight:800; letter-spacing:.11em; text-transform:uppercase; }
+body.admin-promethee .numbers a,body.admin-promethee .numbers { color:var(--admin-ink); font-size:27px; font-weight:800; line-height:1.2; }
+body.admin-promethee .numbers a { color:var(--admin-red); }
+body.admin-promethee .card .footer { margin-top:12px; padding:0; border:0; background:transparent; }
+body.admin-promethee .card .footer hr { margin:10px 0; border-top-color:var(--admin-line); }
+body.admin-promethee .footer { margin-top:16px; border-top:1px solid var(--admin-line); background:rgb(255 255 255 / 80%); }
+body.admin-promethee .cke { border-color:#cbd8e8!important; border-radius:8px; overflow:hidden; }
+body.admin-promethee .cke_top,body.admin-promethee .cke_bottom { border-color:var(--admin-line)!important; background:#f5f8fc!important; }
+
+@media(max-width:991px) { body.admin-promethee .sidebar { width:250px; } body.admin-promethee .main-panel { width:100%; } body.admin-promethee .navbar-nav>li>a { padding-top:11px; padding-bottom:11px; } }
+@media(max-width:767px) { body.admin-promethee .navbar-header { min-height:64px; } body.admin-promethee .navbar.navbar-default { min-height:64px; } body.admin-promethee .navbar .navbar-brand { padding:13px 15px; font-size:19px; } body.admin-promethee .navbar-toggle { margin-top:15px; border-color:var(--admin-line); } body.admin-promethee .content { padding-top:18px; } body.admin-promethee .card .content,body.admin-promethee .panel-body { padding:17px; } body.admin-promethee .table-responsive { border:0; } }
