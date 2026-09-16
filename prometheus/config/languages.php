@@ -2,36 +2,36 @@
 
 return [
     // First in the list is the default
+    'fr' => [
+        'display'   => 'Français',
+        'flag-icon' => 'fr',
+    ],
     'en' => [
         'display'   => 'English',
         'flag-icon' => 'us',
     ],
     'de' => [
-        'display'   => 'German',
+        'display'   => 'Deutsch',
         'flag-icon' => 'de',
     ],
     'es-es' => [
-        'display'   => 'Spanish (Spain)',
+        'display'   => 'Español (España)',
         'flag-icon' => 'es',
     ],
-    'fr' => [
-        'display'   => 'French',
-        'flag-icon' => 'fr',
-    ],
     'it' => [
-        'display'   => 'Italian',
+        'display'   => 'Italiano',
         'flag-icon' => 'it',
     ],
     'pt-br' => [
-        'display'   => 'Portuguese (Brazilian)',
+        'display'   => 'Português (Brasil)',
         'flag-icon' => 'br',
     ],
     'jp' => [
-        'display'   => 'Japanese (日本語)',
+        'display'   => '日本語',
         'flag-icon' => 'jp',
     ],
     'tr' => [
-        'display'   => 'Turkish (Türkçe)',
+        'display'   => 'Türkçe',
         'flag-icon' => 'tr',
     ],
 ];

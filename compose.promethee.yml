@@ -39,6 +39,18 @@ services:
     volumes:
       - promethee-storage:/var/www/html/storage
       - promethee-bootstrap:/var/www/html/bootstrap/cache
+    develop:
+      watch:
+        # Synchronise le code hôte dans le conteneur sans le reconstruire.
+        # Les dépendances et les données runtime restent celles du conteneur.
+        - action: sync
+          path: ./prometheus
+          target: /var/www/html
+          ignore:
+            - vendor/
+            - storage/
+            - bootstrap/cache/
+            - .env
   acars:
     build:
       context: .

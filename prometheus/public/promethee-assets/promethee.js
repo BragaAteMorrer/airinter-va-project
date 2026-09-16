@@ -81,6 +81,14 @@
     if (clock) clock.textContent = new Date().toISOString().slice(11,19)+' UTC';
     const paris = document.getElementById('paris-clock');
     if (paris) paris.textContent = new Intl.DateTimeFormat('fr-FR',{timeZone:'Europe/Paris',hour:'2-digit',minute:'2-digit'}).format(new Date());
+    document.querySelectorAll('[data-world-clock]').forEach((node) => {
+      const zone = node.dataset.worldClock;
+      try {
+        const parts = new Intl.DateTimeFormat('fr-FR',{timeZone:zone,hour:'2-digit',minute:'2-digit',timeZoneName:'shortOffset'}).formatToParts(new Date());
+        node.querySelector('strong').textContent = parts.filter(p => p.type === 'hour' || p.type === 'minute').map(p => p.value).join(':');
+        const offset = parts.find(p => p.type === 'timeZoneName')?.value; if (offset) node.querySelector('small').textContent = offset;
+      } catch { node.querySelector('strong').textContent = '—'; }
+    });
   };
   tick(); setInterval(tick,1000);
 })();

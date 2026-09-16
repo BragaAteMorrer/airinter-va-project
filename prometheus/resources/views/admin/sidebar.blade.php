@@ -7,9 +7,13 @@
 
 
   <div class="sidebar-wrapper">
-    <div class="logo" style="background: #067ec1; margin: 0px; text-align: center; min-height: 74px;">
-      <a href="{{ url('/dashboard') }}">
-        <img src="{{ public_asset('/assets/img/logo_blue_bg.svg') }}" width="110px" style="">
+    <div class="logo">
+      <a href="{{ url('/admin/dashboard') }}" class="admin-brand" aria-label="Air Inter Prométhée — administration">
+        <img src="{{ public_asset('/promethee-assets/logos/air-inter-stacked.png') }}" alt="Air Inter">
+        <span>
+          <b>Prométhée</b>
+          <small>Centre d'opérations</small>
+        </span>
       </a>
     </div>
 
@@ -21,7 +25,7 @@
 
     <div class="row" style="margin-bottom: 20px;">
       <div class="col-xs-12 text-center">
-        <a class="small"
+        <a class="small admin-version"
            style="cursor: pointer"
            data-container="body"
            data-toggle="popover"

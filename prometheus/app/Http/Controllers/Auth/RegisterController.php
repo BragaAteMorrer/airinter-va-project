@@ -229,6 +229,6 @@ class RegisterController extends Controller
 
         $this->guard()->login($user);
 
-        return redirect('/dashboard');
+        return redirect(config('phpvms.login_redirect'));
     }
 }

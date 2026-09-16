@@ -1,4 +1,4 @@
-<li>
+<li class="{{ request()->is('admin/dashboard*') ? 'active' : '' }}">
   <a href="{{ url('/admin/dashboard') }}"><i class="pe-7s-display1"></i>dashboard</a>
 </li>
 
@@ -122,4 +122,3 @@
     </ul>
   </div>
 </li>
-

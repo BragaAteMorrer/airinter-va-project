@@ -25,6 +25,7 @@
   <link rel="stylesheet" href="{{ public_mix('/assets/admin/css/vendor.css') }}"/>
   <link rel="stylesheet" href="{{ public_asset('/assets/admin/css/admin.css') }}"/>
   <link rel="stylesheet" href="{{ public_asset('/promethee-assets/global-shell.css') }}"/>
+  <link rel="stylesheet" href="{{ public_asset('/promethee-assets/admin-promethee.css') }}"/>
 
   <style type="text/css">
     @yield('css')
@@ -56,11 +57,11 @@
             <span class="icon-bar bar2"></span>
             <span class="icon-bar bar3"></span>
           </button>
-          <a class="navbar-brand" href="{{ url('/admin') }}"><span class="admin-kicker">BACKOFFICE AIR INTER</span>@yield('title')</a>
+          <a class="navbar-brand" href="{{ url('/admin') }}"><span class="admin-kicker">AIR INTER · PROMÉTHÉE</span><span class="admin-page-title">@yield('title')</span></a>
         </div>
         <div class="collapse navbar-collapse">
           <ul class="nav navbar-nav navbar-right">
-            <li><a href="{{ url('/') }}">Portail pilote</a></li>
+            <li><a href="{{ url('/') }}"><i class="pe-7s-home"></i> Portail pilote</a></li>
             <li><a href="{{ url('/admin/identity/identite') }}">Identité</a></li>
             @yield('actions')
           </ul>

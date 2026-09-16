@@ -155,7 +155,11 @@ class RouteServiceProvider extends ServiceProvider
             ], function () {
                 Route::get('/', 'HomeController@index')->name('home');
                 Route::get('r/{id}', 'PirepController@show')->name('pirep.show.public');
-                Route::get('pireps/{id}', 'PirepController@show')->name('pireps.show');
+                // The legacy report template has been retired. Keep old links
+                // alive while sending them to the Prométhée report instead.
+                Route::get('pireps/{id}', function (string $id) {
+                    return redirect()->route('promethee.pireps.show', ['id' => $id]);
+                })->name('pireps.show');
 
                 Route::get('users/{id}', 'ProfileController@show')->name('users.show.public');
                 Route::get('pilots/{id}', 'ProfileController@show')->name('pilots.show.public');

@@ -9,3 +9,10 @@
 !/Updater
 !/Vacentral
 !/ModulesManager
+!/Promethee/
+/Promethee/*
+!/Promethee/Database/
+/Promethee/Database/*
+!/Promethee/Database/migrations/
+/Promethee/Database/migrations/*
+!/Promethee/Database/migrations/*.php

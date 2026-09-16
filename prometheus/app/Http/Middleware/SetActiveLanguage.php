@@ -16,11 +16,19 @@ class SetActiveLanguage
      */
     public function handle(Request $request, Closure $next)
     {
-        $preferredLanguage = 'en';
-        if (setting('general.auto_language_detection', false) && !$request->hasCookie('lang')) {
+        $preferredLanguage = config('app.locale', 'fr');
+        // An authenticated pilot's choice takes precedence over the browser
+        // cookie. This keeps the portal consistent when they change device.
+        if ($request->user() && in_array($request->user()->locale, array_keys(config('languages')), true)) {
+            $preferredLanguage = $request->user()->locale;
+        } elseif (setting('general.auto_language_detection', false) && !$request->hasCookie('lang')) {
             $preferredLanguage = $request->getPreferredLanguage(array_keys(config('languages')));
         } else {
-            $preferredLanguage = $request->cookie('lang', config('app.locale', 'en'));
+            $preferredLanguage = $request->cookie('lang', config('app.locale', 'fr'));
+        }
+
+        if (!array_key_exists($preferredLanguage, config('languages'))) {
+            $preferredLanguage = config('app.fallback_locale', 'fr');
         }
 
         App::setLocale($preferredLanguage);

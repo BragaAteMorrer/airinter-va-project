@@ -13,7 +13,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start-promethee.ps1
 Puis ouvrir :
 
 ```text
-http://localhost:8088/promethee
+http://localhost:8088/
 http://127.0.0.1:1974
 ```
 
@@ -56,6 +56,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start-acars.ps1
 - Bulletin sécurité mensuel anonymisé à partir des PIREPs et de la télémétrie.
 - API télémétrie Prométhée.
 - ACARS Windows local avec tampon disque et dépôt de PIREP.
+- Espace administration protégé sous `/admin/promethee` (pilotage, règles de progression, tarifs, réseau et messagerie).
+- Recalcul badges/grades : `php artisan promethee:progression-recalculate`, exécuté chaque heure par le scheduler Laravel.
+- Migration `2026_09_16_000005_add_admin_automation` : règles de badges, règles de grades et historique de progression.
 
 ## Note historique
 

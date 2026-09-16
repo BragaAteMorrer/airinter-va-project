@@ -13,6 +13,30 @@
   --radius: 8px;
   --shadow: 0 8px 22px #0b223512;
 }
+.pilot-space { margin: 0 5px 20px; padding: 14px 0 15px; border-block: 1px solid #ffffff20; color: #a6b9ca; font-size: 9px; letter-spacing: 1px; }
+.pilot-space-label { display: block; margin-bottom: 10px; }
+.pilot-card-link { display: grid; grid-template-columns: 46px minmax(0,1fr) auto; align-items: center; gap: 10px; padding: 8px; border: 1px solid #ffffff1c; border-radius: 7px; background: linear-gradient(135deg,#ffffff12,#ffffff06); color: inherit; text-decoration: none; transition: background 160ms ease, border-color 160ms ease, transform 160ms ease; }
+.pilot-card-link:hover { border-color: #71a8f3; background: #ffffff1b; color: white; text-decoration: none; transform: translateX(2px); }
+.pilot-avatar { width: 46px; height: 46px; overflow: hidden; border: 2px solid #6ea9fa; border-radius: 50%; background: #1c4977; box-shadow: 0 0 0 3px #6ea9fa20; }
+.pilot-avatar img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.pilot-identity { display: grid; min-width: 0; gap: 1px; }
+.pilot-identity strong { overflow: hidden; color: #fff; font-size: 12px; letter-spacing: 0; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; }
+.pilot-identity small { color: #8ebbf0; font: 700 9px/1.35 Consolas, monospace; letter-spacing: .6px; }
+.pilot-identity em { overflow: hidden; color: #b8cadd; font-size: 9px; font-style: normal; letter-spacing: 0; text-overflow: ellipsis; white-space: nowrap; }
+.pilot-open { color: #9fc4f7; font-size: 13px; font-weight: 400; }
+.pilot-space-actions { display: flex; flex-wrap: wrap; gap: 5px 12px; margin: 9px 3px 0; }
+.pilot-space-actions a { color: #a6b9ca; font-size: 10px; letter-spacing: 0; }
+.pilot-space-actions a:hover { color: #fff; }
+[data-era="2000"] .pilot-space { border-color: #b7cbea; }
+[data-era="2000"] .pilot-card-link { border: 2px outset #9cb8dc; border-radius: 0; background: linear-gradient(#4e78b1,#244d8b); }
+[data-era="2000"] .pilot-card-link:hover { border-color: #dceafb; background: linear-gradient(#628cc4,#315e9e); transform: none; }
+[data-era="2000"] .pilot-avatar { border-color: #dceafb; border-radius: 2px; box-shadow: 1px 1px 0 #071a3d; }
+[data-era="2000"] .pilot-space-actions a, [data-era="2000"] .pilot-space { color: #e3ecfa; }
+[data-era="minitel"] .pilot-space { border-color: var(--line); color: var(--muted); }
+[data-era="minitel"] .pilot-card-link { border-color: var(--line); border-radius: 0; background: #0b1d12; }
+[data-era="minitel"] .pilot-avatar { border-color: var(--minitel-green); border-radius: 0; box-shadow: none; filter: grayscale(1) sepia(.5) hue-rotate(65deg); }
+[data-era="minitel"] .pilot-identity strong, [data-era="minitel"] .pilot-space-actions a { color: var(--ink); }
+[data-era="minitel"] .pilot-identity small, [data-era="minitel"] .pilot-open { color: var(--minitel-green); }
 main { max-width: 1680px; }
 .sidebar { background: #0e2a44; }
 .system-name { padding-top: 28px; }
@@ -1188,6 +1212,7 @@ html[data-era="2000"] .sidebar {
 /* Geospatial operational views share one real map surface. */
 .ops-leaflet-map { height: clamp(360px, 58vh, 620px); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #dfe9f0; }
 .ops-leaflet-map.leaflet-container { font: inherit; }
+.report-heading{align-items:flex-start}.report-heading .toolbar{justify-content:flex-end;margin:0}.report-heading form{margin:0}.report-strip{grid-template-columns:repeat(4,1fr)}.route-summary{display:grid;grid-template-columns:1fr minmax(130px,.55fr) 1fr;align-items:center;gap:20px}.airport-card strong{display:block;font-size:29px;line-height:1.1;margin:8px 0}.airport-card p{margin:0 0 7px}.airport-card small{color:var(--muted);font-size:11px}.airport-card.arrival{text-align:right}.route-line{display:grid;place-items:center;text-align:center;color:var(--muted);font-size:10px}.route-line:before,.route-line:after{content:"";display:block;width:100%;height:1px;background:var(--line)}.route-line i{font-size:24px;color:var(--blue);padding:7px;transform:rotate(90deg)}.report-tabs{display:flex;gap:5px;border-bottom:1px solid var(--line);margin:28px 0 22px}.report-tabs button{appearance:none;background:transparent;color:var(--muted);border:0;border-radius:0;padding:12px 17px;font-size:12px}.report-tabs button.active{color:var(--ink);border-bottom:3px solid var(--red)}.report-tabs span{font:10px Consolas,monospace;background:#e8eef5;color:var(--ink);border-radius:9px;padding:2px 5px}.report-tab-panel[hidden]{display:none}.report-route{margin:18px 0 0;padding:13px;background:var(--paper);border-radius:5px;white-space:pre-wrap}.flight-log{max-height:620px;overflow:auto}.flight-log article{display:grid;grid-template-columns:155px 1fr;gap:15px;padding:12px 0;border-bottom:1px solid var(--line)}.flight-log article:last-child{border:0}.flight-log time{font:10px/1.6 Consolas,monospace;color:var(--blue)}.flight-log p{margin:0;color:var(--ink)}.report-details-grid{grid-template-columns:1fr 1fr}.report-list{margin:0}.report-list>div{display:grid;grid-template-columns:minmax(110px,.7fr) 1.3fr;gap:18px;padding:11px 0;border-bottom:1px solid var(--line)}.report-list>div:last-child{border-bottom:0}.report-list dt{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}.report-list dd{margin:0;overflow-wrap:anywhere}.report-list.two-up{display:grid;grid-template-columns:1fr 1fr;gap:0 25px}.report-list.two-up>div:nth-last-child(2){border-bottom:0}@media(max-width:760px){.report-strip{grid-template-columns:1fr 1fr}.route-summary{grid-template-columns:1fr;gap:14px}.airport-card.arrival{text-align:left}.route-line{display:none}.report-tabs{overflow:auto}.report-tabs button{white-space:nowrap}.flight-log article{grid-template-columns:1fr;gap:4px}.report-details-grid{grid-template-columns:1fr}.report-list.two-up{grid-template-columns:1fr}.report-list.two-up>div:nth-last-child(2){border-bottom:1px solid var(--line)}}
 .aircraft-marker { display: grid; place-items: center; width: 28px !important; height: 28px !important; color: var(--ops-red); font-size: 25px; line-height: 1; text-shadow: 0 1px 2px #fff; transform: rotate(35deg); }
 [data-era="minitel"] .ops-leaflet-map { height: 280px; border-color: var(--minitel-green); border-radius: 0; filter: grayscale(1) contrast(1.2) brightness(.62) sepia(.45) hue-rotate(62deg); }
 
