@@ -1,0 +1,1 @@
+1789677041a:6:{s:4:"name";s:9:"Promethee";s:5:"alias";s:9:"promethee";s:11:"description";s:55:"Air Inter — exploitation, économie et suivi des vols";s:6:"active";i:1;s:5:"order";i:100;s:9:"providers";a:1:{i:0;s:52:"Modules\Promethee\Providers\PrometheeServiceProvider";}}

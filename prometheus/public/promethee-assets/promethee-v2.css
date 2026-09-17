@@ -907,6 +907,113 @@ html[data-era="minitel"] {
   [data-era="2000"] main { padding-inline: 16px; }
 }
 
+/* Physical split-flap modules. They intentionally do not inherit the site's eras. */
+html:not([data-era="minitel"]) .departure-board {
+  border: 8px solid #303234;
+  border-radius: 4px;
+  background: linear-gradient(145deg, #45484a, #151617 10%, #26282a 100%);
+  box-shadow: inset 0 0 0 2px #090a0a, inset 0 0 18px #000, 0 14px 28px #09131c42;
+}
+html:not([data-era="minitel"]) .departure-board .panel-heading {
+  min-height: 68px;
+  padding: 14px 20px;
+  border-bottom: 2px solid #101111;
+  background: linear-gradient(#4b4e4f, #27292a 45%, #171819 52%, #282a2b);
+  box-shadow: inset 0 1px #686b6b, inset 0 -1px #070808;
+}
+html:not([data-era="minitel"]) .departure-board .panel-heading h2 {
+  color: #eee9d8;
+  font-family: "Arial Narrow", "Roboto Condensed", sans-serif;
+  font-size: 25px;
+  font-weight: 700;
+  letter-spacing: .16em;
+}
+html:not([data-era="minitel"]) .departure-board .panel-heading h2::before { display: none; }
+html:not([data-era="minitel"]) .departure-board .panel-heading .eyebrow,
+html:not([data-era="minitel"]) .departure-board .panel-heading a { color: #d8d1ba; }
+html:not([data-era="minitel"]) .departure-board .flight-stack {
+  gap: 3px;
+  padding: 13px 12px 14px;
+  background: linear-gradient(90deg, #101111, #1c1d1d 4%, #111212 96%, #080909);
+}
+html:not([data-era="minitel"]) .departure-board .flight-stack::before,
+html:not([data-era="minitel"]) .departure-board .flight-stack::after { display: none; }
+html:not([data-era="minitel"]) .split-flap-head,
+html:not([data-era="minitel"]) .departure-board .dispatch-flight {
+  display: grid;
+  grid-template-columns: 5fr 18fr 8fr 5fr 4fr;
+  gap: 7px;
+}
+html:not([data-era="minitel"]) .split-flap-head { padding: 0 2px 5px; color: #bdb8a8; font: 700 10px/1 Arial, sans-serif; letter-spacing: .12em; }
+html:not([data-era="minitel"]) .departure-board .dispatch-flight {
+  min-height: 39px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+html:not([data-era="minitel"]) .departure-board .dispatch-flight > :not(.board-cell) { display: none; }
+html:not([data-era="minitel"]) .departure-board .dispatch-flight .board-cell {
+  display: flex;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #f1eddf;
+  font: inherit;
+  letter-spacing: 0;
+  text-shadow: none;
+  text-decoration: none;
+}
+.split-flap-field { gap: 2px; align-items: stretch; }
+.split-flap-plain { display: block; overflow: visible; font-family: system-ui, sans-serif; letter-spacing: 0; text-transform: none; white-space: normal; }
+.split-flap-char {
+  position: relative;
+  display: inline-block;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 38px;
+  overflow: hidden;
+  perspective: 160px;
+  color: #f1eddf;
+  background: #181918;
+  border: 1px solid #080909;
+  border-radius: 2px;
+  box-shadow: inset 0 1px #484a48, inset 0 -1px #050505, 0 1px #272827;
+  font: 700 clamp(12px, 1.32vw, 19px)/38px "Arial Narrow", "Roboto Condensed", Arial, sans-serif;
+  letter-spacing: -.035em;
+  text-align: center;
+  text-shadow: 0 1px #000;
+}
+.split-flap-char::after { content: ""; position: absolute; z-index: 5; top: calc(50% - 1px); right: 0; left: 0; height: 2px; background: linear-gradient(#050505, #696a65 48%, #050505 52%); box-shadow: 0 1px #0008; }
+.flap-half { position: absolute; z-index: 1; inset-inline: 0; height: 50%; overflow: hidden; background: linear-gradient(180deg, #30312f, #1c1d1b); }
+.flap-bottom { top: 50%; background: linear-gradient(180deg, #151614, #242522); }
+.flap-face { display: block; height: 38px; line-height: 38px; }
+.flap-bottom .flap-face { transform: translateY(-19px); }
+.flap-flip { z-index: 3; backface-visibility: hidden; }
+.flap-flip-top { transform-origin: bottom; }
+.flap-flip-bottom { transform-origin: top; transform: rotateX(90deg); }
+.split-flap-char.is-flipping .flap-flip-top { animation: flap-top 58ms linear both; }
+.split-flap-char.is-flipping .flap-flip-bottom { animation: flap-bottom 58ms 58ms linear both; }
+@keyframes flap-top { to { transform: rotateX(-90deg); filter: brightness(.55); } }
+@keyframes flap-bottom { from { transform: rotateX(90deg); filter: brightness(.5); } to { transform: rotateX(0); } }
+@media (max-width: 760px) {
+  html:not([data-era="minitel"]) .departure-board { border-width: 5px; }
+  html:not([data-era="minitel"]) .split-flap-head,
+  html:not([data-era="minitel"]) .departure-board .dispatch-flight { grid-template-columns: 5fr 15fr 7fr; gap: 4px; }
+  html:not([data-era="minitel"]) .split-flap-head span:nth-child(4),
+  html:not([data-era="minitel"]) .split-flap-head span:nth-child(5),
+  html:not([data-era="minitel"]) .departure-board .dispatch-flight .duration,
+  html:not([data-era="minitel"]) .departure-board .dispatch-flight .load { display: none; }
+  .split-flap-field { gap: 1px; }
+  .split-flap-char { height: 31px; font-size: 13px; line-height: 31px; }
+  .flap-face { height: 31px; line-height: 31px; }
+  .flap-bottom .flap-face { transform: translateY(-15.5px); }
+}
+@media (prefers-reduced-motion: reduce) { .split-flap-char *, .split-flap-char { animation: none !important; } }
+
 /*
    The Minitel is deliberately presented as one square terminal. The actual
    Videotex grid remains text-led inside it; long operational pages scroll in
@@ -1237,4 +1344,18 @@ html[data-era] .departure-board .dispatch-flight .load { color: #f1c928; }
   .departure-board .dispatch-flight > a { align-self: center; }
   [data-era="minitel"] .brand-logo-shell { height: 28px; }
   [data-era="minitel"] .brand-logo-minitel { width: min(100%, 190px); height: 25px; }
+}
+
+/* Keep the mechanical cabinet above generic era and small-screen board rules. */
+html:not([data-era="minitel"]) .departure-board { background: linear-gradient(145deg, #45484a, #151617 10%, #26282a 100%); border-color: #303234; border-width: 8px; border-radius: 4px; }
+html:not([data-era="minitel"]) .departure-board .panel-heading { padding: 14px 20px; background: linear-gradient(#4b4e4f, #27292a 45%, #171819 52%, #282a2b); }
+html:not([data-era="minitel"]) .departure-board .panel-heading h2 { color: #eee9d8; }
+html:not([data-era="minitel"]) .departure-board .flight-stack { padding: 13px 12px 14px; }
+html:not([data-era="minitel"]) .departure-board .dispatch-flight { grid-template-columns: 5fr 18fr 8fr 5fr 4fr; gap: 7px; padding: 0; }
+html:not([data-era="minitel"]) .departure-board .dispatch-flight .board-cell { font-size: inherit; }
+@media (max-width: 760px) {
+  html:not([data-era="minitel"]) .departure-board { border-width: 5px; border-radius: 4px; }
+  html:not([data-era="minitel"]) .departure-board .flight-stack { padding: 13px 9px 10px; }
+  html:not([data-era="minitel"]) .departure-board .dispatch-flight { grid-template-columns: 5fr 15fr 7fr; gap: 4px; padding: 0; }
+  html:not([data-era="minitel"]) .departure-board .dispatch-flight > a { align-self: stretch; }
 }

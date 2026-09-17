@@ -1,0 +1,2 @@
+<?php
+return ['departures' => 'ABFLÜGE', 'upcoming_departures' => 'NÄCHSTE ABFLÜGE', 'time' => 'ZEIT', 'destination' => 'ZIEL', 'flight' => 'FLUG', 'aircraft' => 'FLUGZEUG', 'gate' => 'GATE', 'status' => 'STATUS', 'duration' => 'DAUER', 'load' => 'AUSLASTUNG', 'scheduled' => 'GEPLANT', 'on_time' => 'PÜNKTLICH', 'boarding' => 'BOARDING', 'delayed' => 'VERSPÄTET', 'cancelled' => 'ANNULLIERT', 'departed' => 'ABGEFLOGEN', 'completed' => 'ABGESCHLOSSEN'];

@@ -1,0 +1,2 @@
+<?php
+return ['departures' => 'PARTENZE', 'upcoming_departures' => 'PROSSIME PARTENZE', 'time' => 'ORA', 'destination' => 'DESTINAZIONE', 'flight' => 'VOLO', 'aircraft' => 'AEROMOBILE', 'gate' => 'GATE', 'status' => 'STATO', 'duration' => 'DURATA', 'load' => 'CARICO', 'scheduled' => 'PROGRAMMATO', 'on_time' => 'IN ORARIO', 'boarding' => 'IMBARCO', 'delayed' => 'IN RITARDO', 'cancelled' => 'CANCELLATO', 'departed' => 'PARTITO', 'completed' => 'COMPLETATO'];

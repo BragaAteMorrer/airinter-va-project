@@ -595,6 +595,20 @@ html[data-login-era="minitel"] {
         margin-bottom: 14px
     }
 
+    .login-wordmark {
+        min-width: 0;
+        font-size: 11px;
+        letter-spacing: .08em
+    }
+
+    .login-era {
+        margin-left: auto
+    }
+
+    .login-era select {
+        max-width: 132px
+    }
+
     .login-layout {
         grid-template-columns: 1fr;
         min-height: 0
@@ -603,6 +617,14 @@ html[data-login-era="minitel"] {
     .login-intro {
         min-height: 220px;
         padding: 30px
+    }
+
+    .login-panel {
+        padding: 30px 22px
+    }
+
+    .login-links {
+        flex-wrap: wrap
     }
 
     [data-login-era="minitel"] .login-shell {

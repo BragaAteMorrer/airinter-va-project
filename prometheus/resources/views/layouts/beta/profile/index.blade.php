@@ -221,12 +221,12 @@ show the details/edit fields only for the currently logged in user
 <div class="clearfix" style="height: 35px;"></div>
 <div class="row">
   <div class="col-sm-12">
-    <h3 class="description">Carnet Prométhée</h3>
+    <h3 class="description">{{ __('promethee.promethee_logbook') }}</h3>
     <div class="card">
       <div class="card-body">
-        <h5>Derniers vols acceptés</h5>
+        <h5>{{ __('promethee.latest_accepted_flights') }}</h5>
         @if($pireps->isEmpty())
-          <p class="text-muted mb-0">Aucun PIREP accepté pour le moment.</p>
+          <p class="text-muted mb-0">{{ __('promethee.no_accepted_pirep') }}</p>
         @else
           <div class="table-responsive">
             <table class="table table-hover mb-0">
@@ -235,10 +235,10 @@ show the details/edit fields only for the currently logged in user
                 <th>Vol</th>
                 <th>Ligne</th>
                 <th>Avion</th>
-                <th>Durée</th>
+                <th>{{ __('promethee.duration') }}</th>
                 <th>Atterrissage</th>
                 <th>Date</th>
-                <th class="text-right">Détail</th>
+                <th class="text-right">{{ __('promethee.details') }}</th>
               </tr>
               </thead>
               <tbody>

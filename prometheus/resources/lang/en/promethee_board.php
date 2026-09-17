@@ -1,0 +1,2 @@
+<?php
+return ['departures' => 'DEPARTURES', 'upcoming_departures' => 'UPCOMING DEPARTURES', 'time' => 'TIME', 'destination' => 'DESTINATION', 'flight' => 'FLIGHT', 'aircraft' => 'AIRCRAFT', 'gate' => 'GATE', 'status' => 'STATUS', 'duration' => 'DURATION', 'load' => 'LOAD', 'scheduled' => 'SCHEDULED', 'on_time' => 'ON TIME', 'boarding' => 'BOARDING', 'delayed' => 'DELAYED', 'cancelled' => 'CANCELLED', 'departed' => 'DEPARTED', 'completed' => 'COMPLETED'];

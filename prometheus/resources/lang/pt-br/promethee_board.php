@@ -1,0 +1,2 @@
+<?php
+return ['departures' => 'PARTIDAS', 'upcoming_departures' => 'PRÓXIMAS PARTIDAS', 'time' => 'HORA', 'destination' => 'DESTINO', 'flight' => 'VOO', 'aircraft' => 'AERONAVE', 'gate' => 'PORTÃO', 'status' => 'STATUS', 'duration' => 'DURAÇÃO', 'load' => 'OCUPAÇÃO', 'scheduled' => 'PROGRAMADO', 'on_time' => 'NO HORÁRIO', 'boarding' => 'EMBARQUE', 'delayed' => 'ATRASADO', 'cancelled' => 'CANCELADO', 'departed' => 'PARTIDO', 'completed' => 'CONCLUÍDO'];

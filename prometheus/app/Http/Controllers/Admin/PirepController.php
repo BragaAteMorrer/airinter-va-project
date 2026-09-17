@@ -313,7 +313,8 @@ class PirepController extends Controller
         // Prométhée progression is idempotent; evaluating here makes a newly
         // accepted report immediately eligible while the scheduled task is a
         // safety net for imports and legacy reports.
-        if ((int) $pirep->state === PirepState::ACCEPTED) {
+        if ((int) $pirep->state === PirepState::ACCEPTED
+            && class_exists(\Modules\Promethee\Services\ProgressionService::class)) {
             app(\Modules\Promethee\Services\ProgressionService::class)->recalculate($pirep->user, 'pirep_validation');
         }
 
