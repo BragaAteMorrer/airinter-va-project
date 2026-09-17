@@ -1,0 +1,6 @@
+@extends('promethee::layout')
+@section('title', __('promethee.navigation_menu.bookings'))
+@section('content')
+<div class="ops-header compact"><div><span class="eyebrow">ESPACE PILOTE</span><h1>{{ __('promethee.navigation_menu.bookings') }}</h1><p>Vos lignes phpVMS actuellement réservées.</p></div><a class="button" href="{{ route('promethee.flights') }}">{{ __('promethee.flight_schedule') }}</a></div>
+<section class="panel table-wrap"><table><thead><tr><th>Vol</th><th>Itinéraire</th><th>Appareil</th><th>Réservé le</th><th></th></tr></thead><tbody>@forelse($bookings as $booking)<tr><td><strong>{{ $booking->flight?->ident ?? '—' }}</strong></td><td>{{ $booking->flight?->dpt_airport_id ?? '—' }} → {{ $booking->flight?->arr_airport_id ?? '—' }}</td><td>{{ $booking->aircraft?->registration ?? '—' }}</td><td>{{ optional($booking->created_at)->setTimezone('Europe/Paris')->format('d/m/Y H:i') }}</td><td>@if($booking->flight)<a href="{{ route('promethee.flights.show', $booking->flight->id) }}">{{ __('promethee.details') }}</a>@endif</td></tr>@empty<tr><td colspan="5">Aucune réservation active. <a href="{{ route('promethee.flights') }}">Consulter le programme des vols</a>.</td></tr>@endforelse</tbody></table></section>
+@endsection

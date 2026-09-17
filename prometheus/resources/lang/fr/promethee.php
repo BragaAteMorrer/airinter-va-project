@@ -49,4 +49,6 @@ return [
         'recent_activity' => 'Activité récente', 'latest_accepted_pireps' => 'DERNIERS PIREP ACCEPTÉS', 'view_operations_room' => 'Voir la salle opérations',
         'time' => 'Temps', 'airport' => 'Aéroport', 'no_accepted_pireps' => 'Aucun PIREP accepté.',
     ],
+    'navigation_welcome' => 'Bienvenue', 'navigation_pilot' => 'Espace pilote', 'navigation_company' => 'Compagnie', 'navigation_operations' => 'Opérations', 'navigation_private' => 'Privé',
+    'navigation_menu' => ['settings' => 'Paramètres', 'flight_map' => 'Carte des vols', 'reports' => 'Mes rapports', 'bookings' => 'Mes réservations', 'downloads' => 'Téléchargements', 'live_flights' => 'Vols en temps réel'],
 ];

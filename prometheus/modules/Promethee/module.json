@@ -1,0 +1,10 @@
+{
+  "name": "Promethee",
+  "alias": "promethee",
+  "description": "Air Inter — exploitation, économie et suivi des vols",
+  "active": 1,
+  "order": 100,
+  "providers": [
+    "Modules\\Promethee\\Providers\\PrometheeServiceProvider"
+  ]
+}

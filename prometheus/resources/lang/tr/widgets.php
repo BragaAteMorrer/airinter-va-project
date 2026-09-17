@@ -1,6 +1,6 @@
 <?php
 
-return [
+return array_replace_recursive([
     'latestnews' => [
         'news'        => 'Haberler',
         'nonewsfound' => 'Haber Bulunamadı',
@@ -31,4 +31,4 @@ return [
         'hrago'      => 'saat önce|saat önce',
         'minago'     => 'dakika önce|dakika önce',
     ],
-];
+], ['weather' => ['showdecoded' => 'Çözülmüş hava durumunu göster']]);

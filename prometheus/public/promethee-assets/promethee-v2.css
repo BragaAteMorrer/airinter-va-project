@@ -1014,6 +1014,27 @@ html:not([data-era="minitel"]) .departure-board .dispatch-flight .board-cell {
 }
 @media (prefers-reduced-motion: reduce) { .split-flap-char *, .split-flap-char { animation: none !important; } }
 
+/* Airport movements layout: the logo is a dedicated physical cell, not a glyph palette. */
+html:not([data-era="minitel"]) .departure-board .split-flap-head,
+html:not([data-era="minitel"]) .departure-board .dispatch-flight {
+  grid-template-columns: 62px minmax(76px, .9fr) minmax(58px, .65fr) 62px minmax(112px, 1.45fr) 62px minmax(96px, 1.2fr);
+}
+html:not([data-era="minitel"]) .departure-board .flight-stack { overflow-x: auto; }
+html:not([data-era="minitel"]) .departure-board .split-flap-head { min-width: 690px; }
+html:not([data-era="minitel"]) .departure-board .dispatch-flight { min-width: 690px; }
+html:not([data-era="minitel"]) .departure-board .airline-logo-cell {
+  display: grid; place-items: center; min-height: 38px; padding: 3px !important;
+  background: #181918 !important; border: 1px solid #080909 !important;
+  border-radius: 2px !important; box-shadow: inset 0 1px #484a48, inset 0 -1px #050505, 0 1px #272827 !important;
+}
+.airline-logo-cell img { display: block; max-width: 100%; max-height: 28px; object-fit: contain; }
+.airline-logo-fallback { color: #f1eddf; font: 700 10px/1 "Arial Narrow", Arial, sans-serif; letter-spacing: .08em; text-align: center; }
+html:not([data-era="minitel"]) .departure-board .status .split-flap-char { color: #f1c928; }
+@media (max-width: 760px) {
+  html:not([data-era="minitel"]) .departure-board .split-flap-head,
+  html:not([data-era="minitel"]) .departure-board .dispatch-flight { min-width: 650px; grid-template-columns: 50px 75px 58px 55px 125px 55px 105px; gap: 4px; }
+}
+
 /*
    The Minitel is deliberately presented as one square terminal. The actual
    Videotex grid remains text-led inside it; long operational pages scroll in

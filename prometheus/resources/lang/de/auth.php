@@ -22,4 +22,5 @@ return [
     'suspendedmessage'         => 'Dein Konto wurde gesperrt.  Bitte kontaktiere einen Administrator.',
     'transferhours'            => 'Transferstunden',
     'loginwith'                => 'Einloggen mit :provider',
+    'sendresetlink'            => 'Link zum Zurücksetzen des Passworts senden',
 ];

@@ -2,7 +2,12 @@
 !prometheus/
 !prometheus/app/**
 !prometheus/config/**
-!prometheus/modules/**
+prometheus/modules/DisposableAirports
+prometheus/modules/DisposableBasic
+prometheus/modules/DisposableSpecial
+prometheus/modules/SPTransfer
+prometheus/modules/Vacentral
+prometheus/modules/VMSAcars
 !prometheus/resources/**
 !prometheus/public/**
 !prometheus/bootstrap/*.php

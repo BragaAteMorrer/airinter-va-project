@@ -1,0 +1,3 @@
+docker compose -f compose.promethee.yml down
+docker compose -f compose.promethee.yml build --no-cache web
+docker compose -f compose.promethee.yml up -d

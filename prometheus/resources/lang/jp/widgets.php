@@ -1,6 +1,6 @@
 <?php
 
-return [
+return array_replace_recursive([
     'latestnews' => [
         'news'        => 'ニュース',
         'nonewsfound' => 'ニュースが見つかりません',
@@ -31,4 +31,4 @@ return [
         'hrago'      => '時間前',
         'minago'     => '分前',
     ],
-];
+], ['weather' => ['showdecoded' => '解析済み気象情報を表示']]);

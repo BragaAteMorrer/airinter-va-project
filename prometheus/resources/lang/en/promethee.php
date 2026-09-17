@@ -104,4 +104,6 @@ return [
         'recent_activity' => 'Recent activity', 'latest_accepted_pireps' => 'LATEST ACCEPTED PIREPs', 'view_operations_room' => 'View operations room',
         'time' => 'Time', 'airport' => 'Airport', 'no_accepted_pireps' => 'No accepted PIREP.',
     ],
+    'navigation_welcome' => 'Welcome', 'navigation_pilot' => 'Pilot area', 'navigation_company' => 'Company', 'navigation_operations' => 'Operations', 'navigation_private' => 'Private',
+    'navigation_menu' => ['settings' => 'Settings', 'flight_map' => 'Flight map', 'reports' => 'My reports', 'bookings' => 'My bookings', 'downloads' => 'Downloads', 'live_flights' => 'Live flights'],
 ];

@@ -6,4 +6,5 @@ return [
     'current'   => '現在地',
     'departure' => '出発地',
     'arrival'   => '目的地',
+    'notes'     => '空港に関する注意',
 ];
