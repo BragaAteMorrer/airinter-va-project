@@ -1,0 +1,2 @@
+<?php
+return ['departures' => 'KALKIŞLAR', 'upcoming_departures' => 'YAKLAŞAN KALKIŞLAR', 'time' => 'SAAT', 'destination' => 'VARIŞ NOKTASI', 'flight' => 'UÇUŞ', 'aircraft' => 'UÇAK', 'gate' => 'KAPI', 'status' => 'DURUM', 'duration' => 'SÜRE', 'load' => 'DOLULUK', 'scheduled' => 'PLANLANDI', 'on_time' => 'ZAMANINDA', 'boarding' => 'BİNİŞ', 'delayed' => 'GECİKMELİ', 'cancelled' => 'İPTAL', 'departed' => 'KALKTI', 'completed' => 'TAMAMLANDI'];

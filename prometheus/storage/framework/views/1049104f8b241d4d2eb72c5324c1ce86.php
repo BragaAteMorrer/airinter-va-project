@@ -1,2 +1,0 @@
-
-<?php echo $__env->make('app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH /home/jewe0363/prometheus/modules/SPTransfer/Providers/../Resources/views/layouts/frontend.blade.php ENDPATH**/ ?>

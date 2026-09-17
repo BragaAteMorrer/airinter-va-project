@@ -1,4 +1,0 @@
-
-
-
-<?php echo $__env->make('admin.app', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH /home/jewe0363/prometheus/modules/VMSAcars/Providers/../Resources/views/layouts/admin.blade.php ENDPATH**/ ?>

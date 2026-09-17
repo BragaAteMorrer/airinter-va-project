@@ -45,7 +45,9 @@ return [
          * Application Service Providers...
          */
         App\Providers\AppServiceProvider::class,
+    ])->merge(class_exists(Modules\Promethee\Providers\PrometheeServiceProvider::class) ? [
         Modules\Promethee\Providers\PrometheeServiceProvider::class,
+    ] : [])->merge([
         App\Providers\AuthServiceProvider::class,
         App\Providers\BindServiceProviders::class,
         App\Providers\BroadcastServiceProvider::class,
