@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Contracts\Controller;
 use App\Models\Aircraft;
+use App\Models\Bid;
 use App\Models\Enums\AircraftState;
 use App\Models\Enums\AircraftStatus;
 use App\Repositories\FlightRepository;
@@ -111,14 +112,22 @@ class AcarsSimBriefController extends Controller
         $aircraft = Aircraft::with('subfleet')
             ->withCount(['bid', 'simbriefs' => fn ($query) => $query->whereNull('pirep_id')])
             ->findOrFail($aircraftId);
-        $allowedSubfleets = $this->userSvc->getAllowableSubfleets(Auth::user())->pluck('id');
+        $user = Auth::user();
+        $allowedSubfleets = $this->userSvc->getAllowableSubfleets($user)->pluck('id');
         $flightSubfleets = $flight->subfleets->pluck('id');
+        // A company-wide aircraft lock must not reject the aircraft already
+        // assigned to this pilot's own reservation for this exact flight.
+        $reservedForThisOperation = Bid::query()
+            ->where('user_id', $user->id)
+            ->where('flight_id', $flight->id)
+            ->where('aircraft_id', $aircraft->id)
+            ->exists();
 
         $eligible = $allowedSubfleets->contains($aircraft->subfleet_id)
             && ($flightSubfleets->isEmpty() || $flightSubfleets->contains($aircraft->subfleet_id))
             && (!setting('pireps.only_aircraft_at_dpt_airport') || $aircraft->airport_id === $flight->dpt_airport_id)
             && (!setting('simbrief.block_aircraft') || $aircraft->simbriefs_count === 0)
-            && (!setting('bids.block_aircraft') || $aircraft->bid_count === 0)
+            && (!setting('bids.block_aircraft') || $aircraft->bid_count === 0 || $reservedForThisOperation)
             && $aircraft->state === AircraftState::PARKED
             && $aircraft->status === AircraftStatus::ACTIVE;
 
