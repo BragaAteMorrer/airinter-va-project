@@ -26,6 +26,13 @@ let pirepId = null;
 let flightPlan = null;
 let connected = false;
 
+function setAuthenticated(value) {
+  connected = Boolean(value);
+  document.body.classList.toggle('auth-locked', !connected);
+  $('.protected-tab').forEach(tab => { tab.disabled = !connected; });
+}
+setAuthenticated(false);
+
 const settingsForm = $('#settingsForm');
 const defaultSettings = { autoDetection: 'true', forcedSimulator: '', timeFormat: 'local', notifications: 'true' };
 let savedSettings = {};
@@ -51,7 +58,8 @@ settingsForm.onsubmit = event => {
 
 $$('.tab').forEach(button => {
   button.onclick = () => {
-    $$('.tab,.panel').forEach(node => node.classList.remove('active'));
+    if (button.classList.contains('protected-tab') && !connected) return;
+    $('.tab,.panel').forEach(node => node.classList.remove('active'));
     button.classList.add('active');
     $('#' + button.dataset.tab).classList.add('active');
   };
@@ -71,7 +79,7 @@ async function login(form, advanced = false) {
   try {
     const response = await call(advanced ? '/api/config' : '/api/login', body);
     pilotIdentity(response);
-    connected = true;
+    setAuthenticated(true);
     showMessage('#loginMessage', 'Connexion réussie. Chargement de vos opérations…');
     await refreshOperations();
     document.querySelector('[data-tab="flight"]').click();
@@ -482,7 +490,7 @@ async function refreshStatus() {
     const flight = status.flight;
     const latest = status.latest || {};
     const value = (camel, pascal) => latest[camel] ?? latest[pascal];
-    if (status.connected) connected = true;
+    if (status.connected && !connected) setAuthenticated(true);
     const simulators = (status.detectedSimulators || []).map(item => item.displayName || item.DisplayName).filter(Boolean);
     setText($('#simState'), simulators.length ? `${simulators.join(' · ')} — ${status.sim || 'connexion en attente'}` : status.sim || 'Simulateur non détecté');
     setText($('#pending'), String(status.pending ?? 0));
