@@ -50,6 +50,18 @@ public sealed class PrometheeWindow : Window
         const string flightsPrefix = "/api/flights/";
         const string simbriefSessionSuffix = "/simbrief/session";
         const string simbriefImportSuffix = "/simbrief/import";
+        const string simbriefRedirectSuffix = "/simbrief/redirect";
+        const string simbriefAccountImportSuffix = "/simbrief/account/import";
+        if (route.StartsWith(flightsPrefix, StringComparison.Ordinal) && route.EndsWith(simbriefRedirectSuffix, StringComparison.Ordinal)) {
+            var flightId = route.Substring(flightsPrefix.Length, route.Length - flightsPrefix.Length - simbriefRedirectSuffix.Length);
+            return await client.Send("acars/flights/" + Uri.EscapeDataString(flightId) + "/simbrief/redirect", body
+                ?? throw new InvalidOperationException("Paramètres SimBrief manquants."));
+        }
+        if (route.StartsWith(flightsPrefix, StringComparison.Ordinal) && route.EndsWith(simbriefAccountImportSuffix, StringComparison.Ordinal)) {
+            var flightId = route.Substring(flightsPrefix.Length, route.Length - flightsPrefix.Length - simbriefAccountImportSuffix.Length);
+            return await client.Send("acars/flights/" + Uri.EscapeDataString(flightId) + "/simbrief/account/import", body
+                ?? throw new InvalidOperationException("Compte SimBrief manquant."));
+        }
         if (route.StartsWith(flightsPrefix, StringComparison.Ordinal) && route.EndsWith(simbriefSessionSuffix, StringComparison.Ordinal)) {
             var flightId = route.Substring(flightsPrefix.Length, route.Length - flightsPrefix.Length - simbriefSessionSuffix.Length);
             return await client.Send("acars/flights/" + Uri.EscapeDataString(flightId) + "/simbrief/session", body
