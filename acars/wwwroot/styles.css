@@ -16,7 +16,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}
 nav{display:grid;gap:6px}
 .tab{position:relative;border:1px solid transparent;border-radius:10px;background:transparent;color:#bcd0df;text-align:left;padding:11px 13px 11px 16px;font-weight:700;transition:.16s ease}
 .tab:before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:3px;background:transparent}
-.tab:hover{background:#ffffff0c;color:#fff}.tab.active{background:#ffffff12;border-color:#ffffff12;color:#fff}.tab.active:before{background:#58b6f2}
+.tab:hover{background:#ffffff0c;color:#fff}.tab:disabled{opacity:.32;cursor:not-allowed;transform:none}.tab:disabled:hover{background:transparent;color:#bcd0df}.tab.active{background:#ffffff12;border-color:#ffffff12;color:#fff}.tab.active:before{background:#58b6f2}
 .theme{margin-top:auto;display:grid;gap:7px;color:#91abc0;font-size:11px;font-weight:700}.theme select{background:#fff;color:#102a42}
 #build{color:#7692a8;font:10px/1.45 Consolas,monospace;overflow-wrap:anywhere}
 main{width:100%;max-width:1480px;padding:40px 48px 72px}
@@ -79,3 +79,13 @@ body[data-era="web2000"] .panel{border:2px solid #8ca9c6}body[data-era="web2000"
 
 @media(max-width:920px){body{grid-template-columns:1fr}.rail{position:relative;height:auto}.rail nav{grid-template-columns:repeat(2,1fr)}.theme{margin-top:0}main{padding:26px 20px}header{display:grid}.status{min-width:0}.login-form{grid-template-columns:1fr}.flight-search,.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.draft-heading{display:grid}.prefile{align-items:flex-start;flex-direction:column}}
 @media(max-width:560px){main{padding:18px 12px}.flight-search,.grid{grid-template-columns:1fr}.route-field,.notes-field{grid-column:span 1}.draft-actions{flex-direction:column}.draft-actions button{width:100%}.panel{padding:21px 17px}h1{font-size:38px}.rail nav{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,1fr)}}
+
+/* Authentication gate: no operations surface is navigable before identity is established. */
+body.auth-locked main{display:grid;place-items:start center;align-content:center;min-height:100vh;padding-top:7vh}
+body.auth-locked header{width:min(760px,100%);margin-bottom:18px}
+body.auth-locked header .status{display:none}
+body.auth-locked .auth-panel{width:min(760px,100%);padding:38px}
+body.auth-locked .auth-panel .login-form{max-width:none}
+body.auth-locked .rail .theme{display:none}
+.auth-mark{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:-8px 0 26px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.auth-mark span{color:var(--red);font-size:10px;font-weight:900;letter-spacing:1.7px}.auth-mark strong{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.7px}
