@@ -1,17 +1,20 @@
 <?php
 namespace Modules\Promethee\Http;
 use App\Contracts\Controller;
-use App\Models\{Airline,Airport,Award,Bid,File,Flight,Pirep,User,Fare,Subfleet,Rank};
-use App\Models\Enums\{FlightType,PirepState,PirepStatus,UserState};
+use App\Models\{Aircraft,Airline,Airport,Award,Bid,File,Flight,Pirep,User,Fare,Subfleet,Rank};
+use App\Models\Enums\{AircraftState,AircraftStatus,FlightType,PirepState,PirepStatus,UserState};
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\File as Filesystem;
+use Illuminate\Support\Facades\Hash;
 use App\Services\AirportService;
 use App\Services\FinanceService;
 use App\Services\FileService;
+use App\Services\UserService;
 use App\Support\Money;
+use App\Support\Countries;
 use Modules\Promethee\Services\{BrandingService,BulletinService,EconomyService,FlightOpsService,SafetyAnalyzer};
 
 class PortalController extends Controller
@@ -67,6 +70,102 @@ class PortalController extends Controller
         return $this->page('pirep', ['pirep' => $pirep]);
     }
     public function publicLive() { return view('promethee::public-live'); }
+
+    /** Native company pages replacing the disabled Disposable module. */
+    public function airlines(Request $r) {
+        $airlines = Airline::query()->withCount(['aircraft', 'subfleets', 'users', 'flights'])->where('active', 1)
+            ->when($r->filled('q'), function ($query) use ($r) {
+                $term = trim((string) $r->query('q'));
+                $query->where(fn ($airlines) => $airlines->where('name', 'like', "%{$term}%")->orWhere('icao', 'like', "%{$term}%")->orWhere('iata', 'like', "%{$term}%"));
+            })->orderBy('name')->get();
+        $airlines->each(fn (Airline $airline) => $airline->setAttribute('promethee_logo', $this->airlineLogoUrl($airline)));
+        return $this->page('airlines', compact('airlines'));
+    }
+
+    public function fleet(Request $r) {
+        $filters = $r->validate([
+            'q' => 'nullable|string|max:32',
+            'airline' => 'nullable|integer',
+            'sort' => 'nullable|in:registration,icao,subfleet,hub,airport,flight_time,fuel_onboard,landing_time,state,status',
+            'direction' => 'nullable|in:asc,desc',
+        ]);
+        $sort = $filters['sort'] ?? 'registration';
+        $direction = $filters['direction'] ?? 'asc';
+        $sortColumns = [
+            'registration' => 'registration', 'icao' => 'icao', 'hub' => 'hub_id',
+            'airport' => 'airport_id', 'flight_time' => 'flight_time',
+            'fuel_onboard' => 'fuel_onboard', 'landing_time' => 'landing_time',
+            'state' => 'state', 'status' => 'status',
+        ];
+        $airlines = Airline::where('active', 1)->orderBy('name')->get(['id', 'name', 'icao']);
+        // Aircraft belongs to an airline through its subfleet. Loading that
+        // chain avoids an ambiguous `id` select produced by belongsToThrough.
+        $aircraft = Aircraft::with(['subfleet.airline', 'airport:id,icao'])
+            // Keep this directory consistent with flight booking: a signed-in
+            // pilot only sees subfleets authorised by their rank (and, if
+            // enabled, their type rating). Guests retain the public catalogue.
+            ->when($r->user() && !$r->user()->ability('admin', 'admin-access') && (setting('pireps.restrict_aircraft_to_rank', false) || setting('pireps.restrict_aircraft_to_typerating', false)), function ($query) use ($r) {
+                $allowedSubfleetIds = app(UserService::class)->getAllowableSubfleets($r->user())->pluck('id');
+                $query->whereIn('subfleet_id', $allowedSubfleetIds);
+            })
+            ->when(!empty($filters['airline']), fn ($query) => $query->whereHas('subfleet', fn ($subfleet) => $subfleet->where('airline_id', $filters['airline'])))
+            ->when(!empty($filters['q']), function ($query) use ($filters) {
+                $term = $filters['q'];
+                $query->where(fn ($fleet) => $fleet->where('registration', 'like', "%{$term}%")->orWhere('icao', 'like', "%{$term}%")->orWhereHas('subfleet', fn ($subfleet) => $subfleet->where('name', 'like', "%{$term}%")));
+            })
+            ->when($sort === 'subfleet', function ($query) use ($direction) {
+                $aircraftTable = (new Aircraft)->getTable();
+                $query->leftJoin('subfleets as fleet_sort_subfleets', 'fleet_sort_subfleets.id', '=', $aircraftTable.'.subfleet_id')
+                    ->select($aircraftTable.'.*')->orderBy('fleet_sort_subfleets.name', $direction);
+            }, fn ($query) => $query->orderBy($sortColumns[$sort], $direction))
+            ->paginate(40)->withQueryString();
+        $aircraft->getCollection()->each(function (Aircraft $plane) {
+            $plane->setAttribute('state_label', AircraftState::$labels[$plane->state] ?? 'Inconnu');
+            $plane->setAttribute('status_label', __(AircraftStatus::$labels[$plane->status] ?? 'aircraft.status.active'));
+            $plane->subfleet?->airline?->setAttribute('promethee_logo', $this->airlineLogoUrl($plane->subfleet->airline));
+        });
+        return $this->page('fleet', compact('aircraft', 'airlines'));
+    }
+
+    public function maintenance(Request $r) {
+        // Read the existing maintenance data directly: no disabled module or
+        // legacy event listener is required for this dashboard.
+        $maintenance = DB::table('disposable_maintenance as maintenance')->join('aircraft as aircraft', 'aircraft.id', '=', 'maintenance.aircraft_id')->leftJoin('subfleets as subfleets', 'subfleets.id', '=', 'aircraft.subfleet_id')->leftJoin('airlines as airlines', 'airlines.id', '=', 'subfleets.airline_id')
+            ->select(['maintenance.*', 'aircraft.registration', 'aircraft.icao', 'airlines.name as airline_name', 'airlines.icao as airline_icao'])
+            ->where(function ($query) {
+                $query->whereNotNull('maintenance.act_note')->orWhere('maintenance.curr_state', '<', 80)->orWhere('maintenance.rem_ta', '<', 600)->orWhere('maintenance.rem_tb', '<', 600)->orWhere('maintenance.rem_tc', '<', 600)->orWhere('maintenance.rem_ca', '<', 3)->orWhere('maintenance.rem_cb', '<', 3)->orWhere('maintenance.rem_cc', '<', 3);
+            })
+            ->when($r->user() && !$r->user()->ability('admin', 'admin-access') && (setting('pireps.restrict_aircraft_to_rank', false) || setting('pireps.restrict_aircraft_to_typerating', false)), function ($query) use ($r) {
+                $allowedSubfleetIds = app(UserService::class)->getAllowableSubfleets($r->user())->pluck('id');
+                $query->whereIn('aircraft.subfleet_id', $allowedSubfleetIds);
+            })->orderBy('maintenance.curr_state')->paginate(40);
+        return $this->page('maintenance', compact('maintenance'));
+    }
+
+    /** Operational record for one aircraft, including type-specific downloads. */
+    public function aircraftDetail(Request $r, string $registration) {
+        $aircraftQuery = Aircraft::with(['airport', 'files', 'subfleet.airline', 'subfleet.fares', 'subfleet.files']);
+        if ($r->user() && !$r->user()->ability('admin', 'admin-access') && (setting('pireps.restrict_aircraft_to_rank', false) || setting('pireps.restrict_aircraft_to_typerating', false))) {
+            $allowedSubfleetIds = app(UserService::class)->getAllowableSubfleets($r->user())->pluck('id');
+            $aircraftQuery->whereIn('subfleet_id', $allowedSubfleetIds);
+        }
+        $aircraft = $aircraftQuery
+            ->where('registration', $registration)->firstOrFail();
+        $aircraft->subfleet?->airline?->setAttribute('promethee_logo', $this->airlineLogoUrl($aircraft->subfleet->airline));
+        $aircraft->setAttribute('state_label', AircraftState::$labels[$aircraft->state] ?? 'Inconnu');
+        $aircraft->setAttribute('status_label', __(AircraftStatus::$labels[$aircraft->status] ?? 'aircraft.status.active'));
+
+        $pireps = Pirep::with(['dpt_airport', 'arr_airport'])
+            ->where('aircraft_id', $aircraft->id)->where('state', PirepState::ACCEPTED)
+            ->latest('submitted_at')->take(10)->get();
+        $maintenance = DB::table('disposable_maintenance')->where('aircraft_id', $aircraft->id)->first();
+        $stats = Pirep::where('aircraft_id', $aircraft->id)->where('state', PirepState::ACCEPTED)
+            ->selectRaw('COUNT(*) as pireps, COALESCE(SUM(flight_time), 0) as flight_minutes, COALESCE(SUM(fuel_used), 0) as fuel_used, COALESCE(SUM(distance), 0) as distance, AVG(landing_rate) as landing_rate')
+            ->first();
+        $downloads = $aircraft->files->concat($aircraft->subfleet?->files ?? collect())->unique('id')->values();
+
+        return $this->page('aircraft', compact('aircraft', 'pireps', 'maintenance', 'stats', 'downloads'));
+    }
 
     /**
      * Return the next departure occurrence in Paris time.
@@ -141,7 +240,19 @@ class PortalController extends Controller
     private function airlineLogoUrl(?Airline $airline): ?string
     {
         $logo = trim((string) $airline?->logo);
-        if ($logo === '') return null;
+        if ($logo === '') {
+            // Several historic timetable carriers have no logo URL in phpVMS.
+            // Keep the board's airline column visual instead of falling back
+            // to vertically stacked split-flap letters.
+            $code = strtoupper((string) ($airline?->code ?: $airline?->icao ?: $airline?->callsign));
+            $bundledLogos = [
+                'ITF' => 'SPTheme/images/LogoITF002.png',
+                'ACF' => 'SPTheme/images/AirCharterLogo.png',
+                'ICS' => 'SPTheme/images/ICSLogo.png',
+            ];
+
+            return isset($bundledLogos[$code]) ? asset($bundledLogos[$code]) : null;
+        }
 
         return filter_var($logo, FILTER_VALIDATE_URL) ? $logo : asset(ltrim($logo, '/'));
     }
@@ -294,6 +405,42 @@ class PortalController extends Controller
     public function profile(Request $r) {
         return $this->pilot($r->user()->id);
     }
+    public function editProfile(Request $r) {
+        $pilot = $r->user()->load(['airline','home_airport']);
+        return $this->page('profile-edit', [
+            'pilot' => $pilot,
+            'airlines' => Airline::where('active', true)->orderBy('name')->get(['id','name','icao']),
+            'airports' => Airport::orderBy('icao')->get(['id','icao','name','location']),
+            'countries' => Countries::getSelectList(),
+        ]);
+    }
+    public function updateProfile(Request $r) {
+        $pilot = $r->user();
+        $data = $r->validate([
+            'name' => 'required|string|max:191',
+            'email' => 'required|email|max:191|unique:users,email,'.$pilot->id,
+            'airline_id' => 'required|integer|exists:airlines,id',
+            'home_airport_id' => 'nullable|string|max:10|exists:airports,id',
+            'country' => 'nullable|string|size:2',
+            'timezone' => 'required|timezone',
+            'vatsim_id' => 'nullable|string|max:32',
+            'ivao_id' => 'nullable|string|max:32',
+            'password' => 'nullable|string|min:8|confirmed',
+            'avatar' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:2048',
+        ]);
+        $emailChanged = $pilot->email !== $data['email'];
+        if (blank($data['password'] ?? null)) unset($data['password']);
+        else $data['password'] = Hash::make($data['password']);
+        unset($data['avatar']);
+        if ($r->hasFile('avatar')) {
+            $file = $r->file('avatar');
+            $data['avatar'] = $file->storeAs('avatars', $pilot->ident.'.'.$file->extension(), config('filesystems.public_files'));
+        }
+        if ($emailChanged) $data['email_verified_at'] = null;
+        $pilot->fill($data)->save();
+        if ($emailChanged) $pilot->sendEmailVerificationNotification();
+        return redirect()->route('promethee.profile')->with('success', 'Profil mis à jour.');
+    }
     /**
      * Pilot passport. A country is stamped after an accepted flight touching
      * one of its airports; no editable or duplicate passport data is stored.
@@ -339,17 +486,31 @@ class PortalController extends Controller
    private function downloadCategory(File $file): string {
        $reference = strtolower((string) $file->ref_model);
        $search = strtolower(implode(' ', [$file->name, $file->description, $file->path, $reference]));
+       if (str_contains($reference, 'promethee\\download\\')) {
+           return strtolower((string) preg_replace('/^.*\\\\/', '', $file->ref_model)) ?: 'documents';
+       }
        if (str_contains($search, 'acars')) return 'acars';
        if (str_contains($reference, 'aircraft') || str_contains($reference, 'subfleet')) return 'fleet';
        if (str_contains($reference, 'airport')) return 'airports';
-       if (str_contains($reference, 'promethee\\download\\')) return strtolower((string) $file->ref_model_id) ?: 'documents';
        return 'documents';
+   }
+   private function downloadSubcategory(File $file): string {
+       $category = $this->downloadCategory($file);
+       $subcategory = trim((string) $file->ref_model_id);
+       // Downloads created before subcategories used the category as their ID.
+       return $subcategory === '' || strtolower($subcategory) === $category ? 'Général' : $subcategory;
    }
    private function downloadGroups() {
        return File::orderBy('name')->get()->groupBy(fn (File $file) => $this->downloadCategory($file));
    }
    public function downloads(Request $r) {
        return $this->page('downloads', ['groups' => $this->downloadGroups()]);
+   }
+   public function downloadCategoryPage(string $category) {
+       $sections = ['acars' => ['ACARS', 'Clients et documentation de connexion'], 'fleet' => ['Avions et flotte', 'Livrées, appareils et documents associés'], 'airports' => ['Aéroports et HUBs', 'Scènes, cartes et ressources réseau'], 'documents' => ['Documents', 'Manuels et documents opérationnels']];
+       abort_unless(array_key_exists($category, $sections), 404);
+       $files = $this->downloadGroups()->get($category, collect())->groupBy(fn (File $file) => $this->downloadSubcategory($file));
+       return $this->page('download-category', compact('category', 'sections', 'files'));
    }
    public function download(string $file) {
        return app(\App\Http\Controllers\Frontend\DownloadController::class)->show($file);
@@ -360,17 +521,49 @@ class PortalController extends Controller
    public function storeDownload(Request $r, FileService $files) {
        $data = $r->validate([
            'name' => 'required|string|max:120', 'description' => 'nullable|string|max:1000',
-           'category' => 'required|in:acars,fleet,airports,documents', 'file' => 'nullable|file|max:102400',
+           'category' => 'required|in:acars,fleet,airports,documents', 'subcategory' => 'nullable|string|max:80', 'file' => 'nullable|file|max:102400',
            'url' => 'nullable|url|max:2000', 'public' => 'nullable|boolean',
        ]);
        if (!$r->hasFile('file') && empty($data['url'])) return back()->withErrors(['url' => 'Ajoutez un fichier ou une URL.'])->withInput();
        $attributes = [
            'name' => $data['name'], 'description' => $data['description'] ?? '', 'public' => $r->boolean('public'),
-           'ref_model' => 'Modules\\Promethee\\Download\\'.ucfirst($data['category']), 'ref_model_id' => $data['category'],
+           'ref_model' => 'Modules\\Promethee\\Download\\'.ucfirst($data['category']),
+           'ref_model_id' => trim($data['subcategory'] ?? '') ?: $data['category'],
        ];
        if ($r->hasFile('file')) $files->saveFile($r->file('file'), 'promethee-downloads', $attributes);
        else { $asset = new File($attributes); $asset->id = File::createNewHashId(); $asset->path = $data['url']; $asset->save(); }
        return back()->with('success', 'Téléchargement enregistré.');
+   }
+   public function editDownload(string $file) {
+       $asset = File::findOrFail($file);
+       abort_unless(str_starts_with((string) $asset->ref_model, 'Modules\\Promethee\\Download\\'), 403);
+       return $this->page('admin.edit-download', compact('asset'));
+   }
+   public function updateDownload(Request $r, string $file, FileService $files) {
+       $asset = File::findOrFail($file);
+       abort_unless(str_starts_with((string) $asset->ref_model, 'Modules\\Promethee\\Download\\'), 403);
+
+       $data = $r->validate([
+           'name' => 'required|string|max:120', 'description' => 'nullable|string|max:1000',
+           'category' => 'required|in:acars,fleet,airports,documents', 'subcategory' => 'nullable|string|max:80',
+           'file' => 'nullable|file|max:102400', 'url' => 'nullable|url|max:2000', 'public' => 'nullable|boolean',
+       ]);
+       $attributes = [
+           'name' => $data['name'], 'description' => $data['description'] ?? '', 'public' => $r->boolean('public'),
+           'ref_model' => 'Modules\\Promethee\\Download\\'.ucfirst($data['category']),
+           'ref_model_id' => trim($data['subcategory'] ?? '') ?: $data['category'],
+       ];
+
+       if ($r->hasFile('file')) {
+           $files->saveFile($r->file('file'), 'promethee-downloads', $attributes);
+           $files->removeFile($asset);
+       } else {
+           $asset->fill($attributes);
+           if (!empty($data['url'])) $asset->path = $data['url'];
+           $asset->save();
+       }
+
+       return redirect()->route('admin.promethee.downloads')->with('success', 'Téléchargement modifié.');
    }
    public function deleteDownload(string $file, FileService $files) {
        $asset = File::findOrFail($file);
@@ -408,8 +601,8 @@ class PortalController extends Controller
         $assignments->each(fn($assignment)=>$assignment->completed=$completed->has($assignment->flight_id));
         return $this->page('assignments',compact('assignments','month'));
     }
-    public function shop(Request $r) { $wallet=$r->user()->journal->getBalance(); $items=DB::table('promethee_shop_items')->where('active',true)->orderBy('price')->get(); $orders=DB::table('promethee_shop_orders as orders')->join('promethee_shop_items as items','items.id','=','orders.item_id')->where('orders.user_id',$r->user()->id)->select('orders.*','items.name')->latest('purchased_at')->get(); return $this->page('shop',compact('wallet','items','orders')); }
-    public function buyShopItem(int $id, Request $r, FinanceService $finance) { return DB::transaction(function() use($id,$r,$finance) { $item=DB::table('promethee_shop_items')->where('id',$id)->where('active',true)->lockForUpdate()->first(); abort_unless($item,404); $user=$r->user()->fresh('journal'); if((int)$user->journal->getBalance()->getAmount() < (int)$item->price) return back()->withErrors(['shop'=>'Solde phpVMS insuffisant.']); $finance->debitFromJournal($user->journal,new Money($item->price),$user,'Boutique : '.$item->name,'shop','shop'); DB::table('promethee_shop_orders')->insert(['user_id'=>$user->id,'item_id'=>$item->id,'price'=>$item->price,'purchased_at'=>now(),'created_at'=>now(),'updated_at'=>now()]); return back()->with('success','Achat enregistré dans votre journal phpVMS.'); }); }
+    public function shop(Request $r) { $pilot=$r->user()->fresh('journal'); $journal=$pilot->journal ?: $pilot->initJournal(); $wallet=$journal->getBalance(); $items=DB::table('promethee_shop_items')->where('active',true)->orderBy('price')->get(); $orders=DB::table('promethee_shop_orders as orders')->join('promethee_shop_items as items','items.id','=','orders.item_id')->where('orders.user_id',$pilot->id)->select('orders.*','items.name')->latest('purchased_at')->get(); return $this->page('shop',compact('wallet','items','orders')); }
+    public function buyShopItem(int $id, Request $r, FinanceService $finance) { return DB::transaction(function() use($id,$r,$finance) { $item=DB::table('promethee_shop_items')->where('id',$id)->where('active',true)->lockForUpdate()->first(); abort_unless($item,404); $user=$r->user()->fresh('journal'); $journal=$user->journal ?: $user->initJournal(); if((int)$journal->getBalance()->getAmount() < (int)$item->price) return back()->withErrors(['shop'=>'Solde phpVMS insuffisant.']); $finance->debitFromJournal($journal,new Money($item->price),$user,'Boutique : '.$item->name,'shop','shop'); DB::table('promethee_shop_orders')->insert(['user_id'=>$user->id,'item_id'=>$item->id,'price'=>$item->price,'purchased_at'=>now(),'created_at'=>now(),'updated_at'=>now()]); return back()->with('success','Achat enregistré dans votre journal phpVMS.'); }); }
     public function transfers(Request $r) { return $this->page('transfers',['requests'=>DB::table('promethee_transfer_requests')->where('user_id',$r->user()->id)->latest()->get(),'airlines'=>Airline::where('active',true)->orderBy('name')->get(['id','name']),'hubs'=>Airport::where('hub',true)->orderBy('id')->get(['id','name'])]); }
     /** Same formula as the historical Prometheus jumpseat: configurable base per nautical mile. */
     private function jumpseatQuote(User $user, Airport $destination): array {
@@ -425,13 +618,16 @@ class PortalController extends Controller
     }
     public function jumpseat(Request $r) {
         $pilot = $r->user()->load('journal');
+        // Older pilot records can predate phpVMS journal creation. Ensure they
+        // have a zero-balance journal before rendering the wallet.
+        $journal = $pilot->journal ?: $pilot->initJournal();
         $origin = Airport::find($pilot->curr_airport_id ?: $pilot->home_airport_id);
         return $this->page('jumpseat',[
             'airports'=>Airport::orderBy('country')->orderBy('icao')->get(['id','icao','name','location','country']),
             'origin'=>$origin,
             'basePrice'=>(float) (DB::table('promethee_settings')->where('key', 'jumpseat.base_price')->value('value') ?: 0.13),
             'discount'=>(float) setting('dbasic.jumpseat_discount', 0),
-            'wallet'=>$pilot->journal->getBalance(),
+            'wallet'=>$journal->getBalance(),
             'orders'=>DB::table('promethee_transfer_requests as request')->join('airports','airports.id','=','request.target_airport_id')->where('request.user_id',$pilot->id)->where('request.type','jumpseat')->select('request.*','airports.icao','airports.name as airport_name')->latest('request.created_at')->get()
         ]);
     }
@@ -439,14 +635,15 @@ class PortalController extends Controller
         $data=$r->validate(['target_airport_id'=>'required|string|exists:airports,id','reason'=>'nullable|string|max:2000']);
         return DB::transaction(function() use($data,$r,$finance) {
             $user=User::with(['journal','airline.journal'])->findOrFail($r->user()->id);
+            $journal = $user->journal ?: $user->initJournal();
             $airport=Airport::findOrFail($data['target_airport_id']);
             $originId=$user->curr_airport_id ?: $user->home_airport_id;
             if (!$originId) return back()->withErrors(['jumpseat'=>'Votre aéroport actuel est introuvable.']);
             if ($originId === $airport->id) return back()->withErrors(['jumpseat'=>'Vous êtes déjà positionné à cet aéroport.']);
             $quote=$this->jumpseatQuote($user,$airport);
             if ($r->boolean('preview')) return back()->with('success','Tarif du jumpseat : '.$quote['origin']->icao.' → '.$airport->icao.' · '.$quote['distance'].' NM · '.$quote['amount'].'.');
-            if((int)$user->journal->getBalance()->getAmount() < (int)$quote['amount']->getAmount()) return back()->withErrors(['jumpseat'=>'Solde phpVMS insuffisant pour ce jumpseat ('.$quote['amount'].').']);
-            $finance->debitFromJournal($user->journal,$quote['amount'],$user,'Jumpseat '.$quote['origin']->icao.' > '.$airport->icao,'jumpseat','jumpseat');
+            if((int)$journal->getBalance()->getAmount() < (int)$quote['amount']->getAmount()) return back()->withErrors(['jumpseat'=>'Solde phpVMS insuffisant pour ce jumpseat ('.$quote['amount'].').']);
+            $finance->debitFromJournal($journal,$quote['amount'],$user,'Jumpseat '.$quote['origin']->icao.' > '.$airport->icao,'jumpseat','jumpseat');
             if ($user->airline?->journal) $finance->creditToJournal($user->airline->journal,$quote['amount'],$user,'Jumpseat de '.$user->name.' ('.$quote['origin']->icao.' > '.$airport->icao.')','jumpseat','jumpseat');
             $user->update(['curr_airport_id'=>$airport->id]);
             DB::table('promethee_transfer_requests')->insert(['user_id'=>$user->id,'type'=>'jumpseat','target_airport_id'=>$airport->id,'reason'=>$data['reason']??null,'status'=>'approved','decision_note'=>'Déplacement automatique : '.$quote['distance'].' NM, remise '.$quote['discount'].' %, montant '.$quote['amount'].'.','decided_at'=>now(),'created_at'=>now(),'updated_at'=>now()]);
@@ -632,11 +829,11 @@ class PortalController extends Controller
         return redirect()->route('admin.promethee.events')->with('success',$id ? 'Événement mis à jour.' : 'Événement ajouté au calendrier.');
     }
     public function pilots(Request $r) {
-        $r->validate(['status'=>'nullable|in:actif,ancien,retraite','q'=>'nullable|string|max:80','airline_id'=>'nullable|integer|exists:airlines,id','rank_id'=>'nullable|integer|exists:ranks,id']);
+        $r->validate(['status'=>'nullable|in:actif,ancien,heaven','q'=>'nullable|string|max:80','airline_id'=>'nullable|integer|exists:airlines,id','rank_id'=>'nullable|integer|exists:ranks,id']);
         $status=$r->query('status','actif');
         $q=User::query()->with(['rank','airline']);
         // A pilote en congé reste membre de la communauté : il ne doit pas disparaître de l'annuaire.
-        if ($status==='actif') $q->whereIn('state',[UserState::ACTIVE,UserState::ON_LEAVE])->whereNotIn('id',DB::table('promethee_members')->whereIn('status',['ancien','retraite'])->select('user_id'));
+        if ($status==='actif') $q->whereIn('state',[UserState::ACTIVE,UserState::ON_LEAVE])->whereNotIn('id',DB::table('promethee_members')->whereIn('status',['ancien','heaven'])->select('user_id'));
         else $q->whereIn('id',DB::table('promethee_members')->where('status',$status)->select('user_id'));
         if ($r->filled('q')) {
             $term='%'.$r->query('q').'%';
@@ -644,11 +841,21 @@ class PortalController extends Controller
         }
         if ($r->filled('airline_id')) $q->where('airline_id',$r->query('airline_id'));
         if ($r->filled('rank_id')) $q->where('rank_id',$r->query('rank_id'));
+        $pilots=$q->orderBy('pilot_id')->paginate(24)->withQueryString();
+        $memorials=DB::table('promethee_members')->whereIn('user_id',$pilots->getCollection()->pluck('id'))
+            ->get(['user_id','status','memorial_portrait_url','memorial_tribute'])->keyBy('user_id');
+        $pilots->getCollection()->each(function (User $pilot) use ($memorials) {
+            $memorial=$memorials->get($pilot->id);
+            $pilot->setAttribute('member_status', $memorial->status ?? 'actif');
+            $pilot->setAttribute('memorial_portrait_url', $memorial->memorial_portrait_url ?? null);
+            $pilot->setAttribute('memorial_tribute', $memorial->memorial_tribute ?? null);
+        });
         return $this->page('pilots',[
-            'pilots'=>$q->orderBy('pilot_id')->paginate(24)->withQueryString(),
+            'pilots'=>$pilots,
             'status'=>$status,
             'airlines'=>Airline::orderBy('name')->get(['id','name','icao']),
             'ranks'=>Rank::orderBy('hours')->orderBy('name')->get(['id','name']),
+            'communityDocuments'=>$this->downloadGroups()->get('documents',collect())->take(3),
         ]);
     }
     public function pilot(int $id) {
@@ -672,9 +879,26 @@ class PortalController extends Controller
     }
     public function saveMember(int $id,Request $r) {
         User::findOrFail($id);
-        $d=$r->validate(['status'=>'required|in:actif,ancien,retraite']);
+        $d=$r->validate(['status'=>'required|in:actif,ancien,heaven','memorial_portrait_url'=>'nullable|url|max:2000','memorial_tribute'=>'nullable|string|max:4000','memorial_portrait'=>'nullable|image|max:4096']);
+        $current=DB::table('promethee_members')->where('user_id',$id)->first();
+        $portrait=$r->hasFile('memorial_portrait') || $r->filled('memorial_portrait_url') ? $this->memorialPortrait($r) : ($current->memorial_portrait_url ?? null);
+        if ($d['status'] !== 'heaven') {
+            $portrait=null;
+            $d['memorial_tribute']=null;
+        }
+        unset($d['memorial_portrait'], $d['memorial_portrait_url']);
+        $d['memorial_portrait_url']=$portrait;
         DB::table('promethee_members')->updateOrInsert(['user_id'=>$id],$d+['updated_at'=>now(),'created_at'=>now()]);
         return back()->with('success','Classement mis à jour. Le compte et le carnet de vol sont conservés.');
+    }
+    private function memorialPortrait(Request $r): ?string {
+        if ($r->hasFile('memorial_portrait')) {
+            $file=$r->file('memorial_portrait'); $directory=storage_path('app/promethee-distinctions');
+            Filesystem::ensureDirectoryExists($directory);
+            $name=uniqid('memorial_', true).'.'.$file->extension(); $file->move($directory,$name);
+            return '/promethee-assets/distinctions/'.$name;
+        }
+        return $r->filled('memorial_portrait_url') ? $r->string('memorial_portrait_url')->toString() : null;
     }
     public function economy(Request $r) {
         $flightFilters=$r->validate(['flight_airline'=>'nullable|string|max:10','flight_origin'=>'nullable|string|size:2','flight_arrival'=>'nullable|string|size:2','flight_dpt_airport'=>'nullable|string|max:10','flight_arr_airport'=>'nullable|string|max:10','flight_search'=>'nullable|string|max:80','flight_select_all'=>'nullable|boolean']);
@@ -1118,12 +1342,22 @@ class PortalController extends Controller
         return back()->with('success','Règle de grade enregistrée.');
     }
     public function branding(BrandingService $branding) {
-        return view('promethee::admin.branding', ['logos' => $branding->logos(), 'branding' => $branding->active()]);
+        return $this->page('admin.branding', ['logos' => $branding->logos(), 'branding' => $branding->active()]);
     }
     public function saveBranding(Request $r, BrandingService $branding) {
         $data = $r->validate(['logo' => 'required|string|in:'.implode(',', array_keys($branding->logos()))]);
         $branding->save($data['logo']);
-        return redirect()->route('admin.identity.branding')->with('success', 'Le logo Air Inter a été mis à jour.');
+        return redirect()->route('admin.promethee.branding')->with('success', 'Le logo Air Inter a été mis à jour.');
+    }
+    public function importBranding(Request $r, BrandingService $branding) {
+        $data = $r->validate(['logo_file' => 'required|file|mimes:png,jpg,jpeg,webp|max:5120']);
+        $directory = public_path('promethee-assets/logos/custom');
+        Filesystem::ensureDirectoryExists($directory);
+        $file = $data['logo_file'];
+        $filename = 'logo-'.bin2hex(random_bytes(12)).'.'.$file->extension();
+        $file->move($directory, $filename);
+        $branding->saveCustom($filename);
+        return redirect()->route('admin.promethee.branding')->with('success', 'Le logo importé est maintenant actif.');
     }
     public function adminMissions() {
         return $this->page('admin-missions', [
@@ -1147,13 +1381,32 @@ class PortalController extends Controller
     public function deleteCircuit(int $id) { DB::table('promethee_circuit_legs')->where('circuit_id',$id)->delete(); DB::table('promethee_circuits')->where('id',$id)->delete(); return back()->with('success','Circuit supprimé.'); }
     public function adminAssignments(Request $r) {
         $month=$r->query('month',now('Europe/Paris')->format('Y-m'));
-        $assignments=DB::table('promethee_assignments as assignment')->join('users','users.id','=','assignment.user_id')->join('flights','flights.id','=','assignment.flight_id')->where('assignment.month',$month)->select('assignment.*','users.name as user_name','users.pilot_id','flights.route_code','flights.flight_number','flights.dpt_airport_id','flights.arr_airport_id')->orderBy('users.pilot_id')->get();
+        abort_unless((bool) preg_match('/^\\d{4}-(0[1-9]|1[0-2])$/', $month), 422, 'Mois invalide.');
+        $filters=$r->validate(['q'=>'nullable|string|max:80','pilot'=>'nullable|integer|exists:users,id','route'=>'nullable|string|max:16']);
+        $assignments=DB::table('promethee_assignments as assignment')->join('users','users.id','=','assignment.user_id')->join('flights','flights.id','=','assignment.flight_id')->where('assignment.month',$month)
+            ->when($filters['pilot'] ?? null, fn($query,$pilot) => $query->where('assignment.user_id',$pilot))
+            ->when($filters['route'] ?? null, fn($query,$route) => $query->where('flights.route_code',$route))
+            ->when($filters['q'] ?? null, fn($query,$q) => $query->where(fn($nested) => $nested->where('users.name','like','%'.$q.'%')->orWhere('users.pilot_id','like','%'.$q.'%')->orWhere('flights.flight_number','like','%'.$q.'%')->orWhere('flights.route_code','like','%'.$q.'%')->orWhere('flights.dpt_airport_id','like','%'.$q.'%')->orWhere('flights.arr_airport_id','like','%'.$q.'%')))
+            ->select('assignment.*','users.name as user_name','users.pilot_id','flights.route_code','flights.flight_number','flights.dpt_airport_id','flights.arr_airport_id')->orderBy('users.pilot_id')->get();
         return $this->page('admin-assignments',['month'=>$month,'assignments'=>$assignments,'pilots'=>User::where('state',UserState::ACTIVE)->orderBy('pilot_id')->get(['id','pilot_id','name']),'flights'=>Flight::where('active',true)->where('visible',true)->orderBy('dpt_airport_id')->get(['id','route_code','flight_number','dpt_airport_id','arr_airport_id'])]);
+    }
+    /** Prométhée-native airline catalogue; legacy phpVMS URLs remain valid. */
+    public function adminAirlines(Request $r) {
+        $filters=$r->validate(['q'=>'nullable|string|max:80','active'=>'nullable|in:all,active,inactive']);
+        $airlines=Airline::query()->when($filters['q'] ?? null, fn($query,$q)=>$query->where(fn($nested)=>$nested->where('name','like','%'.$q.'%')->orWhere('icao','like','%'.$q.'%')->orWhere('iata','like','%'.$q.'%')->orWhere('callsign','like','%'.$q.'%')))->when(($filters['active'] ?? 'all') !== 'all', fn($query)=>$query->where('active',($filters['active'] ?? '')==='active'))->orderBy('name')->get();
+        return $this->page('admin-airlines', ['airlines'=>$airlines,'countries'=>Countries::getSelectList()]);
+    }
+    public function saveAdminAirline(Request $r) {
+        $data=$r->validate(['id'=>'nullable|integer|exists:airlines,id','icao'=>'required|string|max:5','iata'=>'nullable|string|max:5','name'=>'required|string|max:191','callsign'=>'nullable|string|max:191','logo'=>'nullable|url|max:2000','country'=>'nullable|string|size:2','active'=>'nullable|boolean']);
+        $attributes=collect($data)->except('id')->all(); $attributes['active']=$r->boolean('active');
+        if (!empty($data['id'])) Airline::findOrFail($data['id'])->update($attributes); else Airline::create($attributes);
+        return back()->with('success','Compagnie enregistrée.');
     }
     public function adminPassport() { return $this->page('admin-passport',['enabled'=>DB::table('promethee_settings')->where('key','passport.enabled')->value('value') !== '0','showMap'=>DB::table('promethee_settings')->where('key','passport.map_enabled')->value('value') !== '0']); }
     public function savePassportSettings(Request $r) { $r->validate(['enabled'=>'nullable|boolean','map_enabled'=>'nullable|boolean']); foreach(['passport.enabled'=>$r->boolean('enabled'),'passport.map_enabled'=>$r->boolean('map_enabled')] as $key=>$value) DB::table('promethee_settings')->updateOrInsert(['key'=>$key],['value'=>$value?'1':'0','created_at'=>now(),'updated_at'=>now()]); return back()->with('success','Paramètres du passeport enregistrés.'); }
     public function saveAssignment(Request $r) { $data=$r->validate(['user_id'=>'required|integer|exists:users,id','flight_id'=>'required|string|exists:flights,id','month'=>'required|date_format:Y-m','notes'=>'nullable|string|max:2000']); DB::table('promethee_assignments')->updateOrInsert(['user_id'=>$data['user_id'],'flight_id'=>$data['flight_id'],'month'=>$data['month']],['notes'=>$data['notes']??null,'assigned_by'=>$r->user()->id,'updated_at'=>now(),'created_at'=>now()]); return back()->with('success','Affectation enregistrée.'); }
     public function deleteAssignment(int $id) { DB::table('promethee_assignments')->where('id',$id)->delete(); return back()->with('success','Affectation supprimée.'); }
+    public function deleteAssignments(Request $r) { $data=$r->validate(['ids'=>'required|array|min:1|max:500','ids.*'=>'integer|exists:promethee_assignments,id']); DB::table('promethee_assignments')->whereIn('id',$data['ids'])->delete(); return back()->with('success',count($data['ids']).' affectation(s) supprimée(s).'); }
     public function adminShop() { return $this->page('admin-shop',['items'=>DB::table('promethee_shop_items')->latest()->get(),'pilots'=>User::where('state',UserState::ACTIVE)->orderBy('pilot_id')->get(['id','pilot_id','name']),'wallets'=>DB::table('promethee_wallets as wallet')->join('users','users.id','=','wallet.user_id')->select('wallet.*','users.pilot_id','users.name')->orderByDesc('wallet.balance')->get()]); }
     public function saveShopItem(Request $r) { $data=$r->validate(['name'=>'required|string|max:160','description'=>'nullable|string|max:5000','price'=>'required|numeric|min:0|max:1000000','active'=>'nullable|boolean']); DB::table('promethee_shop_items')->insert(['name'=>$data['name'],'description'=>$data['description'] ?? null,'price'=>Money::convertToSubunit($data['price']),'active'=>$r->boolean('active'),'created_at'=>now(),'updated_at'=>now()]); return back()->with('success','Article ajouté au catalogue.'); }
     public function creditWallet(Request $r, FinanceService $finance) { $data=$r->validate(['user_id'=>'required|integer|exists:users,id','amount'=>'required|numeric|between:-100000,100000']); $user=User::with('journal')->findOrFail($data['user_id']); $amount=new Money(Money::convertToSubunit(abs($data['amount']))); if($data['amount']>=0)$finance->creditToJournal($user->journal,$amount,$user,'Crédit boutique Prométhée','shop','shop'); else { if((int)$user->journal->getBalance()->getAmount()<(int)$amount->getAmount()) return back()->withErrors(['amount'=>'Solde phpVMS insuffisant pour ce débit.']); $finance->debitFromJournal($user->journal,$amount,$user,'Débit boutique Prométhée','shop','shop'); } return back()->with('success','Journal phpVMS du pilote mis à jour.'); }

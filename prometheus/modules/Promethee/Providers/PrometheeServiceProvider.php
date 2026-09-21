@@ -13,6 +13,7 @@ class PrometheeServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../Config/departure-board.php', 'departure-board');
+        $this->mergeConfigFrom(__DIR__.'/../Config/acars.php', 'acars');
     }
 
     public function boot(): void
@@ -31,6 +32,6 @@ class PrometheeServiceProvider extends ServiceProvider
     public function registerLinks(): void
     {
         app(ModuleService::class)->addFrontendLink('Prométhée', '/', 'fas fa-plane', true);
-        app(ModuleService::class)->addAdminLink('Prométhée · Identité', '/admin/identity/identite', 'pe-7s-photo');
+        app(ModuleService::class)->addAdminLink('Prométhée · Identité', '/admin/promethee/identite', 'pe-7s-photo');
     }
 }

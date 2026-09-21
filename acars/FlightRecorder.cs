@@ -10,11 +10,13 @@ public record FlightState(string Server, string PirepId, DateTimeOffset Started,
 {
     public List<FlightIssue> Issues { get; init; } = [];
     public List<PhaseEntry> Timeline { get; init; } = [];
+    public List<FlightJournalEntry> Journal { get; init; } = [];
 }
 public record Envelope(Sample Sample);
 public record AcarsEvent(Guid EventId, string Name, DateTimeOffset OccurredAt, double Lat, double Lon);
 public record FlightIssue(DateTimeOffset OccurredAt, string Code, string Message, string Severity = "warning");
 public record PhaseEntry(DateTimeOffset OccurredAt, string Name);
+public record FlightJournalEntry(DateTimeOffset OccurredAt, string Name, double? Value = null);
 public record AcarsRules(double TaxiSpeed = 35, double HardLandingRate = 600);
 public record TrackPoint(DateTimeOffset RecordedAt, double Lat, double Lon, double Altitude);
 public record FlightSummary(string PirepId, DateTimeOffset CompletedAt, double Distance, int AirborneMinutes,
@@ -22,7 +24,7 @@ public record FlightSummary(string PirepId, DateTimeOffset CompletedAt, double D
 
 public sealed class FlightRecorder
 {
-    private static readonly TimeSpan PositionInterval = TimeSpan.FromSeconds(15);
+    private TimeSpan positionInterval = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan InConfirmation = TimeSpan.FromSeconds(15);
     public readonly object Gate = new();
     public readonly SemaphoreSlim NetworkGate = new(1, 1);
@@ -30,6 +32,7 @@ public sealed class FlightRecorder
     private Sample? previous;
     private DateTimeOffset? lastQueuedAt;
     private DateTimeOffset? parkedSince;
+    private readonly FlightTrackingEngine tracking = new();
     public FlightState? Flight { get; private set; }
     public List<TrackPoint> Track { get; private set; } = [];
     public List<FlightSummary> History { get; private set; } = [];
@@ -37,6 +40,7 @@ public sealed class FlightRecorder
     public List<Envelope> Pending { get; private set; } = [];
     public List<AcarsEvent> PendingEvents { get; private set; } = [];
     public string? Warning { get; private set; }
+    public RemoteAcarsConfiguration? RemoteConfiguration { get; private set; }
 
     public FlightRecorder()
     {
@@ -52,6 +56,7 @@ public sealed class FlightRecorder
             try {
                 var saved = JsonSerializer.Deserialize<Saved>(File.ReadAllText(file));
                 Flight = saved?.Flight; Pending = saved?.Pending ?? []; PendingEvents = saved?.PendingEvents ?? [];
+                Track = saved?.Track ?? [];
                 if (Flight is not null) Flight = Flight with { Recording = false };
             } catch (JsonException) {
                 // A damaged local cache must not prevent the pilot from opening ACARS.
@@ -60,14 +65,21 @@ public sealed class FlightRecorder
         }
     }
 
-    private record Saved(FlightState? Flight, List<Envelope> Pending, List<AcarsEvent> PendingEvents);
+    private record Saved(FlightState? Flight, List<Envelope> Pending, List<AcarsEvent> PendingEvents, List<TrackPoint>? Track = null);
     private void SaveHistory() => File.WriteAllText(Path.Combine(folder, "history.json"), JsonSerializer.Serialize(History));
     public void SetRules(AcarsRules rules) { lock (Gate) { if (rules.TaxiSpeed is < 5 or > 100 || rules.HardLandingRate is < 100 or > 2000) throw new InvalidOperationException("Valeurs de règles invalides."); Rules = rules; File.WriteAllText(Path.Combine(folder, "rules.json"), JsonSerializer.Serialize(rules)); } }
+    public void ApplyRemoteConfiguration(RemoteAcarsConfiguration configuration)
+    {
+        lock (Gate) {
+            positionInterval = TimeSpan.FromSeconds(configuration.PositionIntervalSeconds);
+            RemoteConfiguration = configuration;
+        }
+    }
     private void Save()
     {
         var temp = Path.Combine(folder, "state.tmp");
         using (var file = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None)) {
-            JsonSerializer.Serialize(file, new Saved(Flight, Pending, PendingEvents)); file.Flush(true);
+            JsonSerializer.Serialize(file, new Saved(Flight, Pending, PendingEvents, Track)); file.Flush(true);
         }
         File.Move(temp, Path.Combine(folder, "state.json"), true);
     }
@@ -75,17 +87,34 @@ public sealed class FlightRecorder
     public void Start(string server, string id, Sample sample) { lock (Gate) {
         if (Flight is not null) throw new InvalidOperationException("Terminez le rapport en cours avant un nouveau départ.");
         if (!sample.OnGround) throw new InvalidOperationException("L'ACARS doit être démarré au sol, avant le départ du poste.");
+        tracking.Arm();
         Flight = new(server, id, sample.RecordedAt, sample.Fuel, Phase: "BOARDING", BlockOff: sample.RecordedAt) { Timeline = [new(sample.RecordedAt, "OUT"), new(sample.RecordedAt, "BOARDING")] }; previous = sample; Pending = []; PendingEvents = []; Track = [];
         QueueEvent("OUT", sample); QueuePosition(sample); Save();
     }}
+    public void Start(string server, string id, AircraftSnapshot snapshot)
+    {
+        if (!TryToLegacySample(snapshot, out var sample))
+            throw new InvalidOperationException("Le connecteur ne fournit pas encore les données minimales pour démarrer le vol.");
+        Start(server, id, sample);
+    }
     public void Resume(string server) { lock (Gate) {
         if (Flight is null || Flight.Server != server) throw new InvalidOperationException("Le serveur ne correspond pas au vol enregistré.");
+        tracking.Arm();
         Flight = Flight with { Recording = true, BlockOff = Flight.BlockOff ?? Flight.Started }; previous = null; parkedSince = null; Save();
     }}
     public void Pause() { lock (Gate) { if (Flight is not null) Flight = Flight with { Recording = false }; previous = null; parkedSince = null; Save(); }}
 
+    /// <summary>New connector boundary. Legacy recorder logic remains intact during migration.</summary>
+    public void Capture(AircraftSnapshot snapshot)
+    {
+        if (TryToLegacySample(snapshot, out var sample)) Capture(sample);
+    }
+
     public void Capture(Sample s) { lock (Gate) {
         if (Flight is null || !Flight.Recording) return;
+        var pendingBefore = Pending.Count;
+        var eventsBefore = PendingEvents.Count;
+        RecordConnectorFacts(tracking.Process(s.ToSnapshot()), s);
         Track.Add(new(s.RecordedAt, s.Lat, s.Lon, s.Altitude));
         if (Track.Count > 720) Track.RemoveRange(0, Track.Count - 720);
         var changed = false;
@@ -128,9 +157,12 @@ public sealed class FlightRecorder
                 Flight = Flight with { Phase = "IN", BlockOn = s.RecordedAt, Timeline = [.. Flight.Timeline, new(s.RecordedAt, "IN")] }; QueueEvent("IN", s); QueuePosition(s); changed = true;
             }
         } else if (Flight.Phase != "IN") parkedSince = null;
-        if (lastQueuedAt is null || s.RecordedAt - lastQueuedAt >= PositionInterval) { QueuePosition(s); changed = true; }
+        if (lastQueuedAt is null || s.RecordedAt - lastQueuedAt >= positionInterval) { QueuePosition(s); changed = true; }
         previous = s;
-        if (changed) Save();
+        // Persist at the queue cadence (and on phase changes), rather than once
+        // per telemetry tick. A restart can therefore lose at most the current
+        // unqueued second, never an acknowledged or queued ACARS message.
+        if (changed || Pending.Count != pendingBefore || PendingEvents.Count != eventsBefore) Save();
     }}
 
     public void AcknowledgePositions(IEnumerable<Guid> ids) { lock (Gate) { var set = ids.ToHashSet(); Pending.RemoveAll(x => set.Contains(x.Sample.SampleId)); Save(); }}
@@ -150,7 +182,40 @@ public sealed class FlightRecorder
         Flight = Flight with { Issues = [.. Flight.Issues, new(sample.RecordedAt, code, message)] }; Warning = message; QueueEvent(code, sample);
     }
     private void QueuePosition(Sample sample) { if (Pending.Any(x => x.Sample.SampleId == sample.SampleId)) return; Pending.Add(new(sample)); lastQueuedAt = sample.RecordedAt; }
-    private void QueueEvent(string name, Sample sample) => PendingEvents.Add(new(Guid.NewGuid(), name, sample.RecordedAt, sample.Lat, sample.Lon));
+    private void QueueEvent(string name, Sample sample, double? value = null)
+    {
+        PendingEvents.Add(new(Guid.NewGuid(), name, sample.RecordedAt, sample.Lat, sample.Lon));
+        if (Flight is not null && !Flight.Journal.Any(x => x.Name == name && x.OccurredAt == sample.RecordedAt))
+            Flight = Flight with { Journal = [.. Flight.Journal, new(sample.RecordedAt, name, value)] };
+    }
+    private void RecordConnectorFacts(TrackingDecision decision, Sample sample)
+    {
+        // Phase transitions are still emitted by the proven legacy state machine.
+        // These facts are independent and therefore safe to add during migration.
+        foreach (var fact in decision.Events.Where(x => x.Type is "BEACON_ON" or "BEACON_OFF"
+            or "PARKING_BRAKE_ON" or "PARKING_BRAKE_OFF" or "GEAR_ON" or "GEAR_OFF"
+            or "LANDING_LIGHTS_ON" or "LANDING_LIGHTS_OFF" or "ENGINE_STARTED"
+            or "ENGINE_STOPPED" or "TOUCHDOWN" or "SLEW_ACTIVE" or "SIM_RATE_INCREASED"
+            or "FUEL_INCREASED" or "TOUCHDOWN_FIRST" or "TOUCHDOWN_BOUNCE"
+            or "BOUNCE" or "BOUNCE_COUNT"))
+        {
+            if (!PendingEvents.Any(x => x.Name == fact.Type && x.OccurredAt == fact.OccurredAt))
+                QueueEvent(fact.Type, sample, fact.Value);
+        }
+    }
+    private static bool TryToLegacySample(AircraftSnapshot s, out Sample sample)
+    {
+        sample = default!;
+        if (s.Latitude is null || s.Longitude is null || s.AltitudeMslFeet is null || s.AltitudeAglFeet is null
+            || s.IndicatedAirspeedKnots is null || s.GroundSpeedKnots is null || s.VerticalSpeedFeetPerMinute is null
+            || s.HeadingDegrees is null || s.FuelWeight is null || s.OnGround is null || s.GearDown is null
+            || s.FlapsPercent is null || s.ParkingBrake is null) return false;
+        sample = new Sample(s.SampleId, s.RecordedAt, s.Latitude.Value, s.Longitude.Value, s.AltitudeMslFeet.Value,
+            s.AltitudeAglFeet.Value, s.IndicatedAirspeedKnots.Value, s.GroundSpeedKnots.Value,
+            s.VerticalSpeedFeetPerMinute.Value, s.HeadingDegrees.Value, s.FuelWeight.Value, s.OnGround.Value,
+            0, s.GearDown.Value, 0, s.FlapsPercent.Value, false, 0, 0, s.ParkingBrake.Value);
+        return true;
+    }
     public static double Distance(double lat1, double lon1, double lat2, double lon2) {
         var r = Math.PI / 180; var a = Math.Pow(Math.Sin((lat2 - lat1) * r / 2), 2) + Math.Cos(lat1 * r) * Math.Cos(lat2 * r) * Math.Pow(Math.Sin((lon2 - lon1) * r / 2), 2);
         return 3440.065 * 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(Math.Max(0, 1 - a)));

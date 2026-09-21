@@ -13,13 +13,12 @@ public sealed class PhpVmsClient
     public string Server { get; private set; } = "";
     public bool Connected => credential.Length > 0;
 
-    public PhpVmsClient() => http.DefaultRequestHeaders.UserAgent.ParseAdd("Promethee-ACARS/2.0");
+    public PhpVmsClient() => http.DefaultRequestHeaders.UserAgent.ParseAdd("Promethee-ACARS/2.1");
 
     public void ConfigureApiKey(string server, string apiKey)
     {
-        var validatedServer = ValidateServer(server);
+        Server = ValidateServer(server);
         if (apiKey.Length < 10 || apiKey.Length > 200) throw new InvalidOperationException("Clé API invalide.");
-        Server = validatedServer;
         credential = apiKey;
         credentialKind = CredentialKind.ApiKey;
     }
@@ -28,58 +27,70 @@ public sealed class PhpVmsClient
     {
         var validatedServer = ValidateServer(server);
         if (string.IsNullOrWhiteSpace(login) || string.IsNullOrWhiteSpace(password))
-            throw new InvalidOperationException("Saisissez votre identifiant phpVMS et votre mot de passe.");
-
-        using var request = new HttpRequestMessage(HttpMethod.Post, validatedServer + "/api/acars/session") {
-            Content = JsonContent.Create(new { login, password }),
-        };
-        request.Headers.Add("Accept", "application/json");
-        using var response = await http.SendAsync(request);
-        if (!response.IsSuccessStatusCode) {
-            var reason = response.StatusCode switch {
-                System.Net.HttpStatusCode.NotFound => "Le serveur ne contient pas l'API ACARS. Déployez la mise à jour phpVMS.",
-                System.Net.HttpStatusCode.TooManyRequests => "Trop de tentatives. Attendez une minute avant de réessayer.",
-                System.Net.HttpStatusCode.InternalServerError => "Erreur serveur ACARS. L'administrateur doit vérifier les logs et les migrations.",
-                System.Net.HttpStatusCode.Unauthorized => "Identifiants invalides ou compte pilote non activé/autorisé.",
-                _ => $"Connexion ACARS refusée (HTTP {(int)response.StatusCode})."
-            };
-            throw new InvalidOperationException(reason);
+            throw new InvalidOperationException("Saisissez votre identifiant et votre mot de passe.");
+        try {
+            using var request = new HttpRequestMessage(HttpMethod.Post, validatedServer + "/api/acars/session") { Content = JsonContent.Create(new { login, password }) };
+            request.Headers.Add("Accept", "application/json");
+            using var response = await http.SendAsync(request);
+            if (!response.IsSuccessStatusCode) throw new InvalidOperationException(LoginMessage(response.StatusCode));
+            var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+            var data = json.TryGetProperty("data", out var wrapped) ? wrapped : json;
+            if (!data.TryGetProperty("access_token", out var token) || string.IsNullOrWhiteSpace(token.GetString()))
+                throw new InvalidOperationException("Impossible de se connecter au serveur Prométhée.");
+            Server = validatedServer;
+            credential = token.GetString()!;
+            credentialKind = CredentialKind.Bearer;
+            return await Send("user");
+        } catch (HttpRequestException ex) {
+            System.Diagnostics.Trace.WriteLine($"ACARS login transport failure: {ex}");
+            throw new InvalidOperationException("Impossible de se connecter au serveur Prométhée.");
+        } catch (TaskCanceledException ex) {
+            System.Diagnostics.Trace.WriteLine($"ACARS login timeout: {ex}");
+            throw new InvalidOperationException("Impossible de se connecter au serveur Prométhée.");
         }
-
-        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
-        var data = json.TryGetProperty("data", out var wrapped) ? wrapped : json;
-        if (!data.TryGetProperty("access_token", out var token) || string.IsNullOrWhiteSpace(token.GetString()))
-            throw new InvalidOperationException("Le serveur n'a pas fourni de session ACARS valide.");
-
-        // The password never leaves this request and neither it nor the token is written to disk.
-        Server = validatedServer;
-        credential = token.GetString()!;
-        credentialKind = CredentialKind.Bearer;
-        return await Send("user");
     }
 
     public async Task<JsonElement> Send(string path, object? body = null)
     {
-        if (!Connected) throw new InvalidOperationException("Connectez votre compte.");
-        using var request = new HttpRequestMessage(body is null ? HttpMethod.Get : HttpMethod.Post, Server + "/api/" + path);
-        if (credentialKind == CredentialKind.Bearer) request.Headers.Authorization = new("Bearer", credential);
-        else request.Headers.Add("X-API-Key", credential);
-        request.Headers.Add("Accept", "application/json");
-        if (body is not null) request.Content = JsonContent.Create(body);
-        using var response = await http.SendAsync(request);
-        // Legacy phpVMS responses can include sensitive information. Do not reflect them in the local UI.
-        if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException("phpVMS : erreur HTTP " + (int)response.StatusCode + ". Vérifiez le compte, les droits et les données du vol.");
-        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
-        return json.TryGetProperty("data", out var data) ? data : json;
+        if (!Connected) throw new InvalidOperationException("Connectez-vous à votre compte pilote.");
+        try {
+            using var request = new HttpRequestMessage(body is null ? HttpMethod.Get : HttpMethod.Post, Server + "/api/" + path);
+            if (credentialKind == CredentialKind.Bearer) request.Headers.Authorization = new("Bearer", credential);
+            else request.Headers.Add("X-API-Key", credential);
+            request.Headers.Add("Accept", "application/json");
+            if (body is not null) request.Content = JsonContent.Create(body);
+            using var response = await http.SendAsync(request);
+            if (!response.IsSuccessStatusCode) {
+                System.Diagnostics.Trace.WriteLine($"ACARS API {path} returned {(int)response.StatusCode}");
+                throw new InvalidOperationException(response.StatusCode == System.Net.HttpStatusCode.Unauthorized
+                    ? "Votre session a expiré. Connectez-vous à nouveau."
+                    : response.StatusCode == System.Net.HttpStatusCode.UnprocessableEntity
+                        ? "Les informations du PIREP sont incomplètes ou non valides."
+                        : "Impossible de récupérer les données Prométhée.");
+            }
+            var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+            return json.TryGetProperty("data", out var data) ? data : json;
+        } catch (HttpRequestException ex) {
+            System.Diagnostics.Trace.WriteLine($"ACARS API transport failure: {ex}");
+            throw new InvalidOperationException("Impossible de se connecter au serveur Prométhée.");
+        } catch (TaskCanceledException ex) {
+            System.Diagnostics.Trace.WriteLine($"ACARS API timeout: {ex}");
+            throw new InvalidOperationException("Impossible de se connecter au serveur Prométhée.");
+        }
     }
+
+    private static string LoginMessage(System.Net.HttpStatusCode status) => status switch {
+        System.Net.HttpStatusCode.Unauthorized => "Identifiant ou mot de passe incorrect.",
+        System.Net.HttpStatusCode.TooManyRequests => "Trop de tentatives. Attendez une minute avant de réessayer.",
+        _ => "Impossible de se connecter au serveur Prométhée."
+    };
 
     private static string ValidateServer(string server)
     {
         if (!Uri.TryCreate(server, UriKind.Absolute, out var uri)
-            || !(uri.Scheme == "https" || (uri.Scheme == "http" && uri.IsLoopback))
-            || !string.IsNullOrEmpty(uri.UserInfo) || !string.IsNullOrEmpty(uri.Query) || !string.IsNullOrEmpty(uri.Fragment))
-            throw new InvalidOperationException("Utilisez l'URL HTTPS de la compagnie (HTTP est autorisé uniquement en local).");
+            || uri.Scheme != Uri.UriSchemeHttps || !string.IsNullOrEmpty(uri.UserInfo)
+            || !string.IsNullOrEmpty(uri.Query) || !string.IsNullOrEmpty(uri.Fragment))
+            throw new InvalidOperationException("Utilisez une URL HTTPS valide.");
         return uri.AbsoluteUri.TrimEnd('/');
     }
 

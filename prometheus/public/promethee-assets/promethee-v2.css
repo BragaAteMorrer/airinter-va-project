@@ -55,7 +55,8 @@ main { max-width: 1680px; }
 .control-strip article:nth-child(4) { border-left-color: var(--ops-yellow); }
 .control-strip span, .control-strip small { display: block; color: var(--muted); font-size: 10px; }
 .control-strip strong { display: block; font-size: 30px; line-height: 1.25; color: var(--ink); letter-spacing: -.8px; }
-.dispatch-grid { display: grid; grid-template-columns: minmax(0,1fr) 320px; gap: 18px; margin-bottom: 22px; }
+/* The movements board is the main dispatch surface; actions follow beneath it. */
+.dispatch-grid { display: grid; grid-template-columns: minmax(0,1fr); gap: 18px; margin-bottom: 22px; }
 .board-main { padding: 0; }
 .board-main .panel-heading { padding: 22px 24px; margin: 0; border-bottom: 1px solid var(--line); }
 .flight-stack { display: grid; }
@@ -78,7 +79,8 @@ main { max-width: 1680px; }
 .departure-board .dispatch-flight > div { display: flex; align-items: baseline; gap: 10px; }
 .departure-board .dispatch-flight > div strong { color: #f1c928; font: inherit; letter-spacing: inherit; }
 .departure-board .dispatch-flight > div span { overflow: hidden; text-overflow: clip; color: #f3f2e9; font: inherit; letter-spacing: inherit; }
-.departure-board .dispatch-flight time { order: -1; color: #f6cf2d; }
+/* Times are grid items in their DOM order (H.DÉP then H.ARR), never reordered. */
+.departure-board .dispatch-flight time { color: #f6cf2d; }
 .departure-board .dispatch-flight .load { display: block; width: auto; height: auto; color: #f1c928; text-align: center; }
 .departure-board .dispatch-flight > a { color: #f1c928; font-size: 11px; font-weight: 700; white-space: nowrap; }
 .departure-board .empty { margin: 0; padding: 27px 12px; color: #d8d8d0; font-family: "Courier New", monospace; }
@@ -936,13 +938,22 @@ html:not([data-era="minitel"]) .departure-board .flight-stack {
   padding: 13px 12px 14px;
   background: linear-gradient(90deg, #101111, #1c1d1d 4%, #111212 96%, #080909);
 }
+
+.profile-edit-link { margin-top: 14px; font-size: 11px; }
+.profile-page-actions { display: flex; justify-content: flex-end; margin: 0 0 12px; }
+.profile-form { max-width: 980px; }
+.profile-form small { display: block; margin-top: 6px; color: var(--muted); font-size: 10px; font-weight: 400; }
+.profile-password-heading { margin: 32px 0 20px; padding-top: 24px; border-top: 1px solid var(--line); }
+.profile-password-heading p { margin: 6px 0 0; }
+.profile-form-actions { display: flex; justify-content: flex-end; margin-top: 28px; }
 html:not([data-era="minitel"]) .departure-board .flight-stack::before,
 html:not([data-era="minitel"]) .departure-board .flight-stack::after { display: none; }
-html:not([data-era="minitel"]) .split-flap-head,
-html:not([data-era="minitel"]) .departure-board .dispatch-flight {
+/* One shared seven-column track definition for headings and flight rows. */
+html:not([data-era="minitel"]) .departure-board .split-flap-grid {
   display: grid;
-  grid-template-columns: 5fr 18fr 8fr 5fr 4fr;
-  gap: 7px;
+  grid-template-columns: 64px minmax(138px, 1fr) 70px 84px minmax(418px, 1.7fr) 84px minmax(240px, 1.3fr);
+  column-gap: 7px;
+  box-sizing: border-box;
 }
 html:not([data-era="minitel"]) .split-flap-head { padding: 0 2px 5px; color: #bdb8a8; font: 700 10px/1 Arial, sans-serif; letter-spacing: .12em; }
 html:not([data-era="minitel"]) .departure-board .dispatch-flight {
@@ -955,6 +966,7 @@ html:not([data-era="minitel"]) .departure-board .dispatch-flight > :not(.board-c
 html:not([data-era="minitel"]) .departure-board .dispatch-flight .board-cell {
   display: flex;
   min-width: 0;
+  box-sizing: border-box;
   overflow: hidden;
   padding: 0;
   border: 0;
@@ -967,13 +979,16 @@ html:not([data-era="minitel"]) .departure-board .dispatch-flight .board-cell {
   text-shadow: none;
   text-decoration: none;
 }
-.split-flap-field { gap: 2px; align-items: stretch; }
+.split-flap-field,
+html:not([data-era="minitel"]) .departure-board .dispatch-flight .board-cell,
+.airline-logo-fallback { gap: 2px; align-items: stretch; flex-wrap: nowrap; }
 .split-flap-plain { display: block; overflow: visible; font-family: system-ui, sans-serif; letter-spacing: 0; text-transform: none; white-space: normal; }
 .split-flap-char {
   position: relative;
   display: inline-block;
-  flex: 1 1 0;
-  min-width: 0;
+  flex: 0 0 13px;
+  width: 13px;
+  min-width: 13px;
   height: 38px;
   overflow: hidden;
   perspective: 160px;
@@ -982,7 +997,7 @@ html:not([data-era="minitel"]) .departure-board .dispatch-flight .board-cell {
   border: 1px solid #080909;
   border-radius: 2px;
   box-shadow: inset 0 1px #484a48, inset 0 -1px #050505, 0 1px #272827;
-  font: 700 clamp(12px, 1.32vw, 19px)/38px "Arial Narrow", "Roboto Condensed", Arial, sans-serif;
+  font: 700 clamp(10px, .85vw, 12px)/38px "Arial Narrow", "Roboto Condensed", Arial, sans-serif;
   letter-spacing: -.035em;
   text-align: center;
   text-shadow: 0 1px #000;
@@ -990,7 +1005,7 @@ html:not([data-era="minitel"]) .departure-board .dispatch-flight .board-cell {
 .split-flap-char::after { content: ""; position: absolute; z-index: 5; top: calc(50% - 1px); right: 0; left: 0; height: 2px; background: linear-gradient(#050505, #696a65 48%, #050505 52%); box-shadow: 0 1px #0008; }
 .flap-half { position: absolute; z-index: 1; inset-inline: 0; height: 50%; overflow: hidden; background: linear-gradient(180deg, #30312f, #1c1d1b); }
 .flap-bottom { top: 50%; background: linear-gradient(180deg, #151614, #242522); }
-.flap-face { display: block; height: 38px; line-height: 38px; }
+.flap-face { display: flex; align-items: center; justify-content: center; height: 38px; line-height: 1; }
 .flap-bottom .flap-face { transform: translateY(-19px); }
 .flap-flip { z-index: 3; backface-visibility: hidden; }
 .flap-flip-top { transform-origin: bottom; }
@@ -1001,12 +1016,7 @@ html:not([data-era="minitel"]) .departure-board .dispatch-flight .board-cell {
 @keyframes flap-bottom { from { transform: rotateX(90deg); filter: brightness(.5); } to { transform: rotateX(0); } }
 @media (max-width: 760px) {
   html:not([data-era="minitel"]) .departure-board { border-width: 5px; }
-  html:not([data-era="minitel"]) .split-flap-head,
-  html:not([data-era="minitel"]) .departure-board .dispatch-flight { grid-template-columns: 5fr 15fr 7fr; gap: 4px; }
-  html:not([data-era="minitel"]) .split-flap-head span:nth-child(4),
-  html:not([data-era="minitel"]) .split-flap-head span:nth-child(5),
-  html:not([data-era="minitel"]) .departure-board .dispatch-flight .duration,
-  html:not([data-era="minitel"]) .departure-board .dispatch-flight .load { display: none; }
+  html:not([data-era="minitel"]) .departure-board .split-flap-grid { column-gap: 4px; }
   .split-flap-field { gap: 1px; }
   .split-flap-char { height: 31px; font-size: 13px; line-height: 31px; }
   .flap-face { height: 31px; line-height: 31px; }
@@ -1015,24 +1025,19 @@ html:not([data-era="minitel"]) .departure-board .dispatch-flight .board-cell {
 @media (prefers-reduced-motion: reduce) { .split-flap-char *, .split-flap-char { animation: none !important; } }
 
 /* Airport movements layout: the logo is a dedicated physical cell, not a glyph palette. */
-html:not([data-era="minitel"]) .departure-board .split-flap-head,
-html:not([data-era="minitel"]) .departure-board .dispatch-flight {
-  grid-template-columns: 62px minmax(76px, .9fr) minmax(58px, .65fr) 62px minmax(112px, 1.45fr) 62px minmax(96px, 1.2fr);
-}
-html:not([data-era="minitel"]) .departure-board .flight-stack { overflow-x: auto; }
-html:not([data-era="minitel"]) .departure-board .split-flap-head { min-width: 690px; }
-html:not([data-era="minitel"]) .departure-board .dispatch-flight { min-width: 690px; }
+html:not([data-era="minitel"]) .departure-board-scroll { width: 100%; max-width: 100%; overflow-x: auto; }
+html:not([data-era="minitel"]) .departure-board .flight-stack { width: max-content; min-width: 100%; }
+html:not([data-era="minitel"]) .departure-board .split-flap-grid { min-width: 1140px; }
 html:not([data-era="minitel"]) .departure-board .airline-logo-cell {
   display: grid; place-items: center; min-height: 38px; padding: 3px !important;
   background: #181918 !important; border: 1px solid #080909 !important;
   border-radius: 2px !important; box-shadow: inset 0 1px #484a48, inset 0 -1px #050505, 0 1px #272827 !important;
 }
 .airline-logo-cell img { display: block; max-width: 100%; max-height: 28px; object-fit: contain; }
-.airline-logo-fallback { color: #f1eddf; font: 700 10px/1 "Arial Narrow", Arial, sans-serif; letter-spacing: .08em; text-align: center; }
+html:not([data-era="minitel"]) .departure-board .airline-logo-fallback { display: flex; color: #f1eddf; font: 700 10px/1 "Arial Narrow", Arial, sans-serif; letter-spacing: .08em; text-align: center; }
 html:not([data-era="minitel"]) .departure-board .status .split-flap-char { color: #f1c928; }
 @media (max-width: 760px) {
-  html:not([data-era="minitel"]) .departure-board .split-flap-head,
-  html:not([data-era="minitel"]) .departure-board .dispatch-flight { min-width: 650px; grid-template-columns: 50px 75px 58px 55px 125px 55px 105px; gap: 4px; }
+  html:not([data-era="minitel"]) .departure-board .split-flap-grid { min-width: 1140px; }
 }
 
 /*
@@ -1372,11 +1377,19 @@ html:not([data-era="minitel"]) .departure-board { background: linear-gradient(14
 html:not([data-era="minitel"]) .departure-board .panel-heading { padding: 14px 20px; background: linear-gradient(#4b4e4f, #27292a 45%, #171819 52%, #282a2b); }
 html:not([data-era="minitel"]) .departure-board .panel-heading h2 { color: #eee9d8; }
 html:not([data-era="minitel"]) .departure-board .flight-stack { padding: 13px 12px 14px; }
-html:not([data-era="minitel"]) .departure-board .dispatch-flight { grid-template-columns: 5fr 18fr 8fr 5fr 4fr; gap: 7px; padding: 0; }
 html:not([data-era="minitel"]) .departure-board .dispatch-flight .board-cell { font-size: inherit; }
 @media (max-width: 760px) {
   html:not([data-era="minitel"]) .departure-board { border-width: 5px; border-radius: 4px; }
   html:not([data-era="minitel"]) .departure-board .flight-stack { padding: 13px 9px 10px; }
-  html:not([data-era="minitel"]) .departure-board .dispatch-flight { grid-template-columns: 5fr 15fr 7fr; gap: 4px; padding: 0; }
   html:not([data-era="minitel"]) .departure-board .dispatch-flight > a { align-self: stretch; }
+}
+
+/* Minitel keeps the same data order; narrow screens scroll the board instead of reflowing a flight. */
+html[data-era="minitel"] .departure-board-scroll { width: 100%; max-width: 100%; overflow-x: auto; }
+html[data-era="minitel"] .departure-board .flight-stack { width: max-content; min-width: 100%; }
+html[data-era="minitel"] .departure-board .split-flap-grid {
+  display: grid;
+  grid-template-columns: 64px minmax(138px, 1fr) 70px 84px minmax(418px, 1.7fr) 84px minmax(240px, 1.3fr);
+  column-gap: 7px;
+  min-width: 1140px;
 }

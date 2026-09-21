@@ -2,6 +2,7 @@
   const i18n = window.prometheeI18n || {};
   const dateLocale = i18n.dateLocale || i18n.locale || 'fr-FR';
   const allowed = ['modern','2000','minitel'];
+  const appearances = ['light','dark'];
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let revealTimeout;
   let bootTimeout;
@@ -63,9 +64,23 @@
     bootMinitel();
     revealMinitelLines();
   };
+  const setAppearance = (appearance, persist = true) => {
+    if (!appearances.includes(appearance)) appearance = 'light';
+    if (persist) {
+      document.documentElement.dataset.appearanceTransition = 'true';
+      window.setTimeout(() => delete document.documentElement.dataset.appearanceTransition, 230);
+    }
+    document.documentElement.dataset.appearance = appearance;
+    if (persist) try { localStorage.setItem('promethee-appearance', appearance); } catch {}
+    const control = document.getElementById('appearance'); if (control) control.value = appearance;
+  };
   let initial = 'modern'; try { initial = localStorage.getItem('promethee-era') || 'modern'; } catch {}
   setEra(initial);
+  let initialAppearance; try { initialAppearance = localStorage.getItem('promethee-appearance'); } catch {}
+  setAppearance(appearances.includes(initialAppearance) ? initialAppearance : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'), false);
   document.getElementById('era')?.addEventListener('change',e => setEra(e.target.value));
+  document.getElementById('appearance')?.addEventListener('change',e => setAppearance(e.target.value));
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => { try { if (!localStorage.getItem('promethee-appearance')) setAppearance(event.matches ? 'dark' : 'light', false); } catch {} });
   document.querySelectorAll('[data-era-choice]').forEach(button => button.addEventListener('click',() => setEra(button.dataset.eraChoice)));
   document.querySelectorAll('[data-print]').forEach(button => button.addEventListener('click',() => window.print()));
   const tick = () => {
@@ -162,7 +177,7 @@
   };
 
   const bootSplitFlapBoards = () => document.querySelectorAll('[data-split-flap-board]').forEach((board) => {
-    board.querySelectorAll('.board-cell:not(.split-flap-logo)').forEach((field) => renderFlapField(field, true));
+    board.querySelectorAll('.board-cell:not(.split-flap-logo), .airline-logo-fallback').forEach((field) => renderFlapField(field, true));
     // External live updates can set data-flap-value; only affected palettes flip.
     new MutationObserver((changes) => changes.forEach((change) => {
       if (change.type === 'attributes' && change.attributeName === 'data-flap-value') renderFlapField(change.target);
@@ -185,18 +200,19 @@
         cell.append(logo);
       } else {
         const fallback = document.createElement('span');
-        fallback.className = 'airline-logo-fallback'; fallback.textContent = flight.airline_code;
+        fallback.className = 'airline-logo-fallback'; fallback.dataset.flapWidth = 4; fallback.textContent = flight.airline_code;
         cell.append(fallback);
+        renderFlapField(fallback, true);
       }
     };
     const makeRow = (flight, index) => {
       const row = document.createElement('article');
-      row.className = 'dispatch-flight'; row.dataset.boardFlight = flight.id;
+      row.className = 'split-flap-grid dispatch-flight'; row.dataset.boardFlight = flight.id;
       row.style.setProperty('--board-row', index);
       const logo = document.createElement('span');
       logo.className = 'board-cell split-flap-logo airline-logo-cell'; setLogo(logo, flight);
-      const ident = makeCell('a', 'flight-ident', flight.flight, 9); ident.href = flight.url;
-      row.append(logo, ident, makeCell('span', '', flight.departure, 5), makeCell('time', '', flight.departure_time, 5), makeCell('span', 'destination', flight.destination, 14), makeCell('time', '', flight.arrival_time, 5), makeCell('span', 'status', flight.status_label, 13));
+      const ident = makeCell('a', 'flight-cell flight-ident', flight.flight, 9); ident.href = flight.url;
+      row.append(logo, ident, makeCell('span', 'departure-cell', flight.departure, 4), makeCell('time', 'departure-time-cell', flight.departure_time, 5), makeCell('span', 'destination-cell destination', flight.destination, 28), makeCell('time', 'arrival-time-cell', flight.arrival_time, 5), makeCell('span', 'status-cell status', flight.status_label, 16));
       row.querySelectorAll('.board-cell:not(.split-flap-logo)').forEach((field) => renderFlapField(field, true));
       return row;
     };

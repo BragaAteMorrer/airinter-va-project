@@ -1,1 +1,1 @@
-1789677041a:10:{s:4:"name";s:6:"Awards";s:5:"alias";s:6:"awards";s:11:"description";s:0:"";s:8:"keywords";a:0:{}s:6:"active";i:1;s:5:"order";i:0;s:9:"providers";a:1:{i:0;s:45:"Modules\Awards\Providers\AwardServiceProvider";}s:7:"aliases";a:0:{}s:5:"files";a:0:{}s:8:"requires";a:0:{}}
+1790009445a:10:{s:4:"name";s:6:"Awards";s:5:"alias";s:6:"awards";s:11:"description";s:0:"";s:8:"keywords";a:0:{}s:6:"active";i:1;s:5:"order";i:0;s:9:"providers";a:1:{i:0;s:45:"Modules\Awards\Providers\AwardServiceProvider";}s:7:"aliases";a:0:{}s:5:"files";a:0:{}s:8:"requires";a:0:{}}

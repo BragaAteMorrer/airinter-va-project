@@ -1,20 +1,24 @@
-using Microsoft.Win32;
-
 namespace Promethee;
 
-/// <summary>Machine-wide ACARS endpoint. HKLM writes require Windows administrator rights.</summary>
+/// <summary>Resolves an endpoint only when an operator explicitly opts into one.</summary>
 public static class ServerConfiguration
 {
-    private const string RegistryPath = @"SOFTWARE\AirInter\PrometheeACARS";
-    private const string ServerValue = "Server";
+    public const string DefaultServer = "https://promethee.airinter-va.org";
 
-    public static string? Get() => Registry.LocalMachine.OpenSubKey(RegistryPath, writable: false)?.GetValue(ServerValue) as string;
-
-    public static void Set(string server)
+    public static string Get()
     {
-        if (!Uri.TryCreate(server, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps || !string.IsNullOrEmpty(uri.UserInfo))
-            throw new InvalidOperationException("L'URL doit être HTTPS, par exemple https://va.exemple.fr.");
-        using var key = Registry.LocalMachine.CreateSubKey(RegistryPath, writable: true);
-        key.SetValue(ServerValue, uri.AbsoluteUri.TrimEnd('/'), RegistryValueKind.String);
+        // A legacy registry value must never silently redirect a pilot to a retired server.
+        var overrideUrl = Environment.GetEnvironmentVariable("PROMETHEE_ACARS_SERVER");
+        return IsValid(overrideUrl) ? overrideUrl!.TrimEnd('/') : DefaultServer;
     }
+
+    public static string Source() => IsValid(Environment.GetEnvironmentVariable("PROMETHEE_ACARS_SERVER"))
+        ? "variable d’environnement PROMETHEE_ACARS_SERVER" : "configuration de production intégrée";
+
+    public static void Set(string server) => throw new InvalidOperationException(
+        "La configuration serveur par registre n’est plus prise en charge. Utilisez PROMETHEE_ACARS_SERVER pour un environnement administré.");
+
+    public static bool IsValid(string? server) => Uri.TryCreate(server, UriKind.Absolute, out var uri)
+        && uri.Scheme == Uri.UriSchemeHttps && string.IsNullOrEmpty(uri.UserInfo)
+        && string.IsNullOrEmpty(uri.Query) && string.IsNullOrEmpty(uri.Fragment);
 }

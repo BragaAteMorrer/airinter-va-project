@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 210" role="img" aria-labelledby="title">
+  <title>Air Inter Hermès</title>
+  <rect width="480" height="210" rx="14" fill="#fff"/>
+  <g font-family="Arial, Helvetica, sans-serif" font-style="italic" font-weight="900">
+    <text x="32" y="67" fill="#1264b4" font-size="56" letter-spacing="-4">AIR</text>
+    <text x="179" y="67" fill="#e7273a" font-size="56" letter-spacing="-4">INTER</text>
+  </g>
+  <rect x="0" y="94" width="480" height="59" fill="#075b9d"/>
+  <rect x="0" y="153" width="480" height="22" fill="#078fc2"/>
+  <text x="31" y="140" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-style="italic" font-weight="900" font-size="67" letter-spacing="-5">HERMÈS</text>
+  <path d="M20 187h100l-15 8H35z" fill="#e7273a"/>
+  <path d="M121 187h100l-15 8h-70z" fill="#1264b4"/>
+  <path d="M222 187h100l-15 8h-70z" fill="#f2c14e"/>
+</svg>

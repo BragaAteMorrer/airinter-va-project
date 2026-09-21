@@ -1,11 +1,11 @@
 namespace Promethee;
 
-public sealed class TelemetryService(SimConnectReader sim, FlightRecorder recorder, PhpVmsClient client)
+public sealed class TelemetryService(ISimulatorConnector sim, FlightRecorder recorder, PhpVmsClient client)
 {
     public async Task Tick()
     {
         sim.Poll();
-        if (sim.Latest is not null) recorder.Capture(sim.Latest);
+        if (sim.LatestSnapshot is not null) recorder.Capture(sim.LatestSnapshot);
         if (client.Connected) {
             try { await SendPending(client, recorder); } catch { /* queued locally until the next successful sync */ }
         }
@@ -25,6 +25,20 @@ public sealed class TelemetryService(SimConnectReader sim, FlightRecorder record
             }
             if (flight is null || (pending.Count == 0 && events.Count == 0)) return 0;
             if (pending.Count > 0) {
+                try {
+                    await client.Send($"promethee/pireps/{Uri.EscapeDataString(flight.PirepId)}/telemetry", new {
+                        samples = pending.Select(x => new {
+                            sample_id=x.Sample.SampleId, recorded_at=x.Sample.RecordedAt, lat=x.Sample.Lat, lon=x.Sample.Lon,
+                            altitude_msl=x.Sample.Altitude, agl=x.Sample.Agl, ias=x.Sample.Ias, gs=x.Sample.Gs,
+                            vs=x.Sample.Vs, heading=x.Sample.Heading, fuel=x.Sample.Fuel, bank=x.Sample.Bank,
+                            on_ground=x.Sample.OnGround, gear_down=x.Sample.GearDown, landing_flaps=x.Sample.Flaps > 0,
+                            thrust_stable=x.Sample.ThrustStable
+                        })
+                    });
+                } catch (InvalidOperationException) {
+                    // The detailed archive is optional during a rolling server
+                    // upgrade. Standard ACARS positions below must still flow.
+                }
                 await client.Send($"pireps/{Uri.EscapeDataString(flight.PirepId)}/acars/positions", new { positions = pending.Select(x => new {
                     id=x.Sample.SampleId, lat=x.Sample.Lat, lon=x.Sample.Lon, altitude_msl=x.Sample.Altitude, altitude_agl=x.Sample.Agl,
                     gs=x.Sample.Gs, vs=x.Sample.Vs, heading=x.Sample.Heading, fuel=x.Sample.Fuel, sim_time=x.Sample.RecordedAt, created_at=x.Sample.RecordedAt }) });

@@ -2,6 +2,7 @@
 !prometheus/
 !prometheus/app/**
 !prometheus/config/**
+!prometheus/modules/Promethee/**
 prometheus/modules/DisposableAirports
 prometheus/modules/DisposableBasic
 prometheus/modules/DisposableSpecial

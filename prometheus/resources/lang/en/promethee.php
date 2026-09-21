@@ -15,6 +15,7 @@ return [
     'language' => 'Language',
     'display' => 'Display',
     'display_style' => 'Display style',
+    'appearance' => 'Appearance', 'appearance_style' => 'Colour appearance', 'appearance_light' => 'Day', 'appearance_dark' => 'Night',
     'modern' => 'Modern',
     'year_2000' => '2000s',
     'minitel' => 'Minitel',
@@ -105,5 +106,6 @@ return [
         'time' => 'Time', 'airport' => 'Airport', 'no_accepted_pireps' => 'No accepted PIREP.',
     ],
     'navigation_welcome' => 'Welcome', 'navigation_pilot' => 'Pilot area', 'navigation_company' => 'Company', 'navigation_operations' => 'Operations', 'navigation_private' => 'Private',
+    'airlines' => 'Airlines', 'fleet' => 'Fleet', 'maintenance' => 'Maintenance',
     'navigation_menu' => ['settings' => 'Settings', 'flight_map' => 'Flight map', 'reports' => 'My reports', 'bookings' => 'My bookings', 'downloads' => 'Downloads', 'live_flights' => 'Live flights'],
 ];

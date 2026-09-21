@@ -42,25 +42,27 @@
             <div><span class="eyebrow">{{ __('promethee.dashboard_page.network_schedule') }}</span><h2>{{ __('promethee_board.movements') }}</h2></div>
             <a href="{{ route('promethee.flights') }}">{{ __('promethee.dashboard_page.full_schedule') }} ↗</a>
         </div>
-        <div class="flight-stack" data-split-flap-board data-board-url="{{ route('promethee.departure-board.data') }}" data-board-refresh="{{ config('departure-board.refresh_seconds') }}" data-empty-text="{{ __('promethee_board.no_movements') }}" aria-label="{{ __('promethee_board.movements') }}">
-            <div class="split-flap-head" aria-hidden="true">
+        <div class="departure-board-scroll" tabindex="0" aria-label="{{ __('promethee_board.movements') }}">
+        <div class="flight-stack" data-split-flap-board data-board-url="{{ route('promethee.departure-board.data') }}" data-board-refresh="{{ config('departure-board.refresh_seconds') }}" data-empty-text="{{ __('promethee_board.no_movements') }}">
+            <div class="split-flap-grid split-flap-head" aria-hidden="true">
                 <span>{{ __('promethee_board.airline') }}</span><span>{{ __('promethee_board.flight') }}</span><span>{{ __('promethee_board.departure') }}</span><span>{{ __('promethee_board.departure_time') }}</span><span>{{ __('promethee_board.destination') }}</span><span>{{ __('promethee_board.arrival_time') }}</span><span>{{ __('promethee_board.status') }}</span>
             </div>
             @forelse($departureBoard as $flight)
-                <article class="dispatch-flight" data-board-flight="{{ $flight['id'] }}" style="--board-row: {{ $loop->index }}">
+                <article class="split-flap-grid dispatch-flight" data-board-flight="{{ $flight['id'] }}" style="--board-row: {{ $loop->index }}">
                     <span class="board-cell split-flap-logo airline-logo-cell" aria-label="{{ $flight['airline_code'] }}">
-                        @if($flight['logo_url'])<img src="{{ $flight['logo_url'] }}" alt="{{ $flight['airline_code'] }}">@else<span class="airline-logo-fallback">{{ $flight['airline_code'] }}</span>@endif
+                        @if($flight['logo_url'])<img src="{{ $flight['logo_url'] }}" alt="{{ $flight['airline_code'] }}">@else<span class="airline-logo-fallback" data-flap-width="4">{{ $flight['airline_code'] }}</span>@endif
                     </span>
-                    <a class="board-cell flight-ident" href="{{ $flight['url'] }}" data-flap-width="9">{{ $flight['flight'] }}</a>
-                    <span class="board-cell" data-flap-width="5">{{ $flight['departure'] }}</span>
-                    <time class="board-cell" data-flap-width="5">{{ $flight['departure_time'] }}</time>
-                    <span class="board-cell destination" data-flap-width="14">{{ $flight['destination'] }}</span>
-                    <time class="board-cell" data-flap-width="5">{{ $flight['arrival_time'] }}</time>
-                    <span class="board-cell status" data-flap-width="13">{{ $flight['status_label'] }}</span>
+                    <a class="board-cell flight-cell flight-ident" href="{{ $flight['url'] }}" data-flap-width="9">{{ $flight['flight'] }}</a>
+                    <span class="board-cell departure-cell" data-flap-width="4">{{ $flight['departure'] }}</span>
+                    <time class="board-cell departure-time-cell" data-flap-width="5">{{ $flight['departure_time'] }}</time>
+                    <span class="board-cell destination-cell destination" data-flap-width="28">{{ $flight['destination'] }}</span>
+                    <time class="board-cell arrival-time-cell" data-flap-width="5">{{ $flight['arrival_time'] }}</time>
+                    <span class="board-cell status-cell status" data-flap-width="16">{{ $flight['status_label'] }}</span>
                 </article>
             @empty
                 <p class="empty" data-board-empty>{{ __('promethee_board.no_movements') }}</p>
             @endforelse
+        </div>
         </div>
     </section>
 

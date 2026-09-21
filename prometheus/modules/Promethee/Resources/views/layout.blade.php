@@ -1,14 +1,17 @@
 <!doctype html>
-<html lang="{{ app()->getLocale() }}" data-era="modern">
+<html lang="{{ app()->getLocale() }}" data-era="modern" data-appearance="light">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <title>@yield('title', __('promethee.operations_centre')) · Prométhée · Air Inter</title>
+<script>(() => { try { const era=localStorage.getItem('promethee-era'), appearance=localStorage.getItem('promethee-appearance'); document.documentElement.dataset.era=['modern','2000','minitel'].includes(era)?era:'modern'; document.documentElement.dataset.appearance=['light','dark'].includes(appearance)?appearance:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'); } catch (_) {} })();</script>
 <link rel="stylesheet" href="{{ asset('promethee-assets/promethee.css') }}">
-<link rel="stylesheet" href="{{ asset('promethee-assets/promethee-v2.css') }}">
+<link rel="stylesheet" href="{{ asset('promethee-assets/promethee-v2.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-v2.css')) }}">
 <link rel="stylesheet" href="{{ asset('promethee-assets/promethee-distinction.css') }}">
+<link rel="stylesheet" href="{{ asset('promethee-assets/promethee-community.css') }}">
 <link rel="stylesheet" href="{{ asset('promethee-assets/airinter-eras.css') }}">
-<script src="{{ asset('promethee-assets/promethee.js') }}" defer></script>
+<link rel="stylesheet" href="{{ asset('promethee-assets/promethee-appearance.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-appearance.css')) }}">
+<script src="{{ asset('promethee-assets/promethee.js') }}?v={{ filemtime(public_path('promethee-assets/promethee.js')) }}" defer></script>
 <script src="{{ asset('promethee-assets/navigation-groups.js') }}" defer></script>
 @php
     // Keeping the array out of the @json directive is deliberate: Blade's
@@ -70,7 +73,7 @@ window.prometheeI18n = @json($prometheeI18n);
     $navigationGroups = [
         'navigation_welcome' => [
             ['route' => 'promethee.occ', 'label' => 'public_home', 'active' => 'promethee.occ'],
-            ['route' => 'promethee.public.pilots', 'label' => 'community', 'active' => 'promethee.public.pilots'],
+            ['route' => 'promethee.pilots', 'label' => 'community', 'active' => 'promethee.pilots*'],
             // The native map lives in the flight programme; keep its active
             // state in Operations so only one accordion section opens.
             ['route' => 'promethee.flights', 'label' => 'navigation_menu.flight_map', 'active' => 'promethee.welcome.flight-map'],
@@ -87,9 +90,10 @@ window.prometheeI18n = @json($prometheeI18n);
             ['route' => 'promethee.acars', 'label' => 'acars', 'active' => 'promethee.acars'],
         ],
         'navigation_company' => [
-            // The same directory is available from Welcome and Company, but
-            // the canonical active context remains Welcome.
-            ['route' => 'promethee.public.pilots', 'label' => 'community', 'active' => 'promethee.company.pilots'],
+            ['route' => 'promethee.pilots', 'label' => 'community', 'active' => 'promethee.pilots*'],
+            ['route' => 'promethee.airlines', 'label' => 'airlines', 'active' => 'promethee.airlines'],
+            ['route' => 'promethee.fleet', 'label' => 'fleet', 'active' => 'promethee.fleet'],
+            ['route' => 'promethee.maintenance', 'label' => 'maintenance', 'active' => 'promethee.maintenance'],
             ['route' => 'promethee.downloads', 'label' => 'navigation_menu.downloads', 'active' => 'promethee.downloads*'],
         ],
         'navigation_operations' => [
@@ -104,16 +108,18 @@ window.prometheeI18n = @json($prometheeI18n);
 @endphp
 @foreach($navigationGroups as $groupKey => $links)
     @php($groupActive = collect($links)->contains(fn ($link) => request()->routeIs(...explode('|', $link['active']))))
-    <details @class(['nav-group', 'selected' => $groupActive]) @if($groupActive) open @endif>
+    <details @class(['nav-group', 'selected' => $groupActive])>
         <summary>{{ __('promethee.'.$groupKey) }}<b aria-hidden="true">⌄</b></summary>
         <div class="nav-menu">
             @foreach($links as $link)
+                @if(\Illuminate\Support\Facades\Route::has($link['route']))
                 <a @class(['selected' => request()->routeIs(...explode('|', $link['active']))]) href="{{ route($link['route']) }}">{{ __('promethee.'.$link['label']) }}</a>
+                @endif
             @endforeach
         </div>
     </details>
 @endforeach
-<details @class(['nav-group', 'selected' => request()->routeIs('promethee.dashboard', 'admin.promethee.*')]) @if(request()->routeIs('promethee.dashboard', 'admin.promethee.*')) open @endif>
+<details @class(['nav-group', 'selected' => request()->routeIs('promethee.dashboard', 'admin.promethee.*')])>
     <summary>{{ __('promethee.navigation_private') }}<b aria-hidden="true">⌄</b></summary>
     <div class="nav-menu">
         <a @class(['selected' => request()->routeIs('promethee.dashboard')]) href="{{ route('promethee.dashboard') }}">{{ __('promethee.dashboard') }}</a>
@@ -134,6 +140,7 @@ window.prometheeI18n = @json($prometheeI18n);
 <header class="topbar"><span class="breadcrumb">AIR INTER <span>/</span> PROMÉTHÉE <span>/</span> @yield('title','EXPLOITATION')</span>
 <label class="theme-control">{{ __('promethee.language') }} <select aria-label="{{ __('promethee.language') }}" onchange="if(this.value) window.location=this.value">@foreach(config('languages') as $code=>$language)<option value="{{ route('promethee.language',$code) }}" @selected(app()->getLocale() === $code)>{{ $language['display'] }}</option>@endforeach</select></label>
 <label class="theme-control">{{ __('promethee.display') }} <select id="era" aria-label="{{ __('promethee.display_style') }}"><option value="modern">{{ __('promethee.modern') }}</option><option value="2000">{{ __('promethee.year_2000') }}</option><option value="minitel">{{ __('promethee.minitel') }}</option></select></label>
+<label class="theme-control appearance-control">{{ __('promethee.appearance') }} <select id="appearance" aria-label="{{ __('promethee.appearance_style') }}"><option value="light">{{ __('promethee.appearance_light') }}</option><option value="dark">{{ __('promethee.appearance_dark') }}</option></select></label>
 <time id="utc-clock">UTC</time></header>
 <main id="main">
 @if(session('success'))<div class="notice success" role="status">{{ session('success') }}</div>@endif

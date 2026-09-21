@@ -3,6 +3,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Frontend\LanguageController;
 use Modules\Promethee\Http\PortalController;
 use Modules\Promethee\Http\TelemetryController;
+use Modules\Promethee\Http\AcarsOperationsController;
+use Modules\Promethee\Http\AcarsConfigurationController;
 
 // Browsers request this conventional path even though the branded icon lives
 // with the static Promethee assets.
@@ -14,20 +16,27 @@ Route::get('/occ', [PortalController::class, 'occ'])->middleware('web')->name('p
 // Public flight reports replace the legacy phpVMS report screen. The report
 // remains readable without an account, just as the former public URL was.
 Route::get('/pireps/{id}', [PortalController::class, 'pirep'])->middleware(['web','auth'])->name('promethee.pireps.show');
+// Backward-compatible name used by the aircraft history view.
+Route::get('/pirep/{id}', [PortalController::class, 'pirep'])->middleware(['web','auth'])->name('promethee.pirep');
 Route::middleware('web')->prefix('public')->name('promethee.public.')->group(function () {
     Route::get('/pilots', [PortalController::class, 'publicPilots'])->name('pilots');
     Route::get('/pireps', [PortalController::class, 'publicPireps'])->middleware('auth')->name('pireps');
     Route::get('/live', [PortalController::class, 'publicLive'])->name('live');
     Route::get('/live-data', [PortalController::class, 'liveData'])->name('live.data');
 });
+// The historic fleet directory was public; retain that access level.
+Route::get('/dfleet', [PortalController::class, 'fleet'])->middleware('web')->name('promethee.fleet');
 
 Route::middleware(['web','auth'])->name('promethee.')->group(function () {
     Route::get('/', [PortalController::class,'dashboard'])->name('dashboard');
     Route::get('/departure-board-data', [PortalController::class,'departureBoardData'])->name('departure-board.data');
     Route::get('/profile', [PortalController::class,'profile'])->name('profile');
+    Route::get('/profile/edit', [PortalController::class,'editProfile'])->name('profile.edit');
+    Route::patch('/profile', [PortalController::class,'updateProfile'])->name('profile.update');
     Route::get('/passport', [PortalController::class,'passport'])->name('passport');
     Route::get('/bookings', [PortalController::class,'bookings'])->name('bookings');
     Route::get('/downloads', [PortalController::class,'downloads'])->name('downloads');
+    Route::get('/downloads/categories/{category}', [PortalController::class,'downloadCategoryPage'])->where('category','acars|fleet|airports|documents')->name('downloads.category');
     Route::get('/downloads/{file}', [PortalController::class,'download'])->name('downloads.download');
     Route::get('/missions', [PortalController::class,'missions'])->name('missions');
     Route::get('/assignments', [PortalController::class,'assignments'])->name('assignments');
@@ -38,6 +47,11 @@ Route::middleware(['web','auth'])->name('promethee.')->group(function () {
     Route::get('/jumpseat', [PortalController::class,'jumpseat'])->name('jumpseat');
     Route::post('/jumpseat', [PortalController::class,'requestJumpseat'])->name('jumpseat.buy');
     Route::get('/operations', [PortalController::class,'operations'])->name('operations');
+    // Native replacements for the former Disposable pages. Existing bookmarks
+    // continue to work without enabling unrelated legacy module features.
+    Route::get('/dairlines', [PortalController::class, 'airlines'])->name('airlines');
+    Route::get('/dmaintenance', [PortalController::class, 'maintenance'])->name('maintenance');
+    Route::get('/daircraft/{registration}', [PortalController::class, 'aircraftDetail'])->name('aircraft.show');
     Route::get('/live', [PortalController::class,'live'])->name('live');
     Route::get('/live-data', [PortalController::class,'liveData'])->name('live.data');
     Route::get('/calendar', [PortalController::class,'calendar'])->name('calendar');
@@ -58,6 +72,9 @@ Route::middleware(['web','auth'])->name('promethee.')->group(function () {
 /* Administration has a dedicated, server-protected route tree. */
 Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/promethee')->name('admin.promethee.')->group(function () {
         Route::get('/', [PortalController::class,'adminDashboard'])->name('dashboard');
+        Route::get('/identite', [PortalController::class, 'branding'])->name('branding');
+        Route::post('/identite', [PortalController::class, 'saveBranding'])->name('branding.save');
+        Route::post('/identite/importer', [PortalController::class, 'importBranding'])->name('branding.import');
         Route::post('/calendar', [PortalController::class,'saveEvent'])->name('calendar.save');
         Route::delete('/calendar/{id}', [PortalController::class,'deleteEvent'])->name('calendar.delete');
         Route::post('/pilots/{id}', [PortalController::class,'saveMember'])->name('pilots.save');
@@ -110,6 +127,9 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::get('/assignments', [PortalController::class,'adminAssignments'])->name('assignments');
         Route::post('/assignments', [PortalController::class,'saveAssignment'])->name('assignments.save');
         Route::delete('/assignments/{id}', [PortalController::class,'deleteAssignment'])->name('assignments.delete');
+        Route::delete('/assignments', [PortalController::class,'deleteAssignments'])->name('assignments.bulk-delete');
+        Route::get('/airlines', [PortalController::class,'adminAirlines'])->name('airlines');
+        Route::post('/airlines', [PortalController::class,'saveAdminAirline'])->name('airlines.save');
         Route::get('/passport', [PortalController::class,'adminPassport'])->name('passport');
         Route::post('/passport', [PortalController::class,'savePassportSettings'])->name('passport.save');
         Route::get('/shop', [PortalController::class,'adminShop'])->name('shop');
@@ -121,17 +141,19 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::post('/jumpseats/settings', [PortalController::class,'saveJumpseatSettings'])->name('jumpseats.settings');
         Route::get('/downloads', [PortalController::class,'adminDownloads'])->name('downloads');
         Route::post('/downloads', [PortalController::class,'storeDownload'])->name('downloads.store');
+        Route::get('/downloads/{file}/edit', [PortalController::class,'editDownload'])->name('downloads.edit');
+        Route::put('/downloads/{file}', [PortalController::class,'updateDownload'])->name('downloads.update');
         Route::delete('/downloads/{file}', [PortalController::class,'deleteDownload'])->name('downloads.delete');
 });
 Route::middleware(['api','api.auth'])->prefix('api/promethee')->group(function () {
     Route::post('/pireps/{id}/telemetry', [TelemetryController::class,'store']);
+    Route::get('/acars/operations', [AcarsOperationsController::class, 'index']);
+    Route::get('/acars/operations/{bid}/aircraft', [AcarsOperationsController::class, 'aircraft']);
+    Route::get('/acars/operations/{bid}/ofp', [AcarsOperationsController::class, 'ofp']);
+    Route::get('/acars/configuration', [AcarsConfigurationController::class, 'show']);
 });
 
-Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/identity')->name('admin.identity.')->group(function () {
-    Route::get('/identite', [PortalController::class, 'branding'])->name('branding');
-    Route::post('/identite', [PortalController::class, 'saveBranding'])->name('branding.save');
-});
-Route::middleware(['web','auth','ability:admin,admin-access'])->get('/admin/promethee/identite', fn () => redirect('/admin/identity/identite'));
+Route::middleware(['web','auth','ability:admin,admin-access'])->get('/admin/identity/identite', fn () => redirect()->route('admin.promethee.branding'));
 
 // Transitional bookmarks: all new Prométhée URLs are root URLs.
 Route::middleware(['web','auth'])->get('/promethee/{path?}', function (?string $path = null) {
