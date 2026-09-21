@@ -25,6 +25,7 @@ let selectedAircraft = null;
 let pirepId = null;
 let flightPlan = null;
 let connected = false;
+let readiness = { operation: false, aircraft: false, ofp: false, pirep: false, simulator: false };
 
 function setAuthenticated(value) {
   connected = Boolean(value);
@@ -89,6 +90,74 @@ async function login(form, advanced = false) {
 }
 $('#loginForm').onsubmit = event => { event.preventDefault(); login(event.currentTarget); };
 $('#configForm').onsubmit = event => { event.preventDefault(); login(event.currentTarget, true); };
+
+function updateWorkflow() {
+  const state = {
+    operation: Boolean(selectedOperation),
+    aircraft: Boolean(selectedAircraft?.id),
+    ofp: Boolean(flightPlan || selectedOperation?.simbrief?.available),
+    pirep: Boolean(pirepId)
+  };
+  $('#workflow [data-step]').forEach(node => {
+    const key = node.dataset.step;
+    const passed = key === 'ready'
+      ? state.operation && state.aircraft && state.ofp && state.pirep && readiness.simulator
+      : Boolean(state[key]);
+    node.classList.toggle('done', passed);
+    node.classList.toggle('current', !passed && (
+      (key === 'operation' && !state.operation) ||
+      (key === 'aircraft' && state.operation && !state.aircraft) ||
+      (key === 'ofp' && state.aircraft && !state.ofp) ||
+      (key === 'pirep' && state.ofp && !state.pirep) ||
+      (key === 'ready' && state.pirep)
+    ));
+  });
+  const ready = state.operation && state.aircraft && state.ofp && state.pirep && readiness.simulator;
+  const node = $('#readyState');
+  if (node) {
+    node.textContent = ready ? 'READY FOR DEPARTURE' : 'NOT READY';
+    node.classList.toggle('ready', ready);
+  }
+}
+
+function renderEligibility(payload) {
+  const box = $('#aircraftEligibility');
+  if (!box) return;
+  const available = payload?.available || [];
+  const unavailable = payload?.unavailable || [];
+  box.replaceChildren();
+  box.hidden = false;
+
+  const heading = document.createElement('div');
+  heading.className = 'eligibility-heading';
+  heading.innerHTML = '<div><span class="kicker">DISPATCH</span><h3>Éligibilité des appareils</h3></div>';
+  const count = document.createElement('strong');
+  count.textContent = available.length + ' disponible' + (available.length > 1 ? 's' : '');
+  heading.append(count);
+  box.append(heading);
+
+  [...available, ...unavailable].slice(0, 12).forEach(aircraft => {
+    const card = document.createElement('article');
+    card.className = 'aircraft-card ' + (aircraft.eligible ? 'eligible' : 'blocked');
+    const title = document.createElement('div');
+    const name = document.createElement('strong');
+    name.textContent = [aircraft.registration, aircraft.icao || aircraft.subfleet].filter(Boolean).join(' · ');
+    const status = document.createElement('em');
+    status.textContent = aircraft.eligible ? 'DISPONIBLE' : 'INDISPONIBLE';
+    title.append(name, status);
+    card.append(title);
+    const checks = document.createElement('ul');
+    (aircraft.eligible ? aircraft.checks : aircraft.reasons).forEach(item => {
+      const li = document.createElement('li');
+      const passed = item.passed !== false && aircraft.eligible;
+      li.textContent = (passed ? '✓ ' : '✕ ') + (item.label || item.message || item.code);
+      if (item.code && !aircraft.eligible) li.dataset.code = item.code;
+      checks.append(li);
+    });
+    card.append(checks);
+    box.append(card);
+  });
+}
 
 function simulatorCode() {
   const forced = localSettings.forcedSimulator;
@@ -210,6 +279,7 @@ function addAircraftOption(select, aircraft) {
 async function selectOperation(operation) {
   selectedOperation = operation;
   selectedAircraft = operation.aircraft?.id ? operation.aircraft : null;
+  updateWorkflow();
   $('.operation').forEach(node => node.classList.remove('selected'));
   if (document.activeElement?.classList?.contains('operation')) document.activeElement.classList.add('selected');
   flightPlan = null;
@@ -257,6 +327,7 @@ async function selectOperation(operation) {
   try {
     const paths = operation.bid_id
       ? [
+          `/api/v1/operations/${encodeURIComponent(operation.bid_id)}/aircraft-eligibility`,
           `/api/operations/${encodeURIComponent(operation.bid_id)}/aircraft`,
           `/api/flights/${encodeURIComponent(flight.id)}/aircraft`
         ]
@@ -272,7 +343,8 @@ async function selectOperation(operation) {
       }
     }
     if (payload === undefined) throw lastError || new Error('Impossible de charger les appareils.');
-    const aircraft = Array.isArray(payload) ? payload : (payload?.aircraft || payload?.data || []);
+    if (payload?.available || payload?.unavailable) renderEligibility(payload);
+    const aircraft = Array.isArray(payload) ? payload : (payload?.available || payload?.aircraft || payload?.data || []);
     select.replaceChildren();
     const choose = document.createElement('option');
     choose.value = '';
@@ -291,6 +363,7 @@ async function selectOperation(operation) {
 $('#aircraftId').onchange = event => {
   const option = event.target.selectedOptions[0];
   try { selectedAircraft = option?.dataset.aircraft ? JSON.parse(option.dataset.aircraft) : null; } catch { selectedAircraft = null; }
+  updateWorkflow();
 };
 
 $('#resetDraftBtn').onclick = () => {
@@ -361,6 +434,7 @@ $('#simbriefBtn').onclick = async () => {
           if (briefing.initial_altitude) form.elements.level.value = Number(briefing.initial_altitude);
           $('#planBox').textContent = JSON.stringify(briefing, null, 2);
           showMessage('#simbriefState', 'OFP importé et prêt pour le pré-PIREP.');
+          updateWorkflow();
           return;
         } catch (error) {
           if (attempt === 5) return showMessage('#simbriefState', error.message, true);
@@ -402,6 +476,7 @@ $('#prefileForm').onsubmit = async event => {
     pirepId = result.id || result.pirep_id || result.pirep?.id;
     if (!pirepId) throw new Error('Prométhée n’a pas retourné l’identifiant du PIREP.');
     showMessage('#pirepMessage', `PIREP ${pirepId} prêt. Hermès est armé pour l’enregistrement.`);
+    updateWorkflow();
     document.querySelector('[data-tab="record"]').click();
   } catch (error) {
     showMessage('#pirepMessage', error.message, true);
@@ -492,6 +567,8 @@ async function refreshStatus() {
     const latest = status.latest || {};
     const value = (camel, pascal) => latest[camel] ?? latest[pascal];
     if (status.connected && !connected) setAuthenticated(true);
+    readiness.simulator = Boolean(status.latest);
+    updateWorkflow();
     const simulators = (status.detectedSimulators || []).map(item => item.displayName || item.DisplayName).filter(Boolean);
     setText($('#simState'), simulators.length ? `${simulators.join(' · ')} — ${status.sim || 'connexion en attente'}` : status.sim || 'Simulateur non détecté');
     setText($('#pending'), String(status.pending ?? 0));
@@ -510,6 +587,7 @@ async function refreshStatus() {
   } catch {}
 }
 
+updateWorkflow();
 drawMap([]);
 refreshStatus();
 setInterval(refreshStatus, 1000);
