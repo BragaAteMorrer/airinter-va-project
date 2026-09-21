@@ -38,11 +38,15 @@
     </section>
     <section id="flight" class="panel">
       <h2>Préparation du PIREP</h2>
-      <div class="tools">
-        <input id="flightSearch" placeholder="Rechercher un vol, ex. ITF252">
-        <button id="searchBtn">Rechercher</button>
-        <button id="bidsBtn">Mes réservations</button>
-      </div>
+      <form id="flightSearchForm" class="flight-search">
+        <label>Numéro de vol<input id="flightNumberSearch" placeholder="ITF749 ou 749" autocomplete="off"></label>
+        <label>Départ<input id="departureSearch" placeholder="LFPO" maxlength="8" autocomplete="off"></label>
+        <label>Arrivée<input id="arrivalSearch" placeholder="LIRF" maxlength="8" autocomplete="off"></label>
+        <label>Type appareil<input id="aircraftTypeSearch" placeholder="A320" maxlength="8" autocomplete="off"></label>
+        <button id="searchBtn" class="primary" type="submit">Rechercher le programme</button>
+        <button id="bidsBtn" type="button">Mes réservations</button>
+      </form>
+      <p class="hint search-hint">Un seul critère suffit. La recherche respecte les droits, qualifications et restrictions de votre compte pilote.</p>
       <p id="flightMessage" class="message" hidden role="status"></p>
       <div id="flightList" class="list"></div>
       <article id="selectedOperation" class="prefile" hidden>
@@ -51,15 +55,26 @@
       <div class="tools"><label>Plan de vol MSFS / SimBrief<input id="planFile" type="file" accept=".pln,.xml"></label><button id="clearPlanBtn" type="button">Effacer le plan</button></div>
       <div class="tools"><button id="simbriefBtn" type="button">Créer l’OFP dans SimBrief</button><span id="simbriefState">Sélectionnez un vol et un appareil.</span></div>
       <pre id="planBox">Aucun plan chargé.</pre>
-      <form id="prefileForm" class="grid" hidden>
-        <label>ID vol phpVMS<input name="flight_id"></label>
-        <label>Compagnie<input name="airline_id" required></label>
-        <label>Numéro de vol<input name="flight_number" required></label>
+      <form id="prefileForm" class="grid flight-draft" hidden>
+        <div class="draft-heading">
+          <div><span class="kicker">BROUILLON OPÉRATIONNEL</span><h3>Personnaliser le vol</h3></div>
+          <p>Les données du programme sont verrouillées. Vous pouvez adapter la préparation avant SimBrief ou le pré-dépôt.</p>
+        </div>
+        <label>ID vol phpVMS<input name="flight_id" readonly></label>
+        <label>Compagnie<input name="airline_id" required readonly></label>
+        <label>Numéro de vol<input name="flight_number" required readonly></label>
         <label>Avion autorisé<select id="aircraftId" name="aircraft_id" required><option value="">Sélectionnez d'abord un vol</option></select></label>
-        <label>Départ<input name="dpt_airport_id" required></label>
-        <label>Arrivée<input name="arr_airport_id" required></label>
+        <label>Départ<input name="dpt_airport_id" required readonly></label>
+        <label>Arrivée<input name="arr_airport_id" required readonly></label>
+        <label>Aéroport de dégagement<input name="alt_airport_id" placeholder="AUTO ou LIRN" maxlength="8"></label>
+        <label>Niveau de vol<input name="level" type="number" min="10" max="600" step="10" placeholder="350"></label>
+        <label class="route-field">Route<input name="route" maxlength="2000" placeholder="DCT…"></label>
         <label>Block fuel lbs<input name="block_fuel" type="number" min="0" step="1"></label>
-        <button class="primary">Pré-déposer le PIREP</button>
+        <label class="notes-field">Notes opérationnelles<textarea name="notes" maxlength="1000" rows="3" placeholder="Informations utiles au dispatch"></textarea></label>
+        <div class="draft-actions">
+          <button id="resetDraftBtn" type="button">Réinitialiser</button>
+          <button class="primary">Pré-déposer le PIREP</button>
+        </div>
       </form>
       <p id="pirepMessage" class="message" hidden role="status"></p>
     </section>
