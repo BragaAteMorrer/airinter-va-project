@@ -292,8 +292,10 @@ $('#simbriefBtn').onclick = async () => {
 $('#planFile').onchange = async event => {
   const file = event.target.files[0];
   if (!file) return;
-  const contents = await file.text();
-  flightPlan = { plan_name: file.name, plan_text: contents.slice(0, 200000) };
+  await file.text();
+  // The local plan is displayed for the pilot only. phpVMS receives the
+  // normalized route/OFP fields, never an arbitrary local file payload.
+  flightPlan = {};
   $('#planBox').textContent = `${file.name} chargé localement (${Math.round(file.size / 1024)} Ko).`;
 };
 $('#clearPlanBtn').onclick = () => {
