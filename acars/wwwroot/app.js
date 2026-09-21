@@ -170,7 +170,7 @@ function renderEligibility(payload) {
 
 function simulatorCode() {
   const forced = localSettings.forcedSimulator;
-  return ({ xplane: 'xplane', fs2004: 'fs2004', fsx: 'fsx', p3d: 'p3d', msfs: 'msfs2024' })[forced] || 'auto';
+  return ({ xplane: 'xplane', fs2004: 'fs2004', fsx: 'fsx', p3d: 'p3d', msfs: 'msfs2024' })[forced] || '';
 }
 
 function normalizeFlight(raw) {
@@ -240,7 +240,8 @@ async function refreshOperations() {
   }
   try {
     showMessage('#flightMessage', 'Chargement de vos réservations…');
-    renderOperations(await call('/api/operations?simulator=' + encodeURIComponent(simulatorCode())));
+    const simulator = simulatorCode();
+    renderOperations(await call('/api/operations' + (simulator ? '?simulator=' + encodeURIComponent(simulator) : '')));
     showMessage('#flightMessage', '');
   } catch (error) {
     showMessage('#flightMessage', error.message, true);
