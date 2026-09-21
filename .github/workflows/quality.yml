@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          forbidden="$(git ls-files | grep -E '^(acars|acars\.tests)/(bin|obj)/|^(logs|mail|etc|\.cpanel|\.caldav)/|^\.bash_history$|:Zone\.Identifier$|\.(sql|sqlite|sqlite3|bak|backup)$' || true)"
+          forbidden="$(git ls-files | grep -E '^(acars|acars\.tests)/(bin|obj)/|^(logs|mail|etc|\.cpanel|\.caldav)/|^\.bash_history$|Zone\.Identifier$|\.(sql|sqlite|sqlite3|bak|backup)$' || true)"
           if [[ -n "$forbidden" ]]; then
             echo "Forbidden tracked files:"
             echo "$forbidden"

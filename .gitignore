@@ -5,7 +5,7 @@ Thumbs.db
 *.swo
 *.tmp
 *.log
-*:Zone.Identifier
+*Zone.Identifier
 .vscode/
 .idea/
 
