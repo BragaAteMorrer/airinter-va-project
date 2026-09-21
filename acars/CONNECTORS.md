@@ -21,17 +21,17 @@ Statut actuel :
 | Connecteur | Implémenté | Validé |
 | --- | --- | --- |
 | SimConnectReader | oui, compatibilité MSFS existante | non, vol réel à effectuer |
-| FSUIPC | non | non |
-| X-Plane plugin localhost | non | non |
+| FSUIPC | frontière/détection oui ; télémétrie non | non |
+| X-Plane UDP DataRef localhost | expérimental | non |
 
 Matrice cible actualisée :
 
 | Simulateur | Connecteur | État |
 | --- | --- | --- |
 | MSFS 2020/2024 | SimConnectReader | implémenté, non validé en vol réel |
-| FS2004 | FSUIPC3 | non implémenté : runtime et kit client FSUIPC 32 bits requis |
-| FSX / FSX Steam | FSUIPC4 | non implémenté : runtime et kit client FSUIPC requis |
-| Prepar3D | FSUIPC4/5/6 selon version | non implémenté : runtime et kit client FSUIPC requis |
+| FS2004 | FSUIPC3 | détection + frontière implémentées ; télémétrie à implémenter après validation SDK/runtime |
+| FSX / FSX Steam | FSUIPC4 | détection + frontière implémentées ; télémétrie à implémenter après validation SDK/runtime |
+| Prepar3D | FSUIPC4/5/6 selon version | détection + frontière implémentées ; télémétrie à implémenter après validation SDK/runtime |
 | X-Plane 11/12 | XPlaneUdpConnector | expérimental : DataRefs UDP locaux, non validé en vol réel |
 
 XPlaneUdpConnector envoie uniquement des requêtes RREF à 127.0.0.1:49000
