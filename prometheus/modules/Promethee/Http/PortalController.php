@@ -503,8 +503,34 @@ class PortalController extends Controller
        // Downloads created before subcategories used the category as their ID.
        return $subcategory === '' || strtolower($subcategory) === $category ? 'Général' : $subcategory;
    }
+   /**
+    * Only expose files owned by Promethee or attached to operational catalogue
+    * models. The global files table also contains unrelated application assets
+    * which must never fall through into the Documents category.
+    */
    private function downloadGroups() {
-       return File::orderBy('name')->get()->groupBy(fn (File $file) => $this->downloadCategory($file));
+       $files = File::query()
+           ->where(function ($query) {
+               $query->where('ref_model', 'like', 'Modules\\\\Promethee\\\\Download\\\\%')
+                   ->orWhereIn('ref_model', [
+                       Aircraft::class,
+                       Subfleet::class,
+                       Airport::class,
+                   ])
+                   // Keep ACARS packages created by the legacy download screen.
+                   ->orWhere(function ($legacy) {
+                       $legacy->where(fn ($match) => $match
+                           ->where('name', 'like', '%acars%')
+                           ->orWhere('path', 'like', '%acars%'))
+                           ->where(fn ($scope) => $scope
+                               ->whereNull('ref_model')
+                               ->orWhere('ref_model', ''));
+                   });
+           })
+           ->orderBy('name')
+           ->get();
+
+       return $files->groupBy(fn (File $file) => $this->downloadCategory($file));
    }
    public function downloads(Request $r) {
        return $this->page('downloads', ['groups' => $this->downloadGroups()]);
@@ -516,6 +542,9 @@ class PortalController extends Controller
        return $this->page('download-category', compact('category', 'sections', 'files'));
    }
    public function download(string $file) {
+       $allowed = $this->downloadGroups()->flatten(1)->contains(fn (File $asset) => (string) $asset->id === $file);
+       abort_unless($allowed, 404);
+
        return app(\App\Http\Controllers\Frontend\DownloadController::class)->show($file);
    }
    public function adminDownloads() {
