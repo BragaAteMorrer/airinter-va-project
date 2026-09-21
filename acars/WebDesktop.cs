@@ -42,6 +42,19 @@ public sealed class PrometheeWindow : Window
     private async Task<object> Route(string path, JsonElement? body)
     {
         var uri = new Uri("https://promethee.local" + path); var route = uri.AbsolutePath;
+        const string flightsPrefix = "/api/flights/";
+        const string simbriefSessionSuffix = "/simbrief/session";
+        const string simbriefImportSuffix = "/simbrief/import";
+        if (route.StartsWith(flightsPrefix, StringComparison.Ordinal) && route.EndsWith(simbriefSessionSuffix, StringComparison.Ordinal)) {
+            var flightId = route.Substring(flightsPrefix.Length, route.Length - flightsPrefix.Length - simbriefSessionSuffix.Length);
+            return await client.Send("acars/flights/" + Uri.EscapeDataString(flightId) + "/simbrief/session", body?.Value
+                ?? throw new InvalidOperationException("Paramètres SimBrief manquants."));
+        }
+        if (route.StartsWith(flightsPrefix, StringComparison.Ordinal) && route.EndsWith(simbriefImportSuffix, StringComparison.Ordinal)) {
+            var flightId = route.Substring(flightsPrefix.Length, route.Length - flightsPrefix.Length - simbriefImportSuffix.Length);
+            return await client.Send("acars/flights/" + Uri.EscapeDataString(flightId) + "/simbrief/import", body?.Value
+                ?? throw new InvalidOperationException("Paramètres d’import SimBrief manquants."));
+        }
         if (route.StartsWith("/api/operations/", StringComparison.Ordinal) && route.EndsWith("/aircraft", StringComparison.Ordinal))
             return await client.Send("promethee/acars/operations/" + Uri.EscapeDataString(route[16..^9]) + "/aircraft");
         if (route.StartsWith("/api/flights/", StringComparison.Ordinal) && route.EndsWith("/aircraft", StringComparison.Ordinal))
@@ -54,10 +67,18 @@ public sealed class PrometheeWindow : Window
             "/api/operations" => await client.Send("promethee/acars/operations" + uri.Query), "/api/flights" => await client.Send("flights" + uri.Query),
             "/api/prefile" => await client.Send("pireps/prefile", body!.Value), "/api/start" => Start(body), "/api/pause" => Pause(), "/api/resume" => Resume(),
             "/api/sync" => new { sent=await TelemetryService.SendPending(client,recorder) }, "/api/report" => Report(), "/api/file" => await File(),
+            "/api/history" => recorder.History, "/api/diagnostics" => Diagnostics(),
             _ => throw new InvalidOperationException("Commande ACARS inconnue.") };
     }
     private object Status() => new { connected=client.Connected, sim=sim.Status, detectedSimulators=SimulatorDetector.DetectRunning(), latest=sim.LatestSnapshot, flight=recorder.Flight, track=recorder.Track, pending=recorder.Pending.Count+recorder.PendingEvents.Count, remoteConfiguration=recorder.RemoteConfiguration, warning=recorder.Warning };
     private object About() => new { version=Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "dev", serverSource=ServerConfiguration.Source() };
+    private object Diagnostics() => new {
+        generatedAt=DateTimeOffset.UtcNow, server=client.Server, connected=client.Connected,
+        simulator=sim.Status, detectedSimulators=SimulatorDetector.DetectRunning(),
+        latest=sim.LatestSnapshot, flight=recorder.Flight,
+        pendingPositions=recorder.Pending.Count, pendingEvents=recorder.PendingEvents.Count,
+        remoteConfiguration=recorder.RemoteConfiguration, warning=recorder.Warning
+    };
     private async Task<object> Login(JsonElement? body)
     {
         var user = await client.SignIn(ServerConfiguration.Get(), body!.Value.GetProperty("login").GetString() ?? "", body.Value.GetProperty("password").GetString() ?? "");
