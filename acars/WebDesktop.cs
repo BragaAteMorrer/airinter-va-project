@@ -80,9 +80,14 @@ public sealed class PrometheeWindow : Window
             _ => throw new InvalidOperationException("Commande ACARS inconnue.") };
     }
     private object Status() => new { connected=client.Connected, sim=sim.Status, detectedSimulators=SimulatorDetector.DetectRunning(), latest=sim.LatestSnapshot, flight=recorder.Flight, track=recorder.Track, pending=recorder.Pending.Count+recorder.PendingEvents.Count, remoteConfiguration=recorder.RemoteConfiguration, warning=recorder.Warning };
-    private object About() => new { version=Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "dev", serverSource=ServerConfiguration.Source() };
+    private object About() => new {
+        version=Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "dev",
+        server=ServerConfiguration.Get(),
+        loginEndpoint=ServerConfiguration.Get() + "/api/acars/session",
+        serverSource=ServerConfiguration.Source()
+    };
     private object Diagnostics() => new {
-        generatedAt=DateTimeOffset.UtcNow, server=client.Server, connected=client.Connected,
+        generatedAt=DateTimeOffset.UtcNow, configuredServer=ServerConfiguration.Get(), serverSource=ServerConfiguration.Source(), loginEndpoint=ServerConfiguration.Get() + "/api/acars/session", activeServer=client.Server, connected=client.Connected,
         simulator=sim.Status, detectedSimulators=SimulatorDetector.DetectRunning(),
         latest=sim.LatestSnapshot, flight=recorder.Flight,
         pendingPositions=recorder.Pending.Count, pendingEvents=recorder.PendingEvents.Count,
