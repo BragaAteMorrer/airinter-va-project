@@ -107,13 +107,18 @@ function operationCard(operation) {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'operation';
+  if (selectedOperation && (selectedOperation.bid_id || selectedOperation.flight?.id) === (operation.bid_id || operation.flight?.id)) {
+    button.classList.add('selected');
+  }
   const title = document.createElement('strong');
   const route = document.createElement('span');
   const detail = document.createElement('small');
   setText(title, flight.ident || 'Vol Air Inter');
   setText(route, `${flight.departure || '?'} → ${flight.arrival || '?'}`);
   setText(detail, aircraft.registration || aircraft.subfleet || 'Appareil à sélectionner');
-  button.append(title, route, detail);
+  const badge = document.createElement('em');
+  badge.textContent = operation.bid_id ? 'RÉSERVÉ' : 'PROGRAMME';
+  button.append(badge, title, route, detail);
   button.onclick = () => selectOperation({ ...operation, flight });
   return button;
 }
@@ -189,6 +194,8 @@ function addAircraftOption(select, aircraft) {
 async function selectOperation(operation) {
   selectedOperation = operation;
   selectedAircraft = operation.aircraft?.id ? operation.aircraft : null;
+  $('.operation').forEach(node => node.classList.remove('selected'));
+  if (document.activeElement?.classList?.contains('operation')) document.activeElement.classList.add('selected');
   flightPlan = null;
   const flight = normalizeFlight(operation.flight || operation);
   const form = $('#prefileForm');
@@ -378,7 +385,7 @@ $('#prefileForm').onsubmit = async event => {
     const result = unwrap(await call('/api/prefile', body));
     pirepId = result.id || result.pirep_id || result.pirep?.id;
     if (!pirepId) throw new Error('Prométhée n’a pas retourné l’identifiant du PIREP.');
-    showMessage('#pirepMessage', `PIREP ${pirepId} prêt. Vous pouvez démarrer l’enregistrement.`);
+    showMessage('#pirepMessage', `PIREP ${pirepId} prêt. Hermès est armé pour l’enregistrement.`);
     document.querySelector('[data-tab="record"]').click();
   } catch (error) {
     showMessage('#pirepMessage', error.message, true);
