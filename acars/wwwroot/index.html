@@ -65,8 +65,28 @@
         <div><p id="selectedFlight">Aucun vol sélectionné</p><p id="operationBrief" class="hint"></p></div>
       </article>
       <div id="aircraftEligibility" class="eligibility" hidden></div>
-      <div class="tools"><label>Plan de vol MSFS / SimBrief<input id="planFile" type="file" accept=".pln,.xml"></label><button id="clearPlanBtn" type="button">Effacer le plan</button></div>
-      <div class="tools"><button id="simbriefBtn" type="button">Créer l’OFP dans SimBrief</button><span id="simbriefState">Sélectionnez un vol et un appareil.</span></div>
+      <section class="flightplan-source">
+        <div class="draft-heading"><div><span class="kicker">PLANIFICATION</span><h3>Source du plan de vol</h3></div><p>Choisissez la méthode adaptée à votre installation. Vous pourrez changer de mode à tout moment.</p></div>
+        <div class="source-tabs" role="tablist">
+          <button type="button" data-plan-mode="account" class="active">Compte SimBrief</button>
+          <button type="button" data-plan-mode="api">API SimBrief</button>
+          <button type="button" data-plan-mode="file">Plan local</button>
+        </div>
+        <div class="source-panel active" data-plan-panel="account">
+          <label>Alias Navigraph / SimBrief<input id="simbriefUsername" autocomplete="off" placeholder="Votre alias Navigraph"></label>
+          <label>Pilot ID <input id="simbriefPilotId" inputmode="numeric" maxlength="7" placeholder="Optionnel"></label>
+          <p class="hint">Hermès ne demande ni ne stocke votre mot de passe Navigraph. L’alias est conservé uniquement dans vos réglages locaux.</p>
+          <div class="tools"><button id="simbriefAccountOpenBtn" type="button" class="primary">Préparer dans SimBrief</button><button id="simbriefAccountImportBtn" type="button">Importer mon dernier OFP</button></div>
+        </div>
+        <div class="source-panel" data-plan-panel="api" hidden>
+          <p class="hint">Mode compagnie : génération intégrée via la clé API SimBrief configurée dans Prométhée.</p>
+          <div class="tools"><button id="simbriefBtn" type="button" class="primary">Créer l’OFP via l’API SimBrief</button></div>
+        </div>
+        <div class="source-panel" data-plan-panel="file" hidden>
+          <div class="tools"><label>Plan de vol MSFS / XML<input id="planFile" type="file" accept=".pln,.xml"></label><button id="clearPlanBtn" type="button">Effacer le plan</button></div>
+        </div>
+        <span id="simbriefState">Sélectionnez un vol et un appareil.</span>
+      </section>
       <pre id="planBox">Aucun plan chargé.</pre>
       <form id="prefileForm" class="grid flight-draft" hidden>
         <div class="draft-heading">
