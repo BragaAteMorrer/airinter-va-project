@@ -10,9 +10,18 @@ const showMessage = (selector, value, error = false) => {
   setText(node, value || '');
 };
 const call = (path, body) => new Promise((resolve, reject) => {
+  if (!globalThis.chrome?.webview) {
+    reject(new Error('Pont Hermès/WebView2 indisponible. Redémarrez Hermès après reconstruction.'));
+    return;
+  }
   const id = crypto.randomUUID();
+  const timer = setTimeout(() => {
+    chrome.webview.removeEventListener('message', onMessage);
+    reject(new Error('Hermès n’a reçu aucune réponse du backend local après 15 secondes.'));
+  }, 15000);
   const onMessage = event => {
     if (event.data.id !== id) return;
+    clearTimeout(timer);
     chrome.webview.removeEventListener('message', onMessage);
     event.data.ok ? resolve(event.data.data) : reject(new Error(event.data.data));
   };
