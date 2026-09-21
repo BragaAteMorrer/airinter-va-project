@@ -29,3 +29,4 @@
 \\wsl.localhost\Ubuntu\home\bragaatemorrer\Projet_perso\airinter-va-project\acars\bin\Release\net8.0-windows\Microsoft.Web.WebView2.Wpf.xml
 \\wsl.localhost\Ubuntu\home\bragaatemorrer\Projet_perso\airinter-va-project\acars\obj\Release\net8.0-windows\Promethee.Acars.csproj.CopyComplete
 \\wsl.localhost\Ubuntu\home\bragaatemorrer\Projet_perso\airinter-va-project\acars\bin\Release\net8.0-windows\wwwroot\hermes-mark.svg
+\\wsl.localhost\Ubuntu\home\bragaatemorrer\Projet_perso\airinter-va-project\acars\bin\Release\net8.0-windows\wwwroot\layout-overrides.css

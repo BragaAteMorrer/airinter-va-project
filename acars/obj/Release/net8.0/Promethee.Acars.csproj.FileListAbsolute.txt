@@ -18,3 +18,4 @@
 \\wsl.localhost\Ubuntu\home\bragaatemorrer\Projet_perso\airinter-va-project\acars\bin\Release\net8.0\wwwroot\index.html
 \\wsl.localhost\Ubuntu\home\bragaatemorrer\Projet_perso\airinter-va-project\acars\bin\Release\net8.0\wwwroot\styles.css
 \\wsl.localhost\Ubuntu\home\bragaatemorrer\Projet_perso\airinter-va-project\acars\bin\Release\net8.0\wwwroot\hermes-mark.svg
+\\wsl.localhost\Ubuntu\home\bragaatemorrer\Projet_perso\airinter-va-project\acars\bin\Release\net8.0\wwwroot\layout-overrides.css
