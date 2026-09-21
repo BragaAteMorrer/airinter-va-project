@@ -101,6 +101,13 @@ function normalizeFlight(raw) {
   };
 }
 
+function displayFlightIdent(flight) {
+  const number = String(flight.flight_number || '').trim().toUpperCase();
+  if (/^[A-Z]{3}\d/.test(number)) return number;
+  const ident = String(flight.ident || '').trim().toUpperCase().replace(/^([A-Z]{3})\1/, '$1');
+  return ident || number || 'Vol Air Inter';
+}
+
 function operationCard(operation) {
   const flight = normalizeFlight(operation.flight || operation);
   const aircraft = operation.aircraft || {};
@@ -113,7 +120,7 @@ function operationCard(operation) {
   const title = document.createElement('strong');
   const route = document.createElement('span');
   const detail = document.createElement('small');
-  setText(title, flight.ident || 'Vol Air Inter');
+  setText(title, displayFlightIdent(flight));
   setText(route, `${flight.departure || '?'} → ${flight.arrival || '?'}`);
   setText(detail, aircraft.registration || aircraft.subfleet || 'Appareil à sélectionner');
   const badge = document.createElement('em');
@@ -215,7 +222,7 @@ async function selectOperation(operation) {
     route: flight.route || '',
     level: flight.level || ''
   });
-  setText($('#selectedFlight'), `${flight.ident || 'Vol réservé'} — ${flight.departure || '?'} → ${flight.arrival || '?'}`);
+  setText($('#selectedFlight'), `${displayFlightIdent(flight)} — ${flight.departure || '?'} → ${flight.arrival || '?'}`);
   const simbrief = operation.simbrief || {};
   setText($('#operationBrief'), simbrief.available
     ? `OFP SimBrief disponible · type ${simbrief.type || 'à confirmer'}`
