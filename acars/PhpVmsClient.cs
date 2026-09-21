@@ -12,6 +12,7 @@ public sealed class PhpVmsClient
 
     public string Server { get; private set; } = "";
     public bool Connected => credential.Length > 0;
+    public string LoginEndpoint => string.IsNullOrWhiteSpace(Server) ? "" : Server + "/api/acars/session";
 
     public PhpVmsClient() => http.DefaultRequestHeaders.UserAgent.ParseAdd("Promethee-ACARS/2.1");
 
@@ -26,13 +27,20 @@ public sealed class PhpVmsClient
     public async Task<JsonElement> SignIn(string server, string login, string password)
     {
         var validatedServer = ValidateServer(server);
+        Server = validatedServer;
         if (string.IsNullOrWhiteSpace(login) || string.IsNullOrWhiteSpace(password))
             throw new InvalidOperationException("Saisissez votre identifiant et votre mot de passe.");
         try {
             using var request = new HttpRequestMessage(HttpMethod.Post, validatedServer + "/api/acars/session") { Content = JsonContent.Create(new { login, password }) };
             request.Headers.Add("Accept", "application/json");
             using var response = await http.SendAsync(request);
-            if (!response.IsSuccessStatusCode) throw new InvalidOperationException(LoginMessage(response.StatusCode));
+            if (!response.IsSuccessStatusCode) {
+                var responseBody = await response.Content.ReadAsStringAsync();
+                var serverMessage = SafeServerMessage(responseBody);
+                var redirect = response.Headers.Location?.ToString();
+                System.Diagnostics.Trace.WriteLine($"ACARS login {validatedServer}/api/acars/session returned {(int)response.StatusCode}: {responseBody}");
+                throw new InvalidOperationException(LoginMessage(response.StatusCode, serverMessage, redirect));
+            }
             var json = await response.Content.ReadFromJsonAsync<JsonElement>();
             var data = json.TryGetProperty("data", out var wrapped) ? wrapped : json;
             if (!data.TryGetProperty("access_token", out var token) || string.IsNullOrWhiteSpace(token.GetString()))
@@ -43,10 +51,13 @@ public sealed class PhpVmsClient
             return await Send("user");
         } catch (HttpRequestException ex) {
             System.Diagnostics.Trace.WriteLine($"ACARS login transport failure: {ex}");
-            throw new InvalidOperationException("Impossible de se connecter au serveur Prométhée.");
-        } catch (TaskCanceledException ex) {
-            System.Diagnostics.Trace.WriteLine($"ACARS login timeout: {ex}");
-            throw new InvalidOperationException("Impossible de se connecter au serveur Prométhée.");
+            throw new InvalidOperationException($"Connexion réseau impossible vers {validatedServer} ({ex.GetType().Name}: {ex.Message}).");
+        } catch (TaskCanceledException) {
+            System.Diagnostics.Trace.WriteLine($"ACARS login timeout vers {validatedServer}");
+            throw new InvalidOperationException($"Délai dépassé en contactant {validatedServer}/api/acars/session.");
+        } catch (JsonException ex) {
+            System.Diagnostics.Trace.WriteLine($"ACARS login invalid JSON from {validatedServer}: {ex}");
+            throw new InvalidOperationException($"Le serveur {validatedServer} a répondu, mais pas avec le JSON attendu par Hermès.");
         }
     }
 
@@ -109,10 +120,16 @@ public sealed class PhpVmsClient
         }
     }
 
-    private static string LoginMessage(System.Net.HttpStatusCode status) => status switch {
-        System.Net.HttpStatusCode.Unauthorized => "Identifiant ou mot de passe incorrect.",
+    private static string LoginMessage(System.Net.HttpStatusCode status, string? serverMessage, string? redirect) => status switch {
+        System.Net.HttpStatusCode.BadRequest => serverMessage ?? "Prométhée a refusé la requête de connexion (HTTP 400).",
+        System.Net.HttpStatusCode.Unauthorized => serverMessage ?? "Identifiant ou mot de passe incorrect.",
+        System.Net.HttpStatusCode.Forbidden => serverMessage ?? "Compte pilote non autorisé à utiliser Hermès.",
+        System.Net.HttpStatusCode.NotFound => "Endpoint Hermès introuvable sur Prométhée (HTTP 404 : /api/acars/session). Le serveur n’est probablement pas à jour.",
+        System.Net.HttpStatusCode.MethodNotAllowed => "La route /api/acars/session existe mais refuse POST (HTTP 405). Vérifiez les routes API déployées.",
         System.Net.HttpStatusCode.TooManyRequests => "Trop de tentatives. Attendez une minute avant de réessayer.",
-        _ => "Impossible de se connecter au serveur Prométhée."
+        >= System.Net.HttpStatusCode.InternalServerError => serverMessage ?? $"Erreur serveur Prométhée (HTTP {(int)status}). Consultez les logs Laravel.",
+        _ when (int)status is >= 300 and < 400 => $"Prométhée a redirigé la connexion (HTTP {(int)status}) vers {redirect ?? "une autre URL"}. Hermès refuse les redirections d’authentification.",
+        _ => serverMessage ?? $"Échec de connexion Prométhée (HTTP {(int)status})."
     };
 
     private static string ValidateServer(string server)
