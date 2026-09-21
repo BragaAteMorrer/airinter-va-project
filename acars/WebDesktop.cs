@@ -15,7 +15,12 @@ public static class WebDesktop
 
 public sealed class PrometheeWindow : Window
 {
-    private readonly PhpVmsClient client = new(); private readonly SimulatorConnectorHub sim = new(new SimConnectReader(), new XPlaneUdpConnector()); private readonly FlightRecorder recorder = new();
+    private readonly PhpVmsClient client = new(); private readonly SimulatorConnectorHub sim = new(
+        new SimConnectReader(),
+        new XPlaneUdpConnector(),
+        new FsuipcConnector(SimulatorKind.FlightSimulator2004, "Microsoft Flight Simulator 2004"),
+        new FsuipcConnector(SimulatorKind.FlightSimulatorX, "Microsoft Flight Simulator X"),
+        new FsuipcConnector(SimulatorKind.Prepar3D, "Prepar3D")); private readonly FlightRecorder recorder = new();
     private readonly TelemetryService telemetry; private readonly WebView2 web = new(); private bool ticking;
     public PrometheeWindow()
     {

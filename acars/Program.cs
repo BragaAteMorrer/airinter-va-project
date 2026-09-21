@@ -63,8 +63,12 @@ app.MapPost("/api/login", async (LoginRequest input, PhpVmsClient client, Flight
 
 app.MapGet("/api/user", async (PhpVmsClient client) => Results.Json(await client.Send("user")));
 app.MapGet("/api/bids", async (PhpVmsClient client) => Results.Json(await client.Send("user/bids")));
-app.MapGet("/api/flights", async (string? search, PhpVmsClient client) =>
-    Results.Json(await client.Send("flights" + (string.IsNullOrWhiteSpace(search) ? "" : "?search=" + Uri.EscapeDataString(search)))));
+app.MapGet("/api/operations", async (HttpRequest request, PhpVmsClient client) =>
+    Results.Json(await client.Send("acars/operations" + request.QueryString.Value)));
+app.MapGet("/api/operations/{id}/aircraft", async (string id, PhpVmsClient client) =>
+    Results.Json(await client.Send("acars/operations/" + Uri.EscapeDataString(id) + "/aircraft")));
+app.MapGet("/api/flights", async (HttpRequest request, PhpVmsClient client) =>
+    Results.Json(await client.Send("flights" + request.QueryString.Value)));
 app.MapGet("/api/flights/{id}/aircraft", async (string id, PhpVmsClient client) =>
     Results.Json(await client.Send("flights/" + Uri.EscapeDataString(id) + "/aircraft")));
 app.MapPost("/api/flights/{id}/simbrief/session", async (string id, JsonElement body, PhpVmsClient client) =>

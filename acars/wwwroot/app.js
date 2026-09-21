@@ -26,6 +26,13 @@ let pirepId = null;
 let flightPlan = null;
 let connected = false;
 
+function setAuthenticated(value) {
+  connected = Boolean(value);
+  document.body.classList.toggle('auth-locked', !connected);
+  $('.protected-tab').forEach(tab => { tab.disabled = !connected; });
+}
+setAuthenticated(false);
+
 const settingsForm = $('#settingsForm');
 const defaultSettings = { autoDetection: 'true', forcedSimulator: '', timeFormat: 'local', notifications: 'true' };
 let savedSettings = {};
@@ -51,7 +58,8 @@ settingsForm.onsubmit = event => {
 
 $$('.tab').forEach(button => {
   button.onclick = () => {
-    $$('.tab,.panel').forEach(node => node.classList.remove('active'));
+    if (button.classList.contains('protected-tab') && !connected) return;
+    $('.tab,.panel').forEach(node => node.classList.remove('active'));
     button.classList.add('active');
     $('#' + button.dataset.tab).classList.add('active');
   };
@@ -71,7 +79,7 @@ async function login(form, advanced = false) {
   try {
     const response = await call(advanced ? '/api/config' : '/api/login', body);
     pilotIdentity(response);
-    connected = true;
+    setAuthenticated(true);
     showMessage('#loginMessage', 'Connexion réussie. Chargement de vos opérations…');
     await refreshOperations();
     document.querySelector('[data-tab="flight"]').click();
@@ -83,7 +91,8 @@ $('#loginForm').onsubmit = event => { event.preventDefault(); login(event.curren
 $('#configForm').onsubmit = event => { event.preventDefault(); login(event.currentTarget, true); };
 
 function simulatorCode() {
-  return localSettings.forcedSimulator === 'xplane' ? 'xplane' : 'msfs2024';
+  const forced = localSettings.forcedSimulator;
+  return ({ xplane: 'xplane', fs2004: 'fs2004', fsx: 'fsx', p3d: 'p3d', msfs: 'msfs2024' })[forced] || 'auto';
 }
 
 function normalizeFlight(raw) {
@@ -101,19 +110,31 @@ function normalizeFlight(raw) {
   };
 }
 
+function displayFlightIdent(flight) {
+  const number = String(flight.flight_number || '').trim().toUpperCase();
+  if (/^[A-Z]{3}\d/.test(number)) return number;
+  const ident = String(flight.ident || '').trim().toUpperCase().replace(/^([A-Z]{3})\1/, '$1');
+  return ident || number || 'Vol Air Inter';
+}
+
 function operationCard(operation) {
   const flight = normalizeFlight(operation.flight || operation);
   const aircraft = operation.aircraft || {};
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'operation';
+  if (selectedOperation && (selectedOperation.bid_id || selectedOperation.flight?.id) === (operation.bid_id || operation.flight?.id)) {
+    button.classList.add('selected');
+  }
   const title = document.createElement('strong');
   const route = document.createElement('span');
   const detail = document.createElement('small');
-  setText(title, flight.ident || 'Vol Air Inter');
+  setText(title, displayFlightIdent(flight));
   setText(route, `${flight.departure || '?'} → ${flight.arrival || '?'}`);
   setText(detail, aircraft.registration || aircraft.subfleet || 'Appareil à sélectionner');
-  button.append(title, route, detail);
+  const badge = document.createElement('em');
+  badge.textContent = operation.bid_id ? 'RÉSERVÉ' : 'PROGRAMME';
+  button.append(badge, title, route, detail);
   button.onclick = () => selectOperation({ ...operation, flight });
   return button;
 }
@@ -189,6 +210,8 @@ function addAircraftOption(select, aircraft) {
 async function selectOperation(operation) {
   selectedOperation = operation;
   selectedAircraft = operation.aircraft?.id ? operation.aircraft : null;
+  $('.operation').forEach(node => node.classList.remove('selected'));
+  if (document.activeElement?.classList?.contains('operation')) document.activeElement.classList.add('selected');
   flightPlan = null;
   const flight = normalizeFlight(operation.flight || operation);
   const form = $('#prefileForm');
@@ -208,7 +231,7 @@ async function selectOperation(operation) {
     route: flight.route || '',
     level: flight.level || ''
   });
-  setText($('#selectedFlight'), `${flight.ident || 'Vol réservé'} — ${flight.departure || '?'} → ${flight.arrival || '?'}`);
+  setText($('#selectedFlight'), `${displayFlightIdent(flight)} — ${flight.departure || '?'} → ${flight.arrival || '?'}`);
   const simbrief = operation.simbrief || {};
   setText($('#operationBrief'), simbrief.available
     ? `OFP SimBrief disponible · type ${simbrief.type || 'à confirmer'}`
@@ -378,7 +401,7 @@ $('#prefileForm').onsubmit = async event => {
     const result = unwrap(await call('/api/prefile', body));
     pirepId = result.id || result.pirep_id || result.pirep?.id;
     if (!pirepId) throw new Error('Prométhée n’a pas retourné l’identifiant du PIREP.');
-    showMessage('#pirepMessage', `PIREP ${pirepId} prêt. Vous pouvez démarrer l’enregistrement.`);
+    showMessage('#pirepMessage', `PIREP ${pirepId} prêt. Hermès est armé pour l’enregistrement.`);
     document.querySelector('[data-tab="record"]').click();
   } catch (error) {
     showMessage('#pirepMessage', error.message, true);
@@ -468,7 +491,7 @@ async function refreshStatus() {
     const flight = status.flight;
     const latest = status.latest || {};
     const value = (camel, pascal) => latest[camel] ?? latest[pascal];
-    if (status.connected) connected = true;
+    if (status.connected && !connected) setAuthenticated(true);
     const simulators = (status.detectedSimulators || []).map(item => item.displayName || item.DisplayName).filter(Boolean);
     setText($('#simState'), simulators.length ? `${simulators.join(' · ')} — ${status.sim || 'connexion en attente'}` : status.sim || 'Simulateur non détecté');
     setText($('#pending'), String(status.pending ?? 0));
