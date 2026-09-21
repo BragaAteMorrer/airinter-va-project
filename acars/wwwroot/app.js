@@ -148,22 +148,35 @@ async function refreshOperations() {
   }
 }
 
+function normalizedSearchValue(selector) {
+  return $(selector).value.trim().toUpperCase();
+}
+
 async function searchFlights() {
   if (!connected) return showMessage('#flightMessage', 'Connectez-vous d’abord.', true);
-  const search = $('#flightSearch').value.trim();
+  const params = new URLSearchParams();
+  let number = normalizedSearchValue('#flightNumberSearch');
+  const departure = normalizedSearchValue('#departureSearch');
+  const arrival = normalizedSearchValue('#arrivalSearch');
+  const aircraftType = normalizedSearchValue('#aircraftTypeSearch');
+  number = number.replace(/^ITF[ -]?/, '');
+  if (number) params.set('flight_number', number);
+  if (departure) params.set('dep_icao', departure);
+  if (arrival) params.set('arr_icao', arrival);
+  if (aircraftType) params.set('icao_type', aircraftType);
   try {
     showMessage('#flightMessage', 'Recherche dans le programme…');
-    renderOperations(await call('/api/flights' + (search ? '?search=' + encodeURIComponent(search) : '')));
+    renderOperations(await call('/api/flights' + (params.size ? '?' + params.toString() : '')));
     showMessage('#flightMessage', '');
   } catch (error) {
     showMessage('#flightMessage', error.message, true);
   }
 }
 $('#bidsBtn').onclick = refreshOperations;
-$('#searchBtn').onclick = searchFlights;
-$('#flightSearch').addEventListener('keydown', event => {
-  if (event.key === 'Enter') { event.preventDefault(); searchFlights(); }
-});
+$('#flightSearchForm').onsubmit = event => {
+  event.preventDefault();
+  searchFlights();
+};
 
 function addAircraftOption(select, aircraft) {
   const option = document.createElement('option');
@@ -185,6 +198,16 @@ async function selectOperation(operation) {
   assign('flight_number', flight.flight_number);
   assign('dpt_airport_id', flight.departure);
   assign('arr_airport_id', flight.arrival);
+  assign('alt_airport_id', flight.alternate);
+  assign('route', flight.route);
+  assign('level', flight.level);
+  assign('block_fuel', '');
+  assign('notes', '');
+  form.dataset.programDraft = JSON.stringify({
+    alt_airport_id: flight.alternate || '',
+    route: flight.route || '',
+    level: flight.level || ''
+  });
   setText($('#selectedFlight'), `${flight.ident || 'Vol réservé'} — ${flight.departure || '?'} → ${flight.arrival || '?'}`);
   const simbrief = operation.simbrief || {};
   setText($('#operationBrief'), simbrief.available
@@ -247,6 +270,21 @@ $('#aircraftId').onchange = event => {
   try { selectedAircraft = option?.dataset.aircraft ? JSON.parse(option.dataset.aircraft) : null; } catch { selectedAircraft = null; }
 };
 
+$('#resetDraftBtn').onclick = () => {
+  const form = $('#prefileForm');
+  let draft = {};
+  try { draft = JSON.parse(form.dataset.programDraft || '{}'); } catch {}
+  ['alt_airport_id', 'route', 'level'].forEach(name => {
+    if (form.elements[name]) form.elements[name].value = draft[name] || '';
+  });
+  form.elements.block_fuel.value = '';
+  form.elements.notes.value = '';
+  flightPlan = null;
+  $('#planFile').value = '';
+  $('#planBox').textContent = 'Aucun plan chargé.';
+  showMessage('#simbriefState', 'Brouillon réinitialisé aux données du programme.');
+};
+
 $('#simbriefBtn').onclick = async () => {
   const form = $('#prefileForm');
   const flightId = form.elements.flight_id.value;
@@ -254,7 +292,12 @@ $('#simbriefBtn').onclick = async () => {
   if (!flightId || !aircraftId) return showMessage('#simbriefState', 'Sélectionnez un vol et un appareil.', true);
   try {
     showMessage('#simbriefState', 'Préparation de la demande SimBrief…');
-    const session = unwrap(await call(`/api/flights/${encodeURIComponent(flightId)}/simbrief/session`, { aircraft_id: aircraftId }));
+    const session = unwrap(await call(`/api/flights/${encodeURIComponent(flightId)}/simbrief/session`, {
+      aircraft_id: aircraftId,
+      alternate: form.elements.alt_airport_id.value.trim().toUpperCase(),
+      route: form.elements.route.value.trim(),
+      level: form.elements.level.value ? Number(form.elements.level.value) : null
+    }));
     const popup = window.open('about:blank', 'PrometheeSimBrief', 'width=900,height=720');
     if (!popup) throw new Error('Autorisez les fenêtres contextuelles pour ouvrir SimBrief.');
     const dispatch = document.createElement('form');
@@ -291,6 +334,8 @@ $('#simbriefBtn').onclick = async () => {
             block_fuel: briefing.block_fuel || undefined
           };
           if (briefing.block_fuel) form.elements.block_fuel.value = Math.round(briefing.block_fuel);
+          if (briefing.route) form.elements.route.value = briefing.route;
+          if (briefing.initial_altitude) form.elements.level.value = Number(briefing.initial_altitude);
           $('#planBox').textContent = JSON.stringify(briefing, null, 2);
           showMessage('#simbriefState', 'OFP importé et prêt pour le pré-PIREP.');
           return;
@@ -326,14 +371,9 @@ $('#prefileForm').onsubmit = async event => {
   const body = Object.fromEntries([...new FormData(event.currentTarget)].filter(([, value]) => value !== ''));
   if (!body.aircraft_id) return showMessage('#pirepMessage', 'Sélectionnez un appareil.', true);
   if (body.block_fuel) body.block_fuel = Number(body.block_fuel);
-  const flight = normalizeFlight(selectedOperation?.flight || selectedOperation || {});
-  Object.assign(body,
-    flight.alternate ? { alt_airport_id: flight.alternate } : {},
-    flight.route ? { route: flight.route } : {},
-    flight.level ? { level: Number(flight.level) } : {},
-    flightPlan || {},
-    { source_name: 'Hermes ACARS' }
-  );
+  if (body.level) body.level = Number(body.level);
+  if (body.alt_airport_id) body.alt_airport_id = body.alt_airport_id.toUpperCase();
+  Object.assign(body, flightPlan || {}, { source_name: 'Hermes ACARS' });
   try {
     const result = unwrap(await call('/api/prefile', body));
     pirepId = result.id || result.pirep_id || result.pirep?.id;
