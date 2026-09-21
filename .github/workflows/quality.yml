@@ -65,3 +65,10 @@ jobs:
           extensions: json, mbstring, simplexml, bcmath, pdo, intl, zip
       - name: Validate Composer manifest
         run: composer validate --no-check-publish
+      - name: Validate Promethee PHP syntax
+        shell: bash
+        run: |
+          php -l modules/Promethee/Http/PortalController.php
+          php -l modules/Promethee/Config/departure-board.php
+          php -l app/Console/Commands/CheckPrometheeTranslations.php
+          for file in resources/lang/*/promethee_briefing.php; do php -l "$file"; done
