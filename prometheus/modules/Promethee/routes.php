@@ -50,6 +50,8 @@ Route::middleware(['web','auth'])->name('promethee.')->group(function () {
     // Native replacements for the former Disposable pages. Existing bookmarks
     // continue to work without enabling unrelated legacy module features.
     Route::get('/dairlines', [PortalController::class, 'airlines'])->name('airlines');
+    // Historic company bookmark used by the previous themes.
+    Route::get('/dcompany', [PortalController::class, 'airlines'])->name('company');
     Route::get('/dmaintenance', [PortalController::class, 'maintenance'])->name('maintenance');
     Route::get('/daircraft/{registration}', [PortalController::class, 'aircraftDetail'])->name('aircraft.show');
     Route::get('/live', [PortalController::class,'live'])->name('live');
