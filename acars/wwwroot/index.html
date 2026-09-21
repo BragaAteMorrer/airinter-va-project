@@ -31,6 +31,11 @@
         <button class="primary">Se connecter à Prométhée</button>
       </form>
       <p id="loginMessage" class="message" hidden role="status"></p>
+      <div class="login-diagnostics">
+        <span>Serveur utilisé</span><strong id="loginServer">Chargement…</strong>
+        <small id="loginEndpoint"></small>
+        <small id="loginServerSource"></small>
+      </div>
       <details class="advanced"><summary>Connexion avancée</summary>
         <p>Réservée aux installations qui utilisent volontairement une clé API et un serveur personnalisé.</p>
         <form id="configForm" class="login-form"><label>Serveur HTTPS<input name="server" placeholder="https://va.exemple.fr" required></label><label>Clé API<input name="apiKey" type="password" required></label><button>Connecter avec la clé API</button></form>
