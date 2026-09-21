@@ -2,9 +2,13 @@ name: Quality
 
 on:
   push:
-    branches: [master, main]
+    branches:
+      - master
+      - main
   pull_request:
-    branches: [master, main]
+    branches:
+      - master
+      - main
 
 permissions:
   contents: read
@@ -14,46 +18,45 @@ jobs:
     name: Repository hygiene
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-      - name: Reject generated or hosting files
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Reject generated and hosting files
         shell: bash
         run: |
           set -euo pipefail
-          forbidden="$(git ls-files | grep -E '(^|/)(bin|obj|node_modules|vendor|logs|mail)(/|$)|(^|/).env$|(^|/).cpanel(/|$)|(^|/).caldav(/|$)|(^|/).bash_history$|:Zone.Identifier$|.(sql|sqlite3?|bak|backup)$' || true)"
-          if [ -n "$forbidden" ]; then
-            printf '%s
-' "Forbidden tracked files:" "$forbidden"
+          forbidden="$(git ls-files | grep -E '^(acars|acars\.tests)/(bin|obj)/|^(logs|mail|etc|\.cpanel|\.caldav)/|^\.bash_history$|:Zone\.Identifier$|\.(sql|sqlite|sqlite3|bak|backup)$' || true)"
+          if [[ -n "$forbidden" ]]; then
+            echo "Forbidden tracked files:"
+            echo "$forbidden"
             exit 1
           fi
 
   hermes:
-    name: Hermès (.NET 8)
+    name: Hermes tests
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install .NET
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
-          cache: true
-          cache-dependency-path: |
-            acars/Promethee.Acars.csproj
-            acars.tests/Promethee.Acars.Tests.csproj
       - name: Restore
         run: dotnet restore acars.tests/Promethee.Acars.Tests.csproj
       - name: Test
         run: dotnet test acars.tests/Promethee.Acars.Tests.csproj --configuration Release --no-restore --framework net8.0
 
   promethee:
-    name: Prométhée manifest
+    name: Promethee manifest
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: prometheus
     steps:
-      - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install PHP and Composer
+        uses: shivammathur/setup-php@v2
         with:
           php-version: "8.3"
           tools: composer:v2
