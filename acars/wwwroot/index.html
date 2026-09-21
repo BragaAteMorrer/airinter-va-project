@@ -37,7 +37,14 @@
       </details>
     </section>
     <section id="flight" class="panel">
-      <h2>Préparation du PIREP</h2>
+      <div class="workspace-title"><div><span class="kicker">FLIGHT WORKSPACE</span><h2>Préparation opérationnelle</h2></div><strong id="readyState" class="ready-state">NOT READY</strong></div>
+      <div id="workflow" class="workflow" aria-label="État de préparation">
+        <div data-step="operation"><span>01</span><strong>Opération</strong><small>Sélectionner le vol</small></div>
+        <div data-step="aircraft"><span>02</span><strong>Appareil</strong><small>Dispatch & éligibilité</small></div>
+        <div data-step="ofp"><span>03</span><strong>OFP</strong><small>Briefing SimBrief</small></div>
+        <div data-step="pirep"><span>04</span><strong>PIREP</strong><small>Pré-dépôt</small></div>
+        <div data-step="ready"><span>05</span><strong>Ready</strong><small>Contrôles départ</small></div>
+      </div>
       <form id="flightSearchForm" class="flight-search">
         <label>Numéro de vol<input id="flightNumberSearch" placeholder="ITF749 ou 749" autocomplete="off"></label>
         <label>Départ<input id="departureSearch" placeholder="LFPO" maxlength="8" autocomplete="off"></label>
@@ -52,6 +59,7 @@
       <article id="selectedOperation" class="prefile" hidden>
         <div><p id="selectedFlight">Aucun vol sélectionné</p><p id="operationBrief" class="hint"></p></div>
       </article>
+      <div id="aircraftEligibility" class="eligibility" hidden></div>
       <div class="tools"><label>Plan de vol MSFS / SimBrief<input id="planFile" type="file" accept=".pln,.xml"></label><button id="clearPlanBtn" type="button">Effacer le plan</button></div>
       <div class="tools"><button id="simbriefBtn" type="button">Créer l’OFP dans SimBrief</button><span id="simbriefState">Sélectionnez un vol et un appareil.</span></div>
       <pre id="planBox">Aucun plan chargé.</pre>
