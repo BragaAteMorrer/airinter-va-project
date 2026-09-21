@@ -25,13 +25,9 @@ Critère de sortie : le parcours complet est couvert par des tests et peut être
 - Grades séparés des qualifications.
 - Analyse PIREP en trois axes : Safety, Operations et Flight.
 
-## Prométhée 1.5 — Faire revivre Air Inter
+## Principe produit — respecter le projet Air Inter VA
 
-- Époques 1960–1969, 1970–1979, 1980–1989 et 1990–1997.
-- Horaires sourcés et niveau de confiance visible.
-- Réseaux, flottes et immatriculations historiques.
-- Relations entre vols, appareils, aéroports et archives.
-- Indicateurs, cartes, documents et pages aéroports consultables depuis le briefing.
+Prométhée valorise l'identité historique déjà portée par la compagnie, ses horaires et ses appareils, sans créer un système éditorial d'époques ou d'archives parallèle qui ne correspond pas au projet de ses créateurs. Les évolutions historiques restent pilotées par les besoins exprimés par Air Inter VA.
 
 ## Prométhée 2.0 — Écosystème Air Inter
 
