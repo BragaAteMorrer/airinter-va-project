@@ -89,3 +89,5 @@ body.auth-locked .auth-panel .login-form{max-width:none}
 body.auth-locked .rail .theme{display:none}
 .auth-mark{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:-8px 0 26px;padding-bottom:16px;border-bottom:1px solid var(--line)}
 .auth-mark span{color:var(--red);font-size:10px;font-weight:900;letter-spacing:1.7px}.auth-mark strong{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.7px}
+
+.settings-sections{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:24px 0 4px}.settings-sections article{padding:17px;border:1px solid var(--line);border-radius:11px;background:#f8fafc}.settings-sections h3{margin:5px 0 6px}.settings-sections p{margin:0;font-size:12px}@media(max-width:920px){.settings-sections{grid-template-columns:1fr}}
