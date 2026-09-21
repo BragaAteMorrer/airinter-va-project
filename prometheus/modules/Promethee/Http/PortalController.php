@@ -1,7 +1,7 @@
 <?php
 namespace Modules\Promethee\Http;
 use App\Contracts\Controller;
-use App\Models\{Aircraft,Airline,Airport,Award,Bid,File,Flight,Pirep,User,Fare,Subfleet,Rank};
+use App\Models\{Aircraft,Airline,Airport,Award,Bid,File,Flight,Pirep,SimBrief,User,Fare,Subfleet,Rank};
 use App\Models\Enums\{AircraftState,AircraftStatus,FlightType,PirepState,PirepStatus,UserState};
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -263,8 +263,11 @@ class PortalController extends Controller
         $now = CarbonImmutable::now('Europe/Paris');
         $from = $now->subMinutes(config('departure-board.past_minutes'));
         $until = $now->addMinutes(config('departure-board.future_minutes'));
-        $activePireps = Pirep::query()->whereIn('state', [PirepState::IN_PROGRESS, PirepState::PAUSED, PirepState::CANCELLED])
-            ->whereNotNull('flight_id')->latest('updated_at')->get()->unique('flight_id')->keyBy('flight_id');
+        // A recurring timetable row must not inherit yesterday's state.
+        // Only recent, still-open reports can drive today's operational board.
+        $activePireps = Pirep::query()->whereIn('state', [PirepState::IN_PROGRESS, PirepState::PAUSED])
+            ->whereNotNull('flight_id')->where('updated_at', '>=', $now->subHours(12))
+            ->latest('updated_at')->get()->unique('flight_id')->keyBy('flight_id');
 
         $occurrences = Flight::query()->where('active', true)->where('visible', true)
             ->when($homeAirportId, fn ($flights) => $flights->where('dpt_airport_id', $homeAirportId))
@@ -769,7 +772,14 @@ class PortalController extends Controller
         // unit selected for this installation before it is shown to the pilot.
         $suggestedFuel=(int) round(\App\Support\Units\Fuel::make(ceil(max(250,$distance*3.2)), 'kg')->toUnit($fuelUnit));
         $briefing=DB::table('promethee_briefings')->where(['user_id'=>$r->user()->id,'flight_id'=>$flight->id])->first();
-        return $this->page('briefing',['flight'=>$flight,'weather'=>$weather,'briefing'=>$briefing,'suggestedFuel'=>$suggestedFuel,'fuelUnit'=>$fuelUnit]);
+        $bid=Bid::with(['aircraft.subfleet'])->where(['user_id'=>$r->user()->id,'flight_id'=>$flight->id])->latest()->first();
+        $simbrief=SimBrief::with('aircraft')->where('user_id',$r->user()->id)
+            ->where('flight_id',$flight->id)->latest('updated_at')->first();
+        return $this->page('briefing',[
+            'flight'=>$flight,'weather'=>$weather,'briefing'=>$briefing,
+            'suggestedFuel'=>$suggestedFuel,'fuelUnit'=>$fuelUnit,
+            'bid'=>$bid,'simbrief'=>$simbrief,
+        ]);
     }
     public function saveBriefing(string $id, Request $r) {
         Flight::findOrFail($id);
