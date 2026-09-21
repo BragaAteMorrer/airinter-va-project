@@ -44,7 +44,7 @@ function setAuthenticated(value) {
 setAuthenticated(false);
 
 const settingsForm = $('#settingsForm');
-const defaultSettings = { autoDetection: 'true', forcedSimulator: '', timeFormat: 'local', notifications: 'true' };
+const defaultSettings = { autoDetection: 'true', forcedSimulator: '', timeFormat: 'local', notifications: 'true', simbriefUsername: '', simbriefPilotId: '', flightPlanMode: 'account' };
 let savedSettings = {};
 try { savedSettings = JSON.parse(localStorage.prometheeAcarsSettings || '{}'); } catch {}
 let localSettings = { ...defaultSettings, ...savedSettings };
@@ -370,6 +370,85 @@ async function selectOperation(operation) {
     showMessage('#pirepMessage', error.message, true);
   }
 }
+function applyBriefing(briefing, sourceLabel) {
+  const form = $('#prefileForm');
+  flightPlan = {
+    source: briefing.source || sourceLabel,
+    simbrief_id: briefing.id,
+    route: briefing.route,
+    level: Number(briefing.initial_altitude) || undefined,
+    block_fuel: briefing.block_fuel || undefined
+  };
+  if (briefing.block_fuel) form.elements.block_fuel.value = Math.round(briefing.block_fuel);
+  if (briefing.route) form.elements.route.value = briefing.route;
+  if (briefing.initial_altitude) form.elements.level.value = Number(briefing.initial_altitude);
+  if (briefing.alternate) form.elements.alt_airport_id.value = briefing.alternate;
+  $('#planBox').textContent = JSON.stringify(briefing, null, 2);
+  showMessage('#simbriefState', 'OFP importé depuis ' + sourceLabel + ' et prêt pour le pré-PIREP.');
+  updateWorkflow();
+}
+
+function setPlanMode(mode) {
+  localSettings.flightPlanMode = mode;
+  localStorage.prometheeAcarsSettings = JSON.stringify(localSettings);
+  $('[data-plan-mode]').forEach(button => button.classList.toggle('active', button.dataset.planMode === mode));
+  $('[data-plan-panel]').forEach(panel => {
+    const active = panel.dataset.planPanel === mode;
+    panel.classList.toggle('active', active);
+    panel.hidden = !active;
+  });
+}
+$('[data-plan-mode]').forEach(button => button.onclick = () => setPlanMode(button.dataset.planMode));
+$('#simbriefUsername').value = localSettings.simbriefUsername || '';
+$('#simbriefPilotId').value = localSettings.simbriefPilotId || '';
+['simbriefUsername', 'simbriefPilotId'].forEach(key => {
+  const node = $('#' + key);
+  node.onchange = () => {
+    localSettings[key] = node.value.trim();
+    localStorage.prometheeAcarsSettings = JSON.stringify(localSettings);
+  };
+});
+setPlanMode(localSettings.flightPlanMode || 'account');
+
+$('#simbriefAccountOpenBtn').onclick = async () => {
+  const form = $('#prefileForm');
+  const flightId = form.elements.flight_id.value;
+  const aircraftId = form.elements.aircraft_id.value;
+  if (!flightId || !aircraftId) return showMessage('#simbriefState', 'Sélectionnez un vol et un appareil.', true);
+  try {
+    showMessage('#simbriefState', 'Préparation du dispatch SimBrief…');
+    const payload = unwrap(await call(`/api/flights/${encodeURIComponent(flightId)}/simbrief/redirect`, { aircraft_id: aircraftId }));
+    window.open(payload.url, '_blank');
+    showMessage('#simbriefState', 'SimBrief est ouvert avec les données Air Inter. Personnalisez puis générez l’OFP, revenez ensuite dans Hermès pour l’importer.');
+  } catch (error) {
+    showMessage('#simbriefState', error.message, true);
+  }
+};
+
+$('#simbriefAccountImportBtn').onclick = async () => {
+  const form = $('#prefileForm');
+  const flightId = form.elements.flight_id.value;
+  const aircraftId = form.elements.aircraft_id.value;
+  const username = $('#simbriefUsername').value.trim();
+  const pilotId = $('#simbriefPilotId').value.trim();
+  if (!flightId || !aircraftId) return showMessage('#simbriefState', 'Sélectionnez un vol et un appareil.', true);
+  if (!username && !pilotId) return showMessage('#simbriefState', 'Renseignez votre alias Navigraph ou votre Pilot ID SimBrief.', true);
+  localSettings.simbriefUsername = username;
+  localSettings.simbriefPilotId = pilotId;
+  localStorage.prometheeAcarsSettings = JSON.stringify(localSettings);
+  try {
+    showMessage('#simbriefState', 'Import du dernier OFP de votre compte SimBrief…');
+    const briefing = unwrap(await call(`/api/flights/${encodeURIComponent(flightId)}/simbrief/account/import`, {
+      aircraft_id: aircraftId,
+      username: username || null,
+      pilot_id: username ? null : pilotId
+    }));
+    applyBriefing(briefing, 'votre compte SimBrief');
+  } catch (error) {
+    showMessage('#simbriefState', error.message, true);
+  }
+};
+
 $('#aircraftId').onchange = event => {
   const option = event.target.selectedOptions[0];
   try { selectedAircraft = option?.dataset.aircraft ? JSON.parse(option.dataset.aircraft) : null; } catch { selectedAircraft = null; }
@@ -433,18 +512,7 @@ $('#simbriefBtn').onclick = async () => {
             aircraft_id: aircraftId,
             ofp_id: session.ofp_id
           }));
-          flightPlan = {
-            simbrief_id: briefing.id,
-            route: briefing.route,
-            level: Number(briefing.initial_altitude) || undefined,
-            block_fuel: briefing.block_fuel || undefined
-          };
-          if (briefing.block_fuel) form.elements.block_fuel.value = Math.round(briefing.block_fuel);
-          if (briefing.route) form.elements.route.value = briefing.route;
-          if (briefing.initial_altitude) form.elements.level.value = Number(briefing.initial_altitude);
-          $('#planBox').textContent = JSON.stringify(briefing, null, 2);
-          showMessage('#simbriefState', 'OFP importé et prêt pour le pré-PIREP.');
-          updateWorkflow();
+          applyBriefing(briefing, 'l’API SimBrief');
           return;
         } catch (error) {
           if (attempt === 5) return showMessage('#simbriefState', error.message, true);
