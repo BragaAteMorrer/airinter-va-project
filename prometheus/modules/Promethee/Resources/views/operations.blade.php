@@ -35,7 +35,7 @@
                     <strong>{{ $flight->ident }}</strong>
                     <span>{{ $flight->dpt_airport_id }} → {{ $flight->arr_airport_id }}</span>
                     <small>{{ optional($flight->next_departure_at)->translatedFormat('D d/m') }} · LF {{ $flight->load_factor ?? setting('flights.default_load_factor') }} %</small>
-                    <a class="button outline" href="{{ route('promethee.flight.briefing', $flight->id) }}">Préparer ↗</a>
+                    <a class="button outline" href="{{ route('promethee.flights.briefing', $flight->id) }}">Préparer ↗</a>
                 </article>
             @empty
                 <div class="empty">
