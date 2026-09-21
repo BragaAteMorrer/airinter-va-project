@@ -30,6 +30,8 @@ jobs:
             echo "$forbidden"
             exit 1
           fi
+      - name: Validate Hermes interface JavaScript
+        run: node --check acars/wwwroot/app.js
 
   hermes:
     name: Hermes tests
