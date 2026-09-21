@@ -209,17 +209,33 @@ async function selectOperation(operation) {
   }
 
   try {
-    const path = operation.bid_id
-      ? `/api/operations/${encodeURIComponent(operation.bid_id)}/aircraft`
-      : `/api/flights/${encodeURIComponent(flight.id)}/aircraft`;
-    const payload = unwrap(await call(path));
+    const paths = operation.bid_id
+      ? [
+          `/api/operations/${encodeURIComponent(operation.bid_id)}/aircraft`,
+          `/api/flights/${encodeURIComponent(flight.id)}/aircraft`
+        ]
+      : [`/api/flights/${encodeURIComponent(flight.id)}/aircraft`];
+    let payload;
+    let lastError;
+    for (const path of paths) {
+      try {
+        payload = unwrap(await call(path));
+        break;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    if (payload === undefined) throw lastError || new Error('Impossible de charger les appareils.');
     const aircraft = Array.isArray(payload) ? payload : (payload?.aircraft || payload?.data || []);
     select.replaceChildren();
     const choose = document.createElement('option');
     choose.value = '';
-    choose.textContent = aircraft.length ? 'Sélectionnez un appareil' : 'Aucun appareil disponible';
+    choose.textContent = aircraft.length ? 'Sélectionnez un appareil' : 'Aucun appareil disponible pour ce vol';
     select.append(choose);
     aircraft.forEach(item => addAircraftOption(select, item));
+    if (!aircraft.length) {
+      showMessage('#pirepMessage', 'Aucun appareil autorisé et disponible pour ce vol. Vérifiez la flotte, la position et les qualifications.', true);
+    }
   } catch (error) {
     select.replaceChildren(loading);
     loading.textContent = 'Appareils indisponibles';
