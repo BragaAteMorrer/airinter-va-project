@@ -74,7 +74,7 @@ public sealed class PhpVmsClient
                 });
             }
             var json = await response.Content.ReadFromJsonAsync<JsonElement>();
-            return json.TryGetProperty("data", out var data) ? data : json;
+            return UnwrapData(json);
         } catch (HttpRequestException ex) {
             System.Diagnostics.Trace.WriteLine($"ACARS API transport failure: {ex}");
             throw new InvalidOperationException("Impossible de se connecter au serveur Prométhée.");
@@ -82,6 +82,16 @@ public sealed class PhpVmsClient
             System.Diagnostics.Trace.WriteLine($"ACARS API timeout: {ex}");
             throw new InvalidOperationException("Impossible de se connecter au serveur Prométhée.");
         }
+    }
+
+    private static JsonElement UnwrapData(JsonElement json)
+    {
+        // phpVMS endpoints do not all return the same envelope: collection
+        // endpoints may legitimately return a top-level JSON array. Calling
+        // TryGetProperty on an Array throws InvalidOperationException.
+        return json.ValueKind == JsonValueKind.Object && json.TryGetProperty("data", out var data)
+            ? data
+            : json;
     }
 
     private static string? SafeServerMessage(string responseBody)
