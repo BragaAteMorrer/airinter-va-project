@@ -47,12 +47,12 @@ public sealed class PrometheeWindow : Window
         const string simbriefImportSuffix = "/simbrief/import";
         if (route.StartsWith(flightsPrefix, StringComparison.Ordinal) && route.EndsWith(simbriefSessionSuffix, StringComparison.Ordinal)) {
             var flightId = route.Substring(flightsPrefix.Length, route.Length - flightsPrefix.Length - simbriefSessionSuffix.Length);
-            return await client.Send("acars/flights/" + Uri.EscapeDataString(flightId) + "/simbrief/session", body?.Value
+            return await client.Send("acars/flights/" + Uri.EscapeDataString(flightId) + "/simbrief/session", body
                 ?? throw new InvalidOperationException("Paramètres SimBrief manquants."));
         }
         if (route.StartsWith(flightsPrefix, StringComparison.Ordinal) && route.EndsWith(simbriefImportSuffix, StringComparison.Ordinal)) {
             var flightId = route.Substring(flightsPrefix.Length, route.Length - flightsPrefix.Length - simbriefImportSuffix.Length);
-            return await client.Send("acars/flights/" + Uri.EscapeDataString(flightId) + "/simbrief/import", body?.Value
+            return await client.Send("acars/flights/" + Uri.EscapeDataString(flightId) + "/simbrief/import", body
                 ?? throw new InvalidOperationException("Paramètres d’import SimBrief manquants."));
         }
         if (route.StartsWith("/api/operations/", StringComparison.Ordinal) && route.EndsWith("/aircraft", StringComparison.Ordinal))
