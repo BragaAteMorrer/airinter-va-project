@@ -60,6 +60,10 @@ public sealed class PrometheeWindow : Window
             return await client.Send("acars/flights/" + Uri.EscapeDataString(flightId) + "/simbrief/import", body
                 ?? throw new InvalidOperationException("Paramètres d’import SimBrief manquants."));
         }
+        if (route.StartsWith("/api/v1/operations/", StringComparison.Ordinal)) {
+            var remote = route.TrimStart('/');
+            return await client.Send(remote + uri.Query);
+        }
         if (route.StartsWith("/api/operations/", StringComparison.Ordinal) && route.EndsWith("/aircraft", StringComparison.Ordinal))
             return await client.Send("promethee/acars/operations/" + Uri.EscapeDataString(route[16..^9]) + "/aircraft");
         if (route.StartsWith("/api/flights/", StringComparison.Ordinal) && route.EndsWith("/aircraft", StringComparison.Ordinal))
