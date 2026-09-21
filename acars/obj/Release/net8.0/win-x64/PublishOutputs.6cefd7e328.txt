@@ -1,6 +1,0 @@
-\\wsl.localhost\Ubuntu\home\bragaatemorrer\Projet_perso\airinter-va-project\dist\Promethee-ACARS-win-x64-1.0.2\release\Promethee-ACARS-win-x64-1.0.0\release\Promethee-ACARS-win-x64-1.0.0\web.config
-\\wsl.localhost\Ubuntu\home\bragaatemorrer\Projet_perso\airinter-va-project\dist\Promethee-ACARS-win-x64-1.0.2\release\Promethee-ACARS-win-x64-1.0.0\web.config
-\\wsl.localhost\Ubuntu\home\bragaatemorrer\Projet_perso\airinter-va-project\dist\Promethee-ACARS-win-x64-1.0.2\release\Promethee-ACARS-win-x64-1.0.1\release\Promethee-ACARS-win-x64-1.0.0\release\Promethee-ACARS-win-x64-1.0.0\web.config
-\\wsl.localhost\Ubuntu\home\bragaatemorrer\Projet_perso\airinter-va-project\dist\Promethee-ACARS-win-x64-1.0.2\release\Promethee-ACARS-win-x64-1.0.1\release\Promethee-ACARS-win-x64-1.0.0\web.config
-\\wsl.localhost\Ubuntu\home\bragaatemorrer\Projet_perso\airinter-va-project\dist\Promethee-ACARS-win-x64-1.0.2\release\Promethee-ACARS-win-x64-1.0.1\web.config
-\\wsl.localhost\Ubuntu\home\bragaatemorrer\Projet_perso\airinter-va-project\dist\Promethee-ACARS-win-x64-1.0.2\Promethee.Acars.exe

@@ -1,5 +1,0 @@
-C:\Users\nenea\Promethee-acars\Promethee.Acars.exe
-C:\Users\nenea\Promethee-acars\Promethee.Acars.dll
-C:\Users\nenea\Promethee-acars\Promethee.Acars.deps.json
-C:\Users\nenea\Promethee-acars\Promethee.Acars.runtimeconfig.json
-C:\Users\nenea\Promethee-acars\Promethee.Acars.pdb

@@ -1,9 +1,0 @@
-[/home/jewe0363/public_html]
-htaccess_list = 
-
-[/home/jewe0363/prometheus/public]
-htaccess_list = /home/jewe0363/prometheus/public/.htaccess
-
-[/home/jewe0363/occ/public]
-htaccess_list = /home/jewe0363/occ/public/.htaccess
-

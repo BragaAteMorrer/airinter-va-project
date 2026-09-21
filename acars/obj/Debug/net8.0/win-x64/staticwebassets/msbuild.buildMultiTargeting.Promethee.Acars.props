@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="..\build\Promethee.Acars.props" />
-</Project>
