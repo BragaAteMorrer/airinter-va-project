@@ -4,16 +4,16 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Hermès ACARS — Air Inter</title><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/layout-overrides.css">
 </head>
-<body>
+<body class="auth-locked">
   <aside class="rail">
     <div class="brand"><img class="brand-logo" src="/air-inter-va-hermes.png" alt="Air Inter Hermès"><span>ACARS · OPÉRATIONS</span><strong>Hermès</strong></div>
     <nav aria-label="Navigation ACARS">
       <button class="tab active" data-tab="connect">Connexion</button>
-      <button class="tab" data-tab="flight">Mes opérations</button>
-      <button class="tab" data-tab="record">Enregistrement</button>
-      <button class="tab" data-tab="map">Suivi du vol</button>
-      <button class="tab" data-tab="journal">Journal</button>
-      <button class="tab" data-tab="settings">Paramètres</button>
+      <button class="tab protected-tab" data-tab="flight" disabled>Mes opérations</button>
+      <button class="tab protected-tab" data-tab="record" disabled>Enregistrement</button>
+      <button class="tab protected-tab" data-tab="map" disabled>Suivi du vol</button>
+      <button class="tab protected-tab" data-tab="journal" disabled>Journal</button>
+      <button class="tab protected-tab" data-tab="settings" disabled>Paramètres</button>
     </nav>
     <label class="theme">Thème<select id="era"><option value="modern">Moderne</option><option value="web2000">Années 2000</option></select></label>
     <small id="build"></small>
@@ -23,12 +23,12 @@
       <div><p class="kicker">DIRECTION DE L’EXPLOITATION AÉRIENNE</p><h1>Hermès</h1><p class="header-subtitle">Le client ACARS officiel de Prométhée.</p></div>
       <div class="status"><span id="serverState">Identité pilote à venir</span><span id="simState">Simulateur non détecté</span></div>
     </header>
-    <section id="connect" class="panel active">
-      <h2>Connexion pilote</h2><p class="hint">Connectez-vous à votre compte Air Inter pour préparer et suivre votre vol.</p>
+    <section id="connect" class="panel active auth-panel">
+      <div class="auth-mark"><span>AIR INTER VA</span><strong>Accès équipage</strong></div><h2>Connexion pilote</h2><p class="hint">Connectez-vous à votre compte Air Inter pour préparer et suivre votre vol.</p>
       <form id="loginForm" class="login-form">
         <label>Identifiant pilote ou e-mail<input name="login" autocomplete="username" required></label>
         <label>Mot de passe<input name="password" type="password" autocomplete="current-password" required></label>
-        <button class="primary">Se connecter</button>
+        <button class="primary">Se connecter à Prométhée</button>
       </form>
       <p id="loginMessage" class="message" hidden role="status"></p>
       <details class="advanced"><summary>Connexion avancée</summary>
