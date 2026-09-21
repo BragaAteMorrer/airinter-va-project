@@ -629,6 +629,8 @@ class RouteServiceProvider extends ServiceProvider
                 Route::get('flights/{id}/route', 'FlightController@route');
                 Route::get('flights/{id}/aircraft', 'FlightController@aircraft');
                 Route::post('acars/flights/{flight_id}/simbrief/session', 'AcarsSimBriefController@session');
+                Route::post('acars/flights/{flight_id}/simbrief/redirect', 'AcarsSimBriefController@redirect');
+                Route::post('acars/flights/{flight_id}/simbrief/account/import', 'AcarsSimBriefController@importAccount');
                 Route::post('acars/flights/{flight_id}/simbrief/import', 'AcarsSimBriefController@import');
 
                 Route::get('pireps', 'UserController@pireps');
