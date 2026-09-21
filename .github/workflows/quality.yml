@@ -43,8 +43,12 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
-      - name: Restore
+      - name: Restore tests
         run: dotnet restore acars.tests/Promethee.Acars.Tests.csproj
+      - name: Restore Windows desktop
+        run: dotnet restore acars/Promethee.Acars.csproj
+      - name: Build Windows desktop
+        run: dotnet build acars/Promethee.Acars.csproj --configuration Release --no-restore --framework net8.0-windows
       - name: Test
         run: dotnet test acars.tests/Promethee.Acars.Tests.csproj --configuration Release --no-restore --framework net8.0
 
