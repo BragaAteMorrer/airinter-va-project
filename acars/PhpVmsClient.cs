@@ -63,11 +63,13 @@ public sealed class PhpVmsClient
             if (!response.IsSuccessStatusCode) {
                 var responseBody = await response.Content.ReadAsStringAsync();
                 System.Diagnostics.Trace.WriteLine($"ACARS API {path} returned {(int)response.StatusCode}: {responseBody}");
+                var serverMessage = SafeServerMessage(responseBody);
                 throw new InvalidOperationException(response.StatusCode switch {
                     System.Net.HttpStatusCode.Unauthorized => "Votre session a expiré. Connectez-vous à nouveau.",
-                    System.Net.HttpStatusCode.Forbidden => "Votre compte ne permet pas cette opération.",
-                    System.Net.HttpStatusCode.NotFound => "La réservation ou le vol demandé n’existe plus.",
-                    System.Net.HttpStatusCode.UnprocessableEntity => "Les informations du PIREP sont incomplètes ou non valides.",
+                    System.Net.HttpStatusCode.Forbidden => serverMessage ?? "Votre compte ne permet pas cette opération.",
+                    System.Net.HttpStatusCode.NotFound => serverMessage ?? "La réservation ou le vol demandé n’existe plus.",
+                    System.Net.HttpStatusCode.UnprocessableEntity => serverMessage ?? "Les informations du PIREP sont incomplètes ou non valides.",
+                    System.Net.HttpStatusCode.ServiceUnavailable => serverMessage ?? "Le service demandé est temporairement indisponible.",
                     _ => $"Prométhée a refusé la demande (HTTP {(int)response.StatusCode})."
                 });
             }
@@ -79,6 +81,21 @@ public sealed class PhpVmsClient
         } catch (TaskCanceledException ex) {
             System.Diagnostics.Trace.WriteLine($"ACARS API timeout: {ex}");
             throw new InvalidOperationException("Impossible de se connecter au serveur Prométhée.");
+        }
+    }
+
+    private static string? SafeServerMessage(string responseBody)
+    {
+        try {
+            using var document = JsonDocument.Parse(responseBody);
+            var root = document.RootElement;
+            string? message = root.TryGetProperty("message", out var direct) ? direct.GetString() : null;
+            if (message is null && root.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object
+                && error.TryGetProperty("message", out var nested)) message = nested.GetString();
+            message = message?.Trim();
+            return string.IsNullOrWhiteSpace(message) || message.Length > 240 ? null : message;
+        } catch (JsonException) {
+            return null;
         }
     }
 
