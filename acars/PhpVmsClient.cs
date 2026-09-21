@@ -61,12 +61,15 @@ public sealed class PhpVmsClient
             if (body is not null) request.Content = JsonContent.Create(body);
             using var response = await http.SendAsync(request);
             if (!response.IsSuccessStatusCode) {
-                System.Diagnostics.Trace.WriteLine($"ACARS API {path} returned {(int)response.StatusCode}");
-                throw new InvalidOperationException(response.StatusCode == System.Net.HttpStatusCode.Unauthorized
-                    ? "Votre session a expiré. Connectez-vous à nouveau."
-                    : response.StatusCode == System.Net.HttpStatusCode.UnprocessableEntity
-                        ? "Les informations du PIREP sont incomplètes ou non valides."
-                        : "Impossible de récupérer les données Prométhée.");
+                var responseBody = await response.Content.ReadAsStringAsync();
+                System.Diagnostics.Trace.WriteLine($"ACARS API {path} returned {(int)response.StatusCode}: {responseBody}");
+                throw new InvalidOperationException(response.StatusCode switch {
+                    System.Net.HttpStatusCode.Unauthorized => "Votre session a expiré. Connectez-vous à nouveau.",
+                    System.Net.HttpStatusCode.Forbidden => "Votre compte ne permet pas cette opération.",
+                    System.Net.HttpStatusCode.NotFound => "La réservation ou le vol demandé n’existe plus.",
+                    System.Net.HttpStatusCode.UnprocessableEntity => "Les informations du PIREP sont incomplètes ou non valides.",
+                    _ => $"Prométhée a refusé la demande (HTTP {(int)response.StatusCode})."
+                });
             }
             var json = await response.Content.ReadFromJsonAsync<JsonElement>();
             return json.TryGetProperty("data", out var data) ? data : json;
