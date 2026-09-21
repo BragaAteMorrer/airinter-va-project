@@ -5,6 +5,7 @@ use Modules\Promethee\Http\PortalController;
 use Modules\Promethee\Http\TelemetryController;
 use Modules\Promethee\Http\AcarsOperationsController;
 use Modules\Promethee\Http\AcarsConfigurationController;
+use Modules\Promethee\Http\OperationsV1Controller;
 
 // Browsers request this conventional path even though the branded icon lives
 // with the static Promethee assets.
@@ -147,6 +148,14 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::put('/downloads/{file}', [PortalController::class,'updateDownload'])->name('downloads.update');
         Route::delete('/downloads/{file}', [PortalController::class,'deleteDownload'])->name('downloads.delete');
 });
+Route::middleware(['api','api.auth'])->prefix('api/v1')->group(function () {
+    Route::get('/me', [OperationsV1Controller::class, 'me']);
+    Route::get('/operations/{bid}', [OperationsV1Controller::class, 'show']);
+    Route::get('/operations/{bid}/aircraft-eligibility', [OperationsV1Controller::class, 'aircraft']);
+    Route::get('/operations/{bid}/briefing', [OperationsV1Controller::class, 'briefing']);
+    Route::get('/operations/{bid}/readiness', [OperationsV1Controller::class, 'readiness']);
+});
+
 Route::middleware(['api','api.auth'])->prefix('api/promethee')->group(function () {
     Route::post('/pireps/{id}/telemetry', [TelemetryController::class,'store']);
     Route::get('/acars/operations', [AcarsOperationsController::class, 'index']);
