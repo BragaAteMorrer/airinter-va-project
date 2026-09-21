@@ -79,6 +79,8 @@ public sealed class PhpVmsClient
                     System.Net.HttpStatusCode.Unauthorized => "Votre session a expiré. Connectez-vous à nouveau.",
                     System.Net.HttpStatusCode.Forbidden => serverMessage ?? "Votre compte ne permet pas cette opération.",
                     System.Net.HttpStatusCode.NotFound => serverMessage ?? "La réservation ou le vol demandé n’existe plus.",
+                    System.Net.HttpStatusCode.Conflict => serverMessage ?? "Les données retournées ne correspondent pas à l’opération sélectionnée.",
+                    System.Net.HttpStatusCode.BadGateway => serverMessage ?? "Le service externe demandé ne répond pas correctement.",
                     System.Net.HttpStatusCode.UnprocessableEntity => serverMessage ?? "Les informations du PIREP sont incomplètes ou non valides.",
                     System.Net.HttpStatusCode.ServiceUnavailable => serverMessage ?? "Le service demandé est temporairement indisponible.",
                     _ => $"Prométhée a refusé la demande (HTTP {(int)response.StatusCode})."
