@@ -1,189 +1,339 @@
-const $ = s => document.querySelector(s);
+const $ = selector => document.querySelector(selector);
+const $$ = selector => [...document.querySelectorAll(selector)];
+const unwrap = value => value?.data ?? value;
+const setText = (node, value) => { if (node) node.textContent = value ?? ''; };
+const showMessage = (selector, value, error = false) => {
+  const node = $(selector);
+  if (!node) return;
+  node.hidden = !value;
+  node.classList.toggle('error', error);
+  setText(node, value || '');
+};
 const call = (path, body) => new Promise((resolve, reject) => {
   const id = crypto.randomUUID();
-  const onMessage = e => { if (e.data.id !== id) return; chrome.webview.removeEventListener('message', onMessage); e.data.ok ? resolve(e.data.data) : reject(new Error(e.data.data)); };
-  chrome.webview.addEventListener('message', onMessage); chrome.webview.postMessage({id, path, body});
+  const onMessage = event => {
+    if (event.data.id !== id) return;
+    chrome.webview.removeEventListener('message', onMessage);
+    event.data.ok ? resolve(event.data.data) : reject(new Error(event.data.data));
+  };
+  chrome.webview.addEventListener('message', onMessage);
+  chrome.webview.postMessage({ id, path, body });
 });
-const text = (node, value) => { node.textContent = value; };
-const message = (selector, value, error = false) => { const el = $(selector); el.hidden = !value; el.classList.toggle('error', error); text(el, value || ''); };
-const dataOf = value => value?.data ?? value;
-let selectedOperation, pirepId;
+
+let selectedOperation = null;
+let selectedAircraft = null;
+let pirepId = null;
+let flightPlan = null;
+let connected = false;
+
+const settingsForm = $('#settingsForm');
 const defaultSettings = { autoDetection: 'true', forcedSimulator: '', timeFormat: 'local', notifications: 'true' };
-let savedSettings = {}; try { savedSettings = JSON.parse(localStorage.prometheeAcarsSettings || '{}'); } catch {}
+let savedSettings = {};
+try { savedSettings = JSON.parse(localStorage.prometheeAcarsSettings || '{}'); } catch {}
 let localSettings = { ...defaultSettings, ...savedSettings };
 
 const era = $('#era');
-document.body.dataset.era = localStorage.prometheeEra || 'modern'; era.value = document.body.dataset.era;
-era.onchange = () => { document.body.dataset.era = era.value; localStorage.prometheeEra = era.value; };
-const settingsForm = $('#settingsForm');
-Object.entries(localSettings).forEach(([key, value]) => { if (settingsForm.elements[key]) settingsForm.elements[key].value = value; });
-settingsForm.onsubmit = e => {
-  e.preventDefault(); localSettings = { ...defaultSettings, ...Object.fromEntries(new FormData(settingsForm)) };
-  localStorage.prometheeAcarsSettings = JSON.stringify(localSettings);
-  message('#settingsMessage', localSettings.forcedSimulator && localSettings.forcedSimulator !== 'msfs'
-    ? 'Réglage conservé pour diagnostic : ce connecteur n’est pas encore implémenté.' : 'Réglages locaux enregistrés.');
+document.body.dataset.era = localStorage.prometheeEra || 'modern';
+era.value = document.body.dataset.era;
+era.onchange = () => {
+  document.body.dataset.era = era.value;
+  localStorage.prometheeEra = era.value;
 };
-document.querySelectorAll('.tab').forEach(button => button.onclick = () => {
-  document.querySelectorAll('.tab,.panel').forEach(el => el.classList.remove('active'));
-  button.classList.add('active'); $('#' + button.dataset.tab).classList.add('active');
+Object.entries(localSettings).forEach(([key, value]) => {
+  if (settingsForm.elements[key]) settingsForm.elements[key].value = value;
+});
+settingsForm.onsubmit = event => {
+  event.preventDefault();
+  localSettings = { ...defaultSettings, ...Object.fromEntries(new FormData(settingsForm)) };
+  localStorage.prometheeAcarsSettings = JSON.stringify(localSettings);
+  showMessage('#settingsMessage', 'Réglages locaux enregistrés.');
+};
+
+$$('.tab').forEach(button => {
+  button.onclick = () => {
+    $$('.tab,.panel').forEach(node => node.classList.remove('active'));
+    button.classList.add('active');
+    $('#' + button.dataset.tab).classList.add('active');
+  };
 });
 
 function pilotIdentity(value) {
-  const user = dataOf(value)?.user ?? dataOf(value) ?? {};
+  const user = unwrap(value)?.user ?? unwrap(value) ?? {};
   const first = user.first_name || user.firstname || user.firstName || '';
   const last = user.last_name || user.lastname || user.lastName || '';
   const name = [first, last].filter(Boolean).join(' ') || user.name || user.name_private || '';
   const callsign = user.ident || user.pilot_id || user.pilotId || '';
-  text($('#serverState'), name && callsign ? `${name} · ${callsign}` : name || callsign || 'Pilote connecté');
+  setText($('#serverState'), name && callsign ? `${name} · ${callsign}` : name || callsign || 'Pilote connecté');
 }
+
 async function login(form, advanced = false) {
   const body = Object.fromEntries(new FormData(form));
-  try { pilotIdentity(await call(advanced ? '/api/config' : '/api/login', body)); message('#loginMessage', 'Connexion réussie.'); }
-  catch (err) { message('#loginMessage', err.message || 'Impossible de se connecter au serveur Prométhée.', true); }
+  try {
+    const response = await call(advanced ? '/api/config' : '/api/login', body);
+    pilotIdentity(response);
+    connected = true;
+    showMessage('#loginMessage', 'Connexion réussie. Chargement de vos opérations…');
+    await refreshOperations();
+    document.querySelector('[data-tab="flight"]').click();
+  } catch (error) {
+    showMessage('#loginMessage', error.message || 'Impossible de se connecter à Prométhée.', true);
+  }
 }
-$('#loginForm').onsubmit = e => { e.preventDefault(); login(e.currentTarget); };
-$('#configForm').onsubmit = e => { e.preventDefault(); login(e.currentTarget, true); };
+$('#loginForm').onsubmit = event => { event.preventDefault(); login(event.currentTarget); };
+$('#configForm').onsubmit = event => { event.preventDefault(); login(event.currentTarget, true); };
 
-$('#simbriefBtn').onclick = async () => {
+function simulatorCode() {
+  return localSettings.forcedSimulator === 'xplane' ? 'xplane' : 'msfs2024';
+}
+
+function normalizeFlight(raw) {
+  const airline = raw.airline || {};
+  return {
+    id: raw.id,
+    ident: raw.ident || [airline.icao || raw.airline_icao || '', raw.flight_number || ''].join(''),
+    airline_id: raw.airline_id || airline.id,
+    flight_number: raw.flight_number,
+    departure: raw.departure || raw.dpt_airport_id || raw.dpt_airport?.icao,
+    arrival: raw.arrival || raw.arr_airport_id || raw.arr_airport?.icao,
+    alternate: raw.alternate || raw.alt_airport_id,
+    route: raw.route,
+    level: raw.level
+  };
+}
+
+function operationCard(operation) {
+  const flight = normalizeFlight(operation.flight || operation);
+  const aircraft = operation.aircraft || {};
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'operation';
+  const title = document.createElement('strong');
+  const route = document.createElement('span');
+  const detail = document.createElement('small');
+  setText(title, flight.ident || 'Vol Air Inter');
+  setText(route, `${flight.departure || '?'} → ${flight.arrival || '?'}`);
+  setText(detail, aircraft.registration || aircraft.subfleet || 'Appareil à sélectionner');
+  button.append(title, route, detail);
+  button.onclick = () => selectOperation({ ...operation, flight });
+  return button;
+}
+
+function renderOperations(value) {
+  const payload = unwrap(value);
+  const operations = Array.isArray(payload) ? payload : (payload?.operations || payload?.data || []);
+  const list = $('#flightList');
+  list.replaceChildren();
+  if (!operations.length) {
+    const empty = document.createElement('p');
+    empty.className = 'empty';
+    setText(empty, 'Aucune opération trouvée.');
+    list.append(empty);
+    return;
+  }
+  operations.forEach(operation => list.append(operationCard(operation)));
+}
+
+async function refreshOperations() {
+  if (!connected) {
+    renderOperations([]);
+    showMessage('#flightMessage', 'Connectez-vous d’abord à votre compte pilote.', true);
+    return;
+  }
+  try {
+    showMessage('#flightMessage', 'Chargement de vos réservations…');
+    renderOperations(await call('/api/operations?simulator=' + encodeURIComponent(simulatorCode())));
+    showMessage('#flightMessage', '');
+  } catch (error) {
+    showMessage('#flightMessage', error.message, true);
+  }
+}
+
+async function searchFlights() {
+  if (!connected) return showMessage('#flightMessage', 'Connectez-vous d’abord.', true);
+  const search = $('#flightSearch').value.trim();
+  try {
+    showMessage('#flightMessage', 'Recherche dans le programme…');
+    renderOperations(await call('/api/flights' + (search ? '?search=' + encodeURIComponent(search) : '')));
+    showMessage('#flightMessage', '');
+  } catch (error) {
+    showMessage('#flightMessage', error.message, true);
+  }
+}
+$('#bidsBtn').onclick = refreshOperations;
+$('#searchBtn').onclick = searchFlights;
+$('#flightSearch').addEventListener('keydown', event => {
+  if (event.key === 'Enter') { event.preventDefault(); searchFlights(); }
+});
+
+function addAircraftOption(select, aircraft) {
+  const option = document.createElement('option');
+  option.value = aircraft.id || '';
+  option.textContent = aircraft.registration || aircraft.name || aircraft.icao || 'Appareil sans immatriculation';
+  option.dataset.aircraft = JSON.stringify(aircraft);
+  select.append(option);
+}
+
+async function selectOperation(operation) {
+  selectedOperation = operation;
+  selectedAircraft = operation.aircraft?.id ? operation.aircraft : null;
+  flightPlan = null;
+  const flight = normalizeFlight(operation.flight || operation);
   const form = $('#prefileForm');
-  const flightId = form.flight_id.value;
-  const aircraftId = form.aircraft_id.value;
-  if (!flightId || !aircraftId) {
-    show($('#simbriefState'), 'Sélectionnez d’abord un vol et un appareil autorisé.');
+  const assign = (name, value) => { if (form.elements[name]) form.elements[name].value = value ?? ''; };
+  assign('flight_id', flight.id);
+  assign('airline_id', flight.airline_id);
+  assign('flight_number', flight.flight_number);
+  assign('dpt_airport_id', flight.departure);
+  assign('arr_airport_id', flight.arrival);
+  setText($('#selectedFlight'), `${flight.ident || 'Vol réservé'} — ${flight.departure || '?'} → ${flight.arrival || '?'}`);
+  const simbrief = operation.simbrief || {};
+  setText($('#operationBrief'), simbrief.available
+    ? `OFP SimBrief disponible · type ${simbrief.type || 'à confirmer'}`
+    : `OFP à préparer · type ${simbrief.type || 'à confirmer'}`);
+  $('#selectedOperation').hidden = false;
+  form.hidden = false;
+  showMessage('#pirepMessage', '');
+
+  const select = $('#aircraftId');
+  select.replaceChildren();
+  const loading = document.createElement('option');
+  loading.value = '';
+  loading.textContent = 'Chargement des appareils autorisés…';
+  select.append(loading);
+
+  if (selectedAircraft) {
+    select.replaceChildren();
+    addAircraftOption(select, selectedAircraft);
+    select.value = selectedAircraft.id;
     return;
   }
 
   try {
-    show($('#simbriefState'), 'Préparation de la demande SimBrief…');
-    const session = await call(`/api/flights/${encodeURIComponent(flightId)}/simbrief/session`, {aircraft_id: aircraftId});
-    const popup = window.open('about:blank', 'PrometheeSimBrief', 'width=760,height=640');
-    if (!popup) throw new Error('Autorisez les fenêtres contextuelles pour ouvrir SimBrief.');
+    const path = operation.bid_id
+      ? `/api/operations/${encodeURIComponent(operation.bid_id)}/aircraft`
+      : `/api/flights/${encodeURIComponent(flight.id)}/aircraft`;
+    const payload = unwrap(await call(path));
+    const aircraft = Array.isArray(payload) ? payload : (payload?.aircraft || payload?.data || []);
+    select.replaceChildren();
+    const choose = document.createElement('option');
+    choose.value = '';
+    choose.textContent = aircraft.length ? 'Sélectionnez un appareil' : 'Aucun appareil disponible';
+    select.append(choose);
+    aircraft.forEach(item => addAircraftOption(select, item));
+  } catch (error) {
+    select.replaceChildren(loading);
+    loading.textContent = 'Appareils indisponibles';
+    showMessage('#pirepMessage', error.message, true);
+  }
+}
+$('#aircraftId').onchange = event => {
+  const option = event.target.selectedOptions[0];
+  try { selectedAircraft = option?.dataset.aircraft ? JSON.parse(option.dataset.aircraft) : null; } catch { selectedAircraft = null; }
+};
 
+$('#simbriefBtn').onclick = async () => {
+  const form = $('#prefileForm');
+  const flightId = form.elements.flight_id.value;
+  const aircraftId = form.elements.aircraft_id.value;
+  if (!flightId || !aircraftId) return showMessage('#simbriefState', 'Sélectionnez un vol et un appareil.', true);
+  try {
+    showMessage('#simbriefState', 'Préparation de la demande SimBrief…');
+    const session = unwrap(await call(`/api/flights/${encodeURIComponent(flightId)}/simbrief/session`, { aircraft_id: aircraftId }));
+    const popup = window.open('about:blank', 'PrometheeSimBrief', 'width=900,height=720');
+    if (!popup) throw new Error('Autorisez les fenêtres contextuelles pour ouvrir SimBrief.');
     const dispatch = document.createElement('form');
     dispatch.method = 'GET';
     dispatch.action = session.worker_url;
     dispatch.target = 'PrometheeSimBrief';
-    Object.entries(session.parameters).forEach(([name, value]) => {
+    Object.entries(session.parameters || {}).forEach(([name, value]) => {
       if (value === null || value === undefined || value === '') return;
       const input = document.createElement('input');
-      input.type = 'hidden'; input.name = name; input.value = value;
+      input.type = 'hidden';
+      input.name = name;
+      input.value = value;
       dispatch.append(input);
     });
     document.body.append(dispatch);
     dispatch.submit();
     dispatch.remove();
-    show($('#simbriefState'), 'Connectez-vous à SimBrief, générez l’OFP puis fermez la fenêtre.');
+    showMessage('#simbriefState', 'Générez l’OFP puis fermez la fenêtre SimBrief.');
 
     const waitForClose = setInterval(async () => {
       if (!popup.closed) return;
       clearInterval(waitForClose);
-      show($('#simbriefState'), 'Import de l’OFP dans Prométhée…');
-      for (let attempt = 0; attempt < 5; attempt += 1) {
+      showMessage('#simbriefState', 'Import de l’OFP dans Prométhée…');
+      for (let attempt = 1; attempt <= 5; attempt += 1) {
         try {
-          const briefing = await call(`/api/flights/${encodeURIComponent(flightId)}/simbrief/import`, {
-            aircraft_id: aircraftId, ofp_id: session.ofp_id
-          });
-          flightPlan = {name: 'OFP SimBrief', prefile: {
+          const briefing = unwrap(await call(`/api/flights/${encodeURIComponent(flightId)}/simbrief/import`, {
+            aircraft_id: aircraftId,
+            ofp_id: session.ofp_id
+          }));
+          flightPlan = {
             simbrief_id: briefing.id,
             route: briefing.route,
             level: Number(briefing.initial_altitude) || undefined,
             block_fuel: briefing.block_fuel || undefined
-          }};
-          show($('#planBox'), briefing);
-          show($('#simbriefState'), 'OFP importé et prêt à être rattaché au PIREP.');
+          };
+          if (briefing.block_fuel) form.elements.block_fuel.value = Math.round(briefing.block_fuel);
+          $('#planBox').textContent = JSON.stringify(briefing, null, 2);
+          showMessage('#simbriefState', 'OFP importé et prêt pour le pré-PIREP.');
           return;
-        } catch (err) {
-          if (attempt === 4) {
-            show($('#simbriefState'), `OFP introuvable : ${err.message || err}`);
-            return;
-          }
+        } catch (error) {
+          if (attempt === 5) return showMessage('#simbriefState', error.message, true);
           await new Promise(resolve => setTimeout(resolve, 1500));
         }
       }
     }, 500);
-  } catch (err) {
-    show($('#simbriefState'), String(err.message || err));
+  } catch (error) {
+    showMessage('#simbriefState', error.message, true);
   }
 };
 
-$('#prefileForm').onsubmit = async e => {
-  e.preventDefault();
-  const raw = Object.fromEntries(new FormData(e.currentTarget));
-  const body = Object.fromEntries(Object.entries(raw).filter(([,v]) => v !== ''));
-  if (body.block_fuel) body.block_fuel = Number(body.block_fuel);
-  body.source_name = 'Promethee ACARS';
-  if (flightPlan) Object.assign(body, flightPlan.prefile);
-  try {
-    const res = await call('/api/prefile', body);
-    const id = res.id || res.pirep_id || res?.pirep?.id || res?.data?.id;
-    if (id) $('#pirepId').value = id;
-    show($('#pirepBox'), res);
-  } catch (err) { show($('#pirepBox'), String(err.message || err)); }
+$('#planFile').onchange = async event => {
+  const file = event.target.files[0];
+  if (!file) return;
+  const contents = await file.text();
+  flightPlan = { plan_name: file.name, plan_text: contents.slice(0, 200000) };
+  $('#planBox').textContent = `${file.name} chargé localement (${Math.round(file.size / 1024)} Ko).`;
+};
+$('#clearPlanBtn').onclick = () => {
+  flightPlan = null;
+  $('#planFile').value = '';
+  $('#planBox').textContent = 'Aucun plan chargé.';
+  showMessage('#simbriefState', 'Sélectionnez un vol et un appareil.');
 };
 
-$('#startBtn').onclick = async () => action('/api/start', {pirepId: $('#pirepId').value});
-$('#pauseBtn').onclick = async () => action('/api/pause', {});
-$('#resumeBtn').onclick = async () => action('/api/resume', {});
-$('#syncBtn').onclick = async () => action('/api/sync', {});
-$('#fileBtn').onclick = async () => action('/api/file', {});
-$('#reportBtn').onclick = async () => action('/api/report', {});
-async function action(path, body) {
-  try { show($('#recordBox'), await call(path, body)); }
-  catch (err) { show($('#recordBox'), String(err.message || err)); }
-}
-function renderOperations(value) {
-  const operations = dataOf(value)?.operations || [];
-  const list = $('#flightList'); list.replaceChildren();
-  if (!operations.length) { const empty = document.createElement('p'); empty.className = 'empty'; text(empty, 'Aucune réservation active pour ce pilote.'); list.append(empty); return; }
-  operations.forEach(op => list.append(operationCard(op)));
-}
-async function refreshOperations() {
-  try { renderOperations(await call('/api/operations?simulator=' + encodeURIComponent($('#simulator').value))); }
-  catch (err) { const list = $('#flightList'); list.replaceChildren(); const p = document.createElement('p'); p.className='empty'; text(p, err.message); list.append(p); }
-}
-$('#operationsBtn').onclick = refreshOperations;
-async function selectOperation(op) {
-  selectedOperation = op; const f = op.flight || {}, a = op.aircraft || {}, form = $('#prefileForm');
-  text($('#pirepMessage'), '');
-  field(form, 'flight_id', f.id); field(form, 'airline_id', f.airline_id); field(form, 'flight_number', f.flight_number); field(form, 'dpt_airport_id', f.departure); field(form, 'arr_airport_id', f.arrival);
-  text($('#selectedFlight'), `${f.ident || 'Vol réservé'} — ${f.departure || '?'} → ${f.arrival || '?'} · ${a.registration || a.subfleet || 'Avion à confirmer'}`);
-  const sb = op.simbrief || {};
-  text($('#operationBrief'), sb.available ? `SimBrief : ${sb.type || 'type non renseigné'} · OFP disponible` : `SimBrief : ${sb.type || 'type non renseigné'} · aucun OFP disponible`);
-  const picker=$('#aircraftPicker'), pickerLabel=$('#aircraftPickerLabel'); picker.replaceChildren();
-  const addOption = aircraft => { const option=document.createElement('option'); option.value=aircraft.id || ''; text(option, aircraft.registration || aircraft.name || aircraft.icao || 'Avion sans immatriculation'); picker.append(option); };
-  if (a.id) { addOption(a); pickerLabel.hidden=false; }
-  else if (f.id) {
-    pickerLabel.hidden=false; const placeholder=document.createElement('option'); placeholder.value=''; text(placeholder,'Chargement des appareils disponibles…'); picker.append(placeholder);
-    try {
-      const aircraftPath = op.bid_id
-        ? '/api/operations/' + encodeURIComponent(op.bid_id) + '/aircraft'
-        : '/api/flights/' + encodeURIComponent(f.id) + '/aircraft';
-      let response;
-      try { response = await call(aircraftPath); }
-      catch (primaryError) {
-        // Transitional fallback for a Prométhée server not yet exposing the
-        // reservation-scoped ACARS route. The phpVMS route enforces the same
-        // grade and availability restrictions.
-        if (!op.bid_id) throw primaryError;
-        response = await call('/api/flights/' + encodeURIComponent(f.id) + '/aircraft');
-      }
-      const payload=dataOf(response);
-      const aircraft=Array.isArray(payload) ? payload : (payload?.data || payload?.aircraft || []); picker.replaceChildren();
-      const choose=document.createElement('option'); choose.value=''; text(choose, aircraft.length ? 'Sélectionnez un avion' : 'Aucun avion disponible'); picker.append(choose); aircraft.forEach(addOption);
-      if (!aircraft.length) text($('#pirepMessage'),'Aucun avion disponible pour ce vol : contactez les opérations.');
-    } catch { text($('#pirepMessage'),'Impossible de récupérer les avions autorisés pour ce vol.'); }
-  } else { pickerLabel.hidden=true; }
-  form.hidden = false; document.querySelector('[data-tab="flight"]').click();
-}
-$('#prefileForm').onsubmit = async e => {
-  e.preventDefault(); const body = Object.fromEntries(new FormData(e.currentTarget));
-  if (!body.aircraft_id) { text($('#pirepMessage'),'Sélectionnez un avion avant de préparer le PIREP.'); return; }
-  const f = selectedOperation?.flight || {}; Object.assign(body, f.alternate && {alt_airport_id:f.alternate}, f.route && {route:f.route}, f.level && {level:Number(f.level)}, {source_name:'Promethee ACARS'});
-  try { const result = dataOf(await call('/api/prefile', body)); pirepId = result.id || result.pirep_id || result.pirep?.id; text($('#pirepMessage'), `PIREP prêt${pirepId ? ' : ' + pirepId : ''}. Vous pouvez démarrer l’enregistrement.`); }
-  catch (err) { text($('#pirepMessage'), err.message); }
+$('#prefileForm').onsubmit = async event => {
+  event.preventDefault();
+  const body = Object.fromEntries([...new FormData(event.currentTarget)].filter(([, value]) => value !== ''));
+  if (!body.aircraft_id) return showMessage('#pirepMessage', 'Sélectionnez un appareil.', true);
+  if (body.block_fuel) body.block_fuel = Number(body.block_fuel);
+  const flight = normalizeFlight(selectedOperation?.flight || selectedOperation || {});
+  Object.assign(body,
+    flight.alternate ? { alt_airport_id: flight.alternate } : {},
+    flight.route ? { route: flight.route } : {},
+    flight.level ? { level: Number(flight.level) } : {},
+    flightPlan || {},
+    { source_name: 'Hermes ACARS' }
+  );
+  try {
+    const result = unwrap(await call('/api/prefile', body));
+    pirepId = result.id || result.pirep_id || result.pirep?.id;
+    if (!pirepId) throw new Error('Prométhée n’a pas retourné l’identifiant du PIREP.');
+    showMessage('#pirepMessage', `PIREP ${pirepId} prêt. Vous pouvez démarrer l’enregistrement.`);
+    document.querySelector('[data-tab="record"]').click();
+  } catch (error) {
+    showMessage('#pirepMessage', error.message, true);
+  }
 };
+
 async function action(path, success) {
-  try { await call(path, path === '/api/start' ? {pirepId} : {}); message('#recordMessage', success); } catch (err) { message('#recordMessage', err.message, true); }
+  try {
+    await call(path, path === '/api/start' ? { pirepId } : {});
+    showMessage('#recordMessage', success);
+  } catch (error) {
+    showMessage('#recordMessage', error.message, true);
+  }
 }
 $('#startBtn').onclick = () => action('/api/start', 'Enregistrement démarré.');
 $('#pauseBtn').onclick = () => action('/api/pause', 'Enregistrement en pause.');
@@ -192,41 +342,94 @@ $('#syncBtn').onclick = () => action('/api/sync', 'Données synchronisées.');
 $('#fileBtn').onclick = () => action('/api/file', 'PIREP déposé.');
 
 function drawMap(track) {
-  const canvas = $('#flightMap'), ctx = canvas.getContext('2d'), w = canvas.width, h = canvas.height;
-  ctx.fillStyle = '#0d2740'; ctx.fillRect(0, 0, w, h);
-  if (!track?.length) { ctx.fillStyle='#a9bfd2'; ctx.font='20px sans-serif'; ctx.fillText('En attente de la télémétrie…', 28, 48); return; }
-  const lat=track.map(p=>p.lat), lon=track.map(p=>p.lon), pad=.03, minLat=Math.min(...lat)-pad, maxLat=Math.max(...lat)+pad, minLon=Math.min(...lon)-pad, maxLon=Math.max(...lon)+pad;
-  const point = p => [30+(p.lon-minLon)/(maxLon-minLon||1)*(w-60),h-30-(p.lat-minLat)/(maxLat-minLat||1)*(h-60)];
-  ctx.strokeStyle='#54a4ed'; ctx.lineWidth=3; ctx.beginPath(); track.forEach((p,i)=>{const [x,y]=point(p);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.stroke();
+  const canvas = $('#flightMap');
+  const context = canvas.getContext('2d');
+  const width = canvas.width;
+  const height = canvas.height;
+  context.fillStyle = '#0d2740';
+  context.fillRect(0, 0, width, height);
+  if (!track?.length) {
+    context.fillStyle = '#a9bfd2';
+    context.font = '20px sans-serif';
+    context.fillText('En attente de la télémétrie…', 28, 48);
+    return;
+  }
+  const latitudes = track.map(point => point.lat ?? point.Lat);
+  const longitudes = track.map(point => point.lon ?? point.Lon);
+  const minLat = Math.min(...latitudes) - 0.03;
+  const maxLat = Math.max(...latitudes) + 0.03;
+  const minLon = Math.min(...longitudes) - 0.03;
+  const maxLon = Math.max(...longitudes) + 0.03;
+  const position = point => {
+    const lat = point.lat ?? point.Lat;
+    const lon = point.lon ?? point.Lon;
+    return [30 + (lon - minLon) / (maxLon - minLon || 1) * (width - 60), height - 30 - (lat - minLat) / (maxLat - minLat || 1) * (height - 60)];
+  };
+  context.strokeStyle = '#54a4ed';
+  context.lineWidth = 3;
+  context.beginPath();
+  track.forEach((point, index) => {
+    const [x, y] = position(point);
+    index ? context.lineTo(x, y) : context.moveTo(x, y);
+  });
+  context.stroke();
 }
-function timeline(flight) {
-  const el=$('#timeline'); el.replaceChildren(); const phases=flight?.timeline || [];
-  if (!phases.length) { const p=document.createElement('p');p.className='empty';text(p,'En attente d’un vol.');el.append(p);return; }
-  phases.forEach(item=>{const p=document.createElement('span');text(p,`${new Date(item.occurredAt).toLocaleTimeString('fr-FR',{timeZone:localSettings.timeFormat === 'utc' ? 'UTC' : undefined})} — ${item.name}`);el.append(p);});
+
+function renderTimeline(selector, entries) {
+  const node = $(selector);
+  node.replaceChildren();
+  if (!entries?.length) {
+    const empty = document.createElement('p');
+    empty.className = 'empty';
+    empty.textContent = 'En attente d’un vol.';
+    node.append(empty);
+    return;
+  }
+  entries.forEach(entry => {
+    const item = document.createElement('span');
+    const occurredAt = entry.occurredAt || entry.OccurredAt;
+    const value = entry.value ?? entry.Value;
+    const time = new Date(occurredAt).toLocaleTimeString('fr-FR', { timeZone: localSettings.timeFormat === 'utc' ? 'UTC' : undefined });
+    item.textContent = `${time} — ${entry.name || entry.Name}${value == null ? '' : ' · ' + Number(value).toFixed(0)}`;
+    node.append(item);
+  });
 }
-function journal(flight) {
-  const el=$('#journalEntries'); el.replaceChildren(); const entries=flight?.journal || flight?.timeline || [];
-  if (!entries.length) { const p=document.createElement('p');p.className='empty';text(p,'En attente d’un vol.');el.append(p);return; }
-  entries.forEach(item=>{const p=document.createElement('span');const value=item.value == null ? '' : ` · ${Number(item.value).toFixed(0)}`;text(p,`${new Date(item.occurredAt).toLocaleTimeString('fr-FR',{timeZone:localSettings.timeFormat === 'utc' ? 'UTC' : undefined})} — ${item.name}${value}`);el.append(p);});
-}
+
 function updateRemotePolicy(configuration) {
-  const el=$('#remotePolicy'); if (!configuration) { el.hidden=true; return; }
-  const interval=configuration.positionIntervalSeconds ?? configuration.PositionIntervalSeconds;
-  const minimum=configuration.minimumVersion ?? configuration.MinimumVersion;
-  text(el, 'Politique Prométhée : position live toutes les ' + interval + ' s' + (minimum ? ' · version minimale ' + minimum : '') + '.');
-  el.hidden=false;
+  const node = $('#remotePolicy');
+  if (!configuration) { node.hidden = true; return; }
+  const interval = configuration.positionIntervalSeconds ?? configuration.PositionIntervalSeconds;
+  const minimum = configuration.minimumVersion ?? configuration.MinimumVersion;
+  node.textContent = `Politique Prométhée : position toutes les ${interval} s${minimum ? ' · version minimale ' + minimum : ''}.`;
+  node.hidden = false;
 }
-setInterval(async () => { try {
-  const s = await call('/api/status');
-  if (!s.connected) text($('#serverState'), 'Identité pilote à venir');
-  const detected=(s.detectedSimulators || []).map(x => x.displayName || x.DisplayName).filter(Boolean);
-  text($('#simState'), detected.length ? `${detected.join(' · ')} — ${s.sim || 'connexion en attente'}` : (s.sim || 'Simulateur non détecté')); text($('#pending'), String(s.pending ?? 0)); text($('#phase'), s.flight?.phase || '—');
-  text($('#distance'), s.flight ? `${s.flight.distance.toFixed(1)} NM` : '—'); text($('#airborne'), s.flight ? `${Math.floor(s.flight.airborneSeconds/60)} min` : '—'); text($('#warning'), s.warning || '');
-  const latest=s.latest || {}; const number=(key, fallback) => latest[key] ?? latest[key[0].toUpperCase()+key.slice(1)] ?? fallback;
-  text($('#altitude'), number('altitude', null) == null ? '—' : `${Math.round(number('altitude'))} ft`);
-  text($('#groundSpeed'), number('gs', null) == null ? '—' : `${Math.round(number('gs'))} kt`);
-  text($('#fuel'), number('fuel', null) == null ? '—' : `${Math.round(number('fuel'))} lb`);
-  updateRemotePolicy(s.remoteConfiguration || s.RemoteConfiguration);
-  if (s.flight?.pirepId) pirepId=s.flight.pirepId; drawMap(s.track); timeline(s.flight); journal(s.flight);
-} catch {} }, 1000);
-call('/api/about').then(info => text($('#build'), 'Version ' + info.version)).catch(() => {});
+
+async function refreshStatus() {
+  try {
+    const status = await call('/api/status');
+    const flight = status.flight;
+    const latest = status.latest || {};
+    const value = (camel, pascal) => latest[camel] ?? latest[pascal];
+    if (status.connected) connected = true;
+    const simulators = (status.detectedSimulators || []).map(item => item.displayName || item.DisplayName).filter(Boolean);
+    setText($('#simState'), simulators.length ? `${simulators.join(' · ')} — ${status.sim || 'connexion en attente'}` : status.sim || 'Simulateur non détecté');
+    setText($('#pending'), String(status.pending ?? 0));
+    setText($('#phase'), flight?.phase || flight?.Phase || '—');
+    setText($('#distance'), flight ? `${Number(flight.distance ?? flight.Distance ?? 0).toFixed(1)} NM` : '—');
+    setText($('#airborne'), flight ? `${Math.floor(Number(flight.airborneSeconds ?? flight.AirborneSeconds ?? 0) / 60)} min` : '—');
+    setText($('#warning'), status.warning || '');
+    setText($('#altitude'), value('altitude', 'Altitude') == null ? '—' : `${Math.round(value('altitude', 'Altitude'))} ft`);
+    setText($('#groundSpeed'), value('gs', 'Gs') == null ? '—' : `${Math.round(value('gs', 'Gs'))} kt`);
+    setText($('#fuel'), value('fuel', 'Fuel') == null ? '—' : `${Math.round(value('fuel', 'Fuel'))} lb`);
+    updateRemotePolicy(status.remoteConfiguration || status.RemoteConfiguration);
+    if (flight?.pirepId || flight?.PirepId) pirepId = flight.pirepId || flight.PirepId;
+    drawMap(status.track || []);
+    renderTimeline('#timeline', flight?.timeline || flight?.Timeline || []);
+    renderTimeline('#journalEntries', flight?.journal || flight?.Journal || flight?.timeline || flight?.Timeline || []);
+  } catch {}
+}
+
+drawMap([]);
+refreshStatus();
+setInterval(refreshStatus, 1000);
+call('/api/about').then(info => setText($('#build'), 'Version ' + info.version)).catch(() => {});
