@@ -15,7 +15,7 @@ class CheckPrometheeTranslations extends Command
     {
         $root = resource_path('lang');
         $locales = array_keys(config('languages'));
-        $catalogues = ['promethee.php', 'promethee_board.php', 'promethee_javascript.php', 'promethee_accessibility.php'];
+        $catalogues = ['promethee.php', 'promethee_board.php', 'promethee_javascript.php', 'promethee_accessibility.php', 'promethee_briefing.php'];
         $errors = [];
 
         foreach ($catalogues as $catalogue) {
