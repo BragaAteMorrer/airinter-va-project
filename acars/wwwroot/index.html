@@ -43,11 +43,15 @@
         <button id="searchBtn">Rechercher</button>
         <button id="bidsBtn">Mes réservations</button>
       </div>
+      <p id="flightMessage" class="message" hidden role="status"></p>
       <div id="flightList" class="list"></div>
+      <article id="selectedOperation" class="prefile" hidden>
+        <div><p id="selectedFlight">Aucun vol sélectionné</p><p id="operationBrief" class="hint"></p></div>
+      </article>
       <div class="tools"><label>Plan de vol MSFS / SimBrief<input id="planFile" type="file" accept=".pln,.xml"></label><button id="clearPlanBtn" type="button">Effacer le plan</button></div>
       <div class="tools"><button id="simbriefBtn" type="button">Créer l’OFP dans SimBrief</button><span id="simbriefState">Sélectionnez un vol et un appareil.</span></div>
       <pre id="planBox">Aucun plan chargé.</pre>
-      <form id="prefileForm" class="grid">
+      <form id="prefileForm" class="grid" hidden>
         <label>ID vol phpVMS<input name="flight_id"></label>
         <label>Compagnie<input name="airline_id" required></label>
         <label>Numéro de vol<input name="flight_number" required></label>
@@ -55,8 +59,9 @@
         <label>Départ<input name="dpt_airport_id" required></label>
         <label>Arrivée<input name="arr_airport_id" required></label>
         <label>Block fuel lbs<input name="block_fuel" type="number" min="0" step="1"></label>
-        <button>Pré-déposer le PIREP</button>
+        <button class="primary">Pré-déposer le PIREP</button>
       </form>
+      <p id="pirepMessage" class="message" hidden role="status"></p>
     </section>
     <section id="record" class="panel">
       <h2>Enregistrement ACARS</h2><div class="cards"><div><span>Phase</span><strong id="phase">—</strong></div><div><span>Altitude</span><strong id="altitude">—</strong></div><div><span>GS</span><strong id="groundSpeed">—</strong></div><div><span>Carburant</span><strong id="fuel">—</strong></div><div><span>Distance</span><strong id="distance">—</strong></div><div><span>Temps de vol</span><strong id="airborne">—</strong></div><div><span>Synchronisation</span><strong id="pending">0</strong></div></div>
