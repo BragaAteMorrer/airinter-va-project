@@ -29,5 +29,5 @@ if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $exe) -or -not (Test-Pa
   throw 'Hermes ACARS build failed - previous version was not started.'
 }
 
-Write-Host "Hermes ACARS $stamp: $exe"
+Write-Host "Hermes ACARS ${stamp}: $exe"
 & $exe
