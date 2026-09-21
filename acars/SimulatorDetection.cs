@@ -22,10 +22,10 @@ public static class SimulatorDetector
         var result = new List<DetectedSimulator>();
         Add(result, names, ["flightsimulator2024", "microsoft.flightsimulator2024"], SimulatorKind.MicrosoftFlightSimulator, "Microsoft Flight Simulator 2024", true);
         Add(result, names, ["flightsimulator", "microsoft.flightsimulator"], SimulatorKind.MicrosoftFlightSimulator, "Microsoft Flight Simulator 2020", true);
-        Add(result, names, ["prepar3d"], SimulatorKind.Prepar3D, "Prepar3D", false);
-        Add(result, names, ["fsx"], SimulatorKind.FlightSimulatorX, "Microsoft Flight Simulator X / Steam Edition", false);
-        Add(result, names, ["fs9"], SimulatorKind.FlightSimulator2004, "Microsoft Flight Simulator 2004", false);
-        Add(result, names, ["x-plane", "x-plane-64", "xplane"], SimulatorKind.XPlane, "X-Plane 11/12", false);
+        Add(result, names, ["prepar3d"], SimulatorKind.Prepar3D, "Prepar3D", true);
+        Add(result, names, ["fsx"], SimulatorKind.FlightSimulatorX, "Microsoft Flight Simulator X / Steam Edition", true);
+        Add(result, names, ["fs9"], SimulatorKind.FlightSimulator2004, "Microsoft Flight Simulator 2004", true);
+        Add(result, names, ["x-plane", "x-plane-64", "xplane"], SimulatorKind.XPlane, "X-Plane 11/12", true);
         return result;
     }
 
