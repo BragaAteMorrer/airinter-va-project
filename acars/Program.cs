@@ -67,6 +67,10 @@ app.MapGet("/api/flights", async (string? search, PhpVmsClient client) =>
     Results.Json(await client.Send("flights" + (string.IsNullOrWhiteSpace(search) ? "" : "?search=" + Uri.EscapeDataString(search)))));
 app.MapGet("/api/flights/{id}/aircraft", async (string id, PhpVmsClient client) =>
     Results.Json(await client.Send("flights/" + Uri.EscapeDataString(id) + "/aircraft")));
+app.MapPost("/api/flights/{id}/simbrief/session", async (string id, JsonElement body, PhpVmsClient client) =>
+    Results.Json(await client.Send("acars/flights/" + Uri.EscapeDataString(id) + "/simbrief/session", body)));
+app.MapPost("/api/flights/{id}/simbrief/import", async (string id, JsonElement body, PhpVmsClient client) =>
+    Results.Json(await client.Send("acars/flights/" + Uri.EscapeDataString(id) + "/simbrief/import", body)));
 
 app.MapPost("/api/prefile", async (JsonElement body, PhpVmsClient client) =>
     Results.Json(await client.Send("pireps/prefile", body)));

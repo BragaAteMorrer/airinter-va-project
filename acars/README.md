@@ -27,6 +27,19 @@ docker compose -f compose.promethee.yml up --build -d
 4. Laisser l'ACARS déclencher OUT/OFF/ON/IN. IN est validé après 15 secondes au parking, frein de parc serré et vitesse sol inférieure à 2 kt.
 5. Synchroniser, puis déposer le PIREP après IN.
 
+### Créer un OFP SimBrief depuis Hermès
+
+Après avoir choisi le vol et un appareil autorisé, cliquer sur **Créer l’OFP
+dans SimBrief**. Hermès transmet à SimBrief le vol, la route et l'appareil reçus
+de Prométhée, puis ouvre la fenêtre de connexion SimBrief du pilote. Une fois
+l'OFP généré, fermer cette fenêtre : Hermès importe automatiquement le briefing
+dans Prométhée et inclut son `simbrief_id` lors du pré-dépôt du PIREP.
+
+La clé API SimBrief de la compagnie reste sur Prométhée et n'est jamais envoyée
+au client. L'administrateur doit renseigner `simbrief.api_key`, affecter les
+sous-flottes aux vols et aux grades, et définir `simbrief_type` sur l'appareil ou
+sa sous-flotte. Les fenêtres contextuelles doivent être autorisées pour Hermès.
+
 Les positions et événements non envoyés sont conservés localement après une coupure. Après un redémarrage, le pilote doit explicitement reprendre le vol : l'application ne rattache jamais silencieusement des données à un ancien PIREP.
 
 ## Créer la distribution Windows (.exe)

@@ -37,11 +37,25 @@
       </details>
     </section>
     <section id="flight" class="panel">
-      <div class="section-heading"><div><h2>Mes opérations</h2><p class="hint">Choisissez une réservation pour préparer le PIREP.</p></div><div><label>Simulateur<select id="simulator"><option value="msfs2020">MSFS 2020</option><option value="msfs2024">MSFS 2024</option></select></label><button id="operationsBtn" class="primary">Actualiser</button></div></div>
-      <div id="flightList" class="operations"><p class="empty">Connectez-vous pour consulter vos réservations.</p></div>
-      <form id="prefileForm" class="prefile" hidden>
-        <input name="flight_id" type="hidden"><input name="airline_id" type="hidden"><input name="flight_number" type="hidden"><input name="dpt_airport_id" type="hidden"><input name="arr_airport_id" type="hidden">
-        <div><p id="selectedFlight"></p><small id="operationBrief" class="hint"></small></div><label id="aircraftPickerLabel" hidden>Appareil autorisé pour votre grade<select id="aircraftPicker" name="aircraft_id" required></select></label><button class="primary">Préparer ce PIREP</button><span id="pirepMessage" class="inline-message"></span>
+      <h2>Préparation du PIREP</h2>
+      <div class="tools">
+        <input id="flightSearch" placeholder="Rechercher un vol, ex. ITF252">
+        <button id="searchBtn">Rechercher</button>
+        <button id="bidsBtn">Mes réservations</button>
+      </div>
+      <div id="flightList" class="list"></div>
+      <div class="tools"><label>Plan de vol MSFS / SimBrief<input id="planFile" type="file" accept=".pln,.xml"></label><button id="clearPlanBtn" type="button">Effacer le plan</button></div>
+      <div class="tools"><button id="simbriefBtn" type="button">Créer l’OFP dans SimBrief</button><span id="simbriefState">Sélectionnez un vol et un appareil.</span></div>
+      <pre id="planBox">Aucun plan chargé.</pre>
+      <form id="prefileForm" class="grid">
+        <label>ID vol phpVMS<input name="flight_id"></label>
+        <label>Compagnie<input name="airline_id" required></label>
+        <label>Numéro de vol<input name="flight_number" required></label>
+        <label>Avion autorisé<select id="aircraftId" name="aircraft_id" required><option value="">Sélectionnez d'abord un vol</option></select></label>
+        <label>Départ<input name="dpt_airport_id" required></label>
+        <label>Arrivée<input name="arr_airport_id" required></label>
+        <label>Block fuel lbs<input name="block_fuel" type="number" min="0" step="1"></label>
+        <button>Pré-déposer le PIREP</button>
       </form>
     </section>
     <section id="record" class="panel">
