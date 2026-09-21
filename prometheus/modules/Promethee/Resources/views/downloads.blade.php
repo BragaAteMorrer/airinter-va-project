@@ -23,8 +23,12 @@
     Installez uniquement les versions publiées ici. Pour Hermès, fermez l’application avant de remplacer une version existante.
 </div>
 
-@foreach($sections as $key => [$title, $description])
-@php($entries = $groups->get($key, collect()))
+@foreach($sections as $key => $section)
+@php
+    $title = $section[0];
+    $description = $section[1];
+    $entries = $groups->get($key, collect());
+@endphp
 <section class="panel">
     <div class="panel-heading">
         <div><span class="eyebrow">{{ $title }}</span><h2>{{ $entries->count() }} ressource(s)</h2></div>
