@@ -1,6 +1,6 @@
 <?php
 
-return [
+return array_replace_recursive([
     'dashboard'      => 'Dashboard',
     'administration' => 'Yönetim',
     'flight'         => 'Uçuş|Uçuşlar',
@@ -64,4 +64,4 @@ return [
     'wanttocontinue'       => 'Devam etmek istiyor musunuz?',
     'continue'             => 'Devam et',
     'alwaystrustdomain'    => 'Bu alan adına her zaman güven',
-];
+], ['toggleColors' => 'Renkleri değiştir', 'dark' => 'Koyu', 'light' => 'Açık', 'auto' => 'Otomatik', 'map' => 'Harita', 'notes' => 'Notlar']);

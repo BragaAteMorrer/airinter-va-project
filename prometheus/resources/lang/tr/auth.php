@@ -22,4 +22,5 @@ return [
     'suspendedmessage'         => 'Hesabınız donduruldu. Lütfen bir yönetici ile iletişime geçin.',
     'transferhours'            => 'Transfer Uçuş Saati',
     'loginwith'                => ':provider ile Giriş',
+    'sendresetlink'            => 'Parola sıfırlama bağlantısını gönder',
 ];

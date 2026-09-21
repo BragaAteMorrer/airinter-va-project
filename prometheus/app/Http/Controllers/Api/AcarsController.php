@@ -21,6 +21,7 @@ use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class AcarsController extends Controller
@@ -45,6 +46,12 @@ class AcarsController extends Controller
         if ($pirep->cancelled) {
             throw new PirepCancelled($pirep);
         }
+    }
+
+    /** An authenticated ACARS session may only write to its own PIREPs. */
+    protected function checkOwner(Pirep $pirep): void
+    {
+        abort_unless((int) $pirep->user_id === (int) Auth::id(), 403);
     }
 
     /**
@@ -129,6 +136,7 @@ class AcarsController extends Controller
             throw new PirepNotFound($id);
         }
 
+        $this->checkOwner($pirep);
         $this->checkCancelled($pirep);
 
         /*Log::debug(
@@ -219,6 +227,7 @@ class AcarsController extends Controller
             throw new PirepNotFound($id);
         }
 
+        $this->checkOwner($pirep);
         $this->checkCancelled($pirep);
 
         // Log::debug('Posting ACARS log, PIREP: '.$id, $request->post());
@@ -273,6 +282,7 @@ class AcarsController extends Controller
             throw new PirepNotFound($id);
         }
 
+        $this->checkOwner($pirep);
         $this->checkCancelled($pirep);
 
         Log::debug('Posting ACARS event, PIREP: '.$id, $request->post());

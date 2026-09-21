@@ -1,6 +1,6 @@
 <?php
 
-return [
+return array_replace_recursive([
     'flightnumber'     => 'Número de vuelo',
     'flighttime'       => 'Tiempo de vuelo',
     'flighttype'       => 'Tipo de vuelo',
@@ -40,4 +40,8 @@ return [
         'military'          => 'Militar',
         'technical_stop'    => 'Parada técnica',
     ],
-];
+], [
+    'viewflight' => 'Ver vuelo', 'addbid' => 'Añadir reserva', 'removebid' => 'Eliminar reserva',
+    'type' => ['shuttle' => 'Lanzadera (programado)', 'addtl_shuttle' => 'Lanzadera (adicional)', 'cargo_in_cabin' => 'Pasajeros/carga en cabina (programado)', 'addtl_cargo_in_cabin' => 'Pasajeros/carga en cabina (adicional)', 'charter_cargo_in_cabin' => 'Pasajeros/carga en cabina (chárter)', 'general_aviation' => 'Aviación general', 'air_taxi' => 'Aviación de negocios/taxi aéreo', 'company_specific' => 'Específico de la compañía (no estándar)', 'other' => 'Otro (no estándar)'],
+    'createsimbrief' => 'Crear plan de vuelo SimBrief', 'viewsimbrief' => 'Ver plan de vuelo SimBrief', 'weather' => 'Meteorología', 'aircraftbooking' => 'Reserva de aeronave', 'bookaircraft' => 'Reservar aeronave', 'dontbookaircraft' => 'No reservar aeronave',
+]);

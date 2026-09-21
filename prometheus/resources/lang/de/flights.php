@@ -1,6 +1,6 @@
 <?php
 
-return [
+return array_replace_recursive([
     'flightnumber'     => 'Flugnummer',
     'flighttime'       => 'Flugzeit',
     'flighttype'       => 'Flugtyp',
@@ -40,4 +40,8 @@ return [
         'military'          => 'Militär',
         'technical_stop'    => 'Technischer Stopp',
     ],
-];
+], [
+    'viewflight' => 'Flug ansehen', 'addbid' => 'Buchung hinzufügen', 'removebid' => 'Buchung entfernen',
+    'type' => ['shuttle' => 'Pendelverkehr (planmäßig)', 'addtl_shuttle' => 'Pendelverkehr (zusätzlich)', 'cargo_in_cabin' => 'Passagiere/Fracht in der Kabine (planmäßig)', 'addtl_cargo_in_cabin' => 'Passagiere/Fracht in der Kabine (zusätzlich)', 'charter_cargo_in_cabin' => 'Passagiere/Fracht in der Kabine (Charter)', 'general_aviation' => 'Allgemeine Luftfahrt', 'air_taxi' => 'Geschäftsflug/Lufttaxi', 'company_specific' => 'Unternehmensspezifisch (nicht standardisiert)', 'other' => 'Sonstiges (nicht standardisiert)'],
+    'createsimbrief' => 'SimBrief-Flugplan erstellen', 'viewsimbrief' => 'SimBrief-Flugplan anzeigen', 'weather' => 'Wetter', 'aircraftbooking' => 'Flugzeugbuchung', 'bookaircraft' => 'Flugzeug buchen', 'dontbookaircraft' => 'Flugzeug nicht buchen',
+]);

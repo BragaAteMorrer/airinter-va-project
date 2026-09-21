@@ -1,0 +1,7 @@
+@extends('promethee::layout')
+@section('title','Jumpseats')
+@section('content')
+<div class="ops-header compact"><div><span class="eyebrow">ADMINISTRATION</span><h1>Jumpseats.</h1><p>Accords automatiques payés via le journal phpVMS.</p></div><span class="tag">{{ number_format($basePrice, 2, ',', ' ') }} € / NM</span></div>
+<section class="panel"><div class="panel-heading"><div><span class="eyebrow">TARIFICATION</span><h2>Prix de base</h2></div></div><form method="post" action="{{ route('admin.promethee.jumpseats.settings') }}" class="form-grid">@csrf<label>Euros par mille nautique (NM)<input name="base_price" type="number" min="0" max="10000" step="0.01" value="{{ number_format($basePrice, 2, '.', '') }}" required></label><div><button type="submit">Enregistrer le tarif</button></div></form><p class="muted">Montant facturé : prix de base × distance orthodromique en NM, puis remise jumpseat éventuelle.</p></section>
+<section class="panel table-wrap"><table><thead><tr><th>Pilote</th><th>Destination</th><th>Calcul</th><th>Date</th><th>État</th></tr></thead><tbody>@forelse($requests as $request)<tr><td>{{ $request->pilot_id }} · {{ $request->user_name }}</td><td>{{ $request->icao ?: '—' }} · {{ $request->airport_name }}</td><td>{{ $request->decision_note ?: '—' }}</td><td>{{ \Carbon\Carbon::parse($request->created_at)->format('d/m/Y H:i') }}</td><td>{{ $request->status }}</td></tr>@empty<tr><td colspan="5">Aucun jumpseat.</td></tr>@endforelse</tbody></table></section>
+@endsection

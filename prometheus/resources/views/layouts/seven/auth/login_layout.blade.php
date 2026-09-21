@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>@yield('title') · {{ config('app.name') }}</title>
-  <script>(() => { try { const era=localStorage.getItem('promethee-era')||'modern'; document.documentElement.dataset.loginEra=['modern','2000','minitel'].includes(era)?era:'modern'; } catch { document.documentElement.dataset.loginEra='modern'; } })();</script>
+  <script>(() => { try { const era=localStorage.getItem('promethee-era')||'modern', appearance=localStorage.getItem('promethee-appearance'); document.documentElement.dataset.loginEra=['modern','2000','minitel'].includes(era)?era:'modern'; document.documentElement.dataset.appearance=['light','dark'].includes(appearance)?appearance:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'); } catch { document.documentElement.dataset.loginEra='modern'; } })();</script>
+  <script>window.prometheeLoginI18n=@json(['appearance' => __('promethee.appearance'), 'appearanceLight' => __('promethee.appearance_light'), 'appearanceDark' => __('promethee.appearance_dark')]);</script>
   <link rel="shortcut icon" type="image/png" href="{{ public_asset('/assets/img/favicon.png') }}">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="{{ public_asset('/promethee-assets/login.css') }}">

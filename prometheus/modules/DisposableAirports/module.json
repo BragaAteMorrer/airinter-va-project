@@ -1,0 +1,25 @@
+{
+    "name": "DisposableAirports",
+    "alias": "disposableairports",
+    "description": "phpVMS v7 module for Automated Airport Import and Updates",
+    "version": "1.0.6",
+    "readme_url": "https://github.com/FatihKoz/DisposableAirports?tab=readme-ov-file#readme",
+    "license_url": "https://github.com/FatihKoz/DisposableAirports?tab=License-1-ov-file#readme",
+    "attribution": {
+        "text": "Disposable Airports by DH Addons",
+        "url": "https://github.com/FatihKoz",
+        "img": null
+    },
+    "keywords": [],
+    "active": 0,
+    "order": 9003,
+    "providers": [
+        "Modules\\DisposableAirports\\Providers\\DA_ServiceProvider",
+        "Modules\\DisposableAirports\\Providers\\DA_EventProvider"
+    ],
+    "aliases": {},
+    "files": [
+        "da_helpers.php"
+    ],
+    "requires": []
+}

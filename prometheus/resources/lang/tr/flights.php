@@ -1,6 +1,6 @@
 <?php
 
-return [
+return array_replace_recursive([
     'flightnumber'     => 'Uçuş Numarası',
     'flighttime'       => 'Uçuş Süresi',
     'flighttype'       => 'Uçuş Tipi',
@@ -49,4 +49,6 @@ return [
         'company_specific'       => 'Şirkete Özel (Standart Dışı)',
         'other'                  => 'Diğer (Standart Dışı)',
     ],
-];
+], [
+    'viewflight' => 'Uçuşu görüntüle', 'addbid' => 'Rezervasyon ekle', 'removebid' => 'Rezervasyonu kaldır', 'createsimbrief' => 'SimBrief uçuş planı oluştur', 'viewsimbrief' => 'SimBrief uçuş planını görüntüle', 'weather' => 'Hava durumu', 'aircraftbooking' => 'Uçak rezervasyonu', 'bookaircraft' => 'Uçak rezerve et', 'dontbookaircraft' => 'Uçak rezerve etme',
+]);

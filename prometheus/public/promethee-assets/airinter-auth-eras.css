@@ -1,7 +1,7 @@
 /* Authentication shares the display selector but remains independent from phpVMS forms. */
 html[data-login-era="modern"] { --ai-blue: #075b96; --ai-dark: #064a7c; --ai-light: #eaf4f8; --ai-red: #d9323c; }
 html[data-login-era="modern"] body.promethee-auth { background: #f4f9fb; color: #102c42; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
-html[data-login-era="modern"] .login-shell { max-width: 1180px; } html[data-login-era="modern"] .login-topbar { background: #fff; border-bottom: 1px solid #dbe5eb; }
+html[data-login-era="modern"] .login-topbar { background: #fff; border-bottom: 1px solid #dbe5eb; }
 html[data-login-era="modern"] .login-wordmark { color: var(--ai-blue); font-weight: 800; letter-spacing: .08em; }
 html[data-login-era="modern"] .login-panel { border: 1px solid #dbe5eb; border-radius: 7px; box-shadow: 0 12px 30px rgb(16 44 66 / 7%); }
 html[data-login-era="modern"] .login-submit { background: var(--ai-red); border-color: var(--ai-red); border-radius: 5px; }
@@ -20,3 +20,7 @@ html[data-login-era="2000"] .login-form-heading h2, html[data-login-era="2000"] 
 html[data-login-era="2000"] .login-submit { border-radius: 0; background: #075d99; border: 1px solid #064a7c; } html[data-login-era="2000"] .login-footer { margin: 18px auto 0; background: #e2f0f5; border-top: 5px solid #83b9cf; }
 @media (max-width: 760px) { html[data-login-era="2000"] .login-topbar { min-height: 114px; padding: 22px 15px 0; border-bottom-width: 52px; } html[data-login-era="2000"] .login-topbar::before { bottom: 22px; height: 30px; } html[data-login-era="2000"] .login-wordmark { font-size: 25px; } html[data-login-era="2000"] .login-layout { padding: 12px; } }
 @media (max-width: 480px) { html[data-login-era="2000"] .login-topbar { align-items: flex-start; gap: 8px; } html[data-login-era="2000"] .login-era { flex-direction: column; align-items: flex-end; gap: 2px; } html[data-login-era="2000"] .login-wordmark { max-width: calc(100% - 130px); font-size: 19px; } }
+html[data-appearance="dark"] body.promethee-auth{color-scheme:dark;background:#081522;color:#edf4fa}
+html[data-appearance="dark"] .login-shell,html[data-appearance="dark"] .login-topbar,html[data-appearance="dark"] .login-panel{background:#0d1b29;color:#edf4fa;border-color:#29455d}
+html[data-appearance="dark"] .login-panel input,html[data-appearance="dark"] .login-panel select,html[data-appearance="dark"] .login-appearance select{background:#172d40;color:#edf4fa;border-color:#42647f}
+html[data-login-era="2000"][data-appearance="dark"] .login-shell{background:#111a29} html[data-login-era="2000"][data-appearance="dark"] .login-topbar,html[data-login-era="2000"][data-appearance="dark"] .login-panel,html[data-login-era="2000"][data-appearance="dark"] .login-intro{background:#1b293a;border-color:#66809a}

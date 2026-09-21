@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'avatarresize' => 'Dieser Avatar wird auf die Größe :Breite x :Höhe Pixel gebracht',
+    'avatarresize' => 'Dieser Avatar wird auf :width x :height Pixel skaliert',
 
     'newapikey'       => 'Neuer API Key',
     'your-profile'    => 'Dein Profil',

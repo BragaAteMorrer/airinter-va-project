@@ -1,6 +1,6 @@
 <?php
 
-return [
+return array_replace_recursive([
    // Tooltips
    'dashboard-t'        => 'Seyahatinize başlayın',
    'home-t'             => 'Anasayfaya geri dön',
@@ -253,4 +253,4 @@ return [
    'availmission'       => 'Mevcut görevler',
    'missions-t'         => 'Yeniden konumlandırma görevlerimiz',
    'checkmission'       => 'Tüm görevleri kontrol et',
-];
+], ['mypassport' => 'Pasaportum', 'pilotcenter' => 'Pilot merkezi', 'noaward' => 'Ödül bulunamadı.', 'welcome_back' => 'Uçuş Operasyon Merkezi’ne tekrar hoş geldiniz.']);

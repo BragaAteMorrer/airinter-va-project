@@ -1,0 +1,171 @@
+{
+  "format": 1,
+  "restore": {
+    "\\\\wsl.localhost\\Ubuntu\\home\\bragaatemorrer\\Projet_perso\\airinter-va-project\\acars.tests\\Promethee.Acars.Tests.csproj": {}
+  },
+  "projects": {
+    "\\\\wsl.localhost\\Ubuntu\\home\\bragaatemorrer\\Projet_perso\\airinter-va-project\\acars.tests\\Promethee.Acars.Tests.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "\\\\wsl.localhost\\Ubuntu\\home\\bragaatemorrer\\Projet_perso\\airinter-va-project\\acars.tests\\Promethee.Acars.Tests.csproj",
+        "projectName": "Promethee.Acars.Tests",
+        "projectPath": "\\\\wsl.localhost\\Ubuntu\\home\\bragaatemorrer\\Projet_perso\\airinter-va-project\\acars.tests\\Promethee.Acars.Tests.csproj",
+        "packagesPath": "C:\\Users\\nenea\\.nuget\\packages\\",
+        "outputPath": "\\\\wsl.localhost\\Ubuntu\\home\\bragaatemorrer\\Projet_perso\\airinter-va-project\\acars.tests\\obj\\",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "C:\\Users\\nenea\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "\\\\wsl.localhost\\Ubuntu\\home\\bragaatemorrer\\Projet_perso\\airinter-va-project\\acars\\Promethee.Acars.csproj": {
+                "projectPath": "\\\\wsl.localhost\\Ubuntu\\home\\bragaatemorrer\\Projet_perso\\airinter-va-project\\acars\\Promethee.Acars.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.NET.Test.Sdk": {
+              "target": "Package",
+              "version": "[17.11.1, )"
+            },
+            "xunit": {
+              "target": "Package",
+              "version": "[2.9.2, )"
+            },
+            "xunit.runner.visualstudio": {
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[2.8.2, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.101/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "\\\\wsl.localhost\\Ubuntu\\home\\bragaatemorrer\\Projet_perso\\airinter-va-project\\acars\\Promethee.Acars.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "\\\\wsl.localhost\\Ubuntu\\home\\bragaatemorrer\\Projet_perso\\airinter-va-project\\acars\\Promethee.Acars.csproj",
+        "projectName": "Promethee.Acars",
+        "projectPath": "\\\\wsl.localhost\\Ubuntu\\home\\bragaatemorrer\\Projet_perso\\airinter-va-project\\acars\\Promethee.Acars.csproj",
+        "packagesPath": "C:\\Users\\nenea\\.nuget\\packages\\",
+        "outputPath": "\\\\wsl.localhost\\Ubuntu\\home\\bragaatemorrer\\Projet_perso\\airinter-va-project\\acars\\obj\\",
+        "projectStyle": "PackageReference",
+        "crossTargeting": true,
+        "configFilePaths": [
+          "C:\\Users\\nenea\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0",
+          "net8.0-windows"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          },
+          "net8.0-windows7.0": {
+            "targetAlias": "net8.0-windows",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.AspNetCore.App": {
+              "privateAssets": "none"
+            },
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.101/PortableRuntimeIdentifierGraph.json"
+        },
+        "net8.0-windows7.0": {
+          "targetAlias": "net8.0-windows",
+          "dependencies": {
+            "Microsoft.Web.WebView2": {
+              "target": "Package",
+              "version": "[1.0.3065.39, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            },
+            "Microsoft.WindowsDesktop.App.WPF": {
+              "privateAssets": "none"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.101/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

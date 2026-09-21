@@ -6,4 +6,5 @@ return [
     'current'   => 'Mevcut Havalimanı',
     'departure' => 'Kalkış Havalimanı',
     'arrival'   => 'Varış Havalimanı',
+    'notes'     => 'Havalimanı notları',
 ];

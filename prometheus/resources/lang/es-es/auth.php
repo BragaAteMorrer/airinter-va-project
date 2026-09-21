@@ -35,4 +35,5 @@ return [
     'transferhours'            => 'Transferir horas',
     'loginwith'                => 'Iniciar sesión con :provider',
 
+    'sendresetlink'            => 'Enviar enlace para restablecer la contraseña',
 ];
