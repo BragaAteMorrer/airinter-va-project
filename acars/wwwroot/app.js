@@ -91,7 +91,8 @@ $('#loginForm').onsubmit = event => { event.preventDefault(); login(event.curren
 $('#configForm').onsubmit = event => { event.preventDefault(); login(event.currentTarget, true); };
 
 function simulatorCode() {
-  return localSettings.forcedSimulator === 'xplane' ? 'xplane' : 'msfs2024';
+  const forced = localSettings.forcedSimulator;
+  return ({ xplane: 'xplane', fs2004: 'fs2004', fsx: 'fsx', p3d: 'p3d', msfs: 'msfs2024' })[forced] || 'auto';
 }
 
 function normalizeFlight(raw) {
