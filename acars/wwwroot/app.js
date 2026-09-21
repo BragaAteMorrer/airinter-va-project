@@ -39,7 +39,7 @@ let readiness = { operation: false, aircraft: false, ofp: false, pirep: false, s
 function setAuthenticated(value) {
   connected = Boolean(value);
   document.body.classList.toggle('auth-locked', !connected);
-  $('.protected-tab').forEach(tab => { tab.disabled = !connected; });
+  $$('.protected-tab').forEach(tab => { tab.disabled = !connected; });
 }
 setAuthenticated(false);
 
@@ -69,7 +69,7 @@ settingsForm.onsubmit = event => {
 $$('.tab').forEach(button => {
   button.onclick = () => {
     if (button.classList.contains('protected-tab') && !connected) return;
-    $('.tab,.panel').forEach(node => node.classList.remove('active'));
+    $$('.tab,.panel').forEach(node => node.classList.remove('active'));
     button.classList.add('active');
     $('#' + button.dataset.tab).classList.add('active');
   };
@@ -107,7 +107,7 @@ function updateWorkflow() {
     ofp: Boolean(flightPlan || selectedOperation?.simbrief?.available),
     pirep: Boolean(pirepId)
   };
-  $('#workflow [data-step]').forEach(node => {
+  $$('#workflow [data-step]').forEach(node => {
     const key = node.dataset.step;
     const passed = key === 'ready'
       ? state.operation && state.aircraft && state.ofp && state.pirep && readiness.simulator
@@ -289,7 +289,7 @@ async function selectOperation(operation) {
   selectedOperation = operation;
   selectedAircraft = operation.aircraft?.id ? operation.aircraft : null;
   updateWorkflow();
-  $('.operation').forEach(node => node.classList.remove('selected'));
+  $$('.operation').forEach(node => node.classList.remove('selected'));
   if (document.activeElement?.classList?.contains('operation')) document.activeElement.classList.add('selected');
   flightPlan = null;
   const flight = normalizeFlight(operation.flight || operation);
