@@ -55,31 +55,81 @@ class SafetyAnalyzer
 
     public function debrief(?float $landingRate, array $samples): array
     {
+        usort($samples, fn ($a, $b) => strcmp((string) ($a['recorded_at'] ?? ''), (string) ($b['recorded_at'] ?? '')));
         $analysis = $this->analyze($landingRate, $samples);
-        $facts = [];
-
-        if ($analysis['hard_landing'] === true) $facts[] = ['level' => 'warning', 'code' => 'HARD_LANDING', 'label' => 'Touchdown à surveiller', 'value' => $landingRate];
-        elseif ($analysis['hard_landing'] === false) $facts[] = ['level' => 'ok', 'code' => 'LANDING_RATE', 'label' => 'Touchdown dans le seuil observé', 'value' => $landingRate];
-
-        if ($analysis['overspeed'] === true) $facts[] = ['level' => 'warning', 'code' => 'OVERSPEED', 'label' => $analysis['speed_events'].' dépassement(s) de vitesse observé(s)'];
-        elseif ($analysis['overspeed'] === false) $facts[] = ['level' => 'ok', 'code' => 'SPEED', 'label' => 'Aucun dépassement de vitesse observé'];
+        $timeline = $this->timeline($samples);
+        $first = $samples[0] ?? null;
+        $last = $samples ? $samples[array_key_last($samples)] : null;
 
         $knownApproaches = array_values(array_filter($analysis['approaches'], fn ($value) => $value !== null));
         $approachConform = $knownApproaches ? !in_array(false, $knownApproaches, true) : null;
-        if ($approachConform === true) $facts[] = ['level' => 'ok', 'code' => 'STABLE_APPROACH', 'label' => 'Approche stabilisée'];
-        elseif ($approachConform === false) $facts[] = ['level' => 'warning', 'code' => 'UNSTABLE_APPROACH', 'label' => 'Approche à surveiller'];
 
-        $safetyWarning = $analysis['hard_landing'] === true || $analysis['overspeed'] === true;
-        $safetyKnown = $analysis['hard_landing'] !== null || $analysis['overspeed'] !== null;
+        $safetyEvents = [];
+        if ($analysis['hard_landing'] === true) {
+            $safetyEvents[] = $this->event('HARD_LANDING', 'warning', 'Touchdown supérieur au seuil observé.', null, ['landing_rate_fpm' => $landingRate]);
+        } elseif ($analysis['hard_landing'] === false) {
+            $safetyEvents[] = $this->event('LANDING_RATE', 'info', 'Taux de toucher observé.', null, ['landing_rate_fpm' => $landingRate]);
+        }
+        if ($analysis['overspeed'] === true) {
+            $safetyEvents[] = $this->event('OVERSPEED', 'warning', 'Dépassement de la limite de vitesse transmise.', null, ['events' => $analysis['speed_events']]);
+        }
+
+        $operationsEvents = [];
+        if ($approachConform === false) {
+            $operationsEvents[] = $this->event('UNSTABLE_APPROACH', 'warning', 'Un checkpoint d’approche connu ne satisfait pas les critères observés.');
+        } elseif ($approachConform === true) {
+            $operationsEvents[] = $this->event('STABLE_APPROACH', 'info', 'Les checkpoints d’approche évaluables satisfont les critères observés.');
+        }
+
+        $flightEvents = array_map(fn ($event) => [
+            'code' => strtoupper(str_replace([' ', 'é', 'è', '→'], ['_', 'E', 'E', '_'], $event['type'])),
+            'level' => 'info',
+            'label' => $event['detail'],
+            'at' => $event['at'],
+            'values' => [],
+        ], $timeline);
 
         return [
-            'safety' => ['label' => $safetyKnown ? ($safetyWarning ? 'À surveiller' : 'Conforme') : 'Données insuffisantes'],
-            'operations' => ['label' => $approachConform === null ? 'Données insuffisantes' : ($approachConform ? 'Conforme' : 'À surveiller')],
-            'flight' => ['label' => $analysis['hard_landing'] === null ? 'Données insuffisantes' : ($analysis['hard_landing'] ? 'À surveiller' : 'Conforme')],
-            'facts' => $facts,
-            'timeline' => $this->timeline($samples),
+            'contract_version' => '1.0',
             'analysis_version' => self::VERSION,
+            'data_quality' => [
+                'samples' => count($samples),
+                'first_at' => $first['recorded_at'] ?? null,
+                'last_at' => $last['recorded_at'] ?? null,
+                'landing_rate_available' => $landingRate !== null,
+                'approach_checkpoints_evaluable' => count($knownApproaches),
+            ],
+            'safety' => [
+                'status' => $this->sectionStatus($safetyEvents, $analysis['hard_landing'] !== null || $analysis['overspeed'] !== null),
+                'events' => $safetyEvents,
+            ],
+            'operations' => [
+                'status' => $this->sectionStatus($operationsEvents, $approachConform !== null),
+                'events' => $operationsEvents,
+            ],
+            'flight' => [
+                'status' => $this->sectionStatus($flightEvents, count($samples) > 0),
+                'events' => $flightEvents,
+                'timeline' => $timeline,
+            ],
+            // Compatibility for existing Prométhée consumers. New clients should
+            // consume the three sections above instead of interpreting a score.
+            'facts' => array_values(array_merge($safetyEvents, $operationsEvents)),
+            'timeline' => $timeline,
         ];
+    }
+
+    private function event(string $code, string $level, string $label, ?string $at = null, array $values = []): array
+    {
+        return compact('code', 'level', 'label', 'at', 'values');
+    }
+
+    private function sectionStatus(array $events, bool $known): string
+    {
+        if (!$known) return 'INSUFFICIENT_DATA';
+        return collect($events)->contains(fn ($event) => ($event['level'] ?? null) === 'warning')
+            ? 'ATTENTION'
+            : 'OBSERVED';
     }
 
     /** A pedagogical score: unknown data is never turned into a penalty. */
