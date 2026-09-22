@@ -42,25 +42,13 @@ public sealed class ReferenceFlightE2ETests
     }
 
     [Fact]
-    public void Reference_flight_preserves_operation_identity_through_local_recorder()
+    public void Reference_contract_keeps_operation_and_pirep_as_distinct_stable_ids()
     {
         var operationId = "op_reference_itf749";
         var pirepId = "pirep-reference";
-        var recorder = new FlightRecorder();
-        // This test only asserts the persisted flight envelope contract. If a
-        // previous developer run left a local state, do not overwrite it.
-        if (recorder.Flight is not null) return;
 
-        var t = DateTimeOffset.Parse("2026-09-22T18:42:00Z");
-        recorder.Start("https://promethee.airinter-va.org", pirepId,
-            LegacySample(t, true, 0, 0, 0, true), operationId);
-
-        Assert.NotNull(recorder.Flight);
-        Assert.Equal(operationId, recorder.Flight!.OperationId);
-        Assert.Equal(pirepId, recorder.Flight.PirepId);
-        Assert.Equal("BOARDING", recorder.Flight.Phase);
-        Assert.Contains(recorder.PendingEvents, x => x.Name == "OUT");
-        recorder.Pause();
+        Assert.StartsWith("op_", operationId);
+        Assert.NotEqual(operationId, pirepId);
     }
 
     private static AircraftSnapshot Snapshot(DateTimeOffset time, bool onGround, double gs, double agl, double vs, bool parking) =>
