@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 using Promethee;
+using Promethee.Acars;
 
 namespace PrometheeDesktop;
 
@@ -15,7 +16,17 @@ public static class DesktopProgram
             catch (Exception e) { MessageBox.Show(e.Message + "\n\nLancez cette commande en administrateur.", "Prométhée ACARS", MessageBoxButton.OK, MessageBoxImage.Error); }
             return;
         }
-        new Application().Run(new AcarsWindow());
+        AppDomain.CurrentDomain.UnhandledException += (_, e) => {
+            if (e.ExceptionObject is Exception ex) DiagnosticsService.RecordCrash(ex);
+        };
+        TaskScheduler.UnobservedTaskException += (_, e) => {
+            DiagnosticsService.RecordCrash(e.Exception); e.SetObserved();
+        };
+        try { new Application().Run(new AcarsWindow()); }
+        catch (Exception ex) {
+            DiagnosticsService.RecordCrash(ex);
+            MessageBox.Show("Hermès a rencontré une erreur inattendue. Un diagnostic local a été enregistré.", "Hermès ACARS", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 }
 
@@ -103,7 +114,12 @@ public sealed class AcarsWindow : Window
     private Task SyncAsync() => Guard(async () => Show(new { sent = await TelemetryService.SendPending(client, recorder) }));
     private Task Report() => Guard(() => { var f = recorder.Flight ?? throw new InvalidOperationException("Aucun vol."); Show(new { f.Phase, f.Distance, f.FuelUsed, f.AirborneSeconds, f.LandingRate, f.Issues }); return Task.CompletedTask; });
     private Task HistoryAsync() => Guard(() => { Show(recorder.History); return Task.CompletedTask; });
-    private Task DiagnosticsAsync() => Guard(() => { Show(new { connected=client.Connected, server=client.Server, simulator=sim.Status, latest=sim.Latest, flight=recorder.Flight, pending=recorder.Pending.Count + recorder.PendingEvents.Count }); return Task.CompletedTask; });
+    private Task DiagnosticsAsync() => Guard(() => {
+        var report = DiagnosticsService.Create(client.Server ?? server.Text.Trim(), client.Connected, sim.Status, recorder);
+        var path = DiagnosticsService.Export(report);
+        Show(new { report, exported_to=path, last_crash=DiagnosticsService.LastCrashPath() });
+        return Task.CompletedTask;
+    });
     private Task FileAsync() => Guard(async () => { await TelemetryService.SendPending(client, recorder); var f=recorder.Flight ?? throw new InvalidOperationException("Aucun vol."); await client.Send($"pireps/{Uri.EscapeDataString(f.PirepId)}/file", new { distance=Math.Round(f.Distance,2), flight_time=Math.Max(1,(int)Math.Round(f.AirborneSeconds/60)), fuel_used=Math.Round(f.FuelUsed), block_time=Math.Max(1,(int)Math.Round(((f.BlockOn ?? DateTimeOffset.UtcNow)-f.BlockOff!.Value).TotalMinutes)), block_off_time=f.BlockOff, block_on_time=f.BlockOn, created_at=f.BlockOn, landing_rate=f.LandingRate }); recorder.Complete(); Show("PIREP déposé."); });
     private async Task RefreshAsync() { if (ticking) return; ticking = true; try { await telemetry.Tick(); var f=recorder.Flight; status.Text = $"{sim.Status}   |   {(client.Connected ? client.Server : "phpVMS déconnecté")}   |   Phase : {f?.Phase ?? "-"}   |   Tampon : {recorder.Pending.Count + recorder.PendingEvents.Count}"; } finally { ticking = false; } }
 }
