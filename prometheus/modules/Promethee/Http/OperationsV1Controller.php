@@ -259,10 +259,38 @@ class OperationsV1Controller extends Controller
                 return $payload;
             })->all();
 
+        $debrief = $this->safetyAnalyzer->debrief($pirep->landing_rate, $samples);
+        $first = $samples[0] ?? null;
+        $last = $samples ? $samples[array_key_last($samples)] : null;
+        $blockMinutes = ($pirep->block_off_time && $pirep->block_on_time)
+            ? $pirep->block_off_time->diffInMinutes($pirep->block_on_time)
+            : null;
+
         return response()->json(['data' => [
+            'contract_version' => '1.0',
             'operation_id' => str_starts_with($reference, 'op_') ? $reference : 'op_'.$reference,
             'pirep' => $this->pirepDto($pirep),
-            'debrief' => $this->safetyAnalyzer->debrief($pirep->landing_rate, $samples),
+            'summary' => [
+                'flight' => $pirep->ident,
+                'departure' => $pirep->dpt_airport_id,
+                'arrival' => $pirep->arr_airport_id,
+                'aircraft_id' => $pirep->aircraft_id,
+                'block_off_at' => optional($pirep->block_off_time)?->toIso8601String(),
+                'block_on_at' => optional($pirep->block_on_time)?->toIso8601String(),
+                'block_minutes' => $blockMinutes,
+                'flight_minutes' => $pirep->flight_time,
+                'fuel_used' => $this->scalarValue($pirep->fuel_used),
+                'landing_rate_fpm' => $pirep->landing_rate,
+                'telemetry_first_at' => $first['recorded_at'] ?? null,
+                'telemetry_last_at' => $last['recorded_at'] ?? null,
+                'telemetry_samples' => count($samples),
+            ],
+            'debrief' => $debrief,
+            'provenance' => [
+                'flight_record' => 'phpvms_pirep',
+                'telemetry' => 'hermes',
+                'analysis' => 'promethee_safety_analyzer_v'.SafetyAnalyzer::VERSION,
+            ],
         ]]);
     }
 
@@ -563,6 +591,18 @@ class OperationsV1Controller extends Controller
             'created_at' => null,
             'submitted_at' => null,
         ];
+    }
+
+    private function scalarValue(mixed $value): mixed
+    {
+        if (is_scalar($value) || $value === null) return $value;
+        if (is_object($value)) {
+            foreach (['value', 'local', 'raw'] as $property) {
+                if (isset($value->{$property}) && is_scalar($value->{$property})) return $value->{$property};
+            }
+            if (method_exists($value, '__toString')) return (string) $value;
+        }
+        return null;
     }
 
     private function reason(string $code, string $message): array
