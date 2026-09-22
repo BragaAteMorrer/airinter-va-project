@@ -8,10 +8,26 @@ use Carbon\Carbon;
 use Modules\Promethee\Services\OperationIdentityService;
 class TelemetryController extends Controller
 {
+    public function __construct(private readonly OperationIdentityService $operationIdentity) {}
+
+    public function storeOperation(string $operation, Request $request)
+    {
+        $pirep = $this->operationIdentity->resolvePirep($operation, (int) $request->user()->id);
+        abort_if(!$pirep, 409, 'Préparez le PIREP de cette opération avant de démarrer la télémétrie.');
+
+        return $this->storeForPirep($pirep, $request, $operation);
+    }
+
     public function store(string $id, Request $request)
     {
         $pirep = Pirep::findOrFail($id);
         abort_unless($pirep->user_id === $request->user()->id,403);
+
+        return $this->storeForPirep($pirep, $request);
+    }
+
+    private function storeForPirep(Pirep $pirep, Request $request, ?string $operationId = null)
+    {
         $rules = ['samples'=>'required|array|min:1|max:100','samples.*.sample_id'=>'required|uuid',
             'samples.*.recorded_at'=>'required|date','samples.*.agl'=>'nullable|numeric|between:-2000,70000',
             'samples.*.lat'=>'nullable|numeric|between:-90,90','samples.*.lon'=>'nullable|numeric|between:-180,180',
@@ -27,6 +43,7 @@ class TelemetryController extends Controller
         foreach (['on_ground','gear_down','landing_flaps','thrust_stable','checklist_complete'] as $field) $rules['samples.*.'.$field]='nullable|boolean';
         $data = $request->validate($rules);
         $inserted = 0;
+        $id = $pirep->id;
         DB::transaction(function () use ($data,$id,&$inserted) {
             foreach ($data['samples'] as $s) {
                 $date = Carbon::parse($s['recorded_at'])->utc();
@@ -37,6 +54,12 @@ class TelemetryController extends Controller
                 ]);
             }
         });
-        return response()->json(['data'=>['inserted'=>$inserted]]);
+        return response()->json(['data'=>[
+            'operation_id' => $operationId,
+            'pirep_id' => $pirep->id,
+            'inserted' => $inserted,
+            'received' => count($data['samples']),
+            'live' => true,
+        ]]);
     }
 }
