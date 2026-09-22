@@ -118,7 +118,7 @@ public sealed class PrometheeWindow : Window
         return route switch {
             "/api/status" => Status(), "/api/about" => About(), "/api/login" => await Login(body), "/api/config" => await ConfigureApiKey(body),
             "/api/user" => await client.Send("user"), "/api/bids" => await client.Send("user/bids"),
-            "/api/operations" => await client.Send("promethee/acars/operations" + uri.Query), "/api/flights" => await client.Send("flights" + uri.Query),
+            "/api/operations" => await client.Send("v1/operations" + uri.Query), "/api/flights" => await client.Send("flights" + uri.Query),
             "/api/prefile" => await client.Send("pireps/prefile", body!.Value), "/api/start" => Start(body), "/api/pause" => Pause(), "/api/resume" => Resume(),
             "/api/sync" => new { sent=await TelemetryService.SendPending(client,recorder) }, "/api/report" => Report(), "/api/file" => await File(),
             "/api/history" => recorder.History, "/api/diagnostics" => Diagnostics(), "/api/open-external" => OpenExternal(body),
