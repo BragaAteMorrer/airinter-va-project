@@ -32,9 +32,9 @@ jobs:
         shell: pwsh
         run: |
           if ('${{ github.event_name }}' -eq 'workflow_dispatch') {
-            $version = '${{ inputs.version }}'
+            $version = '${{ inputs.version }}'.Trim()
           } else {
-            $version = '${{ github.ref_name }}' -replace '^hermes-v', ''
+            $version = ('${{ github.ref_name }}' -replace '^hermes-v', '').Trim()
           }
           if ($version -notmatch '^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$') {
             throw "Version invalide: $version"
@@ -68,8 +68,6 @@ jobs:
           path: |
             dist/Hermes-ACARS-Setup-${{ steps.version.outputs.value }}.exe
             dist/Hermes-ACARS-Setup-${{ steps.version.outputs.value }}.exe.sha256
-            dist/Promethee-ACARS-win-x64-${{ steps.version.outputs.value }}.zip
-            dist/Promethee-ACARS-win-x64-${{ steps.version.outputs.value }}.zip.sha256
             dist/Promethee-ACARS-win-x64-${{ steps.version.outputs.value }}.zip
             dist/Promethee-ACARS-win-x64-${{ steps.version.outputs.value }}.zip.sha256
 
