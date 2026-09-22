@@ -14,18 +14,18 @@ $candidates = @(
 
 $iscc = $candidates | Select-Object -First 1
 if (-not $iscc) {
-  throw 'Inno Setup 6 est requis : installez-le depuis https://jrsoftware.org/isdl.php ou avec choco install innosetup.'
+  throw "Inno Setup 6 est requis - installez-le avec Chocolatey (choco install innosetup)."
 }
 
 & $iscc "/DMyAppVersion=$Version" (Join-Path $PSScriptRoot 'installer.iss')
-if ($LASTEXITCODE -ne 0) { throw 'La création de l’installateur Hermès a échoué.' }
+if ($LASTEXITCODE -ne 0) { throw "La creation de l'installateur Hermes a echoue." }
 
 $dist = Join-Path (Split-Path $PSScriptRoot -Parent) 'dist'
 $setup = Join-Path $dist "Hermes-ACARS-Setup-$Version.exe"
-if (-not (Test-Path -LiteralPath $setup)) { throw "Installateur introuvable : $setup" }
+if (-not (Test-Path -LiteralPath $setup)) { throw "Installateur introuvable: $setup" }
 
 $hash = Get-FileHash -Algorithm SHA256 -LiteralPath $setup
 "$($hash.Hash.ToLowerInvariant())  $([IO.Path]::GetFileName($setup))" |
   Set-Content -LiteralPath "$setup.sha256" -Encoding ascii
-Write-Host "Installateur créé : $setup"
-Write-Host "SHA-256 : $($hash.Hash)"
+Write-Host "Installateur cree: $setup"
+Write-Host "SHA-256: $($hash.Hash)"
