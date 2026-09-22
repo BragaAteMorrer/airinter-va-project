@@ -33,16 +33,12 @@
     <br><small class="muted">{{ $file->download_count }} téléchargement(s) · modifié le {{ optional($file->updated_at)->setTimezone('Europe/Paris')?->format('d/m/Y H:i') ?: '—' }}</small>
 </td>
                         <td>
-                            @if (str_starts_with((string) $file->ref_model, 'Modules\\Promethee\\Download\\') || trim((string) $file->ref_model) === '')
-                                <a class="button outline" href="{{ route('admin.promethee.downloads.edit', $file->id) }}">Modifier</a>
-                                <form method="post" action="{{ route('admin.promethee.downloads.delete', $file->id) }}">
-                                    @csrf
-                                    @method('delete')
-                                    <button class="button outline">Supprimer</button>
-                                </form>
-                            @else
-                                <span class="muted">Ressource liée au catalogue phpVMS</span>
-                            @endif
+                            <a class="button outline" href="{{ route('admin.promethee.downloads.edit', $file->id) }}">Modifier</a>
+                            <form method="post" action="{{ route('admin.promethee.downloads.delete', $file->id) }}" onsubmit="return confirm('Supprimer définitivement ce téléchargement ?')">
+                                @csrf
+                                @method('delete')
+                                <button class="button outline">Supprimer</button>
+                            </form>
                         </td>
                     </tr>
                 @endforeach
