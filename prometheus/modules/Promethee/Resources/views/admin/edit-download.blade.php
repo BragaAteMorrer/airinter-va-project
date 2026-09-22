@@ -7,6 +7,15 @@
 @php($category = strtolower(str_replace('Modules\\Promethee\\Download\\', '', (string) $asset->ref_model)))
 @php($subcategory = trim((string) $asset->ref_model_id))
 @php($isExternal = $asset->isExternalFile)
+@if ($errors->any())
+<div class="notice danger" role="alert">
+    <strong>Impossible d’enregistrer les modifications.</strong>
+    <ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
+</div>
+@endif
+@if (session('success'))
+<div class="notice success" role="status">{{ session('success') }}</div>
+@endif
 
 <div class="ops-header compact">
     <div>
