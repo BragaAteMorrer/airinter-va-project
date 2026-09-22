@@ -545,48 +545,91 @@ class PortalController extends Controller
         abort_unless(DB::table('promethee_settings')->where('key','passport.enabled')->value('value') !== '0', 404);
         return $this->page('passport', compact('pilot', 'countries', 'ranking'));
    }
-   /** The pilot's active phpVMS bids, rendered in the native Prométhée UI. */
+   /** The pilot's phpVMS bids projected as operational states. */
    public function bookings(Request $r) {
        $bookings = Bid::with(['flight.airline', 'flight.dpt_airport', 'flight.arr_airport', 'aircraft'])
            ->where('user_id', $r->user()->id)->latest()->get()
-           ->map(function (Bid $booking) {
-               $operationId = 'op_'.$booking->id;
-               $ofp = $booking->aircraft_id ? SimBrief::where('user_id', $booking->user_id)
-                   ->where('flight_id', $booking->flight_id)
-                   ->where('aircraft_id', $booking->aircraft_id)
-                   ->whereNull('pirep_id')
-                   ->when($booking->created_at, fn ($query) => $query->where('updated_at', '>=', $booking->created_at))
-                   ->latest('updated_at')->first() : null;
-               $pirep = Pirep::where('user_id', $booking->user_id)
-                   ->where('flight_id', $booking->flight_id)
-                   ->where('aircraft_id', $booking->aircraft_id)
-                   ->where('source_name', 'Hermes ACARS ['.$operationId.']')
-                   ->latest('created_at')->first();
-               $booking->setAttribute('operation_id', $operationId);
-               $booking->setAttribute('operation_ofp', $ofp);
-               $booking->setAttribute('operation_pirep', $pirep);
-               $booking->setAttribute('operation_status', $pirep ? 'VOL EN COURS' : ($ofp ? 'PRÊT POUR PIREP' : 'PRÉPARATION REQUISE'));
-               return $booking;
-           });
+           ->map(fn (Bid $booking) => $this->bookingOperation($booking));
        return $this->page('bookings', compact('bookings'));
    }
+
    public function cancelBooking(string $bid, Request $r) {
-       $booking = Bid::with('flight')->where('user_id', $r->user()->id)->findOrFail($bid);
+       $booking = Bid::with(['flight', 'aircraft'])->where('user_id', $r->user()->id)->findOrFail($bid);
+       $booking = $this->bookingOperation($booking);
+       if (!$booking->operation_can_delete) {
+           return back()->withErrors(['booking' => 'Cette opération a déjà commencé et ne peut plus être supprimée.']);
+       }
        $ident = $booking->flight?->ident ?? $booking->flight_id;
+       $booking->delete();
+
+       return redirect()->route('promethee.bookings')->with('success', 'Réservation '.$ident.' supprimée.');
+   }
+
+   private function bookingOperation(Bid $booking): Bid
+   {
        $operationId = 'op_'.$booking->id;
-       $activePirep = Pirep::where('user_id', $r->user()->id)
+       $pirep = Pirep::where('user_id', $booking->user_id)
            ->where('flight_id', $booking->flight_id)
            ->where('aircraft_id', $booking->aircraft_id)
            ->where('source_name', 'Hermes ACARS ['.$operationId.']')
-           ->exists();
-       if ($activePirep) {
-           return back()->withErrors(['booking' => 'Cette réservation possède déjà un PIREP Hermès et ne peut plus être supprimée.']);
-       }
-       $booking->delete();
+           ->latest('created_at')->first();
 
-       return redirect()->route('promethee.bookings')
-           ->with('success', 'Réservation '.$ident.' supprimée.');
+       $ofp = null;
+       if ($booking->aircraft_id) {
+           if ($pirep) {
+               $ofp = SimBrief::where('user_id', $booking->user_id)->where('flight_id', $booking->flight_id)
+                   ->where('aircraft_id', $booking->aircraft_id)->where('pirep_id', $pirep->id)
+                   ->latest('updated_at')->first();
+           }
+           $ofp ??= SimBrief::where('user_id', $booking->user_id)->where('flight_id', $booking->flight_id)
+               ->where('aircraft_id', $booking->aircraft_id)->whereNull('pirep_id')
+               ->when($booking->created_at, fn ($query) => $query->where('updated_at', '>=', $booking->created_at))
+               ->latest('updated_at')->first();
+       }
+
+       $hasTelemetry = $pirep && DB::table('promethee_telemetry')->where('pirep_id', $pirep->id)->exists();
+       $completed = $pirep && ($pirep->submitted_at !== null
+           || in_array((int) $pirep->state, [PirepState::PENDING, PirepState::ACCEPTED, PirepState::REJECTED], true)
+           || $pirep->status === PirepStatus::ARRIVED);
+       $cancelled = $pirep && ((int) $pirep->state === PirepState::CANCELLED || $pirep->status === PirepStatus::CANCELLED);
+
+       $status = $cancelled ? 'CANCELLED'
+           : ($completed ? 'COMPLETED'
+           : ($hasTelemetry ? 'IN_PROGRESS'
+           : ($pirep ? 'READY'
+           : ($ofp && $booking->aircraft_id ? 'PIREP_REQUIRED'
+           : ($booking->aircraft_id ? 'OFP_REQUIRED' : 'AIRCRAFT_REQUIRED')))));
+
+       $progress = match ($status) {
+           'AIRCRAFT_REQUIRED' => 10,
+           'OFP_REQUIRED' => 30,
+           'PIREP_REQUIRED' => 55,
+           'READY' => 70,
+           'IN_PROGRESS' => 85,
+           'COMPLETED', 'CANCELLED' => 100,
+           default => 0,
+       };
+
+       $booking->setAttribute('operation_id', $operationId);
+       $booking->setAttribute('operation_ofp', $ofp);
+       $booking->setAttribute('operation_pirep', $pirep);
+       $booking->setAttribute('operation_status', $status);
+       $booking->setAttribute('operation_progress', $progress);
+       $booking->setAttribute('operation_can_delete', $pirep === null);
+       $booking->setAttribute('operation_next_action', match ($status) {
+           'AIRCRAFT_REQUIRED' => 'Sélectionner un appareil',
+           'OFP_REQUIRED' => 'Préparer l’OFP',
+           'PIREP_REQUIRED' => 'Préparer le PIREP',
+           'READY' => 'Démarrer dans Hermès',
+           'IN_PROGRESS' => 'Vol en cours',
+           'COMPLETED' => 'Consulter le vol',
+           'CANCELLED' => 'Opération annulée',
+           default => null,
+       });
+
+       return $booking;
    }
+
    private function downloadCategory(File $file): string {
        $reference = strtolower((string) $file->ref_model);
        $search = strtolower(implode(' ', [$file->name, $file->description, $file->path, $reference]));
