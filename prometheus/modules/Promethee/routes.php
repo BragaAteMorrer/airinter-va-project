@@ -6,6 +6,7 @@ use Modules\Promethee\Http\TelemetryController;
 use Modules\Promethee\Http\AcarsOperationsController;
 use Modules\Promethee\Http\AcarsConfigurationController;
 use Modules\Promethee\Http\OperationsV1Controller;
+use Modules\Promethee\Http\HermesReleaseController;
 
 // Browsers request this conventional path even though the branded icon lives
 // with the static Promethee assets.
@@ -148,6 +149,9 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::put('/downloads/{file}', [PortalController::class,'updateDownload'])->name('downloads.update');
         Route::delete('/downloads/{file}', [PortalController::class,'deleteDownload'])->name('downloads.delete');
 });
+// Update discovery is intentionally public: Hermès checks before the pilot signs in.
+Route::middleware('api')->get('/api/v1/hermes/releases/latest', [HermesReleaseController::class, 'latest']);
+
 Route::middleware(['api','api.auth'])->prefix('api/v1')->group(function () {
     Route::get('/me', [OperationsV1Controller::class, 'me']);
     Route::get('/operations/{bid}', [OperationsV1Controller::class, 'show']);
