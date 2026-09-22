@@ -162,7 +162,7 @@ Route::middleware(['api','api.auth'])->prefix('api/v1')->group(function () {
     Route::get('/operations/{bid}/aircraft-eligibility', [OperationsV1Controller::class, 'aircraft']);
     Route::get('/operations/{bid}/briefing', [OperationsV1Controller::class, 'briefing']);
     Route::get('/operations/{bid}/readiness', [OperationsV1Controller::class, 'readiness']);
-    Route::get('/operations/{bid}/dispatch', [OperationsV1Controller::class, 'dispatch']);
+    Route::get('/operations/{bid}/dispatch', [OperationsV1Controller::class, 'operationDispatch']);
     Route::get('/operations/{bid}/pirep', [OperationsV1Controller::class, 'pirep']);
     Route::get('/operations/{bid}/debrief', [OperationsV1Controller::class, 'debrief']);
     Route::get('/operations/{bid}/fleet-state', [OperationsV1Controller::class, 'fleetState']);
