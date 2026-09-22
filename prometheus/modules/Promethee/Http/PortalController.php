@@ -399,7 +399,7 @@ class PortalController extends Controller
     }
     public function live(Request $r) { return $this->page('live'); }
     public function liveData(Request $r, FlightOpsService $ops) {
-        $pireps=Pirep::whereIn('state',[PirepState::IN_PROGRESS,PirepState::PAUSED])->with('user')->orderByDesc('updated_at')->limit(50)->get();
+        $pireps=Pirep::whereIn('state',[PirepState::IN_PROGRESS,PirepState::PAUSED])->with(['user','aircraft'])->orderByDesc('updated_at')->limit(50)->get();
         return response()->json(['updated_at'=>now()->toIso8601String(),'flights'=>$pireps->map(function ($p) use ($ops) {
             $sample=DB::table('promethee_telemetry')->where('pirep_id',$p->id)->latest('recorded_at')->first(); $data=$sample ? json_decode($sample->payload,true) : [];
             preg_match('/Hermes ACARS \\[(op_[^\\]]+)\\]/', (string) $p->source_name, $operationMatch);
@@ -500,7 +500,26 @@ class PortalController extends Controller
    /** The pilot's active phpVMS bids, rendered in the native Prométhée UI. */
    public function bookings(Request $r) {
        $bookings = Bid::with(['flight.airline', 'flight.dpt_airport', 'flight.arr_airport', 'aircraft'])
-           ->where('user_id', $r->user()->id)->latest()->get();
+           ->where('user_id', $r->user()->id)->latest()->get()
+           ->map(function (Bid $booking) {
+               $operationId = 'op_'.$booking->id;
+               $ofp = $booking->aircraft_id ? SimBrief::where('user_id', $booking->user_id)
+                   ->where('flight_id', $booking->flight_id)
+                   ->where('aircraft_id', $booking->aircraft_id)
+                   ->whereNull('pirep_id')
+                   ->when($booking->created_at, fn ($query) => $query->where('updated_at', '>=', $booking->created_at))
+                   ->latest('updated_at')->first() : null;
+               $pirep = Pirep::where('user_id', $booking->user_id)
+                   ->where('flight_id', $booking->flight_id)
+                   ->where('aircraft_id', $booking->aircraft_id)
+                   ->where('source_name', 'Hermes ACARS ['.$operationId.']')
+                   ->latest('created_at')->first();
+               $booking->setAttribute('operation_id', $operationId);
+               $booking->setAttribute('operation_ofp', $ofp);
+               $booking->setAttribute('operation_pirep', $pirep);
+               $booking->setAttribute('operation_status', $pirep ? 'VOL EN COURS' : ($ofp ? 'PRÊT POUR PIREP' : 'PRÉPARATION REQUISE'));
+               return $booking;
+           });
        return $this->page('bookings', compact('bookings'));
    }
    public function cancelBooking(string $bid, Request $r) {
