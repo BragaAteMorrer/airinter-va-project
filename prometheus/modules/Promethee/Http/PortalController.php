@@ -511,7 +511,7 @@ class PortalController extends Controller
    private function downloadGroups() {
        $files = File::query()
            ->where(function ($query) {
-               $query->where('ref_model', 'like', 'Modules\\Promethee\\Download\\%')
+               $query->where('ref_model', 'like', 'Modules\\\\Promethee\\\\Download\\\\%')
                    ->orWhereIn('ref_model', [
                        Aircraft::class,
                        Subfleet::class,
