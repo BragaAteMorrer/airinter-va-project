@@ -249,7 +249,7 @@ async function refreshOperations() {
   try {
     showMessage('#flightMessage', 'Chargement de vos réservations…');
     const simulator = simulatorCode();
-    renderOperations(await call('/api/operations' + (simulator ? '?simulator=' + encodeURIComponent(simulator) : '')));
+    renderOperations(await call('/api/v1/operations' + (simulator ? '?simulator=' + encodeURIComponent(simulator) : '')));
     showMessage('#flightMessage', '');
   } catch (error) {
     showMessage('#flightMessage', error.message, true);
@@ -347,24 +347,8 @@ async function selectOperation(operation) {
 
   try {
     const operationRef = operation.operation_id || operation.id || operation.bid_id;
-    const paths = operation.bid_id
-      ? [
-          `/api/v1/operations/${encodeURIComponent(operationRef)}/aircraft-eligibility`,
-          `/api/operations/${encodeURIComponent(operation.bid_id)}/aircraft`,
-          `/api/flights/${encodeURIComponent(flight.id)}/aircraft`
-        ]
-      : [`/api/flights/${encodeURIComponent(flight.id)}/aircraft`];
-    let payload;
-    let lastError;
-    for (const path of paths) {
-      try {
-        payload = unwrap(await call(path));
-        break;
-      } catch (error) {
-        lastError = error;
-      }
-    }
-    if (payload === undefined) throw lastError || new Error('Impossible de charger les appareils.');
+    if (!operationRef) throw new Error('Cette réservation ne possède pas d’identifiant d’opération Prométhée.');
+    const payload = unwrap(await call(`/api/v1/operations/${encodeURIComponent(operationRef)}/aircraft-eligibility`));
     if (payload?.available || payload?.unavailable) renderEligibility(payload);
     const aircraft = Array.isArray(payload) ? payload : (payload?.available || payload?.aircraft || payload?.data || []);
     select.replaceChildren();
@@ -626,7 +610,8 @@ $('#prefileForm').onsubmit = async event => {
       block_fuel: body.block_fuel || flightPlan?.block_fuel || undefined,
       simbrief_source: flightPlan?.source === 'simbrief_account' ? 'simbrief_account' : (String(flightPlan?.source || '').toLowerCase().includes('simbrief') ? 'simbrief' : undefined)
     } : body;
-    const result = unwrap(await call(operationRef ? `/api/v1/operations/${encodeURIComponent(operationRef)}/pirep` : '/api/prefile', operationPirepBody));
+    if (!operationRef) throw new Error('Impossible de pré-déposer le PIREP sans operation_id.');
+    const result = unwrap(await call(`/api/v1/operations/${encodeURIComponent(operationRef)}/pirep`, operationPirepBody));
     pirepId = result.id || result.pirep_id || result.pirep?.id;
     if (!pirepId) throw new Error('Prométhée n’a pas retourné l’identifiant du PIREP.');
     showMessage('#pirepMessage', `PIREP ${pirepId} prêt. Vérification finale du Dispatch Prométhée…`);
