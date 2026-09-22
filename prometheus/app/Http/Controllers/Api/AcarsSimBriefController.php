@@ -147,8 +147,22 @@ class AcarsSimBriefController extends Controller
         abort_unless($origin === strtoupper($flight->dpt_airport_id) && $destination === strtoupper($flight->arr_airport_id), 409,
             "Le dernier OFP SimBrief est {$origin} → {$destination}, mais l’opération sélectionnée est {$flight->dpt_airport_id} → {$flight->arr_airport_id}.");
 
+        // Account mode used to return an ephemeral JSON plan only. Persist the
+        // exact generated OFP in the existing phpVMS SimBrief table as well so
+        // the following PIREP can attach to a concrete SimBrief row.
+        $requestId = (string) data_get($ofp, 'params.request_id', '');
+        abort_if($requestId === '', 502, 'SimBrief n’a pas retourné l’identifiant de l’OFP généré.');
+        $persisted = $this->simBriefSvc->downloadOfp(
+            (string) Auth::id(),
+            $requestId,
+            (string) $flight->id,
+            (string) $aircraft->id
+        );
+        abort_if($persisted === null, 502, 'L’OFP SimBrief a été trouvé mais n’a pas pu être persisté dans Prométhée.');
+
         return response()->json([
             'operation_id' => $request->input('operation_id'),
+            'id' => $persisted->id,
             'source' => 'simbrief_account',
             'static_id' => $staticId,
             'edit_url' => 'https://www.simbrief.com/system/dispatch.php?editflight=last&static_id='.rawurlencode($staticId),
