@@ -30,6 +30,14 @@ jobs:
             echo "$forbidden"
             exit 1
           fi
+      - name: Reject obvious committed secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git grep -nEI -- ':!*.example' ':!*.md' '(BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,})'; then
+            echo "Potential secret material found in tracked files."
+            exit 1
+          fi
       - name: Validate Hermes interface JavaScript
         run: node --check acars/wwwroot/app.js
 
