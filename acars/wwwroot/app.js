@@ -372,6 +372,13 @@ async function selectOperation(operation) {
     showMessage('#pirepMessage', error.message, true);
   }
 }
+function simbriefPath(suffix, flightId) {
+  const operationRef = selectedOperation?.operation_id || selectedOperation?.id;
+  return operationRef
+    ? `/api/v1/operations/${encodeURIComponent(operationRef)}/simbrief/${suffix}`
+    : `/api/flights/${encodeURIComponent(flightId)}/simbrief/${suffix}`;
+}
+
 function normalizeFlightLevel(value) {
   const altitude = Number(value);
   if (!Number.isFinite(altitude) || altitude <= 0) return undefined;
@@ -428,7 +435,7 @@ $('#simbriefAccountOpenBtn').onclick = async () => {
   if (!flightId || !aircraftId) return showMessage('#simbriefState', 'Sélectionnez un vol et un appareil.', true);
   try {
     showMessage('#simbriefState', 'Préparation du dispatch SimBrief…');
-    const payload = unwrap(await call(`/api/flights/${encodeURIComponent(flightId)}/simbrief/redirect`, { aircraft_id: aircraftId }));
+    const payload = unwrap(await call(simbriefPath('redirect', flightId), { aircraft_id: aircraftId }));
     linkedSimBrief = payload;
     const editButton = $('#simbriefAccountEditBtn');
     if (editButton) editButton.hidden = !payload.edit_url;
@@ -458,7 +465,7 @@ $('#simbriefAccountImportBtn').onclick = async () => {
   localStorage.prometheeAcarsSettings = JSON.stringify(localSettings);
   try {
     showMessage('#simbriefState', 'Import du dernier OFP de votre compte SimBrief…');
-    const briefing = unwrap(await call(`/api/flights/${encodeURIComponent(flightId)}/simbrief/account/import`, {
+    const briefing = unwrap(await call(simbriefPath('account/import', flightId), {
       aircraft_id: aircraftId,
       username: username || null,
       pilot_id: username ? null : pilotId
@@ -500,7 +507,7 @@ $('#simbriefBtn').onclick = async () => {
   if (!flightId || !aircraftId) return showMessage('#simbriefState', 'Sélectionnez un vol et un appareil.', true);
   try {
     showMessage('#simbriefState', 'Préparation de la demande SimBrief…');
-    const session = unwrap(await call(`/api/flights/${encodeURIComponent(flightId)}/simbrief/session`, {
+    const session = unwrap(await call(simbriefPath('session', flightId), {
       aircraft_id: aircraftId,
       alternate: form.elements.alt_airport_id.value.trim().toUpperCase(),
       route: form.elements.route.value.trim(),
@@ -531,7 +538,7 @@ $('#simbriefBtn').onclick = async () => {
       showMessage('#simbriefState', 'Import de l’OFP dans Prométhée…');
       for (let attempt = 1; attempt <= 5; attempt += 1) {
         try {
-          const briefing = unwrap(await call(`/api/flights/${encodeURIComponent(flightId)}/simbrief/import`, {
+          const briefing = unwrap(await call(simbriefPath('import', flightId), {
             aircraft_id: aircraftId,
             ofp_id: session.ofp_id
           }));
