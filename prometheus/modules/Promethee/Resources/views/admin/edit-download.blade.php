@@ -4,18 +4,22 @@
 
 @section('content')
 @php($sections = ['acars' => 'ACARS', 'fleet' => 'Avions et flotte', 'airports' => 'Aéroports et HUBs', 'documents' => 'Documents'])
-@php($category = strtolower(str_replace('Modules\\Promethee\\Download\\', '', (string) $asset->ref_model)))
-@php($subcategory = trim((string) $asset->ref_model_id))
-@php($isExternal = $asset->isExternalFile)
-@if ($errors->any())
-<div class="notice danger" role="alert">
-    <strong>Impossible d’enregistrer les modifications.</strong>
-    <ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
-</div>
-@endif
-@if (session('success'))
-<div class="notice success" role="status">{{ session('success') }}</div>
-@endif
+@php
+    $reference = (string) $asset->ref_model;
+    if (str_starts_with($reference, 'Modules\\Promethee\\Download\\')) {
+        $category = strtolower(str_replace('Modules\\Promethee\\Download\\', '', $reference));
+    } elseif (str_contains(strtolower($reference), 'aircraft') || str_contains(strtolower($reference), 'subfleet')) {
+        $category = 'fleet';
+    } elseif (str_contains(strtolower($reference), 'airport')) {
+        $category = 'airports';
+    } elseif (str_contains(strtolower($asset->name.' '.$asset->path), 'acars')) {
+        $category = 'acars';
+    } else {
+        $category = 'documents';
+    }
+    $subcategory = trim((string) $asset->ref_model_id);
+    $isExternal = $asset->isExternalFile;
+@endphp
 
 <div class="ops-header compact">
     <div>
