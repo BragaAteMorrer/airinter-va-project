@@ -1,0 +1,119 @@
+/*
+ * Hermès visual system
+ * --------------------
+ * Presentation-only layer aligned with Prométhée's Air Inter eras.
+ * Functional markup stays era-agnostic so a future Minitel skin can be added
+ * without changing the ACARS workflow. "minitel" is deliberately not exposed.
+ */
+:root{
+  --ai-blue:#075b96;--ai-blue-dark:#064a7c;--ai-blue-light:#82bbd0;--ai-cyan:#118ab8;--ai-red:#d9323c;
+  --ai-success:#187344;--ai-warning:#9a6500;--ai-danger:#b4232c;
+}
+body[data-era="modern"]{
+  --navy:var(--ai-blue-dark);--navy-2:#0b2943;--blue:var(--ai-blue);--blue-2:var(--ai-cyan);--red:var(--ai-red);
+  --bg:#f7fafc;--paper:#fff;--ink:#102c42;--muted:#607487;--line:#dbe5eb;
+  --ok:var(--ai-success);--warning:var(--ai-warning);--danger:var(--ai-danger);--radius:7px;
+  --shadow:0 8px 24px rgb(16 44 66 / 6%);
+  background:#f7fafc;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif
+}
+body[data-era="modern"] .rail{
+  background:#fff;color:var(--ink);border-right:1px solid var(--line);box-shadow:2px 0 12px rgb(11 45 70 / 4%)
+}
+body[data-era="modern"] .rail:before{content:"";position:absolute;inset:0 0 auto;height:6px;background:var(--ai-blue-dark)}
+body[data-era="modern"] .brand{border-color:var(--line)}
+body[data-era="modern"] .brand span{color:var(--ai-blue)}
+body[data-era="modern"] .brand strong{color:var(--ai-blue-dark)}
+body[data-era="modern"] .brand-logo{filter:none}
+body[data-era="modern"] .tab{color:#385064;border-radius:5px}
+body[data-era="modern"] .tab:hover{background:#eef5f8;color:var(--ai-blue)}
+body[data-era="modern"] .tab.active{background:#eef5f8;border-color:#d6e6ee;color:var(--ai-blue-dark);box-shadow:inset 3px 0 var(--ai-red)}
+body[data-era="modern"] .tab.active:before{display:none}
+body[data-era="modern"] .theme{color:#607487}
+body[data-era="modern"] .panel{border-color:var(--line);box-shadow:var(--shadow)}
+body[data-era="modern"] button.primary,body[data-era="modern"] .primary{background:var(--ai-red);border-color:var(--ai-red);box-shadow:none}
+body[data-era="modern"] button.primary:hover,body[data-era="modern"] .primary:hover{background:#bc2833;border-color:#bc2833}
+body[data-era="modern"] .cards div{border-radius:6px;border-top-color:var(--ai-blue)}
+body[data-era="modern"] .cards div:nth-child(2n){border-top-color:var(--ai-cyan)}
+body[data-era="modern"] .cards div:nth-child(3n){border-top-color:var(--ai-red)}
+body[data-era="modern"] .workflow{border-radius:6px}
+body[data-era="modern"] .flight-search,body[data-era="modern"] .flight-draft,body[data-era="modern"] .eligibility,body[data-era="modern"] .flightplan-source{border-radius:6px}
+
+/* 1999-2005: Air Inter web/intranet language, intentionally not an XP parody. */
+body[data-era="2000"]{
+  --bg:#d8e5ed;--paper:#fff;--line:#8ca8b9;--ink:#102b52;--muted:#49667f;
+  --navy:#074f86;--blue:#075d99;--red:#d9323c;--radius:0;--shadow:none;
+  grid-template-columns:238px minmax(0,1fr);background:#d8e5ed;font-family:Arial,Verdana,Tahoma,sans-serif;font-size:13px
+}
+body[data-era="2000"] .rail{padding:18px 12px;background:#fff;color:var(--ink);border-right:1px solid #8ca8b9;box-shadow:none}
+body[data-era="2000"] .brand{border-color:#8ca8b9}
+body[data-era="2000"] .brand-logo{filter:none}
+body[data-era="2000"] .brand span{color:#075d99;font-family:Arial,sans-serif}
+body[data-era="2000"] .brand strong{color:#074f86;font-size:22px}
+body[data-era="2000"] .tab,body[data-era="2000"] button{border:1px solid #064a7c;border-radius:0;background:#075d99;color:#fff;box-shadow:none;text-shadow:none}
+body[data-era="2000"] .tab{text-align:left}
+body[data-era="2000"] .tab:hover,body[data-era="2000"] .tab.active,body[data-era="2000"] button:hover,body[data-era="2000"] button.primary{background:#d9323c;border-color:#b41f2a;color:#fff;transform:none}
+body[data-era="2000"] .tab:disabled{background:#dfe8ed;color:#708697;border-color:#9db0bd}
+body[data-era="2000"] main{max-width:1180px;padding:24px 28px 52px;background:#fff;border-right:1px solid #9cb5c5}
+body[data-era="2000"] h1{font:700 28px Arial,sans-serif;letter-spacing:0;color:#074f86}
+body[data-era="2000"] h2{font:700 18px Arial,sans-serif;letter-spacing:0;color:#074f86}
+body[data-era="2000"] h3{font:700 14px Arial,sans-serif;color:#074f86}
+body[data-era="2000"] .kicker{color:#d9323c;font:700 10px Arial,sans-serif;letter-spacing:.5px}
+body[data-era="2000"] .panel,body[data-era="2000"] .status span,body[data-era="2000"] .cards div,body[data-era="2000"] .operation,body[data-era="2000"] .prefile,body[data-era="2000"] .flight-search,body[data-era="2000"] .flight-draft,body[data-era="2000"] .eligibility,body[data-era="2000"] .flightplan-source,body[data-era="2000"] .workflow,body[data-era="2000"] input,body[data-era="2000"] select,body[data-era="2000"] textarea,body[data-era="2000"] #planBox{border-radius:0;box-shadow:none}
+body[data-era="2000"] .panel{border:1px solid #91aebf;padding:20px}
+body[data-era="2000"] input,body[data-era="2000"] select,body[data-era="2000"] textarea{min-height:30px;padding:5px;border-color:#7f9dae}
+body[data-era="2000"] .status span{min-height:36px;background:#eaf4f8;border-color:#91aebf}
+body[data-era="2000"] .workflow>div{min-height:60px}
+body[data-era="2000"] .workflow span{border-radius:0;background:#075d99;color:#fff}
+body[data-era="2000"] .operation em,body[data-era="2000"] .ready-state{border-radius:0}
+body[data-era="2000"] .cards div{background:#eaf4f8;border-color:#91aebf;border-top:3px solid #075d99}
+
+/* Night mode is independent from the selected era, as in Prométhée. */
+body[data-appearance="dark"]{
+  color-scheme:dark;--bg:#081522;--paper:#0d1b29;--ink:#edf4fa;--muted:#8ea5b8;--line:#29455d;
+  --navy:#edf4fa;--blue:#55a9df;--red:#d94a52;--ok:#6fbd9b;--warning:#e6be69;--danger:#ec8080;
+  --shadow:0 8px 24px #02080e66;background:#081522;color:var(--ink)
+}
+body[data-appearance="dark"] .rail{background:#0a1c2c;color:#b5c6d5;border-color:#29455d;box-shadow:8px 0 28px #02080e66}
+body[data-appearance="dark"] .brand{border-color:#29455d}
+body[data-appearance="dark"] .brand strong,body[data-appearance="dark"] h1,body[data-appearance="dark"] h2,body[data-appearance="dark"] h3{color:#edf4fa}
+body[data-appearance="dark"] .brand span{color:#71b9e5}
+body[data-appearance="dark"] .tab{color:#b5c6d5}
+body[data-appearance="dark"] .tab:hover,body[data-appearance="dark"] .tab.active{background:#173149;color:#fff;border-color:#29455d}
+body[data-appearance="dark"] .theme{color:#a5b8c9}
+body[data-appearance="dark"] .theme select,body[data-appearance="dark"] input,body[data-appearance="dark"] select,body[data-appearance="dark"] textarea{background:#172d40;color:#edf4fa;border-color:#42647f}
+body[data-appearance="dark"] input[readonly]{background:#122536;color:#a5b8c9}
+body[data-appearance="dark"] .panel,body[data-appearance="dark"] .status span,body[data-appearance="dark"] .cards div,body[data-appearance="dark"] .operation,body[data-appearance="dark"] .prefile,body[data-appearance="dark"] .flight-search,body[data-appearance="dark"] .flight-draft,body[data-appearance="dark"] .eligibility,body[data-appearance="dark"] .aircraft-card,body[data-appearance="dark"] .flightplan-source,body[data-appearance="dark"] .source-panel,body[data-appearance="dark"] .login-diagnostics,body[data-appearance="dark"] .settings-sections article{background:#0d1b29;color:#edf4fa;border-color:#29455d;box-shadow:none}
+body[data-appearance="dark"] .workflow{background:#122536;border-color:#29455d}
+body[data-appearance="dark"] .workflow>div{border-color:#29455d}
+body[data-appearance="dark"] .workflow .done{background:#123326}
+body[data-appearance="dark"] .message{background:#123326;border-color:#3e8063;color:#edf4fa}
+body[data-appearance="dark"] .message.error{background:#3a2025;border-color:#a7555d;color:#edf4fa}
+body[data-appearance="dark"] .operation.selected{background:#10283a}
+body[data-appearance="dark"] .hint,body[data-appearance="dark"] .header-subtitle,body[data-appearance="dark"] .operation small,body[data-appearance="dark"] .tools>span,body[data-appearance="dark"] .timeline span{color:#b5c6d5}
+body[data-appearance="dark"] .timeline span{background:#122536;border-color:#29455d}
+body[data-appearance="dark"] .auth-mark{border-color:#29455d}
+body[data-appearance="dark"] #flightMap{border-color:#42647f}
+
+/* The 2000 night variant stays blue-grey and denser rather than becoming modern-dark. */
+body[data-era="2000"][data-appearance="dark"]{--bg:#111a29;--paper:#1b293a;--line:#66809a;--ink:#f0f4f7;--muted:#a5b8c9;--navy:#f0f4f7;--blue:#79b5dc;--red:#e16b70;background:#111a29}
+body[data-era="2000"][data-appearance="dark"] .rail{background:#1b293a;border-color:#66809a;box-shadow:none}
+body[data-era="2000"][data-appearance="dark"] main{background:#111a29;border-color:#66809a}
+body[data-era="2000"][data-appearance="dark"] .tab{background:#193e64;border-color:#79a1bd;color:#f2f6fa}
+body[data-era="2000"][data-appearance="dark"] .tab:hover,body[data-era="2000"][data-appearance="dark"] .tab.active,body[data-era="2000"][data-appearance="dark"] button.primary{background:#7a303b;border-color:#b76a71}
+body[data-era="2000"][data-appearance="dark"] .cards div,body[data-era="2000"][data-appearance="dark"] .status span{background:#26394d;border-color:#66809a}
+
+/* Theme switching is presentation-only and motion respects OS accessibility. */
+body[data-theme-transition],body[data-theme-transition] .rail,body[data-theme-transition] .panel,body[data-theme-transition] .status span,body[data-theme-transition] input,body[data-theme-transition] select,body[data-theme-transition] textarea{transition:background-color 190ms ease,color 190ms ease,border-color 190ms ease,box-shadow 190ms ease}
+@media(prefers-reduced-motion:reduce){body[data-theme-transition] *{transition:none!important}}
+
+/* Future contract: Minitel remains reserved until the shared Prométhée/Hermès design is approved.
+   No selector option and no partial skin are intentionally provided here. */
+body[data-era="minitel"]{--radius:0;--shadow:none}
+
+/* Display controls remain available after authentication, hidden with the rest of operations while locked. */
+.display-controls{margin-top:auto;display:grid;gap:9px}
+.display-controls .theme{margin-top:0}
+body.auth-locked .rail .display-controls{display:none}
+
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+@media(max-width:920px){body[data-era="2000"]{grid-template-columns:1fr}body[data-era="2000"] main{max-width:none;border-right:0}}
