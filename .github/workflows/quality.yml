@@ -75,7 +75,9 @@ jobs:
         shell: pwsh
         run: |
           $state = Join-Path $env:LOCALAPPDATA 'AirInter\Promethee'
-          if (Test-Path $state) { Remove-Item -Recurse -Force $state }
+          if (Test-Path $state) { Remove-Item -Recurse -Force $state -ErrorAction Stop }
+          New-Item -ItemType Directory -Force -Path $state | Out-Null
+          Write-Host "Hermes test state reset: $state"
       - name: Test
         run: dotnet test acars.tests/Promethee.Acars.Tests.csproj --configuration Release --no-restore --framework net8.0 --logger "trx;LogFileName=hermes-tests.trx" --results-directory TestResults
       - name: Upload Hermès test report
