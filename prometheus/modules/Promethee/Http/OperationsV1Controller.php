@@ -14,7 +14,9 @@ use App\Services\PirepService;
 use App\Services\UserService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Modules\Promethee\Services\OperationIdentityService;
+use Modules\Promethee\Services\SafetyAnalyzer;
 
 /**
  * Stable Air Inter operations facade.
@@ -29,7 +31,8 @@ class OperationsV1Controller extends Controller
     public function __construct(
         private readonly UserService $userSvc,
         private readonly PirepService $pirepSvc,
-        private readonly OperationIdentityService $operationIdentity
+        private readonly OperationIdentityService $operationIdentity,
+        private readonly SafetyAnalyzer $safetyAnalyzer
     ) {}
 
     public function index(Request $request)
@@ -227,6 +230,28 @@ class OperationsV1Controller extends Controller
             'server_checks_complete' => true,
             'pirep' => $this->pirepDto($pirep),
             'client_checks_required' => ['SIMULATOR_CONNECTED', 'AIRCRAFT_MATCH', 'DEPARTURE_MATCH'],
+        ]]);
+    }
+
+    public function debrief(string $reference, Request $request)
+    {
+        $pirep = $this->operationIdentity->resolvePirep($reference, (int) $request->user()->id);
+        abort_if(!$pirep, 404, 'Aucun PIREP Hermès trouvé pour cette opération.');
+
+        $samples = DB::table('promethee_telemetry')
+            ->where('pirep_id', $pirep->id)
+            ->orderBy('recorded_at')
+            ->get()
+            ->map(function ($sample) {
+                $payload = json_decode($sample->payload, true) ?: [];
+                $payload['recorded_at'] = (string) $sample->recorded_at;
+                return $payload;
+            })->all();
+
+        return response()->json(['data' => [
+            'operation_id' => str_starts_with($reference, 'op_') ? $reference : 'op_'.$reference,
+            'pirep' => $this->pirepDto($pirep),
+            'debrief' => $this->safetyAnalyzer->debrief($pirep->landing_rate, $samples),
         ]]);
     }
 
