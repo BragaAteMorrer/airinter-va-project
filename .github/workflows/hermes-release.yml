@@ -69,7 +69,9 @@ jobs:
             dist/Hermes-ACARS-Setup-${{ steps.version.outputs.value }}.exe
             dist/Hermes-ACARS-Setup-${{ steps.version.outputs.value }}.exe.sha256
             dist/Promethee-ACARS-win-x64-${{ steps.version.outputs.value }}.zip
+            dist/Promethee-ACARS-win-x64-${{ steps.version.outputs.value }}.zip.sha256
             dist/Promethee-ACARS-win-x64-${{ steps.version.outputs.value }}.zip
+            dist/Promethee-ACARS-win-x64-${{ steps.version.outputs.value }}.zip.sha256
 
       - name: Publish GitHub release
         if: startsWith(github.ref, 'refs/tags/hermes-v')
