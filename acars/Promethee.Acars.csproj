@@ -9,6 +9,12 @@
   <Nullable>enable</Nullable>
   <ImplicitUsings>enable</ImplicitUsings>
   <AssemblyName>Promethee.Acars</AssemblyName>
+  <Product>Hermès — Air Inter Virtual Airlines</Product>
+  <Title>Hermès ACARS</Title>
+  <Description>Client ACARS officiel Air Inter Virtual Airlines</Description>
+  <Company>Air Inter Virtual Airlines</Company>
+  <Authors>Air Inter Virtual Airlines</Authors>
+  <Copyright>Air Inter Virtual Airlines</Copyright>
 </PropertyGroup>
 <ItemGroup>
   <Content Include="wwwroot\**" CopyToOutputDirectory="PreserveNewest" />
