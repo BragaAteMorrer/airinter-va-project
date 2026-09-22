@@ -246,7 +246,13 @@ class OperationsV1Controller extends Controller
 
         abort_if(!$bid->aircraft_id, 409, 'Sélectionnez un appareil avant de préparer le PIREP.');
         $ofp = $this->operationOfp($bid);
-        abort_if(!$ofp, 409, 'Préparez l’OFP SimBrief avant le PIREP.');
+        $plan = $request->validate([
+            'route' => 'nullable|string|max:4000',
+            'level' => 'nullable|integer|min:10|max:600',
+            'block_fuel' => 'nullable|numeric|min:0',
+            'simbrief_source' => 'nullable|string|in:simbrief_account,simbrief_api,simbrief',
+        ]);
+        abort_if(!$ofp && empty($plan['simbrief_source']), 409, 'Préparez ou importez l’OFP SimBrief avant le PIREP.');
 
         $flight = $bid->flight;
         $operationId = $this->operationIdentity->id($bid);
@@ -260,8 +266,9 @@ class OperationsV1Controller extends Controller
             'dpt_airport_id' => $flight->dpt_airport_id,
             'arr_airport_id' => $flight->arr_airport_id,
             'alt_airport_id' => $flight->alt_airport_id,
-            'level' => $flight->level,
-            'route' => $flight->route,
+            'level' => $plan['level'] ?? $flight->level,
+            'route' => $plan['route'] ?? $flight->route,
+            'block_fuel' => $plan['block_fuel'] ?? null,
             'source' => PirepSource::ACARS,
             'source_name' => 'Hermes ACARS ['.$operationId.']',
         ];
@@ -313,11 +320,12 @@ class OperationsV1Controller extends Controller
             : (str_contains($airline, 'cargo') ? config('acars.load_factors.inter_cargo_service') : config('acars.load_factors.air_inter'));
         $ofp = $this->operationOfp($bid);
         $pirep = $this->operationPirep($bid);
+        $ofpAvailable = $ofp !== null || ($pirep !== null && filled($pirep->route));
         return [
             'id' => $this->operationIdentity->id($bid),
             'operation_id' => $this->operationIdentity->id($bid),
             'bid_id' => $bid->id,
-            'status' => $pirep ? 'prefiled' : ($ofp ? 'planned' : 'reserved'),
+            'status' => $pirep ? 'prefiled' : ($ofpAvailable ? 'planned' : 'reserved'),
             'pirep_id' => $pirep?->id,
             'created_at' => optional($bid->created_at)?->toIso8601String(),
             'flight' => [
@@ -343,7 +351,7 @@ class OperationsV1Controller extends Controller
                 'type' => $simbriefType,
                 'addon' => $fallback['addon'] ?? null,
                 'ofp_id' => $ofp?->id,
-                'available' => $ofp !== null,
+                'available' => $ofpAvailable,
             ],
             'operating_rules' => [
                 'passenger_weight_kg' => config('acars.passenger_weight_kg'),
@@ -368,10 +376,11 @@ class OperationsV1Controller extends Controller
 
     private function readinessChecks(Bid $bid, ?SimBrief $ofp, ?Pirep $pirep = null): array
     {
+        $ofpReady = $ofp !== null || ($pirep !== null && filled($pirep->route));
         return [
             ['code' => 'OPERATION', 'ready' => true, 'label' => 'Réservation valide', 'action' => null],
             ['code' => 'AIRCRAFT', 'ready' => $bid->aircraft_id !== null, 'label' => $bid->aircraft_id ? 'Appareil affecté' : 'Appareil à sélectionner', 'action' => $bid->aircraft_id ? null : 'Sélectionnez un appareil autorisé.'],
-            ['code' => 'OFP', 'ready' => $ofp !== null, 'label' => $ofp ? 'OFP SimBrief lié à cette opération' : 'OFP à préparer', 'action' => $ofp ? null : 'Générez ou importez l’OFP SimBrief pour cette réservation.'],
+            ['code' => 'OFP', 'ready' => $ofpReady, 'label' => $ofpReady ? 'OFP lié à cette opération' : 'OFP à préparer', 'action' => $ofpReady ? null : 'Générez ou importez l’OFP SimBrief pour cette réservation.'],
             ['code' => 'PIREP', 'ready' => $pirep !== null, 'label' => $pirep ? 'PIREP pré-déposé' : 'PIREP à préparer', 'action' => $pirep ? null : 'Pré-déposez le PIREP depuis Hermès.'],
         ];
     }
