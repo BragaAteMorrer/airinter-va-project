@@ -585,7 +585,7 @@ $('#prefileForm').onsubmit = async event => {
       route: body.route || flightPlan?.route || undefined,
       level: body.level ? Number(body.level) : (flightPlan?.level || undefined),
       block_fuel: body.block_fuel || flightPlan?.block_fuel || undefined,
-      simbrief_source: flightPlan?.source === 'simbrief_account' ? 'simbrief_account' : (flightPlan ? 'simbrief' : undefined)
+      simbrief_source: flightPlan?.source === 'simbrief_account' ? 'simbrief_account' : (String(flightPlan?.source || '').toLowerCase().includes('simbrief') ? 'simbrief' : undefined)
     } : body;
     const result = unwrap(await call(operationRef ? `/api/v1/operations/${encodeURIComponent(operationRef)}/pirep` : '/api/prefile', operationPirepBody));
     pirepId = result.id || result.pirep_id || result.pirep?.id;
