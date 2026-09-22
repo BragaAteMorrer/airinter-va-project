@@ -20,6 +20,7 @@ class TelemetryController extends Controller
             'samples.*.max_ias'=>'nullable|numeric|between:1,2000','samples.*.vs'=>'nullable|numeric|between:-30000,30000',
             'samples.*.gs'=>'nullable|numeric|between:0,3000','samples.*.heading'=>'nullable|numeric|between:-360,360',
             'samples.*.fuel'=>'nullable|numeric|between:0,1000000',
+            'samples.*.phase'=>'nullable|string|in:BOARDING,PUSHBACK,TAXI_OUT,TAKEOFF,CLIMB,CRUISE,ENROUTE,DESCENT,APPROACH,FINAL,LANDING,TAXI_IN,IN',
             'samples.*.bank'=>'nullable|numeric|between:-180,180',
             'samples.*.localizer_dots'=>'nullable|numeric|between:-100,100',
             'samples.*.glideslope_dots'=>'nullable|numeric|between:-100,100'];
