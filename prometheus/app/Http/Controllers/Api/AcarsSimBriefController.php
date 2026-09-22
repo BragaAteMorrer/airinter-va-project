@@ -48,6 +48,7 @@ class AcarsSimBriefController extends Controller
         $ofpId = $timestamp.'_'.md5($flight->dpt_airport_id.$flight->arr_airport_id.$type);
 
         return response()->json([
+            'operation_id' => $request->input('operation_id'),
             'worker_url' => 'https://www.simbrief.com/ofp/ofp.loader.api.php',
             'ofp_id' => $ofpId,
             'flight_id' => $flight->id,
@@ -109,6 +110,7 @@ class AcarsSimBriefController extends Controller
         ], fn ($value) => $value !== null && $value !== '');
 
         return response()->json([
+            'operation_id' => $request->input('operation_id'),
             'url' => 'https://dispatch.simbrief.com/options/custom?'.http_build_query($parameters, '', '&', PHP_QUERY_RFC3986),
             'edit_url' => 'https://www.simbrief.com/system/dispatch.php?editflight=last&static_id='.rawurlencode($staticId),
             'static_id' => $staticId,
@@ -146,6 +148,7 @@ class AcarsSimBriefController extends Controller
             "Le dernier OFP SimBrief est {$origin} → {$destination}, mais l’opération sélectionnée est {$flight->dpt_airport_id} → {$flight->arr_airport_id}.");
 
         return response()->json([
+            'operation_id' => $request->input('operation_id'),
             'source' => 'simbrief_account',
             'static_id' => $staticId,
             'edit_url' => 'https://www.simbrief.com/system/dispatch.php?editflight=last&static_id='.rawurlencode($staticId),
@@ -183,6 +186,7 @@ class AcarsSimBriefController extends Controller
         $xml = $simbrief->xml;
 
         return response()->json([
+            'operation_id' => $request->input('operation_id'),
             'id' => $simbrief->id,
             'aircraft_id' => $simbrief->aircraft_id,
             'origin' => (string) $xml->origin->icao_code,
@@ -237,9 +241,16 @@ class AcarsSimBriefController extends Controller
     private function staticId(Request $request, string $pilot, string $flightId, string $aircraftId): string
     {
         if ($request->filled('operation_id')) {
-            return 'AIRINTER_OP_'.strtoupper(str_replace('-', '_', (string) $request->input('operation_id')));
+            // The operation is the public correlation key. SimBrief receives the
+            // same deterministic static_id for create/edit/import, so Hermès never
+            // has to guess from the pilot + flight + aircraft + timestamp tuple.
+            $operation = preg_replace('/[^A-Za-z0-9_]/', '_', (string) $request->input('operation_id'));
+
+            return 'AIRINTER_OP_'.strtoupper($operation);
         }
 
+        // Legacy flight endpoints remain available during the Prometheus ->
+        // Prométhée transition, but new Hermès flows use operation_id above.
         return 'AIRINTER_'.strtoupper(str_replace('-', '_', $pilot.'_'.$flightId.'_'.$aircraftId));
     }
 
