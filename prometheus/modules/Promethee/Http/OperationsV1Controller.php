@@ -11,6 +11,7 @@ use App\Models\SimBrief;
 use App\Services\UserService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Modules\Promethee\Services\OperationIdentityService;
 
 /**
  * Stable Air Inter operations facade.
@@ -22,7 +23,10 @@ class OperationsV1Controller extends Controller
 {
     private const SIMULATORS = ['fs2004', 'fsx', 'msfs2020', 'msfs2024', 'xplane'];
 
-    public function __construct(private readonly UserService $userSvc) {}
+    public function __construct(
+        private readonly UserService $userSvc,
+        private readonly OperationIdentityService $operationIdentity
+    ) {}
 
     public function index(Request $request)
     {
@@ -67,6 +71,7 @@ class OperationsV1Controller extends Controller
 
         // A reservation is only an intention to fly. PIREPs are separate
         // operational records and are never removed by cancelling a bid.
+        $this->operationIdentity->forget($bid);
         $bid->delete();
 
         return response()->json(['data' => [
@@ -212,10 +217,14 @@ class OperationsV1Controller extends Controller
         ]]);
     }
 
-    private function bid(string $bidId, Request $request): Bid
+    private function bid(string $reference, Request $request): Bid
     {
+        $bid = $this->operationIdentity->resolveBid($reference, (int) $request->user()->id);
+        abort_if(!$bid, 404, 'Opération introuvable.');
+
         return Bid::with(['flight.airline', 'flight.subfleets', 'aircraft.subfleet'])
-            ->where('user_id', $request->user()->id)->findOrFail($bidId);
+            ->where('user_id', $request->user()->id)
+            ->findOrFail($bid->id);
     }
 
     /**
@@ -250,10 +259,19 @@ class OperationsV1Controller extends Controller
         $loadFactor = str_contains($airline, 'charter') ? config('acars.load_factors.air_charter_international')
             : (str_contains($airline, 'cargo') ? config('acars.load_factors.inter_cargo_service') : config('acars.load_factors.air_inter'));
         $ofp = $this->operationOfp($bid);
+        $identity = $this->operationIdentity->ensure($bid);
+        if ($ofp && (string) ($identity->simbrief_id ?? '') !== (string) $ofp->id) {
+            $this->operationIdentity->attachSimBrief($bid, (string) $ofp->id);
+            $identity = $this->operationIdentity->ensure($bid);
+        }
 
         return [
-            'id' => $bid->id,
+            'id' => $identity->operation_id,
+            'operation_id' => $identity->operation_id,
             'bid_id' => $bid->id,
+            'status' => $identity->status,
+            'pirep_id' => $identity->pirep_id,
+            'created_at' => optional($bid->created_at)?->toIso8601String(),
             'flight' => [
                 'id' => $flight?->id,
                 'ident' => $flight?->ident,
