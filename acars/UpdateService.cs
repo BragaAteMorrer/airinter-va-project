@@ -17,6 +17,6 @@ internal static class UpdateService
   if (string.IsNullOrWhiteSpace(version) || string.IsNullOrWhiteSpace(url)) return null;
   return new(version, url, root.TryGetProperty("mandatory", out var required) && required.GetBoolean(), root.TryGetProperty("sha256", out var checksum) ? checksum.GetString() : null);
  }
- public static bool IsNewer(string candidate) { static Version P(string v) { var c=v.Split('+','-',2)[0].TrimStart('v','V'); return Version.TryParse(c,out var p)?p:new Version(0,0); } return P(candidate)>P(CurrentVersion); }
+ public static bool IsNewer(string candidate) { static Version P(string v) { var c=v.Split(new[] { '+', '-' }, 2, StringSplitOptions.None)[0].TrimStart('v','V'); return Version.TryParse(c,out var p)?p:new Version(0,0); } return P(candidate)>P(CurrentVersion); }
  public static void OpenDownload(HermesRelease release) => Process.Start(new ProcessStartInfo(release.DownloadUrl){UseShellExecute=true});
 }
