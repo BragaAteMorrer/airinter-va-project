@@ -258,7 +258,13 @@ class OperationsV1Controller extends Controller
     public function pirep(string $reference, Request $request)
     {
         $bid = $this->bid($reference, $request);
-        return response()->json(['data' => $this->pirepDto($this->operationPirep($bid))]);
+        $pirep = $this->operationPirep($bid);
+
+        return response()->json(['data' => [
+            'operation_id' => $this->operationIdentity->id($bid),
+            'pirep' => $this->pirepDto($pirep),
+            'pirep_id' => $pirep?->id,
+        ]]);
     }
 
     public function prefilePirep(string $reference, Request $request)
@@ -266,7 +272,12 @@ class OperationsV1Controller extends Controller
         $bid = $this->bid($reference, $request);
         $existing = $this->operationPirep($bid);
         if ($existing) {
-            return response()->json(['data' => $this->pirepDto($existing)]);
+            return response()->json(['data' => [
+                'operation_id' => $this->operationIdentity->id($bid),
+                'pirep' => $this->pirepDto($existing),
+                'pirep_id' => $existing->id,
+                'already_prefiled' => true,
+            ]]);
         }
 
         abort_if(!$bid->aircraft_id, 409, 'Sélectionnez un appareil avant de préparer le PIREP.');
@@ -283,6 +294,7 @@ class OperationsV1Controller extends Controller
         $operationId = $this->operationIdentity->id($bid);
         $attrs = [
             'flight_id' => $flight->id,
+            'simbrief_id' => $ofp?->id,
             'airline_id' => $flight->airline_id,
             'aircraft_id' => $bid->aircraft_id,
             'flight_number' => $flight->flight_number,
@@ -299,7 +311,22 @@ class OperationsV1Controller extends Controller
         ];
 
         $pirep = $this->pirepSvc->prefile($request->user(), $attrs, [], []);
-        return response()->json(['data' => $this->pirepDto($pirep)], 201);
+        $pirep->refresh();
+
+        return response()->json(['data' => [
+            'operation_id' => $operationId,
+            'pirep' => $this->pirepDto($pirep),
+            'pirep_id' => $pirep->id,
+            'simbrief_id' => $ofp?->id,
+            'correlation' => [
+                'operation' => $operationId,
+                'bid' => $bid->id,
+                'flight' => $flight->id,
+                'aircraft' => $bid->aircraft_id,
+                'simbrief' => $ofp?->id,
+                'pirep' => $pirep->id,
+            ],
+        ]], 201);
     }
 
     private function bid(string $reference, Request $request): Bid
