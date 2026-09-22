@@ -80,7 +80,7 @@ public sealed class PrometheeWindow : Window
     {
         var uri = new Uri("https://promethee.local" + path); var route = uri.AbsolutePath;
         if (route.StartsWith("/api/v1/", StringComparison.Ordinal)) {
-            var remote = route.TrimStart('/');
+            var remote = route["/api/".Length..];
             if (body.HasValue && body.Value.ValueKind != JsonValueKind.Null) {
                 return await client.Send(remote + uri.Query, body.Value);
             }
