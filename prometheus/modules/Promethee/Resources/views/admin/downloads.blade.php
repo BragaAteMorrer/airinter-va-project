@@ -8,9 +8,6 @@
     <ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
 </div>
 @endif
-@if (session('success'))
-<div class="notice success" role="status">{{ session('success') }}</div>
-@endif
 <div class="ops-header compact"><div><span class="eyebrow">ADMINISTRATION</span><h1>Centre de téléchargements.</h1><p>Créez des sous-catégories pour que chaque espace pilote ait sa page dédiée. Choisissez « Documents » pour alimenter la bibliothèque de la communauté.</p></div><a class="button outline" href="{{ route('promethee.downloads') }}">Voir le centre pilote</a></div>
 <section class="panel"><div class="panel-heading"><div><span class="eyebrow">NOUVELLE RESSOURCE</span><h2>Publier un téléchargement</h2></div></div><form method="post" enctype="multipart/form-data" action="{{ route('admin.promethee.downloads.store') }}" class="flight-filter">@csrf<label class="filter-wide">Nom<input name="name" value="{{ old('name') }}" required></label><label>Catégorie<select name="category">@foreach($sections as $key=>$title)<option value="{{ $key }}" @selected(old('category')===$key)>{{ $title }}</option>@endforeach</select></label><label>Sous-catégorie<input name="subcategory" maxlength="80" value="{{ old('subcategory') }}" placeholder="Ex. MSFS, Airbus, Manuels"></label><label>Fichier<input name="file" type="file"></label><label>ou URL<input name="url" type="url" value="{{ old('url') }}" placeholder="https://…"></label><label>Description<textarea name="description">{{ old('description') }}</textarea></label><label><input name="public" value="1" type="checkbox"> accessible sans connexion</label><button>Publier</button></form></section>
 @foreach($sections as $key => $title)
