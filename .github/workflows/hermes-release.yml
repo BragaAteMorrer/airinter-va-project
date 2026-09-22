@@ -12,7 +12,7 @@ on:
       - 'hermes-v*'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   windows-release:
@@ -59,7 +59,7 @@ jobs:
         shell: pwsh
         run: ./acars/build-installer.ps1 -Version '${{ steps.version.outputs.value }}'
 
-      - name: Upload Hermès release
+      - name: Upload Hermès build artifact
         uses: actions/upload-artifact@v4
         with:
           name: Hermes-ACARS-${{ steps.version.outputs.value }}
@@ -69,3 +69,12 @@ jobs:
             dist/Hermes-ACARS-Setup-${{ steps.version.outputs.value }}.exe
             dist/Hermes-ACARS-Setup-${{ steps.version.outputs.value }}.exe.sha256
             dist/Promethee-ACARS-win-x64-${{ steps.version.outputs.value }}.zip
+
+      - name: Publish GitHub release
+        if: startsWith(github.ref, 'refs/tags/hermes-v')
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            dist/Hermes-ACARS-Setup-${{ steps.version.outputs.value }}.exe
+            dist/Hermes-ACARS-Setup-${{ steps.version.outputs.value }}.exe.sha256
