@@ -29,8 +29,7 @@ public sealed class PrometheeWindow : Window
     public PrometheeWindow()
     {
         telemetry = new(sim, recorder, client); Title = "Hermès ACARS — Air Inter";
-        var iconPath = Path.Combine(AppContext.BaseDirectory, "wwwroot", "air-inter-va-hermes.png");
-        if (System.IO.File.Exists(iconPath)) Icon = BitmapFrame.Create(new Uri(iconPath, UriKind.Absolute));
+        Icon = BitmapFrame.Create(new Uri("pack://application:,,,/assets/hermes.ico", UriKind.Absolute));
         Width=1280; Height=840; MinWidth=900; MinHeight=620; WindowStartupLocation=WindowStartupLocation.CenterScreen; WindowState=WindowState.Maximized; Content=web;
         Loaded += async (_, _) => { await StartAsync(); await CheckForUpdatesAsync(); }; Closed += (_, _) => sim.Dispose();
         var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(1) }; timer.Tick += async (_, _) => await Tick(); timer.Start();

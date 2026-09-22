@@ -197,7 +197,7 @@ class OperationsV1Controller extends Controller
         ]]);
     }
 
-    public function dispatch(string $bidId, Request $request)
+    public function operationDispatch(string $bidId, Request $request)
     {
         $bid = $this->bid($bidId, $request);
         $ofp = $this->operationOfp($bid);

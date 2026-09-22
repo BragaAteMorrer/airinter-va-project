@@ -15,12 +15,14 @@
   <Company>Air Inter Virtual Airlines</Company>
   <Authors>Air Inter Virtual Airlines</Authors>
   <Copyright>Air Inter Virtual Airlines</Copyright>
+  <ApplicationIcon Condition="'$(TargetFramework)' == 'net8.0-windows'">assets\hermes.ico</ApplicationIcon>
 </PropertyGroup>
 <ItemGroup>
   <Content Include="wwwroot\**" CopyToOutputDirectory="PreserveNewest" />
 </ItemGroup>
 <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
   <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3065.39" />
+  <Resource Include="assets\hermes.ico" />
 </ItemGroup>
 <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
   <FrameworkReference Include="Microsoft.AspNetCore.App" />

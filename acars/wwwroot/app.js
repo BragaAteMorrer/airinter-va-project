@@ -52,12 +52,34 @@ try { savedSettings = JSON.parse(localStorage.prometheeAcarsSettings || '{}'); }
 let localSettings = { ...defaultSettings, ...savedSettings };
 
 const era = $('#era');
-document.body.dataset.era = localStorage.prometheeEra || 'modern';
-era.value = document.body.dataset.era;
-era.onchange = () => {
-  document.body.dataset.era = era.value;
-  localStorage.prometheeEra = era.value;
-};
+const appearance = $('#appearance');
+const allowedEras = ['modern', '2000'];
+const reservedEras = ['minitel'];
+const allowedAppearances = ['light', 'dark'];
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function applyDisplay(eraValue, appearanceValue, persist = true) {
+  const nextEra = allowedEras.includes(eraValue) ? eraValue : 'modern';
+  const nextAppearance = allowedAppearances.includes(appearanceValue) ? appearanceValue : 'light';
+  document.body.dataset.era = nextEra;
+  document.body.dataset.appearance = nextAppearance;
+  era.value = nextEra;
+  appearance.value = nextAppearance;
+  if (persist) {
+    localStorage.hermesEra = nextEra;
+    localStorage.hermesAppearance = nextAppearance;
+    if (!reduceMotion) {
+      document.body.dataset.themeTransition = 'true';
+      setTimeout(() => delete document.body.dataset.themeTransition, 230);
+    }
+  }
+}
+
+const storedEra = localStorage.hermesEra || localStorage.prometheeEra || 'modern';
+const storedAppearance = localStorage.hermesAppearance || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+applyDisplay(reservedEras.includes(storedEra) ? 'modern' : storedEra, storedAppearance, false);
+era.onchange = () => applyDisplay(era.value, document.body.dataset.appearance);
+appearance.onchange = () => applyDisplay(document.body.dataset.era, appearance.value);
 Object.entries(localSettings).forEach(([key, value]) => {
   if (settingsForm.elements[key]) settingsForm.elements[key].value = value;
 });
