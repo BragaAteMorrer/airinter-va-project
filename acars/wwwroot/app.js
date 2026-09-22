@@ -151,7 +151,7 @@ function renderEligibility(payload) {
     card.className = 'aircraft-card ' + (aircraft.eligible ? 'eligible' : 'blocked');
     const title = document.createElement('div');
     const name = document.createElement('strong');
-    name.textContent = [aircraft.registration, aircraft.icao || aircraft.subfleet].filter(Boolean).join(' · ');
+    name.textContent = [aircraft.registration, aircraft.name, aircraft.icao || aircraft.subfleet].filter(Boolean).join(' · ');
     const status = document.createElement('em');
     status.textContent = aircraft.eligible ? 'DISPONIBLE' : 'INDISPONIBLE';
     title.append(name, status);
@@ -210,7 +210,7 @@ function operationCard(operation) {
   const detail = document.createElement('small');
   setText(title, displayFlightIdent(flight));
   setText(route, `${flight.departure || '?'} → ${flight.arrival || '?'}`);
-  setText(detail, aircraft.registration || aircraft.subfleet || 'Appareil à sélectionner');
+  setText(detail, [aircraft.registration, aircraft.name].filter(Boolean).join(' · ') || aircraft.subfleet || 'Appareil à sélectionner');
   const badge = document.createElement('em');
   badge.textContent = operation.bid_id ? 'RÉSERVÉ' : 'PROGRAMME';
   button.append(badge, title, route, detail);
@@ -282,7 +282,7 @@ $('#flightSearchForm').onsubmit = event => {
 function addAircraftOption(select, aircraft) {
   const option = document.createElement('option');
   option.value = aircraft.id || '';
-  option.textContent = aircraft.registration || aircraft.name || aircraft.icao || 'Appareil sans immatriculation';
+  option.textContent = [aircraft.registration, aircraft.name].filter(Boolean).join(' · ') || aircraft.icao || aircraft.subfleet || 'Appareil sans immatriculation';
   option.dataset.aircraft = JSON.stringify(aircraft);
   select.append(option);
 }
