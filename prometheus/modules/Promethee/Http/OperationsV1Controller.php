@@ -21,6 +21,19 @@ class OperationsV1Controller extends Controller
 {
     public function __construct(private readonly UserService $userSvc) {}
 
+    public function index(Request $request)
+    {
+        $bids = Bid::with(['flight.airline', 'flight.subfleets', 'aircraft.subfleet'])
+            ->where('user_id', $request->user()->id)
+            ->latest()
+            ->get();
+
+        return response()->json(['data' => [
+            'contract_version' => '1.0',
+            'operations' => $bids->map(fn (Bid $bid) => $this->operationDto($bid))->values(),
+        ]]);
+    }
+
     public function me(Request $request)
     {
         $user = $request->user();
