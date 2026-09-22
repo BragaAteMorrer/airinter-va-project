@@ -336,9 +336,10 @@ async function selectOperation(operation) {
   }
 
   try {
+    const operationRef = operation.operation_id || operation.id || operation.bid_id;
     const paths = operation.bid_id
       ? [
-          `/api/v1/operations/${encodeURIComponent(operation.bid_id)}/aircraft-eligibility`,
+          `/api/v1/operations/${encodeURIComponent(operationRef)}/aircraft-eligibility`,
           `/api/operations/${encodeURIComponent(operation.bid_id)}/aircraft`,
           `/api/flights/${encodeURIComponent(flight.id)}/aircraft`
         ]
@@ -572,7 +573,8 @@ $('#prefileForm').onsubmit = async event => {
   if (body.alt_airport_id) body.alt_airport_id = body.alt_airport_id.toUpperCase();
   Object.assign(body, flightPlan || {}, { source_name: 'Hermes ACARS' });
   try {
-    const result = unwrap(await call('/api/prefile', body));
+    const operationRef = selectedOperation?.operation_id || selectedOperation?.id;
+    const result = unwrap(await call(operationRef ? `/api/v1/operations/${encodeURIComponent(operationRef)}/pirep` : '/api/prefile', operationRef ? {} : body));
     pirepId = result.id || result.pirep_id || result.pirep?.id;
     if (!pirepId) throw new Error('Prométhée n’a pas retourné l’identifiant du PIREP.');
     showMessage('#pirepMessage', `PIREP ${pirepId} prêt. Hermès est armé pour l’enregistrement.`);
@@ -585,7 +587,7 @@ $('#prefileForm').onsubmit = async event => {
 
 async function action(path, success) {
   try {
-    await call(path, path === '/api/start' ? { pirepId } : {});
+    await call(path, path === '/api/start' ? { pirepId, operationId: selectedOperation?.operation_id || selectedOperation?.id || null } : {});
     showMessage('#recordMessage', success);
   } catch (error) {
     showMessage('#recordMessage', error.message, true);
