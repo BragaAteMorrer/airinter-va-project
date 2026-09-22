@@ -86,6 +86,8 @@ class AcarsSimBriefController extends Controller
         $type = $aircraft->simbrief_type ?: ($aircraft->subfleet->simbrief_type ?: $aircraft->icao);
         abort_if(empty($type), 422, 'Le type SimBrief de cet appareil n’est pas configuré.');
 
+        $staticId = 'AIRINTER_'.strtoupper(str_replace('-', '_', (string) Auth::id().'_'.$flight->id.'_'.$aircraft->id));
+
         $parameters = array_filter([
             'airline' => $flight->airline->icao,
             'fltnum' => $flight->flight_number,
@@ -101,10 +103,13 @@ class AcarsSimBriefController extends Controller
             'planformat' => 'LIDO',
             'navlog' => '1',
             'maps' => 'detail',
+            'static_id' => $staticId,
         ], fn ($value) => $value !== null && $value !== '');
 
         return response()->json([
             'url' => 'https://dispatch.simbrief.com/options/custom?'.http_build_query($parameters, '', '&', PHP_QUERY_RFC3986),
+            'edit_url' => 'https://www.simbrief.com/system/dispatch.php?editflight=last&static_id='.rawurlencode($staticId),
+            'static_id' => $staticId,
             'parameters' => $parameters,
         ]);
     }
@@ -123,9 +128,10 @@ class AcarsSimBriefController extends Controller
         abort_if(empty($attrs['username']) && empty($attrs['pilot_id']), 422, 'Renseignez votre alias Navigraph ou votre Pilot ID SimBrief.');
 
         [$flight, $aircraft] = $this->getEligibleOperation($flight_id, $attrs['aircraft_id']);
+        $staticId = 'AIRINTER_'.strtoupper(str_replace('-', '_', (string) Auth::id().'_'.$flight->id.'_'.$aircraft->id));
         $query = !empty($attrs['username'])
-            ? ['username' => $attrs['username'], 'json' => 'v2']
-            : ['userid' => $attrs['pilot_id'], 'json' => 'v2'];
+            ? ['username' => $attrs['username'], 'static_id' => $staticId, 'json' => 1]
+            : ['userid' => $attrs['pilot_id'], 'static_id' => $staticId, 'json' => 1];
 
         $response = Http::acceptJson()->timeout(15)->get('https://www.simbrief.com/api/xml.fetcher.php', $query);
         abort_unless($response->successful(), 502, 'SimBrief n’a pas pu retourner le dernier OFP de ce compte.');
@@ -139,6 +145,8 @@ class AcarsSimBriefController extends Controller
 
         return response()->json([
             'source' => 'simbrief_account',
+            'static_id' => $staticId,
+            'edit_url' => 'https://www.simbrief.com/system/dispatch.php?editflight=last&static_id='.rawurlencode($staticId),
             'aircraft_id' => $aircraft->id,
             'origin' => $origin,
             'destination' => $destination,
