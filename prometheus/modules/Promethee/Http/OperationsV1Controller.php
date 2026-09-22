@@ -8,6 +8,9 @@ use App\Models\Bid;
 use App\Models\Enums\AircraftState;
 use App\Models\Enums\AircraftStatus;
 use App\Models\SimBrief;
+use App\Models\Pirep;
+use App\Models\Enums\PirepSource;
+use App\Services\PirepService;
 use App\Services\UserService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -25,6 +28,7 @@ class OperationsV1Controller extends Controller
 
     public function __construct(
         private readonly UserService $userSvc,
+        private readonly PirepService $pirepSvc,
         private readonly OperationIdentityService $operationIdentity
     ) {}
 
@@ -68,6 +72,7 @@ class OperationsV1Controller extends Controller
     {
         $bid = $this->bid($bidId, $request);
         $ident = $bid->flight?->ident ?? $bid->flight_id;
+        abort_if($this->operationPirep($bid), 409, 'Cette opération possède déjà un PIREP et ne peut plus être supprimée.');
         // A reservation is only an intention to fly. PIREPs are separate
         // operational records and are never removed by cancelling a bid.
         $bid->delete();
@@ -189,16 +194,21 @@ class OperationsV1Controller extends Controller
     {
         $bid = $this->bid($bidId, $request);
         $ofp = $this->operationOfp($bid);
-        $checks = $this->readinessChecks($bid, $ofp);
+        $pirep = $this->operationPirep($bid);
+        $checks = $this->readinessChecks($bid, $ofp, $pirep);
+        $serverReady = collect($checks)->every(fn ($check) => $check['ready']);
 
         return response()->json(['data' => [
             'contract_version' => '1.0',
             'operation' => $this->operationDto($bid),
             'ofp' => $this->ofpDto($ofp),
-            'ready' => collect($checks)->every(fn ($check) => $check['ready']),
+            'status' => $serverReady ? 'READY' : 'PREPARATION_REQUIRED',
+            'ready' => $serverReady,
+            'server_checks' => collect($checks)->mapWithKeys(fn ($check) => [strtolower($check['code']) => $check['ready']]),
             'checks' => $checks,
             'actions' => collect($checks)->where('ready', false)->pluck('action')->filter()->values(),
-            'client_checks_required' => ['SIMULATOR_CONNECTED', 'AIRCRAFT_MATCH', 'DEPARTURE_MATCH', 'PIREP_PREFILED'],
+            'pirep' => $this->pirepDto($pirep),
+            'client_checks_required' => ['SIMULATOR_CONNECTED', 'AIRCRAFT_MATCH', 'DEPARTURE_MATCH'],
         ]]);
     }
 
@@ -206,7 +216,8 @@ class OperationsV1Controller extends Controller
     {
         $bid = $this->bid($bidId, $request);
         $ofp = $this->operationOfp($bid);
-        $checks = $this->readinessChecks($bid, $ofp);
+        $pirep = $this->operationPirep($bid);
+        $checks = $this->readinessChecks($bid, $ofp, $pirep);
 
         return response()->json(['data' => [
             'operation_id' => $this->operationIdentity->id($bid),
@@ -214,8 +225,49 @@ class OperationsV1Controller extends Controller
             'ready' => collect($checks)->every(fn ($check) => $check['ready']),
             'checks' => $checks,
             'server_checks_complete' => true,
-            'client_checks_required' => ['SIMULATOR_CONNECTED', 'AIRCRAFT_MATCH', 'DEPARTURE_MATCH', 'PIREP_PREFILED'],
+            'pirep' => $this->pirepDto($pirep),
+            'client_checks_required' => ['SIMULATOR_CONNECTED', 'AIRCRAFT_MATCH', 'DEPARTURE_MATCH'],
         ]]);
+    }
+
+    public function pirep(string $reference, Request $request)
+    {
+        $bid = $this->bid($reference, $request);
+        return response()->json(['data' => $this->pirepDto($this->operationPirep($bid))]);
+    }
+
+    public function prefilePirep(string $reference, Request $request)
+    {
+        $bid = $this->bid($reference, $request);
+        $existing = $this->operationPirep($bid);
+        if ($existing) {
+            return response()->json(['data' => $this->pirepDto($existing)]);
+        }
+
+        abort_if(!$bid->aircraft_id, 409, 'Sélectionnez un appareil avant de préparer le PIREP.');
+        $ofp = $this->operationOfp($bid);
+        abort_if(!$ofp, 409, 'Préparez l’OFP SimBrief avant le PIREP.');
+
+        $flight = $bid->flight;
+        $operationId = $this->operationIdentity->id($bid);
+        $attrs = [
+            'flight_id' => $flight->id,
+            'airline_id' => $flight->airline_id,
+            'aircraft_id' => $bid->aircraft_id,
+            'flight_number' => $flight->flight_number,
+            'route_code' => $flight->route_code,
+            'route_leg' => $flight->route_leg,
+            'dpt_airport_id' => $flight->dpt_airport_id,
+            'arr_airport_id' => $flight->arr_airport_id,
+            'alt_airport_id' => $flight->alt_airport_id,
+            'level' => $flight->level,
+            'route' => $flight->route,
+            'source' => PirepSource::ACARS,
+            'source_name' => 'Hermes ACARS ['.$operationId.']',
+        ];
+
+        $pirep = $this->pirepSvc->prefile($request->user(), $attrs, [], []);
+        return response()->json(['data' => $this->pirepDto($pirep)], 201);
     }
 
     private function bid(string $reference, Request $request): Bid
@@ -301,12 +353,25 @@ class OperationsV1Controller extends Controller
         ];
     }
 
-    private function readinessChecks(Bid $bid, ?SimBrief $ofp): array
+    private function operationPirep(Bid $bid): ?Pirep
+    {
+        $operationId = $this->operationIdentity->id($bid);
+        return Pirep::query()
+            ->where('user_id', $bid->user_id)
+            ->where('flight_id', $bid->flight_id)
+            ->where('aircraft_id', $bid->aircraft_id)
+            ->where('source_name', 'Hermes ACARS ['.$operationId.']')
+            ->latest('created_at')
+            ->first();
+    }
+
+    private function readinessChecks(Bid $bid, ?SimBrief $ofp, ?Pirep $pirep = null): array
     {
         return [
             ['code' => 'OPERATION', 'ready' => true, 'label' => 'Réservation valide', 'action' => null],
             ['code' => 'AIRCRAFT', 'ready' => $bid->aircraft_id !== null, 'label' => $bid->aircraft_id ? 'Appareil affecté' : 'Appareil à sélectionner', 'action' => $bid->aircraft_id ? null : 'Sélectionnez un appareil autorisé.'],
             ['code' => 'OFP', 'ready' => $ofp !== null, 'label' => $ofp ? 'OFP SimBrief lié à cette opération' : 'OFP à préparer', 'action' => $ofp ? null : 'Générez ou importez l’OFP SimBrief pour cette réservation.'],
+            ['code' => 'PIREP', 'ready' => $pirep !== null, 'label' => $pirep ? 'PIREP pré-déposé' : 'PIREP à préparer', 'action' => $pirep ? null : 'Pré-déposez le PIREP depuis Hermès.'],
         ];
     }
 
@@ -318,6 +383,25 @@ class OperationsV1Controller extends Controller
             'aircraft_id' => $ofp->aircraft_id,
             'updated_at' => optional($ofp->updated_at)?->toIso8601String(),
         ] : ['id' => null, 'available' => false, 'aircraft_id' => null, 'updated_at' => null];
+    }
+
+    private function pirepDto(?Pirep $pirep): array
+    {
+        return $pirep ? [
+            'id' => $pirep->id,
+            'available' => true,
+            'state' => $pirep->state,
+            'status' => $pirep->status,
+            'created_at' => optional($pirep->created_at)?->toIso8601String(),
+            'submitted_at' => optional($pirep->submitted_at)?->toIso8601String(),
+        ] : [
+            'id' => null,
+            'available' => false,
+            'state' => null,
+            'status' => null,
+            'created_at' => null,
+            'submitted_at' => null,
+        ];
     }
 
     private function reason(string $code, string $message): array
