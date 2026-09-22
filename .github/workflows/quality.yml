@@ -71,6 +71,11 @@ jobs:
         run: dotnet restore acars/Promethee.Acars.csproj
       - name: Build Windows desktop
         run: dotnet build acars/Promethee.Acars.csproj --configuration Release --no-restore --framework net8.0-windows
+      - name: Reset Hermès test state
+        shell: pwsh
+        run: |
+          $state = Join-Path $env:LOCALAPPDATA 'AirInter\Promethee'
+          if (Test-Path $state) { Remove-Item -Recurse -Force $state }
       - name: Test
         run: dotnet test acars.tests/Promethee.Acars.Tests.csproj --configuration Release --no-restore --framework net8.0 --logger "trx;LogFileName=hermes-tests.trx" --results-directory TestResults
       - name: Upload Hermès test report
