@@ -312,12 +312,13 @@ class OperationsV1Controller extends Controller
         $loadFactor = str_contains($airline, 'charter') ? config('acars.load_factors.air_charter_international')
             : (str_contains($airline, 'cargo') ? config('acars.load_factors.inter_cargo_service') : config('acars.load_factors.air_inter'));
         $ofp = $this->operationOfp($bid);
+        $pirep = $this->operationPirep($bid);
         return [
             'id' => $this->operationIdentity->id($bid),
             'operation_id' => $this->operationIdentity->id($bid),
             'bid_id' => $bid->id,
-            'status' => 'reserved',
-            'pirep_id' => null,
+            'status' => $pirep ? 'prefiled' : ($ofp ? 'planned' : 'reserved'),
+            'pirep_id' => $pirep?->id,
             'created_at' => optional($bid->created_at)?->toIso8601String(),
             'flight' => [
                 'id' => $flight?->id,
