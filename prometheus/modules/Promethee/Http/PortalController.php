@@ -566,14 +566,21 @@ class PortalController extends Controller
        else { $asset = new File($attributes); $asset->id = File::createNewHashId(); $asset->path = $data['url']; $asset->save(); }
        return back()->with('success', 'Téléchargement enregistré.');
    }
+   private function isManagedDownload(File $asset): bool {
+       $reference = trim((string) $asset->ref_model);
+       // Prométhée owns its native downloads. Legacy standalone ACARS entries
+       // can also be adopted safely; catalogue attachments keep their original
+       // Aircraft/Subfleet/Airport relationship and remain read-only here.
+       return str_starts_with($reference, 'Modules\\Promethee\\Download\\') || $reference === '';
+   }
    public function editDownload(string $file) {
        $asset = File::findOrFail($file);
-       abort_unless(str_starts_with((string) $asset->ref_model, 'Modules\\Promethee\\Download\\'), 403);
+       abort_unless($this->isManagedDownload($asset), 403);
        return $this->page('admin.edit-download', compact('asset'));
    }
    public function updateDownload(Request $r, string $file, FileService $files) {
        $asset = File::findOrFail($file);
-       abort_unless(str_starts_with((string) $asset->ref_model, 'Modules\\Promethee\\Download\\'), 403);
+       abort_unless($this->isManagedDownload($asset), 403);
 
        $data = $r->validate([
            'name' => 'required|string|max:120', 'description' => 'nullable|string|max:1000',
@@ -599,7 +606,7 @@ class PortalController extends Controller
    }
    public function deleteDownload(string $file, FileService $files) {
        $asset = File::findOrFail($file);
-       abort_unless(str_starts_with((string) $asset->ref_model, 'Modules\\Promethee\\Download\\'), 403);
+       abort_unless($this->isManagedDownload($asset), 403);
        $files->removeFile($asset);
        return back()->with('success', 'Téléchargement supprimé.');
    }
