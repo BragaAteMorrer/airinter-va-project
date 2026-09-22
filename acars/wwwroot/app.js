@@ -34,6 +34,7 @@ let selectedAircraft = null;
 let pirepId = null;
 let flightPlan = null;
 let linkedSimBrief = null;
+let serverDispatch = null;
 let connected = false;
 let readiness = { operation: false, aircraft: false, ofp: false, pirep: false, simulator: false };
 
@@ -320,6 +321,7 @@ async function selectOperation(operation) {
   $('#selectedOperation').hidden = false;
   form.hidden = false;
   showMessage('#pirepMessage', '');
+  serverDispatch = null;
 
   const select = $('#aircraftId');
   select.replaceChildren();
@@ -332,6 +334,8 @@ async function selectOperation(operation) {
     select.replaceChildren();
     addAircraftOption(select, selectedAircraft);
     select.value = selectedAircraft.id;
+    try { await refreshDispatch(); }
+    catch (error) { showMessage('#pirepMessage', 'Dispatch indisponible : ' + error.message, true); }
     return;
   }
 
@@ -371,7 +375,37 @@ async function selectOperation(operation) {
     loading.textContent = 'Appareils indisponibles';
     showMessage('#pirepMessage', error.message, true);
   }
+
+  try { await refreshDispatch(); }
+  catch (error) { showMessage('#pirepMessage', 'Dispatch indisponible : ' + error.message, true); }
 }
+
+async function refreshDispatch() {
+  const operationRef = selectedOperation?.operation_id || selectedOperation?.id;
+  if (!operationRef) { serverDispatch = null; return null; }
+
+  serverDispatch = unwrap(await call(`/api/v1/operations/${encodeURIComponent(operationRef)}/dispatch`));
+  const checks = serverDispatch?.server_checks || {};
+  readiness.operation = Boolean(checks.operation);
+  readiness.aircraft = Boolean(checks.aircraft);
+  readiness.ofp = Boolean(checks.ofp);
+  readiness.pirep = Boolean(checks.pirep);
+
+  const labels = { PREPARATION_REQUIRED: 'PRÉPARATION REQUISE', READY: 'PRÊT POUR HERMÈS', IN_PROGRESS: 'VOL EN COURS', COMPLETED: 'VOL TERMINÉ', CANCELLED: 'OPÉRATION ANNULÉE' };
+  setText($('#operationBrief'), `${labels[serverDispatch?.status] || serverDispatch?.status || 'DISPATCH'} · Dispatch Prométhée`);
+  updateReadiness();
+  return serverDispatch;
+}
+
+async function assertDispatchCanStart() {
+  const dispatch = await refreshDispatch();
+  if (!dispatch?.can_start) {
+    const actions = Array.isArray(dispatch?.actions) ? dispatch.actions.filter(Boolean).join(' ') : '';
+    throw new Error(actions || `Prométhée refuse le démarrage : ${dispatch?.status || 'opération non prête'}.`);
+  }
+  return dispatch;
+}
+
 function simbriefPath(suffix) {
   const operationRef = selectedOperation?.operation_id || selectedOperation?.id;
   if (!operationRef) throw new Error('Sélectionnez une opération Prométhée avant de préparer SimBrief.');
@@ -589,7 +623,8 @@ $('#prefileForm').onsubmit = async event => {
     const result = unwrap(await call(operationRef ? `/api/v1/operations/${encodeURIComponent(operationRef)}/pirep` : '/api/prefile', operationPirepBody));
     pirepId = result.id || result.pirep_id || result.pirep?.id;
     if (!pirepId) throw new Error('Prométhée n’a pas retourné l’identifiant du PIREP.');
-    showMessage('#pirepMessage', `PIREP ${pirepId} prêt. Hermès est armé pour l’enregistrement.`);
+    showMessage('#pirepMessage', `PIREP ${pirepId} prêt. Vérification finale du Dispatch Prométhée…`);
+    await refreshDispatch();
     updateWorkflow();
     document.querySelector('[data-tab="record"]').click();
   } catch (error) {
@@ -605,7 +640,14 @@ async function action(path, success) {
     showMessage('#recordMessage', error.message, true);
   }
 }
-$('#startBtn').onclick = () => action('/api/start', 'Enregistrement démarré.');
+$('#startBtn').onclick = async () => {
+  try {
+    await assertDispatchCanStart();
+    await action('/api/start', 'Enregistrement démarré.');
+  } catch (error) {
+    showMessage('#pirepMessage', error.message, true);
+  }
+};
 $('#pauseBtn').onclick = () => action('/api/pause', 'Enregistrement en pause.');
 $('#resumeBtn').onclick = () => action('/api/resume', 'Enregistrement repris.');
 $('#syncBtn').onclick = () => action('/api/sync', 'Données synchronisées.');
