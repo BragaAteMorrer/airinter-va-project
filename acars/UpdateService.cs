@@ -41,6 +41,8 @@ internal static class UpdateService
     {
         var uri = new Uri(release.DownloadUrl);
         if (uri.Scheme != Uri.UriSchemeHttps) throw new InvalidOperationException("La mise à jour Hermès doit utiliser HTTPS.");
+        if (string.IsNullOrWhiteSpace(release.Sha256))
+            throw new InvalidOperationException("La mise à jour ne fournit pas de SHA-256 et ne peut pas être installée automatiquement.");
         var directory = Path.Combine(Path.GetTempPath(), "AirInter", "Hermes", "updates");
         Directory.CreateDirectory(directory);
         var path = Path.Combine(directory, $"Hermes-ACARS-Setup-{release.Version}.exe");
@@ -58,8 +60,7 @@ internal static class UpdateService
             }
         }
 
-        if (!string.IsNullOrWhiteSpace(release.Sha256)) {
-            await using var stream = File.OpenRead(path);
+        await using (var stream = File.OpenRead(path)) {
             var actual = Convert.ToHexString(await SHA256.HashDataAsync(stream, ct)).ToLowerInvariant();
             if (!actual.Equals(release.Sha256.Trim(), StringComparison.OrdinalIgnoreCase)) {
                 File.Delete(path); throw new InvalidOperationException("Le contrôle d’intégrité SHA-256 de la mise à jour a échoué.");
