@@ -142,7 +142,11 @@ class OperationsV1Controller extends Controller
                 'reasons' => $reasons,
             ];
 
-            if (count($reasons) === 0) {\n                $available[] = $dto;\n            } else {\n                $unavailable[] = $dto;\n            }
+            if (count($reasons) === 0) {
+                $available[] = $dto;
+            } else {
+                $unavailable[] = $dto;
+            }
         }
 
         return response()->json(['data' => [
