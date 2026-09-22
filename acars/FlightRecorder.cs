@@ -42,9 +42,9 @@ public sealed class FlightRecorder
     public string? Warning { get; private set; }
     public RemoteAcarsConfiguration? RemoteConfiguration { get; private set; }
 
-    public FlightRecorder()
+    public FlightRecorder(string? storageFolder = null)
     {
-        folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AirInter", "Promethee");
+        folder = storageFolder ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AirInter", "Promethee");
         Directory.CreateDirectory(folder);
         var rulesFile = Path.Combine(folder, "rules.json");
         try { if (File.Exists(rulesFile)) Rules = JsonSerializer.Deserialize<AcarsRules>(File.ReadAllText(rulesFile)) ?? new(); } catch (JsonException) { }
