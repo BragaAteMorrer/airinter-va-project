@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Windows;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
+using System.Windows.Media.Imaging;
 using Promethee;
 
 namespace PrometheeDesktop;
@@ -25,7 +26,10 @@ public sealed class PrometheeWindow : Window
     private readonly TelemetryService telemetry; private readonly WebView2 web = new(); private bool ticking;
     public PrometheeWindow()
     {
-        telemetry = new(sim, recorder, client); Title = "Hermès ACARS — Air Inter"; Width=1280; Height=840; MinWidth=900; MinHeight=620; Content=web;
+        telemetry = new(sim, recorder, client); Title = "Hermès ACARS — Air Inter";
+        var iconPath = Path.Combine(AppContext.BaseDirectory, "wwwroot", "air-inter-va-icon.png");
+        if (File.Exists(iconPath)) Icon = BitmapFrame.Create(new Uri(iconPath, UriKind.Absolute));
+        Width=1280; Height=840; MinWidth=900; MinHeight=620; Content=web;
         Loaded += async (_, _) => await StartAsync(); Closed += (_, _) => sim.Dispose();
         var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(1) }; timer.Tick += async (_, _) => await Tick(); timer.Start();
     }
