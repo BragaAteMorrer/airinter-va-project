@@ -68,16 +68,13 @@ class OperationsV1Controller extends Controller
     {
         $bid = $this->bid($bidId, $request);
         $ident = $bid->flight?->ident ?? $bid->flight_id;
-        $identity = $this->operationIdentity->ensure($bid);
-
         // A reservation is only an intention to fly. PIREPs are separate
         // operational records and are never removed by cancelling a bid.
-        $this->operationIdentity->forget($bid);
         $bid->delete();
 
         return response()->json(['data' => [
             'cancelled' => true,
-            'operation_id' => $identity->operation_id,
+            'operation_id' => $this->operationIdentity->id($bid),
             'bid_id' => $bid->id,
             'flight_ident' => $ident,
         ]]);
@@ -157,7 +154,7 @@ class OperationsV1Controller extends Controller
         }
 
         return response()->json(['data' => [
-            'operation_id' => $this->operationIdentity->ensure($bid)->operation_id,
+            'operation_id' => $this->operationIdentity->id($bid),
             'bid_id' => $bid->id,
             'available' => $available,
             'unavailable' => $unavailable,
@@ -263,18 +260,12 @@ class OperationsV1Controller extends Controller
         $loadFactor = str_contains($airline, 'charter') ? config('acars.load_factors.air_charter_international')
             : (str_contains($airline, 'cargo') ? config('acars.load_factors.inter_cargo_service') : config('acars.load_factors.air_inter'));
         $ofp = $this->operationOfp($bid);
-        $identity = $this->operationIdentity->ensure($bid);
-        if ($ofp && (string) ($identity->simbrief_id ?? '') !== (string) $ofp->id) {
-            $this->operationIdentity->attachSimBrief($bid, (string) $ofp->id);
-            $identity = $this->operationIdentity->ensure($bid);
-        }
-
         return [
-            'id' => $identity->operation_id,
-            'operation_id' => $identity->operation_id,
+            'id' => $this->operationIdentity->id($bid),
+            'operation_id' => $this->operationIdentity->id($bid),
             'bid_id' => $bid->id,
-            'status' => $identity->status,
-            'pirep_id' => $identity->pirep_id,
+            'status' => 'reserved',
+            'pirep_id' => null,
             'created_at' => optional($bid->created_at)?->toIso8601String(),
             'flight' => [
                 'id' => $flight?->id,
