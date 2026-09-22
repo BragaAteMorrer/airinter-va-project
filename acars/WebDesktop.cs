@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text.Json;
 using System.IO;
+using System.Diagnostics;
 using System.Windows;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
@@ -88,8 +89,17 @@ public sealed class PrometheeWindow : Window
             "/api/operations" => await client.Send("promethee/acars/operations" + uri.Query), "/api/flights" => await client.Send("flights" + uri.Query),
             "/api/prefile" => await client.Send("pireps/prefile", body!.Value), "/api/start" => Start(body), "/api/pause" => Pause(), "/api/resume" => Resume(),
             "/api/sync" => new { sent=await TelemetryService.SendPending(client,recorder) }, "/api/report" => Report(), "/api/file" => await File(),
-            "/api/history" => recorder.History, "/api/diagnostics" => Diagnostics(),
+            "/api/history" => recorder.History, "/api/diagnostics" => Diagnostics(), "/api/open-external" => OpenExternal(body),
             _ => throw new InvalidOperationException("Commande ACARS inconnue.") };
+    }
+    private object OpenExternal(JsonElement? body)
+    {
+        var raw = body?.GetProperty("url").GetString() ?? throw new InvalidOperationException("URL externe manquante.");
+        if (!Uri.TryCreate(raw, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps
+            || (uri.Host != "www.simbrief.com" && uri.Host != "dispatch.simbrief.com"))
+            throw new InvalidOperationException("Hermès refuse d’ouvrir cette URL externe.");
+        Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
+        return new { ok = true };
     }
     private object Status() => new { connected=client.Connected, sim=sim.Status, detectedSimulators=SimulatorDetector.DetectRunning(), latest=sim.LatestSnapshot, flight=recorder.Flight, track=recorder.Track, pending=recorder.Pending.Count+recorder.PendingEvents.Count, remoteConfiguration=recorder.RemoteConfiguration, warning=recorder.Warning };
     private object About() => new {
