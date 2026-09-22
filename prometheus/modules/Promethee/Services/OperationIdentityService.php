@@ -3,6 +3,7 @@
 namespace Modules\Promethee\Services;
 
 use App\Models\Bid;
+use App\Models\Pirep;
 
 /**
  * Transitional operation identity for the Prometheus -> Promethee migration.
@@ -33,6 +34,17 @@ class OperationIdentityService
         return Bid::query()
             ->where('user_id', $userId)
             ->find($bidId);
+    }
+
+    public function resolvePirep(string $reference, int $userId): ?Pirep
+    {
+        $operationId = str_starts_with($reference, self::PREFIX) ? $reference : self::PREFIX.$reference;
+
+        return Pirep::query()
+            ->where('user_id', $userId)
+            ->where('source_name', 'Hermes ACARS ['.$operationId.']')
+            ->latest('created_at')
+            ->first();
     }
 
     public function dto(Bid $bid): array
