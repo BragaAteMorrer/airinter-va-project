@@ -392,14 +392,14 @@ function applyBriefing(briefing, sourceLabel) {
 function setPlanMode(mode) {
   localSettings.flightPlanMode = mode;
   localStorage.prometheeAcarsSettings = JSON.stringify(localSettings);
-  $('[data-plan-mode]').forEach(button => button.classList.toggle('active', button.dataset.planMode === mode));
-  $('[data-plan-panel]').forEach(panel => {
+  $$('[data-plan-mode]').forEach(button => button.classList.toggle('active', button.dataset.planMode === mode));
+  $$('[data-plan-panel]').forEach(panel => {
     const active = panel.dataset.planPanel === mode;
     panel.classList.toggle('active', active);
     panel.hidden = !active;
   });
 }
-$('[data-plan-mode]').forEach(button => button.onclick = () => setPlanMode(button.dataset.planMode));
+$$('[data-plan-mode]').forEach(button => button.onclick = () => setPlanMode(button.dataset.planMode));
 $('#simbriefUsername').value = localSettings.simbriefUsername || '';
 $('#simbriefPilotId').value = localSettings.simbriefPilotId || '';
 ['simbriefUsername', 'simbriefPilotId'].forEach(key => {
