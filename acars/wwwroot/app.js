@@ -422,16 +422,17 @@ $('#simbriefAccountOpenBtn').onclick = async () => {
     linkedSimBrief = payload;
     const editButton = $('#simbriefAccountEditBtn');
     if (editButton) editButton.hidden = !payload.edit_url;
-    window.open(payload.url, '_blank');
+    await call('/api/open-external', { url: payload.url });
     showMessage('#simbriefState', 'SimBrief est ouvert avec les données Air Inter. Personnalisez puis générez l’OFP, revenez ensuite dans Hermès pour l’importer.');
   } catch (error) {
     showMessage('#simbriefState', error.message, true);
   }
 };
 
-$('#simbriefAccountEditBtn').onclick = () => {
+$('#simbriefAccountEditBtn').onclick = async () => {
   if (!linkedSimBrief?.edit_url) return showMessage('#simbriefState', 'Préparez d’abord ce vol dans SimBrief.', true);
-  window.open(linkedSimBrief.edit_url, '_blank');
+  try { await call('/api/open-external', { url: linkedSimBrief.edit_url }); }
+  catch (error) { showMessage('#simbriefState', error.message, true); }
 };
 
 $('#simbriefAccountImportBtn').onclick = async () => {
