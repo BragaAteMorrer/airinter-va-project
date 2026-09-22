@@ -311,6 +311,14 @@ class OperationsV1Controller extends Controller
         ];
 
         $pirep = $this->pirepSvc->prefile($request->user(), $attrs, [], []);
+
+        // phpVMS may return an existing duplicate prefile. Reassert the
+        // Prométhée correlation marker so a retry still resolves to this
+        // operation deterministically instead of relying on timestamps.
+        if ($pirep->source_name !== $attrs['source_name']) {
+            $pirep->source_name = $attrs['source_name'];
+            $pirep->save();
+        }
         $pirep->refresh();
 
         return response()->json(['data' => [
