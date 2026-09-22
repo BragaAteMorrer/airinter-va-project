@@ -3,8 +3,13 @@
 @section('title', 'Modifier un téléchargement')
 
 @section('content')
-@php($sections = ['acars' => 'ACARS', 'fleet' => 'Avions et flotte', 'airports' => 'Aéroports et HUBs', 'documents' => 'Documents'])
 @php
+    $sections = [
+        'acars' => 'ACARS & Hermès',
+        'fleet' => 'Avions et flotte',
+        'airports' => 'Aéroports et HUBs',
+        'documents' => 'Documents',
+    ];
     $reference = (string) $asset->ref_model;
     if (str_starts_with($reference, 'Modules\\Promethee\\Download\\')) {
         $category = strtolower(str_replace('Modules\\Promethee\\Download\\', '', $reference));
