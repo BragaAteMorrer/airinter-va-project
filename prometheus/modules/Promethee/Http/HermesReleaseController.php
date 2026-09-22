@@ -2,7 +2,7 @@
 
 namespace Modules\Promethee\Http;
 
-use App\Http\Controllers\Controller;
+use App\Contracts\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
