@@ -80,46 +80,17 @@ public sealed class PrometheeWindow : Window
     private async Task<object> Route(string path, JsonElement? body)
     {
         var uri = new Uri("https://promethee.local" + path); var route = uri.AbsolutePath;
-        const string flightsPrefix = "/api/flights/";
-        const string simbriefSessionSuffix = "/simbrief/session";
-        const string simbriefImportSuffix = "/simbrief/import";
-        const string simbriefRedirectSuffix = "/simbrief/redirect";
-        const string simbriefAccountImportSuffix = "/simbrief/account/import";
-        if (route.StartsWith(flightsPrefix, StringComparison.Ordinal) && route.EndsWith(simbriefRedirectSuffix, StringComparison.Ordinal)) {
-            var flightId = route.Substring(flightsPrefix.Length, route.Length - flightsPrefix.Length - simbriefRedirectSuffix.Length);
-            return await client.Send("acars/flights/" + Uri.EscapeDataString(flightId) + "/simbrief/redirect", body
-                ?? throw new InvalidOperationException("Paramètres SimBrief manquants."));
-        }
-        if (route.StartsWith(flightsPrefix, StringComparison.Ordinal) && route.EndsWith(simbriefAccountImportSuffix, StringComparison.Ordinal)) {
-            var flightId = route.Substring(flightsPrefix.Length, route.Length - flightsPrefix.Length - simbriefAccountImportSuffix.Length);
-            return await client.Send("acars/flights/" + Uri.EscapeDataString(flightId) + "/simbrief/account/import", body
-                ?? throw new InvalidOperationException("Compte SimBrief manquant."));
-        }
-        if (route.StartsWith(flightsPrefix, StringComparison.Ordinal) && route.EndsWith(simbriefSessionSuffix, StringComparison.Ordinal)) {
-            var flightId = route.Substring(flightsPrefix.Length, route.Length - flightsPrefix.Length - simbriefSessionSuffix.Length);
-            return await client.Send("acars/flights/" + Uri.EscapeDataString(flightId) + "/simbrief/session", body
-                ?? throw new InvalidOperationException("Paramètres SimBrief manquants."));
-        }
-        if (route.StartsWith(flightsPrefix, StringComparison.Ordinal) && route.EndsWith(simbriefImportSuffix, StringComparison.Ordinal)) {
-            var flightId = route.Substring(flightsPrefix.Length, route.Length - flightsPrefix.Length - simbriefImportSuffix.Length);
-            return await client.Send("acars/flights/" + Uri.EscapeDataString(flightId) + "/simbrief/import", body
-                ?? throw new InvalidOperationException("Paramètres d’import SimBrief manquants."));
-        }
-        if (route.StartsWith("/api/v1/operations/", StringComparison.Ordinal)) {
+        if (route.StartsWith("/api/v1/", StringComparison.Ordinal)) {
             var remote = route.TrimStart('/');
+            if (body.HasValue && body.Value.ValueKind != JsonValueKind.Null) {
+                return await client.Send(remote + uri.Query, body.Value);
+            }
             return await client.Send(remote + uri.Query);
         }
-        if (route.StartsWith("/api/operations/", StringComparison.Ordinal) && route.EndsWith("/aircraft", StringComparison.Ordinal))
-            return await client.Send("promethee/acars/operations/" + Uri.EscapeDataString(route[16..^9]) + "/aircraft");
-        if (route.StartsWith("/api/flights/", StringComparison.Ordinal) && route.EndsWith("/aircraft", StringComparison.Ordinal))
-            return await client.Send("flights/" + Uri.EscapeDataString(route[13..^9]) + "/aircraft");
-        if (route.StartsWith("/api/operations/", StringComparison.Ordinal) && route.EndsWith("/ofp", StringComparison.Ordinal))
-            return await client.Send("promethee/acars/operations/" + Uri.EscapeDataString(route[16..^4]) + "/ofp");
+
         return route switch {
             "/api/status" => Status(), "/api/about" => About(), "/api/login" => await Login(body), "/api/config" => await ConfigureApiKey(body),
-            "/api/user" => await client.Send("user"), "/api/bids" => await client.Send("user/bids"),
-            "/api/operations" => await client.Send("v1/operations" + uri.Query), "/api/flights" => await client.Send("flights" + uri.Query),
-            "/api/prefile" => await client.Send("pireps/prefile", body!.Value), "/api/start" => Start(body), "/api/pause" => Pause(), "/api/resume" => Resume(),
+            "/api/start" => Start(body), "/api/pause" => Pause(), "/api/resume" => Resume(),
             "/api/sync" => new { sent=await TelemetryService.SendPending(client,recorder) }, "/api/report" => Report(), "/api/file" => await File(),
             "/api/history" => recorder.History, "/api/diagnostics" => Diagnostics(), "/api/update/check" => await CheckUpdateStatusAsync(), "/api/open-external" => OpenExternal(body),
             _ => throw new InvalidOperationException("Commande ACARS inconnue.") };
@@ -168,13 +139,14 @@ public sealed class PrometheeWindow : Window
     };
     private async Task<object> Login(JsonElement? body)
     {
-        var user = await client.SignIn(ServerConfiguration.Get(), body!.Value.GetProperty("login").GetString() ?? "", body.Value.GetProperty("password").GetString() ?? "");
+        await client.SignIn(ServerConfiguration.Get(), body!.Value.GetProperty("login").GetString() ?? "", body.Value.GetProperty("password").GetString() ?? "");
+        var user = await client.Send("v1/me");
         return new { user, configuration = await LoadRemoteConfiguration() };
     }
     private async Task<object> ConfigureApiKey(JsonElement? body)
     {
         var value=body!.Value; client.ConfigureApiKey(value.GetProperty("server").GetString() ?? "", value.GetProperty("apiKey").GetString() ?? "");
-        return new { user = await client.Send("user"), configuration = await LoadRemoteConfiguration() };
+        return new { user = await client.Send("v1/me"), configuration = await LoadRemoteConfiguration() };
     }
     private async Task<RemoteAcarsConfiguration> LoadRemoteConfiguration()
     {
