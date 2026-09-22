@@ -8,7 +8,7 @@ public sealed class FlightRecorderRecoveryTests
     [Fact]
     public void Recorder_preserves_operation_identity_while_flight_is_active()
     {
-        var recorder = new FlightRecorder();
+        var recorder = NewRecorder();
         var sample = Ground(DateTimeOffset.Parse("2026-09-22T10:00:00Z"));
         recorder.Start("https://promethee.example", "pirep-42", sample, "op_bid-42");
 
@@ -16,16 +16,12 @@ public sealed class FlightRecorderRecoveryTests
         Assert.Equal("op_bid-42", recorder.Flight?.OperationId);
         Assert.NotEmpty(recorder.PendingEvents);
         Assert.Contains(recorder.PendingEvents, x => x.Name == "OUT");
-        recorder.AcknowledgePositions(recorder.Pending.Select(x => x.Sample.SampleId).ToArray());
-        recorder.AcknowledgeEvents(recorder.PendingEvents.Select(x => x.EventId).ToArray());
-        recorder.Pause();
-        File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AirInter", "Promethee", "state.json"));
     }
 
     [Fact]
     public void Acknowledgements_remove_only_the_confirmed_messages()
     {
-        var recorder = new FlightRecorder();
+        var recorder = NewRecorder();
         var t = DateTimeOffset.Parse("2026-09-22T10:00:00Z");
         recorder.Start("https://promethee.example", "pirep-42", Ground(t), "op_bid-42");
         recorder.Capture(Ground(t.AddSeconds(20)) with { SampleId = Guid.NewGuid(), Gs = 5, ParkingBrake = false });
@@ -41,6 +37,12 @@ public sealed class FlightRecorderRecoveryTests
         recorder.AcknowledgeEvents([ackEvent]);
         Assert.DoesNotContain(recorder.PendingEvents, x => x.EventId == ackEvent);
         if (keepEvent != ackEvent) Assert.Contains(recorder.PendingEvents, x => x.EventId == keepEvent);
+    }
+
+    private static FlightRecorder NewRecorder()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "AirInter-Hermes-Tests", Guid.NewGuid().ToString("N"));
+        return new FlightRecorder(folder);
     }
 
     private static Sample Ground(DateTimeOffset at) =>
