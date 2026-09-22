@@ -174,6 +174,8 @@ Route::middleware(['api','api.auth'])->prefix('api/v1')->group(function () {
     Route::get('/hermes/configuration', [AcarsConfigurationController::class, 'show']);
 });
 
+// Deprecated compatibility surface for older Hermès/Prometheus clients.
+// New desktop builds must consume /api/v1 exclusively. Do not add features here.
 Route::middleware(['api','api.auth'])->prefix('api/promethee')->group(function () {
     Route::post('/pireps/{id}/telemetry', [TelemetryController::class,'store']);
     Route::get('/acars/operations', [AcarsOperationsController::class, 'index']);
