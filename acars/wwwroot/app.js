@@ -371,18 +371,27 @@ async function selectOperation(operation) {
     showMessage('#pirepMessage', error.message, true);
   }
 }
+function normalizeFlightLevel(value) {
+  const altitude = Number(value);
+  if (!Number.isFinite(altitude) || altitude <= 0) return undefined;
+  // SimBrief returns general.initial_altitude in feet (e.g. 37000),
+  // while phpVMS/Hermès stores the flight level (e.g. 370).
+  return altitude > 600 ? Math.round(altitude / 100) : Math.round(altitude);
+}
+
 function applyBriefing(briefing, sourceLabel) {
   const form = $('#prefileForm');
+  const flightLevel = normalizeFlightLevel(briefing.initial_altitude);
   flightPlan = {
     source: briefing.source || sourceLabel,
     simbrief_id: briefing.id,
     route: briefing.route,
-    level: Number(briefing.initial_altitude) || undefined,
+    level: flightLevel,
     block_fuel: briefing.block_fuel || undefined
   };
   if (briefing.block_fuel) form.elements.block_fuel.value = Math.round(briefing.block_fuel);
   if (briefing.route) form.elements.route.value = briefing.route;
-  if (briefing.initial_altitude) form.elements.level.value = Number(briefing.initial_altitude);
+  if (flightLevel) form.elements.level.value = flightLevel;
   if (briefing.alternate) form.elements.alt_airport_id.value = briefing.alternate;
   $('#planBox').textContent = JSON.stringify(briefing, null, 2);
   showMessage('#simbriefState', 'OFP importé depuis ' + sourceLabel + ' et prêt pour le pré-PIREP.');
