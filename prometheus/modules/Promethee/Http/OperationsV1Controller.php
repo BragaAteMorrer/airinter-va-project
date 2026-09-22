@@ -209,7 +209,7 @@ class OperationsV1Controller extends Controller
         $checks = $this->readinessChecks($bid, $ofp);
 
         return response()->json(['data' => [
-            'operation_id' => $this->operationIdentity->ensure($bid)->operation_id,
+            'operation_id' => $this->operationIdentity->id($bid),
             'bid_id' => $bid->id,
             'ready' => collect($checks)->every(fn ($check) => $check['ready']),
             'checks' => $checks,
