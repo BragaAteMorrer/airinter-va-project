@@ -6,7 +6,7 @@ namespace Promethee;
 public record FlightState(string Server, string PirepId, DateTimeOffset Started, double InitialFuel,
     string Phase = "OUT", DateTimeOffset? BlockOff = null, DateTimeOffset? Takeoff = null,
     DateTimeOffset? Landing = null, DateTimeOffset? BlockOn = null, double Distance = 0,
-    double FuelUsed = 0, double AirborneSeconds = 0, double? LandingRate = null, bool Recording = true)
+    double FuelUsed = 0, double AirborneSeconds = 0, double? LandingRate = null, bool Recording = true, string? OperationId = null)
 {
     public List<FlightIssue> Issues { get; init; } = [];
     public List<PhaseEntry> Timeline { get; init; } = [];
@@ -84,18 +84,18 @@ public sealed class FlightRecorder
         File.Move(temp, Path.Combine(folder, "state.json"), true);
     }
 
-    public void Start(string server, string id, Sample sample) { lock (Gate) {
+    public void Start(string server, string id, Sample sample, string? operationId = null) { lock (Gate) {
         if (Flight is not null) throw new InvalidOperationException("Terminez le rapport en cours avant un nouveau départ.");
         if (!sample.OnGround) throw new InvalidOperationException("L'ACARS doit être démarré au sol, avant le départ du poste.");
         tracking.Arm();
-        Flight = new(server, id, sample.RecordedAt, sample.Fuel, Phase: "BOARDING", BlockOff: sample.RecordedAt) { Timeline = [new(sample.RecordedAt, "OUT"), new(sample.RecordedAt, "BOARDING")] }; previous = sample; Pending = []; PendingEvents = []; Track = [];
+        Flight = new(server, id, sample.RecordedAt, sample.Fuel, Phase: "BOARDING", BlockOff: sample.RecordedAt, OperationId: operationId) { Timeline = [new(sample.RecordedAt, "OUT"), new(sample.RecordedAt, "BOARDING")] }; previous = sample; Pending = []; PendingEvents = []; Track = [];
         QueueEvent("OUT", sample); QueuePosition(sample); Save();
     }}
-    public void Start(string server, string id, AircraftSnapshot snapshot)
+    public void Start(string server, string id, AircraftSnapshot snapshot, string? operationId = null)
     {
         if (!TryToLegacySample(snapshot, out var sample))
             throw new InvalidOperationException("Le connecteur ne fournit pas encore les données minimales pour démarrer le vol.");
-        Start(server, id, sample);
+        Start(server, id, sample, operationId);
     }
     public void Resume(string server) { lock (Gate) {
         if (Flight is null || Flight.Server != server) throw new InvalidOperationException("Le serveur ne correspond pas au vol enregistré.");
