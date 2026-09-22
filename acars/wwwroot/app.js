@@ -33,6 +33,7 @@ let selectedOperation = null;
 let selectedAircraft = null;
 let pirepId = null;
 let flightPlan = null;
+let linkedSimBrief = null;
 let connected = false;
 let readiness = { operation: false, aircraft: false, ofp: false, pirep: false, simulator: false };
 
@@ -418,11 +419,19 @@ $('#simbriefAccountOpenBtn').onclick = async () => {
   try {
     showMessage('#simbriefState', 'Préparation du dispatch SimBrief…');
     const payload = unwrap(await call(`/api/flights/${encodeURIComponent(flightId)}/simbrief/redirect`, { aircraft_id: aircraftId }));
+    linkedSimBrief = payload;
+    const editButton = $('#simbriefAccountEditBtn');
+    if (editButton) editButton.hidden = !payload.edit_url;
     window.open(payload.url, '_blank');
     showMessage('#simbriefState', 'SimBrief est ouvert avec les données Air Inter. Personnalisez puis générez l’OFP, revenez ensuite dans Hermès pour l’importer.');
   } catch (error) {
     showMessage('#simbriefState', error.message, true);
   }
+};
+
+$('#simbriefAccountEditBtn').onclick = () => {
+  if (!linkedSimBrief?.edit_url) return showMessage('#simbriefState', 'Préparez d’abord ce vol dans SimBrief.', true);
+  window.open(linkedSimBrief.edit_url, '_blank');
 };
 
 $('#simbriefAccountImportBtn').onclick = async () => {
@@ -443,7 +452,10 @@ $('#simbriefAccountImportBtn').onclick = async () => {
       username: username || null,
       pilot_id: username ? null : pilotId
     }));
-    applyBriefing(briefing, 'votre compte SimBrief');
+    linkedSimBrief = { ...(linkedSimBrief || {}), static_id: briefing.static_id, edit_url: briefing.edit_url };
+    const editButton = $('#simbriefAccountEditBtn');
+    if (editButton) editButton.hidden = !briefing.edit_url;
+    applyBriefing(briefing, 'le vol SimBrief lié à cette opération');
   } catch (error) {
     showMessage('#simbriefState', error.message, true);
   }
