@@ -162,6 +162,7 @@ Route::middleware(['api','api.auth'])->prefix('api/v1')->group(function () {
     Route::get('/operations/{bid}/briefing', [OperationsV1Controller::class, 'briefing']);
     Route::get('/operations/{bid}/readiness', [OperationsV1Controller::class, 'readiness']);
     Route::get('/operations/{bid}/dispatch', [OperationsV1Controller::class, 'dispatch']);
+    Route::get('/hermes/configuration', [AcarsConfigurationController::class, 'show']);
 });
 
 Route::middleware(['api','api.auth'])->prefix('api/promethee')->group(function () {
