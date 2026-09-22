@@ -53,7 +53,37 @@ class SafetyAnalyzer
         ];
     }
 
+    public function debrief(?float $landingRate, array $samples): array
+    {
+        $analysis = $this->analyze($landingRate, $samples);
+        $facts = [];
+
+        if ($analysis['hard_landing'] === true) $facts[] = ['level' => 'warning', 'code' => 'HARD_LANDING', 'label' => 'Touchdown à surveiller', 'value' => $landingRate];
+        elseif ($analysis['hard_landing'] === false) $facts[] = ['level' => 'ok', 'code' => 'LANDING_RATE', 'label' => 'Touchdown dans le seuil observé', 'value' => $landingRate];
+
+        if ($analysis['overspeed'] === true) $facts[] = ['level' => 'warning', 'code' => 'OVERSPEED', 'label' => $analysis['speed_events'].' dépassement(s) de vitesse observé(s)'];
+        elseif ($analysis['overspeed'] === false) $facts[] = ['level' => 'ok', 'code' => 'SPEED', 'label' => 'Aucun dépassement de vitesse observé'];
+
+        $knownApproaches = array_values(array_filter($analysis['approaches'], fn ($value) => $value !== null));
+        $approachConform = $knownApproaches ? !in_array(false, $knownApproaches, true) : null;
+        if ($approachConform === true) $facts[] = ['level' => 'ok', 'code' => 'STABLE_APPROACH', 'label' => 'Approche stabilisée'];
+        elseif ($approachConform === false) $facts[] = ['level' => 'warning', 'code' => 'UNSTABLE_APPROACH', 'label' => 'Approche à surveiller'];
+
+        $safetyWarning = $analysis['hard_landing'] === true || $analysis['overspeed'] === true;
+        $safetyKnown = $analysis['hard_landing'] !== null || $analysis['overspeed'] !== null;
+
+        return [
+            'safety' => ['label' => $safetyKnown ? ($safetyWarning ? 'À surveiller' : 'Conforme') : 'Données insuffisantes'],
+            'operations' => ['label' => $approachConform === null ? 'Données insuffisantes' : ($approachConform ? 'Conforme' : 'À surveiller')],
+            'flight' => ['label' => $analysis['hard_landing'] === null ? 'Données insuffisantes' : ($analysis['hard_landing'] ? 'À surveiller' : 'Conforme')],
+            'facts' => $facts,
+            'timeline' => $this->timeline($samples),
+            'analysis_version' => self::VERSION,
+        ];
+    }
+
     /** A pedagogical score: unknown data is never turned into a penalty. */
+
     public function score(?float $landingRate, array $samples): array
     {
         $analysis = $this->analyze($landingRate, $samples);
