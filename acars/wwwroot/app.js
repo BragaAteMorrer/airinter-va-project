@@ -581,7 +581,13 @@ $('#prefileForm').onsubmit = async event => {
   Object.assign(body, flightPlan || {}, { source_name: 'Hermes ACARS' });
   try {
     const operationRef = selectedOperation?.operation_id || selectedOperation?.id;
-    const result = unwrap(await call(operationRef ? `/api/v1/operations/${encodeURIComponent(operationRef)}/pirep` : '/api/prefile', operationRef ? {} : body));
+    const operationPirepBody = operationRef ? {
+      route: body.route || flightPlan?.route || undefined,
+      level: body.level ? Number(body.level) : (flightPlan?.level || undefined),
+      block_fuel: body.block_fuel || flightPlan?.block_fuel || undefined,
+      simbrief_source: flightPlan?.source === 'simbrief_account' ? 'simbrief_account' : (flightPlan ? 'simbrief' : undefined)
+    } : body;
+    const result = unwrap(await call(operationRef ? `/api/v1/operations/${encodeURIComponent(operationRef)}/pirep` : '/api/prefile', operationPirepBody));
     pirepId = result.id || result.pirep_id || result.pirep?.id;
     if (!pirepId) throw new Error('Prométhée n’a pas retourné l’identifiant du PIREP.');
     showMessage('#pirepMessage', `PIREP ${pirepId} prêt. Hermès est armé pour l’enregistrement.`);
