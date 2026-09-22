@@ -16,6 +16,10 @@ public sealed class FlightRecorderRecoveryTests
         Assert.Equal("op_bid-42", recorder.Flight?.OperationId);
         Assert.NotEmpty(recorder.PendingEvents);
         Assert.Contains(recorder.PendingEvents, x => x.Name == "OUT");
+        recorder.AcknowledgePositions(recorder.Pending.Select(x => x.Sample.SampleId).ToArray());
+        recorder.AcknowledgeEvents(recorder.PendingEvents.Select(x => x.EventId).ToArray());
+        recorder.Pause();
+        File.Delete(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AirInter", "Promethee", "state.json"));
     }
 
     [Fact]
