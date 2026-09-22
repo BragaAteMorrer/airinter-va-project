@@ -30,20 +30,20 @@ if (-not (Test-Path -LiteralPath $setup)) { throw "Installateur introuvable: $se
 if ($CertificatePath) {
   if (-not (Test-Path -LiteralPath $CertificatePath)) { throw "Certificat de signature introuvable: $CertificatePath" }
   $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Filter signtool.exe -Recurse -ErrorAction SilentlyContinue |
-    Where-Object { $_.FullName -match '\\x64\\signtool\.exe
-"$($hash.Hash.ToLowerInvariant())  $([IO.Path]::GetFileName($setup))" |
-  Set-Content -LiteralPath "$setup.sha256" -Encoding ascii
-Write-Host "Installateur cree: $setup"
-Write-Host "SHA-256: $($hash.Hash)"
- } | Sort-Object FullName -Descending | Select-Object -First 1
+    Where-Object { $_.FullName -match '\\x64\\signtool\.exe$' } |
+    Sort-Object FullName -Descending |
+    Select-Object -First 1
   if (-not $signtool) { throw "signtool.exe introuvable. Installez le Windows SDK." }
-  $args = @('sign','/fd','SHA256','/tr','http://timestamp.digicert.com','/td','SHA256','/f',$CertificatePath)
-  if ($CertificatePassword) { $args += @('/p',$CertificatePassword) }
-  $args += $setup
-  & $signtool.FullName @args
+
+  $signArgs = @('sign','/fd','SHA256','/tr','http://timestamp.digicert.com','/td','SHA256','/f',$CertificatePath)
+  if ($CertificatePassword) { $signArgs += @('/p',$CertificatePassword) }
+  $signArgs += $setup
+  & $signtool.FullName @signArgs
   if ($LASTEXITCODE -ne 0) { throw "La signature Authenticode de l'installateur a échoué." }
-  & $signtool.FullName verify /pa $setup
+
+  & $signtool.FullName verify /pa /v $setup
   if ($LASTEXITCODE -ne 0) { throw "La vérification Authenticode de l'installateur a échoué." }
+  Write-Host "Signature Authenticode valide."
 } else {
   Write-Warning "Installateur NON SIGNE : configurez HERMES_SIGNING_CERTIFICATE pour une release publique."
 }
