@@ -509,28 +509,29 @@ class PortalController extends Controller
     * which must never fall through into the Documents category.
     */
    private function downloadGroups() {
-       $files = File::query()
-           ->where(function ($query) {
-               $query->where('ref_model', 'like', 'Modules\\\\Promethee\\\\Download\\\\%')
-                   ->orWhereIn('ref_model', [
-                       Aircraft::class,
-                       Subfleet::class,
-                       Airport::class,
-                   ])
-                   // Keep ACARS packages created by the legacy download screen.
-                   ->orWhere(function ($legacy) {
-                       $legacy->where(fn ($match) => $match
-                           ->where('name', 'like', '%acars%')
-                           ->orWhere('path', 'like', '%acars%'))
-                           ->where(fn ($scope) => $scope
-                               ->whereNull('ref_model')
-                               ->orWhere('ref_model', ''));
-                   });
-           })
-           ->orderBy('name')
-           ->get();
+       $files = File::query()->orderBy('name')->get();
 
-       return $files->groupBy(fn (File $file) => $this->downloadCategory($file));
+       // The files table is shared with phpVMS. Keep every resource that is
+       // explicitly owned by Prométhée, linked to the operational catalogue,
+       // or looks like a legacy standalone download. Unknown legacy entries
+       // are deliberately kept in an "uncategorized" bucket so admins can
+       // recover/reclassify them instead of making them invisible.
+       $knownModels = [Aircraft::class, Subfleet::class, Airport::class];
+       $files = $files->filter(function (File $file) use ($knownModels) {
+           $reference = trim((string) $file->ref_model);
+           if (str_starts_with($reference, 'Modules\\Promethee\\Download\\')) return true;
+           if (in_array($reference, $knownModels, true)) return true;
+           if ($reference === '') return true;
+
+           return false;
+       });
+
+       return $files->groupBy(function (File $file) {
+           $category = $this->downloadCategory($file);
+           return in_array($category, ['acars', 'fleet', 'airports', 'documents'], true)
+               ? $category
+               : 'uncategorized';
+       });
    }
    public function downloads(Request $r) {
        return $this->page('downloads', ['groups' => $this->downloadGroups()]);
