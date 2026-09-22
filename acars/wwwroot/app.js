@@ -103,7 +103,13 @@ $('#loginForm').onsubmit = event => { event.preventDefault(); login(event.curren
 $('#configForm').onsubmit = event => { event.preventDefault(); login(event.currentTarget, true); };
 
 function updateWorkflow() {
-  const state = {
+  const server = serverDispatch?.server_checks;
+  const state = server ? {
+    operation: Boolean(server.operation),
+    aircraft: Boolean(server.aircraft),
+    ofp: Boolean(server.ofp),
+    pirep: Boolean(server.pirep)
+  } : {
     operation: Boolean(selectedOperation),
     aircraft: Boolean(selectedAircraft?.id),
     ofp: Boolean(flightPlan || selectedOperation?.simbrief?.available),
@@ -123,7 +129,7 @@ function updateWorkflow() {
       (key === 'ready' && state.pirep)
     ));
   });
-  const ready = state.operation && state.aircraft && state.ofp && state.pirep && readiness.simulator;
+  const ready = (serverDispatch ? serverDispatch.status === 'READY' : (state.operation && state.aircraft && state.ofp && state.pirep)) && readiness.simulator;
   const node = $('#readyState');
   if (node) {
     node.textContent = ready ? 'READY FOR DEPARTURE' : 'NOT READY';
