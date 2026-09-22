@@ -13,6 +13,7 @@ use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 
 class AcarsSimBriefController extends Controller
 {
@@ -69,6 +70,85 @@ class AcarsSimBriefController extends Controller
                 'timestamp' => $timestamp,
                 'apicode' => md5($apiKey.$signatureInput),
             ],
+        ]);
+    }
+
+
+    /**
+     * Account mode: return a SimBrief Dispatch Redirect URL with the operation
+     * pre-filled. This does not require the VA API key and never handles the
+     * pilot's Navigraph password.
+     */
+    public function redirect(Request $request, string $flight_id): JsonResponse
+    {
+        $attrs = $request->validate(['aircraft_id' => 'required|string']);
+        [$flight, $aircraft] = $this->getEligibleOperation($flight_id, $attrs['aircraft_id']);
+        $type = $aircraft->simbrief_type ?: ($aircraft->subfleet->simbrief_type ?: $aircraft->icao);
+        abort_if(empty($type), 422, 'Le type SimBrief de cet appareil n’est pas configuré.');
+
+        $parameters = array_filter([
+            'airline' => $flight->airline->icao,
+            'fltnum' => $flight->flight_number,
+            'type' => $type,
+            'orig' => $flight->dpt_airport_id,
+            'dest' => $flight->arr_airport_id,
+            'altn' => $flight->alt_airport_id ?: null,
+            'route' => $flight->route ?: null,
+            'fl' => $flight->level ?: null,
+            'reg' => $aircraft->registration ?: null,
+            'callsign' => $flight->airline->icao.$flight->flight_number,
+            'units' => 'KGS',
+            'planformat' => 'LIDO',
+            'navlog' => '1',
+            'maps' => 'detail',
+        ], fn ($value) => $value !== null && $value !== '');
+
+        return response()->json([
+            'url' => 'https://dispatch.simbrief.com/options/custom?'.http_build_query($parameters, '', '&', PHP_QUERY_RFC3986),
+            'parameters' => $parameters,
+        ]);
+    }
+
+    /**
+     * Account mode: fetch the latest OFP explicitly requested by the pilot.
+     * SimBrief documents this endpoint for user-triggered imports only.
+     */
+    public function importAccount(Request $request, string $flight_id): JsonResponse
+    {
+        $attrs = $request->validate([
+            'aircraft_id' => 'required|string',
+            'username' => ['nullable', 'string', 'max:100'],
+            'pilot_id' => ['nullable', 'regex:/^\d{1,7}$/'],
+        ]);
+        abort_if(empty($attrs['username']) && empty($attrs['pilot_id']), 422, 'Renseignez votre alias Navigraph ou votre Pilot ID SimBrief.');
+
+        [$flight, $aircraft] = $this->getEligibleOperation($flight_id, $attrs['aircraft_id']);
+        $query = !empty($attrs['username'])
+            ? ['username' => $attrs['username'], 'json' => 'v2']
+            : ['userid' => $attrs['pilot_id'], 'json' => 'v2'];
+
+        $response = Http::acceptJson()->timeout(15)->get('https://www.simbrief.com/api/xml.fetcher.php', $query);
+        abort_unless($response->successful(), 502, 'SimBrief n’a pas pu retourner le dernier OFP de ce compte.');
+        $ofp = $response->json();
+        abort_unless(is_array($ofp), 502, 'Réponse SimBrief invalide.');
+
+        $origin = strtoupper((string) data_get($ofp, 'origin.icao_code', ''));
+        $destination = strtoupper((string) data_get($ofp, 'destination.icao_code', ''));
+        abort_unless($origin === strtoupper($flight->dpt_airport_id) && $destination === strtoupper($flight->arr_airport_id), 409,
+            "Le dernier OFP SimBrief est {$origin} → {$destination}, mais l’opération sélectionnée est {$flight->dpt_airport_id} → {$flight->arr_airport_id}.");
+
+        return response()->json([
+            'source' => 'simbrief_account',
+            'aircraft_id' => $aircraft->id,
+            'origin' => $origin,
+            'destination' => $destination,
+            'alternate' => (string) data_get($ofp, 'alternate.icao_code', ''),
+            'route' => (string) data_get($ofp, 'general.route', ''),
+            'initial_altitude' => (string) data_get($ofp, 'general.initial_altitude', ''),
+            'block_fuel' => (float) data_get($ofp, 'fuel.plan_ramp', 0),
+            'estimated_time_enroute' => (int) data_get($ofp, 'times.est_time_enroute', 0),
+            'generated_at' => data_get($ofp, 'params.time_generated'),
+            'aircraft_type' => data_get($ofp, 'aircraft.icaocode'),
         ]);
     }
 

@@ -99,3 +99,9 @@ body.auth-locked .rail .theme{display:none}
 @media(max-width:1050px){.workflow{grid-template-columns:1fr}.workflow>div{border-right:0;border-bottom:1px solid var(--line)}.workflow>div:last-child{border-bottom:0}}@media(max-width:700px){.workspace-title{display:grid}.aircraft-card ul{display:grid}}
 
 .login-diagnostics{margin-top:14px;padding:12px 14px;border:1px solid var(--line);border-radius:9px;background:#f7f9fb;display:grid;gap:4px}.login-diagnostics span{font-size:9px;font-weight:900;letter-spacing:.9px;text-transform:uppercase;color:var(--muted)}.login-diagnostics strong{font-size:12px;word-break:break-all}.login-diagnostics small{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:9px;color:var(--muted);word-break:break-all}
+
+.flightplan-source{margin:18px 0;padding:18px;border:1px solid var(--line,#cfd5dc);border-radius:14px;background:var(--panel,#fff)}
+.source-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 16px}
+.source-tabs button.active{font-weight:800;box-shadow:inset 0 -3px currentColor}
+.source-panel{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;align-items:end}
+.source-panel .hint,.source-panel .tools{grid-column:1/-1}
