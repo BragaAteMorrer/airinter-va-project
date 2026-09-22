@@ -56,7 +56,7 @@ Connexion Hermès
 
 ## Automatisation
 
-`ReferenceFlightE2ETests` couvre la machine d'état simulateur-neutre du départ parking à BLOCK_ON et la conservation locale de l'identité opération/PIREP.
+`ReferenceFlightE2ETests` couvre la machine d'état simulateur-neutre du départ parking à BLOCK_ON, la conservation locale de l'identité opération/PIREP, ainsi que la barrière de clôture : Hermès refuse `Complete()` avant `IN` et tant qu'il reste des positions ou événements ACARS non acquittés.
 
 Le vrai test HTTP Laravel du parcours complet nécessitera un environnement de test phpVMS avec base isolée et fixtures. Il ne doit jamais utiliser ou réinitialiser la base historique de production.
 
