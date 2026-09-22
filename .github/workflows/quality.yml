@@ -89,6 +89,7 @@ jobs:
           php -l modules/Promethee/Http/PortalController.php
           php -l modules/Promethee/Http/AcarsOperationsController.php
           php -l modules/Promethee/Http/OperationsV1Controller.php
+          php -l modules/Promethee/Services/OperationIdentityService.php
           php -l modules/Promethee/routes.php
           php -l app/Http/Controllers/Api/AcarsSessionController.php
           php -l app/Http/Controllers/Api/AcarsSimBriefController.php
