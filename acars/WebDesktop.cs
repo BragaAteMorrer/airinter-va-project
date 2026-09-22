@@ -121,9 +121,28 @@ public sealed class PrometheeWindow : Window
             "/api/operations" => await client.Send("v1/operations" + uri.Query), "/api/flights" => await client.Send("flights" + uri.Query),
             "/api/prefile" => await client.Send("pireps/prefile", body!.Value), "/api/start" => Start(body), "/api/pause" => Pause(), "/api/resume" => Resume(),
             "/api/sync" => new { sent=await TelemetryService.SendPending(client,recorder) }, "/api/report" => Report(), "/api/file" => await File(),
-            "/api/history" => recorder.History, "/api/diagnostics" => Diagnostics(), "/api/open-external" => OpenExternal(body),
+            "/api/history" => recorder.History, "/api/diagnostics" => Diagnostics(), "/api/update/check" => await CheckUpdateStatusAsync(), "/api/open-external" => OpenExternal(body),
             _ => throw new InvalidOperationException("Commande ACARS inconnue.") };
     }
+    private async Task<object> CheckUpdateStatusAsync()
+    {
+        try {
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
+            var release = await UpdateService.CheckAsync(http, new Uri(ServerConfiguration.Get()));
+            if (release is null) return new { ok = true, updateAvailable = false, currentVersion = UpdateService.CurrentVersion };
+            return new {
+                ok = true,
+                updateAvailable = UpdateService.IsNewer(release.Version),
+                currentVersion = UpdateService.CurrentVersion,
+                latestVersion = release.Version,
+                channel = release.Channel,
+                releaseUrl = release.ReleaseUrl
+            };
+        } catch (Exception exception) {
+            return new { ok = false, updateAvailable = false, currentVersion = UpdateService.CurrentVersion, error = exception.Message };
+        }
+    }
+
     private object OpenExternal(JsonElement? body)
     {
         var raw = body?.GetProperty("url").GetString() ?? throw new InvalidOperationException("URL externe manquante.");
