@@ -5,6 +5,7 @@ use App\Models\Pirep;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Modules\Promethee\Services\OperationIdentityService;
 class TelemetryController extends Controller
 {
     public function store(string $id, Request $request)
