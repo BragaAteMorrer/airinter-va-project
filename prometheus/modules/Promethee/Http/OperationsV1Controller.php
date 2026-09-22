@@ -68,6 +68,7 @@ class OperationsV1Controller extends Controller
     {
         $bid = $this->bid($bidId, $request);
         $ident = $bid->flight?->ident ?? $bid->flight_id;
+        $identity = $this->operationIdentity->ensure($bid);
 
         // A reservation is only an intention to fly. PIREPs are separate
         // operational records and are never removed by cancelling a bid.
@@ -76,7 +77,8 @@ class OperationsV1Controller extends Controller
 
         return response()->json(['data' => [
             'cancelled' => true,
-            'operation_id' => $bidId,
+            'operation_id' => $identity->operation_id,
+            'bid_id' => $bid->id,
             'flight_ident' => $ident,
         ]]);
     }
@@ -155,7 +157,8 @@ class OperationsV1Controller extends Controller
         }
 
         return response()->json(['data' => [
-            'operation_id' => $bid->id,
+            'operation_id' => $this->operationIdentity->ensure($bid)->operation_id,
+            'bid_id' => $bid->id,
             'available' => $available,
             'unavailable' => $unavailable,
             'reason_codes' => [
@@ -209,7 +212,8 @@ class OperationsV1Controller extends Controller
         $checks = $this->readinessChecks($bid, $ofp);
 
         return response()->json(['data' => [
-            'operation_id' => $bid->id,
+            'operation_id' => $this->operationIdentity->ensure($bid)->operation_id,
+            'bid_id' => $bid->id,
             'ready' => collect($checks)->every(fn ($check) => $check['ready']),
             'checks' => $checks,
             'server_checks_complete' => true,
