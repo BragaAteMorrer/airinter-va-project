@@ -5,7 +5,7 @@
   <title>Hermès ACARS — Air Inter</title>
   <link rel="icon" type="image/png" href="/air-inter-va-hermes.png">
   <link rel="apple-touch-icon" href="/air-inter-va-hermes.png">
-  <link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/layout-overrides.css">
+  <link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/hermes-themes.css"><link rel="stylesheet" href="/layout-overrides.css">
 </head>
 <body class="auth-locked">
   <aside class="rail">
@@ -18,7 +18,7 @@
       <button class="tab protected-tab" data-tab="journal" disabled>Journal</button>
       <button class="tab protected-tab" data-tab="settings" disabled>Paramètres</button>
     </nav>
-    <label class="theme">Thème<select id="era"><option value="modern">Moderne</option><option value="web2000">Années 2000</option></select></label>
+    <div class="display-controls" aria-label="Affichage Hermès"><label class="theme">Style<select id="era"><option value="modern">Moderne</option><option value="2000">Années 2000</option></select></label><label class="theme">Apparence<select id="appearance"><option value="light">Clair</option><option value="dark">Nuit</option></select></label></div>
     <small id="build"></small>
   </aside>
   <main>
