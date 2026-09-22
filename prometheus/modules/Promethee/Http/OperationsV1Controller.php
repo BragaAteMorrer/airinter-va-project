@@ -10,6 +10,8 @@ use App\Models\Enums\AircraftStatus;
 use App\Models\SimBrief;
 use App\Models\Pirep;
 use App\Models\Enums\PirepSource;
+use App\Models\Enums\PirepState;
+use App\Models\Enums\PirepStatus;
 use App\Services\PirepService;
 use App\Services\UserService;
 use Illuminate\Http\Request;
@@ -200,18 +202,24 @@ class OperationsV1Controller extends Controller
         $pirep = $this->operationPirep($bid);
         $checks = $this->readinessChecks($bid, $ofp, $pirep);
         $serverReady = collect($checks)->every(fn ($check) => $check['ready']);
+        $status = $this->dispatchStatus($bid, $pirep, $serverReady);
 
         return response()->json(['data' => [
             'contract_version' => '1.0',
+            'operation_id' => $this->operationIdentity->id($bid),
             'operation' => $this->operationDto($bid),
             'ofp' => $this->ofpDto($ofp),
-            'status' => $serverReady ? 'READY' : 'PREPARATION_REQUIRED',
-            'ready' => $serverReady,
+            'status' => $status,
+            'ready' => $status === 'READY',
+            'can_start' => $status === 'READY',
             'server_checks' => collect($checks)->mapWithKeys(fn ($check) => [strtolower($check['code']) => $check['ready']]),
             'checks' => $checks,
             'actions' => collect($checks)->where('ready', false)->pluck('action')->filter()->values(),
             'pirep' => $this->pirepDto($pirep),
-            'client_checks_required' => ['SIMULATOR_CONNECTED', 'AIRCRAFT_MATCH', 'DEPARTURE_MATCH'],
+            'client_checks_required' => $status === 'READY'
+                ? ['SIMULATOR_CONNECTED', 'AIRCRAFT_MATCH', 'DEPARTURE_MATCH']
+                : [],
+            'terminal' => in_array($status, ['COMPLETED', 'CANCELLED'], true),
         ]]);
     }
 
@@ -226,6 +234,7 @@ class OperationsV1Controller extends Controller
             'operation_id' => $this->operationIdentity->id($bid),
             'bid_id' => $bid->id,
             'ready' => collect($checks)->every(fn ($check) => $check['ready']),
+            'status' => $this->dispatchStatus($bid, $pirep, collect($checks)->every(fn ($check) => $check['ready'])),
             'checks' => $checks,
             'server_checks_complete' => true,
             'pirep' => $this->pirepDto($pirep),
@@ -356,6 +365,21 @@ class OperationsV1Controller extends Controller
     {
         if (!$bid->aircraft_id) return null;
 
+        // Once a PIREP is prefiled phpVMS moves the exact SimBrief row from
+        // "active OFP" to that PIREP. Resolve that exact row first so Dispatch
+        // never loses the OFP just because the flight moved to the next stage.
+        $pirep = $this->operationPirep($bid);
+        if ($pirep) {
+            $attached = SimBrief::query()
+                ->where('user_id', $bid->user_id)
+                ->where('flight_id', $bid->flight_id)
+                ->where('aircraft_id', $bid->aircraft_id)
+                ->where('pirep_id', $pirep->id)
+                ->latest('updated_at')
+                ->first();
+            if ($attached) return $attached;
+        }
+
         return SimBrief::query()
             ->where('user_id', $bid->user_id)
             ->where('flight_id', $bid->flight_id)
@@ -436,13 +460,52 @@ class OperationsV1Controller extends Controller
 
     private function readinessChecks(Bid $bid, ?SimBrief $ofp, ?Pirep $pirep = null): array
     {
-        $ofpReady = $ofp !== null || ($pirep !== null && filled($pirep->route));
+        $aircraft = $bid->aircraft;
+        $flight = $bid->flight;
+        $aircraftReady = $aircraft !== null
+            && $aircraft->status === AircraftStatus::ACTIVE
+            && $aircraft->state === AircraftState::PARKED
+            && (!setting('pireps.only_aircraft_at_dpt_airport')
+                || strtoupper((string) $aircraft->airport_id) === strtoupper((string) $flight?->dpt_airport_id));
+        $ofpReady = $ofp !== null;
+        $pirepReady = $pirep !== null
+            && (int) $pirep->state === PirepState::IN_PROGRESS
+            && $pirep->status !== PirepStatus::CANCELLED;
+
         return [
             ['code' => 'OPERATION', 'ready' => true, 'label' => 'Réservation valide', 'action' => null],
-            ['code' => 'AIRCRAFT', 'ready' => $bid->aircraft_id !== null, 'label' => $bid->aircraft_id ? 'Appareil affecté' : 'Appareil à sélectionner', 'action' => $bid->aircraft_id ? null : 'Sélectionnez un appareil autorisé.'],
-            ['code' => 'OFP', 'ready' => $ofpReady, 'label' => $ofpReady ? 'OFP lié à cette opération' : 'OFP à préparer', 'action' => $ofpReady ? null : 'Générez ou importez l’OFP SimBrief pour cette réservation.'],
-            ['code' => 'PIREP', 'ready' => $pirep !== null, 'label' => $pirep ? 'PIREP pré-déposé' : 'PIREP à préparer', 'action' => $pirep ? null : 'Pré-déposez le PIREP depuis Hermès.'],
+            ['code' => 'AIRCRAFT', 'ready' => $aircraftReady, 'label' => $aircraftReady ? 'Appareil autorisé et disponible' : 'Appareil non prêt', 'action' => $aircraftReady ? null : 'Sélectionnez un appareil actif, au parking et à l’aéroport de départ lorsque la règle de position est active.'],
+            ['code' => 'OFP', 'ready' => $ofpReady, 'label' => $ofpReady ? 'OFP SimBrief lié à cette opération' : 'OFP à préparer', 'action' => $ofpReady ? null : 'Générez ou importez l’OFP SimBrief pour cette opération.'],
+            ['code' => 'PIREP', 'ready' => $pirepReady, 'label' => $pirepReady ? 'PIREP pré-déposé et actif' : 'PIREP à préparer', 'action' => $pirepReady ? null : 'Pré-déposez le PIREP depuis Hermès.'],
         ];
+    }
+
+    private function dispatchStatus(Bid $bid, ?Pirep $pirep, bool $serverReady): string
+    {
+        if ($pirep) {
+            if ((int) $pirep->state === PirepState::CANCELLED || $pirep->status === PirepStatus::CANCELLED) {
+                return 'CANCELLED';
+            }
+
+            if ($pirep->submitted_at !== null
+                || in_array((int) $pirep->state, [PirepState::PENDING, PirepState::ACCEPTED, PirepState::REJECTED], true)
+                || $pirep->status === PirepStatus::ARRIVED) {
+                return 'COMPLETED';
+            }
+
+            if ($this->hasOperationTelemetry($pirep)) {
+                return 'IN_PROGRESS';
+            }
+        }
+
+        return $serverReady ? 'READY' : 'PREPARATION_REQUIRED';
+    }
+
+    private function hasOperationTelemetry(Pirep $pirep): bool
+    {
+        return DB::table('promethee_telemetry')
+            ->where('pirep_id', $pirep->id)
+            ->exists();
     }
 
     private function ofpDto(?SimBrief $ofp): array
