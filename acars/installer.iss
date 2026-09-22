@@ -38,6 +38,7 @@ VersionInfoProductName={#MyAppName}
 VersionInfoProductVersion={#MyAppVersion}
 WizardStyle=modern
 SetupLogging=yes
+SetupIconFile=assets\hermes.ico
 
 [Languages]
 Name: "french"; MessagesFile: "compiler:Languages\French.isl"
