@@ -79,3 +79,21 @@ Avant de distribuer le client, l'administrateur Windows configure l'unique serve
 ```
 
 L'adresse est enregistrée dans `HKLM\SOFTWARE\AirInter\PrometheeACARS`. Les pilotes peuvent la consulter mais ne peuvent pas la modifier dans l'ACARS.
+
+
+## Code signing policy
+
+Hermès is distributed from the public Air Inter VA source repository. Official Windows releases are built from this repository through the project's automated release workflow.
+
+Free code signing is intended to be provided by SignPath.io, certificate by SignPath Foundation, subject to project acceptance by SignPath Foundation.
+
+- Committers, reviewers and release approvers: the maintainers of `BragaAteMorrer/airinter-va-project`.
+- Signing requests must correspond to an official Hermès release built from the public source repository.
+- Release binaries must not be modified after signing.
+- Every published installer is accompanied by a SHA-256 checksum.
+- Signing credentials and private keys must never be committed to this repository.
+
+### Privacy
+
+Hermès communicates with the Prométhée/phpVMS server explicitly configured for the virtual airline and with services explicitly requested by the pilot as part of the flight workflow (for example SimBrief). Authentication secrets are not included in diagnostic exports. Flight state and unsent telemetry are persisted locally for recovery and synchronization.
+
