@@ -1,3 +1,4 @@
+using System.Net.Http;
 using System.Reflection;
 using System.Text.Json;
 using System.IO;
@@ -7,6 +8,7 @@ using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 using System.Windows.Media.Imaging;
 using Promethee;
+using Promethee.Acars;
 
 namespace PrometheeDesktop;
 
@@ -30,7 +32,7 @@ public sealed class PrometheeWindow : Window
         var iconPath = Path.Combine(AppContext.BaseDirectory, "wwwroot", "air-inter-va-icon.png");
         if (System.IO.File.Exists(iconPath)) Icon = BitmapFrame.Create(new Uri(iconPath, UriKind.Absolute));
         Width=1280; Height=840; MinWidth=900; MinHeight=620; Content=web;
-        Loaded += async (_, _) => await StartAsync(); Closed += (_, _) => sim.Dispose();
+        Loaded += async (_, _) => { await StartAsync(); await CheckForUpdatesAsync(); }; Closed += (_, _) => sim.Dispose();
         var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(1) }; timer.Tick += async (_, _) => await Tick(); timer.Start();
     }
     private async Task StartAsync()
@@ -42,6 +44,32 @@ public sealed class PrometheeWindow : Window
         core.SetVirtualHostNameToFolderMapping("promethee.local", assets, CoreWebView2HostResourceAccessKind.DenyCors);
         core.Navigate("https://promethee.local/index.html");
     }
+    private async Task CheckForUpdatesAsync()
+    {
+        try {
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
+            var release = await UpdateService.CheckAsync(http, new Uri(ServerConfiguration.Get()));
+            if (release is null || !UpdateService.IsNewer(release.Version)) return;
+
+            var notes = string.IsNullOrWhiteSpace(release.Notes) ? "" : "\n\n" + release.Notes.Trim();
+            if (notes.Length > 900) notes = notes[..900] + "…";
+            var prompt = $"Une nouvelle version d’Hermès est disponible.\n\nVersion installée : {UpdateService.CurrentVersion}\nNouvelle version : {release.Version}\nCanal : {release.Channel}{notes}\n\nTélécharger et installer maintenant ?";
+            var buttons = release.Mandatory ? MessageBoxButton.OKCancel : MessageBoxButton.YesNo;
+            var result = MessageBox.Show(this, prompt, release.Mandatory ? "Mise à jour Hermès requise" : "Mise à jour Hermès disponible", buttons, MessageBoxImage.Information);
+            var accepted = release.Mandatory ? result == MessageBoxResult.OK : result == MessageBoxResult.Yes;
+            if (!accepted) return;
+
+            Title = $"Hermès ACARS — téléchargement de la version {release.Version}…";
+            var installer = await UpdateService.DownloadAndVerifyAsync(release);
+            Title = "Hermès ACARS — Air Inter";
+            UpdateService.LaunchInstaller(installer);
+            Application.Current.Shutdown();
+        } catch (Exception exception) {
+            Trace.WriteLine($"Hermès update check failed: {exception}");
+            Title = "Hermès ACARS — Air Inter";
+        }
+    }
+
     private async Task Tick() { if (ticking) return; ticking=true; try { await telemetry.Tick(); } finally { ticking=false; } }
     private async Task Handle(string raw)
     {

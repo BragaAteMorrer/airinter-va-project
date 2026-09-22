@@ -10,7 +10,7 @@ body{margin:0;min-height:100vh;display:grid;grid-template-columns:264px minmax(0
 button,input,select,textarea{font:inherit}button{cursor:pointer}
 .rail{position:sticky;top:0;height:100vh;padding:22px 15px;background:linear-gradient(180deg,#0c2d49 0,#071b2d 72%,#061725);color:#fff;display:flex;flex-direction:column;gap:20px;border-right:1px solid #fff1}
 .brand{display:grid;gap:5px;padding:0 7px 18px;border-bottom:1px solid #ffffff18}
-.brand-logo{width:100%;max-width:205px;border-radius:10px;background:#fff;box-shadow:0 8px 22px #0003}
+.brand-logo{display:block;width:100%;max-width:220px;height:auto;object-fit:contain;background:transparent;filter:drop-shadow(0 8px 16px #0003)}
 .brand span{margin-top:5px;color:#8fc7f1;font:700 9px/1.2 Consolas,monospace;letter-spacing:1.7px}
 .brand strong{font-size:23px;letter-spacing:-.6px}
 nav{display:grid;gap:6px}
@@ -70,7 +70,7 @@ button.primary:hover{background:#095494}
 /* Thème Années 2000 : volontairement distinct, mais toujours lisible. */
 body[data-era="web2000"]{--bg:#dce8f3;--navy:#06336a;--blue:#0057a5;--red:#d41f31;--paper:#f7fbff;--line:#88a9ca;--ink:#062d61;--muted:#426586;--radius:0;--shadow:2px 3px 0 #6f89aa;font-family:Tahoma,Arial,sans-serif;background:linear-gradient(#eaf4fb,#cfdfef)}
 body[data-era="web2000"] .rail{background:linear-gradient(#255f98,#06366f 55%,#062a56);border-right:3px ridge #c4d9ee}
-body[data-era="web2000"] .brand-logo{border:2px outset #e6f3ff;border-radius:0}
+body[data-era="web2000"] .brand-logo{filter:drop-shadow(2px 2px 0 #02254d)}
 body[data-era="web2000"] .tab,body[data-era="web2000"] button{border:2px outset #e4f1ff;border-radius:0;background:linear-gradient(#fff,#cadeef 52%,#93b8d8);color:#06336a;box-shadow:1px 1px 0 #02254d;text-shadow:1px 1px #fff}
 body[data-era="web2000"] .tab{background:linear-gradient(#3f7db8,#174f89);color:#fff;text-shadow:1px 1px #02254d}
 body[data-era="web2000"] .tab.active,body[data-era="web2000"] .tab:hover,body[data-era="web2000"] button.primary{border-style:inset;background:#075ca9;color:#fff;text-shadow:none;transform:none}
