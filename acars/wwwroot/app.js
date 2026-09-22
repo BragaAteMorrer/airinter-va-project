@@ -715,3 +715,21 @@ call('/api/about').then(info => {
   setText($('#loginServer'), 'Impossible de lire la configuration Hermès');
   setText($('#loginEndpoint'), error.message || '');
 });
+
+
+const checkUpdateBtn = $('#checkUpdateBtn');
+if (checkUpdateBtn) checkUpdateBtn.onclick = async () => {
+  setText($('#updateMessage'), 'Vérification auprès de Prométhée…');
+  try {
+    const result = await call('/api/update/check');
+    if (!result.ok) {
+      setText($('#updateMessage'), `Échec de la vérification : ${result.error || 'serveur indisponible'}`);
+    } else if (result.updateAvailable) {
+      setText($('#updateMessage'), `Mise à jour disponible : ${result.currentVersion} → ${result.latestVersion} (${result.channel || 'stable'}).`);
+    } else {
+      setText($('#updateMessage'), `Hermès est à jour (${result.currentVersion}).`);
+    }
+  } catch (error) {
+    setText($('#updateMessage'), `Échec de la vérification : ${error.message}`);
+  }
+};
