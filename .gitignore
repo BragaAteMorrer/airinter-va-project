@@ -45,6 +45,11 @@ mail/
 *.tar
 *.tar.gz
 *.7z
+*.pfx
+*.p12
+*.pem
+*.key
+*.snk
 
 # Laravel / Prométhée
 prometheus/vendor/
@@ -69,3 +74,6 @@ prometheus/public/storage
 dist/
 release/
 acars/release/
+*.trx
+coverage/
+coverage.*
