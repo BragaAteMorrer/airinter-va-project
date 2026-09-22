@@ -399,28 +399,76 @@ class PortalController extends Controller
     }
     public function live(Request $r) { return $this->page('live'); }
     public function liveData(Request $r, FlightOpsService $ops) {
-        $pireps=Pirep::whereIn('state',[PirepState::IN_PROGRESS,PirepState::PAUSED])->with(['user','aircraft'])->orderByDesc('updated_at')->limit(50)->get();
-        return response()->json(['updated_at'=>now()->toIso8601String(),'flights'=>$pireps->map(function ($p) use ($ops) {
-            $sample=DB::table('promethee_telemetry')->where('pirep_id',$p->id)->latest('recorded_at')->first(); $data=$sample ? json_decode($sample->payload,true) : [];
-            preg_match('/Hermes ACARS \\[(op_[^\\]]+)\\]/', (string) $p->source_name, $operationMatch);
-            return $ops->liveFlight([
-                'id'=>$p->id,
-                'operation_id'=>$operationMatch[1] ?? null,
-                'ident'=>$p->ident,
-                'pilot'=>$p->user?->name,
-                'aircraft'=>$p->aircraft?->registration,
-                'departure'=>$p->dpt_airport_id,
-                'arrival'=>$p->arr_airport_id,
-                'state'=>$data['phase'] ?? PirepState::label($p->state),
-                'phase'=>$data['phase'] ?? null,
-                'recorded_at'=>$sample?->recorded_at,
-                'lat'=>$data['lat']??null,'lon'=>$data['lon']??null,
-                'altitude'=>$data['altitude_msl']??null,'ias'=>$data['ias']??null,
-                'gs'=>$data['gs']??null,'vs'=>$data['vs']??null,
-                'heading'=>$data['heading']??null,'fuel'=>$data['fuel']??null,
-                'on_ground'=>$data['on_ground']??null
-            ],$data);
-        })]);
+        $pireps = Pirep::whereIn('state', [PirepState::IN_PROGRESS, PirepState::PAUSED])
+            ->with(['user', 'aircraft'])->orderByDesc('updated_at')->limit(50)->get();
+
+        // Load the recent Hermès archive once for the whole OCC instead of
+        // issuing one telemetry query per active flight. The archive remains
+        // attached to the phpVMS PIREP; operation_id is the stable public key.
+        $telemetry = DB::table('promethee_telemetry')
+            ->whereIn('pirep_id', $pireps->pluck('id'))
+            ->orderBy('recorded_at')
+            ->get()
+            ->groupBy('pirep_id');
+
+        return response()->json([
+            'updated_at' => now()->toIso8601String(),
+            'poll_after_seconds' => 5,
+            'flights' => $pireps->map(function ($p) use ($ops, $telemetry) {
+                $samples = collect($telemetry->get($p->id, []))->map(function ($sample) {
+                    $payload = json_decode($sample->payload, true) ?: [];
+                    $payload['recorded_at'] = (string) $sample->recorded_at;
+                    return $payload;
+                });
+                $data = $samples->last() ?? [];
+                preg_match('/Hermes ACARS \\[(op_[^\\]]+)\\]/', (string) $p->source_name, $operationMatch);
+
+                $transitions = [];
+                $previousPhase = null;
+                foreach ($samples as $sample) {
+                    $phase = strtoupper((string) ($sample['phase'] ?? ''));
+                    if ($phase === '' || $phase === $previousPhase) continue;
+                    $transitions[] = ['phase' => $phase, 'at' => $sample['recorded_at']];
+                    $previousPhase = $phase;
+                }
+                $firstAt = function (array $phases) use ($transitions) {
+                    foreach ($transitions as $transition) {
+                        if (in_array($transition['phase'], $phases, true)) return $transition['at'];
+                    }
+                    return null;
+                };
+
+                $recordedAt = $data['recorded_at'] ?? null;
+                $age = $recordedAt ? now()->diffInSeconds(\Carbon\CarbonImmutable::parse($recordedAt)) : null;
+                $signal = $age === null ? 'NO_SIGNAL' : ($age > 180 ? 'LOST' : ($age > 60 ? 'STALE' : 'LIVE'));
+
+                return $ops->liveFlight([
+                    'id' => $p->id,
+                    'operation_id' => $operationMatch[1] ?? null,
+                    'ident' => $p->ident,
+                    'pilot' => $p->user?->name,
+                    'aircraft' => $p->aircraft?->registration,
+                    'departure' => $p->dpt_airport_id,
+                    'arrival' => $p->arr_airport_id,
+                    'state' => $data['phase'] ?? PirepState::label($p->state),
+                    'phase' => $data['phase'] ?? null,
+                    'recorded_at' => $recordedAt,
+                    'signal' => $signal,
+                    'milestones' => [
+                        'out' => $firstAt(['PUSHBACK', 'TAXI_OUT', 'TAKEOFF', 'CLIMB', 'CRUISE', 'ENROUTE', 'DESCENT', 'APPROACH', 'FINAL', 'LANDING', 'TAXI_IN', 'IN']),
+                        'off' => $firstAt(['TAKEOFF', 'CLIMB', 'CRUISE', 'ENROUTE', 'DESCENT', 'APPROACH', 'FINAL', 'LANDING', 'TAXI_IN', 'IN']),
+                        'on' => $firstAt(['LANDING', 'TAXI_IN', 'IN']),
+                        'in' => $firstAt(['IN']),
+                    ],
+                    'phase_history' => $transitions,
+                    'lat' => $data['lat'] ?? null, 'lon' => $data['lon'] ?? null,
+                    'altitude' => $data['altitude_msl'] ?? null, 'ias' => $data['ias'] ?? null,
+                    'gs' => $data['gs'] ?? null, 'vs' => $data['vs'] ?? null,
+                    'heading' => $data['heading'] ?? null, 'fuel' => $data['fuel'] ?? null,
+                    'on_ground' => $data['on_ground'] ?? null,
+                ], $data);
+            })->values(),
+        ]);
     }
     public function profile(Request $r) {
         return $this->pilot($r->user()->id);
