@@ -36,7 +36,8 @@ Route::middleware(['web','auth'])->name('promethee.')->group(function () {
     Route::get('/profile/edit', [PortalController::class,'editProfile'])->name('profile.edit');
     Route::patch('/profile', [PortalController::class,'updateProfile'])->name('profile.update');
     Route::get('/passport', [PortalController::class,'passport'])->name('passport');
-    Route::get('/bookings', [PortalController::class,'bookings'])->name('bookings');\n    Route::delete('/bookings/{bid}', [PortalController::class,'cancelBooking'])->name('bookings.cancel');
+    Route::get('/bookings', [PortalController::class,'bookings'])->name('bookings');
+    Route::delete('/bookings/{bid}', [PortalController::class,'cancelBooking'])->name('bookings.cancel');
     Route::get('/downloads', [PortalController::class,'downloads'])->name('downloads');
     Route::get('/downloads/categories/{category}', [PortalController::class,'downloadCategoryPage'])->where('category','acars|fleet|airports|documents')->name('downloads.category');
     Route::get('/downloads/{file}', [PortalController::class,'download'])->name('downloads.download');
@@ -155,10 +156,12 @@ Route::middleware('api')->get('/api/v1/hermes/releases/latest', [HermesReleaseCo
 Route::middleware(['api','api.auth'])->prefix('api/v1')->group(function () {
     Route::get('/me', [OperationsV1Controller::class, 'me']);
     Route::get('/operations', [OperationsV1Controller::class, 'index']);
-    Route::get('/operations/{bid}', [OperationsV1Controller::class, 'show']);\n    Route::delete('/operations/{bid}', [OperationsV1Controller::class, 'destroy']);
+    Route::get('/operations/{bid}', [OperationsV1Controller::class, 'show']);
+    Route::delete('/operations/{bid}', [OperationsV1Controller::class, 'destroy']);
     Route::get('/operations/{bid}/aircraft-eligibility', [OperationsV1Controller::class, 'aircraft']);
     Route::get('/operations/{bid}/briefing', [OperationsV1Controller::class, 'briefing']);
-    Route::get('/operations/{bid}/readiness', [OperationsV1Controller::class, 'readiness']);\n    Route::get('/operations/{bid}/dispatch', [OperationsV1Controller::class, 'dispatch']);
+    Route::get('/operations/{bid}/readiness', [OperationsV1Controller::class, 'readiness']);
+    Route::get('/operations/{bid}/dispatch', [OperationsV1Controller::class, 'dispatch']);
 });
 
 Route::middleware(['api','api.auth'])->prefix('api/promethee')->group(function () {
