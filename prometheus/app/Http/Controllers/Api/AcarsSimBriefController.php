@@ -14,13 +14,15 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Modules\Promethee\Services\OperationIdentityService;
 
 class AcarsSimBriefController extends Controller
 {
     public function __construct(
         private readonly FlightRepository $flightRepo,
         private readonly SimBriefService $simBriefSvc,
-        private readonly UserService $userSvc
+        private readonly UserService $userSvc,
+        private readonly OperationIdentityService $operationIdentity
     ) {}
 
     /**
@@ -61,7 +63,7 @@ class AcarsSimBriefController extends Controller
                 'airline' => $flight->airline->icao,
                 'fltnum' => $flight->flight_number,
                 'callsign' => setting('simbrief.callsign', true) ? $user->ident : $flight->airline->icao.$flight->flight_number,
-                'static_id' => $user->ident.'_'.$flight->id,
+                'static_id' => $this->staticId($request, $user->ident, $flight->id, $aircraft->id),
                 'planformat' => 'lido',
                 'units' => 'KGS',
                 'navlog' => '1',
@@ -86,7 +88,7 @@ class AcarsSimBriefController extends Controller
         $type = $aircraft->simbrief_type ?: ($aircraft->subfleet->simbrief_type ?: $aircraft->icao);
         abort_if(empty($type), 422, 'Le type SimBrief de cet appareil n’est pas configuré.');
 
-        $staticId = 'AIRINTER_'.strtoupper(str_replace('-', '_', (string) Auth::id().'_'.$flight->id.'_'.$aircraft->id));
+        $staticId = $this->staticId($request, (string) Auth::id(), $flight->id, $aircraft->id);
 
         $parameters = array_filter([
             'airline' => $flight->airline->icao,
@@ -128,7 +130,7 @@ class AcarsSimBriefController extends Controller
         abort_if(empty($attrs['username']) && empty($attrs['pilot_id']), 422, 'Renseignez votre alias Navigraph ou votre Pilot ID SimBrief.');
 
         [$flight, $aircraft] = $this->getEligibleOperation($flight_id, $attrs['aircraft_id']);
-        $staticId = 'AIRINTER_'.strtoupper(str_replace('-', '_', (string) Auth::id().'_'.$flight->id.'_'.$aircraft->id));
+        $staticId = $this->staticId($request, (string) Auth::id(), $flight->id, $aircraft->id);
         $query = !empty($attrs['username'])
             ? ['username' => $attrs['username'], 'static_id' => $staticId, 'json' => 1]
             : ['userid' => $attrs['pilot_id'], 'static_id' => $staticId, 'json' => 1];
@@ -192,6 +194,53 @@ class AcarsSimBriefController extends Controller
             'estimated_time_enroute' => (int) $xml->times->est_time_enroute,
             'briefing_url' => route('api.flights.briefing', ['id' => $simbrief->id]),
         ]);
+    }
+
+
+    public function sessionOperation(Request $request, string $operation): JsonResponse
+    {
+        [$flightId, $aircraftId, $operationId] = $this->operationContext($operation);
+        $request->merge(['aircraft_id' => $aircraftId, 'operation_id' => $operationId]);
+        return $this->session($request, $flightId);
+    }
+
+    public function redirectOperation(Request $request, string $operation): JsonResponse
+    {
+        [$flightId, $aircraftId, $operationId] = $this->operationContext($operation);
+        $request->merge(['aircraft_id' => $aircraftId, 'operation_id' => $operationId]);
+        return $this->redirect($request, $flightId);
+    }
+
+    public function importAccountOperation(Request $request, string $operation): JsonResponse
+    {
+        [$flightId, $aircraftId, $operationId] = $this->operationContext($operation);
+        $request->merge(['aircraft_id' => $aircraftId, 'operation_id' => $operationId]);
+        return $this->importAccount($request, $flightId);
+    }
+
+    public function importOperation(Request $request, string $operation): JsonResponse
+    {
+        [$flightId, $aircraftId, $operationId] = $this->operationContext($operation);
+        $request->merge(['aircraft_id' => $aircraftId, 'operation_id' => $operationId]);
+        return $this->import($request, $flightId);
+    }
+
+    private function operationContext(string $reference): array
+    {
+        $bid = $this->operationIdentity->resolveBid($reference, (int) Auth::id());
+        abort_if(!$bid, 404, 'Opération introuvable.');
+        abort_if(!$bid->aircraft_id, 409, 'Sélectionnez un appareil avant de préparer SimBrief.');
+
+        return [$bid->flight_id, (string) $bid->aircraft_id, $this->operationIdentity->id($bid)];
+    }
+
+    private function staticId(Request $request, string $pilot, string $flightId, string $aircraftId): string
+    {
+        if ($request->filled('operation_id')) {
+            return 'AIRINTER_OP_'.strtoupper(str_replace('-', '_', (string) $request->input('operation_id')));
+        }
+
+        return 'AIRINTER_'.strtoupper(str_replace('-', '_', $pilot.'_'.$flightId.'_'.$aircraftId));
     }
 
     private function getEligibleOperation(string $flightId, string $aircraftId): array

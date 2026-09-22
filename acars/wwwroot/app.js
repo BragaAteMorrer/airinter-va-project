@@ -336,9 +336,10 @@ async function selectOperation(operation) {
   }
 
   try {
+    const operationRef = operation.operation_id || operation.id || operation.bid_id;
     const paths = operation.bid_id
       ? [
-          `/api/v1/operations/${encodeURIComponent(operation.bid_id)}/aircraft-eligibility`,
+          `/api/v1/operations/${encodeURIComponent(operationRef)}/aircraft-eligibility`,
           `/api/operations/${encodeURIComponent(operation.bid_id)}/aircraft`,
           `/api/flights/${encodeURIComponent(flight.id)}/aircraft`
         ]
@@ -371,6 +372,13 @@ async function selectOperation(operation) {
     showMessage('#pirepMessage', error.message, true);
   }
 }
+function simbriefPath(suffix, flightId) {
+  const operationRef = selectedOperation?.operation_id || selectedOperation?.id;
+  return operationRef
+    ? `/api/v1/operations/${encodeURIComponent(operationRef)}/simbrief/${suffix}`
+    : `/api/flights/${encodeURIComponent(flightId)}/simbrief/${suffix}`;
+}
+
 function normalizeFlightLevel(value) {
   const altitude = Number(value);
   if (!Number.isFinite(altitude) || altitude <= 0) return undefined;
@@ -427,7 +435,7 @@ $('#simbriefAccountOpenBtn').onclick = async () => {
   if (!flightId || !aircraftId) return showMessage('#simbriefState', 'Sélectionnez un vol et un appareil.', true);
   try {
     showMessage('#simbriefState', 'Préparation du dispatch SimBrief…');
-    const payload = unwrap(await call(`/api/flights/${encodeURIComponent(flightId)}/simbrief/redirect`, { aircraft_id: aircraftId }));
+    const payload = unwrap(await call(simbriefPath('redirect', flightId), { aircraft_id: aircraftId }));
     linkedSimBrief = payload;
     const editButton = $('#simbriefAccountEditBtn');
     if (editButton) editButton.hidden = !payload.edit_url;
@@ -457,7 +465,7 @@ $('#simbriefAccountImportBtn').onclick = async () => {
   localStorage.prometheeAcarsSettings = JSON.stringify(localSettings);
   try {
     showMessage('#simbriefState', 'Import du dernier OFP de votre compte SimBrief…');
-    const briefing = unwrap(await call(`/api/flights/${encodeURIComponent(flightId)}/simbrief/account/import`, {
+    const briefing = unwrap(await call(simbriefPath('account/import', flightId), {
       aircraft_id: aircraftId,
       username: username || null,
       pilot_id: username ? null : pilotId
@@ -499,7 +507,7 @@ $('#simbriefBtn').onclick = async () => {
   if (!flightId || !aircraftId) return showMessage('#simbriefState', 'Sélectionnez un vol et un appareil.', true);
   try {
     showMessage('#simbriefState', 'Préparation de la demande SimBrief…');
-    const session = unwrap(await call(`/api/flights/${encodeURIComponent(flightId)}/simbrief/session`, {
+    const session = unwrap(await call(simbriefPath('session', flightId), {
       aircraft_id: aircraftId,
       alternate: form.elements.alt_airport_id.value.trim().toUpperCase(),
       route: form.elements.route.value.trim(),
@@ -530,7 +538,7 @@ $('#simbriefBtn').onclick = async () => {
       showMessage('#simbriefState', 'Import de l’OFP dans Prométhée…');
       for (let attempt = 1; attempt <= 5; attempt += 1) {
         try {
-          const briefing = unwrap(await call(`/api/flights/${encodeURIComponent(flightId)}/simbrief/import`, {
+          const briefing = unwrap(await call(simbriefPath('import', flightId), {
             aircraft_id: aircraftId,
             ofp_id: session.ofp_id
           }));
@@ -572,7 +580,14 @@ $('#prefileForm').onsubmit = async event => {
   if (body.alt_airport_id) body.alt_airport_id = body.alt_airport_id.toUpperCase();
   Object.assign(body, flightPlan || {}, { source_name: 'Hermes ACARS' });
   try {
-    const result = unwrap(await call('/api/prefile', body));
+    const operationRef = selectedOperation?.operation_id || selectedOperation?.id;
+    const operationPirepBody = operationRef ? {
+      route: body.route || flightPlan?.route || undefined,
+      level: body.level ? Number(body.level) : (flightPlan?.level || undefined),
+      block_fuel: body.block_fuel || flightPlan?.block_fuel || undefined,
+      simbrief_source: flightPlan?.source === 'simbrief_account' ? 'simbrief_account' : (String(flightPlan?.source || '').toLowerCase().includes('simbrief') ? 'simbrief' : undefined)
+    } : body;
+    const result = unwrap(await call(operationRef ? `/api/v1/operations/${encodeURIComponent(operationRef)}/pirep` : '/api/prefile', operationPirepBody));
     pirepId = result.id || result.pirep_id || result.pirep?.id;
     if (!pirepId) throw new Error('Prométhée n’a pas retourné l’identifiant du PIREP.');
     showMessage('#pirepMessage', `PIREP ${pirepId} prêt. Hermès est armé pour l’enregistrement.`);
@@ -585,7 +600,7 @@ $('#prefileForm').onsubmit = async event => {
 
 async function action(path, success) {
   try {
-    await call(path, path === '/api/start' ? { pirepId } : {});
+    await call(path, path === '/api/start' ? { pirepId, operationId: selectedOperation?.operation_id || selectedOperation?.id || null } : {});
     showMessage('#recordMessage', success);
   } catch (error) {
     showMessage('#recordMessage', error.message, true);
@@ -700,3 +715,21 @@ call('/api/about').then(info => {
   setText($('#loginServer'), 'Impossible de lire la configuration Hermès');
   setText($('#loginEndpoint'), error.message || '');
 });
+
+
+const checkUpdateBtn = $('#checkUpdateBtn');
+if (checkUpdateBtn) checkUpdateBtn.onclick = async () => {
+  setText($('#updateMessage'), 'Vérification auprès de Prométhée…');
+  try {
+    const result = await call('/api/update/check');
+    if (!result.ok) {
+      setText($('#updateMessage'), `Échec de la vérification : ${result.error || 'serveur indisponible'}`);
+    } else if (result.updateAvailable) {
+      setText($('#updateMessage'), `Mise à jour disponible : ${result.currentVersion} → ${result.latestVersion} (${result.channel || 'stable'}).`);
+    } else {
+      setText($('#updateMessage'), `Hermès est à jour (${result.currentVersion}).`);
+    }
+  } catch (error) {
+    setText($('#updateMessage'), `Échec de la vérification : ${error.message}`);
+  }
+};

@@ -26,13 +26,16 @@ public sealed class TelemetryService(ISimulatorConnector sim, FlightRecorder rec
             if (flight is null || (pending.Count == 0 && events.Count == 0)) return 0;
             if (pending.Count > 0) {
                 try {
-                    await client.Send($"promethee/pireps/{Uri.EscapeDataString(flight.PirepId)}/telemetry", new {
+                    var telemetryPath = string.IsNullOrWhiteSpace(flight.OperationId)
+                    ? $"promethee/pireps/{Uri.EscapeDataString(flight.PirepId)}/telemetry"
+                    : $"v1/operations/{Uri.EscapeDataString(flight.OperationId)}/telemetry";
+                await client.Send(telemetryPath, new {
                         samples = pending.Select(x => new {
                             sample_id=x.Sample.SampleId, recorded_at=x.Sample.RecordedAt, lat=x.Sample.Lat, lon=x.Sample.Lon,
                             altitude_msl=x.Sample.Altitude, agl=x.Sample.Agl, ias=x.Sample.Ias, gs=x.Sample.Gs,
                             vs=x.Sample.Vs, heading=x.Sample.Heading, fuel=x.Sample.Fuel, bank=x.Sample.Bank,
                             on_ground=x.Sample.OnGround, gear_down=x.Sample.GearDown, landing_flaps=x.Sample.Flaps > 0,
-                            thrust_stable=x.Sample.ThrustStable
+                            thrust_stable=x.Sample.ThrustStable, phase=flight.Phase
                         })
                     });
                 } catch (InvalidOperationException) {

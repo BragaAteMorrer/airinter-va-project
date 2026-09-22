@@ -7,6 +7,7 @@ use Modules\Promethee\Http\AcarsOperationsController;
 use Modules\Promethee\Http\AcarsConfigurationController;
 use Modules\Promethee\Http\OperationsV1Controller;
 use Modules\Promethee\Http\HermesReleaseController;
+use App\Http\Controllers\Api\AcarsSimBriefController;
 
 // Browsers request this conventional path even though the branded icon lives
 // with the static Promethee assets.
@@ -162,6 +163,15 @@ Route::middleware(['api','api.auth'])->prefix('api/v1')->group(function () {
     Route::get('/operations/{bid}/briefing', [OperationsV1Controller::class, 'briefing']);
     Route::get('/operations/{bid}/readiness', [OperationsV1Controller::class, 'readiness']);
     Route::get('/operations/{bid}/dispatch', [OperationsV1Controller::class, 'dispatch']);
+    Route::get('/operations/{bid}/pirep', [OperationsV1Controller::class, 'pirep']);
+    Route::get('/operations/{bid}/debrief', [OperationsV1Controller::class, 'debrief']);
+    Route::post('/operations/{bid}/pirep', [OperationsV1Controller::class, 'prefilePirep']);
+    Route::post('/operations/{bid}/telemetry', [TelemetryController::class, 'storeOperation']);
+    Route::post('/operations/{operation}/simbrief/session', [AcarsSimBriefController::class, 'sessionOperation']);
+    Route::post('/operations/{operation}/simbrief/redirect', [AcarsSimBriefController::class, 'redirectOperation']);
+    Route::post('/operations/{operation}/simbrief/account/import', [AcarsSimBriefController::class, 'importAccountOperation']);
+    Route::post('/operations/{operation}/simbrief/import', [AcarsSimBriefController::class, 'importOperation']);
+    Route::get('/hermes/configuration', [AcarsConfigurationController::class, 'show']);
 });
 
 Route::middleware(['api','api.auth'])->prefix('api/promethee')->group(function () {
