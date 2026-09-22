@@ -19,6 +19,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Modules\Promethee\Services\OperationIdentityService;
 use Modules\Promethee\Services\SafetyAnalyzer;
+use Modules\Promethee\Services\AircraftOperationalStateService;
 
 /**
  * Stable Air Inter operations facade.
@@ -34,7 +35,8 @@ class OperationsV1Controller extends Controller
         private readonly UserService $userSvc,
         private readonly PirepService $pirepSvc,
         private readonly OperationIdentityService $operationIdentity,
-        private readonly SafetyAnalyzer $safetyAnalyzer
+        private readonly SafetyAnalyzer $safetyAnalyzer,
+        private readonly AircraftOperationalStateService $aircraftState
     ) {}
 
     public function index(Request $request)
@@ -261,6 +263,32 @@ class OperationsV1Controller extends Controller
             'operation_id' => str_starts_with($reference, 'op_') ? $reference : 'op_'.$reference,
             'pirep' => $this->pirepDto($pirep),
             'debrief' => $this->safetyAnalyzer->debrief($pirep->landing_rate, $samples),
+        ]]);
+    }
+
+    public function fleetState(string $reference, Request $request)
+    {
+        $pirep = $this->operationIdentity->resolvePirep($reference, (int) $request->user()->id);
+        abort_if(!$pirep, 404, 'Aucun PIREP Hermès trouvé pour cette opération.');
+        $pirep->loadMissing('aircraft');
+
+        return response()->json(['data' => [
+            'operation_id' => str_starts_with($reference, 'op_') ? $reference : 'op_'.$reference,
+            'pirep_id' => $pirep->id,
+            'aircraft' => $this->aircraftState->snapshot($pirep),
+        ]]);
+    }
+
+    public function reconcileFleet(string $reference, Request $request)
+    {
+        $pirep = $this->operationIdentity->resolvePirep($reference, (int) $request->user()->id);
+        abort_if(!$pirep, 404, 'Aucun PIREP Hermès trouvé pour cette opération.');
+        $pirep->loadMissing('aircraft');
+
+        return response()->json(['data' => [
+            'operation_id' => str_starts_with($reference, 'op_') ? $reference : 'op_'.$reference,
+            'pirep_id' => $pirep->id,
+            'reconciliation' => $this->aircraftState->reconcile($pirep),
         ]]);
     }
 
