@@ -402,7 +402,24 @@ class PortalController extends Controller
         $pireps=Pirep::whereIn('state',[PirepState::IN_PROGRESS,PirepState::PAUSED])->with('user')->orderByDesc('updated_at')->limit(50)->get();
         return response()->json(['updated_at'=>now()->toIso8601String(),'flights'=>$pireps->map(function ($p) use ($ops) {
             $sample=DB::table('promethee_telemetry')->where('pirep_id',$p->id)->latest('recorded_at')->first(); $data=$sample ? json_decode($sample->payload,true) : [];
-            return $ops->liveFlight(['id'=>$p->id,'ident'=>$p->ident,'pilot'=>$p->user?->name,'departure'=>$p->dpt_airport_id,'arrival'=>$p->arr_airport_id,'state'=>PirepState::label($p->state),'recorded_at'=>$sample?->recorded_at,'lat'=>$data['lat']??null,'lon'=>$data['lon']??null,'altitude'=>$data['altitude_msl']??null,'ias'=>$data['ias']??null,'gs'=>$data['gs']??null,'vs'=>$data['vs']??null,'heading'=>$data['heading']??null,'fuel'=>$data['fuel']??null,'on_ground'=>$data['on_ground']??null],$data);
+            preg_match('/Hermes ACARS \\[(op_[^\\]]+)\\]/', (string) $p->source_name, $operationMatch);
+            return $ops->liveFlight([
+                'id'=>$p->id,
+                'operation_id'=>$operationMatch[1] ?? null,
+                'ident'=>$p->ident,
+                'pilot'=>$p->user?->name,
+                'aircraft'=>$p->aircraft?->registration,
+                'departure'=>$p->dpt_airport_id,
+                'arrival'=>$p->arr_airport_id,
+                'state'=>$data['phase'] ?? PirepState::label($p->state),
+                'phase'=>$data['phase'] ?? null,
+                'recorded_at'=>$sample?->recorded_at,
+                'lat'=>$data['lat']??null,'lon'=>$data['lon']??null,
+                'altitude'=>$data['altitude_msl']??null,'ias'=>$data['ias']??null,
+                'gs'=>$data['gs']??null,'vs'=>$data['vs']??null,
+                'heading'=>$data['heading']??null,'fuel'=>$data['fuel']??null,
+                'on_ground'=>$data['on_ground']??null
+            ],$data);
         })]);
     }
     public function profile(Request $r) {
@@ -489,6 +506,15 @@ class PortalController extends Controller
    public function cancelBooking(string $bid, Request $r) {
        $booking = Bid::with('flight')->where('user_id', $r->user()->id)->findOrFail($bid);
        $ident = $booking->flight?->ident ?? $booking->flight_id;
+       $operationId = 'op_'.$booking->id;
+       $activePirep = Pirep::where('user_id', $r->user()->id)
+           ->where('flight_id', $booking->flight_id)
+           ->where('aircraft_id', $booking->aircraft_id)
+           ->where('source_name', 'Hermes ACARS ['.$operationId.']')
+           ->exists();
+       if ($activePirep) {
+           return back()->withErrors(['booking' => 'Cette réservation possède déjà un PIREP Hermès et ne peut plus être supprimée.']);
+       }
        $booking->delete();
 
        return redirect()->route('promethee.bookings')
