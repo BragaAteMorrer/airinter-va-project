@@ -26,7 +26,10 @@ public sealed class TelemetryService(ISimulatorConnector sim, FlightRecorder rec
             if (flight is null || (pending.Count == 0 && events.Count == 0)) return 0;
             if (pending.Count > 0) {
                 try {
-                    var telemetryPath = string.IsNullOrWhiteSpace(flight.OperationId)\n                    ? $"promethee/pireps/{Uri.EscapeDataString(flight.PirepId)}/telemetry"\n                    : $"v1/operations/{Uri.EscapeDataString(flight.OperationId)}/telemetry";\n                await client.Send(telemetryPath, new {
+                    var telemetryPath = string.IsNullOrWhiteSpace(flight.OperationId)
+                    ? $"promethee/pireps/{Uri.EscapeDataString(flight.PirepId)}/telemetry"
+                    : $"v1/operations/{Uri.EscapeDataString(flight.OperationId)}/telemetry";
+                await client.Send(telemetryPath, new {
                         samples = pending.Select(x => new {
                             sample_id=x.Sample.SampleId, recorded_at=x.Sample.RecordedAt, lat=x.Sample.Lat, lon=x.Sample.Lon,
                             altitude_msl=x.Sample.Altitude, agl=x.Sample.Agl, ias=x.Sample.Ias, gs=x.Sample.Gs,
