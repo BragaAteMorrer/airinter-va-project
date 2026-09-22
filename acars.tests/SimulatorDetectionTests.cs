@@ -25,4 +25,22 @@ public sealed class SimulatorDetectionTests
             && x.HasConnectorBoundary
             && !x.TelemetryImplemented);
     }
+
+    [Theory]
+    [InlineData("fs9", SimulatorKind.FlightSimulator2004)]
+    [InlineData("fsx_se", SimulatorKind.FlightSimulatorX)]
+    [InlineData("Prepar3D_v6", SimulatorKind.Prepar3D)]
+    [InlineData("x-plane-x86_64", SimulatorKind.XPlane)]
+    public void Detection_recognises_supported_simulator_families(string process, SimulatorKind expected)
+    {
+        var detected = SimulatorDetector.Detect([process]);
+        Assert.Contains(detected, x => x.Kind == expected);
+    }
+
+    [Fact]
+    public void Detection_does_not_claim_fsuipc_telemetry_before_protocol_validation()
+    {
+        var detected = SimulatorDetector.Detect(["fs9", "fsx", "Prepar3D"]);
+        Assert.All(detected, x => Assert.False(x.TelemetryImplemented));
+    }
 }
