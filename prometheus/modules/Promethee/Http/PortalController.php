@@ -486,6 +486,14 @@ class PortalController extends Controller
            ->where('user_id', $r->user()->id)->latest()->get();
        return $this->page('bookings', compact('bookings'));
    }
+   public function cancelBooking(string $bid, Request $r) {
+       $booking = Bid::with('flight')->where('user_id', $r->user()->id)->findOrFail($bid);
+       $ident = $booking->flight?->ident ?? $booking->flight_id;
+       $booking->delete();
+
+       return redirect()->route('promethee.bookings')
+           ->with('success', 'Réservation '.$ident.' supprimée.');
+   }
    private function downloadCategory(File $file): string {
        $reference = strtolower((string) $file->ref_model);
        $search = strtolower(implode(' ', [$file->name, $file->description, $file->path, $reference]));
