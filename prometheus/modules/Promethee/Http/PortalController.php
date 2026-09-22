@@ -567,11 +567,11 @@ class PortalController extends Controller
        return back()->with('success', 'Téléchargement enregistré.');
    }
    private function isManagedDownload(File $asset): bool {
-       $reference = trim((string) $asset->ref_model);
-       // Prométhée owns its native downloads. Legacy standalone ACARS entries
-       // can also be adopted safely; catalogue attachments keep their original
-       // Aircraft/Subfleet/Airport relationship and remain read-only here.
-       return str_starts_with($reference, 'Modules\\Promethee\\Download\\') || $reference === '';
+       // Everything surfaced by the Prométhée download centre is manageable
+       // from this screen. On first edit, legacy phpVMS catalogue attachments
+       // are adopted by Prométhée and become ordinary download resources.
+       return $this->downloadGroups()->flatten(1)
+           ->contains(fn (File $download) => (string) $download->id === (string) $asset->id);
    }
    public function editDownload(string $file) {
        $asset = File::findOrFail($file);
@@ -594,11 +594,30 @@ class PortalController extends Controller
        ];
 
        if ($r->hasFile('file')) {
-           $files->saveFile($r->file('file'), 'promethee-downloads', $attributes);
-           $files->removeFile($asset);
+           // Replace the physical payload while keeping the same database ID.
+           // This preserves download counters and existing Prométhée links.
+           $oldPath = (string) $asset->path;
+           $oldDisk = $asset->disk ?? config('filesystems.public_files');
+           $replacement = $files->saveFile($r->file('file'), 'promethee-downloads', $attributes);
+           $asset->fill($attributes);
+           $asset->path = $replacement->path;
+           $asset->disk = $replacement->disk;
+           $asset->save();
+           $replacement->delete();
+           if ($oldPath !== '' && !str_starts_with($oldPath, 'http') && $oldPath !== $asset->path) {
+               \Illuminate\Support\Facades\Storage::disk($oldDisk)->delete($oldPath);
+           }
        } else {
            $asset->fill($attributes);
-           if (!empty($data['url'])) $asset->path = $data['url'];
+           if (!empty($data['url'])) {
+               $oldPath = (string) $asset->path;
+               $oldDisk = $asset->disk ?? config('filesystems.public_files');
+               $asset->path = $data['url'];
+               $asset->disk = null;
+               if ($oldPath !== '' && !str_starts_with($oldPath, 'http')) {
+                   \Illuminate\Support\Facades\Storage::disk($oldDisk)->delete($oldPath);
+               }
+           }
            $asset->save();
        }
 
