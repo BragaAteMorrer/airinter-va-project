@@ -30,6 +30,14 @@ jobs:
             echo "$forbidden"
             exit 1
           fi
+      - name: Reject obvious committed secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git grep -nEI -- ':!*.example' ':!*.md' '(BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]{20,})'; then
+            echo "Potential secret material found in tracked files."
+            exit 1
+          fi
       - name: Validate Hermes interface JavaScript
         run: node --check acars/wwwroot/app.js
 
@@ -63,6 +71,13 @@ jobs:
         run: dotnet restore acars/Promethee.Acars.csproj
       - name: Build Windows desktop
         run: dotnet build acars/Promethee.Acars.csproj --configuration Release --no-restore --framework net8.0-windows
+      - name: Reset Hermès test state
+        shell: pwsh
+        run: |
+          $state = Join-Path $env:LOCALAPPDATA 'AirInter\Promethee'
+          if (Test-Path $state) { Remove-Item -Recurse -Force $state -ErrorAction Stop }
+          New-Item -ItemType Directory -Force -Path $state | Out-Null
+          Write-Host "Hermes test state reset: $state"
       - name: Test
         run: dotnet test acars.tests/Promethee.Acars.Tests.csproj --configuration Release --no-restore --framework net8.0 --logger "trx;LogFileName=hermes-tests.trx" --results-directory TestResults
       - name: Upload Hermès test report

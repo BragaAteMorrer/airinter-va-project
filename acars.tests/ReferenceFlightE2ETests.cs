@@ -48,7 +48,7 @@ public sealed class ReferenceFlightE2ETests
     [Fact]
     public void Recorder_refuses_completion_until_in_and_all_messages_are_acknowledged()
     {
-        var recorder = new FlightRecorder();
+        var recorder = new FlightRecorder(Path.Combine(Path.GetTempPath(), "AirInter-Hermes-Tests", Guid.NewGuid().ToString("N")));
         var t = DateTimeOffset.Parse("2026-09-22T18:42:00Z");
         recorder.Start("https://promethee.example", "pirep-reference", Legacy(t, true, 0, 0, 0, true), "op_reference_itf749");
 
