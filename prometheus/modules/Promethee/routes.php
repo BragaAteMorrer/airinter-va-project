@@ -77,6 +77,7 @@ Route::middleware(['web','auth'])->name('promethee.')->group(function () {
     Route::post('/flights/{id}/reserve', [PortalController::class,'reserveFlight'])->name('flights.reserve');
     Route::get('/flights/{id}/briefing', [PortalController::class,'briefing'])->name('flights.briefing');
     Route::post('/flights/{id}/briefing', [PortalController::class,'saveBriefing'])->name('flights.briefing.save');
+    Route::get('/simbrief/{id}', [PortalController::class,'simbrief'])->name('simbrief.show');
     Route::get('/replay/{id}', [PortalController::class,'replay'])->name('replay');
 });
 
