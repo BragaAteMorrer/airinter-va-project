@@ -160,6 +160,7 @@ Route::middleware(['api','api.auth'])->prefix('api/v1')->group(function () {
     Route::get('/operations/{bid}', [OperationsV1Controller::class, 'show']);
     Route::delete('/operations/{bid}', [OperationsV1Controller::class, 'destroy']);
     Route::get('/operations/{bid}/aircraft-eligibility', [OperationsV1Controller::class, 'aircraft']);
+    Route::put('/operations/{bid}/aircraft', [OperationsV1Controller::class, 'selectAircraft']);
     Route::get('/operations/{bid}/briefing', [OperationsV1Controller::class, 'briefing']);
     Route::get('/operations/{bid}/readiness', [OperationsV1Controller::class, 'readiness']);
     Route::get('/operations/{bid}/dispatch', [OperationsV1Controller::class, 'operationDispatch']);
