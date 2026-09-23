@@ -177,6 +177,44 @@ class OperationsV1Controller extends Controller
         ]]);
     }
 
+    public function selectAircraft(string $bidId, Request $request)
+    {
+        $bid = $this->bid($bidId, $request);
+        abort_if($this->operationPirep($bid), 409, 'L’appareil ne peut plus être modifié après le pré-dépôt du PIREP.');
+
+        $data = $request->validate([
+            'aircraft_id' => 'required|integer',
+        ]);
+
+        $eligibility = $this->aircraft($bidId, $request)->getData(true)['data'] ?? [];
+        $available = collect($eligibility['available'] ?? []);
+        $selected = $available->first(fn ($aircraft) => (string) ($aircraft['id'] ?? '') === (string) $data['aircraft_id']);
+        abort_if(!$selected, 409, 'Cet appareil n’est pas autorisé ou n’est plus disponible pour cette opération.');
+
+        // Changing aircraft invalidates any active OFP linked to the previous
+        // aircraft. Do not silently switch once planning has started.
+        $existingOfp = $this->operationOfp($bid);
+        abort_if($existingOfp && (string) $bid->aircraft_id !== (string) $data['aircraft_id'], 409, 'Un OFP existe déjà pour cette opération. Supprimez-le avant de changer d’appareil.');
+
+        $bid->aircraft_id = (int) $data['aircraft_id'];
+        $bid->save();
+
+        $bid = $this->bid($bidId, $request);
+        $ofp = $this->operationOfp($bid);
+        $pirep = $this->operationPirep($bid);
+        $checks = $this->readinessChecks($bid, $ofp, $pirep);
+        $serverReady = collect($checks)->every(fn ($check) => $check['ready']);
+
+        return response()->json(['data' => [
+            'operation_id' => $this->operationIdentity->id($bid),
+            'bid_id' => $bid->id,
+            'aircraft' => $this->operationDto($bid)['aircraft'],
+            'status' => $this->dispatchStatus($bid, $pirep, $serverReady),
+            'server_checks' => collect($checks)->mapWithKeys(fn ($check) => [strtolower($check['code']) => $check['ready']]),
+            'checks' => $checks,
+        ]]);
+    }
+
     public function briefing(string $bidId, Request $request)
     {
         $bid = $this->bid($bidId, $request);
