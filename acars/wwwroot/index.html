@@ -166,10 +166,11 @@
     </section>
   </main><script>
 window.addEventListener('error', event => {
-  const server = document.getElementById('loginServer');
-  const endpoint = document.getElementById('loginEndpoint');
-  if (server) server.textContent = 'Interface Hermès en erreur';
-  if (endpoint) endpoint.textContent = event.message || 'Erreur JavaScript inconnue';
+  const message = document.getElementById('loginMessage');
+  if (!message) return;
+  message.hidden = false;
+  message.classList.add('error');
+  message.textContent = 'Interface Hermès en erreur : ' + (event.message || 'erreur inconnue');
 });
 </script>
 <script src="/app.js"></script>
