@@ -5,6 +5,8 @@ public sealed class TelemetryService(ISimulatorConnector sim, FlightRecorder rec
     private static readonly TimeSpan MaxRetryDelay = TimeSpan.FromSeconds(60);
     private DateTimeOffset nextSyncAttemptAt = DateTimeOffset.MinValue;
     private int consecutiveFailures;
+    private bool? simulatorWasAvailable;
+    private bool networkWasDegraded;
 
     public string SyncState { get; private set; } = "IDLE";
     public DateTimeOffset? LastSuccessfulSyncAt { get; private set; }
@@ -15,6 +17,15 @@ public sealed class TelemetryService(ISimulatorConnector sim, FlightRecorder rec
     public async Task Tick()
     {
         sim.Poll();
+        var now = DateTimeOffset.UtcNow;
+        var simulatorAvailable = sim.LatestSnapshot is not null;
+        if (recorder.Flight?.Recording == true) {
+            if (simulatorWasAvailable == true && !simulatorAvailable)
+                recorder.RecordLocalOperationalEvent("SIMULATOR_LOST", now);
+            else if (simulatorWasAvailable == false && simulatorAvailable)
+                recorder.RecordLocalOperationalEvent("SIMULATOR_RECOVERED", now);
+        }
+        simulatorWasAvailable = simulatorAvailable;
         if (sim.LatestSnapshot is not null) recorder.Capture(sim.LatestSnapshot);
 
         if (!client.Connected) {
@@ -22,7 +33,6 @@ public sealed class TelemetryService(ISimulatorConnector sim, FlightRecorder rec
             return;
         }
 
-        var now = DateTimeOffset.UtcNow;
         if (now < nextSyncAttemptAt) {
             SyncState = "RETRYING";
             return;
@@ -30,6 +40,9 @@ public sealed class TelemetryService(ISimulatorConnector sim, FlightRecorder rec
 
         try {
             await SendPending(client, recorder);
+            if (networkWasDegraded && recorder.Flight?.Recording == true)
+                recorder.RecordLocalOperationalEvent("NETWORK_RECOVERED", now);
+            networkWasDegraded = false;
             consecutiveFailures = 0;
             nextSyncAttemptAt = DateTimeOffset.MinValue;
             LastSyncError = null;
@@ -38,6 +51,9 @@ public sealed class TelemetryService(ISimulatorConnector sim, FlightRecorder rec
         } catch (Exception exception) {
             // Tracking is deliberately independent from the network. Failed
             // messages remain in FlightRecorder and will be retried at least once.
+            if (!networkWasDegraded && recorder.Flight?.Recording == true)
+                recorder.RecordLocalOperationalEvent("NETWORK_LOST", now);
+            networkWasDegraded = true;
             consecutiveFailures++;
             var seconds = Math.Min(MaxRetryDelay.TotalSeconds, Math.Pow(2, Math.Min(consecutiveFailures, 6)));
             nextSyncAttemptAt = now.AddSeconds(seconds);
@@ -51,6 +67,9 @@ public sealed class TelemetryService(ISimulatorConnector sim, FlightRecorder rec
         if (!client.Connected) throw new InvalidOperationException("Connectez-vous à Prométhée avant de synchroniser.");
         try {
             var sent = await SendPending(client, recorder);
+            if (networkWasDegraded && recorder.Flight?.Recording == true)
+                recorder.RecordLocalOperationalEvent("NETWORK_RECOVERED", DateTimeOffset.UtcNow);
+            networkWasDegraded = false;
             consecutiveFailures = 0;
             nextSyncAttemptAt = DateTimeOffset.MinValue;
             LastSyncError = null;
@@ -58,6 +77,9 @@ public sealed class TelemetryService(ISimulatorConnector sim, FlightRecorder rec
             SyncState = "ONLINE";
             return sent;
         } catch (Exception exception) {
+            if (!networkWasDegraded && recorder.Flight?.Recording == true)
+                recorder.RecordLocalOperationalEvent("NETWORK_LOST", DateTimeOffset.UtcNow);
+            networkWasDegraded = true;
             consecutiveFailures++;
             var seconds = Math.Min(MaxRetryDelay.TotalSeconds, Math.Pow(2, Math.Min(consecutiveFailures, 6)));
             nextSyncAttemptAt = DateTimeOffset.UtcNow.AddSeconds(seconds);
