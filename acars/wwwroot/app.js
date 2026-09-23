@@ -914,10 +914,14 @@ async function refreshStatus() {
     readiness.simulator = Boolean(status.latest);
     const recording = Boolean(flight?.recording ?? flight?.Recording);
     const recovery = Boolean(status.recoveryAvailable);
-    setIndicator('#prometheeIndicator', status.connected ? 'ok' : 'bad', status.connected ? 'PROMÉTHÉE' : 'PROMÉTHÉE OFFLINE');
+    const pendingCount = Number(status.pending || 0);
+    const syncState = String(status.syncState || 'IDLE').toUpperCase();
+    const networkDegraded = syncState === 'RETRYING' && pendingCount > 0;
+    setIndicator('#prometheeIndicator', !status.connected ? 'bad' : (networkDegraded ? 'warn' : 'ok'),
+      !status.connected ? 'PROMÉTHÉE OFFLINE' : (networkDegraded ? 'PROMÉTHÉE RETRY' : 'PROMÉTHÉE'));
     setIndicator('#simIndicator', status.latest ? 'ok' : ((status.detectedSimulators || []).length ? 'warn' : 'bad'), status.latest ? 'SIM' : 'SIM WAIT');
     setIndicator('#trackingIndicator', recording ? 'ok' : (recovery ? 'warn' : 'pending'), recording ? 'TRACKING' : (recovery ? 'RECOVERY' : 'TRACKING'));
-    setIndicator('#syncIndicator', Number(status.pending || 0) === 0 ? 'ok' : 'warn', Number(status.pending || 0) === 0 ? 'SYNC' : `SYNC ${status.pending}`);
+    setIndicator('#syncIndicator', pendingCount === 0 ? 'ok' : (networkDegraded ? 'bad' : 'warn'), pendingCount === 0 ? 'SYNC' : `SYNC ${pendingCount}`);
     updateWorkflow();
     const simulators = (status.detectedSimulators || []).map(item => item.displayName || item.DisplayName).filter(Boolean);
     setText($('#simState'), simulators.length ? `${simulators.join(' · ')} — ${status.sim || 'connexion en attente'}` : status.sim || 'Simulateur non détecté');
@@ -925,7 +929,10 @@ async function refreshStatus() {
     setText($('#phase'), flight?.phase || flight?.Phase || '—');
     setText($('#distance'), flight ? `${Number(flight.distance ?? flight.Distance ?? 0).toFixed(1)} NM` : '—');
     setText($('#airborne'), flight ? `${Math.floor(Number(flight.airborneSeconds ?? flight.AirborneSeconds ?? 0) / 60)} min` : '—');
-    setText($('#warning'), status.warning || '');
+    const localRecordingWarning = recording && networkDegraded
+      ? `Prométhée indisponible — le vol continue d’être enregistré localement. ${pendingCount} message${pendingCount > 1 ? 's' : ''} en attente ; votre vol reste sauvegardé.`
+      : '';
+    setText($('#warning'), localRecordingWarning || status.warning || '');
     setText($('#altitude'), value('altitude', 'Altitude') == null ? '—' : `${Math.round(value('altitude', 'Altitude'))} ft`);
     setText($('#groundSpeed'), value('gs', 'Gs') == null ? '—' : `${Math.round(value('gs', 'Gs'))} kt`);
     setText($('#fuel'), value('fuel', 'Fuel') == null ? '—' : `${Math.round(value('fuel', 'Fuel'))} lb`);
