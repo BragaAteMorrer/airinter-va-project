@@ -40,6 +40,23 @@ public sealed class FlightRecorderRecoveryTests
     }
 
 
+
+    [Fact]
+    public void Operational_interruption_events_are_persisted_without_duplicates()
+    {
+        var folder = NewFolder();
+        var recorder = new FlightRecorder(folder);
+        var at = DateTimeOffset.Parse("2026-09-23T11:00:00Z");
+        recorder.Start("https://promethee.example", "pirep-events", Ground(at));
+        recorder.RecordLocalOperationalEvent("SIMULATOR_LOST", at.AddMinutes(1));
+        recorder.RecordLocalOperationalEvent("SIMULATOR_LOST", at.AddMinutes(1));
+
+        Assert.Single(recorder.Flight!.Journal.Where(x => x.Name == "SIMULATOR_LOST"));
+
+        var recovered = new FlightRecorder(folder);
+        Assert.Contains(recovered.Flight!.Journal, x => x.Name == "SIMULATOR_LOST");
+    }
+
     [Fact]
     public void Manual_pause_is_not_reported_as_crash_recovery()
     {
