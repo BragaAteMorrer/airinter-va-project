@@ -40,7 +40,7 @@ button.primary:hover{background:#095494}
 .login-form{display:grid;grid-template-columns:repeat(2,minmax(220px,1fr));gap:18px;align-items:end;max-width:760px}.login-form button{height:44px;max-width:260px}
 .message{margin:18px 0 0;padding:12px 14px;border:1px solid #b9ddcb;border-radius:9px;background:#f0faf4;color:var(--ok);font-weight:650}
 .message.error{border-color:#efb8bb;background:#fff3f3;color:var(--danger)}
-.advanced{margin-top:28px;padding-top:18px;border-top:1px solid var(--line)}.advanced summary{cursor:pointer;color:var(--navy);font-weight:800}.advanced .login-form{margin-top:15px}
+
 .flight-search{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:13px;align-items:end;margin:23px 0 8px;padding:19px;border:1px solid #d4e0e9;border-radius:13px;background:#f6f9fb}
 .flight-search button{min-height:44px}.search-hint{margin:8px 0 18px;font-size:12px}
 .list{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:11px;margin-top:18px}
@@ -136,3 +136,21 @@ button:disabled { cursor:not-allowed; opacity:.48; filter:saturate(.5); }
   .pilot-state,.ops-status { justify-content:flex-start; }
   .next-action { align-items:flex-start; flex-direction:column; }
 }
+
+
+/* Recovery Center */
+.recovery-center{max-width:1160px;margin:0 0 20px;padding:24px;border:1px solid #e6c78a;border-left:5px solid #d9981f;border-radius:14px;background:linear-gradient(180deg,#fffaf0,#fff);box-shadow:var(--shadow)}
+.recovery-heading{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}
+.recovery-heading h2{margin:4px 0 6px}.recovery-heading p{margin:0;color:var(--muted)}
+.recovery-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:18px 0}
+.recovery-metrics div{display:grid;gap:5px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.recovery-metrics span{font-size:9px;font-weight:900;letter-spacing:.9px;text-transform:uppercase;color:var(--muted)}
+.recovery-metrics strong{font-size:18px;color:var(--navy)}
+.recovery-actions{margin-top:14px}
+button.danger{border-color:#d39ba0;background:#fff4f4;color:#9f3138}
+button.danger:hover{border-color:#b94a51;background:#ffecec}
+.recovery-review{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.recovery-review h3{margin:0 0 8px}
+
+body.auth-locked .recovery-center{width:min(760px,100%)}
+@media(max-width:700px){.recovery-heading{display:grid}.recovery-actions{display:grid}.recovery-actions button{width:100%}}
