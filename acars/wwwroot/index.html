@@ -34,6 +34,32 @@
         </div>
       </div>
     </header>
+    <section id="recoveryOverlay" class="recovery-overlay" hidden aria-modal="true" role="dialog" aria-labelledby="recoveryTitle">
+      <article class="recovery-dialog">
+        <div class="recovery-heading">
+          <div><span class="kicker">RÉCUPÉRATION DE VOL</span><h2 id="recoveryTitle">Un vol interrompu a été retrouvé</h2></div>
+          <strong id="recoveryPhase" class="ready-state">RECOVERY</strong>
+        </div>
+        <p id="recoveryLead">Hermès a conservé l’état du vol localement. Choisissez ce que vous souhaitez faire avant de préparer une autre opération.</p>
+        <div class="recovery-summary">
+          <div><span>PIREP</span><strong id="recoveryPirep">—</strong></div>
+          <div><span>Phase</span><strong id="recoveryPhaseValue">—</strong></div>
+          <div><span>Distance</span><strong id="recoveryDistance">—</strong></div>
+          <div><span>Temps airborne</span><strong id="recoveryAirborne">—</strong></div>
+          <div><span>À synchroniser</span><strong id="recoveryPending">—</strong></div>
+        </div>
+        <details id="recoveryDetails">
+          <summary>Consulter le vol interrompu</summary>
+          <div id="recoveryTimeline" class="timeline"></div>
+        </details>
+        <p id="recoveryMessage" class="message" hidden role="status"></p>
+        <div class="recovery-actions">
+          <button id="recoveryReviewBtn" type="button">Consulter</button>
+          <button id="recoveryAbandonBtn" type="button" class="danger-action">Abandonner</button>
+          <button id="recoveryResumeBtn" type="button" class="primary">Reprendre le vol</button>
+        </div>
+      </article>
+    </section>
     <section id="connect" class="panel active auth-panel">
       <div class="auth-mark"><span>AIR INTER VA</span><strong>Accès équipage</strong></div><h2>Connexion pilote</h2><p class="hint">Connectez-vous à votre compte Air Inter pour préparer et suivre votre vol.</p>
       <form id="loginForm" class="login-form">
