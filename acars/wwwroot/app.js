@@ -36,6 +36,7 @@ let flightPlan = null;
 let linkedSimBrief = null;
 let serverDispatch = null;
 let connected = false;
+let lastStatus = null;
 let readiness = { operation: false, aircraft: false, ofp: false, pirep: false, simulator: false };
 
 function setAuthenticated(value) {
@@ -124,9 +125,27 @@ async function login(form, advanced = false) {
 $('#loginForm').onsubmit = event => { event.preventDefault(); login(event.currentTarget); };
 $('#configForm').onsubmit = event => { event.preventDefault(); login(event.currentTarget, true); };
 
-function updateWorkflow() {
+function setIndicator(selector, state, label) {
+  const node = $(selector);
+  if (!node) return;
+  node.classList.remove('ok', 'warn', 'bad', 'pending');
+  node.classList.add(state || 'pending');
+  if (label) {
+    const dot = node.querySelector('b');
+    node.replaceChildren(document.createTextNode(label + ' '));
+    const nextDot = dot || document.createElement('b');
+    nextDot.textContent = '●';
+    node.append(nextDot);
+  }
+}
+
+function snapshotValue(snapshot, camel, pascal = camel) {
+  return snapshot?.[camel] ?? snapshot?.[pascal] ?? null;
+}
+
+function buildWorkflowState() {
   const server = serverDispatch?.server_checks;
-  const state = server ? {
+  return server ? {
     operation: Boolean(server.operation),
     aircraft: Boolean(server.aircraft),
     ofp: Boolean(server.ofp),
@@ -137,6 +156,106 @@ function updateWorkflow() {
     ofp: Boolean(flightPlan || selectedOperation?.simbrief?.available),
     pirep: Boolean(pirepId)
   };
+}
+
+function updateNextAction(state, ready) {
+  const title = $('#nextActionTitle');
+  const text = $('#nextActionText');
+  const button = $('#nextActionBtn');
+  if (!title || !text || !button) return;
+
+  let action = () => {};
+  if (!state.operation) {
+    setText(title, 'Choisissez votre vol');
+    setText(text, 'Sélectionnez une réservation ou recherchez une ligne du programme Air Inter.');
+    setText(button, 'Choisir un vol');
+    action = () => { $('#flightNumberSearch')?.focus(); $('#flightSearchForm')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+  } else if (!state.aircraft) {
+    setText(title, 'Affectez un appareil');
+    setText(text, 'Hermès n’affiche que les appareils autorisés et disponibles pour cette opération.');
+    setText(button, 'Choisir l’appareil');
+    action = () => { $('#aircraftId')?.focus(); $('#aircraftId')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+  } else if (!state.ofp) {
+    const mode = localSettings.flightPlanMode || 'account';
+    const hasSimBriefIdentity = Boolean($('#simbriefUsername')?.value.trim() || $('#simbriefPilotId')?.value.trim());
+    setText(title, mode === 'account' && !hasSimBriefIdentity ? 'Reliez votre compte SimBrief' : 'Préparez le briefing');
+    setText(text, mode === 'account'
+      ? (hasSimBriefIdentity
+          ? 'Envoyez les données Air Inter et vos ajustements vers SimBrief, puis importez l’OFP généré.'
+          : 'Renseignez votre alias Navigraph / SimBrief ou votre Pilot ID. Hermès ne demande jamais votre mot de passe.')
+      : 'Préparez l’OFP avant le pré-dépôt du PIREP.');
+    setText(button, mode === 'account' ? (hasSimBriefIdentity ? 'Envoyer vers SimBrief' : 'Ajouter mon alias') : (mode === 'api' ? 'Générer l’OFP' : 'Charger un plan'));
+    action = () => {
+      if (mode === 'account' && !hasSimBriefIdentity) {
+        $('#simbriefUsername')?.focus();
+        $('#simbriefUsername')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else if (mode === 'account') $('#simbriefAccountOpenBtn')?.click();
+      else if (mode === 'api') $('#simbriefBtn')?.click();
+      else $('#planFile')?.click();
+    };
+  } else if (!state.pirep) {
+    setText(title, 'Validez la préparation');
+    setText(text, 'Le briefing est prêt. Pré-déposez le PIREP pour figer la préparation opérationnelle.');
+    setText(button, 'Préparer le PIREP');
+    action = () => $('#prefileForm')?.requestSubmit();
+  } else if (!readiness.simulator) {
+    setText(title, 'Connectez le simulateur');
+    setText(text, 'La préparation est terminée. Hermès attend maintenant une télémétrie valide du simulateur.');
+    setText(button, 'Voir l’état simulateur');
+    action = () => document.querySelector('[data-tab="record"]')?.click();
+  } else {
+    setText(title, ready ? 'Prêt pour le départ' : 'Contrôles avant départ');
+    setText(text, ready
+      ? 'Prométhée, le simulateur et la préparation sont alignés. Vous pouvez démarrer l’enregistrement.'
+      : 'Un contrôle obligatoire reste à satisfaire avant le démarrage.');
+    setText(button, ready ? 'Passer au vol' : 'Voir les contrôles');
+    action = () => document.querySelector('[data-tab="record"]')?.click();
+  }
+  button.onclick = action;
+}
+
+function updatePreflight(status, state, ready) {
+  const container = $('#preflightChecks');
+  if (!container) return;
+  const latest = status?.latest || {};
+  const onGround = snapshotValue(latest, 'onGround', 'OnGround');
+  const parkingBrake = snapshotValue(latest, 'parkingBrake', 'ParkingBrake');
+  const engines = snapshotValue(latest, 'enginesRunning', 'EnginesRunning');
+  const enginesKnown = Array.isArray(engines) && engines.length > 0;
+  const enginesStopped = enginesKnown ? !engines.some(Boolean) : null;
+  const active = status?.activeConnector;
+  const connectorName = active?.name || active?.Name || status?.sim || 'Simulateur';
+
+  const checks = [
+    ['VOL', state.operation, state.operation ? 'opération sélectionnée' : 'à sélectionner'],
+    ['APPAREIL', state.aircraft, state.aircraft ? 'appareil affecté' : 'à sélectionner'],
+    ['OFP', state.ofp, state.ofp ? 'briefing disponible' : 'à préparer'],
+    ['PIREP', state.pirep, state.pirep ? 'pré-déposé' : 'à préparer'],
+    ['SIMULATEUR', readiness.simulator, readiness.simulator ? connectorName : 'télémétrie en attente'],
+    ['AU SOL', onGround === null ? null : onGround === true, onGround === null ? 'information indisponible' : (onGround ? 'confirmé' : 'avion en vol')],
+    ['FREIN DE PARC', parkingBrake === null ? null : parkingBrake === true, parkingBrake === null ? 'information indisponible' : (parkingBrake ? 'serré' : 'desserré')],
+    ['MOTEURS', enginesStopped, enginesStopped === null ? 'information indisponible' : (enginesStopped ? 'arrêtés' : 'en fonctionnement')]
+  ];
+
+  container.replaceChildren();
+  checks.forEach(([name, passed, detail]) => {
+    const item = document.createElement('span');
+    item.className = 'preflight-check ' + (passed === true ? 'ok' : passed === null ? 'unknown' : 'pending');
+    const mark = passed === true ? '✓' : passed === null ? '?' : '•';
+    item.textContent = `${mark} ${name} — ${detail}`;
+    container.append(item);
+  });
+
+  const safety = $('#flightSafetyState');
+  if (safety) {
+    const recording = Boolean(status?.flight?.recording ?? status?.flight?.Recording);
+    setText(safety, recording ? 'TRACKING' : (ready ? 'READY' : 'STANDBY'));
+    safety.classList.toggle('ready', ready || recording);
+  }
+}
+
+function updateWorkflow() {
+  const state = buildWorkflowState();
   $$('#workflow [data-step]').forEach(node => {
     const key = node.dataset.step;
     const passed = key === 'ready'
@@ -157,6 +276,10 @@ function updateWorkflow() {
     node.textContent = ready ? 'READY FOR DEPARTURE' : 'NOT READY';
     node.classList.toggle('ready', ready);
   }
+  const startButton = $('#startBtn');
+  if (startButton) startButton.disabled = !ready;
+  updateNextAction(state, ready);
+  updatePreflight(lastStatus, state, ready);
 }
 
 function renderEligibility(payload) {
@@ -477,10 +600,21 @@ $('#simbriefAccountOpenBtn').onclick = async () => {
   const form = $('#prefileForm');
   const flightId = form.elements.flight_id.value;
   const aircraftId = form.elements.aircraft_id.value;
+  const username = $('#simbriefUsername').value.trim();
+  const pilotId = $('#simbriefPilotId').value.trim();
   if (!flightId || !aircraftId) return showMessage('#simbriefState', 'Sélectionnez un vol et un appareil.', true);
+  if (!username && !pilotId) return showMessage('#simbriefState', 'Ajoutez votre alias Navigraph / SimBrief ou votre Pilot ID avant d’envoyer le vol.', true);
+  localSettings.simbriefUsername = username;
+  localSettings.simbriefPilotId = pilotId;
+  localStorage.prometheeAcarsSettings = JSON.stringify(localSettings);
   try {
-    showMessage('#simbriefState', 'Préparation du dispatch SimBrief…');
-    const payload = unwrap(await call(simbriefPath('redirect'), { aircraft_id: aircraftId }));
+    showMessage('#simbriefState', 'Envoi de la préparation Air Inter vers SimBrief…');
+    const payload = unwrap(await call(simbriefPath('redirect'), {
+      aircraft_id: aircraftId,
+      alternate: form.elements.alt_airport_id.value.trim().toUpperCase() || null,
+      route: form.elements.route.value.trim() || null,
+      level: form.elements.level.value ? Number(form.elements.level.value) : null
+    }));
     linkedSimBrief = payload;
     const editButton = $('#simbriefAccountEditBtn');
     if (editButton) editButton.hidden = !payload.edit_url;
@@ -765,11 +899,18 @@ function updateRemotePolicy(configuration) {
 async function refreshStatus() {
   try {
     const status = await call('/api/status');
+    lastStatus = status;
     const flight = status.flight;
     const latest = status.latest || {};
     const value = (camel, pascal) => latest[camel] ?? latest[pascal];
     if (status.connected && !connected) setAuthenticated(true);
     readiness.simulator = Boolean(status.latest);
+    const recording = Boolean(flight?.recording ?? flight?.Recording);
+    const recovery = Boolean(status.recoveryAvailable);
+    setIndicator('#prometheeIndicator', status.connected ? 'ok' : 'bad', status.connected ? 'PROMÉTHÉE' : 'PROMÉTHÉE OFFLINE');
+    setIndicator('#simIndicator', status.latest ? 'ok' : ((status.detectedSimulators || []).length ? 'warn' : 'bad'), status.latest ? 'SIM' : 'SIM WAIT');
+    setIndicator('#trackingIndicator', recording ? 'ok' : (recovery ? 'warn' : 'pending'), recording ? 'TRACKING' : (recovery ? 'RECOVERY' : 'TRACKING'));
+    setIndicator('#syncIndicator', Number(status.pending || 0) === 0 ? 'ok' : 'warn', Number(status.pending || 0) === 0 ? 'SYNC' : `SYNC ${status.pending}`);
     updateWorkflow();
     const simulators = (status.detectedSimulators || []).map(item => item.displayName || item.DisplayName).filter(Boolean);
     setText($('#simState'), simulators.length ? `${simulators.join(' · ')} — ${status.sim || 'connexion en attente'}` : status.sim || 'Simulateur non détecté');
