@@ -935,7 +935,7 @@ $('#recoveryReviewBtn').onclick = async () => {
   if (!review.hidden) { review.hidden = true; return; }
   try {
     const data = await call('/api/recovery');
-    renderTimeline('#recoveryTimeline', data.timeline || []);
+    renderTimeline('#recoveryTimeline', data.journal || data.timeline || []);
     review.hidden = false;
   } catch (error) {
     showMessage('#recoveryMessage', error.message, true);
