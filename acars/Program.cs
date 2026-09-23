@@ -43,20 +43,15 @@ app.MapGet("/api/status", (PhpVmsClient client, SimConnectReader sim, FlightReco
             flight = recorder.Flight,
             track = recorder.Track,
             pending = recorder.Pending.Count + recorder.PendingEvents.Count,
+            recoveryAvailable = recorder.RecoveryAvailable,
+            recovery = recorder.GetRecoveryInfo(),
             warning = recorder.Warning
         });
     }
 });
 
-app.MapPost("/api/config", async (ConfigRequest input, PhpVmsClient client, FlightRecorder recorder) =>
-{
-    client.ConfigureApiKey(input.Server, input.ApiKey);
-    var user = await client.Send("user");
-    var configuration = await LoadRemoteConfiguration(client, recorder);
-    return Results.Json(new { user, configuration });
-});
 app.MapPost("/api/login", async (LoginRequest input, PhpVmsClient client, FlightRecorder recorder) => {
-    var user = await client.SignIn(input.Server, input.Login, input.Password);
+    var user = await client.SignIn(ServerConfiguration.Get(), input.Login, input.Password);
     var configuration = await LoadRemoteConfiguration(client, recorder);
     return Results.Json(new { user, configuration });
 });
@@ -88,7 +83,31 @@ app.MapPost("/api/start", (StartRequest input, PhpVmsClient client, SimConnectRe
 });
 
 app.MapPost("/api/pause", (FlightRecorder recorder) => { recorder.Pause(); return Results.Ok(); });
-app.MapPost("/api/resume", (PhpVmsClient client, FlightRecorder recorder) => { recorder.Resume(client.Server); return Results.Ok(); });
+app.MapPost("/api/resume", (PhpVmsClient client, SimConnectReader sim, FlightRecorder recorder) => {
+    if (!client.Connected) throw new InvalidOperationException("Connectez-vous à votre compte Air Inter avant de reprendre.");
+    if (sim.Latest is null) throw new InvalidOperationException("Reconnectez le simulateur avant de reprendre.");
+    recorder.Resume(client.Server);
+    return Results.Ok();
+});
+app.MapGet("/api/recovery", (FlightRecorder recorder) => Results.Json(new {
+    available = recorder.RecoveryAvailable,
+    info = recorder.GetRecoveryInfo(),
+    flight = recorder.RecoveryAvailable ? recorder.Flight : null,
+    timeline = recorder.RecoveryAvailable ? recorder.Flight?.Timeline : null,
+    journal = recorder.RecoveryAvailable ? recorder.Flight?.Journal : null,
+    track = recorder.RecoveryAvailable ? recorder.Track : []
+}));
+app.MapPost("/api/recovery/resume", (PhpVmsClient client, SimConnectReader sim, FlightRecorder recorder) => {
+    if (!recorder.RecoveryAvailable) throw new InvalidOperationException("Aucun vol interrompu à reprendre.");
+    if (!client.Connected) throw new InvalidOperationException("Connectez-vous à votre compte Air Inter avant de reprendre ce vol.");
+    if (sim.Latest is null) throw new InvalidOperationException("Reconnectez le simulateur avant de reprendre ce vol.");
+    recorder.Resume(client.Server);
+    return Results.Ok(new { flight = recorder.Flight });
+});
+app.MapPost("/api/recovery/abandon", (FlightRecorder recorder) => {
+    recorder.AbandonRecovery();
+    return Results.Ok(new { archived = true });
+});
 
 app.MapPost("/api/sync", async (PhpVmsClient client, FlightRecorder recorder) =>
 {
@@ -166,8 +185,7 @@ static async Task<RemoteAcarsConfiguration> LoadRemoteConfiguration(PhpVmsClient
     return configuration;
 }
 
-public sealed record ConfigRequest(string Server, string ApiKey);
-public sealed record LoginRequest(string Server, string Login, string Password);
+public sealed record LoginRequest(string Login, string Password);
 public sealed record StartRequest(string PirepId);
 
 public sealed class TelemetryWorker(SimConnectReader sim, FlightRecorder recorder, PhpVmsClient client) : BackgroundService
