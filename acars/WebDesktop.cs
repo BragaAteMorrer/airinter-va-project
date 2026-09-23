@@ -154,9 +154,7 @@ public sealed class PrometheeWindow : Window
     };
     private object About() => new {
         version=Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "dev",
-        server=ServerConfiguration.Get(),
-        loginEndpoint=ServerConfiguration.Get() + "/api/acars/session",
-        serverSource=ServerConfiguration.Source()
+        product="Hermès — Air Inter Virtual Airlines"
     };
     private object Diagnostics() => new {
         generatedAt=DateTimeOffset.UtcNow, configuredServer=ServerConfiguration.Get(), serverSource=ServerConfiguration.Source(), loginEndpoint=ServerConfiguration.Get() + "/api/acars/session", activeServer=client.Server, connected=client.Connected,
