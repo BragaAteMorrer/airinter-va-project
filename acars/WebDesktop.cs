@@ -90,7 +90,7 @@ public sealed class PrometheeWindow : Window
         return route switch {
             "/api/status" => Status(), "/api/about" => About(), "/api/login" => await Login(body), "/api/config" => await ConfigureApiKey(body),
             "/api/start" => Start(body), "/api/pause" => Pause(), "/api/resume" => Resume(),
-            "/api/sync" => new { sent=await TelemetryService.SendPending(client,recorder) }, "/api/report" => Report(), "/api/file" => await File(),
+            "/api/sync" => new { sent=await telemetry.SyncNow() }, "/api/report" => Report(), "/api/file" => await File(),
             "/api/history" => recorder.History, "/api/diagnostics" => Diagnostics(), "/api/update/check" => await CheckUpdateStatusAsync(), "/api/open-external" => OpenExternal(body),
             _ => throw new InvalidOperationException("Commande ACARS inconnue.") };
     }
@@ -139,6 +139,11 @@ public sealed class PrometheeWindow : Window
         track=recorder.Track,
         pending=recorder.Pending.Count+recorder.PendingEvents.Count,
         recoveryAvailable=recorder.Flight is not null && !recorder.Flight.Recording,
+        syncState=telemetry.SyncState,
+        lastSuccessfulSyncAt=telemetry.LastSuccessfulSyncAt,
+        nextSyncAttemptAt=telemetry.NextSyncAttemptAt,
+        syncFailures=telemetry.ConsecutiveFailures,
+        syncError=telemetry.LastSyncError,
         remoteConfiguration=recorder.RemoteConfiguration,
         warning=recorder.Warning
     };
@@ -154,6 +159,9 @@ public sealed class PrometheeWindow : Window
         activeConnector=sim.Active?.Descriptor, connectors=sim.Connectors,
         latest=sim.LatestSnapshot, flight=recorder.Flight,
         pendingPositions=recorder.Pending.Count, pendingEvents=recorder.PendingEvents.Count,
+        syncState=telemetry.SyncState, lastSuccessfulSyncAt=telemetry.LastSuccessfulSyncAt,
+        nextSyncAttemptAt=telemetry.NextSyncAttemptAt, syncFailures=telemetry.ConsecutiveFailures,
+        syncError=telemetry.LastSyncError,
         remoteConfiguration=recorder.RemoteConfiguration, warning=recorder.Warning
     };
     private async Task<object> Login(JsonElement? body)
