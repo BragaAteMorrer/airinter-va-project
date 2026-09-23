@@ -15,7 +15,7 @@
 <section class="control-strip">
     <article><span>{{ __('promethee_briefing.suggested_fuel') }}</span><strong>{{ number_format($suggestedFuel, 0, ',', ' ') }} {{ strtoupper($fuelUnit) }}</strong><small>{{ __('promethee_briefing.fuel_hint') }}</small></article>
     <article><span>{{ __('promethee_briefing.published_alternate') }}</span><strong>{{ $flight->alt_airport_id ?: '—' }}</strong><small>{{ __('promethee_briefing.weather_check') }}</small></article>
-    <article><span>{{ __('promethee_briefing.compatible_fleets') }}</span><strong>{{ $flight->subfleets->count() }}</strong><small>{{ __('promethee_briefing.aircraft_required') }}</small></article>
+    <article><span>{{ __('promethee_briefing.compatible_fleets') }}</span><strong>{{ $compatibleSubfleetCount }}</strong><small>{{ $lineFleetRestricted ? __('promethee_briefing.aircraft_required') : 'Aucune restriction de sous-flotte publiée' }} · {{ $compatibleAircraftCount }} appareil(s) actif(s)</small></article>
     <article><span>{{ __('promethee_briefing.weather') }}</span><strong>{{ count(array_filter($weather, fn ($report) => !empty($report['metar']))) }}</strong><small>{{ __('promethee_briefing.metar_received') }}</small></article>
 </section>
 
