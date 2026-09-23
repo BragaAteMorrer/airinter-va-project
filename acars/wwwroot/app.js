@@ -270,7 +270,14 @@ function updateWorkflow() {
       (key === 'ready' && state.pirep)
     ));
   });
-  const ready = (serverDispatch ? serverDispatch.status === 'READY' : (state.operation && state.aircraft && state.ofp && state.pirep)) && readiness.simulator;
+  const latest = lastStatus?.latest || {};
+  const onGround = snapshotValue(latest, 'onGround', 'OnGround');
+  const parkingBrake = snapshotValue(latest, 'parkingBrake', 'ParkingBrake');
+  const engines = snapshotValue(latest, 'enginesRunning', 'EnginesRunning');
+  const enginesStoppedOrUnknown = !Array.isArray(engines) || engines.length === 0 || !engines.some(Boolean);
+  const preflightSafe = onGround === true && parkingBrake !== false && enginesStoppedOrUnknown;
+  const ready = (serverDispatch ? serverDispatch.status === 'READY' : (state.operation && state.aircraft && state.ofp && state.pirep))
+    && readiness.simulator && preflightSafe;
   const node = $('#readyState');
   if (node) {
     node.textContent = ready ? 'READY FOR DEPARTURE' : 'NOT READY';
