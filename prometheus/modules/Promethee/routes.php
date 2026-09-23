@@ -27,8 +27,10 @@ Route::middleware('web')->prefix('public')->name('promethee.public.')->group(fun
     Route::get('/live', [PortalController::class, 'publicLive'])->name('live');
     Route::get('/live-data', [PortalController::class, 'liveData'])->name('live.data');
 });
-// The historic fleet directory was public; retain that access level.
-Route::get('/dfleet', [PortalController::class, 'fleet'])->middleware('web')->name('promethee.fleet');
+// Native Promethee fleet directory. Data comes directly from phpVMS models.
+Route::get('/fleet', [PortalController::class, 'fleet'])->middleware('web')->name('promethee.fleet');
+// Legacy bookmarks remain redirects only; no Promethee navigation depends on them.
+Route::redirect('/dfleet', '/fleet', 301)->middleware('web');
 
 Route::middleware(['web','auth'])->name('promethee.')->group(function () {
     Route::get('/', [PortalController::class,'dashboard'])->name('dashboard');
@@ -51,13 +53,16 @@ Route::middleware(['web','auth'])->name('promethee.')->group(function () {
     Route::get('/jumpseat', [PortalController::class,'jumpseat'])->name('jumpseat');
     Route::post('/jumpseat', [PortalController::class,'requestJumpseat'])->name('jumpseat.buy');
     Route::get('/operations', [PortalController::class,'operations'])->name('operations');
-    // Native replacements for the former Disposable pages. Existing bookmarks
-    // continue to work without enabling unrelated legacy module features.
-    Route::get('/dairlines', [PortalController::class, 'airlines'])->name('airlines');
-    // Historic company bookmark used by the previous themes.
-    Route::get('/dcompany', [PortalController::class, 'airlines'])->name('company');
-    Route::get('/dmaintenance', [PortalController::class, 'maintenance'])->name('maintenance');
-    Route::get('/daircraft/{registration}', [PortalController::class, 'aircraftDetail'])->name('aircraft.show');
+    // Native Promethee pages backed directly by phpVMS data/models.
+    Route::get('/airlines', [PortalController::class, 'airlines'])->name('airlines');
+    Route::get('/maintenance', [PortalController::class, 'maintenance'])->name('maintenance');
+    Route::get('/aircraft/{registration}', [PortalController::class, 'aircraftDetail'])->name('aircraft.show');
+
+    // Compatibility redirects for historic DisposableBasic bookmarks only.
+    Route::redirect('/dairlines', '/airlines', 301);
+    Route::redirect('/dcompany', '/airlines', 301)->name('company');
+    Route::redirect('/dmaintenance', '/maintenance', 301);
+    Route::get('/daircraft/{registration}', fn (string $registration) => redirect('/aircraft/'.rawurlencode($registration), 301));
     Route::get('/live', [PortalController::class,'live'])->name('live');
     Route::get('/live-data', [PortalController::class,'liveData'])->name('live.data');
     Route::get('/calendar', [PortalController::class,'calendar'])->name('calendar');
