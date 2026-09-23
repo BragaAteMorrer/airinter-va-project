@@ -43,7 +43,7 @@
             <form method="post" action="{{ route('promethee.flights.reserve', $flight->id) }}">@csrf<button>{{ __('promethee_briefing.reserve') }}</button></form>
         @endunless
         @if($simbrief)
-            <a class="button outline" href="{{ route('frontend.simbrief.briefing', $simbrief->id) }}">{{ __('promethee_briefing.open_ofp') }}</a>
+            <a class="button outline" href="{{ route('promethee.simbrief.show', $simbrief->id) }}">{{ __('promethee_briefing.open_ofp') }}</a>
         @endif
         <a class="button" href="{{ route('promethee.downloads.category', 'acars') }}">{{ __('promethee_briefing.open_hermes') }}</a>
     </div>
