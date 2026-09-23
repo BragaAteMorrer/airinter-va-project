@@ -1029,13 +1029,7 @@ refreshStatus();
 setInterval(refreshStatus, 1000);
 call('/api/about').then(info => {
   setText($('#build'), 'Version ' + info.version);
-  setText($('#loginServer'), info.server || 'Serveur inconnu');
-  setText($('#loginEndpoint'), info.loginEndpoint ? 'POST ' + info.loginEndpoint : '');
-  setText($('#loginServerSource'), info.serverSource ? 'Source : ' + info.serverSource : '');
-}).catch(error => {
-  setText($('#loginServer'), 'Impossible de lire la configuration Hermès');
-  setText($('#loginEndpoint'), error.message || '');
-});
+}).catch(() => setText($('#build'), 'Version inconnue'));
 
 
 const checkUpdateBtn = $('#checkUpdateBtn');
