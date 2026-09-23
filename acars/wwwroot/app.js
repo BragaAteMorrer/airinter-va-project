@@ -994,15 +994,19 @@ async function refreshStatus() {
     const latest = status.latest || {};
     const value = (camel, pascal) => latest[camel] ?? latest[pascal];
     if (status.connected && !connected) setAuthenticated(true);
-    readiness.simulator = Boolean(status.latest);
+    const simulatorSessionState = String(status.simulatorSessionState || (status.latest ? 'Connected' : 'Disconnected')).toUpperCase();
+    readiness.simulator = simulatorSessionState === 'CONNECTED' && Boolean(status.latest);
     const recording = Boolean(flight?.recording ?? flight?.Recording);
     const recovery = Boolean(status.recoveryAvailable);
     const pendingCount = Number(status.pending || 0);
     const syncState = String(status.syncState || 'IDLE').toUpperCase();
     const networkDegraded = syncState === 'RETRYING' && pendingCount > 0;
+    const simulatorDegraded = simulatorSessionState === 'TEMPORARILYLOST' || simulatorSessionState === 'RECONNECTING';
     setIndicator('#prometheeIndicator', !status.connected ? 'bad' : (networkDegraded ? 'warn' : 'ok'),
       !status.connected ? 'PROMÉTHÉE OFFLINE' : (networkDegraded ? 'PROMÉTHÉE RETRY' : 'PROMÉTHÉE'));
-    setIndicator('#simIndicator', status.latest ? 'ok' : ((status.detectedSimulators || []).length ? 'warn' : 'bad'), status.latest ? 'SIM' : 'SIM WAIT');
+    setIndicator('#simIndicator',
+      simulatorSessionState === 'CONNECTED' ? 'ok' : (simulatorDegraded ? 'warn' : 'bad'),
+      simulatorSessionState === 'CONNECTED' ? 'SIM' : (simulatorSessionState === 'TEMPORARILYLOST' ? 'SIM LOST' : (simulatorSessionState === 'RECONNECTING' ? 'SIM RECONNECT' : 'SIM WAIT')));
     setIndicator('#trackingIndicator', recording ? 'ok' : (recovery ? 'warn' : 'pending'), recording ? 'TRACKING' : (recovery ? 'RECOVERY' : 'TRACKING'));
     setIndicator('#syncIndicator', pendingCount === 0 ? 'ok' : (networkDegraded ? 'bad' : 'warn'), pendingCount === 0 ? 'SYNC' : `SYNC ${pendingCount}`);
     updateWorkflow();
@@ -1012,10 +1016,17 @@ async function refreshStatus() {
     setText($('#phase'), flight?.phase || flight?.Phase || '—');
     setText($('#distance'), flight ? `${Number(flight.distance ?? flight.Distance ?? 0).toFixed(1)} NM` : '—');
     setText($('#airborne'), flight ? `${Math.floor(Number(flight.airborneSeconds ?? flight.AirborneSeconds ?? 0) / 60)} min` : '—');
-    const localRecordingWarning = recording && networkDegraded
-      ? `Prométhée indisponible — le vol continue d’être enregistré localement. ${pendingCount} message${pendingCount > 1 ? 's' : ''} en attente ; votre vol reste sauvegardé.`
-      : '';
-    setText($('#warning'), localRecordingWarning || status.warning || '');
+    const warnings = [];
+    if (recording && simulatorDegraded) warnings.push(
+      simulatorSessionState === 'TEMPORARILYLOST'
+        ? 'Télémétrie simulateur temporairement perdue — Hermès conserve le vol actif et attend la reconnexion.'
+        : 'Reconnexion au simulateur en cours — le vol existant sera poursuivi, pas recréé.'
+    );
+    if (recording && networkDegraded) warnings.push(
+      `Prométhée indisponible — le vol continue d’être enregistré localement. ${pendingCount} message${pendingCount > 1 ? 's' : ''} en attente.`
+    );
+    if (status.warning) warnings.push(status.warning);
+    setText($('#warning'), warnings.join(' '));
     setText($('#altitude'), value('altitude', 'Altitude') == null ? '—' : `${Math.round(value('altitude', 'Altitude'))} ft`);
     setText($('#groundSpeed'), value('gs', 'Gs') == null ? '—' : `${Math.round(value('gs', 'Gs'))} kt`);
     setText($('#fuel'), value('fuel', 'Fuel') == null ? '—' : `${Math.round(value('fuel', 'Fuel'))} lb`);
