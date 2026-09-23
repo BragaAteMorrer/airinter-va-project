@@ -39,11 +39,66 @@ public sealed class FlightRecorderRecoveryTests
         if (keepEvent != ackEvent) Assert.Contains(recorder.PendingEvents, x => x.EventId == keepEvent);
     }
 
-    private static FlightRecorder NewRecorder()
+
+    [Fact]
+    public void Manual_pause_is_not_reported_as_crash_recovery()
     {
-        var folder = Path.Combine(Path.GetTempPath(), "AirInter-Hermes-Tests", Guid.NewGuid().ToString("N"));
-        return new FlightRecorder(folder);
+        var recorder = NewRecorder();
+        recorder.Start("https://promethee.example", "pirep-pause", Ground(DateTimeOffset.Parse("2026-09-23T10:00:00Z")));
+        recorder.Pause();
+
+        Assert.False(recorder.RecoveryAvailable);
+        Assert.Null(recorder.GetRecoveryInfo());
     }
+
+    [Fact]
+    public void Restart_exposes_recovery_and_resume_preserves_flight_identity()
+    {
+        var folder = NewFolder();
+        var first = new FlightRecorder(folder);
+        var t = DateTimeOffset.Parse("2026-09-23T10:00:00Z");
+        first.Start("https://promethee.example", "pirep-recovery", Ground(t), "op-recovery");
+        first.Capture(Ground(t.AddSeconds(20)) with { SampleId = Guid.NewGuid(), Gs = 7, ParkingBrake = false });
+
+        var recovered = new FlightRecorder(folder);
+        var info = recovered.GetRecoveryInfo();
+
+        Assert.True(recovered.RecoveryAvailable);
+        Assert.NotNull(info);
+        Assert.Equal("pirep-recovery", info!.PirepId);
+        Assert.Equal("op-recovery", info.OperationId);
+        Assert.True(info.PendingMessages > 0);
+
+        recovered.Resume("https://promethee.example");
+
+        Assert.False(recovered.RecoveryAvailable);
+        Assert.True(recovered.Flight?.Recording);
+        Assert.Equal("pirep-recovery", recovered.Flight?.PirepId);
+    }
+
+    [Fact]
+    public void Abandon_recovery_archives_state_before_clearing_session()
+    {
+        var folder = NewFolder();
+        var first = new FlightRecorder(folder);
+        first.Start("https://promethee.example", "pirep-abandon", Ground(DateTimeOffset.Parse("2026-09-23T10:00:00Z")));
+
+        var recovered = new FlightRecorder(folder);
+        Assert.True(recovered.RecoveryAvailable);
+
+        recovered.AbandonRecovery();
+
+        Assert.False(recovered.RecoveryAvailable);
+        Assert.Null(recovered.Flight);
+        Assert.Empty(recovered.Pending);
+        Assert.Empty(recovered.PendingEvents);
+        Assert.Single(Directory.GetFiles(Path.Combine(folder, "recovery-archive"), "abandoned-*.json"));
+    }
+
+    private static string NewFolder() =>
+        Path.Combine(Path.GetTempPath(), "AirInter-Hermes-Tests", Guid.NewGuid().ToString("N"));
+
+    private static FlightRecorder NewRecorder() => new(NewFolder());
 
     private static Sample Ground(DateTimeOffset at) =>
         new(Guid.NewGuid(), at, 48.7, 2.3, 300, 0, 0, 0, 0, 180, 8000, true,
