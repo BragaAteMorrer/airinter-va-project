@@ -88,8 +88,9 @@ public sealed class PrometheeWindow : Window
         }
 
         return route switch {
-            "/api/status" => Status(), "/api/about" => About(), "/api/login" => await Login(body), "/api/config" => await ConfigureApiKey(body),
+            "/api/status" => Status(), "/api/about" => About(), "/api/login" => await Login(body),
             "/api/start" => Start(body), "/api/pause" => Pause(), "/api/resume" => Resume(),
+            "/api/recovery" => Recovery(), "/api/recovery/resume" => ResumeRecovery(), "/api/recovery/abandon" => AbandonRecovery(),
             "/api/sync" => new { sent=await telemetry.SyncNow() }, "/api/report" => Report(), "/api/file" => await File(),
             "/api/history" => recorder.History, "/api/diagnostics" => Diagnostics(), "/api/update/check" => await CheckUpdateStatusAsync(), "/api/open-external" => OpenExternal(body),
             _ => throw new InvalidOperationException("Commande ACARS inconnue.") };
@@ -134,11 +135,15 @@ public sealed class PrometheeWindow : Window
             experimental=sim.Active.Descriptor.IsExperimental
         },
         connectors=sim.Connectors,
+        simLinkState=sim.LinkState,
+        simLostAt=sim.LostAt,
+        simRecoveredAt=sim.RecoveredAt,
         latest=sim.LatestSnapshot,
         flight=recorder.Flight,
         track=recorder.Track,
         pending=recorder.Pending.Count+recorder.PendingEvents.Count,
-        recoveryAvailable=recorder.Flight is not null && !recorder.Flight.Recording,
+        recoveryAvailable=recorder.RecoveryAvailable,
+        recovery=recorder.GetRecoveryInfo(),
         syncState=telemetry.SyncState,
         lastSuccessfulSyncAt=telemetry.LastSuccessfulSyncAt,
         nextSyncAttemptAt=telemetry.NextSyncAttemptAt,
@@ -157,6 +162,7 @@ public sealed class PrometheeWindow : Window
         generatedAt=DateTimeOffset.UtcNow, configuredServer=ServerConfiguration.Get(), serverSource=ServerConfiguration.Source(), loginEndpoint=ServerConfiguration.Get() + "/api/acars/session", activeServer=client.Server, connected=client.Connected,
         simulator=sim.Status, detectedSimulators=SimulatorDetector.DetectRunning(),
         activeConnector=sim.Active?.Descriptor, connectors=sim.Connectors,
+        simLinkState=sim.LinkState, simLostAt=sim.LostAt, simRecoveredAt=sim.RecoveredAt,
         latest=sim.LatestSnapshot, flight=recorder.Flight,
         pendingPositions=recorder.Pending.Count, pendingEvents=recorder.PendingEvents.Count,
         syncState=telemetry.SyncState, lastSuccessfulSyncAt=telemetry.LastSuccessfulSyncAt,
@@ -169,11 +175,6 @@ public sealed class PrometheeWindow : Window
         await client.SignIn(ServerConfiguration.Get(), body!.Value.GetProperty("login").GetString() ?? "", body.Value.GetProperty("password").GetString() ?? "");
         var user = await client.Send("v1/me");
         return new { user, configuration = await LoadRemoteConfiguration() };
-    }
-    private async Task<object> ConfigureApiKey(JsonElement? body)
-    {
-        var value=body!.Value; client.ConfigureApiKey(value.GetProperty("server").GetString() ?? "", value.GetProperty("apiKey").GetString() ?? "");
-        return new { user = await client.Send("v1/me"), configuration = await LoadRemoteConfiguration() };
     }
     private async Task<RemoteAcarsConfiguration> LoadRemoteConfiguration()
     {
@@ -201,7 +202,39 @@ public sealed class PrometheeWindow : Window
         recorder.Start(client.Server, value.GetProperty("pirepId").GetString() ?? "", snapshot, operationId);
         return new { ok=true, operationId };
     }
-    private object Pause() { recorder.Pause(); return new {ok=true}; } private object Resume() { recorder.Resume(client.Server); return new {ok=true}; }
+    private object Pause() { recorder.Pause(); return new {ok=true}; }
+    private object Resume()
+    {
+        if (!client.Connected) throw new InvalidOperationException("Reconnectez-vous à votre compte Air Inter avant de reprendre.");
+        if (sim.LatestSnapshot is null) throw new InvalidOperationException("Le simulateur doit être reconnecté avant de reprendre l’enregistrement.");
+        recorder.Resume(client.Server);
+        return new {ok=true};
+    }
+
+    private object Recovery() => new {
+        available = recorder.RecoveryAvailable,
+        info = recorder.GetRecoveryInfo(),
+        flight = recorder.RecoveryAvailable ? recorder.Flight : null,
+        timeline = recorder.RecoveryAvailable ? recorder.Flight?.Timeline : null,
+        journal = recorder.RecoveryAvailable ? recorder.Flight?.Journal : null,
+        track = recorder.RecoveryAvailable ? recorder.Track : []
+    };
+
+    private object ResumeRecovery()
+    {
+        if (!recorder.RecoveryAvailable) throw new InvalidOperationException("Aucun vol interrompu à reprendre.");
+        if (!client.Connected) throw new InvalidOperationException("Connectez-vous à votre compte Air Inter avant de reprendre ce vol.");
+        if (sim.LatestSnapshot is null) throw new InvalidOperationException("Reconnectez le simulateur avant de reprendre ce vol.");
+        recorder.Resume(client.Server);
+        return new { ok = true, flight = recorder.Flight, simulator = sim.Status };
+    }
+
+    private object AbandonRecovery()
+    {
+        recorder.AbandonRecovery();
+        return new { ok = true, archived = true };
+    }
+
     private object Report() { var f=recorder.Flight ?? throw new InvalidOperationException("Aucun vol en cours."); return new {phase=f.Phase,distance=f.Distance,airborneMinutes=(int)Math.Round(f.AirborneSeconds/60)}; }
     private async Task<object> File() { await TelemetryService.SendPending(client, recorder); var f=recorder.Flight ?? throw new InvalidOperationException("Aucun vol en cours."); if (f.Phase != "IN") throw new InvalidOperationException("Attendez l’arrivée au parking avant de déposer le PIREP."); await client.Send($"pireps/{Uri.EscapeDataString(f.PirepId)}/file", new { distance=Math.Round(f.Distance,2), flight_time=Math.Max(1,(int)Math.Round(f.AirborneSeconds/60)), fuel_used=Math.Round(f.FuelUsed), block_time=Math.Max(1,(int)Math.Round(((f.BlockOn ?? DateTimeOffset.UtcNow)-f.BlockOff!.Value).TotalMinutes)), block_off_time=f.BlockOff, block_on_time=f.BlockOn, created_at=f.BlockOn, landing_rate=f.LandingRate }); recorder.Complete(); return new {ok=true}; }
     private static string UserMessage(Exception e) => e is InvalidOperationException ? e.Message : "Une erreur inattendue est survenue. Réessayez plus tard.";
