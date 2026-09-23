@@ -88,7 +88,7 @@ public sealed class PrometheeWindow : Window
         }
 
         return route switch {
-            "/api/status" => Status(), "/api/about" => About(), "/api/login" => await Login(body), "/api/config" => await ConfigureApiKey(body),
+            "/api/status" => Status(), "/api/about" => About(), "/api/login" => await Login(body),
             "/api/start" => Start(body), "/api/pause" => Pause(), "/api/resume" => Resume(),
             "/api/sync" => new { sent=await telemetry.SyncNow() }, "/api/report" => Report(), "/api/file" => await File(),
             "/api/history" => recorder.History, "/api/diagnostics" => Diagnostics(), "/api/update/check" => await CheckUpdateStatusAsync(), "/api/open-external" => OpenExternal(body),
@@ -169,11 +169,6 @@ public sealed class PrometheeWindow : Window
         await client.SignIn(ServerConfiguration.Get(), body!.Value.GetProperty("login").GetString() ?? "", body.Value.GetProperty("password").GetString() ?? "");
         var user = await client.Send("v1/me");
         return new { user, configuration = await LoadRemoteConfiguration() };
-    }
-    private async Task<object> ConfigureApiKey(JsonElement? body)
-    {
-        var value=body!.Value; client.ConfigureApiKey(value.GetProperty("server").GetString() ?? "", value.GetProperty("apiKey").GetString() ?? "");
-        return new { user = await client.Send("v1/me"), configuration = await LoadRemoteConfiguration() };
     }
     private async Task<RemoteAcarsConfiguration> LoadRemoteConfiguration()
     {
