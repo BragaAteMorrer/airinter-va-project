@@ -78,18 +78,37 @@ public sealed class XPlaneUdpConnector : ISimulatorConnector
         var snapshot = new AircraftSnapshot(
             Guid.NewGuid(), DateTimeOffset.UtcNow,
             Latitude: lat, Longitude: lon, AltitudeMslFeet: MetersToFeet(altitude),
-            AltitudeAglFeet: MetersToFeet(Get(AglMeters)), IndicatedAirspeedKnots: MetersPerSecondToKnots(Get(IasMps)),
-            GroundSpeedKnots: MetersPerSecondToKnots(Get(GroundSpeedMps)), HeadingDegrees: Get(HeadingDegrees),
-            VerticalSpeedFeetPerMinute: MetersPerSecondToFeetPerMinute(Get(VerticalSpeedMps)),
-            OnGround: Get(OnGround) > .5f, ParkingBrake: Get(ParkingBrake) > .5f,
-            FuelWeight: Get(FuelKg), GearDown: Get(GearRatio) > .95f, FlapsPercent: Get(FlapsRatio) * 100);
+            AltitudeAglFeet: GetConverted(AglMeters, 3.280839895),
+            IndicatedAirspeedKnots: GetConverted(IasMps, 1.943844492),
+            GroundSpeedKnots: GetConverted(GroundSpeedMps, 1.943844492),
+            HeadingDegrees: GetOptional(HeadingDegrees),
+            VerticalSpeedFeetPerMinute: GetConverted(VerticalSpeedMps, 196.850394),
+            OnGround: GetBoolean(OnGround), ParkingBrake: GetBoolean(ParkingBrake),
+            FuelWeight: GetOptional(FuelKg), GearDown: GetBoolean(GearRatio, .95f),
+            FlapsPercent: GetConverted(FlapsRatio, 100));
         LatestSnapshot = snapshot;
         ConnectionState = SimulatorConnectionState.Connected;
         Status = "Connecté à X-Plane (UDP expérimental)";
         SnapshotReceived?.Invoke(snapshot);
     }
 
-    private float Get(int index) => values.TryGetValue(index, out var value) && float.IsFinite(value) ? value : 0;
+    // Missing DataRefs must stay UNKNOWN. Returning 0/false here would create
+    // fake ground, fuel, gear or flight-dynamics facts and can corrupt FDM.
+    private float? GetOptional(int index) =>
+        values.TryGetValue(index, out var value) && float.IsFinite(value) ? value : null;
+
+    private double? GetConverted(int index, double factor)
+    {
+        var value = GetOptional(index);
+        return value is null ? null : value.Value * factor;
+    }
+
+    private bool? GetBoolean(int index, float threshold = .5f)
+    {
+        var value = GetOptional(index);
+        return value is null ? null : value.Value > threshold;
+    }
+
     public void Dispose() => socket.Dispose();
 
     private static double MetersToFeet(float value) => value * 3.280839895;

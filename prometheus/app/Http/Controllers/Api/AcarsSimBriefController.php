@@ -33,9 +33,10 @@ class AcarsSimBriefController extends Controller
      */
     public function session(Request $request, string $flight_id): JsonResponse
     {
-        $attrs = $request->validate(['aircraft_id' => 'required|string']);
+        $attrs = $this->validatePlanningRequest($request);
         $user = Auth::user();
         [$flight, $aircraft] = $this->getEligibleOperation($flight_id, $attrs['aircraft_id']);
+        $plan = $this->effectivePlanning($flight, $attrs);
 
         $apiKey = setting('simbrief.api_key');
         abort_if(empty($apiKey), 503, 'La clé API SimBrief de la compagnie n’est pas configurée.');
@@ -58,9 +59,9 @@ class AcarsSimBriefController extends Controller
             'parameters' => [
                 'orig' => $flight->dpt_airport_id,
                 'dest' => $flight->arr_airport_id,
-                'altn' => $flight->alt_airport_id ?: 'AUTO',
-                'route' => $flight->route,
-                'fl' => $flight->level,
+                'altn' => $plan['alternate'],
+                'route' => $plan['route'],
+                'fl' => $plan['level'],
                 'type' => $type,
                 'reg' => $aircraft->registration,
                 'airline' => $flight->airline->icao,
@@ -86,8 +87,9 @@ class AcarsSimBriefController extends Controller
      */
     public function redirect(Request $request, string $flight_id): JsonResponse
     {
-        $attrs = $request->validate(['aircraft_id' => 'required|string']);
+        $attrs = $this->validatePlanningRequest($request);
         [$flight, $aircraft] = $this->getEligibleOperation($flight_id, $attrs['aircraft_id']);
+        $plan = $this->effectivePlanning($flight, $attrs);
         $type = $aircraft->simbrief_type ?: ($aircraft->subfleet->simbrief_type ?: $aircraft->icao);
         abort_if(empty($type), 422, 'Le type SimBrief de cet appareil n’est pas configuré.');
 
@@ -99,9 +101,9 @@ class AcarsSimBriefController extends Controller
             'type' => $type,
             'orig' => $flight->dpt_airport_id,
             'dest' => $flight->arr_airport_id,
-            'altn' => $flight->alt_airport_id ?: null,
-            'route' => $flight->route ?: null,
-            'fl' => $flight->level ?: null,
+            'altn' => $plan['alternate'] === 'AUTO' ? null : $plan['alternate'],
+            'route' => $plan['route'] ?: null,
+            'fl' => $plan['level'] ?: null,
             'reg' => $aircraft->registration ?: null,
             'callsign' => $flight->airline->icao.$flight->flight_number,
             'units' => 'KGS',
@@ -249,6 +251,29 @@ class AcarsSimBriefController extends Controller
         [$flightId, $aircraftId, $operationId] = $this->operationContext($operation);
         $request->merge(['aircraft_id' => $aircraftId, 'operation_id' => $operationId]);
         return $this->import($request, $flightId);
+    }
+
+    /**
+     * Planning overrides are intentionally ephemeral: Hermès may personalize the
+     * dispatch sent to SimBrief without mutating the phpVMS schedule or fleet DB.
+     */
+    private function validatePlanningRequest(Request $request): array
+    {
+        return $request->validate([
+            'aircraft_id' => ['required', 'string'],
+            'alternate' => ['nullable', 'string', 'max:8', 'regex:/^[A-Za-z0-9]{3,8}$/'],
+            'route' => ['nullable', 'string', 'max:2000'],
+            'level' => ['nullable', 'integer', 'between:10,600'],
+        ]);
+    }
+
+    private function effectivePlanning($flight, array $attrs): array
+    {
+        return [
+            'alternate' => strtoupper(trim((string) ($attrs['alternate'] ?? $flight->alt_airport_id ?: 'AUTO'))),
+            'route' => trim((string) ($attrs['route'] ?? $flight->route ?? '')),
+            'level' => $attrs['level'] ?? $flight->level,
+        ];
     }
 
     private function operationContext(string $reference): array

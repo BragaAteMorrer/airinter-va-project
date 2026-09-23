@@ -24,7 +24,15 @@
   <main>
     <header>
       <div><p class="kicker">DIRECTION DE L’EXPLOITATION AÉRIENNE</p><h1>Hermès</h1><p class="header-subtitle">Le client ACARS officiel de Prométhée.</p></div>
-      <div class="status"><span id="serverState">Identité pilote à venir</span><span id="simState">Simulateur non détecté</span></div>
+      <div class="header-status">
+        <div class="pilot-state"><span id="serverState">Identité pilote à venir</span><span id="simState">Simulateur non détecté</span></div>
+        <div class="ops-status" aria-label="État opérationnel Hermès">
+          <span id="prometheeIndicator" class="status-chip pending">PROMÉTHÉE <b>●</b></span>
+          <span id="simIndicator" class="status-chip pending">SIM <b>●</b></span>
+          <span id="trackingIndicator" class="status-chip pending">TRACKING <b>●</b></span>
+          <span id="syncIndicator" class="status-chip pending">SYNC <b>●</b></span>
+        </div>
+      </div>
     </header>
     <section id="connect" class="panel active auth-panel">
       <div class="auth-mark"><span>AIR INTER VA</span><strong>Accès équipage</strong></div><h2>Connexion pilote</h2><p class="hint">Connectez-vous à votre compte Air Inter pour préparer et suivre votre vol.</p>
@@ -53,6 +61,10 @@
         <div data-step="pirep"><span>04</span><strong>PIREP</strong><small>Pré-dépôt</small></div>
         <div data-step="ready"><span>05</span><strong>Ready</strong><small>Contrôles départ</small></div>
       </div>
+      <section id="nextAction" class="next-action">
+        <div><span class="kicker">PROCHAINE ACTION</span><strong id="nextActionTitle">Choisissez votre vol</strong><p id="nextActionText">Sélectionnez une réservation ou recherchez une ligne du programme Air Inter.</p></div>
+        <button id="nextActionBtn" type="button" class="primary">Choisir un vol</button>
+      </section>
       <form id="flightSearchForm" class="flight-search">
         <label>Numéro de vol<input id="flightNumberSearch" placeholder="ITF749 ou 749" autocomplete="off"></label>
         <label>Départ<input id="departureSearch" placeholder="LFPO" maxlength="8" autocomplete="off"></label>
@@ -77,9 +89,9 @@
         </div>
         <div class="source-panel active" data-plan-panel="account">
           <label>Alias Navigraph / SimBrief<input id="simbriefUsername" autocomplete="off" placeholder="Votre alias Navigraph"></label>
-          <label>Pilot ID <input id="simbriefPilotId" inputmode="numeric" maxlength="7" placeholder="Optionnel"></label>
-          <p class="hint">Hermès ne demande ni ne stocke votre mot de passe Navigraph. L’alias est conservé uniquement dans vos réglages locaux.</p>
-          <div class="tools"><button id="simbriefAccountOpenBtn" type="button" class="primary">Préparer dans SimBrief</button><button id="simbriefAccountEditBtn" type="button" hidden>Modifier ce vol dans SimBrief</button><button id="simbriefAccountImportBtn" type="button">Récupérer cet OFP</button></div>
+          <label>Pilot ID <input id="simbriefPilotId" inputmode="numeric" maxlength="7" placeholder="Alternative à l’alias"></label>
+          <p class="hint">Ajoutez votre alias une seule fois. Hermès envoie ensuite à SimBrief le vol, l’appareil et vos ajustements de dispatch ; aucun mot de passe Navigraph n’est demandé ou stocké.</p>
+          <div class="tools"><button id="simbriefAccountOpenBtn" type="button" class="primary">Envoyer le vol vers SimBrief</button><button id="simbriefAccountEditBtn" type="button" hidden>Modifier dans SimBrief</button><button id="simbriefAccountImportBtn" type="button">Importer l’OFP généré</button></div>
         </div>
         <div class="source-panel" data-plan-panel="api" hidden>
           <p class="hint">Mode compagnie : génération intégrée via la clé API SimBrief configurée dans Prométhée.</p>
@@ -96,9 +108,9 @@
           <div><span class="kicker">BROUILLON OPÉRATIONNEL</span><h3>Personnaliser le vol</h3></div>
           <p>Les données du programme sont verrouillées. Vous pouvez adapter la préparation avant SimBrief ou le pré-dépôt.</p>
         </div>
-        <label>ID vol phpVMS<input name="flight_id" readonly></label>
-        <label>Compagnie<input name="airline_id" required readonly></label>
-        <label>Numéro de vol<input name="flight_number" required readonly></label>
+        <input name="flight_id" type="hidden">
+        <input name="airline_id" type="hidden">
+        <input name="flight_number" type="hidden">
         <label>Avion autorisé<select id="aircraftId" name="aircraft_id" required><option value="">Sélectionnez d'abord un vol</option></select></label>
         <label>Départ<input name="dpt_airport_id" required readonly></label>
         <label>Arrivée<input name="arr_airport_id" required readonly></label>
@@ -115,7 +127,9 @@
       <p id="pirepMessage" class="message" hidden role="status"></p>
     </section>
     <section id="record" class="panel">
-      <h2>Enregistrement ACARS</h2><div class="cards"><div><span>Phase</span><strong id="phase">—</strong></div><div><span>Altitude</span><strong id="altitude">—</strong></div><div><span>GS</span><strong id="groundSpeed">—</strong></div><div><span>Carburant</span><strong id="fuel">—</strong></div><div><span>Distance</span><strong id="distance">—</strong></div><div><span>Temps de vol</span><strong id="airborne">—</strong></div><div><span>Synchronisation</span><strong id="pending">0</strong></div></div>
+      <div class="workspace-title"><div><span class="kicker">FLIGHT OPERATIONS</span><h2>Enregistrement ACARS</h2></div><strong id="flightSafetyState" class="ready-state">STANDBY</strong></div>
+      <div id="preflightChecks" class="preflight-checks" aria-label="Contrôles avant départ"></div>
+      <div class="cards"><div><span>Phase</span><strong id="phase">—</strong></div><div><span>Altitude</span><strong id="altitude">—</strong></div><div><span>GS</span><strong id="groundSpeed">—</strong></div><div><span>Carburant</span><strong id="fuel">—</strong></div><div><span>Distance</span><strong id="distance">—</strong></div><div><span>Temps de vol</span><strong id="airborne">—</strong></div><div><span>Synchronisation</span><strong id="pending">0</strong></div></div>
       <p id="warning" class="hint"></p><div class="actions"><button id="startBtn" class="primary">Démarrer l’enregistrement</button><button id="pauseBtn">Pause</button><button id="resumeBtn">Reprendre</button><button id="syncBtn">Synchroniser</button><button id="fileBtn">Déposer le PIREP</button></div><p id="recordMessage" class="message" hidden></p>
     </section>
     <section id="map" class="panel"><h2>Suivi du vol</h2><canvas id="flightMap" width="960" height="440" aria-label="Trajet enregistré"></canvas><div id="timeline" class="timeline"><p class="empty">En attente d’un vol.</p></div></section>

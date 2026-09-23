@@ -90,7 +90,7 @@ public sealed class PrometheeWindow : Window
         return route switch {
             "/api/status" => Status(), "/api/about" => About(), "/api/login" => await Login(body), "/api/config" => await ConfigureApiKey(body),
             "/api/start" => Start(body), "/api/pause" => Pause(), "/api/resume" => Resume(),
-            "/api/sync" => new { sent=await TelemetryService.SendPending(client,recorder) }, "/api/report" => Report(), "/api/file" => await File(),
+            "/api/sync" => new { sent=await telemetry.SyncNow() }, "/api/report" => Report(), "/api/file" => await File(),
             "/api/history" => recorder.History, "/api/diagnostics" => Diagnostics(), "/api/update/check" => await CheckUpdateStatusAsync(), "/api/open-external" => OpenExternal(body),
             _ => throw new InvalidOperationException("Commande ACARS inconnue.") };
     }
@@ -122,7 +122,31 @@ public sealed class PrometheeWindow : Window
         Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
         return new { ok = true };
     }
-    private object Status() => new { connected=client.Connected, sim=sim.Status, detectedSimulators=SimulatorDetector.DetectRunning(), latest=sim.LatestSnapshot, flight=recorder.Flight, track=recorder.Track, pending=recorder.Pending.Count+recorder.PendingEvents.Count, remoteConfiguration=recorder.RemoteConfiguration, warning=recorder.Warning };
+    private object Status() => new {
+        connected=client.Connected,
+        sim=sim.Status,
+        detectedSimulators=SimulatorDetector.DetectRunning(),
+        activeConnector=sim.Active is null ? null : new {
+            id=sim.Active.Descriptor.ConnectorId,
+            name=sim.Active.Descriptor.DisplayName,
+            state=sim.Active.ConnectionState.ToString(),
+            capabilities=sim.Active.Descriptor.Capabilities.ToString(),
+            experimental=sim.Active.Descriptor.IsExperimental
+        },
+        connectors=sim.Connectors,
+        latest=sim.LatestSnapshot,
+        flight=recorder.Flight,
+        track=recorder.Track,
+        pending=recorder.Pending.Count+recorder.PendingEvents.Count,
+        recoveryAvailable=recorder.Flight is not null && !recorder.Flight.Recording,
+        syncState=telemetry.SyncState,
+        lastSuccessfulSyncAt=telemetry.LastSuccessfulSyncAt,
+        nextSyncAttemptAt=telemetry.NextSyncAttemptAt,
+        syncFailures=telemetry.ConsecutiveFailures,
+        syncError=telemetry.LastSyncError,
+        remoteConfiguration=recorder.RemoteConfiguration,
+        warning=recorder.Warning
+    };
     private object About() => new {
         version=Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "dev",
         server=ServerConfiguration.Get(),
@@ -132,8 +156,12 @@ public sealed class PrometheeWindow : Window
     private object Diagnostics() => new {
         generatedAt=DateTimeOffset.UtcNow, configuredServer=ServerConfiguration.Get(), serverSource=ServerConfiguration.Source(), loginEndpoint=ServerConfiguration.Get() + "/api/acars/session", activeServer=client.Server, connected=client.Connected,
         simulator=sim.Status, detectedSimulators=SimulatorDetector.DetectRunning(),
+        activeConnector=sim.Active?.Descriptor, connectors=sim.Connectors,
         latest=sim.LatestSnapshot, flight=recorder.Flight,
         pendingPositions=recorder.Pending.Count, pendingEvents=recorder.PendingEvents.Count,
+        syncState=telemetry.SyncState, lastSuccessfulSyncAt=telemetry.LastSuccessfulSyncAt,
+        nextSyncAttemptAt=telemetry.NextSyncAttemptAt, syncFailures=telemetry.ConsecutiveFailures,
+        syncError=telemetry.LastSyncError,
         remoteConfiguration=recorder.RemoteConfiguration, warning=recorder.Warning
     };
     private async Task<object> Login(JsonElement? body)
@@ -161,10 +189,16 @@ public sealed class PrometheeWindow : Window
         return configuration;
     }
     private object Start(JsonElement? body) {
-        if(sim.LatestSnapshot is null) throw new InvalidOperationException("Le simulateur n’est pas encore connecté.");
+        var snapshot = sim.LatestSnapshot ?? throw new InvalidOperationException("Le simulateur n’est pas encore connecté.");
+        if (snapshot.OnGround != true)
+            throw new InvalidOperationException("START FLIGHT refusé : l’avion doit être au sol.");
+        if (snapshot.ParkingBrake == false)
+            throw new InvalidOperationException("START FLIGHT refusé : serrez le frein de parc.");
+        if (snapshot.EnginesRunning?.Any(running => running) == true)
+            throw new InvalidOperationException("START FLIGHT refusé : arrêtez les moteurs avant de commencer la préparation ACARS.");
         var value = body!.Value;
         var operationId = value.TryGetProperty("operationId", out var operation) ? operation.GetString() : null;
-        recorder.Start(client.Server, value.GetProperty("pirepId").GetString() ?? "", sim.LatestSnapshot, operationId);
+        recorder.Start(client.Server, value.GetProperty("pirepId").GetString() ?? "", snapshot, operationId);
         return new { ok=true, operationId };
     }
     private object Pause() { recorder.Pause(); return new {ok=true}; } private object Resume() { recorder.Resume(client.Server); return new {ok=true}; }

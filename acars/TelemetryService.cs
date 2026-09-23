@@ -2,12 +2,68 @@ namespace Promethee;
 
 public sealed class TelemetryService(ISimulatorConnector sim, FlightRecorder recorder, PhpVmsClient client)
 {
+    private static readonly TimeSpan MaxRetryDelay = TimeSpan.FromSeconds(60);
+    private DateTimeOffset nextSyncAttemptAt = DateTimeOffset.MinValue;
+    private int consecutiveFailures;
+
+    public string SyncState { get; private set; } = "IDLE";
+    public DateTimeOffset? LastSuccessfulSyncAt { get; private set; }
+    public DateTimeOffset? NextSyncAttemptAt => nextSyncAttemptAt == DateTimeOffset.MinValue ? null : nextSyncAttemptAt;
+    public string? LastSyncError { get; private set; }
+    public int ConsecutiveFailures => consecutiveFailures;
+
     public async Task Tick()
     {
         sim.Poll();
         if (sim.LatestSnapshot is not null) recorder.Capture(sim.LatestSnapshot);
-        if (client.Connected) {
-            try { await SendPending(client, recorder); } catch { /* queued locally until the next successful sync */ }
+
+        if (!client.Connected) {
+            SyncState = "DISCONNECTED";
+            return;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        if (now < nextSyncAttemptAt) {
+            SyncState = "RETRYING";
+            return;
+        }
+
+        try {
+            await SendPending(client, recorder);
+            consecutiveFailures = 0;
+            nextSyncAttemptAt = DateTimeOffset.MinValue;
+            LastSyncError = null;
+            LastSuccessfulSyncAt = now;
+            SyncState = "ONLINE";
+        } catch (Exception exception) {
+            // Tracking is deliberately independent from the network. Failed
+            // messages remain in FlightRecorder and will be retried at least once.
+            consecutiveFailures++;
+            var seconds = Math.Min(MaxRetryDelay.TotalSeconds, Math.Pow(2, Math.Min(consecutiveFailures, 6)));
+            nextSyncAttemptAt = now.AddSeconds(seconds);
+            LastSyncError = exception.Message;
+            SyncState = "RETRYING";
+        }
+    }
+
+    public async Task<int> SyncNow()
+    {
+        if (!client.Connected) throw new InvalidOperationException("Connectez-vous à Prométhée avant de synchroniser.");
+        try {
+            var sent = await SendPending(client, recorder);
+            consecutiveFailures = 0;
+            nextSyncAttemptAt = DateTimeOffset.MinValue;
+            LastSyncError = null;
+            LastSuccessfulSyncAt = DateTimeOffset.UtcNow;
+            SyncState = "ONLINE";
+            return sent;
+        } catch (Exception exception) {
+            consecutiveFailures++;
+            var seconds = Math.Min(MaxRetryDelay.TotalSeconds, Math.Pow(2, Math.Min(consecutiveFailures, 6)));
+            nextSyncAttemptAt = DateTimeOffset.UtcNow.AddSeconds(seconds);
+            LastSyncError = exception.Message;
+            SyncState = "RETRYING";
+            throw;
         }
     }
 
