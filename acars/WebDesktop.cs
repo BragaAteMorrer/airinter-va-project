@@ -90,6 +90,7 @@ public sealed class PrometheeWindow : Window
         return route switch {
             "/api/status" => Status(), "/api/about" => About(), "/api/login" => await Login(body),
             "/api/start" => Start(body), "/api/pause" => Pause(), "/api/resume" => Resume(),
+            "/api/recovery" => Recovery(), "/api/recovery/resume" => RecoveryResume(), "/api/recovery/abandon" => RecoveryAbandon(),
             "/api/sync" => new { sent=await telemetry.SyncNow() }, "/api/report" => Report(), "/api/file" => await File(),
             "/api/history" => recorder.History, "/api/diagnostics" => Diagnostics(), "/api/update/check" => await CheckUpdateStatusAsync(), "/api/open-external" => OpenExternal(body),
             _ => throw new InvalidOperationException("Commande ACARS inconnue.") };
@@ -197,6 +198,26 @@ public sealed class PrometheeWindow : Window
         return new { ok=true, operationId };
     }
     private object Pause() { recorder.Pause(); return new {ok=true}; } private object Resume() { recorder.Resume(client.Server); return new {ok=true}; }
+
+    private object Recovery()
+    {
+        var state = recorder.GetRecoverySnapshot();
+        return new { available = state is not null, flight = state };
+    }
+
+    private object RecoveryResume()
+    {
+        if (!client.Connected) throw new InvalidOperationException("Reconnectez-vous à votre compte Air Inter avant de reprendre le vol.");
+        recorder.Resume(client.Server);
+        return new { ok = true, flight = recorder.GetRecoverySnapshot() };
+    }
+
+    private object RecoveryAbandon()
+    {
+        recorder.Abandon();
+        return new { ok = true };
+    }
+
     private object Report() { var f=recorder.Flight ?? throw new InvalidOperationException("Aucun vol en cours."); return new {phase=f.Phase,distance=f.Distance,airborneMinutes=(int)Math.Round(f.AirborneSeconds/60)}; }
     private async Task<object> File() { await TelemetryService.SendPending(client, recorder); var f=recorder.Flight ?? throw new InvalidOperationException("Aucun vol en cours."); if (f.Phase != "IN") throw new InvalidOperationException("Attendez l’arrivée au parking avant de déposer le PIREP."); await client.Send($"pireps/{Uri.EscapeDataString(f.PirepId)}/file", new { distance=Math.Round(f.Distance,2), flight_time=Math.Max(1,(int)Math.Round(f.AirborneSeconds/60)), fuel_used=Math.Round(f.FuelUsed), block_time=Math.Max(1,(int)Math.Round(((f.BlockOn ?? DateTimeOffset.UtcNow)-f.BlockOff!.Value).TotalMinutes)), block_off_time=f.BlockOff, block_on_time=f.BlockOn, created_at=f.BlockOn, landing_rate=f.LandingRate }); recorder.Complete(); return new {ok=true}; }
     private static string UserMessage(Exception e) => e is InvalidOperationException ? e.Message : "Une erreur inattendue est survenue. Réessayez plus tard.";
