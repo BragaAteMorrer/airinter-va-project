@@ -20,7 +20,25 @@ public record FlightJournalEntry(DateTimeOffset OccurredAt, string Name, double?
 public record AcarsRules(double TaxiSpeed = 35, double HardLandingRate = 600);
 public record TrackPoint(DateTimeOffset RecordedAt, double Lat, double Lon, double Altitude);
 public record FlightSummary(string PirepId, DateTimeOffset CompletedAt, double Distance, int AirborneMinutes,
-    int BlockMinutes, double FuelUsed, double? LandingRate, IReadOnlyList<FlightIssue> Issues);
+    int BlockMinutes, double FuelUsed, double? LandingRate, IReadOnlyList<FlightIssue> Issues, string Status = "COMPLETED");
+public record RecoverySnapshot(
+    string PirepId,
+    string? OperationId,
+    DateTimeOffset Started,
+    string Phase,
+    DateTimeOffset? BlockOff,
+    DateTimeOffset? Takeoff,
+    DateTimeOffset? Landing,
+    DateTimeOffset? BlockOn,
+    double Distance,
+    double FuelUsed,
+    double AirborneSeconds,
+    double? LandingRate,
+    int PendingPositions,
+    int PendingEvents,
+    int TrackPoints,
+    IReadOnlyList<PhaseEntry> Timeline,
+    IReadOnlyList<FlightIssue> Issues);
 
 public sealed class FlightRecorder
 {
@@ -103,6 +121,58 @@ public sealed class FlightRecorder
         Flight = Flight with { Recording = true, BlockOff = Flight.BlockOff ?? Flight.Started }; previous = null; parkedSince = null; Save();
     }}
     public void Pause() { lock (Gate) { if (Flight is not null) Flight = Flight with { Recording = false }; previous = null; parkedSince = null; Save(); }}
+
+    public RecoverySnapshot? GetRecoverySnapshot()
+    {
+        lock (Gate) {
+            if (Flight is null) return null;
+            return new RecoverySnapshot(
+                Flight.PirepId, Flight.OperationId, Flight.Started, Flight.Phase,
+                Flight.BlockOff, Flight.Takeoff, Flight.Landing, Flight.BlockOn,
+                Math.Round(Flight.Distance, 2), Math.Round(Flight.FuelUsed, 2),
+                Flight.AirborneSeconds, Flight.LandingRate,
+                Pending.Count, PendingEvents.Count, Track.Count,
+                Flight.Timeline.ToArray(), Flight.Issues.ToArray());
+        }
+    }
+
+    public void Abandon()
+    {
+        lock (Gate) {
+            if (Flight is null) throw new InvalidOperationException("Aucun vol à abandonner.");
+            if (Flight.Recording) throw new InvalidOperationException("Mettez d’abord le vol en pause avant de l’abandonner.");
+
+            var flight = Flight;
+            var block = flight.BlockOff is null
+                ? 0
+                : (int)Math.Round(((flight.BlockOn ?? DateTimeOffset.UtcNow) - flight.BlockOff.Value).TotalMinutes);
+
+            History.Insert(0, new(
+                flight.PirepId,
+                DateTimeOffset.UtcNow,
+                Math.Round(flight.Distance, 2),
+                (int)Math.Round(flight.AirborneSeconds / 60),
+                Math.Max(0, block),
+                Math.Round(flight.FuelUsed),
+                flight.LandingRate,
+                flight.Issues,
+                "ABANDONED"));
+
+            if (History.Count > 25) History.RemoveRange(25, History.Count - 25);
+            SaveHistory();
+
+            Flight = null;
+            Pending = [];
+            PendingEvents = [];
+            Track = [];
+            previous = null;
+            lastQueuedAt = null;
+            parkedSince = null;
+            Warning = null;
+            Save();
+        }
+    }
+
 
     /// <summary>New connector boundary. Legacy recorder logic remains intact during migration.</summary>
     public void Capture(AircraftSnapshot snapshot)
