@@ -109,10 +109,10 @@ function pilotIdentity(value) {
   setText($('#serverState'), name && callsign ? `${name} · ${callsign}` : name || callsign || 'Pilote connecté');
 }
 
-async function login(form, advanced = false) {
+async function login(form) {
   const body = Object.fromEntries(new FormData(form));
   try {
-    const response = await call(advanced ? '/api/config' : '/api/login', body);
+    const response = await call('/api/login', body);
     pilotIdentity(response);
     setAuthenticated(true);
     showMessage('#loginMessage', 'Connexion réussie. Chargement de vos opérations…');
@@ -123,7 +123,6 @@ async function login(form, advanced = false) {
   }
 }
 $('#loginForm').onsubmit = event => { event.preventDefault(); login(event.currentTarget); };
-$('#configForm').onsubmit = event => { event.preventDefault(); login(event.currentTarget, true); };
 
 function setIndicator(selector, state, label) {
   const node = $(selector);
@@ -950,12 +949,9 @@ refreshStatus();
 setInterval(refreshStatus, 1000);
 call('/api/about').then(info => {
   setText($('#build'), 'Version ' + info.version);
-  setText($('#loginServer'), info.server || 'Serveur inconnu');
-  setText($('#loginEndpoint'), info.loginEndpoint ? 'POST ' + info.loginEndpoint : '');
-  setText($('#loginServerSource'), info.serverSource ? 'Source : ' + info.serverSource : '');
+  // Hermès est un client Air Inter VA : l’endpoint compagnie n’est pas configurable par le pilote.
 }).catch(error => {
-  setText($('#loginServer'), 'Impossible de lire la configuration Hermès');
-  setText($('#loginEndpoint'), error.message || '');
+  showMessage('#loginMessage', error.message || 'Impossible de lire la configuration Hermès.', true);
 });
 
 
