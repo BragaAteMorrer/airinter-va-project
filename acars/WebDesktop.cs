@@ -122,7 +122,26 @@ public sealed class PrometheeWindow : Window
         Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
         return new { ok = true };
     }
-    private object Status() => new { connected=client.Connected, sim=sim.Status, detectedSimulators=SimulatorDetector.DetectRunning(), latest=sim.LatestSnapshot, flight=recorder.Flight, track=recorder.Track, pending=recorder.Pending.Count+recorder.PendingEvents.Count, remoteConfiguration=recorder.RemoteConfiguration, warning=recorder.Warning };
+    private object Status() => new {
+        connected=client.Connected,
+        sim=sim.Status,
+        detectedSimulators=SimulatorDetector.DetectRunning(),
+        activeConnector=sim.Active is null ? null : new {
+            id=sim.Active.Descriptor.ConnectorId,
+            name=sim.Active.Descriptor.DisplayName,
+            state=sim.Active.ConnectionState.ToString(),
+            capabilities=sim.Active.Descriptor.Capabilities.ToString(),
+            experimental=sim.Active.Descriptor.IsExperimental
+        },
+        connectors=sim.Connectors,
+        latest=sim.LatestSnapshot,
+        flight=recorder.Flight,
+        track=recorder.Track,
+        pending=recorder.Pending.Count+recorder.PendingEvents.Count,
+        recoveryAvailable=recorder.Flight is not null && !recorder.Flight.Recording,
+        remoteConfiguration=recorder.RemoteConfiguration,
+        warning=recorder.Warning
+    };
     private object About() => new {
         version=Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "dev",
         server=ServerConfiguration.Get(),
@@ -132,6 +151,7 @@ public sealed class PrometheeWindow : Window
     private object Diagnostics() => new {
         generatedAt=DateTimeOffset.UtcNow, configuredServer=ServerConfiguration.Get(), serverSource=ServerConfiguration.Source(), loginEndpoint=ServerConfiguration.Get() + "/api/acars/session", activeServer=client.Server, connected=client.Connected,
         simulator=sim.Status, detectedSimulators=SimulatorDetector.DetectRunning(),
+        activeConnector=sim.Active?.Descriptor, connectors=sim.Connectors,
         latest=sim.LatestSnapshot, flight=recorder.Flight,
         pendingPositions=recorder.Pending.Count, pendingEvents=recorder.PendingEvents.Count,
         remoteConfiguration=recorder.RemoteConfiguration, warning=recorder.Warning
