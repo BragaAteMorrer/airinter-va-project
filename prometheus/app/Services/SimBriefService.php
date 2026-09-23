@@ -109,6 +109,62 @@ class SimBriefService extends Service
     /**
      * @return \SimpleXMLElement|null
      */
+    public function persistFetchedOfp(
+        string $user_id,
+        string $ofp_id,
+        string $flight_id,
+        string $ac_id,
+        array $payload,
+        array $fares = []
+    ): ?SimBrief {
+        try {
+            $xml = simplexml_load_string('<OFP>'.self::arrayToXml($payload).'</OFP>', SimBriefXML::class);
+            if (!$xml) {
+                Log::error('SimBrief | Unable to convert fetched OFP to XML', ['ofp_id' => $ofp_id]);
+                return null;
+            }
+
+            $attrs = [
+                'user_id' => $user_id,
+                'flight_id' => $flight_id,
+                'aircraft_id' => $ac_id,
+                'ofp_xml' => $xml->asXML(),
+            ];
+            if (!empty($fares)) {
+                $attrs['fare_data'] = json_encode($fares);
+            }
+
+            $acarsXml = $this->getAcarsOFP($xml);
+            if (!empty($acarsXml)) {
+                $attrs['acars_xml'] = $acarsXml->asXML();
+            } else {
+                $acarsBody = str_replace('<OFP>', '<VMSAcars Type="FlightPlan" version="1.0" generated="'.time().'">', $xml->asXML());
+                $acarsBody = str_replace('</OFP>', '</VMSAcars>', $acarsBody);
+                $acars = simplexml_load_string($acarsBody);
+                if ($acars) $attrs['acars_xml'] = $acars->asXML();
+            }
+
+            return SimBrief::updateOrCreate(['id' => $ofp_id], $attrs);
+        } catch (\Throwable $e) {
+            Log::error('SimBrief | Failed to persist fetched OFP', [
+                'ofp_id' => $ofp_id, 'flight_id' => $flight_id,
+                'aircraft_id' => $ac_id, 'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
+
+    private static function arrayToXml(array $data): string
+    {
+        $xml = '';
+        foreach ($data as $key => $value) {
+            $tag = is_string($key) && preg_match('/^[A-Za-z_][A-Za-z0-9_.-]*$/', $key) ? $key : 'item';
+            if (is_array($value)) $xml .= '<'.$tag.'>'.self::arrayToXml($value).'</'.$tag.'>';
+            elseif ($value !== null) $xml .= '<'.$tag.'>'.htmlspecialchars((string) $value, ENT_XML1 | ENT_QUOTES, 'UTF-8').'</'.$tag.'>';
+        }
+        return $xml;
+    }
+
     public function getAcarsOFP(SimBriefXML $ofp)
     {
         $url = $ofp->getAcarsXmlUrl();
