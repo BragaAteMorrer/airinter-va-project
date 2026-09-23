@@ -524,10 +524,21 @@ $('#simbriefAccountImportBtn').onclick = async () => {
   }
 };
 
-$('#aircraftId').onchange = event => {
+$('#aircraftId').onchange = async event => {
   const option = event.target.selectedOptions[0];
   try { selectedAircraft = option?.dataset.aircraft ? JSON.parse(option.dataset.aircraft) : null; } catch { selectedAircraft = null; }
+
+  // Keep the operational draft and the server dispatch in sync with the
+  // aircraft selected by the pilot before enabling SimBrief preparation.
+  event.target.value = selectedAircraft?.id || '';
   updateWorkflow();
+
+  try {
+    await refreshDispatch();
+    showMessage('#pirepMessage', '');
+  } catch (error) {
+    showMessage('#pirepMessage', 'Dispatch indisponible : ' + error.message, true);
+  }
 };
 
 $('#resetDraftBtn').onclick = () => {
