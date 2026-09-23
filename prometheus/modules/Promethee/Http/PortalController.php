@@ -975,10 +975,27 @@ class PortalController extends Controller
         $bid=Bid::with(['aircraft.subfleet'])->where(['user_id'=>$r->user()->id,'flight_id'=>$flight->id])->latest()->first();
         $simbrief=SimBrief::with('aircraft')->where('user_id',$r->user()->id)
             ->where('flight_id',$flight->id)->latest('updated_at')->first();
+
+        // An empty flight/subfleet pivot means "no line restriction" in phpVMS,
+        // not "zero compatible fleets". Keep the briefing consistent with the
+        // operation dispatch used by Hermes.
+        $allowedSubfleetIds = app(UserService::class)->getAllowableSubfleets($r->user())->pluck('id');
+        $flightSubfleetIds = $flight->subfleets->pluck('id');
+        $compatibleSubfleetIds = $flightSubfleetIds->isEmpty()
+            ? $allowedSubfleetIds
+            : $allowedSubfleetIds->intersect($flightSubfleetIds)->values();
+        $compatibleAircraftCount = Aircraft::query()
+            ->whereIn('subfleet_id', $compatibleSubfleetIds)
+            ->where('status', AircraftStatus::ACTIVE)
+            ->count();
+
         return $this->page('briefing',[
             'flight'=>$flight,'weather'=>$weather,'briefing'=>$briefing,
             'suggestedFuel'=>$suggestedFuel,'fuelUnit'=>$fuelUnit,
             'bid'=>$bid,'simbrief'=>$simbrief,
+            'lineFleetRestricted'=>$flightSubfleetIds->isNotEmpty(),
+            'compatibleSubfleetCount'=>$compatibleSubfleetIds->count(),
+            'compatibleAircraftCount'=>$compatibleAircraftCount,
         ]);
     }
     public function saveBriefing(string $id, Request $r) {
