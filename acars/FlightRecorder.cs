@@ -240,7 +240,7 @@ public sealed class FlightRecorder
         foreach (var obsolete in Directory.GetFiles(archiveFolder, "abandoned-*.json")
                      .OrderByDescending(File.GetCreationTimeUtc).Skip(5))
             try { File.Delete(obsolete); } catch (IOException) { }
-    }}
+    }
     private void SetPhase(string phase, string eventName, Sample sample) { if (Flight?.Phase == phase) return; Flight = Flight! with { Phase = phase, Timeline = [.. Flight.Timeline, new(sample.RecordedAt, eventName)] }; QueueEvent(eventName, sample); }
     private void AddIssue(Sample sample, string code, string message) {
         if (Flight is null || Flight.Issues.Any(x => x.Code == code)) return;
