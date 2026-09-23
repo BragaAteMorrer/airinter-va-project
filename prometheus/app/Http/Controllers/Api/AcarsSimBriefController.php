@@ -152,13 +152,17 @@ class AcarsSimBriefController extends Controller
         // the following PIREP can attach to a concrete SimBrief row.
         $requestId = (string) data_get($ofp, 'params.request_id', '');
         abort_if($requestId === '', 502, 'SimBrief n’a pas retourné l’identifiant de l’OFP généré.');
-        $persisted = $this->simBriefSvc->downloadOfp(
+        // Account import already owns the complete OFP payload returned by
+        // SimBrief. Persist that exact payload instead of downloading it again
+        // through the legacy request-id endpoint.
+        $persisted = $this->simBriefSvc->persistFetchedOfp(
             (string) Auth::id(),
             $requestId,
             (string) $flight->id,
-            (string) $aircraft->id
+            (string) $aircraft->id,
+            $ofp
         );
-        abort_if($persisted === null, 502, 'L’OFP SimBrief a été trouvé mais n’a pas pu être persisté dans Prométhée.');
+        abort_if($persisted === null, 502, 'L’OFP SimBrief a été reçu mais sa persistance dans Prométhée a échoué. Consultez les logs SimBrief pour le détail.');
 
         return response()->json([
             'operation_id' => $request->input('operation_id'),
