@@ -8,21 +8,12 @@ public sealed class PhpVmsClient
 {
     private readonly HttpClient http = new(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(20) };
     private string credential = "";
-    private CredentialKind credentialKind;
 
     public string Server { get; private set; } = "";
     public bool Connected => credential.Length > 0;
     public string LoginEndpoint => string.IsNullOrWhiteSpace(Server) ? "" : Server + "/api/acars/session";
 
     public PhpVmsClient() => http.DefaultRequestHeaders.UserAgent.ParseAdd("Promethee-ACARS/2.1");
-
-    public void ConfigureApiKey(string server, string apiKey)
-    {
-        Server = ValidateServer(server);
-        if (apiKey.Length < 10 || apiKey.Length > 200) throw new InvalidOperationException("Clé API invalide.");
-        credential = apiKey;
-        credentialKind = CredentialKind.ApiKey;
-    }
 
     public async Task<JsonElement> SignIn(string server, string login, string password)
     {
@@ -47,7 +38,6 @@ public sealed class PhpVmsClient
                 throw new InvalidOperationException("Impossible de se connecter au serveur Prométhée.");
             Server = validatedServer;
             credential = token.GetString()!;
-            credentialKind = CredentialKind.Bearer;
             return await Send("user");
         } catch (HttpRequestException ex) {
             System.Diagnostics.Trace.WriteLine($"ACARS login transport failure: {ex}");
@@ -66,8 +56,7 @@ public sealed class PhpVmsClient
         if (!Connected) throw new InvalidOperationException("Connectez-vous à votre compte pilote.");
         try {
             using var request = new HttpRequestMessage(body is null ? HttpMethod.Get : HttpMethod.Post, Server + "/api/" + path);
-            if (credentialKind == CredentialKind.Bearer) request.Headers.Authorization = new("Bearer", credential);
-            else request.Headers.Add("X-API-Key", credential);
+            request.Headers.Authorization = new("Bearer", credential);
             request.Headers.Add("Accept", "application/json");
             if (body is not null) request.Content = JsonContent.Create(body);
             using var response = await http.SendAsync(request);
@@ -143,5 +132,4 @@ public sealed class PhpVmsClient
         return uri.AbsoluteUri.TrimEnd('/');
     }
 
-    private enum CredentialKind { ApiKey, Bearer }
 }
