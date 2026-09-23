@@ -181,10 +181,16 @@ public sealed class PrometheeWindow : Window
         return configuration;
     }
     private object Start(JsonElement? body) {
-        if(sim.LatestSnapshot is null) throw new InvalidOperationException("Le simulateur n’est pas encore connecté.");
+        var snapshot = sim.LatestSnapshot ?? throw new InvalidOperationException("Le simulateur n’est pas encore connecté.");
+        if (snapshot.OnGround != true)
+            throw new InvalidOperationException("START FLIGHT refusé : l’avion doit être au sol.");
+        if (snapshot.ParkingBrake == false)
+            throw new InvalidOperationException("START FLIGHT refusé : serrez le frein de parc.");
+        if (snapshot.EnginesRunning?.Any(running => running) == true)
+            throw new InvalidOperationException("START FLIGHT refusé : arrêtez les moteurs avant de commencer la préparation ACARS.");
         var value = body!.Value;
         var operationId = value.TryGetProperty("operationId", out var operation) ? operation.GetString() : null;
-        recorder.Start(client.Server, value.GetProperty("pirepId").GetString() ?? "", sim.LatestSnapshot, operationId);
+        recorder.Start(client.Server, value.GetProperty("pirepId").GetString() ?? "", snapshot, operationId);
         return new { ok=true, operationId };
     }
     private object Pause() { recorder.Pause(); return new {ok=true}; } private object Resume() { recorder.Resume(client.Server); return new {ok=true}; }
