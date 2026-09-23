@@ -998,6 +998,17 @@ class PortalController extends Controller
             'compatibleAircraftCount'=>$compatibleAircraftCount,
         ]);
     }
+    public function simbrief(string $id, Request $r) {
+        $simbrief=SimBrief::with(['flight.airline','aircraft.subfleet','pirep'])->where('user_id',$r->user()->id)->findOrFail($id);
+        abort_unless($simbrief->xml, 404, 'OFP SimBrief indisponible.');
+        $fares=collect();
+        if (!empty($simbrief->fare_data)) {
+            $decoded=json_decode($simbrief->fare_data, true);
+            if (is_array($decoded)) $fares=collect($decoded);
+        }
+        return $this->page('simbrief', ['simbrief'=>$simbrief,'ofp'=>$simbrief->xml,'flight'=>$simbrief->flight,'aircraft'=>$simbrief->aircraft,'fares'=>$fares]);
+    }
+
     public function saveBriefing(string $id, Request $r) {
         Flight::findOrFail($id);
         $data=$r->validate(['ofp_reference'=>'nullable|string|max:120','alternate'=>'nullable|string|max:8','planned_fuel'=>'nullable|integer|min:0|max:1000000','notes'=>'nullable|string|max:4000']);
