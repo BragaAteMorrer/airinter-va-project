@@ -21,6 +21,10 @@ public record AcarsRules(double TaxiSpeed = 35, double HardLandingRate = 600);
 public record TrackPoint(DateTimeOffset RecordedAt, double Lat, double Lon, double Altitude);
 public record FlightSummary(string PirepId, DateTimeOffset CompletedAt, double Distance, int AirborneMinutes,
     int BlockMinutes, double FuelUsed, double? LandingRate, IReadOnlyList<FlightIssue> Issues);
+public record FlightRecoveryInfo(
+    string PirepId, string? OperationId, string Server, string Phase, DateTimeOffset Started,
+    DateTimeOffset? LastTrackAt, double Distance, int AirborneMinutes, double FuelUsed,
+    double? LandingRate, int PendingMessages, int TrackPoints);
 
 public sealed class FlightRecorder
 {
@@ -33,6 +37,7 @@ public sealed class FlightRecorder
     private DateTimeOffset? lastQueuedAt;
     private DateTimeOffset? parkedSince;
     private readonly FlightTrackingEngine tracking = new();
+    private bool recoveryRequired;
     public FlightState? Flight { get; private set; }
     public List<TrackPoint> Track { get; private set; } = [];
     public List<FlightSummary> History { get; private set; } = [];
@@ -41,6 +46,7 @@ public sealed class FlightRecorder
     public List<AcarsEvent> PendingEvents { get; private set; } = [];
     public string? Warning { get; private set; }
     public RemoteAcarsConfiguration? RemoteConfiguration { get; private set; }
+    public bool RecoveryAvailable { get { lock (Gate) return recoveryRequired && Flight is not null && !Flight.Recording; } }
 
     public FlightRecorder(string? storageFolder = null)
     {
@@ -57,7 +63,10 @@ public sealed class FlightRecorder
                 var saved = JsonSerializer.Deserialize<Saved>(File.ReadAllText(file));
                 Flight = saved?.Flight; Pending = saved?.Pending ?? []; PendingEvents = saved?.PendingEvents ?? [];
                 Track = saved?.Track ?? [];
-                if (Flight is not null) Flight = Flight with { Recording = false };
+                if (Flight is not null) {
+                    Flight = Flight with { Recording = false };
+                    recoveryRequired = true;
+                }
             } catch (JsonException) {
                 // A damaged local cache must not prevent the pilot from opening ACARS.
                 Warning = "Le cache local est illisible. Commencez un nouveau vol après avoir vérifié le PIREP.";
@@ -86,6 +95,7 @@ public sealed class FlightRecorder
 
     public void Start(string server, string id, Sample sample, string? operationId = null) { lock (Gate) {
         if (Flight is not null) throw new InvalidOperationException("Terminez le rapport en cours avant un nouveau départ.");
+        recoveryRequired = false;
         if (!sample.OnGround) throw new InvalidOperationException("L'ACARS doit être démarré au sol, avant le départ du poste.");
         tracking.Arm();
         Flight = new(server, id, sample.RecordedAt, sample.Fuel, Phase: "BOARDING", BlockOff: sample.RecordedAt, OperationId: operationId) { Timeline = [new(sample.RecordedAt, "OUT"), new(sample.RecordedAt, "BOARDING")] }; previous = sample; Pending = []; PendingEvents = []; Track = [];
@@ -100,6 +110,7 @@ public sealed class FlightRecorder
     public void Resume(string server) { lock (Gate) {
         if (Flight is null || Flight.Server != server) throw new InvalidOperationException("Le serveur ne correspond pas au vol enregistré.");
         tracking.Arm();
+        recoveryRequired = false;
         Flight = Flight with { Recording = true, BlockOff = Flight.BlockOff ?? Flight.Started }; previous = null; parkedSince = null; Save();
     }}
     public void Pause() { lock (Gate) { if (Flight is not null) Flight = Flight with { Recording = false }; previous = null; parkedSince = null; Save(); }}
@@ -174,7 +185,61 @@ public sealed class FlightRecorder
         var block = flight.BlockOn is null || flight.BlockOff is null ? 0 : (int)Math.Round((flight.BlockOn.Value - flight.BlockOff.Value).TotalMinutes);
         History.Insert(0, new(flight.PirepId, DateTimeOffset.UtcNow, Math.Round(flight.Distance, 2), (int)Math.Round(flight.AirborneSeconds / 60), block, Math.Round(flight.FuelUsed), flight.LandingRate, flight.Issues));
         if (History.Count > 25) History.RemoveRange(25, History.Count - 25);
-        SaveHistory(); Flight = null; previous = null; parkedSince = null; Track = []; Save();
+        SaveHistory(); Flight = null; previous = null; parkedSince = null; Track = []; recoveryRequired = false; Save();
+    }}
+
+    public FlightRecoveryInfo? GetRecoveryInfo()
+    {
+        lock (Gate) {
+            if (!recoveryRequired || Flight is null || Flight.Recording) return null;
+            return new(
+                Flight.PirepId,
+                Flight.OperationId,
+                Flight.Server,
+                Flight.Phase,
+                Flight.Started,
+                Track.LastOrDefault()?.RecordedAt,
+                Math.Round(Flight.Distance, 2),
+                (int)Math.Round(Flight.AirborneSeconds / 60),
+                Math.Round(Flight.FuelUsed),
+                Flight.LandingRate,
+                Pending.Count + PendingEvents.Count,
+                Track.Count);
+        }
+    }
+
+    public void AbandonRecovery()
+    {
+        lock (Gate) {
+            if (!recoveryRequired || Flight is null || Flight.Recording)
+                throw new InvalidOperationException("Aucun vol interrompu à abandonner.");
+
+            ArchiveRecoveryState();
+            Flight = null;
+            previous = null;
+            parkedSince = null;
+            lastQueuedAt = null;
+            Pending = [];
+            PendingEvents = [];
+            Track = [];
+            recoveryRequired = false;
+            Warning = null;
+            Save();
+        }
+    }
+
+    private void ArchiveRecoveryState()
+    {
+        var statePath = Path.Combine(folder, "state.json");
+        if (!File.Exists(statePath)) return;
+        var archiveFolder = Path.Combine(folder, "recovery-archive");
+        Directory.CreateDirectory(archiveFolder);
+        var archivePath = Path.Combine(archiveFolder, $"abandoned-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss-fff}.json");
+        File.Copy(statePath, archivePath, false);
+
+        foreach (var obsolete in Directory.GetFiles(archiveFolder, "abandoned-*.json")
+                     .OrderByDescending(File.GetCreationTimeUtc).Skip(5))
+            try { File.Delete(obsolete); } catch (IOException) { }
     }}
     private void SetPhase(string phase, string eventName, Sample sample) { if (Flight?.Phase == phase) return; Flight = Flight! with { Phase = phase, Timeline = [.. Flight.Timeline, new(sample.RecordedAt, eventName)] }; QueueEvent(eventName, sample); }
     private void AddIssue(Sample sample, string code, string message) {
