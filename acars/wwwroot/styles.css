@@ -40,7 +40,6 @@ button.primary:hover{background:#095494}
 .login-form{display:grid;grid-template-columns:repeat(2,minmax(220px,1fr));gap:18px;align-items:end;max-width:760px}.login-form button{height:44px;max-width:260px}
 .message{margin:18px 0 0;padding:12px 14px;border:1px solid #b9ddcb;border-radius:9px;background:#f0faf4;color:var(--ok);font-weight:650}
 .message.error{border-color:#efb8bb;background:#fff3f3;color:var(--danger)}
-.advanced{margin-top:28px;padding-top:18px;border-top:1px solid var(--line)}.advanced summary{cursor:pointer;color:var(--navy);font-weight:800}.advanced .login-form{margin-top:15px}
 .flight-search{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:13px;align-items:end;margin:23px 0 8px;padding:19px;border:1px solid #d4e0e9;border-radius:13px;background:#f6f9fb}
 .flight-search button{min-height:44px}.search-hint{margin:8px 0 18px;font-size:12px}
 .list{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:11px;margin-top:18px}
@@ -136,3 +135,20 @@ button:disabled { cursor:not-allowed; opacity:.48; filter:saturate(.5); }
   .pilot-state,.ops-status { justify-content:flex-start; }
   .next-action { align-items:flex-start; flex-direction:column; }
 }
+
+
+/* Crash recovery is intentionally modal: a stale flight must be resolved before a new operation starts. */
+.recovery-overlay{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:24px;background:rgb(4 18 31 / 72%);backdrop-filter:blur(5px)}
+.recovery-overlay[hidden]{display:none}
+.recovery-dialog{width:min(760px,96vw);max-height:90vh;overflow:auto;padding:28px;border:1px solid var(--line);border-radius:18px;background:var(--paper);box-shadow:0 28px 90px #0007}
+.recovery-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.recovery-heading h2{margin:5px 0 0}
+.recovery-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:20px 0}
+.recovery-summary div{display:grid;gap:4px;padding:11px;border:1px solid var(--line);border-radius:10px;background:#f8fafc}
+.recovery-summary span{font-size:8px;font-weight:900;letter-spacing:.9px;text-transform:uppercase;color:var(--muted)}
+.recovery-summary strong{font-size:14px;color:var(--navy)}
+.recovery-dialog details{margin:16px 0;padding:12px;border:1px solid var(--line);border-radius:10px}
+.recovery-dialog summary{cursor:pointer;font-weight:800;color:var(--navy)}
+.recovery-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:20px}
+.danger-action{border-color:#d7a4a8!important;color:#a62f36!important;background:#fff6f6!important}
+@media(max-width:760px){.recovery-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.recovery-actions{display:grid}.recovery-actions button{width:100%}}
