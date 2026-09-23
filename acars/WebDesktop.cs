@@ -126,6 +126,8 @@ public sealed class PrometheeWindow : Window
     private object Status() => new {
         connected=client.Connected,
         sim=sim.Status,
+        simulatorSessionState=sim.SessionState.ToString(),
+        simulatorLostSince=sim.LostSince,
         detectedSimulators=SimulatorDetector.DetectRunning(),
         activeConnector=sim.Active is null ? null : new {
             id=sim.Active.Descriptor.ConnectorId,
@@ -156,7 +158,8 @@ public sealed class PrometheeWindow : Window
     };
     private object Diagnostics() => new {
         generatedAt=DateTimeOffset.UtcNow, configuredServer=ServerConfiguration.Get(), serverSource=ServerConfiguration.Source(), loginEndpoint=ServerConfiguration.Get() + "/api/acars/session", activeServer=client.Server, connected=client.Connected,
-        simulator=sim.Status, detectedSimulators=SimulatorDetector.DetectRunning(),
+        simulator=sim.Status, simulatorSessionState=sim.SessionState.ToString(), simulatorLostSince=sim.LostSince,
+        detectedSimulators=SimulatorDetector.DetectRunning(),
         activeConnector=sim.Active?.Descriptor, connectors=sim.Connectors,
         latest=sim.LatestSnapshot, flight=recorder.Flight,
         pendingPositions=recorder.Pending.Count, pendingEvents=recorder.PendingEvents.Count,
