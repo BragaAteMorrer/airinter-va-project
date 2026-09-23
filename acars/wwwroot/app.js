@@ -115,14 +115,98 @@ async function login(form) {
     const response = await call('/api/login', body);
     pilotIdentity(response);
     setAuthenticated(true);
-    showMessage('#loginMessage', 'Connexion réussie. Chargement de vos opérations…');
-    await refreshOperations();
-    document.querySelector('[data-tab="flight"]').click();
+    showMessage('#loginMessage', 'Connexion réussie. Vérification d’un éventuel vol interrompu…');
+    const recovery = await checkRecovery();
+    if (!recovery) {
+      await refreshOperations();
+      document.querySelector('[data-tab="flight"]').click();
+    }
   } catch (error) {
     showMessage('#loginMessage', error.message || 'Impossible de se connecter à Prométhée.', true);
   }
 }
 $('#loginForm').onsubmit = event => { event.preventDefault(); login(event.currentTarget); };
+
+
+function formatRecoveryTime(seconds) {
+  const value = Math.max(0, Number(seconds || 0));
+  const hours = Math.floor(value / 3600);
+  const minutes = Math.floor((value % 3600) / 60);
+  return hours ? `${hours} h ${String(minutes).padStart(2, '0')}` : `${minutes} min`;
+}
+
+function hideRecovery() {
+  const overlay = $('#recoveryOverlay');
+  if (overlay) overlay.hidden = true;
+}
+
+function renderRecovery(payload) {
+  const flight = payload?.flight;
+  const overlay = $('#recoveryOverlay');
+  if (!overlay || !payload?.available || !flight) {
+    hideRecovery();
+    return false;
+  }
+
+  setText($('#recoveryPirep'), flight.pirepId || flight.PirepId || '—');
+  setText($('#recoveryPhase'), flight.phase || flight.Phase || 'RECOVERY');
+  setText($('#recoveryPhaseValue'), flight.phase || flight.Phase || '—');
+  setText($('#recoveryDistance'), `${Number(flight.distance ?? flight.Distance ?? 0).toFixed(1)} NM`);
+  setText($('#recoveryAirborne'), formatRecoveryTime(flight.airborneSeconds ?? flight.AirborneSeconds));
+  const pendingPositions = Number(flight.pendingPositions ?? flight.PendingPositions ?? 0);
+  const pendingEvents = Number(flight.pendingEvents ?? flight.PendingEvents ?? 0);
+  setText($('#recoveryPending'), String(pendingPositions + pendingEvents));
+
+  const timeline = flight.timeline || flight.Timeline || [];
+  renderTimeline('#recoveryTimeline', timeline);
+  overlay.hidden = false;
+  return true;
+}
+
+async function checkRecovery() {
+  try {
+    const payload = unwrap(await call('/api/recovery'));
+    return renderRecovery(payload);
+  } catch (error) {
+    showMessage('#loginMessage', 'Impossible de lire l’état de récupération : ' + error.message, true);
+    return false;
+  }
+}
+
+$('#recoveryReviewBtn').onclick = () => {
+  const details = $('#recoveryDetails');
+  if (details) {
+    details.open = true;
+    details.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+};
+
+$('#recoveryResumeBtn').onclick = async () => {
+  try {
+    showMessage('#recoveryMessage', 'Reconnexion du vol interrompu…');
+    const payload = unwrap(await call('/api/recovery/resume'));
+    hideRecovery();
+    showMessage('#recordMessage', 'Vol restauré. Hermès reprend le tracking dès que la télémétrie simulateur est disponible.');
+    if (payload?.flight?.pirepId || payload?.flight?.PirepId) pirepId = payload.flight.pirepId || payload.flight.PirepId;
+    document.querySelector('[data-tab="record"]')?.click();
+    await refreshStatus();
+  } catch (error) {
+    showMessage('#recoveryMessage', error.message, true);
+  }
+};
+
+$('#recoveryAbandonBtn').onclick = async () => {
+  if (!confirm('Abandonner ce vol local ? Son résumé sera conservé dans l’historique Hermès, mais les données ACARS en attente ne seront plus envoyées.')) return;
+  try {
+    await call('/api/recovery/abandon');
+    hideRecovery();
+    showMessage('#loginMessage', 'Vol interrompu classé comme abandonné. Chargement de vos opérations…');
+    await refreshOperations();
+    document.querySelector('[data-tab="flight"]')?.click();
+  } catch (error) {
+    showMessage('#recoveryMessage', error.message, true);
+  }
+};
 
 function setIndicator(selector, state, label) {
   const node = $(selector);
