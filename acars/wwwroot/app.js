@@ -525,19 +525,41 @@ $('#simbriefAccountImportBtn').onclick = async () => {
 };
 
 $('#aircraftId').onchange = async event => {
-  const option = event.target.selectedOptions[0];
-  try { selectedAircraft = option?.dataset.aircraft ? JSON.parse(option.dataset.aircraft) : null; } catch { selectedAircraft = null; }
+  const select = event.target;
+  const option = select.selectedOptions[0];
+  let nextAircraft = null;
+  try { nextAircraft = option?.dataset.aircraft ? JSON.parse(option.dataset.aircraft) : null; } catch {}
 
-  // Keep the operational draft and the server dispatch in sync with the
-  // aircraft selected by the pilot before enabling SimBrief preparation.
-  event.target.value = selectedAircraft?.id || '';
-  updateWorkflow();
+  if (!nextAircraft?.id) {
+    selectedAircraft = null;
+    updateWorkflow();
+    return;
+  }
 
+  const operationRef = selectedOperation?.operation_id || selectedOperation?.id || selectedOperation?.bid_id;
+  if (!operationRef) {
+    select.value = selectedAircraft?.id || '';
+    return showMessage('#pirepMessage', 'Impossible d’affecter l’appareil : opération Prométhée introuvable.', true);
+  }
+
+  select.disabled = true;
+  showMessage('#pirepMessage', `Affectation de ${nextAircraft.registration || 'l’appareil'} à l’opération…`);
   try {
+    const assignment = unwrap(await call(`/api/v1/operations/${encodeURIComponent(operationRef)}/aircraft`, {
+      _method: 'PUT',
+      aircraft_id: nextAircraft.id
+    }));
+    selectedAircraft = { ...nextAircraft, ...(assignment?.aircraft || {}) };
+    if (selectedOperation) selectedOperation.aircraft = selectedAircraft;
+    select.value = String(selectedAircraft.id);
     await refreshDispatch();
-    showMessage('#pirepMessage', '');
+    showMessage('#pirepMessage', `${selectedAircraft.registration || 'Appareil'} affecté. Vous pouvez préparer SimBrief.`);
   } catch (error) {
-    showMessage('#pirepMessage', 'Dispatch indisponible : ' + error.message, true);
+    select.value = selectedAircraft?.id || '';
+    showMessage('#pirepMessage', 'Affectation impossible : ' + error.message, true);
+  } finally {
+    select.disabled = false;
+    updateWorkflow();
   }
 };
 
