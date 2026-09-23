@@ -8,6 +8,7 @@ use App\Models\Bid;
 use App\Models\Enums\AircraftState;
 use App\Models\Enums\AircraftStatus;
 use App\Repositories\FlightRepository;
+use App\Services\FareService;
 use App\Services\SimBriefService;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
@@ -20,6 +21,7 @@ class AcarsSimBriefController extends Controller
 {
     public function __construct(
         private readonly FlightRepository $flightRepo,
+        private readonly FareService $fareSvc,
         private readonly SimBriefService $simBriefSvc,
         private readonly UserService $userSvc,
         private readonly OperationIdentityService $operationIdentity
@@ -160,7 +162,8 @@ class AcarsSimBriefController extends Controller
             $requestId,
             (string) $flight->id,
             (string) $aircraft->id,
-            $ofp
+            $ofp,
+            $this->operationFares($flight, $aircraft)
         );
         abort_if($persisted === null, 502, 'L’OFP SimBrief a été reçu mais sa persistance dans Prométhée a échoué. Consultez les logs SimBrief pour le détail.');
 
@@ -197,7 +200,8 @@ class AcarsSimBriefController extends Controller
             (string) Auth::id(),
             $attrs['ofp_id'],
             $flight_id,
-            $attrs['aircraft_id']
+            $attrs['aircraft_id'],
+            $this->operationFares(...$this->getEligibleOperation($flight_id, $attrs['aircraft_id']))
         );
         abort_if($simbrief === null, 404, 'L’OFP SimBrief n’est pas encore disponible.');
 
@@ -274,7 +278,7 @@ class AcarsSimBriefController extends Controller
 
     private function getEligibleOperation(string $flightId, string $aircraftId): array
     {
-        $flight = $this->flightRepo->with(['airline', 'subfleets'])->find($flightId);
+        $flight = $this->flightRepo->with(['airline', 'fares', 'subfleets.fares'])->find($flightId);
         $aircraft = Aircraft::with('subfleet')
             ->withCount(['bid', 'simbriefs' => fn ($query) => $query->whereNull('pirep_id')])
             ->findOrFail($aircraftId);
@@ -300,5 +304,27 @@ class AcarsSimBriefController extends Controller
         abort_unless($eligible, 403, 'Cet appareil ne peut pas être utilisé pour ce vol.');
 
         return [$flight, $aircraft];
+    }
+
+    /**
+     * Resolve the effective phpVMS fares for the selected aircraft.
+     * Flight overrides win over subfleet/base values, exactly like the native
+     * phpVMS SimBrief and PIREP flows.
+     */
+    private function operationFares($flight, Aircraft $aircraft): array
+    {
+        return $this->fareSvc
+            ->getFareWithOverrides($aircraft->subfleet->fares, $flight->fares)
+            ->filter(fn ($fare) => $fare->active && !empty($fare->capacity))
+            ->map(fn ($fare) => [
+                'id' => $fare->id,
+                'fare_id' => $fare->id,
+                'code' => $fare->code,
+                'name' => $fare->name,
+                'type' => $fare->type,
+                'capacity' => (int) $fare->capacity,
+                'price' => (float) $fare->price,
+                'cost' => (float) $fare->cost,
+            ])->values()->all();
     }
 }
