@@ -34,6 +34,5 @@
   <Compile Remove="Program.cs" Condition="'$(TargetFramework)' == 'net8.0-windows'" />
   <Compile Remove="DesktopProgram.cs" />
   <Compile Remove="WebDesktop.cs" Condition="'$(TargetFramework)' == 'net8.0'" />
-  <Compile Remove="ServerConfiguration.cs" Condition="'$(TargetFramework)' == 'net8.0'" />
 </ItemGroup>
 </Project>
