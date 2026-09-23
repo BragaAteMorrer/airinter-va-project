@@ -178,6 +178,16 @@ public sealed class FlightRecorder
 
     public void AcknowledgePositions(IEnumerable<Guid> ids) { lock (Gate) { var set = ids.ToHashSet(); Pending.RemoveAll(x => set.Contains(x.Sample.SampleId)); Save(); }}
     public void AcknowledgeEvents(IEnumerable<Guid> ids) { lock (Gate) { var set = ids.ToHashSet(); PendingEvents.RemoveAll(x => set.Contains(x.EventId)); Save(); }}
+
+    public void RecordLocalOperationalEvent(string name, DateTimeOffset occurredAt, double? value = null)
+    {
+        lock (Gate) {
+            if (Flight is null) return;
+            if (Flight.Journal.Any(x => x.Name == name && x.OccurredAt == occurredAt)) return;
+            Flight = Flight with { Journal = [.. Flight.Journal, new(occurredAt, name, value)] };
+            Save();
+        }
+    }
     public void Complete() { lock (Gate) {
         if (Flight?.Phase != "IN") throw new InvalidOperationException("Attendez l'événement IN : avion arrêté au parking, frein de parc serré.");
         if (Pending.Count > 0 || PendingEvents.Count > 0) throw new InvalidOperationException("Des messages ACARS restent à synchroniser.");
