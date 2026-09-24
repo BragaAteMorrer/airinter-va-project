@@ -1032,7 +1032,7 @@ const capabilityLabels = {
   Engines: 'Engines', BeaconLight: 'Beacon', NavigationLight: 'Nav lights', StrobeLight: 'Strobes',
   LandingLight: 'Landing lights', TaxiLight: 'Taxi lights', SeatBeltSign: 'Seat belt sign', Doors: 'Doors',
   Transponder: 'Transponder', Autopilot: 'Autopilot', ThrustStable: 'Thrust stable', Slew: 'Slew', Pause: 'Pause', SimulationRate: 'Sim rate',
-  TouchdownRate: 'Touchdown rate', AircraftTitle: 'Aircraft title', AircraftIcao: 'Aircraft ICAO'
+  TouchdownRate: 'Touchdown rate', AircraftTitle: 'Aircraft title', AircraftIcao: 'Aircraft ICAO', AircraftModel: 'Aircraft model'
 };
 
 function renderAircraftCapabilities(report) {
