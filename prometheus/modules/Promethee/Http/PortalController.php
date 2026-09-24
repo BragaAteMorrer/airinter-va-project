@@ -1747,13 +1747,35 @@ class PortalController extends Controller
     }
     public function adminSimbrief()
     {
+        $companyKey = app(\Modules\Promethee\Services\SimBriefCompanyKeyService::class);
+
         return $this->page('admin.simbrief', [
-            'apiConfigured' => filled(setting('simbrief.api_key')),
+            'apiConfigured' => $companyKey->configured(),
             'aircraftCount' => \App\Models\SimBriefAircraft::count(),
             'airframeCount' => \App\Models\SimBriefAirframe::count(),
             'layoutCount' => \App\Models\SimBriefLayout::count(),
             'lastSync' => DB::table('promethee_settings')->where('key', 'simbrief.support_synced_at')->value('value'),
         ]);
+    }
+
+    public function saveSimbriefApiKey(Request $r, \Modules\Promethee\Services\SimBriefCompanyKeyService $companyKey)
+    {
+        $data = $r->validate([
+            'api_key' => 'required|string|min:8|max:512',
+        ]);
+
+        $companyKey->save($data['api_key']);
+
+        return redirect()->route('admin.promethee.simbrief')
+            ->with('success', 'Clé API SimBrief enregistrée côté serveur.');
+    }
+
+    public function deleteSimbriefApiKey(\Modules\Promethee\Services\SimBriefCompanyKeyService $companyKey)
+    {
+        $companyKey->delete();
+
+        return redirect()->route('admin.promethee.simbrief')
+            ->with('success', 'Clé API SimBrief supprimée de Prométhée.');
     }
 
     public function syncSimbrief(\App\Services\SimBriefService $simbrief)
