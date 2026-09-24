@@ -12,9 +12,15 @@ class DemandProfileService
 {
     private array $capacityCache = [];
     private array $bandCache = [];
+    private array $profileCache = [];
+    private ?array $settingsCache = null;
 
     public function settings(): array
     {
+        if ($this->settingsCache !== null) {
+            return $this->settingsCache;
+        }
+
         $values = DB::table('promethee_settings')
             ->whereIn('key', [
                 'pricing.bands.enabled',
@@ -29,7 +35,7 @@ class DemandProfileService
             ])
             ->pluck('value', 'key');
 
-        return [
+        return $this->settingsCache = [
             'enabled' => ($values['pricing.bands.enabled'] ?? '1') !== '0',
             'fares' => [
                 'bleu' => (float) ($values['pricing.bands.blue'] ?? 50),
@@ -118,6 +124,11 @@ class DemandProfileService
 
     public function profile(Aircraft $aircraft, Flight $flight, string $operationId): array
     {
+        $cacheKey = $operationId.'|'.$flight->id.'|'.$aircraft->id;
+        if (isset($this->profileCache[$cacheKey])) {
+            return $this->profileCache[$cacheKey];
+        }
+
         $settings = $this->settings();
         $band = $settings['enabled'] ? $this->bandForFlight($flight) : 'rouge';
         $range = $settings['loads'][$band];
@@ -145,7 +156,7 @@ class DemandProfileService
             ? min($capacity, max(0, (int) round($capacity * $load / 100)))
             : 0;
 
-        return [
+        return $this->profileCache[$cacheKey] = [
             'band' => $band,
             'band_label' => ucfirst($band),
             'fare_percent' => $settings['fares'][$band],
