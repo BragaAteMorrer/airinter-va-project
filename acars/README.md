@@ -52,6 +52,24 @@ dans les réponses API, les diagnostics Hermès ou les logs d'activité. Il faut
 
 Les positions et événements non envoyés sont conservés localement après une coupure. Après un redémarrage, le pilote doit explicitement reprendre le vol : l'application ne rattache jamais silencieusement des données à un ancien PIREP.
 
+### Moteur de phases Hermès
+
+`FlightTrackingEngine` est l'unique source de vérité des phases de vol :
+
+`BOARDING → PUSHBACK → TAXI_OUT → TAKEOFF → CLIMB → CRUISE → DESCENT → APPROACH → FINAL → LANDING → TAXI_IN → IN`.
+
+Les événements ACARS canoniques sont distincts de ces phases :
+
+- **OUT** : départ réel du poste, pas au clic sur Start Flight ;
+- **OFF** : transition sol → air au décollage ;
+- **ON** : touchdown confirmé après stabilisation, afin d'absorber les rebonds ;
+- **IN** : avion immobilisé au parking, frein de parc serré pendant 15 secondes.
+
+Une remise de gaz avant contact produit `GO_AROUND`. Un contact suivi d'un
+redécollage produit `TOUCH_AND_GO` et ne produit pas de faux `ON`. Lors
+d'une reprise après crash, la phase sauvegardée est restaurée au lieu de
+réinitialiser le vol à `ACARS_READY`.
+
 ## Créer la distribution Windows (.exe)
 
 Depuis PowerShell à la racine du dépôt :
