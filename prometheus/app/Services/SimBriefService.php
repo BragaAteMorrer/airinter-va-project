@@ -303,7 +303,7 @@ class SimBriefService extends Service
      * Get Aircraft and Airframe Data from SimBrief
      * Insert or Update relevant models, for proper and detailed flight planning
      */
-    public function getAircraftAndAirframes()
+    public function getAircraftAndAirframes(): bool
     {
         $url = config('phpvms.simbrief_airframes_url');
         $sbdata = Http::get($url);
@@ -341,16 +341,20 @@ class SimBriefService extends Service
                     'details' => json_encode($ac),
                 ]);
             }
-        } else {
-            Log::error('SimBrief | An Error Occured while trying to get aircraft and airframe data!');
+
+            return true;
         }
+
+        Log::error('SimBrief | An Error Occured while trying to get aircraft and airframe data!');
+
+        return false;
     }
 
     /**
      * Get OFP Layouts from SimBrief
      * Insert or Update relevant model for proper flight planning
      */
-    public function GetBriefingLayouts()
+    public function GetBriefingLayouts(): bool
     {
         $url = config('phpvms.simbrief_layouts_url');
         $sbdata = Http::get($url);
@@ -371,8 +375,12 @@ class SimBriefService extends Service
                     'name_long' => $sb['name_long'],
                 ]);
             }
-        } else {
-            Log::error('SimBrief | An Error Occured while trying to get layout data!');
+
+            return true;
         }
+
+        Log::error('SimBrief | An Error Occured while trying to get layout data!');
+
+        return false;
     }
 }
