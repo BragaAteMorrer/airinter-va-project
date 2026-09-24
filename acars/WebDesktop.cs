@@ -99,6 +99,8 @@ public sealed class PrometheeWindow : Window
             return await Datalink(uri);
         if (route == "/api/datalink/send")
             return await DatalinkSend(uri, body);
+        if (route == "/api/datalink/read")
+            return await DatalinkRead(uri, body);
         if (route == "/api/datalink/ack")
             return await DatalinkAck(uri, body);
         if (route.StartsWith("/api/v1/", StringComparison.Ordinal)) {
@@ -132,7 +134,7 @@ public sealed class PrometheeWindow : Window
         var value = body.Value;
         var message = value.TryGetProperty("body", out var text) ? text.GetString() ?? "" : "";
         var category = value.TryGetProperty("category", out var categoryValue) ? categoryValue.GetString() ?? "CREW" : "CREW";
-        var priority = value.TryGetProperty("priority", out var priorityValue) ? priorityValue.GetString() ?? "NORMAL" : "NORMAL";
+        var priority = value.TryGetProperty("priority", out var priorityValue) ? priorityValue.GetString() ?? "ROUTINE" : "ROUTINE";
         var requiresAck = value.TryGetProperty("requires_ack", out var ackValue)
             && ackValue.ValueKind is JsonValueKind.True or JsonValueKind.False
             && ackValue.GetBoolean();
@@ -141,6 +143,15 @@ public sealed class PrometheeWindow : Window
             : null;
 
         return await datalink.SendAsync(operationId, message, category, priority, requiresAck, replyTo);
+    }
+
+    private async Task<object> DatalinkRead(Uri uri, JsonElement? body)
+    {
+        var operationId = QueryParameter(uri, "operation");
+        if (!body.HasValue || body.Value.ValueKind != JsonValueKind.Object
+            || !body.Value.TryGetProperty("message_id", out var messageValue))
+            throw new InvalidOperationException("Message datalink à marquer comme lu manquant.");
+        return await datalink.MarkReadAsync(operationId, messageValue.GetString() ?? "");
     }
 
     private async Task<object> DatalinkAck(Uri uri, JsonElement? body)
