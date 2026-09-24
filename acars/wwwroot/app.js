@@ -38,6 +38,8 @@ let serverDispatch = null;
 let connected = false;
 let lastStatus = null;
 let lastFiledReview = null;
+let lastDatalinkSnapshot = null;
+let datalinkRefreshing = false;
 let readiness = { operation: false, aircraft: false, ofp: false, pirep: false, simulator: false };
 
 function setAuthenticated(value) {
@@ -98,6 +100,7 @@ $$('.tab').forEach(button => {
     $$('.tab,.panel').forEach(node => node.classList.remove('active'));
     button.classList.add('active');
     $('#' + button.dataset.tab).classList.add('active');
+    if (button.dataset.tab === 'datalink') refreshDatalink();
   };
 });
 
@@ -450,6 +453,8 @@ function addAircraftOption(select, aircraft) {
 async function selectOperation(operation) {
   selectedOperation = operation;
   selectedAircraft = operation.aircraft?.id ? operation.aircraft : null;
+  lastDatalinkSnapshot = null;
+  setTimeout(refreshDatalink, 0);
   updateWorkflow();
   $$('.operation').forEach(node => node.classList.remove('selected'));
   if (document.activeElement?.classList?.contains('operation')) document.activeElement.classList.add('selected');
@@ -867,6 +872,182 @@ $('#fileBtn').onclick = () => {
   renderReview(lastStatus?.review || lastStatus?.Review || lastFiledReview);
 };
 
+function currentDatalinkOperation() {
+  const activeFlight = lastStatus?.flight || lastStatus?.Flight;
+  return selectedOperation?.operation_id || selectedOperation?.operationId || selectedOperation?.id
+    || activeFlight?.operationId || activeFlight?.OperationId || null;
+}
+
+function datalinkRead(object, camel, pascal = camel) {
+  return object?.[camel] ?? object?.[pascal] ?? null;
+}
+
+function renderDatalink(snapshot) {
+  lastDatalinkSnapshot = snapshot || null;
+  const operationId = snapshot ? datalinkRead(snapshot, 'operationId', 'OperationId') : currentDatalinkOperation();
+  const messages = snapshot ? (datalinkRead(snapshot, 'messages', 'Messages') || []) : [];
+  const syncState = String(snapshot ? datalinkRead(snapshot, 'syncState', 'SyncState') || 'LOCAL' : 'STANDBY').toUpperCase();
+  const pendingOutbound = Number(snapshot ? datalinkRead(snapshot, 'pendingOutbound', 'PendingOutbound') || 0 : 0);
+  const pendingAcks = Number(snapshot ? datalinkRead(snapshot, 'pendingAcks', 'PendingAcks') || 0 : 0);
+  const requiredAcks = Number(snapshot ? datalinkRead(snapshot, 'pendingRequiredAcks', 'PendingRequiredAcks') || 0 : 0);
+  const lastSync = snapshot ? datalinkRead(snapshot, 'lastSuccessfulSyncAt', 'LastSuccessfulSyncAt') : null;
+  const error = snapshot ? datalinkRead(snapshot, 'error', 'Error') : null;
+
+  setText($('#datalinkOperation'), operationId || '—');
+  setText($('#datalinkLastSync'), lastSync ? new Date(lastSync).toLocaleTimeString('fr-FR', { timeZone: localSettings.timeFormat === 'utc' ? 'UTC' : undefined }) : '—');
+  setText($('#datalinkPending'), String(pendingOutbound + pendingAcks));
+  const state = $('#datalinkState');
+  if (state) {
+    state.textContent = syncState;
+    state.classList.toggle('ready', syncState === 'SYNCED');
+  }
+  const badge = $('#datalinkBadge');
+  if (badge) {
+    badge.hidden = requiredAcks <= 0;
+    badge.textContent = String(requiredAcks);
+  }
+
+  const list = $('#datalinkMessages');
+  list.replaceChildren();
+  if (!operationId) {
+    const empty = document.createElement('p');
+    empty.className = 'empty';
+    empty.textContent = 'Sélectionnez une opération Air Inter.';
+    list.append(empty);
+  } else if (!messages.length) {
+    const empty = document.createElement('p');
+    empty.className = 'empty';
+    empty.textContent = syncState === 'OFFLINE' ? 'Aucun message local. Prométhée est hors ligne.' : 'Aucun message datalink pour cette opération.';
+    list.append(empty);
+  } else {
+    messages.forEach(message => {
+      const id = datalinkRead(message, 'id', 'Id');
+      const direction = String(datalinkRead(message, 'direction', 'Direction') || '');
+      const priority = String(datalinkRead(message, 'priority', 'Priority') || 'NORMAL');
+      const category = String(datalinkRead(message, 'category', 'Category') || 'OPS');
+      const sender = datalinkRead(message, 'senderLabel', 'SenderLabel') || (direction === 'OPS_TO_COCKPIT' ? 'AIR INTER OPS' : 'COCKPIT');
+      const body = datalinkRead(message, 'body', 'Body') || '';
+      const createdAt = datalinkRead(message, 'createdAt', 'CreatedAt');
+      const requiresAck = Boolean(datalinkRead(message, 'requiresAck', 'RequiresAck'));
+      const acknowledgedAt = datalinkRead(message, 'acknowledgedAt', 'AcknowledgedAt');
+      const status = String(datalinkRead(message, 'status', 'Status') || 'SENT');
+      const localPending = Boolean(datalinkRead(message, 'localPending', 'LocalPending'));
+
+      const item = document.createElement('article');
+      item.className = 'datalink-message ' + (direction === 'OPS_TO_COCKPIT' ? 'incoming' : 'outgoing') + ' priority-' + priority.toLowerCase();
+      const header = document.createElement('header');
+      const meta = document.createElement('div');
+      const source = document.createElement('strong');
+      source.textContent = sender;
+      const tags = document.createElement('span');
+      const time = createdAt ? new Date(createdAt).toLocaleTimeString('fr-FR', { timeZone: localSettings.timeFormat === 'utc' ? 'UTC' : undefined }) : '—';
+      tags.textContent = category + ' · ' + priority + ' · ' + time;
+      meta.append(source, tags);
+      const statusNode = document.createElement('em');
+      statusNode.textContent = localPending ? 'QUEUED' : (acknowledgedAt ? 'ACK' : status);
+      header.append(meta, statusNode);
+      const text = document.createElement('p');
+      text.textContent = body;
+      const actions = document.createElement('div');
+      actions.className = 'datalink-message-actions';
+
+      if (direction === 'OPS_TO_COCKPIT' && requiresAck && !acknowledgedAt) {
+        const ack = document.createElement('button');
+        ack.type = 'button';
+        ack.textContent = status === 'ACK_QUEUED' ? 'ACK en file' : 'ACK';
+        ack.disabled = status === 'ACK_QUEUED';
+        ack.onclick = () => acknowledgeDatalink(id);
+        actions.append(ack);
+      }
+      if (direction === 'OPS_TO_COCKPIT' && !localPending) {
+        const reply = document.createElement('button');
+        reply.type = 'button';
+        reply.textContent = 'Répondre';
+        reply.onclick = () => prepareDatalinkReply(id, sender);
+        actions.append(reply);
+      }
+
+      item.append(header, text);
+      if (actions.childElementCount) item.append(actions);
+      list.append(item);
+    });
+  }
+
+  const form = $('#datalinkForm');
+  if (form) form.querySelector('button[type="submit"]').disabled = !operationId;
+  showMessage('#datalinkMessage', error || '', Boolean(error && syncState !== 'OFFLINE'));
+}
+
+async function refreshDatalink() {
+  const operationId = currentDatalinkOperation();
+  if (!connected || !operationId || datalinkRefreshing) {
+    if (!operationId) renderDatalink(null);
+    return;
+  }
+  datalinkRefreshing = true;
+  try {
+    const snapshot = await call('/api/datalink?operation=' + encodeURIComponent(operationId));
+    renderDatalink(snapshot);
+  } catch (error) {
+    showMessage('#datalinkMessage', error.message, true);
+  } finally {
+    datalinkRefreshing = false;
+  }
+}
+
+async function acknowledgeDatalink(messageId) {
+  const operationId = currentDatalinkOperation();
+  if (!operationId) return;
+  try {
+    const snapshot = await call('/api/datalink/ack?operation=' + encodeURIComponent(operationId), { message_id: messageId });
+    renderDatalink(snapshot);
+  } catch (error) {
+    showMessage('#datalinkMessage', error.message, true);
+  }
+}
+
+function prepareDatalinkReply(messageId, sender) {
+  const form = $('#datalinkForm');
+  form.elements.reply_to.value = messageId || '';
+  $('#datalinkCancelReplyBtn').hidden = false;
+  form.elements.body.placeholder = 'Réponse à ' + (sender || 'OPS') + '…';
+  form.elements.body.focus();
+}
+
+$('#datalinkCancelReplyBtn').onclick = () => {
+  const form = $('#datalinkForm');
+  form.elements.reply_to.value = '';
+  form.elements.body.placeholder = 'Message à Air Inter OPS…';
+  $('#datalinkCancelReplyBtn').hidden = true;
+};
+
+$('#datalinkRefreshBtn').onclick = refreshDatalink;
+$('#datalinkForm').onsubmit = async event => {
+  event.preventDefault();
+  const operationId = currentDatalinkOperation();
+  if (!operationId) return showMessage('#datalinkMessage', 'Sélectionnez une opération Air Inter.', true);
+  const form = event.currentTarget;
+  const body = {
+    body: form.elements.body.value.trim(),
+    category: form.elements.category.value,
+    priority: form.elements.priority.value,
+    requires_ack: form.elements.requires_ack.checked,
+    reply_to: form.elements.reply_to.value || null
+  };
+  try {
+    const snapshot = await call('/api/datalink/send?operation=' + encodeURIComponent(operationId), body);
+    renderDatalink(snapshot);
+    form.elements.body.value = '';
+    form.elements.reply_to.value = '';
+    form.elements.requires_ack.checked = false;
+    $('#datalinkCancelReplyBtn').hidden = true;
+    const queued = Number(datalinkRead(snapshot, 'pendingOutbound', 'PendingOutbound') || 0);
+    showMessage('#datalinkMessage', queued ? 'Message conservé dans la file locale ; Hermès le renverra automatiquement.' : 'Message transmis à Air Inter OPS.');
+  } catch (error) {
+    showMessage('#datalinkMessage', error.message, true);
+  }
+};
+
 function drawMap(track) {
   const canvas = $('#flightMap');
   const context = canvas.getContext('2d');
@@ -1203,6 +1384,7 @@ updateWorkflow();
 drawMap([]);
 refreshStatus();
 setInterval(refreshStatus, 1000);
+setInterval(refreshDatalink, 5000);
 call('/api/about').then(info => {
   setText($('#build'), 'Version ' + info.version);
 }).catch(() => setText($('#build'), 'Version inconnue'));
