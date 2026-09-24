@@ -164,7 +164,7 @@
     <section id="journal" class="panel"><h2>Journal opérationnel</h2><p class="hint">Événements ACARS enregistrés localement et conservés durant une reprise de vol.</p><div id="journalEntries" class="timeline"><p class="empty">En attente d’un vol.</p></div></section>
     <section id="datalink" class="panel">
       <div class="workspace-title">
-        <div><span class="kicker">AIR INTER DATALINK</span><h2>OPS / Cockpit</h2><p class="hint">Messages opérationnels liés à l'opération sélectionnée. Les envois et ACK sont conservés localement en cas de coupure.</p></div>
+        <div><span class="kicker">AIR INTER DATALINK</span><h2>OPS / Cockpit</h2><p class="hint">Messages opérationnels liés à l'opération sélectionnée. Envois, lecture et ACK sont conservés localement en cas de coupure.</p></div>
         <strong id="datalinkState" class="ready-state">STANDBY</strong>
       </div>
       <div class="datalink-toolbar">
@@ -177,7 +177,7 @@
       <form id="datalinkForm" class="datalink-compose">
         <div class="datalink-compose-meta">
           <label><span>Type</span><select name="category"><option value="CREW">Crew</option><option value="DISPATCH">Dispatch</option><option value="WEATHER">Weather</option><option value="OPS">Ops</option></select></label>
-          <label><span>Priorité</span><select name="priority"><option value="NORMAL">Normal</option><option value="HIGH">High</option><option value="URGENT">Urgent</option></select></label>
+          <label><span>Priorité</span><select name="priority"><option value="ROUTINE">Routine</option><option value="ADVISORY">Advisory</option><option value="IMPORTANT">Important</option><option value="URGENT">Urgent</option></select></label>
           <label class="inline-check"><input type="checkbox" name="requires_ack" value="true"> Demander un ACK</label>
         </div>
         <label><span>Message</span><textarea name="body" maxlength="2000" rows="4" placeholder="Message à Air Inter OPS…" required></textarea></label>

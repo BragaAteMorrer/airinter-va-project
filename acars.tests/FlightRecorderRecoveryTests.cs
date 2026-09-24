@@ -52,7 +52,7 @@ public sealed class FlightRecorderRecoveryTests
         recorder.RecordLocalOperationalEvent("SIMULATOR_LOST", at.AddMinutes(1));
         recorder.RecordLocalOperationalEvent("SIMULATOR_LOST", at.AddMinutes(1));
 
-        Assert.Single(recorder.Flight!.Journal.Where(x => x.Name == "SIMULATOR_LOST"));
+        Assert.Single(recorder.Flight!.Journal, x => x.Name == "SIMULATOR_LOST");
 
         var recovered = new FlightRecorder(folder);
         Assert.Contains(recovered.Flight!.Journal, x => x.Name == "SIMULATOR_LOST");

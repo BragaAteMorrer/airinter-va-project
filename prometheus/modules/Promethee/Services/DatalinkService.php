@@ -6,40 +6,51 @@ use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
- * Lightweight datalink store for Hermès.
+ * Hermès operational datalink store.
  *
- * Deliberately file-backed for Lot 5: no phpVMS/Prométhée database migration is
- * required. The future Dispatcher UI can consume this service without changing
- * the pilot-facing protocol.
+ * Contract v2 keeps the Lot 5 local-first/idempotent transport while adding
+ * real recipient lifecycle semantics: SENT -> DELIVERED -> READ -> ACKNOWLEDGED.
+ * Legacy NORMAL/HIGH priorities remain accepted and are normalized server-side.
  */
 class DatalinkService
 {
     private const MAX_MESSAGES = 500;
+    private const PRIORITY_ALIASES = [
+        'NORMAL' => 'ROUTINE',
+        'HIGH' => 'IMPORTANT',
+    ];
+    private const PRIORITIES = ['ROUTINE', 'ADVISORY', 'IMPORTANT', 'URGENT'];
 
     public function __construct(private readonly ?string $root = null) {}
 
-    public function list(string $operationId, int $pilotId): array
+    public function list(string $operationId, int $pilotId, ?string $recipientDirection = null): array
     {
-        $messages = array_values(array_filter(
-            $this->read($operationId),
-            fn (array $message) => (int) ($message['pilot_id'] ?? 0) === $pilotId
-        ));
+        if ($recipientDirection !== null) {
+            return $this->mutate($operationId, function (array &$messages) use ($operationId, $pilotId, $recipientDirection) {
+                $now = now()->toIso8601String();
+                foreach ($messages as &$message) {
+                    $message = $this->normalizeStoredMessage($message);
+                    if ((int) ($message['pilot_id'] ?? 0) !== $pilotId
+                        || ($message['direction'] ?? null) !== $recipientDirection) {
+                        continue;
+                    }
 
-        usort($messages, fn (array $a, array $b) => strcmp(
-            (string) ($a['created_at'] ?? ''),
-            (string) ($b['created_at'] ?? '')
-        ));
+                    if (blank($message['delivered_at'] ?? null)) {
+                        $message['delivered_at'] = $now;
+                        if (($message['status'] ?? 'SENT') === 'SENT') $message['status'] = 'DELIVERED';
+                    }
+                }
+                unset($message);
 
-        return [
-            'contract_version' => '1.0',
-            'operation_id' => $operationId,
-            'messages' => $messages,
-            'pending_ack_count' => count(array_filter($messages, fn (array $message) =>
-                ($message['direction'] ?? null) === 'OPS_TO_COCKPIT'
-                && ($message['requires_ack'] ?? false)
-                && blank($message['acknowledged_at'] ?? null)
-            )),
-        ];
+                return $this->snapshot($operationId, $pilotId, $messages);
+            });
+        }
+
+        $messages = array_map(
+            fn (array $message) => $this->normalizeStoredMessage($message),
+            $this->read($operationId)
+        );
+        return $this->snapshot($operationId, $pilotId, $messages);
     }
 
     public function send(
@@ -63,32 +74,67 @@ class DatalinkService
                     if (($existing['client_message_id'] ?? null) === $clientMessageId
                         && (int) ($existing['pilot_id'] ?? 0) === $pilotId
                         && ($existing['direction'] ?? null) === $direction) {
-                        return $existing;
+                        return $this->normalizeStoredMessage($existing);
                     }
                 }
             }
 
+            $createdAt = now()->toIso8601String();
             $message = [
                 'id' => (string) Str::uuid(),
                 'operation_id' => $operationId,
                 'pilot_id' => $pilotId,
                 'direction' => $direction,
-                'category' => $category,
-                'priority' => $priority,
+                'category' => strtoupper(trim($category)),
+                'priority' => $this->normalizePriority($priority),
                 'body' => trim($body),
                 'requires_ack' => $requiresAck,
                 'status' => 'SENT',
                 'sender_label' => trim($senderLabel),
                 'client_message_id' => $clientMessageId,
                 'reply_to' => $replyTo,
-                'created_at' => now()->toIso8601String(),
+                'created_at' => $createdAt,
+                'sent_at' => $createdAt,
+                'delivered_at' => null,
+                'read_at' => null,
                 'acknowledged_at' => null,
             ];
 
             $messages[] = $message;
             $messages = $this->trimMessages($messages);
-
             return $message;
+        });
+    }
+
+    public function markRead(
+        string $operationId,
+        int $pilotId,
+        string $messageId,
+        string $recipientDirection
+    ): array {
+        return $this->mutate($operationId, function (array &$messages) use (
+            $pilotId, $messageId, $recipientDirection
+        ) {
+            foreach ($messages as &$message) {
+                $message = $this->normalizeStoredMessage($message);
+                if (($message['id'] ?? null) !== $messageId
+                    || (int) ($message['pilot_id'] ?? 0) !== $pilotId) {
+                    continue;
+                }
+
+                if (($message['direction'] ?? null) !== $recipientDirection) {
+                    throw new RuntimeException('Ce message ne peut pas être marqué comme lu par ce destinataire.');
+                }
+
+                $now = now()->toIso8601String();
+                $message['delivered_at'] ??= $now;
+                $message['read_at'] ??= $now;
+                if (blank($message['acknowledged_at'] ?? null)) $message['status'] = 'READ';
+                return $message;
+            }
+            unset($message);
+
+            throw new RuntimeException('Message datalink introuvable.');
         });
     }
 
@@ -102,6 +148,7 @@ class DatalinkService
             $pilotId, $messageId, $recipientDirection
         ) {
             foreach ($messages as &$message) {
+                $message = $this->normalizeStoredMessage($message);
                 if (($message['id'] ?? null) !== $messageId
                     || (int) ($message['pilot_id'] ?? 0) !== $pilotId) {
                     continue;
@@ -111,11 +158,12 @@ class DatalinkService
                     throw new RuntimeException('Ce message ne peut pas être acquitté par ce destinataire.');
                 }
 
-                if (!($message['requires_ack'] ?? false)) {
-                    return $message;
-                }
+                if (!($message['requires_ack'] ?? false)) return $message;
 
-                $message['acknowledged_at'] ??= now()->toIso8601String();
+                $now = now()->toIso8601String();
+                $message['delivered_at'] ??= $now;
+                $message['read_at'] ??= $now;
+                $message['acknowledged_at'] ??= $now;
                 $message['status'] = 'ACKNOWLEDGED';
                 return $message;
             }
@@ -125,13 +173,65 @@ class DatalinkService
         });
     }
 
+    private function snapshot(string $operationId, int $pilotId, array $allMessages): array
+    {
+        $messages = array_values(array_filter(
+            $allMessages,
+            fn (array $message) => (int) ($message['pilot_id'] ?? 0) === $pilotId
+        ));
+
+        usort($messages, fn (array $a, array $b) => strcmp(
+            (string) ($a['created_at'] ?? ''),
+            (string) ($b['created_at'] ?? '')
+        ));
+
+        return [
+            'contract_version' => '2.0',
+            'operation_id' => $operationId,
+            'messages' => $messages,
+            'unread_count' => count(array_filter($messages, fn (array $message) =>
+                ($message['direction'] ?? null) === 'OPS_TO_COCKPIT'
+                && blank($message['read_at'] ?? null)
+            )),
+            'pending_ack_count' => count(array_filter($messages, fn (array $message) =>
+                ($message['direction'] ?? null) === 'OPS_TO_COCKPIT'
+                && ($message['requires_ack'] ?? false)
+                && blank($message['acknowledged_at'] ?? null)
+            )),
+        ];
+    }
+
+    private function normalizeStoredMessage(array $message): array
+    {
+        $message['priority'] = $this->normalizePriority((string) ($message['priority'] ?? 'ROUTINE'));
+        $message['sent_at'] ??= $message['created_at'] ?? null;
+        $message['delivered_at'] ??= null;
+        $message['read_at'] ??= null;
+        $message['acknowledged_at'] ??= null;
+
+        if (!blank($message['acknowledged_at'])) $message['status'] = 'ACKNOWLEDGED';
+        elseif (!blank($message['read_at'])) $message['status'] = 'READ';
+        elseif (!blank($message['delivered_at'])) $message['status'] = 'DELIVERED';
+        else $message['status'] = 'SENT';
+
+        return $message;
+    }
+
+    private function normalizePriority(string $priority): string
+    {
+        $priority = strtoupper(trim($priority));
+        $priority = self::PRIORITY_ALIASES[$priority] ?? $priority;
+        return in_array($priority, self::PRIORITIES, true) ? $priority : 'ROUTINE';
+    }
+
     private function trimMessages(array $messages): array
     {
         if (count($messages) <= self::MAX_MESSAGES) return array_values($messages);
 
         $protected = [];
         foreach ($messages as $message) {
-            if (($message['requires_ack'] ?? false) && blank($message['acknowledged_at'] ?? null)) {
+            if ((($message['requires_ack'] ?? false) && blank($message['acknowledged_at'] ?? null))
+                || blank($message['read_at'] ?? null)) {
                 $protected[(string) ($message['id'] ?? '')] = true;
             }
         }

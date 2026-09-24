@@ -13,7 +13,7 @@ use RuntimeException;
 class DatalinkController extends Controller
 {
     private const CATEGORIES = ['OPS', 'DISPATCH', 'WEATHER', 'SYSTEM', 'CREW'];
-    private const PRIORITIES = ['NORMAL', 'HIGH', 'URGENT'];
+    private const PRIORITIES = ['ROUTINE', 'ADVISORY', 'IMPORTANT', 'URGENT', 'NORMAL', 'HIGH'];
 
     public function __construct(
         private readonly DatalinkService $datalink,
@@ -25,7 +25,11 @@ class DatalinkController extends Controller
         $bid = $this->pilotBid($operation, $request);
 
         return response()->json(['data' =>
-            $this->datalink->list($this->operationIdentity->id($bid), (int) $request->user()->id)
+            $this->datalink->list(
+                $this->operationIdentity->id($bid),
+                (int) $request->user()->id,
+                'OPS_TO_COCKPIT'
+            )
         ]);
     }
 
@@ -48,7 +52,7 @@ class DatalinkController extends Controller
             (int) $user->id,
             'COCKPIT_TO_OPS',
             $data['category'] ?? 'CREW',
-            $data['priority'] ?? 'NORMAL',
+            $data['priority'] ?? 'ROUTINE',
             $data['body'],
             (bool) ($data['requires_ack'] ?? false),
             $sender,
@@ -57,6 +61,24 @@ class DatalinkController extends Controller
         );
 
         return response()->json(['data' => ['message' => $message]], 201);
+    }
+
+    public function read(string $operation, string $message, Request $request)
+    {
+        $bid = $this->pilotBid($operation, $request);
+
+        try {
+            $updated = $this->datalink->markRead(
+                $this->operationIdentity->id($bid),
+                (int) $request->user()->id,
+                $message,
+                'OPS_TO_COCKPIT'
+            );
+        } catch (RuntimeException $exception) {
+            abort(409, $exception->getMessage());
+        }
+
+        return response()->json(['data' => ['message' => $updated]]);
     }
 
     public function acknowledge(string $operation, string $message, Request $request)
@@ -83,7 +105,11 @@ class DatalinkController extends Controller
         $bid = $this->adminBid($data['operation']);
 
         return response()->json(['data' =>
-            $this->datalink->list($this->operationIdentity->id($bid), (int) $bid->user_id)
+            $this->datalink->list(
+                $this->operationIdentity->id($bid),
+                (int) $bid->user_id,
+                'COCKPIT_TO_OPS'
+            )
         ]);
     }
 
@@ -106,7 +132,7 @@ class DatalinkController extends Controller
             (int) $bid->user_id,
             'OPS_TO_COCKPIT',
             $data['category'] ?? 'OPS',
-            $data['priority'] ?? 'NORMAL',
+            $data['priority'] ?? 'ROUTINE',
             $data['body'],
             (bool) ($data['requires_ack'] ?? true),
             $data['sender_label'] ?? 'AIR INTER OPS',
@@ -115,6 +141,25 @@ class DatalinkController extends Controller
         );
 
         return response()->json(['data' => ['message' => $message]], 201);
+    }
+
+    public function adminRead(string $message, Request $request)
+    {
+        $data = $request->validate(['operation' => 'required|string|max:128']);
+        $bid = $this->adminBid($data['operation']);
+
+        try {
+            $updated = $this->datalink->markRead(
+                $this->operationIdentity->id($bid),
+                (int) $bid->user_id,
+                $message,
+                'COCKPIT_TO_OPS'
+            );
+        } catch (RuntimeException $exception) {
+            abort(409, $exception->getMessage());
+        }
+
+        return response()->json(['data' => ['message' => $updated]]);
     }
 
     public function adminAcknowledge(string $message, Request $request)

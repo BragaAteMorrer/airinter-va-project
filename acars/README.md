@@ -176,6 +176,39 @@ redécollage produit `TOUCH_AND_GO` et ne produit pas de faux `ON`. Lors
 d'une reprise après crash, la phase sauvegardée est restaurée au lieu de
 réinitialiser le vol à `ACARS_READY`.
 
+## Hermès Datalink v2
+
+Le Datalink est un transport opérationnel lié à une opération Air Inter. Hermès
+conserve localement les messages sortants, reçus de lecture et ACK tant que
+Prométhée n'a pas confirmé leur traitement.
+
+Catégories : `OPS`, `DISPATCH`, `WEATHER`, `SYSTEM`, `CREW`.
+
+Priorités canoniques :
+
+- `ROUTINE`
+- `ADVISORY`
+- `IMPORTANT`
+- `URGENT`
+
+Les anciennes valeurs `NORMAL` et `HIGH` restent acceptées pendant la
+transition et sont normalisées respectivement vers `ROUTINE` et
+`IMPORTANT`.
+
+Cycle serveur d'un message :
+
+```
+QUEUED (local Hermès)
+  -> SENT
+  -> DELIVERED
+  -> READ
+  -> ACKNOWLEDGED   (uniquement lorsqu'un ACK est demandé)
+```
+
+`DELIVERED` signifie que le destinataire a récupéré le message depuis
+Prométhée. `READ` est un reçu explicite distinct de l'ACK. Un ACK implique
+également la lecture côté serveur.
+
 ## Créer la distribution Windows (.exe)
 
 Depuis PowerShell à la racine du dépôt :
