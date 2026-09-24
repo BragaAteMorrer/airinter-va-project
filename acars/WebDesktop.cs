@@ -91,7 +91,7 @@ public sealed class PrometheeWindow : Window
             "/api/status" => Status(), "/api/about" => About(), "/api/login" => await Login(body),
             "/api/start" => Start(body), "/api/pause" => Pause(), "/api/resume" => Resume(),
             "/api/recovery" => Recovery(), "/api/recovery/resume" => ResumeRecovery(), "/api/recovery/abandon" => AbandonRecovery(),
-            "/api/sync" => new { sent=await telemetry.SyncNow() }, "/api/report" => Report(), "/api/file" => await File(),
+            "/api/sync" => new { sent=await telemetry.SyncNow() }, "/api/report" => Report(), "/api/review" => recorder.GetReview() ?? throw new InvalidOperationException("Aucun vol en cours."), "/api/file" => await File(),
             "/api/history" => recorder.History, "/api/diagnostics" => Diagnostics(), "/api/update/check" => await CheckUpdateStatusAsync(), "/api/open-external" => OpenExternal(body),
             _ => throw new InvalidOperationException("Commande ACARS inconnue.") };
     }
@@ -140,6 +140,7 @@ public sealed class PrometheeWindow : Window
         simRecoveredAt=sim.RecoveredAt,
         latest=sim.LatestSnapshot,
         flight=recorder.Flight,
+        review=recorder.GetReview(),
         track=recorder.Track,
         pending=recorder.Pending.Count+recorder.PendingEvents.Count,
         recoveryAvailable=recorder.RecoveryAvailable,
@@ -161,7 +162,7 @@ public sealed class PrometheeWindow : Window
         simulator=sim.Status, detectedSimulators=SimulatorDetector.DetectRunning(),
         activeConnector=sim.Active?.Descriptor, connectors=sim.Connectors,
         simLinkState=sim.LinkState, simLostAt=sim.LostAt, simRecoveredAt=sim.RecoveredAt,
-        latest=sim.LatestSnapshot, flight=recorder.Flight,
+        latest=sim.LatestSnapshot, flight=recorder.Flight, review=recorder.GetReview(),
         pendingPositions=recorder.Pending.Count, pendingEvents=recorder.PendingEvents.Count,
         syncState=telemetry.SyncState, lastSuccessfulSyncAt=telemetry.LastSuccessfulSyncAt,
         nextSyncAttemptAt=telemetry.NextSyncAttemptAt, syncFailures=telemetry.ConsecutiveFailures,
@@ -215,6 +216,8 @@ public sealed class PrometheeWindow : Window
         flight = recorder.RecoveryAvailable ? recorder.Flight : null,
         timeline = recorder.RecoveryAvailable ? recorder.Flight?.Timeline : null,
         journal = recorder.RecoveryAvailable ? recorder.Flight?.Journal : null,
+        observations = recorder.RecoveryAvailable ? recorder.Flight?.Observations : null,
+        review = recorder.RecoveryAvailable ? recorder.GetReview() : null,
         track = recorder.RecoveryAvailable ? recorder.Track : []
     };
 
@@ -233,7 +236,25 @@ public sealed class PrometheeWindow : Window
         return new { ok = true, archived = true };
     }
 
-    private object Report() { var f=recorder.Flight ?? throw new InvalidOperationException("Aucun vol en cours."); return new {phase=f.Phase,distance=f.Distance,airborneMinutes=(int)Math.Round(f.AirborneSeconds/60)}; }
-    private async Task<object> File() { await TelemetryService.SendPending(client, recorder); var f=recorder.Flight ?? throw new InvalidOperationException("Aucun vol en cours."); if (f.Phase != "IN") throw new InvalidOperationException("Attendez l’arrivée au parking avant de déposer le PIREP."); await client.Send($"pireps/{Uri.EscapeDataString(f.PirepId)}/file", new { distance=Math.Round(f.Distance,2), flight_time=Math.Max(1,(int)Math.Round(f.AirborneSeconds/60)), fuel_used=Math.Round(f.FuelUsed), block_time=Math.Max(1,(int)Math.Round(((f.BlockOn ?? DateTimeOffset.UtcNow)-f.BlockOff!.Value).TotalMinutes)), block_off_time=f.BlockOff, block_on_time=f.BlockOn, created_at=f.BlockOn, landing_rate=f.LandingRate }); recorder.Complete(); return new {ok=true}; }
+    private object Report() => recorder.GetReview() ?? throw new InvalidOperationException("Aucun vol en cours.");
+    private async Task<object> File()
+    {
+        await TelemetryService.SendPending(client, recorder);
+        var f = recorder.Flight ?? throw new InvalidOperationException("Aucun vol en cours.");
+        if (f.Phase != "IN") throw new InvalidOperationException("Attendez l’arrivée au parking avant de déposer le PIREP.");
+        var review = recorder.GetReview() ?? throw new InvalidOperationException("Flight Review indisponible.");
+        await client.Send($"pireps/{Uri.EscapeDataString(f.PirepId)}/file", new {
+            distance=Math.Round(f.Distance,2),
+            flight_time=Math.Max(1,(int)Math.Round(f.AirborneSeconds/60)),
+            fuel_used=Math.Round(f.FuelUsed),
+            block_time=Math.Max(1,(int)Math.Round(((f.BlockOn ?? DateTimeOffset.UtcNow)-f.BlockOff!.Value).TotalMinutes)),
+            block_off_time=f.BlockOff,
+            block_on_time=f.BlockOn,
+            created_at=f.BlockOn,
+            landing_rate=f.LandingRate
+        });
+        recorder.Complete();
+        return new { ok=true, review };
+    }
     private static string UserMessage(Exception e) => e is InvalidOperationException ? e.Message : "Une erreur inattendue est survenue. Réessayez plus tard.";
 }
