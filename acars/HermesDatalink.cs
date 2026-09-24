@@ -49,6 +49,18 @@ internal sealed record DatalinkStoreState(
     List<PendingDatalinkSend>? Outbox = null,
     List<PendingDatalinkAck>? Acks = null);
 
+public interface IDatalinkTransport
+{
+    bool Connected { get; }
+    Task<JsonElement> Send(string path, object? body = null);
+}
+
+public sealed class PhpVmsDatalinkTransport(PhpVmsClient client) : IDatalinkTransport
+{
+    public bool Connected => transport.Connected;
+    public Task<JsonElement> Send(string path, object? body = null) => transport.Send(path, body);
+}
+
 /// <summary>
 /// Local-first Hermès datalink. Outbound messages and acknowledgements are
 /// persisted before network I/O, making retries idempotent through
@@ -56,7 +68,7 @@ internal sealed record DatalinkStoreState(
 /// </summary>
 public sealed class HermesDatalink
 {
-    private readonly PhpVmsClient client;
+    private readonly IDatalinkTransport transport;
     private readonly string folder;
     private readonly object gate = new();
     private List<DatalinkMessage> messages = [];
@@ -67,8 +79,13 @@ public sealed class HermesDatalink
     public string? LastError { get; private set; }
 
     public HermesDatalink(PhpVmsClient client, string? storageFolder = null)
+        : this(new PhpVmsDatalinkTransport(client), storageFolder)
     {
-        this.client = client;
+    }
+
+    public HermesDatalink(IDatalinkTransport transport, string? storageFolder = null)
+    {
+        this.transport = transport;
         folder = storageFolder ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "AirInter", "Promethee");
@@ -78,13 +95,13 @@ public sealed class HermesDatalink
 
     public DatalinkSnapshot Local(string operationId)
     {
-        lock (gate) return Snapshot(operationId, client.Connected ? "LOCAL" : "OFFLINE");
+        lock (gate) return Snapshot(operationId, transport.Connected ? "LOCAL" : "OFFLINE");
     }
 
     public async Task<DatalinkSnapshot> SyncAsync(string operationId)
     {
         ValidateOperation(operationId);
-        if (!client.Connected) {
+        if (!transport.Connected) {
             LastError = "Prométhée hors ligne — messages conservés localement.";
             return Local(operationId);
         }
@@ -93,7 +110,7 @@ public sealed class HermesDatalink
             await FlushOutbox(operationId);
             await FlushAcks(operationId);
 
-            var payload = await client.Send($"v1/operations/{Uri.EscapeDataString(operationId)}/datalink");
+            var payload = await transport.Send($"v1/operations/{Uri.EscapeDataString(operationId)}/datalink");
             MergeServerPayload(payload);
             LastSuccessfulSyncAt = DateTimeOffset.UtcNow;
             LastError = null;
@@ -167,7 +184,7 @@ public sealed class HermesDatalink
             if (message.Direction != "OPS_TO_COCKPIT")
                 throw new InvalidOperationException("Seuls les messages reçus d’OPS peuvent être acquittés.");
             if (!message.RequiresAck || message.AcknowledgedAt is not null)
-                return Snapshot(operationId, client.Connected ? "LOCAL" : "OFFLINE");
+                return Snapshot(operationId, transport.Connected ? "LOCAL" : "OFFLINE");
 
             if (!pendingAcks.Any(x => x.OperationId == operationId && x.MessageId == messageId))
                 pendingAcks.Add(new(operationId, messageId, DateTimeOffset.UtcNow));
@@ -185,7 +202,7 @@ public sealed class HermesDatalink
 
         foreach (var item in pending)
         {
-            var response = await client.Send(
+            var response = await transport.Send(
                 $"v1/operations/{Uri.EscapeDataString(operationId)}/datalink",
                 new {
                     body = item.Body,
@@ -215,7 +232,7 @@ public sealed class HermesDatalink
 
         foreach (var item in pending)
         {
-            var response = await client.Send(
+            var response = await transport.Send(
                 $"v1/operations/{Uri.EscapeDataString(operationId)}/datalink/{Uri.EscapeDataString(item.MessageId)}/ack",
                 new { });
 
