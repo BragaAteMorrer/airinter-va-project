@@ -68,8 +68,6 @@ public sealed class FlightRecorder
                 Flight = saved?.Flight; Pending = saved?.Pending ?? []; PendingEvents = saved?.PendingEvents ?? [];
                 PendingFacts = saved?.PendingFacts ?? [];
                 Track = saved?.Track ?? [];
-                if (Flight?.OperationId is not null && PendingFacts.Count == 0 && Flight.Observations.Count > 0)
-                    PendingFacts = Flight.Observations.Select(x => new SopFactEnvelope(Guid.NewGuid(), x)).ToList();
                 if (Flight is not null) {
                     Flight = Flight with { Recording = false };
                     recoveryRequired = true;
@@ -200,15 +198,6 @@ public sealed class FlightRecorder
                 Warning = "Interruption de télémétrie : durée et consommation peuvent être incomplètes.";
             }
         }
-
-        if (Flight.Phase is "PUSHBACK" or "TAXI_OUT" or "TAXI_IN"
-            && snapshot.OnGround == true
-            && snapshot.GroundSpeedKnots is { } taxiGs
-            && taxiGs > Rules.TaxiSpeed)
-            AddIssue(s, "TAXI_OVERSPEED", $"Vitesse sol excessive au roulage : {taxiGs:0} kt.");
-
-        if (Flight.Phase == "FINAL" && snapshot.GearDown == false)
-            AddIssue(s, "GEAR_UP_FINAL", "Train rentré en finale.");
 
         if (lastQueuedAt is null || s.RecordedAt - lastQueuedAt >= positionInterval) {
             QueuePosition(s, snapshot);
@@ -369,13 +358,6 @@ public sealed class FlightRecorder
                 Flight = Flight with { Timeline = [.. Flight.Timeline, new(fact.OccurredAt, fact.Type)] };
 
             QueueEvent(fact, current);
-
-            if (fact.Type == "TOUCHDOWN" && fact.Value is { } rate && Math.Abs(rate) >= Rules.HardLandingRate)
-                AddIssue(current with {
-                    RecordedAt = fact.OccurredAt,
-                    Lat = fact.Snapshot.Latitude ?? current.Lat,
-                    Lon = fact.Snapshot.Longitude ?? current.Lon
-                }, "HARD_LANDING", $"Atterrissage dur : {Math.Abs(rate):0} ft/min.");
 
             if (fact.Type is "OUT" or "OFF" or "ON" or "IN")
                 QueuePosition(fact.Snapshot, current);
