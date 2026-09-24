@@ -23,7 +23,7 @@ public sealed class SimulatorDetectionTests
         Assert.Contains(detected, x =>
             x.Kind == SimulatorKind.FlightSimulatorX
             && x.HasConnectorBoundary
-            && !x.TelemetryImplemented);
+            && x.TelemetryImplemented);
     }
 
     [Theory]
@@ -38,10 +38,10 @@ public sealed class SimulatorDetectionTests
     }
 
     [Fact]
-    public void Detection_does_not_claim_fsuipc_telemetry_before_protocol_validation()
+    public void Detection_reports_fsuipc_telemetry_implementation_for_classic_simulators()
     {
         var detected = SimulatorDetector.Detect(["fs9", "fsx", "Prepar3D"]);
-        Assert.All(detected, x => Assert.False(x.TelemetryImplemented));
+        Assert.All(detected, x => Assert.True(x.TelemetryImplemented));
     }
     [Fact]
     public void Connector_hub_distinguishes_temporary_loss_from_never_detected()

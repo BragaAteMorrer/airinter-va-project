@@ -22,10 +22,13 @@
 </ItemGroup>
 <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
   <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3065.39" />
+  <PackageReference Include="FSUIPCClientDLL" Version="3.3.16" />
+  <Compile Remove="FsuipcNativeSession.Stub.cs" />
   <Resource Include="assets\hermes.ico" />
 </ItemGroup>
 <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
   <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  <Compile Remove="FsuipcNativeSession.Windows.cs" />
 </ItemGroup>
 <ItemGroup>
   <!-- Build artifacts must never become web assets in the next single-file build. -->
