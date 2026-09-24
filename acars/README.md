@@ -42,6 +42,32 @@ sa sous-flotte. Les fenêtres contextuelles doivent être autorisées pour Herm�
 
 Les positions et événements non envoyés sont conservés localement après une coupure. Après un redémarrage, le pilote doit explicitement reprendre le vol : l'application ne rattache jamais silencieusement des données à un ancien PIREP.
 
+### Flight Data Monitoring et Flight Review
+
+Hermès collecte désormais des **observations factuelles** séparées des règles
+compagnie et des pénalités. Le FDM local enregistre notamment :
+
+- passage des gates **1000 ft** et **500 ft AGL** en approche avec un statut
+  `STABLE`, `UNSTABLE` ou `UNKNOWN` selon les données réellement
+  disponibles ;
+- excursions de bank supérieures à 35° avec le pic observé ;
+- ajout de carburant, utilisation du slew et augmentation du sim-rate ;
+- remises de gaz, touch-and-go, touchdown confirmé et nombre de rebonds.
+
+Les gates d'approche n'utilisent que des critères génériques disponibles
+(train, volets, vitesse verticale et bank). Hermès n'invente jamais une VAPP
+ou une configuration avion qu'il ne connaît pas.
+
+Le **Flight Review** est accessible pendant le vol et devient prêt au dépôt
+après `IN`. Il récapitule distance, temps airborne/block, carburant,
+landing rate, gates 1000/500, FDM et anomalies compagnie avant l'envoi final
+du PIREP.
+
+Ces observations sont persistées dans l'état local et survivent à une reprise
+après crash. Le contrat serveur `/acars/events` n'est pas étendu dans ce lot :
+les valeurs FDM détaillées restent locales tant qu'un schéma serveur dédié
+n'existe pas.
+
 ### Moteur de phases Hermès
 
 `FlightTrackingEngine` est l'unique source de vérité des phases de vol :
