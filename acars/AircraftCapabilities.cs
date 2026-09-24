@@ -40,6 +40,7 @@ public enum AircraftDataCapability
     Doors,
     Transponder,
     Autopilot,
+    ThrustStable,
     Slew,
     Pause,
     SimulationRate,
@@ -296,6 +297,7 @@ public sealed class AircraftCapabilityMonitor
         AircraftDataCapability.Doors => s.DoorsOpen is not null,
         AircraftDataCapability.Transponder => s.TransponderCode is not null,
         AircraftDataCapability.Autopilot => s.AutopilotEnabled is not null,
+        AircraftDataCapability.ThrustStable => s.ThrustStable is not null,
         AircraftDataCapability.Slew => s.SlewActive is not null,
         AircraftDataCapability.Pause => s.Paused is not null,
         AircraftDataCapability.SimulationRate => s.SimulationRate is not null,
@@ -337,6 +339,7 @@ public sealed class AircraftCapabilityMonitor
             or AircraftDataCapability.Doors
             or AircraftDataCapability.Transponder
             or AircraftDataCapability.Autopilot
+            or AircraftDataCapability.ThrustStable
             => SimulatorCapabilities.AircraftSystems,
 
         AircraftDataCapability.Engines => SimulatorCapabilities.Engines,
