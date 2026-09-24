@@ -53,7 +53,7 @@
 
         <p class="text-muted">
           Dernière synchronisation manuelle :
-          <strong>{{ $lastSync ? CarbonCarbon::parse($lastSync)->timezone('Europe/Paris')->format('d/m/Y H:i') : 'jamais' }}</strong>.
+          <strong>{{ $lastSync ? \Carbon\Carbon::parse($lastSync)->timezone('Europe/Paris')->format('d/m/Y H:i') : 'jamais' }}</strong>.
           La synchronisation hebdomadaire phpVMS reste active indépendamment de ce bouton.
         </p>
 
