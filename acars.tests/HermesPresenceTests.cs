@@ -17,6 +17,7 @@ public sealed class HermesPresenceTests
         await presence.HeartbeatIfDueAsync("op_123", heartbeat);
         await presence.HeartbeatIfDueAsync("op_123", heartbeat);
 
+        Assert.Equal("op_123", presence.CurrentOperationId);
         Assert.Equal(1, transport.HeartbeatCount);
 
         now = now.AddSeconds(15);
