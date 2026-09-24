@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Promethee\Services\OperationIdentityService;
 use Modules\Promethee\Services\SafetyAnalyzer;
 use Modules\Promethee\Services\AircraftOperationalStateService;
+use Modules\Promethee\Services\DemandProfileService;
 
 /**
  * Stable Air Inter operations facade.
@@ -36,7 +37,8 @@ class OperationsV1Controller extends Controller
         private readonly PirepService $pirepSvc,
         private readonly OperationIdentityService $operationIdentity,
         private readonly SafetyAnalyzer $safetyAnalyzer,
-        private readonly AircraftOperationalStateService $aircraftState
+        private readonly AircraftOperationalStateService $aircraftState,
+        private readonly DemandProfileService $demandProfile
     ) {}
 
     public function index(Request $request)
@@ -99,8 +101,10 @@ class OperationsV1Controller extends Controller
         $allowed = $this->userSvc->getAllowableSubfleets($request->user())->pluck('id')->all();
         $flightAllowed = $flight->subfleets->pluck('id')->all();
 
+        $operationId = $this->operationIdentity->id($bid);
+
         $candidates = Aircraft::query()
-            ->with(['subfleet:id,name'])
+            ->with(['subfleet:id,name,type'])
             ->withCount(['bid', 'simbriefs' => fn ($query) => $query->whereNull('pirep_id')])
             ->orderBy('icao')->orderBy('registration')->get();
 
@@ -146,16 +150,28 @@ class OperationsV1Controller extends Controller
                 if (!$freeOfp) $reasons[] = $this->reason('ACTIVE_OFP', 'Un OFP actif utilise déjà cet appareil.');
             }
 
+            $profile = count($reasons) === 0
+                ? $this->demandProfile->profile($plane, $flight, $operationId)
+                : null;
+
             $dto = [
                 'id' => $plane->id,
                 'registration' => $plane->registration,
                 'name' => $plane->name,
                 'icao' => $plane->icao,
                 'subfleet' => $plane->subfleet?->name,
+                'type_key' => $this->demandProfile->typeKey($plane),
+                'type_label' => $this->demandProfile->typeLabel($plane),
                 'airport' => $plane->airport_id,
                 'eligible' => count($reasons) === 0,
                 'checks' => $checks,
                 'reasons' => $reasons,
+                'capacity' => $profile['capacity'] ?? null,
+                'passengers' => $profile['passengers'] ?? null,
+                'load_factor_percent' => $profile['load_factor_percent'] ?? null,
+                'pricing_band' => $profile['band'] ?? null,
+                'fare_percent' => $profile['fare_percent'] ?? null,
+                'load_range' => $profile['load_range'] ?? null,
             ];
 
             if (count($reasons) === 0) {
@@ -165,9 +181,31 @@ class OperationsV1Controller extends Controller
             }
         }
 
+        $types = collect($available)
+            ->groupBy('type_key')
+            ->map(function ($planes, $typeKey) {
+                $primary = $planes->sortBy('registration')->first();
+
+                return [
+                    'type_key' => $typeKey,
+                    'type_label' => $primary['type_label'],
+                    'available_count' => $planes->count(),
+                    'suggested_aircraft_id' => $primary['id'],
+                    'capacity' => $primary['capacity'],
+                    'passengers' => $primary['passengers'],
+                    'load_factor_percent' => $primary['load_factor_percent'],
+                    'pricing_band' => $primary['pricing_band'],
+                    'fare_percent' => $primary['fare_percent'],
+                    'load_range' => $primary['load_range'],
+                ];
+            })
+            ->sortBy('type_label')
+            ->values();
+
         return response()->json(['data' => [
-            'operation_id' => $this->operationIdentity->id($bid),
+            'operation_id' => $operationId,
             'bid_id' => $bid->id,
+            'types' => $types,
             'available' => $available,
             'unavailable' => $unavailable,
             'reason_codes' => [
@@ -183,13 +221,21 @@ class OperationsV1Controller extends Controller
         abort_if($this->operationPirep($bid), 409, 'L’appareil ne peut plus être modifié après le pré-dépôt du PIREP.');
 
         $data = $request->validate([
-            'aircraft_id' => 'required|integer',
+            'aircraft_id' => 'nullable|integer|required_without:aircraft_type',
+            'aircraft_type' => 'nullable|string|max:32|required_without:aircraft_id',
         ]);
 
         $eligibility = $this->aircraft($bidId, $request)->getData(true)['data'] ?? [];
         $available = collect($eligibility['available'] ?? []);
-        $selected = $available->first(fn ($aircraft) => (string) ($aircraft['id'] ?? '') === (string) $data['aircraft_id']);
-        abort_if(!$selected, 409, 'Cet appareil n’est pas autorisé ou n’est plus disponible pour cette opération.');
+        $selected = !empty($data['aircraft_id'])
+            ? $available->first(fn ($aircraft) => (string) ($aircraft['id'] ?? '') === (string) $data['aircraft_id'])
+            : $available
+                ->where('type_key', strtoupper(preg_replace('/[^A-Za-z0-9]+/', '', (string) $data['aircraft_type'])))
+                ->sortBy('registration')
+                ->first();
+        abort_if(!$selected, 409, 'Ce type d’appareil n’est pas autorisé ou aucun exemplaire n’est disponible pour cette opération.');
+
+        $data['aircraft_id'] = (int) $selected['id'];
 
         // Changing aircraft invalidates any active OFP linked to the previous
         // aircraft. Do not silently switch once planning has started.
@@ -516,15 +562,18 @@ class OperationsV1Controller extends Controller
                 'alternate' => $flight?->alt_airport_id,
                 'route' => $flight?->route,
                 'level' => $flight?->level,
+                'pricing_band' => $flight ? $this->demandProfile->bandForFlight($flight) : null,
             ],
-            'aircraft' => $aircraft ? [
+            'aircraft' => $aircraft ? array_merge([
                 'id' => $aircraft->id,
                 'registration' => $aircraft->registration,
                 'name' => $aircraft->name,
                 'icao' => $aircraft->icao,
                 'subfleet' => $aircraft->subfleet?->name,
+                'type_key' => $this->demandProfile->typeKey($aircraft),
+                'type_label' => $this->demandProfile->typeLabel($aircraft),
                 'airport' => $aircraft->airport_id,
-            ] : null,
+            ], $flight ? $this->demandProfile->profile($aircraft, $flight, $this->operationIdentity->id($bid)) : []) : null,
             'simbrief' => [
                 'type' => $simbriefType,
                 'addon' => $fallback['addon'] ?? null,
@@ -537,7 +586,16 @@ class OperationsV1Controller extends Controller
             'operating_rules' => [
                 'passenger_weight_kg' => config('acars.passenger_weight_kg'),
                 'checked_baggage_kg' => config('acars.checked_baggage_kg'),
-                'load_factor_percent' => $loadFactor,
+                'load_factor_percent' => $aircraft && $flight
+                    ? $this->demandProfile->profile($aircraft, $flight, $this->operationIdentity->id($bid))['load_factor_percent']
+                    : $loadFactor,
+                'passengers' => $aircraft && $flight
+                    ? $this->demandProfile->profile($aircraft, $flight, $this->operationIdentity->id($bid))['passengers']
+                    : null,
+                'capacity' => $aircraft && $flight
+                    ? $this->demandProfile->profile($aircraft, $flight, $this->operationIdentity->id($bid))['capacity']
+                    : null,
+                'pricing_band' => $flight ? $this->demandProfile->bandForFlight($flight) : null,
                 'fuel_policy' => 'trip + 5% + alternate + expected holding + 45 minutes reserve',
             ],
         ];
