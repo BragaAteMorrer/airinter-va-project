@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - main
+      - 'feature/**'
   pull_request:
 
 permissions:
@@ -119,6 +120,9 @@ jobs:
           php -l modules/Promethee/Http/AcarsOperationsController.php
           php -l modules/Promethee/Http/OperationsV1Controller.php
           php -l modules/Promethee/Http/TelemetryController.php
+          php -l modules/Promethee/Http/DatalinkController.php
+          php -l modules/Promethee/Services/DatalinkService.php
+          php -l tests/DatalinkServiceTest.php
           php -l modules/Promethee/Services/OperationIdentityService.php
           php -l modules/Promethee/Services/SafetyAnalyzer.php
           php -l modules/Promethee/Services/AircraftOperationalStateService.php
