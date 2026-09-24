@@ -117,6 +117,21 @@ public sealed class ReferenceFlightE2ETests
     }
 
     [Fact]
+    public void Recorder_does_not_flag_takeoff_roll_as_taxi_overspeed()
+    {
+        var recorder = new FlightRecorder(Path.Combine(Path.GetTempPath(), "AirInter-Hermes-Tests", Guid.NewGuid().ToString("N")));
+        var t = DateTimeOffset.Parse("2026-09-22T18:42:00Z");
+        recorder.Start("https://promethee.example", "pirep-roll", Legacy(t, true, 0, 0, 0, true));
+
+        recorder.Capture(Legacy(t.AddSeconds(5), true, 12, 0, 0, false));
+        recorder.Capture(Legacy(t.AddSeconds(10), true, 22, 0, 0, false));
+        recorder.Capture(Legacy(t.AddSeconds(14), true, 42, 0, 0, false));
+
+        Assert.Equal("TAKEOFF", recorder.Flight?.Phase);
+        Assert.DoesNotContain(recorder.Flight!.Issues, x => x.Code == "TAXI_OVERSPEED");
+    }
+
+    [Fact]
     public void Recorder_uses_tracking_engine_phase_names_instead_of_legacy_enroute()
     {
         var recorder = new FlightRecorder(Path.Combine(Path.GetTempPath(), "AirInter-Hermes-Tests", Guid.NewGuid().ToString("N")));
