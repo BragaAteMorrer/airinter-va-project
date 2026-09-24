@@ -55,8 +55,8 @@
         </table></div>
         <div class="panel-heading" style="margin-top:1.5rem"><div><span class="eyebrow">2. MODIFIER</span><h2>Prix des lignes sélectionnées</h2><p id="selection-count">Aucune ligne sélectionnée.</p></div></div>
         <div class="form-grid">
-            <label>Opération <select name="mode"><option value="set">Fixer le prix rouge</option><option value="add">Ajouter / retirer un montant</option><option value="percent">Augmenter / réduire en %</option><option value="band">Changer uniquement la couleur</option></select></label>
-            <label>Valeur <input name="value" type="number" step="0.01" placeholder="Ex. 218 ou -10"></label>
+            <label>Opération <select name="mode" id="bulk-price-mode"><option value="band" selected>Changer uniquement la couleur BBR</option><option value="set">Fixer un nouveau prix Rouge commun</option><option value="add">Ajouter / retirer un montant à chaque prix Rouge</option><option value="percent">Augmenter / réduire chaque prix Rouge en %</option></select></label>
+            <label>Valeur <input name="value" id="bulk-price-value" type="number" step="0.01" placeholder="Inutile pour un changement BBR" disabled></label>
             <label>Tarif des lignes <select name="band"><option value="keep">Conserver la couleur actuelle</option><option value="rouge">Rouge · plein tarif</option><option value="blanc">Blanc · tarif réduit</option><option value="bleu">Bleu · tarif réduit</option></select></label>
             <button type="submit">Enregistrer la modification</button>
         </div>
@@ -70,7 +70,10 @@
  const ids=['airline','origin','dpt-airport','arrival','arr-airport','route']; const fields=Object.fromEntries(ids.map(id=>[id,document.querySelector('#filter-'+id)]));
  const rows=[...document.querySelectorAll('#flight-price-form tbody tr')];
  const apply=()=>rows.forEach(row=>{ const v=fields.route.value.toLowerCase(); row.hidden=!!((fields.airline.value&&row.dataset.airline!==fields.airline.value)||(fields.origin.value&&row.dataset.origin!==fields.origin.value)||(fields['dpt-airport'].value&&row.dataset.dptAirport!==fields['dpt-airport'].value)||(fields.arrival.value&&row.dataset.arrival!==fields.arrival.value)||(fields['arr-airport'].value&&row.dataset.arrAirport!==fields['arr-airport'].value)||(v&&!row.dataset.route.includes(v))); });
- const count=()=>{ const n=document.querySelectorAll('input[name="flight_ids[]"]:checked').length; document.querySelector('#selection-count').textContent=n ? n+' ligne(s) sélectionnée(s).' : 'Aucune ligne sélectionnée.'; };
+ const count=()=>{ const n=document.querySelectorAll('input[name="flight_ids[]"]:checked').length; document.querySelector('#selection-count').textContent=n ? n+' ligne(s) sélectionnée(s). Chaque ligne conserve sa propre référence Rouge lors d’un changement BBR.' : 'Aucune ligne sélectionnée.'; };
+ const mode=document.querySelector('#bulk-price-mode'), value=document.querySelector('#bulk-price-value');
+ const syncValue=()=>{ const needsValue=mode.value!=='band'; value.disabled=!needsValue; value.required=needsValue; if(!needsValue) value.value=''; value.placeholder=needsValue ? 'Ex. 218 ou -10' : 'Inutile pour un changement BBR'; };
+ mode.addEventListener('change',syncValue); syncValue();
  Object.values(fields).forEach(field=>field.addEventListener('input',apply)); document.querySelectorAll('input[name="flight_ids[]"]').forEach(box=>box.addEventListener('change',count)); document.querySelector('#flight-select-all').addEventListener('change',event=>{ rows.filter(row=>!row.hidden).forEach(row=>row.querySelector('input[name="flight_ids[]"]').checked=event.target.checked); count(); }); count();
 })();
 </script>
