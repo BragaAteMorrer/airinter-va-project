@@ -38,6 +38,14 @@ class PortalController extends Controller
         return view('promethee::public-pilots', compact('pilots'));
     }
     public function publicPireps(Request $r) {
+        return $this->pirepsIndex($r);
+    }
+
+    public function myPireps(Request $r) {
+        return $this->pirepsIndex($r, true);
+    }
+
+    private function pirepsIndex(Request $r, bool $mine = false) {
         $filters = $r->validate([
             'pilot' => 'nullable|string|max:80',
             'flight' => 'nullable|string|max:32',
@@ -47,7 +55,10 @@ class PortalController extends Controller
             'from' => 'nullable|date',
             'to' => 'nullable|date|after_or_equal:from',
         ]);
-        $pireps = Pirep::with(['user:id,name,pilot_id','aircraft','airline'])->where('state', PirepState::ACCEPTED)
+
+        $pireps = Pirep::with(['user:id,name,pilot_id','aircraft','airline'])
+            ->where('state', PirepState::ACCEPTED)
+            ->when($mine, fn ($q) => $q->where('user_id', $r->user()->id))
             ->when($r->filled('pilot'), fn ($q) => $q->whereHas('user', fn ($users) => $users->where('name', 'like', '%'.$filters['pilot'].'%')->orWhere('pilot_id', 'like', '%'.$filters['pilot'].'%')))
             ->when($r->filled('flight'), fn ($q) => $q->where(fn ($reports) => $reports->where('flight_number', 'like', '%'.strtoupper($filters['flight']).'%')->orWhere('route_code', 'like', '%'.strtoupper($filters['flight']).'%')))
             ->when($r->filled('departure'), fn ($q) => $q->where('dpt_airport_id', strtoupper($filters['departure'])))
@@ -55,9 +66,11 @@ class PortalController extends Controller
             ->when($r->filled('aircraft'), fn ($q) => $q->whereHas('aircraft', fn ($aircraft) => $aircraft->where('registration', 'like', '%'.strtoupper($filters['aircraft']).'%')->orWhere('icao', 'like', '%'.strtoupper($filters['aircraft']).'%')))
             ->when($r->filled('from'), fn ($q) => $q->whereDate('submitted_at', '>=', $filters['from']))
             ->when($r->filled('to'), fn ($q) => $q->whereDate('submitted_at', '<=', $filters['to']))
-            ->latest('submitted_at')->paginate(30)->withQueryString();
+            ->latest('submitted_at')
+            ->paginate(30)
+            ->withQueryString();
 
-        return $this->page('public-pireps', compact('pireps'));
+        return $this->page('public-pireps', compact('pireps', 'mine'));
     }
     /** The branded, public replacement for /legacy/pireps/{id}. */
     public function pirep(string $id) {
