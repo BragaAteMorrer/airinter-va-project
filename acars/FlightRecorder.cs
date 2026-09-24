@@ -35,6 +35,7 @@ public sealed class FlightRecorder
     public readonly SemaphoreSlim NetworkGate = new(1, 1);
     private readonly string folder;
     private Sample? previous;
+    private AircraftSnapshot? previousSnapshot;
     private DateTimeOffset? lastQueuedAt;
     private readonly FlightTrackingEngine tracking = new();
     private readonly FlightDataMonitor fdm = new();
@@ -105,6 +106,7 @@ public sealed class FlightRecorder
             Timeline = [new(sample.RecordedAt, "BOARDING")]
         };
         previous = sample;
+        previousSnapshot = initialSnapshot;
         Pending = [];
         PendingEvents = [];
         Track = [];
@@ -129,11 +131,13 @@ public sealed class FlightRecorder
         recoveryRequired = false;
         Flight = Flight with { Recording = true };
         previous = null;
+        previousSnapshot = null;
         Save();
     }}
     public void Pause() { lock (Gate) {
         if (Flight is not null) Flight = Flight with { Recording = false };
         previous = null;
+        previousSnapshot = null;
         Save();
     }}
 
@@ -194,6 +198,7 @@ public sealed class FlightRecorder
         }
 
         previous = s;
+        previousSnapshot = snapshot;
         if (changed || Pending.Count != pendingBefore || PendingEvents.Count != eventsBefore
             || Flight.Observations.Count != observationsBefore) Save();
     }}
@@ -214,12 +219,12 @@ public sealed class FlightRecorder
         if (Flight?.Phase != "IN") throw new InvalidOperationException("Attendez l'événement IN : avion arrêté au parking, frein de parc serré.");
         if (Pending.Count > 0 || PendingEvents.Count > 0) throw new InvalidOperationException("Des messages ACARS restent à synchroniser.");
         var flight = Flight;
-        AddObservations(fdm.Flush(previous?.ToSnapshot(), FlightTrackingEngine.ParsePhase(flight.Phase)));
+        AddObservations(fdm.Flush(previousSnapshot, FlightTrackingEngine.ParsePhase(flight.Phase)));
         flight = Flight!;
         var block = flight.BlockOn is null || flight.BlockOff is null ? 0 : (int)Math.Round((flight.BlockOn.Value - flight.BlockOff.Value).TotalMinutes);
         History.Insert(0, new(flight.PirepId, DateTimeOffset.UtcNow, Math.Round(flight.Distance, 2), (int)Math.Round(flight.AirborneSeconds / 60), block, Math.Round(flight.FuelUsed), flight.LandingRate, flight.Issues, flight.Observations));
         if (History.Count > 25) History.RemoveRange(25, History.Count - 25);
-        SaveHistory(); Flight = null; previous = null; Track = []; recoveryRequired = false; Save();
+        SaveHistory(); Flight = null; previous = null; previousSnapshot = null; Track = []; recoveryRequired = false; Save();
     }}
 
     public FlightReview? GetReview()
@@ -287,6 +292,7 @@ public sealed class FlightRecorder
             ArchiveRecoveryState();
             Flight = null;
             previous = null;
+            previousSnapshot = null;
             lastQueuedAt = null;
             Pending = [];
             PendingEvents = [];
