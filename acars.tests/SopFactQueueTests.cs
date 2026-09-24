@@ -54,7 +54,7 @@ public sealed class SopFactQueueTests
         monitor.Process(Snapshot(t.AddSeconds(2), 1, true, 37), FlightPhase.TaxiOut, []);
         var facts = monitor.Process(Snapshot(t.AddSeconds(4), 1, false, 145), FlightPhase.Takeoff, []);
 
-        var taxi = Assert.Single(facts.Where(x => x.Code == "TAXI_SPEED_MAX"));
+        var taxi = Assert.Single(facts, x => x.Code == "TAXI_SPEED_MAX");
         Assert.Equal(37, taxi.Value);
         Assert.Equal("kt", taxi.Unit);
         Assert.Equal("TAXI_OUT", taxi.Phase);
