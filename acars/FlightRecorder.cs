@@ -13,7 +13,7 @@ public record FlightState(string Server, string PirepId, DateTimeOffset Started,
     public List<PhaseEntry> Timeline { get; init; } = [];
     public List<FlightJournalEntry> Journal { get; init; } = [];
 }
-public record Envelope(Sample Sample);
+public record Envelope(Sample Sample, AircraftSnapshot? Snapshot = null);
 public record AcarsEvent(Guid EventId, string Name, DateTimeOffset OccurredAt, double Lat, double Lon);
 public record FlightIssue(DateTimeOffset OccurredAt, string Code, string Message, string Severity = "warning");
 public record PhaseEntry(DateTimeOffset OccurredAt, string Name);
@@ -111,7 +111,7 @@ public sealed class FlightRecorder
         var initialSnapshot = sample.ToSnapshot();
         tracking.Process(initialSnapshot);
         fdm.Process(initialSnapshot, FlightPhase.Boarding, []);
-        QueuePosition(sample);
+        QueuePosition(sample, initialSnapshot);
         Save();
     }}
     public void Start(string server, string id, AircraftSnapshot snapshot, string? operationId = null)
@@ -180,14 +180,16 @@ public sealed class FlightRecorder
         }
 
         if (Flight.Phase is "PUSHBACK" or "TAXI_OUT" or "TAXI_IN"
-            && s.OnGround && s.Gs > Rules.TaxiSpeed)
-            AddIssue(s, "TAXI_OVERSPEED", $"Vitesse sol excessive au roulage : {s.Gs:0} kt.");
+            && snapshot.OnGround == true
+            && snapshot.GroundSpeedKnots is { } taxiGs
+            && taxiGs > Rules.TaxiSpeed)
+            AddIssue(s, "TAXI_OVERSPEED", $"Vitesse sol excessive au roulage : {taxiGs:0} kt.");
 
-        if (Flight.Phase == "FINAL" && !s.GearDown)
+        if (Flight.Phase == "FINAL" && snapshot.GearDown == false)
             AddIssue(s, "GEAR_UP_FINAL", "Train rentré en finale.");
 
         if (lastQueuedAt is null || s.RecordedAt - lastQueuedAt >= positionInterval) {
-            QueuePosition(s);
+            QueuePosition(s, snapshot);
             changed = true;
         }
 
@@ -371,16 +373,16 @@ public sealed class FlightRecorder
         QueueEvent(code, sample);
     }
 
-    private void QueuePosition(Sample sample) {
+    private void QueuePosition(Sample sample, AircraftSnapshot? snapshot = null) {
         if (Pending.Any(x => x.Sample.SampleId == sample.SampleId)) return;
-        Pending.Add(new(sample));
+        Pending.Add(new(sample, snapshot));
         lastQueuedAt = sample.RecordedAt;
     }
 
     private void QueuePosition(AircraftSnapshot snapshot, Sample fallback)
     {
-        if (TryToLegacySample(snapshot, out var sample)) QueuePosition(sample);
-        else QueuePosition(fallback);
+        if (TryToLegacySample(snapshot, out var sample)) QueuePosition(sample, snapshot);
+        else QueuePosition(fallback, snapshot);
     }
 
     private void QueueEvent(string name, Sample sample, double? value = null)
@@ -407,8 +409,7 @@ public sealed class FlightRecorder
         sample = default!;
         if (s.Latitude is null || s.Longitude is null || s.AltitudeMslFeet is null || s.AltitudeAglFeet is null
             || s.IndicatedAirspeedKnots is null || s.GroundSpeedKnots is null || s.VerticalSpeedFeetPerMinute is null
-            || s.HeadingDegrees is null || s.FuelWeight is null || s.OnGround is null || s.GearDown is null
-            || s.FlapsPercent is null || s.ParkingBrake is null) return false;
+            || s.HeadingDegrees is null || s.FuelWeight is null || s.OnGround is null) return false;
         var engines = s.EnginesRunning ?? [];
         sample = new Sample(
             s.SampleId,
@@ -424,13 +425,13 @@ public sealed class FlightRecorder
             s.FuelWeight.Value,
             s.OnGround.Value,
             s.BankDegrees ?? 0,
-            s.GearDown.Value,
+            s.GearDown ?? false,
             (s.TouchdownVerticalSpeedFeetPerMinute ?? s.VerticalSpeedFeetPerMinute.Value) / 60d,
-            s.FlapsPercent.Value,
+            s.FlapsPercent ?? 0,
             false,
             0,
             0,
-            s.ParkingBrake.Value,
+            s.ParkingBrake ?? false,
             BeaconLight: s.BeaconLight ?? false,
             LandingLight: s.LandingLight ?? false,
             Engine1Running: engines.ElementAtOrDefault(0),
