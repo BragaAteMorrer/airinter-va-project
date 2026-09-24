@@ -9,6 +9,7 @@ namespace Promethee;
 public sealed class SimulatorConnectorHub(params ISimulatorConnector[] connectors) : ISimulatorConnector
 {
     private static readonly TimeSpan SnapshotTimeout = TimeSpan.FromSeconds(15);
+    private readonly AircraftCapabilityMonitor capabilityMonitor = new();
     private SimulatorDescriptor? lastActiveDescriptor;
 
     public SimulatorDescriptor Descriptor { get; } = new(SimulatorKind.Unknown, "Détection automatique", "hub", SimulatorCapabilities.None);
@@ -22,6 +23,7 @@ public sealed class SimulatorConnectorHub(params ISimulatorConnector[] connector
               ?? connectors.FirstOrDefault(x => x.ConnectionState == SimulatorConnectionState.Detected)?.Status
               ?? "Simulateur non détecté");
     public AircraftSnapshot? LatestSnapshot => Active?.LatestSnapshot;
+    public AircraftCapabilityReport? AircraftCapabilities { get; private set; }
     public ISimulatorConnector? Active { get; private set; }
     public bool TemporarilyLost { get; private set; }
     public DateTimeOffset? LostAt { get; private set; }
@@ -56,7 +58,10 @@ public sealed class SimulatorConnectorHub(params ISimulatorConnector[] connector
             }
         }
 
-        if (Active?.LatestSnapshot is { } snapshot) SnapshotReceived?.Invoke(snapshot);
+        if (Active?.LatestSnapshot is { } snapshot) {
+            AircraftCapabilities = capabilityMonitor.Observe(Active.Descriptor, snapshot);
+            SnapshotReceived?.Invoke(snapshot);
+        }
     }
 
     private static bool IsHealthy(ISimulatorConnector connector) =>
