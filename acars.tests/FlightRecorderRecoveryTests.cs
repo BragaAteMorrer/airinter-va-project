@@ -14,8 +14,9 @@ public sealed class FlightRecorderRecoveryTests
 
         Assert.Equal("pirep-42", recorder.Flight?.PirepId);
         Assert.Equal("op_bid-42", recorder.Flight?.OperationId);
-        Assert.NotEmpty(recorder.PendingEvents);
-        Assert.Contains(recorder.PendingEvents, x => x.Name == "OUT");
+        Assert.Equal("BOARDING", recorder.Flight?.Phase);
+        Assert.Empty(recorder.PendingEvents);
+        Assert.Null(recorder.Flight?.BlockOff);
     }
 
     [Fact]
