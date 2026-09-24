@@ -42,6 +42,7 @@ public sealed class HermesPresence
     private JsonElement? lastNetwork;
 
     public DateTimeOffset? LastHeartbeatAt { get; private set; }
+    public string? CurrentOperationId => lastOperationId;
     public string? LastError { get; private set; }
     public JsonElement? LastNetwork => lastNetwork?.Clone();
 
