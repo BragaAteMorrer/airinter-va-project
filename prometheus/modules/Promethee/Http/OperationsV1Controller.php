@@ -581,7 +581,7 @@ class OperationsV1Controller extends Controller
                 'available' => $ofpAvailable,
                 // Hermès only needs to know whether company generation can be
                 // offered. The actual API key never leaves Prométhée.
-                'company_api_available' => filled(setting('simbrief.api_key')),
+                'company_api_available' => app(\Modules\Promethee\Services\SimBriefCompanyKeyService::class)->configured(),
             ],
             'operating_rules' => [
                 'passenger_weight_kg' => config('acars.passenger_weight_kg'),
