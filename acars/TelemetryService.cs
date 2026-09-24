@@ -123,7 +123,7 @@ public sealed class TelemetryService(ISimulatorConnector sim, FlightRecorder rec
                             on_ground=raw?.OnGround ?? x.Sample.OnGround,
                             gear_down=raw?.GearDown,
                             landing_flaps=raw?.FlapsPercent is { } flaps ? flaps > 0 : (bool?)null,
-                            thrust_stable=raw is null ? (bool?)x.Sample.ThrustStable : null,
+                            thrust_stable=raw?.ThrustStable ?? (raw is null ? (bool?)x.Sample.ThrustStable : null),
                             phase=flight.Phase
                         };
                     })
