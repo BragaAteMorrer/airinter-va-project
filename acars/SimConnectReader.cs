@@ -13,12 +13,24 @@ public record Sample(Guid SampleId, DateTimeOffset RecordedAt, double Lat, doubl
 /// </summary>
 public sealed class SimConnectReader : ISimulatorConnector
 {
+    private const uint MainDefinitionId = 1;
+    private const uint MainRequestId = 1;
+    private const uint TitleDefinitionId = 2;
+    private const uint TitleRequestId = 2;
+    private const uint ModelDefinitionId = 3;
+    private const uint ModelRequestId = 3;
+    private const uint SimConnectDataTypeString128 = 8;
+    private const uint SimConnectDataTypeString256 = 9;
+    private const uint SimConnectPeriodSecond = 4;
+
     private IntPtr handle; private readonly Dispatch callback;
+    private string? aircraftTitle;
+    private string? aircraftIcao;
     public Sample? Latest { get; private set; }
     public string Status { get; private set; } = "Simulateur non détecté";
     public event Action<Sample>? Received;
     public event Action<AircraftSnapshot>? SnapshotReceived;
-    public AircraftSnapshot? LatestSnapshot => Latest?.ToSnapshot();
+    public AircraftSnapshot? LatestSnapshot { get; private set; }
     public SimulatorConnectionState ConnectionState => handle != IntPtr.Zero
         ? (Latest is null ? SimulatorConnectionState.Detected : SimulatorConnectionState.Connected)
         : SimulatorConnectionState.NotDetected;
@@ -43,8 +55,14 @@ public sealed class SimConnectReader : ISimulatorConnector
                 if (detected is not null) Status = detected.DisplayName + " détecté — connexion SimConnect…";
                 var hr=SimConnect_Open(out handle,"Promethee Air Inter",IntPtr.Zero,0,IntPtr.Zero,0);
                 if(hr<0){handle=IntPtr.Zero;Status=detected is null ? "Simulateur non détecté" : detected.DisplayName + " détecté — SimConnect indisponible";return;}
-                foreach(var d in definitions) Marshal.ThrowExceptionForHR(SimConnect_AddToDataDefinition(handle,1,d.Name,d.Unit,4,0,uint.MaxValue));
-                Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,1,1,0,4,0,0,0,0)); Status="MSFS détecté";
+                foreach(var d in definitions)
+                    Marshal.ThrowExceptionForHR(SimConnect_AddToDataDefinition(handle,MainDefinitionId,d.Name,d.Unit,4,0,uint.MaxValue));
+                Marshal.ThrowExceptionForHR(SimConnect_AddToDataDefinition(handle,TitleDefinitionId,"TITLE","NULL",SimConnectDataTypeString256,0,uint.MaxValue));
+                Marshal.ThrowExceptionForHR(SimConnect_AddToDataDefinition(handle,ModelDefinitionId,"ATC MODEL","NULL",SimConnectDataTypeString128,0,uint.MaxValue));
+                Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,MainRequestId,MainDefinitionId,0,SimConnectPeriodSecond,0,0,0,0));
+                Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,TitleRequestId,TitleDefinitionId,0,SimConnectPeriodSecond,0,0,0,0));
+                Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,ModelRequestId,ModelDefinitionId,0,SimConnectPeriodSecond,0,0,0,0));
+                Status="MSFS détecté";
             }
             Marshal.ThrowExceptionForHR(SimConnect_CallDispatch(handle,callback,IntPtr.Zero));
         } catch(DllNotFoundException ex){System.Diagnostics.Trace.WriteLine(ex);Status="Simulateur non détecté";Close();}
@@ -55,12 +73,32 @@ public sealed class SimConnectReader : ISimulatorConnector
     private void Receive(IntPtr data,uint length,IntPtr context)
     {
         var id=Marshal.ReadInt32(data,8); if(id==3){Status="Simulateur non détecté";Close();return;} if(id==1){Status="Connexion au simulateur interrompue";return;}
-        if(id!=8||length<40+definitions.Length*8||Marshal.ReadInt32(data,12)!=1)return;
+        if(id!=8)return;
+        var requestId=Marshal.ReadInt32(data,12);
+        if(requestId==TitleRequestId){
+            aircraftTitle=ReadFixedString(data,length,256);
+            return;
+        }
+        if(requestId==ModelRequestId){
+            aircraftIcao=ReadFixedString(data,length,128);
+            return;
+        }
+        if(requestId!=MainRequestId||length<40+definitions.Length*8)return;
         var v=new double[definitions.Length];Marshal.Copy(IntPtr.Add(data,40),v,0,v.Length);if(v.Any(x=>!double.IsFinite(x))||Math.Abs(v[0])>90||Math.Abs(v[1])>180)return;
         Latest=new Sample(Guid.NewGuid(),DateTimeOffset.UtcNow,v[0],v[1],v[2],v[3],v[4],v[5],v[6],v[7],v[8],v[9]!=0,v[10],v[11]>=99,v[12],v[13],v[14]!=0,v[15],v[16],v[17]!=0,
-            v[18]!=0,v[19]!=0,v[20]!=0,v[21]!=0,v[22]!=0,v[23]!=0,v[24]!=0,v[25]);Status="Connecté à MSFS";Received?.Invoke(Latest); SnapshotReceived?.Invoke(Latest.ToSnapshot());
+            v[18]!=0,v[19]!=0,v[20]!=0,v[21]!=0,v[22]!=0,v[23]!=0,v[24]!=0,v[25]);
+        LatestSnapshot=Latest.ToSnapshot() with { AircraftTitle=aircraftTitle, AircraftIcao=aircraftIcao };
+        Status="Connecté à MSFS";Received?.Invoke(Latest); SnapshotReceived?.Invoke(LatestSnapshot);
     }
-    private void Close(){if(handle!=IntPtr.Zero){SimConnect_Close(handle);handle=IntPtr.Zero;}} public void Dispose()=>Close();
+    private static string? ReadFixedString(IntPtr data,uint length,int size){
+        if(length<40+size)return null;
+        var value=Marshal.PtrToStringAnsi(IntPtr.Add(data,40),size)?.TrimEnd('\0').Trim();
+        return string.IsNullOrWhiteSpace(value)?null:value;
+    }
+    private void Close(){
+        if(handle!=IntPtr.Zero){SimConnect_Close(handle);handle=IntPtr.Zero;}
+        Latest=null;LatestSnapshot=null;aircraftTitle=null;aircraftIcao=null;
+    } public void Dispose()=>Close();
     [UnmanagedFunctionPointer(CallingConvention.StdCall)] private delegate void Dispatch(IntPtr data,uint length,IntPtr context);
     [DllImport("SimConnect.dll",CharSet=CharSet.Ansi)] private static extern int SimConnect_Open(out IntPtr handle,string name,IntPtr window,uint message,IntPtr signal,uint index);
     [DllImport("SimConnect.dll")] private static extern int SimConnect_Close(IntPtr handle);
