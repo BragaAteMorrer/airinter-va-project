@@ -9,6 +9,7 @@ use Modules\Promethee\Http\OperationsV1Controller;
 use Modules\Promethee\Http\HermesReleaseController;
 use Modules\Promethee\Http\SimBriefCallbackController;
 use Modules\Promethee\Http\DatalinkController;
+use Modules\Promethee\Http\DispatchDeskController;
 use App\Http\Controllers\Api\AcarsSimBriefController;
 
 // Browsers request this conventional path even though the branded icon lives
@@ -86,6 +87,9 @@ Route::middleware(['web','auth'])->name('promethee.')->group(function () {
 /* Administration has a dedicated, server-protected route tree. */
 Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/promethee')->name('admin.promethee.')->group(function () {
         Route::get('/', [PortalController::class,'adminDashboard'])->name('dashboard');
+        Route::get('/dispatch', [DispatchDeskController::class, 'index'])->name('dispatch');
+        Route::get('/dispatch/data', [DispatchDeskController::class, 'feed'])->name('dispatch.feed');
+        Route::get('/dispatch/operations/{operation}', [DispatchDeskController::class, 'operation'])->name('dispatch.operation');
         Route::get('/identite', [PortalController::class, 'branding'])->name('branding');
         Route::post('/identite', [PortalController::class, 'saveBranding'])->name('branding.save');
         Route::post('/identite/importer', [PortalController::class, 'importBranding'])->name('branding.import');
