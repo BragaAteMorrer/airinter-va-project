@@ -197,3 +197,31 @@ body.auth-locked .recovery-center{width:min(760px,100%)}
 .capability-item.unsupported{opacity:.7}
 .capability-item.unsupported small{color:var(--muted)}
 @media(max-width:800px){.capability-heading{display:grid}.capability-counts{justify-content:flex-start}}
+
+
+/* Hermès Datalink */
+.nav-badge{display:inline-flex;min-width:18px;height:18px;align-items:center;justify-content:center;margin-left:6px;padding:0 5px;border-radius:999px;background:var(--red);color:#fff;font-size:9px;font-weight:900}
+.datalink-toolbar{display:grid;grid-template-columns:repeat(3,minmax(120px,1fr)) auto;gap:10px;align-items:end;margin:16px 0}
+.datalink-toolbar>div{display:grid;gap:3px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#f8fafc}
+.datalink-toolbar span{font-size:9px;font-weight:900;letter-spacing:.55px;text-transform:uppercase;color:var(--muted)}
+.datalink-toolbar strong{font:800 12px/1.2 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--ink)}
+.datalink-messages{display:grid;gap:10px;max-height:440px;overflow:auto;padding:2px}
+.datalink-message{display:grid;gap:10px;padding:13px 15px;border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:10px;background:#fff}
+.datalink-message.incoming{margin-right:7%}
+.datalink-message.outgoing{margin-left:7%;border-left-color:var(--ok);background:#f7fbf9}
+.datalink-message.priority-high{border-left-color:#d9981f}
+.datalink-message.priority-urgent{border-left-color:var(--red);background:#fff5f5}
+.datalink-message header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.datalink-message header div{display:grid;gap:2px}
+.datalink-message header strong{font-size:12px}
+.datalink-message header span{font-size:9px;font-weight:800;letter-spacing:.45px;color:var(--muted)}
+.datalink-message header em{font:900 9px/1 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--muted);font-style:normal}
+.datalink-message p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.45}
+.datalink-message-actions{display:flex;gap:7px}
+.datalink-message-actions button{padding:6px 10px}
+.datalink-compose{display:grid;gap:11px;margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}
+.datalink-compose-meta{display:grid;grid-template-columns:160px 160px 1fr;gap:10px;align-items:end}
+.datalink-compose textarea{resize:vertical;min-height:80px}
+.inline-check{display:flex!important;align-items:center;gap:8px;padding-bottom:9px}
+.inline-check input{width:auto}
+@media(max-width:850px){.datalink-toolbar,.datalink-compose-meta{grid-template-columns:1fr}.datalink-message.incoming,.datalink-message.outgoing{margin:0}}
