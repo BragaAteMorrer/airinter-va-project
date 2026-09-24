@@ -888,14 +888,16 @@ function renderDatalink(snapshot) {
   const messages = snapshot ? (datalinkRead(snapshot, 'messages', 'Messages') || []) : [];
   const syncState = String(snapshot ? datalinkRead(snapshot, 'syncState', 'SyncState') || 'LOCAL' : 'STANDBY').toUpperCase();
   const pendingOutbound = Number(snapshot ? datalinkRead(snapshot, 'pendingOutbound', 'PendingOutbound') || 0 : 0);
+  const pendingReads = Number(snapshot ? datalinkRead(snapshot, 'pendingReads', 'PendingReads') || 0 : 0);
   const pendingAcks = Number(snapshot ? datalinkRead(snapshot, 'pendingAcks', 'PendingAcks') || 0 : 0);
+  const unreadCount = Number(snapshot ? datalinkRead(snapshot, 'unreadCount', 'UnreadCount') || 0 : 0);
   const requiredAcks = Number(snapshot ? datalinkRead(snapshot, 'pendingRequiredAcks', 'PendingRequiredAcks') || 0 : 0);
   const lastSync = snapshot ? datalinkRead(snapshot, 'lastSuccessfulSyncAt', 'LastSuccessfulSyncAt') : null;
   const error = snapshot ? datalinkRead(snapshot, 'error', 'Error') : null;
 
   setText($('#datalinkOperation'), operationId || '—');
   setText($('#datalinkLastSync'), lastSync ? new Date(lastSync).toLocaleTimeString('fr-FR', { timeZone: localSettings.timeFormat === 'utc' ? 'UTC' : undefined }) : '—');
-  setText($('#datalinkPending'), String(pendingOutbound + pendingAcks));
+  setText($('#datalinkPending'), String(pendingOutbound + pendingReads + pendingAcks));
   const state = $('#datalinkState');
   if (state) {
     state.textContent = syncState;
@@ -903,8 +905,9 @@ function renderDatalink(snapshot) {
   }
   const badge = $('#datalinkBadge');
   if (badge) {
-    badge.hidden = requiredAcks <= 0;
-    badge.textContent = String(requiredAcks);
+    const attention = Math.max(unreadCount, requiredAcks);
+    badge.hidden = attention <= 0;
+    badge.textContent = String(attention);
   }
 
   const list = $('#datalinkMessages');
@@ -923,12 +926,13 @@ function renderDatalink(snapshot) {
     messages.forEach(message => {
       const id = datalinkRead(message, 'id', 'Id');
       const direction = String(datalinkRead(message, 'direction', 'Direction') || '');
-      const priority = String(datalinkRead(message, 'priority', 'Priority') || 'NORMAL');
+      const priority = String(datalinkRead(message, 'priority', 'Priority') || 'ROUTINE');
       const category = String(datalinkRead(message, 'category', 'Category') || 'OPS');
       const sender = datalinkRead(message, 'senderLabel', 'SenderLabel') || (direction === 'OPS_TO_COCKPIT' ? 'AIR INTER OPS' : 'COCKPIT');
       const body = datalinkRead(message, 'body', 'Body') || '';
       const createdAt = datalinkRead(message, 'createdAt', 'CreatedAt');
       const requiresAck = Boolean(datalinkRead(message, 'requiresAck', 'RequiresAck'));
+      const readAt = datalinkRead(message, 'readAt', 'ReadAt');
       const acknowledgedAt = datalinkRead(message, 'acknowledgedAt', 'AcknowledgedAt');
       const status = String(datalinkRead(message, 'status', 'Status') || 'SENT');
       const localPending = Boolean(datalinkRead(message, 'localPending', 'LocalPending'));
@@ -951,6 +955,14 @@ function renderDatalink(snapshot) {
       const actions = document.createElement('div');
       actions.className = 'datalink-message-actions';
 
+      if (direction === 'OPS_TO_COCKPIT' && !readAt && !acknowledgedAt) {
+        const read = document.createElement('button');
+        read.type = 'button';
+        read.textContent = status === 'READ_QUEUED' ? 'Lecture en file' : 'Marquer lu';
+        read.disabled = status === 'READ_QUEUED';
+        read.onclick = () => readDatalink(id);
+        actions.append(read);
+      }
       if (direction === 'OPS_TO_COCKPIT' && requiresAck && !acknowledgedAt) {
         const ack = document.createElement('button');
         ack.type = 'button';
@@ -992,6 +1004,17 @@ async function refreshDatalink() {
     showMessage('#datalinkMessage', error.message, true);
   } finally {
     datalinkRefreshing = false;
+  }
+}
+
+async function readDatalink(messageId) {
+  const operationId = currentDatalinkOperation();
+  if (!operationId) return;
+  try {
+    const snapshot = await call('/api/datalink/read?operation=' + encodeURIComponent(operationId), { message_id: messageId });
+    renderDatalink(snapshot);
+  } catch (error) {
+    showMessage('#datalinkMessage', error.message, true);
   }
 }
 
