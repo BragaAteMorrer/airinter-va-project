@@ -48,15 +48,8 @@ app.MapGet("/api/status", (PhpVmsClient client, SimConnectReader sim, FlightReco
     }
 });
 
-app.MapPost("/api/config", async (ConfigRequest input, PhpVmsClient client, FlightRecorder recorder) =>
-{
-    client.ConfigureApiKey(input.Server, input.ApiKey);
-    var user = await client.Send("user");
-    var configuration = await LoadRemoteConfiguration(client, recorder);
-    return Results.Json(new { user, configuration });
-});
 app.MapPost("/api/login", async (LoginRequest input, PhpVmsClient client, FlightRecorder recorder) => {
-    var user = await client.SignIn(input.Server, input.Login, input.Password);
+    var user = await client.SignIn(AirInterServer(), input.Login, input.Password);
     var configuration = await LoadRemoteConfiguration(client, recorder);
     return Results.Json(new { user, configuration });
 });
@@ -142,6 +135,19 @@ app.MapPost("/api/file", async (PhpVmsClient client, FlightRecorder recorder) =>
 app.MapFallbackToFile("index.html");
 app.Run();
 
+static string AirInterServer()
+{
+    const string production = "https://promethee.airinter-va.org";
+    var managedOverride = Environment.GetEnvironmentVariable("PROMETHEE_ACARS_SERVER");
+    if (Uri.TryCreate(managedOverride, UriKind.Absolute, out var uri)
+        && uri.Scheme == Uri.UriSchemeHttps
+        && string.IsNullOrEmpty(uri.UserInfo)
+        && string.IsNullOrEmpty(uri.Query)
+        && string.IsNullOrEmpty(uri.Fragment))
+        return uri.AbsoluteUri.TrimEnd('/');
+    return production;
+}
+
 static string FindAvailableLocalUrl()
 {
     for (var port = 1974; port <= 1984; port++) {
@@ -166,8 +172,7 @@ static async Task<RemoteAcarsConfiguration> LoadRemoteConfiguration(PhpVmsClient
     return configuration;
 }
 
-public sealed record ConfigRequest(string Server, string ApiKey);
-public sealed record LoginRequest(string Server, string Login, string Password);
+public sealed record LoginRequest(string Login, string Password);
 public sealed record StartRequest(string PirepId);
 
 public sealed class TelemetryWorker(SimConnectReader sim, FlightRecorder recorder, PhpVmsClient client) : BackgroundService
