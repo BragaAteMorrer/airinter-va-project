@@ -83,7 +83,7 @@
     const datalinkAckBase = @json(url('/admin/promethee/datalink/messages'));
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
-    const state = { operations: [], selected: null, detail: null, tab: 'overview', timer: null, map: null, layer: null };
+    const state = { operations: [], selected: null, detail: null, tab: 'overview', timer: null, map: null, layer: null, trackLayer: null };
 
     const rows = document.querySelector('#dispatch-rows');
     const updated = document.querySelector('#dispatch-updated');
@@ -129,6 +129,7 @@
         state.map = L.map(node, {scrollWheelZoom:true, minZoom:2, maxZoom:12}).setView([46.6, 2.5], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution:'© OpenStreetMap'}).addTo(state.map);
         state.layer = L.layerGroup().addTo(state.map);
+        state.trackLayer = L.layerGroup().addTo(state.map);
     }
 
     function renderMap(operations) {
@@ -150,7 +151,24 @@
             marker.on('click', () => selectOperation(op.operation_id));
             points.push([lat, lon]);
         });
-        if (points.length) state.map.fitBounds(points, {padding:[30,30], maxZoom:7});
+        if (points.length && !state.selected) state.map.fitBounds(points, {padding:[30,30], maxZoom:7});
+    }
+
+    function renderSelectedTrack() {
+        initMap();
+        if (!state.map || !state.trackLayer) return;
+        state.trackLayer.clearLayers();
+
+        const points = (state.detail?.track?.points || [])
+            .filter(point => point.lat !== null && point.lat !== undefined && point.lon !== null && point.lon !== undefined)
+            .map(point => [Number(point.lat), Number(point.lon)]);
+
+        if (!points.length) return;
+
+        L.polyline(points, {weight:4, opacity:.8}).addTo(state.trackLayer);
+        const last = points[points.length - 1];
+        L.circleMarker(last, {radius:6, weight:2, fillOpacity:.9}).addTo(state.trackLayer);
+        state.map.fitBounds(points, {padding:[35,35], maxZoom:8});
     }
 
     function operationMatches(op, query) {
@@ -236,6 +254,7 @@
             const payload = await response.json();
             state.detail = payload.data;
             renderOperationHeader();
+            renderSelectedTrack();
             renderTab();
         } catch (error) {
             content.innerHTML = '<div class="notice error">Impossible de charger cette opération.</div>';
@@ -345,7 +364,7 @@
             '<article class="dispatch-card"><span>Position</span><strong>' + esc(latest.lat ?? '—') + ' / ' + esc(latest.lon ?? '—') + '</strong><small>' + dateTime(latest.recorded_at) + '</small></article>' +
             '<article class="dispatch-card"><span>Cap</span><strong>' + number(latest.heading, '°') + '</strong><small>VS ' + number(latest.vs, ' ft/min') + '</small></article>' +
             '<article class="dispatch-card"><span>Vitesse</span><strong>' + number(latest.gs, ' kt') + '</strong><small>IAS ' + number(latest.ias, ' kt') + '</small></article>' +
-        '</div><p class="muted">La trace cartographique est affichée sur la carte OCC principale. ' + esc((t.points || []).length) + ' points représentatifs sont disponibles dans le flux détail.</p>';
+        '</div><p class="muted">La trajectoire de l’opération sélectionnée est tracée sur la carte OCC à partir de ' + esc((t.points || []).length) + ' points représentatifs.</p>';
     }
 
     function renderFdm() {
