@@ -106,6 +106,68 @@ $('#simbriefBtn').onclick = async () => {
   }
 };
 
+$('#simbriefBtn').onclick = async () => {
+  const form = $('#prefileForm');
+  const flightId = form.flight_id.value;
+  const aircraftId = form.aircraft_id.value;
+  if (!flightId || !aircraftId) {
+    show($('#simbriefState'), 'Sélectionnez d’abord un vol et un appareil autorisé.');
+    return;
+  }
+
+  try {
+    show($('#simbriefState'), 'Préparation de la demande SimBrief…');
+    const session = await call(`/api/flights/${encodeURIComponent(flightId)}/simbrief/session`, {aircraft_id: aircraftId});
+    const popup = window.open('about:blank', 'PrometheeSimBrief', 'width=760,height=640');
+    if (!popup) throw new Error('Autorisez les fenêtres contextuelles pour ouvrir SimBrief.');
+
+    const dispatch = document.createElement('form');
+    dispatch.method = 'GET';
+    dispatch.action = session.worker_url;
+    dispatch.target = 'PrometheeSimBrief';
+    Object.entries(session.parameters).forEach(([name, value]) => {
+      if (value === null || value === undefined || value === '') return;
+      const input = document.createElement('input');
+      input.type = 'hidden'; input.name = name; input.value = value;
+      dispatch.append(input);
+    });
+    document.body.append(dispatch);
+    dispatch.submit();
+    dispatch.remove();
+    show($('#simbriefState'), 'Connectez-vous à SimBrief, générez l’OFP puis fermez la fenêtre.');
+
+    const waitForClose = setInterval(async () => {
+      if (!popup.closed) return;
+      clearInterval(waitForClose);
+      show($('#simbriefState'), 'Import de l’OFP dans Prométhée…');
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        try {
+          const briefing = await call(`/api/flights/${encodeURIComponent(flightId)}/simbrief/import`, {
+            aircraft_id: aircraftId, ofp_id: session.ofp_id
+          });
+          flightPlan = {name: 'OFP SimBrief', prefile: {
+            simbrief_id: briefing.id,
+            route: briefing.route,
+            level: Number(briefing.initial_altitude) || undefined,
+            block_fuel: briefing.block_fuel || undefined
+          }};
+          show($('#planBox'), briefing);
+          show($('#simbriefState'), 'OFP importé et prêt à être rattaché au PIREP.');
+          return;
+        } catch (err) {
+          if (attempt === 4) {
+            show($('#simbriefState'), `OFP introuvable : ${err.message || err}`);
+            return;
+          }
+          await new Promise(resolve => setTimeout(resolve, 1500));
+        }
+      }
+    }, 500);
+  } catch (err) {
+    show($('#simbriefState'), String(err.message || err));
+  }
+};
+
 $('#prefileForm').onsubmit = async e => {
   e.preventDefault();
   const raw = Object.fromEntries(new FormData(e.currentTarget));
