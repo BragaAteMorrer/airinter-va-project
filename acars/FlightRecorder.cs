@@ -224,6 +224,10 @@ public sealed class FlightRecorder
             var observations = Flight.Observations ?? [];
             string? gateStatus(string prefix) => observations
                 .LastOrDefault(x => x.Code.StartsWith(prefix, StringComparison.Ordinal))?.Status;
+            var maxBank = observations.Where(x => x.Code == "EXCESSIVE_BANK")
+                .Select(x => x.Value ?? 0).DefaultIfEmpty(0).Max();
+            var maxRate = observations.Where(x => x.Code == "SIM_RATE")
+                .Select(x => x.Value ?? 0).DefaultIfEmpty(0).Max();
             return new(
                 Flight.PirepId,
                 Flight.Phase,
@@ -237,9 +241,9 @@ public sealed class FlightRecorder
                 gateStatus("APPROACH_500_"),
                 (int)observations.Where(x => x.Code == "BOUNCE").Select(x => x.Value ?? 0).DefaultIfEmpty(0).Max(),
                 observations.Count(x => x.Code == "GO_AROUND"),
-                observations.Where(x => x.Code == "EXCESSIVE_BANK").Select(x => x.Value).Where(x => x is not null).Select(x => x!.Value).DefaultIfEmpty().Max() is var maxBank && maxBank > 0 ? maxBank : null,
+                maxBank > 0 ? maxBank : null,
                 Math.Round(observations.Where(x => x.Code == "FUEL_ADDED").Sum(x => x.Value ?? 0)),
-                observations.Where(x => x.Code == "SIM_RATE").Select(x => x.Value).Where(x => x is not null).Select(x => x!.Value).DefaultIfEmpty().Max() is var maxRate && maxRate > 0 ? maxRate : null,
+                maxRate > 0 ? maxRate : null,
                 Flight.Issues,
                 observations,
                 Flight.Timeline);
