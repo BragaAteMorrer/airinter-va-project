@@ -86,9 +86,7 @@ class DatalinkService
             ];
 
             $messages[] = $message;
-            if (count($messages) > self::MAX_MESSAGES) {
-                $messages = array_slice($messages, -self::MAX_MESSAGES);
-            }
+            $messages = $this->trimMessages($messages);
 
             return $message;
         });
@@ -125,6 +123,32 @@ class DatalinkService
 
             throw new RuntimeException('Message datalink introuvable.');
         });
+    }
+
+    private function trimMessages(array $messages): array
+    {
+        if (count($messages) <= self::MAX_MESSAGES) return array_values($messages);
+
+        $protected = [];
+        foreach ($messages as $message) {
+            if (($message['requires_ack'] ?? false) && blank($message['acknowledged_at'] ?? null)) {
+                $protected[(string) ($message['id'] ?? '')] = true;
+            }
+        }
+
+        $keep = $protected;
+        $room = max(0, self::MAX_MESSAGES - count($keep));
+        for ($index = count($messages) - 1; $index >= 0 && $room > 0; $index--) {
+            $id = (string) ($messages[$index]['id'] ?? '');
+            if (isset($keep[$id])) continue;
+            $keep[$id] = true;
+            $room--;
+        }
+
+        return array_values(array_filter(
+            $messages,
+            fn (array $message) => isset($keep[(string) ($message['id'] ?? '')])
+        ));
     }
 
     private function read(string $operationId): array
