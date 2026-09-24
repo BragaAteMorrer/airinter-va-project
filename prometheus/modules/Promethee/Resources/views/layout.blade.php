@@ -36,6 +36,7 @@
 <script>
 window.prometheeI18n = @json($prometheeI18n);
 </script>
+@stack('styles')
 </head>
 <body>
 <a class="skip" href="#main">{{ __('promethee.skip_to_content') }}</a>
@@ -124,7 +125,8 @@ window.prometheeI18n = @json($prometheeI18n);
     <div class="nav-menu">
         <a @class(['selected' => request()->routeIs('promethee.dashboard')]) href="{{ route('promethee.dashboard') }}">{{ __('promethee.dashboard') }}</a>
         @ability('admin','admin-access')
-        <a @class(['selected' => request()->routeIs('admin.promethee.*')]) href="{{ route('admin.promethee.dashboard') }}">{{ __('promethee.administration') }}</a>
+        <a @class(['selected' => request()->routeIs('admin.promethee.dashboard')]) href="{{ route('admin.promethee.dashboard') }}">{{ __('promethee.administration') }}</a>
+        <a @class(['selected' => request()->routeIs('admin.promethee.dispatch*')]) href="{{ route('admin.promethee.dispatch') }}">Dispatch Desk</a>
         @endability
         <a href="{{ url('/logout') }}">{{ __('promethee.logout') }}</a>
     </div>
