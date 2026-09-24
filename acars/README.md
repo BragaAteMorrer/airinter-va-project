@@ -36,9 +36,16 @@ l'OFP généré, fermer cette fenêtre : Hermès importe automatiquement le brie
 dans Prométhée et inclut son `simbrief_id` lors du pré-dépôt du PIREP.
 
 La clé API SimBrief de la compagnie reste sur Prométhée et n'est jamais envoyée
-au client. L'administrateur doit renseigner `simbrief.api_key`, affecter les
-sous-flottes aux vols et aux grades, et définir `simbrief_type` sur l'appareil ou
-sa sous-flotte. Les fenêtres contextuelles doivent être autorisées pour Hermès.
+au client. Dans **Administration → Settings → simbrief**, renseigner **SimBrief
+Company API Key** puis enregistrer. Le champ est write-only : une clé déjà
+configurée n'est jamais réaffichée ; laisser le champ vide la conserve et sa
+suppression exige de cocher explicitement **Remove the stored credential**.
+
+Hermès reçoit uniquement `company_api_available: true/false` afin d'activer ou
+désactiver le mode **API SimBrief**. La valeur de la clé n'est jamais incluse
+dans les réponses API, les diagnostics Hermès ou les logs d'activité. Il faut
+également affecter les sous-flottes aux vols et aux grades, et définir
+`simbrief_type` sur l'appareil ou sa sous-flotte.
 
 Les positions et événements non envoyés sont conservés localement après une coupure. Après un redémarrage, le pilote doit explicitement reprendre le vol : l'application ne rattache jamais silencieusement des données à un ancien PIREP.
 
