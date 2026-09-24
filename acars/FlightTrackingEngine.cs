@@ -249,7 +249,7 @@ public sealed class FlightTrackingEngine
         var observedRate = current.TouchdownVerticalSpeedFeetPerMinute
             ?? current.VerticalSpeedFeetPerMinute
             ?? before.VerticalSpeedFeetPerMinute;
-        var rate = observedRate is null ? null : -Math.Abs(observedRate.Value);
+        double? rate = observedRate is null ? null : -Math.Abs(observedRate.Value);
 
         Phase = FlightPhase.Landing;
         events.Add(new("LANDING", current.RecordedAt, current, rate));
