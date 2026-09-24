@@ -530,6 +530,9 @@ class OperationsV1Controller extends Controller
                 'addon' => $fallback['addon'] ?? null,
                 'ofp_id' => $ofp?->id,
                 'available' => $ofpAvailable,
+                // Hermès only needs to know whether company generation can be
+                // offered. The actual API key never leaves Prométhée.
+                'company_api_available' => filled(setting('simbrief.api_key')),
             ],
             'operating_rules' => [
                 'passenger_weight_kg' => config('acars.passenger_weight_kg'),
