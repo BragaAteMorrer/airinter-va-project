@@ -383,4 +383,246 @@ final class PrometheeDemandEconomyTest extends TestCase
         );
     }
 
+
+    public function test_bulk_bbr_band_change_preserves_each_selected_flights_own_red_price(): void
+    {
+        $admin = $this->createAdminUser();
+        $fleet = $this->createSubfleetWithAircraft(1);
+        $subfleet = $fleet['subfleet'];
+
+        $fare = Fare::factory()->create([
+            'code' => 'YBULK',
+            'name' => 'Bulk BBR Economy',
+            'type' => FareType::PASSENGER,
+            'price' => 300,
+            'capacity' => 100,
+            'active' => true,
+        ]);
+        $subfleet->fares()->syncWithoutDetaching([
+            $fare->id => ['price' => null, 'cost' => null, 'capacity' => 100],
+        ]);
+
+        $first = Flight::factory()->create([
+            'airline_id' => $subfleet->airline_id,
+            'active' => true,
+        ]);
+        $second = Flight::factory()->create([
+            'airline_id' => $subfleet->airline_id,
+            'active' => true,
+        ]);
+        foreach ([$first, $second] as $flight) {
+            $flight->subfleets()->syncWithoutDetaching([$subfleet->id]);
+        }
+        $first->fares()->syncWithoutDetaching([
+            $fare->id => ['price' => '234', 'cost' => null, 'capacity' => 100],
+        ]);
+        $second->fares()->syncWithoutDetaching([
+            $fare->id => ['price' => '178', 'cost' => null, 'capacity' => 100],
+        ]);
+
+        foreach ([
+            'pricing.bands.enabled' => '1',
+            'pricing.bands.blue' => '50',
+            'pricing.bands.white' => '80',
+        ] as $key => $value) {
+            DB::table('promethee_settings')->updateOrInsert(
+                ['key' => $key],
+                ['value' => $value, 'created_at' => now(), 'updated_at' => now()]
+            );
+        }
+
+        $this->actingAs($admin, 'web')->post('/admin/promethee/economy/flight-prices', [
+            'flight_ids' => [$first->id, $second->id],
+            'mode' => 'band',
+            'band' => 'blanc',
+        ])->assertStatus(302);
+
+        $this->assertSame(
+            187.2,
+            (float) DB::table('flight_fare')->where('flight_id', $first->id)->where('fare_id', $fare->id)->value('price')
+        );
+        $this->assertSame(
+            142.4,
+            (float) DB::table('flight_fare')->where('flight_id', $second->id)->where('fare_id', $fare->id)->value('price')
+        );
+        $this->assertSame(
+            234.0,
+            (float) DB::table('promethee_pricing')->where('flight_id', $first->id)->where('fare_id', $fare->id)->value('red_price')
+        );
+        $this->assertSame(
+            178.0,
+            (float) DB::table('promethee_pricing')->where('flight_id', $second->id)->where('fare_id', $fare->id)->value('red_price')
+        );
+
+        $this->actingAs($admin, 'web')->post('/admin/promethee/economy/flight-prices', [
+            'flight_ids' => [$first->id, $second->id],
+            'mode' => 'band',
+            'band' => 'rouge',
+        ])->assertStatus(302);
+
+        $this->assertSame(
+            234.0,
+            (float) DB::table('flight_fare')->where('flight_id', $first->id)->where('fare_id', $fare->id)->value('price')
+        );
+        $this->assertSame(
+            178.0,
+            (float) DB::table('flight_fare')->where('flight_id', $second->id)->where('fare_id', $fare->id)->value('price')
+        );
+    }
+
+    public function test_blank_bulk_red_price_mutation_is_rejected_instead_of_becoming_zero(): void
+    {
+        $admin = $this->createAdminUser();
+        $flight = Flight::factory()->create(['active' => true]);
+        $fare = Fare::factory()->create([
+            'code' => 'YBLANK',
+            'name' => 'Blank Bulk Guard',
+            'type' => FareType::PASSENGER,
+            'price' => 234,
+            'active' => true,
+        ]);
+        $flight->fares()->syncWithoutDetaching([
+            $fare->id => ['price' => '234', 'cost' => null, 'capacity' => 100],
+        ]);
+
+        $this->actingAs($admin, 'web')->post('/admin/promethee/economy/flight-prices', [
+            'flight_ids' => [$flight->id],
+            'mode' => 'set',
+            'value' => '',
+            'band' => 'blanc',
+        ])->assertStatus(422);
+
+        $this->assertSame(
+            234.0,
+            (float) DB::table('flight_fare')->where('flight_id', $flight->id)->where('fare_id', $fare->id)->value('price')
+        );
+        $this->assertFalse(
+            DB::table('promethee_pricing')->where('flight_id', $flight->id)->where('fare_id', $fare->id)->exists()
+        );
+    }
+
+    public function test_blank_bulk_zero_corruption_is_repaired_from_each_inherited_red_price(): void
+    {
+        $fleet = $this->createSubfleetWithAircraft(1);
+        $subfleet = $fleet['subfleet'];
+
+        $fare = Fare::factory()->create([
+            'code' => 'YREPAIR0',
+            'name' => 'Zeroed Bulk BBR',
+            'type' => FareType::PASSENGER,
+            'price' => 300,
+            'capacity' => 100,
+            'active' => true,
+        ]);
+        $subfleet->fares()->syncWithoutDetaching([
+            $fare->id => ['price' => '234', 'cost' => null, 'capacity' => 100],
+        ]);
+
+        $flight = Flight::factory()->create([
+            'airline_id' => $subfleet->airline_id,
+            'active' => true,
+        ]);
+        $flight->subfleets()->syncWithoutDetaching([$subfleet->id]);
+        $flight->fares()->syncWithoutDetaching([
+            $fare->id => ['price' => '0', 'cost' => null, 'capacity' => 100],
+        ]);
+
+        DB::table('promethee_pricing')->insert([
+            'flight_id' => $flight->id,
+            'fare_id' => $fare->id,
+            'band' => 'blanc',
+            'red_price' => 0,
+            'multiplier' => .8,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('promethee_price_history')->insert([
+            'target' => 'ticket',
+            'subject_id' => $flight->id,
+            'field' => 'fare:'.$fare->id,
+            'before_price' => 234,
+            'after_price' => 0,
+            'context' => json_encode([
+                'operation' => 'set',
+                'value' => null,
+                'band' => 'blanc',
+                'red_price' => 0,
+            ]),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $count = app(BbrReferenceRepairService::class)->repairBlankBulkReferences();
+
+        $this->assertSame(1, $count);
+        $this->assertSame(
+            234.0,
+            (float) DB::table('promethee_pricing')->where('flight_id', $flight->id)->where('fare_id', $fare->id)->value('red_price')
+        );
+        $this->assertSame(
+            187.2,
+            (float) DB::table('flight_fare')->where('flight_id', $flight->id)->where('fare_id', $fare->id)->value('price')
+        );
+    }
+
+    public function test_zero_red_price_explicitly_entered_by_admin_is_not_repaired(): void
+    {
+        $fleet = $this->createSubfleetWithAircraft(1);
+        $subfleet = $fleet['subfleet'];
+
+        $fare = Fare::factory()->create([
+            'code' => 'YFREE',
+            'name' => 'Explicit Zero Fare',
+            'type' => FareType::PASSENGER,
+            'price' => 300,
+            'capacity' => 100,
+            'active' => true,
+        ]);
+        $subfleet->fares()->syncWithoutDetaching([
+            $fare->id => ['price' => '234', 'cost' => null, 'capacity' => 100],
+        ]);
+
+        $flight = Flight::factory()->create([
+            'airline_id' => $subfleet->airline_id,
+            'active' => true,
+        ]);
+        $flight->subfleets()->syncWithoutDetaching([$subfleet->id]);
+        $flight->fares()->syncWithoutDetaching([
+            $fare->id => ['price' => '0', 'cost' => null, 'capacity' => 100],
+        ]);
+
+        DB::table('promethee_pricing')->insert([
+            'flight_id' => $flight->id,
+            'fare_id' => $fare->id,
+            'band' => 'rouge',
+            'red_price' => 0,
+            'multiplier' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('promethee_price_history')->insert([
+            'target' => 'ticket',
+            'subject_id' => $flight->id,
+            'field' => 'fare:'.$fare->id,
+            'before_price' => 234,
+            'after_price' => 0,
+            'context' => json_encode([
+                'operation' => 'set',
+                'value' => 0,
+                'band' => 'rouge',
+                'red_price' => 0,
+            ]),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $count = app(BbrReferenceRepairService::class)->repairBlankBulkReferences();
+
+        $this->assertSame(0, $count);
+        $this->assertSame(
+            0.0,
+            (float) DB::table('promethee_pricing')->where('flight_id', $flight->id)->where('fare_id', $fare->id)->value('red_price')
+        );
+    }
+
 }
