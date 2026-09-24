@@ -15,6 +15,7 @@ public record FlightState(string Server, string PirepId, DateTimeOffset Started,
 }
 public record Envelope(Sample Sample, AircraftSnapshot? Snapshot = null);
 public record AcarsEvent(Guid EventId, string Name, DateTimeOffset OccurredAt, double Lat, double Lon);
+public record SopFactEnvelope(Guid FactId, FdmObservation Observation);
 public record FlightIssue(DateTimeOffset OccurredAt, string Code, string Message, string Severity = "warning");
 public record PhaseEntry(DateTimeOffset OccurredAt, string Name);
 public record FlightJournalEntry(DateTimeOffset OccurredAt, string Name, double? Value = null);
@@ -46,6 +47,7 @@ public sealed class FlightRecorder
     public AcarsRules Rules { get; private set; } = new();
     public List<Envelope> Pending { get; private set; } = [];
     public List<AcarsEvent> PendingEvents { get; private set; } = [];
+    public List<SopFactEnvelope> PendingFacts { get; private set; } = [];
     public string? Warning { get; private set; }
     public RemoteAcarsConfiguration? RemoteConfiguration { get; private set; }
     public bool RecoveryAvailable { get { lock (Gate) return recoveryRequired && Flight is not null && !Flight.Recording; } }
@@ -64,7 +66,10 @@ public sealed class FlightRecorder
             try {
                 var saved = JsonSerializer.Deserialize<Saved>(File.ReadAllText(file));
                 Flight = saved?.Flight; Pending = saved?.Pending ?? []; PendingEvents = saved?.PendingEvents ?? [];
+                PendingFacts = saved?.PendingFacts ?? [];
                 Track = saved?.Track ?? [];
+                if (Flight?.OperationId is not null && PendingFacts.Count == 0 && Flight.Observations.Count > 0)
+                    PendingFacts = Flight.Observations.Select(x => new SopFactEnvelope(Guid.NewGuid(), x)).ToList();
                 if (Flight is not null) {
                     Flight = Flight with { Recording = false };
                     recoveryRequired = true;
@@ -76,7 +81,12 @@ public sealed class FlightRecorder
         }
     }
 
-    private record Saved(FlightState? Flight, List<Envelope> Pending, List<AcarsEvent> PendingEvents, List<TrackPoint>? Track = null);
+    private record Saved(
+        FlightState? Flight,
+        List<Envelope> Pending,
+        List<AcarsEvent> PendingEvents,
+        List<TrackPoint>? Track = null,
+        List<SopFactEnvelope>? PendingFacts = null);
     private void SaveHistory() => File.WriteAllText(Path.Combine(folder, "history.json"), JsonSerializer.Serialize(History));
     public void SetRules(AcarsRules rules) { lock (Gate) { if (rules.TaxiSpeed is < 5 or > 100 || rules.HardLandingRate is < 100 or > 2000) throw new InvalidOperationException("Valeurs de règles invalides."); Rules = rules; File.WriteAllText(Path.Combine(folder, "rules.json"), JsonSerializer.Serialize(rules)); } }
     public void ApplyRemoteConfiguration(RemoteAcarsConfiguration configuration)
@@ -90,7 +100,7 @@ public sealed class FlightRecorder
     {
         var temp = Path.Combine(folder, "state.tmp");
         using (var file = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None)) {
-            JsonSerializer.Serialize(file, new Saved(Flight, Pending, PendingEvents, Track)); file.Flush(true);
+            JsonSerializer.Serialize(file, new Saved(Flight, Pending, PendingEvents, Track, PendingFacts)); file.Flush(true);
         }
         File.Move(temp, Path.Combine(folder, "state.json"), true);
     }
@@ -121,6 +131,7 @@ public sealed class FlightRecorder
             previousSnapshot = snapshot;
             Pending = [];
             PendingEvents = [];
+            PendingFacts = [];
             Track = [];
             tracking.Process(snapshot);
             fdm.Process(snapshot, FlightPhase.Boarding, []);
@@ -212,6 +223,7 @@ public sealed class FlightRecorder
 
     public void AcknowledgePositions(IEnumerable<Guid> ids) { lock (Gate) { var set = ids.ToHashSet(); Pending.RemoveAll(x => set.Contains(x.Sample.SampleId)); Save(); }}
     public void AcknowledgeEvents(IEnumerable<Guid> ids) { lock (Gate) { var set = ids.ToHashSet(); PendingEvents.RemoveAll(x => set.Contains(x.EventId)); Save(); }}
+    public void AcknowledgeFacts(IEnumerable<Guid> ids) { lock (Gate) { var set = ids.ToHashSet(); PendingFacts.RemoveAll(x => set.Contains(x.FactId)); Save(); }}
 
     public void RecordLocalOperationalEvent(string name, DateTimeOffset occurredAt, double? value = null)
     {
@@ -224,9 +236,10 @@ public sealed class FlightRecorder
     }
     public void Complete() { lock (Gate) {
         if (Flight?.Phase != "IN") throw new InvalidOperationException("Attendez l'événement IN : avion arrêté au parking, frein de parc serré.");
-        if (Pending.Count > 0 || PendingEvents.Count > 0) throw new InvalidOperationException("Des messages ACARS restent à synchroniser.");
         var flight = Flight;
         AddObservations(fdm.Flush(previousSnapshot, FlightTrackingEngine.ParsePhase(flight.Phase)));
+        if (Pending.Count > 0 || PendingEvents.Count > 0 || PendingFacts.Count > 0)
+            throw new InvalidOperationException("Des messages ACARS ou faits SOP restent à synchroniser.");
         flight = Flight!;
         var block = flight.BlockOn is null || flight.BlockOff is null ? 0 : (int)Math.Round((flight.BlockOn.Value - flight.BlockOff.Value).TotalMinutes);
         History.Insert(0, new(flight.PirepId, DateTimeOffset.UtcNow, Math.Round(flight.Distance, 2), (int)Math.Round(flight.AirborneSeconds / 60), block, Math.Round(flight.FuelUsed), flight.LandingRate, flight.Issues, flight.Observations));
@@ -285,7 +298,7 @@ public sealed class FlightRecorder
                 (int)Math.Round(Flight.AirborneSeconds / 60),
                 Math.Round(Flight.FuelUsed),
                 Flight.LandingRate,
-                Pending.Count + PendingEvents.Count,
+                Pending.Count + PendingEvents.Count + PendingFacts.Count,
                 Track.Count);
         }
     }
@@ -303,6 +316,7 @@ public sealed class FlightRecorder
             lastQueuedAt = null;
             Pending = [];
             PendingEvents = [];
+            PendingFacts = [];
             Track = [];
             recoveryRequired = false;
             Warning = null;
@@ -377,6 +391,8 @@ public sealed class FlightRecorder
             .ToList();
         if (additions.Count == 0) return;
         Flight = Flight with { Observations = [.. Flight.Observations, .. additions] };
+        if (Flight.OperationId is not null)
+            PendingFacts.AddRange(additions.Select(x => new SopFactEnvelope(Guid.NewGuid(), x)));
     }
 
     private void AddIssue(Sample sample, string code, string message) {
