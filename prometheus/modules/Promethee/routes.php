@@ -93,6 +93,8 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::post('/identite', [PortalController::class, 'saveBranding'])->name('branding.save');
         Route::post('/identite/importer', [PortalController::class, 'importBranding'])->name('branding.import');
         Route::get('/simbrief', [PortalController::class, 'adminSimbrief'])->name('simbrief');
+        Route::post('/simbrief/api-key', [PortalController::class, 'saveSimbriefApiKey'])->name('simbrief.api-key.save');
+        Route::delete('/simbrief/api-key', [PortalController::class, 'deleteSimbriefApiKey'])->name('simbrief.api-key.delete');
         Route::post('/simbrief/sync', [PortalController::class, 'syncSimbrief'])->name('simbrief.sync');
         Route::post('/calendar', [PortalController::class,'saveEvent'])->name('calendar.save');
         Route::delete('/calendar/{id}', [PortalController::class,'deleteEvent'])->name('calendar.delete');
