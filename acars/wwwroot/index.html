@@ -92,7 +92,7 @@
       <p id="flightMessage" class="message" hidden role="status"></p>
       <div id="flightList" class="list"></div>
       <article id="selectedOperation" class="prefile" hidden>
-        <div><p id="selectedFlight">Aucun vol sélectionné</p><p id="operationBrief" class="hint"></p></div>
+        <div><p id="selectedFlight">Aucun vol sélectionné</p><p id="operationBrief" class="hint"></p><p id="operationLoad" class="hint" hidden></p></div>
       </article>
       <div id="aircraftEligibility" class="eligibility" hidden></div>
       <section class="flightplan-source">
@@ -126,7 +126,8 @@
         <input name="flight_id" type="hidden">
         <input name="airline_id" type="hidden">
         <input name="flight_number" type="hidden">
-        <label>Avion autorisé<select id="aircraftId" name="aircraft_id" required><option value="">Sélectionnez d'abord un vol</option></select></label>
+        <input id="selectedAircraftId" name="aircraft_id" type="hidden">
+        <label>Type d’appareil<select id="aircraftId" required><option value="">Sélectionnez d'abord un vol</option></select></label>
         <label>Départ<input name="dpt_airport_id" required readonly></label>
         <label>Arrivée<input name="arr_airport_id" required readonly></label>
         <label>Aéroport de dégagement<input name="alt_airport_id" placeholder="AUTO ou LIRN" maxlength="8"></label>
