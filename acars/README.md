@@ -54,9 +54,18 @@ Le script produit `dist\Promethee-ACARS-win-x64-1.0.0.zip`. C'est le fichier à 
 
 ### Prérequis pilote
 
-- Windows 10/11 64 bits et Microsoft Flight Simulator démarré ;
-- SimConnect installé avec MSFS/son SDK. Si le DLL n'est pas trouvé automatiquement, définir `PROMETHEE_SIMCONNECT_DLL` vers le `SimConnect.dll` 64 bits avant de lancer l'EXE ;
+- Windows 10/11 64 bits ;
+- **MSFS 2020/2024** : SimConnect installé avec MSFS/son SDK. Si la DLL n'est pas trouvée automatiquement, définir `PROMETHEE_SIMCONNECT_DLL` vers le `SimConnect.dll` 64 bits avant de lancer l'EXE ;
+- **FS2004** : FSUIPC3 installé (branche historique 3.999z9) ;
+- **FSX / FSX Steam / Prepar3D 1–3** : FSUIPC4 installé ;
+- **Prepar3D 4–6** : FSUIPC6 installé ;
 - accès HTTPS au site phpVMS (HTTP n'est accepté que pour `localhost`).
+
+Hermès embarque uniquement le client .NET `FSUIPCClientDLL` nécessaire pour
+ouvrir l'interface IPC. Il ne redistribue pas FSUIPC. L'accès IPC utilisé par
+les applications tierces ne nécessite pas la licence payante des fonctions
+avancées FSUIPC. Le support FS2004/FSX/P3D est considéré **implémenté mais non
+validé en vol réel** tant que la matrice de tests matériels n'est pas terminée.
 
 Ne pas ajouter le cache local au ZIP : les sessions et positions en attente sont enregistrées séparément dans `%LOCALAPPDATA%\AirInter\Promethee` sur chaque poste.
 
