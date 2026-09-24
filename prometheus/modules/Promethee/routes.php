@@ -126,6 +126,7 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         // Lot 5 transport surface for the future Dispatcher Desk.
         Route::get('/datalink/messages', [DatalinkController::class, 'adminIndex'])->name('datalink.messages');
         Route::post('/datalink/messages', [DatalinkController::class, 'adminSend'])->name('datalink.messages.send');
+        Route::post('/datalink/messages/{message}/read', [DatalinkController::class, 'adminRead'])->name('datalink.messages.read');
         Route::post('/datalink/messages/{message}/ack', [DatalinkController::class, 'adminAcknowledge'])->name('datalink.messages.ack');
         Route::get('/sop', [SopController::class, 'admin'])->name('sop');
         Route::post('/sop/rules', [SopController::class, 'saveRule'])->name('sop.rules.save');
@@ -198,6 +199,7 @@ Route::middleware(['api','api.auth'])->prefix('api/v1')->group(function () {
     Route::post('/operations/{bid}/telemetry', [TelemetryController::class, 'storeOperation']);
     Route::get('/operations/{operation}/datalink', [DatalinkController::class, 'index']);
     Route::post('/operations/{operation}/datalink', [DatalinkController::class, 'send']);
+    Route::post('/operations/{operation}/datalink/{message}/read', [DatalinkController::class, 'read']);
     Route::post('/operations/{operation}/datalink/{message}/ack', [DatalinkController::class, 'acknowledge']);
     Route::get('/operations/{operation}/sop', [SopController::class, 'index']);
     Route::post('/operations/{operation}/sop/facts', [SopController::class, 'ingest']);
