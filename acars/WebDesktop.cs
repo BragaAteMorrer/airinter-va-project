@@ -238,7 +238,10 @@ public sealed class PrometheeWindow : Window
         syncState=telemetry.SyncState, lastSuccessfulSyncAt=telemetry.LastSuccessfulSyncAt,
         nextSyncAttemptAt=telemetry.NextSyncAttemptAt, syncFailures=telemetry.ConsecutiveFailures,
         syncError=telemetry.LastSyncError,
-        remoteConfiguration=recorder.RemoteConfiguration, warning=recorder.Warning
+        remoteConfiguration=recorder.RemoteConfiguration,
+        datalinkLastSuccessfulSyncAt=datalink.LastSuccessfulSyncAt,
+        datalinkError=datalink.LastError,
+        warning=recorder.Warning
     };
     private async Task<object> Login(JsonElement? body)
     {
