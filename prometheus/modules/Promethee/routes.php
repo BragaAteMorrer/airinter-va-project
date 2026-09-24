@@ -88,6 +88,8 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::get('/identite', [PortalController::class, 'branding'])->name('branding');
         Route::post('/identite', [PortalController::class, 'saveBranding'])->name('branding.save');
         Route::post('/identite/importer', [PortalController::class, 'importBranding'])->name('branding.import');
+        Route::get('/simbrief', [PortalController::class, 'adminSimbrief'])->name('simbrief');
+        Route::post('/simbrief/sync', [PortalController::class, 'syncSimbrief'])->name('simbrief.sync');
         Route::post('/calendar', [PortalController::class,'saveEvent'])->name('calendar.save');
         Route::delete('/calendar/{id}', [PortalController::class,'deleteEvent'])->name('calendar.delete');
         Route::post('/pilots/{id}', [PortalController::class,'saveMember'])->name('pilots.save');
