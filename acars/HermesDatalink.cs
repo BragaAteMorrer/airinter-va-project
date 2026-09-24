@@ -71,6 +71,7 @@ public sealed class HermesDatalink
     private readonly IDatalinkTransport transport;
     private readonly string folder;
     private readonly object gate = new();
+    private readonly SemaphoreSlim networkGate = new(1, 1);
     private List<DatalinkMessage> messages = [];
     private List<PendingDatalinkSend> outbox = [];
     private List<PendingDatalinkAck> pendingAcks = [];
@@ -101,26 +102,31 @@ public sealed class HermesDatalink
     public async Task<DatalinkSnapshot> SyncAsync(string operationId)
     {
         ValidateOperation(operationId);
-        if (!transport.Connected) {
-            LastError = "Prométhée hors ligne — messages conservés localement.";
-            return Local(operationId);
-        }
-
+        await networkGate.WaitAsync();
         try {
-            await FlushOutbox(operationId);
-            await FlushAcks(operationId);
+            if (!transport.Connected) {
+                LastError = "Prométhée hors ligne — messages conservés localement.";
+                return Local(operationId);
+            }
 
-            var payload = await transport.Send($"v1/operations/{Uri.EscapeDataString(operationId)}/datalink");
-            MergeServerPayload(payload);
-            LastSuccessfulSyncAt = DateTimeOffset.UtcNow;
-            LastError = null;
-            Save();
-            lock (gate) return Snapshot(operationId, "SYNCED");
-        } catch (Exception exception) when (exception is InvalidOperationException or HttpRequestException or TaskCanceledException)
-        {
-            LastError = exception.Message;
-            Save();
-            lock (gate) return Snapshot(operationId, "DEGRADED");
+            try {
+                await FlushOutbox(operationId);
+                await FlushAcks(operationId);
+
+                var payload = await transport.Send($"v1/operations/{Uri.EscapeDataString(operationId)}/datalink");
+                MergeServerPayload(payload);
+                LastSuccessfulSyncAt = DateTimeOffset.UtcNow;
+                LastError = null;
+                Save();
+                lock (gate) return Snapshot(operationId, "SYNCED");
+            } catch (Exception exception) when (exception is InvalidOperationException or HttpRequestException or TaskCanceledException)
+            {
+                LastError = exception.Message;
+                Save();
+                lock (gate) return Snapshot(operationId, "DEGRADED");
+            }
+        } finally {
+            networkGate.Release();
         }
     }
 
