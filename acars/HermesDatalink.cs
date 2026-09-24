@@ -1,7 +1,6 @@
 using System.Text.Json;
 using System.IO;
 using System.Net.Http;
-using System.Text.Json.Serialization;
 
 namespace Promethee;
 
@@ -16,6 +15,9 @@ public sealed record DatalinkMessage(
     string Status,
     string SenderLabel,
     DateTimeOffset CreatedAt,
+    DateTimeOffset? SentAt = null,
+    DateTimeOffset? DeliveredAt = null,
+    DateTimeOffset? ReadAt = null,
     DateTimeOffset? AcknowledgedAt = null,
     string? ClientMessageId = null,
     string? ReplyTo = null,
@@ -25,7 +27,9 @@ public sealed record DatalinkSnapshot(
     string OperationId,
     IReadOnlyList<DatalinkMessage> Messages,
     int PendingOutbound,
+    int PendingReads,
     int PendingAcks,
+    int UnreadCount,
     int PendingRequiredAcks,
     string SyncState,
     DateTimeOffset? LastSuccessfulSyncAt,
@@ -41,6 +45,11 @@ internal sealed record PendingDatalinkSend(
     string? ReplyTo,
     DateTimeOffset CreatedAt);
 
+internal sealed record PendingDatalinkRead(
+    string OperationId,
+    string MessageId,
+    DateTimeOffset QueuedAt);
+
 internal sealed record PendingDatalinkAck(
     string OperationId,
     string MessageId,
@@ -49,6 +58,7 @@ internal sealed record PendingDatalinkAck(
 internal sealed record DatalinkStoreState(
     List<DatalinkMessage>? Messages = null,
     List<PendingDatalinkSend>? Outbox = null,
+    List<PendingDatalinkRead>? Reads = null,
     List<PendingDatalinkAck>? Acks = null);
 
 public interface IDatalinkTransport
@@ -64,9 +74,9 @@ public sealed class PhpVmsDatalinkTransport(PhpVmsClient client) : IDatalinkTran
 }
 
 /// <summary>
-/// Local-first Hermès datalink. Outbound messages and acknowledgements are
-/// persisted before network I/O, making retries idempotent through
-/// client_message_id and server-side ACK idempotency.
+/// Local-first Hermès datalink v2. Sends, READ receipts and ACKs are persisted
+/// before network I/O. The server remains the canonical source for delivery
+/// state while the local cache survives Prométhée/network interruptions.
 /// </summary>
 public sealed class HermesDatalink
 {
@@ -76,15 +86,14 @@ public sealed class HermesDatalink
     private readonly SemaphoreSlim networkGate = new(1, 1);
     private List<DatalinkMessage> messages = [];
     private List<PendingDatalinkSend> outbox = [];
+    private List<PendingDatalinkRead> pendingReads = [];
     private List<PendingDatalinkAck> pendingAcks = [];
 
     public DateTimeOffset? LastSuccessfulSyncAt { get; private set; }
     public string? LastError { get; private set; }
 
     public HermesDatalink(PhpVmsClient client, string? storageFolder = null)
-        : this(new PhpVmsDatalinkTransport(client), storageFolder)
-    {
-    }
+        : this(new PhpVmsDatalinkTransport(client), storageFolder) {}
 
     public HermesDatalink(IDatalinkTransport transport, string? storageFolder = null)
     {
@@ -105,14 +114,18 @@ public sealed class HermesDatalink
     {
         ValidateOperation(operationId);
         await networkGate.WaitAsync();
-        try {
-            if (!transport.Connected) {
-                LastError = "Prométhée hors ligne — messages conservés localement.";
+        try
+        {
+            if (!transport.Connected)
+            {
+                LastError = "Prométhée hors ligne — messages et reçus conservés localement.";
                 return Local(operationId);
             }
 
-            try {
+            try
+            {
                 await FlushOutbox(operationId);
+                await FlushReads(operationId);
                 await FlushAcks(operationId);
 
                 var payload = await transport.Send($"v1/operations/{Uri.EscapeDataString(operationId)}/datalink");
@@ -121,13 +134,16 @@ public sealed class HermesDatalink
                 LastError = null;
                 Save();
                 lock (gate) return Snapshot(operationId, "SYNCED");
-            } catch (Exception exception) when (exception is InvalidOperationException or HttpRequestException or TaskCanceledException)
+            }
+            catch (Exception exception) when (exception is InvalidOperationException or HttpRequestException or TaskCanceledException)
             {
                 LastError = exception.Message;
                 Save();
                 lock (gate) return Snapshot(operationId, "DEGRADED");
             }
-        } finally {
+        }
+        finally
+        {
             networkGate.Release();
         }
     }
@@ -136,7 +152,7 @@ public sealed class HermesDatalink
         string operationId,
         string body,
         string category = "CREW",
-        string priority = "NORMAL",
+        string priority = "ROUTINE",
         bool requiresAck = false,
         string? replyTo = null)
     {
@@ -146,7 +162,7 @@ public sealed class HermesDatalink
             throw new InvalidOperationException("Le message datalink doit contenir entre 1 et 2000 caractères.");
 
         category = NormalizeChoice(category, ["OPS", "DISPATCH", "WEATHER", "SYSTEM", "CREW"], "CREW");
-        priority = NormalizeChoice(priority, ["NORMAL", "HIGH", "URGENT"], "NORMAL");
+        priority = NormalizePriority(priority);
 
         var clientMessageId = Guid.NewGuid().ToString();
         var queuedAt = DateTimeOffset.UtcNow;
@@ -163,16 +179,48 @@ public sealed class HermesDatalink
             "QUEUED",
             "COCKPIT",
             queuedAt,
-            null,
-            clientMessageId,
-            replyTo,
-            true);
+            SentAt: null,
+            ClientMessageId: clientMessageId,
+            ReplyTo: replyTo,
+            LocalPending: true);
 
-        lock (gate) {
+        lock (gate)
+        {
             outbox.Add(pending);
             messages.RemoveAll(x => x.Id == local.Id);
             messages.Add(local);
             Trim();
+            SaveUnsafe();
+        }
+
+        return await SyncAsync(operationId);
+    }
+
+    public async Task<DatalinkSnapshot> MarkReadAsync(string operationId, string messageId)
+    {
+        ValidateOperation(operationId);
+        if (string.IsNullOrWhiteSpace(messageId))
+            throw new InvalidOperationException("Message datalink invalide.");
+
+        lock (gate)
+        {
+            var index = messages.FindIndex(x => x.Id == messageId && x.OperationId == operationId);
+            if (index < 0) throw new InvalidOperationException("Message datalink introuvable.");
+            var message = messages[index];
+            if (message.Direction != "OPS_TO_COCKPIT")
+                throw new InvalidOperationException("Seuls les messages reçus d’OPS peuvent être marqués comme lus.");
+            if (message.ReadAt is not null || message.AcknowledgedAt is not null)
+                return Snapshot(operationId, transport.Connected ? "LOCAL" : "OFFLINE");
+
+            if (!pendingReads.Any(x => x.OperationId == operationId && x.MessageId == messageId))
+                pendingReads.Add(new(operationId, messageId, DateTimeOffset.UtcNow));
+
+            messages[index] = message with
+            {
+                Status = "READ_QUEUED",
+                ReadAt = DateTimeOffset.UtcNow,
+                LocalPending = true
+            };
             SaveUnsafe();
         }
 
@@ -185,7 +233,8 @@ public sealed class HermesDatalink
         if (string.IsNullOrWhiteSpace(messageId))
             throw new InvalidOperationException("Message datalink invalide.");
 
-        lock (gate) {
+        lock (gate)
+        {
             var index = messages.FindIndex(x => x.Id == messageId && x.OperationId == operationId);
             if (index < 0) throw new InvalidOperationException("Message datalink introuvable.");
             var message = messages[index];
@@ -194,9 +243,16 @@ public sealed class HermesDatalink
             if (!message.RequiresAck || message.AcknowledgedAt is not null)
                 return Snapshot(operationId, transport.Connected ? "LOCAL" : "OFFLINE");
 
+            pendingReads.RemoveAll(x => x.OperationId == operationId && x.MessageId == messageId);
             if (!pendingAcks.Any(x => x.OperationId == operationId && x.MessageId == messageId))
                 pendingAcks.Add(new(operationId, messageId, DateTimeOffset.UtcNow));
-            messages[index] = message with { Status = "ACK_QUEUED", LocalPending = true };
+
+            messages[index] = message with
+            {
+                Status = "ACK_QUEUED",
+                ReadAt = message.ReadAt ?? DateTimeOffset.UtcNow,
+                LocalPending = true
+            };
             SaveUnsafe();
         }
 
@@ -212,7 +268,8 @@ public sealed class HermesDatalink
         {
             var response = await transport.Send(
                 $"v1/operations/{Uri.EscapeDataString(operationId)}/datalink",
-                new {
+                new
+                {
                     body = item.Body,
                     category = item.Category,
                     priority = item.Priority,
@@ -222,10 +279,34 @@ public sealed class HermesDatalink
                 });
 
             var canonical = ParseMessage(MessageElement(response));
-            lock (gate) {
+            lock (gate)
+            {
                 outbox.RemoveAll(x => x.OperationId == item.OperationId && x.ClientMessageId == item.ClientMessageId);
                 messages.RemoveAll(x => x.OperationId == item.OperationId
                     && (x.Id == "local-" + item.ClientMessageId || x.ClientMessageId == item.ClientMessageId));
+                messages.Add(canonical);
+                Trim();
+                SaveUnsafe();
+            }
+        }
+    }
+
+    private async Task FlushReads(string operationId)
+    {
+        List<PendingDatalinkRead> pending;
+        lock (gate) pending = pendingReads.Where(x => x.OperationId == operationId).OrderBy(x => x.QueuedAt).ToList();
+
+        foreach (var item in pending)
+        {
+            var response = await transport.Send(
+                $"v1/operations/{Uri.EscapeDataString(operationId)}/datalink/{Uri.EscapeDataString(item.MessageId)}/read",
+                new { });
+
+            var canonical = ParseMessage(MessageElement(response));
+            lock (gate)
+            {
+                pendingReads.RemoveAll(x => x.OperationId == item.OperationId && x.MessageId == item.MessageId);
+                messages.RemoveAll(x => x.Id == canonical.Id);
                 messages.Add(canonical);
                 Trim();
                 SaveUnsafe();
@@ -245,7 +326,8 @@ public sealed class HermesDatalink
                 new { });
 
             var canonical = ParseMessage(MessageElement(response));
-            lock (gate) {
+            lock (gate)
+            {
                 pendingAcks.RemoveAll(x => x.OperationId == item.OperationId && x.MessageId == item.MessageId);
                 messages.RemoveAll(x => x.Id == canonical.Id);
                 messages.Add(canonical);
@@ -261,7 +343,8 @@ public sealed class HermesDatalink
             || !payload.TryGetProperty("messages", out var array)
             || array.ValueKind != JsonValueKind.Array) return;
 
-        lock (gate) {
+        lock (gate)
+        {
             foreach (var element in array.EnumerateArray())
             {
                 var incoming = ParseMessage(element);
@@ -280,6 +363,8 @@ public sealed class HermesDatalink
             .Where(x => x.OperationId == operationId)
             .OrderBy(x => x.CreatedAt)
             .ToArray();
+        var unread = operationMessages.Count(x =>
+            x.Direction == "OPS_TO_COCKPIT" && x.ReadAt is null);
         var pendingRequired = operationMessages.Count(x =>
             x.Direction == "OPS_TO_COCKPIT" && x.RequiresAck && x.AcknowledgedAt is null);
 
@@ -287,7 +372,9 @@ public sealed class HermesDatalink
             operationId,
             operationMessages,
             outbox.Count(x => x.OperationId == operationId),
+            pendingReads.Count(x => x.OperationId == operationId),
             pendingAcks.Count(x => x.OperationId == operationId),
+            unread,
             pendingRequired,
             state,
             LastSuccessfulSyncAt,
@@ -318,17 +405,21 @@ public sealed class HermesDatalink
             return DateTimeOffset.TryParse(value, out var parsed) ? parsed : null;
         }
 
+        var createdAt = date("created_at") ?? DateTimeOffset.UtcNow;
         return new(
             str("id"),
             str("operation_id"),
             str("direction"),
             str("category", "OPS"),
-            str("priority", "NORMAL"),
+            NormalizePriority(str("priority", "ROUTINE")),
             str("body"),
             boolean("requires_ack"),
             str("status", "SENT"),
             str("sender_label"),
-            date("created_at") ?? DateTimeOffset.UtcNow,
+            createdAt,
+            date("sent_at") ?? createdAt,
+            date("delivered_at"),
+            date("read_at"),
             date("acknowledged_at"),
             NullIfEmpty(str("client_message_id")),
             NullIfEmpty(str("reply_to")),
@@ -339,15 +430,21 @@ public sealed class HermesDatalink
     {
         var path = StorePath();
         if (!File.Exists(path)) return;
-        try {
+        try
+        {
             var state = JsonSerializer.Deserialize<DatalinkStoreState>(File.ReadAllText(path));
             messages = state?.Messages ?? [];
             outbox = state?.Outbox ?? [];
+            pendingReads = state?.Reads ?? [];
             pendingAcks = state?.Acks ?? [];
+            messages = messages.Select(x => x with { Priority = NormalizePriority(x.Priority) }).ToList();
             Trim();
-        } catch (Exception exception) when (exception is JsonException or IOException or UnauthorizedAccessException) {
+        }
+        catch (Exception exception) when (exception is JsonException or IOException or UnauthorizedAccessException)
+        {
             messages = [];
             outbox = [];
+            pendingReads = [];
             pendingAcks = [];
             LastError = "Le cache datalink local était illisible ou inaccessible et a été réinitialisé.";
         }
@@ -362,7 +459,8 @@ public sealed class HermesDatalink
     {
         var path = StorePath();
         var temp = path + ".tmp";
-        File.WriteAllText(temp, JsonSerializer.Serialize(new DatalinkStoreState(messages, outbox, pendingAcks)));
+        File.WriteAllText(temp, JsonSerializer.Serialize(
+            new DatalinkStoreState(messages, outbox, pendingReads, pendingAcks)));
         File.Move(temp, path, true);
     }
 
@@ -371,10 +469,11 @@ public sealed class HermesDatalink
         if (messages.Count <= 500) return;
 
         var protectedIds = new HashSet<string>(
-            pendingAcks.Select(x => x.MessageId)
+            pendingReads.Select(x => x.MessageId)
+                .Concat(pendingAcks.Select(x => x.MessageId))
                 .Concat(outbox.Select(x => "local-" + x.ClientMessageId))
                 .Concat(messages
-                    .Where(x => x.LocalPending || (x.RequiresAck && x.AcknowledgedAt is null))
+                    .Where(x => x.LocalPending || x.ReadAt is null || (x.RequiresAck && x.AcknowledgedAt is null))
                     .Select(x => x.Id)),
             StringComparer.Ordinal);
 
@@ -401,6 +500,18 @@ public sealed class HermesDatalink
     {
         value = (value ?? fallback).Trim().ToUpperInvariant();
         return allowed.Contains(value) ? value : fallback;
+    }
+
+    private static string NormalizePriority(string value)
+    {
+        value = (value ?? "ROUTINE").Trim().ToUpperInvariant();
+        value = value switch
+        {
+            "NORMAL" => "ROUTINE",
+            "HIGH" => "IMPORTANT",
+            _ => value
+        };
+        return value is "ROUTINE" or "ADVISORY" or "IMPORTANT" or "URGENT" ? value : "ROUTINE";
     }
 
     private static string? NullIfEmpty(string value) => string.IsNullOrWhiteSpace(value) ? null : value;
