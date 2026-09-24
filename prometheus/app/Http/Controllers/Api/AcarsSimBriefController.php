@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Modules\Promethee\Services\OperationIdentityService;
 use Modules\Promethee\Services\SimBriefApiSessionService;
+use Modules\Promethee\Services\DemandProfileService;
 
 class AcarsSimBriefController extends Controller
 {
@@ -26,7 +27,8 @@ class AcarsSimBriefController extends Controller
         private readonly SimBriefService $simBriefSvc,
         private readonly UserService $userSvc,
         private readonly OperationIdentityService $operationIdentity,
-        private readonly SimBriefApiSessionService $apiSessions
+        private readonly SimBriefApiSessionService $apiSessions,
+        private readonly DemandProfileService $demandProfile
     ) {}
 
     /**
@@ -47,8 +49,9 @@ class AcarsSimBriefController extends Controller
         abort_if(empty($type), 422, 'Le type SimBrief de cet appareil n’est pas configuré.');
 
         $timestamp = now()->timestamp;
-        $staticId = $this->staticId($request, $user->ident, $flight->id, $aircraft->id);
         $operationId = (string) ($request->input('operation_id') ?: $flight->id);
+        $demand = $this->demandProfile->profile($aircraft, $flight, $operationId);
+        $staticId = $this->staticId($request, $user->ident, $flight->id, $aircraft->id);
         $apiSession = $this->apiSessions->create(
             (int) $user->id,
             $operationId,
@@ -74,6 +77,7 @@ class AcarsSimBriefController extends Controller
                 'fl' => $plan['level'],
                 'type' => $type,
                 'reg' => $aircraft->registration,
+                'pax' => $demand['capacity'] > 0 ? $demand['passengers'] : null,
                 'airline' => $flight->airline->icao,
                 'fltnum' => $flight->flight_number,
                 'callsign' => setting('simbrief.callsign', true) ? $user->ident : $flight->airline->icao.$flight->flight_number,
@@ -104,6 +108,8 @@ class AcarsSimBriefController extends Controller
         abort_if(empty($type), 422, 'Le type SimBrief de cet appareil n’est pas configuré.');
 
         $staticId = $this->staticId($request, (string) Auth::id(), $flight->id, $aircraft->id);
+        $operationId = (string) ($request->input('operation_id') ?: $flight->id);
+        $demand = $this->demandProfile->profile($aircraft, $flight, $operationId);
 
         $parameters = array_filter([
             'airline' => $flight->airline->icao,
@@ -115,6 +121,7 @@ class AcarsSimBriefController extends Controller
             'route' => $plan['route'] ?: null,
             'fl' => $plan['level'] ?: null,
             'reg' => $aircraft->registration ?: null,
+            'pax' => $demand['capacity'] > 0 ? $demand['passengers'] : null,
             'callsign' => $flight->airline->icao.$flight->flight_number,
             'units' => 'KGS',
             'planformat' => 'LIDO',

@@ -15,7 +15,7 @@ use App\Services\FileService;
 use App\Services\UserService;
 use App\Support\Money;
 use App\Support\Countries;
-use Modules\Promethee\Services\{BrandingService,BulletinService,EconomyService,FlightOpsService,SafetyAnalyzer};
+use Modules\Promethee\Services\{BrandingService,BulletinService,DemandProfileService,EconomyService,FlightOpsService,SafetyAnalyzer};
 
 class PortalController extends Controller
 {
@@ -970,7 +970,7 @@ class PortalController extends Controller
         try { $bids->addBid($flight,$r->user()); return back()->with('success','Vol '.$flight->ident.' réservé.'); }
         catch (\Throwable $e) { return back()->withErrors(['reservation'=>$e->getMessage() ?: 'Cette réservation ne peut pas être créée.']); }
     }
-    public function briefing(string $id, Request $r) {
+    public function briefing(string $id, Request $r, DemandProfileService $demand) {
         $flight=Flight::with(['airline','dpt_airport','arr_airport','alt_airport','subfleets'])->findOrFail($id);
         $weather=[];
         try {
@@ -986,6 +986,13 @@ class PortalController extends Controller
         $suggestedFuel=(int) round(\App\Support\Units\Fuel::make(ceil(max(250,$distance*3.2)), 'kg')->toUnit($fuelUnit));
         $briefing=DB::table('promethee_briefings')->where(['user_id'=>$r->user()->id,'flight_id'=>$flight->id])->first();
         $bid=Bid::with(['aircraft.subfleet'])->where(['user_id'=>$r->user()->id,'flight_id'=>$flight->id])->latest()->first();
+        $loadProfile = $bid?->aircraft
+            ? $demand->profile(
+                $bid->aircraft,
+                $flight,
+                app(\Modules\Promethee\Services\OperationIdentityService::class)->id($bid)
+            )
+            : null;
         $simbrief=SimBrief::with('aircraft')->where('user_id',$r->user()->id)
             ->where('flight_id',$flight->id)->latest('updated_at')->first();
 
@@ -1005,7 +1012,7 @@ class PortalController extends Controller
         return $this->page('briefing',[
             'flight'=>$flight,'weather'=>$weather,'briefing'=>$briefing,
             'suggestedFuel'=>$suggestedFuel,'fuelUnit'=>$fuelUnit,
-            'bid'=>$bid,'simbrief'=>$simbrief,
+            'bid'=>$bid,'simbrief'=>$simbrief,'loadProfile'=>$loadProfile,
             'lineFleetRestricted'=>$flightSubfleetIds->isNotEmpty(),
             'compatibleSubfleetCount'=>$compatibleSubfleetIds->count(),
             'compatibleAircraftCount'=>$compatibleAircraftCount,
@@ -1151,6 +1158,57 @@ class PortalController extends Controller
         }
         return $r->filled('memorial_portrait_url') ? $r->string('memorial_portrait_url')->toString() : null;
     }
+    public function bbrSettings(DemandProfileService $demand)
+    {
+        return $this->page('admin.bbr', ['bbr' => $demand->settings()]);
+    }
+
+    public function saveBbrSettings(Request $r)
+    {
+        $data = $r->validate([
+            'enabled' => 'nullable|boolean',
+            'blue' => 'required|numeric|between:1,100',
+            'white' => 'required|numeric|between:1,100',
+            'blue_min' => 'required|numeric|between:1,100',
+            'blue_max' => 'required|numeric|between:1,100',
+            'white_min' => 'required|numeric|between:1,100',
+            'white_max' => 'required|numeric|between:1,100',
+            'red_min' => 'required|numeric|between:1,100',
+            'red_max' => 'required|numeric|between:1,100',
+        ]);
+
+        if ((float) $data['blue'] > (float) $data['white']) {
+            return back()->withErrors(['blue' => 'Le tarif Bleu doit rester inférieur ou égal au tarif Blanc.'])->withInput();
+        }
+
+        foreach (['blue', 'white', 'red'] as $band) {
+            if ((float) $data[$band.'_min'] > (float) $data[$band.'_max']) {
+                return back()->withErrors([$band.'_min' => 'Le minimum de remplissage doit être inférieur ou égal au maximum.'])->withInput();
+            }
+        }
+
+        $values = [
+            'pricing.bands.enabled' => $r->boolean('enabled') ? '1' : '0',
+            'pricing.bands.blue' => (string) $data['blue'],
+            'pricing.bands.white' => (string) $data['white'],
+            'pricing.demand.blue_min' => (string) $data['blue_min'],
+            'pricing.demand.blue_max' => (string) $data['blue_max'],
+            'pricing.demand.white_min' => (string) $data['white_min'],
+            'pricing.demand.white_max' => (string) $data['white_max'],
+            'pricing.demand.red_min' => (string) $data['red_min'],
+            'pricing.demand.red_max' => (string) $data['red_max'],
+        ];
+
+        foreach ($values as $key => $value) {
+            DB::table('promethee_settings')->updateOrInsert(
+                ['key' => $key],
+                ['value' => $value, 'created_at' => now(), 'updated_at' => now()]
+            );
+        }
+
+        return redirect()->route('admin.promethee.bbr')->with('success', 'Tarification et remplissage Bleu-Blanc-Rouge enregistrés.');
+    }
+
     public function economy(Request $r) {
         $flightFilters=$r->validate(['flight_airline'=>'nullable|string|max:10','flight_origin'=>'nullable|string|size:2','flight_arrival'=>'nullable|string|size:2','flight_dpt_airport'=>'nullable|string|max:10','flight_arr_airport'=>'nullable|string|max:10','flight_search'=>'nullable|string|max:80','flight_select_all'=>'nullable|boolean']);
         $fuelFilters=$r->validate(['fuel_country'=>'nullable|string|size:2','fuel_region'=>'nullable|string|max:191','fuel_search'=>'nullable|string|max:80','fuel_select_all'=>'nullable|boolean']);

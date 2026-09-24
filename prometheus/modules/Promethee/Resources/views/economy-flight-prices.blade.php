@@ -24,16 +24,32 @@
             <thead><tr><th><input type="checkbox" id="flight-select-all" aria-label="Tout sélectionner"></th><th>Compagnie</th><th>Ligne</th><th>Départ</th><th>Arrivée</th><th>Tarif</th><th>Prix actuel</th><th>Couleur</th></tr></thead>
             <tbody>
             @foreach($flightPricing as $flight)
-                @forelse($flight->fares as $fare)
-                    <tr data-airline="{{ $flight->airline?->icao }}" data-origin="{{ $flight->dpt_airport?->country }}" data-arrival="{{ $flight->arr_airport?->country }}" data-dpt-airport="{{ $flight->dpt_airport_id }}" data-arr-airport="{{ $flight->arr_airport_id }}" data-route="{{ strtolower($flight->ident.' '.$flight->dpt_airport_id.' '.$flight->arr_airport_id) }}">
-                        <td><input type="checkbox" name="flight_ids[]" value="{{ $flight->id }}" @checked(in_array((string)$flight->id,$selectedFlights,true))></td><td>{{ $flight->airline?->icao }}</td><td><strong>{{ $flight->ident }}</strong></td><td>{{ $flight->dpt_airport_id }} · {{ $flight->dpt_airport?->country }}</td><td>{{ $flight->arr_airport_id }} · {{ $flight->arr_airport?->country }}</td><td>{{ $fare->code }} · {{ $fare->name }}</td><td>{{ $fare->pivot->price ?: $fare->price }} {{ setting('units.currency', 'EUR') }}{{ $fare->type === \App\Models\Enums\FareType::CARGO ? ' / kg' : ' / passager' }}</td><td>{{ $pricingBands[$flight->id.'|'.$fare->id] ?? 'rouge' }}</td>
-                    </tr>
-                @empty
-                    @php $fareCode=$flight->airline?->icao === 'ICS' ? 'CGO' : ($flight->airline?->icao === 'ACF' ? 'T' : 'Y'); $baseFare=$baseFares[$fareCode] ?? null; $fareDefault=$baseFareDefaults[$fareCode]; @endphp
-                    <tr data-airline="{{ $flight->airline?->icao }}" data-origin="{{ $flight->dpt_airport?->country }}" data-arrival="{{ $flight->arr_airport?->country }}" data-dpt-airport="{{ $flight->dpt_airport_id }}" data-arr-airport="{{ $flight->arr_airport_id }}" data-route="{{ strtolower($flight->ident.' '.$flight->dpt_airport_id.' '.$flight->arr_airport_id) }}">
-                        <td><input type="checkbox" name="flight_ids[]" value="{{ $flight->id }}" @checked(in_array((string)$flight->id,$selectedFlights,true))></td><td>{{ $flight->airline?->icao }}</td><td><strong>{{ $flight->ident }}</strong></td><td>{{ $flight->dpt_airport_id }} · {{ $flight->dpt_airport?->country }}</td><td>{{ $flight->arr_airport_id }} · {{ $flight->arr_airport?->country }}</td><td>{{ $fareCode }} · {{ $baseFare?->name ?: $fareDefault['name'] }}</td><td>{{ $baseFare?->price ?: $fareDefault['price'] }} {{ setting('units.currency', 'EUR') }}{{ $fareCode === 'CGO' ? ' / kg' : ' / passager' }}</td><td>rouge</td>
-                    </tr>
-                @endforelse
+                @php
+                    $displayFares = $flight->fares;
+                    if ($displayFares->isNotEmpty()) {
+                        $fareSummary = $displayFares->map(fn($fare) => $fare->code.' · '.$fare->name)->implode(' / ');
+                        $priceSummary = $displayFares->map(fn($fare) => $fare->code.' '.($fare->pivot->price ?: $fare->price).' '.setting('units.currency', 'EUR').($fare->type === \App\Models\Enums\FareType::CARGO ? '/kg' : '/pax'))->implode(' · ');
+                        $bands = $displayFares->map(fn($fare) => $pricingBands[$flight->id.'|'.$fare->id] ?? 'rouge')->unique()->values();
+                        $bandSummary = $bands->map(fn($band) => ucfirst($band))->implode(' / ');
+                    } else {
+                        $fareCode = $flight->airline?->icao === 'ICS' ? 'CGO' : ($flight->airline?->icao === 'ACF' ? 'T' : 'Y');
+                        $baseFare = $baseFares[$fareCode] ?? null;
+                        $fareDefault = $baseFareDefaults[$fareCode];
+                        $fareSummary = $fareCode.' · '.($baseFare?->name ?: $fareDefault['name']);
+                        $priceSummary = $fareCode.' '.($baseFare?->price ?: $fareDefault['price']).' '.setting('units.currency', 'EUR').($fareCode === 'CGO' ? '/kg' : '/pax');
+                        $bandSummary = 'Rouge';
+                    }
+                @endphp
+                <tr data-airline="{{ $flight->airline?->icao }}" data-origin="{{ $flight->dpt_airport?->country }}" data-arrival="{{ $flight->arr_airport?->country }}" data-dpt-airport="{{ $flight->dpt_airport_id }}" data-arr-airport="{{ $flight->arr_airport_id }}" data-route="{{ strtolower($flight->ident.' '.$flight->dpt_airport_id.' '.$flight->arr_airport_id) }}">
+                    <td><input type="checkbox" name="flight_ids[]" value="{{ $flight->id }}" @checked(in_array((string)$flight->id,$selectedFlights,true))></td>
+                    <td>{{ $flight->airline?->icao }}</td>
+                    <td><strong>{{ $flight->ident }}</strong></td>
+                    <td>{{ $flight->dpt_airport_id }} · {{ $flight->dpt_airport?->country }}</td>
+                    <td>{{ $flight->arr_airport_id }} · {{ $flight->arr_airport?->country }}</td>
+                    <td>{{ $fareSummary }}</td>
+                    <td>{{ $priceSummary }}</td>
+                    <td>{{ $bandSummary }}</td>
+                </tr>
             @endforeach
             </tbody>
         </table></div>

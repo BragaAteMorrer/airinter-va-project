@@ -83,6 +83,14 @@ class EconomyService
         return ['kind'=>'ticket','count'=>count($rows),'load_factor'=>round($load*100,1),'passengers'=>$passengers,'revenue_delta'=>$revenue,'message'=>'Écart de recette par rotation estimé à partir du taux de remplissage simulé. Les coûts opérationnels restent inchangés.'];
     }
 
+    private function bandMultipliers(): array
+    {
+        $blue = (float) (DB::table('promethee_settings')->where('key', 'pricing.bands.blue')->value('value') ?: 50);
+        $white = (float) (DB::table('promethee_settings')->where('key', 'pricing.bands.white')->value('value') ?: 75);
+
+        return ['bleu' => $blue / 100, 'blanc' => $white / 100, 'rouge' => 1.0];
+    }
+
     private function resolve(float $base,mixed $override): float
     {
         if ($override===null || $override==='') return $base;
@@ -149,7 +157,7 @@ class EconomyService
             }
             $flight=Flight::with('subfleets.fares')->find($item['id']); $fare=Fare::find($item['fare_id']); if (!$flight || !$fare) $this->error("Ligne {$line} : ligne ou cabine introuvable.");
             if (!$flight->subfleets()->whereHas('fares',fn($q)=>$q->where('fares.id',$fare->id))->exists()) $this->error("Ligne {$line} : cabine non disponible sur cette ligne.");
-            $pivot=DB::table('flight_fare')->where(['flight_id'=>$flight->id,'fare_id'=>$fare->id])->first(); $pricing=DB::table('promethee_pricing')->where(['flight_id'=>$flight->id,'fare_id'=>$fare->id])->first(); $effective=$pivot ? (float)$pivot->price : (float)$fare->price; $band=$item['band'] ?? ($pricing->band ?? 'rouge'); $multiplier=['bleu'=>.5,'blanc'=>.75,'rouge'=>1][$band]; $red=(float)$item['price'];
+            $pivot=DB::table('flight_fare')->where(['flight_id'=>$flight->id,'fare_id'=>$fare->id])->first(); $pricing=DB::table('promethee_pricing')->where(['flight_id'=>$flight->id,'fare_id'=>$fare->id])->first(); $effective=$pivot ? (float)$pivot->price : (float)$fare->price; $band=$item['band'] ?? ($pricing->band ?? 'rouge'); $multiplier=$this->bandMultipliers()[$band]; $red=(float)$item['price'];
             $rows[]=['target'=>'ticket','id'=>$flight->id,'fare_id'=>$fare->id,'label'=>$flight->ident.' · '.$flight->dpt_airport_id.' → '.$flight->arr_airport_id,'before'=>$pivot ? (array)$pivot : null,'pricing_before'=>$pricing ? (array)$pricing : null,'effective'=>$effective,'after'=>round($red*$multiplier,2),'red_price'=>$red,'band'=>$band,'multiplier'=>$multiplier,'capacity'=>(int)($pivot->capacity ?? $fare->capacity ?? 0)];
         }
         if (!$rows) $this->error('Le fichier ne contient aucune ligne exploitable.');
