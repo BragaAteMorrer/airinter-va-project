@@ -5,10 +5,8 @@ on:
     branches:
       - master
       - main
+      - 'feature/**'
   pull_request:
-    branches:
-      - master
-      - main
 
 permissions:
   contents: read
@@ -122,6 +120,15 @@ jobs:
           php -l modules/Promethee/Http/AcarsOperationsController.php
           php -l modules/Promethee/Http/OperationsV1Controller.php
           php -l modules/Promethee/Http/TelemetryController.php
+          php -l modules/Promethee/Http/DatalinkController.php
+          php -l modules/Promethee/Services/DatalinkService.php
+          php -l tests/DatalinkServiceTest.php
+          php -l modules/Promethee/Http/SopController.php
+          php -l modules/Promethee/Services/SopEngineService.php
+          php -l tests/SopEngineServiceTest.php
+          php -l modules/Promethee/Http/PresenceController.php
+          php -l modules/Promethee/Services/PresenceService.php
+          php -l tests/PresenceServiceTest.php
           php -l modules/Promethee/Services/OperationIdentityService.php
           php -l modules/Promethee/Services/SafetyAnalyzer.php
           php -l modules/Promethee/Services/AircraftOperationalStateService.php

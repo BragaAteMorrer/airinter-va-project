@@ -27,7 +27,7 @@ public sealed class FlightTrackingEngineTests
         var all = new List<FlightEvent>();
 
         Add(engine.Process(Snapshot(start, true, 0, 0, 0, true)), all);
-        Assert.Empty(all.Where(x => x.Type == "OUT"));
+        Assert.DoesNotContain(all, x => x.Type == "OUT");
 
         Add(engine.Process(Snapshot(start.AddSeconds(10), true, 1, 0, 0, false)), all);
         Assert.Equal(FlightPhase.Pushback, engine.Phase);
@@ -54,7 +54,7 @@ public sealed class FlightTrackingEngineTests
         Assert.DoesNotContain(firstTouch.Events, x => x.Type == "ON");
 
         Add(engine.Process(Snapshot(start.AddMinutes(75).AddSeconds(9), true, 90, 0, 0, false)), all);
-        Assert.Single(all.Where(x => x.Type == "ON"));
+        Assert.Single(all, x => x.Type == "ON");
 
         Add(engine.Process(Snapshot(start.AddMinutes(77), true, 15, 0, 0, false)), all);
         Assert.Equal(FlightPhase.TaxiIn, engine.Phase);
@@ -62,10 +62,10 @@ public sealed class FlightTrackingEngineTests
         Add(engine.Process(Snapshot(start.AddMinutes(78).AddSeconds(16), true, 0, 0, 0, true)), all);
         Assert.Equal(FlightPhase.In, engine.Phase);
 
-        Assert.Single(all.Where(x => x.Type == "OUT"));
-        Assert.Single(all.Where(x => x.Type == "OFF"));
-        Assert.Single(all.Where(x => x.Type == "ON"));
-        Assert.Single(all.Where(x => x.Type == "IN"));
+        Assert.Single(all, x => x.Type == "OUT");
+        Assert.Single(all, x => x.Type == "OFF");
+        Assert.Single(all, x => x.Type == "ON");
+        Assert.Single(all, x => x.Type == "IN");
     }
 
     [Fact]
@@ -79,7 +79,7 @@ public sealed class FlightTrackingEngineTests
         var decision = engine.Process(Snapshot(t.AddSeconds(5), true, 8, 0, 0, false));
 
         Assert.Equal(FlightPhase.TaxiOut, decision.Phase);
-        Assert.Single(decision.Events.Where(x => x.Type == "OUT"));
+        Assert.Single(decision.Events, x => x.Type == "OUT");
         Assert.Contains(decision.Events, x => x.Type == "TAXI_OUT");
     }
 

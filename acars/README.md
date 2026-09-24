@@ -52,6 +52,112 @@ dans les réponses API, les diagnostics Hermès ou les logs d'activité. Il faut
 
 Les positions et événements non envoyés sont conservés localement après une coupure. Après un redémarrage, le pilote doit explicitement reprendre le vol : l'application ne rattache jamais silencieusement des données à un ancien PIREP.
 
+### Hermès Datalink
+
+Hermès dispose d'un transport opérationnel bidirectionnel lié à une
+`operation_id` Prométhée.
+
+Le contrat v1 distingue les catégories `OPS`, `DISPATCH`, `WEATHER`,
+`SYSTEM` et `CREW`, ainsi que les priorités `NORMAL`, `HIGH` et
+`URGENT`. Un message peut exiger un accusé de réception (`requires_ack`)
+et répondre à un message précédent via `reply_to`.
+
+Le client est **local-first** :
+
+- un message cockpit est écrit dans `datalink.json` avant tout appel réseau ;
+- chaque envoi possède un `client_message_id` UUID afin que les retries
+  serveur soient idempotents ;
+- les ACK sont eux aussi mis en file locale ;
+- une coupure Prométhée laisse le vol et la messagerie utilisables ;
+- Hermès retente automatiquement la synchronisation pendant un vol actif et
+  l'interface Datalink peut la déclencher manuellement.
+
+Prométhée utilise pour ce lot un stockage JSON verrouillé dans
+`storage/app/promethee/datalink`. Aucun schéma phpVMS n'est modifié. Ce
+stockage constitue le transport v1 ; le futur Dispatcher Desk consommera le
+même service et pourra remplacer la persistance sans casser le contrat Hermès.
+
+Les routes pilote sont sous
+`/api/v1/operations/{operation}/datalink`. Une surface admin protégée sous
+`/admin/promethee/datalink/messages` permet déjà au futur Dispatcher
+d'injecter, lire et acquitter les messages sans exposer cette capacité aux
+pilotes.
+
+### Aircraft capabilities et adapters
+
+Hermès maintient désormais un profil de capacités **par avion et par
+connecteur**. Chaque donnée est classée dans un des trois états suivants :
+
+- `SUPPORTED` : la donnée a réellement été observée au moins une fois pour
+  l'avion courant ;
+- `UNKNOWN` : le connecteur sait exposer cette famille de données, mais
+  Hermès ne l'a pas encore reçue pour cet avion ;
+- `UNSUPPORTED` : le connecteur actif n'expose explicitement pas cette
+  famille de données.
+
+Un changement d'identité avion réinitialise les observations afin qu'une
+capacité vue sur un appareil ne soit jamais transférée au suivant.
+
+Le registre d'adapters contient un fallback `generic` et reconnaît
+actuellement les identités Fenix A320, PMDG, Flight Sim Labs et TFDi MD-11.
+Cette reconnaissance **n'est pas une promesse de support** : les capacités
+restent déterminées par la télémétrie réellement reçue. Les adapters sont
+cependant placés dans le chemin de normalisation du hub afin de pouvoir
+ajouter ultérieurement des intégrations vendor-specific sans modifier le
+recorder.
+
+Le recorder accepte maintenant un vol même lorsque certaines données systèmes
+optionnelles (train, volets, frein de parc, bank) sont absentes, à condition
+que les données minimales de navigation nécessaires au suivi soient présentes.
+Les valeurs absentes restent `null` dans la télémétrie détaillée et ne
+déclenchent pas de faux événements FDM.
+
+### Flight Data Monitoring et Flight Review
+
+Hermès collecte désormais des **observations factuelles** séparées des règles
+compagnie et des pénalités. Le FDM local enregistre notamment :
+
+- passage des gates **1000 ft** et **500 ft AGL** en approche avec un statut
+  `STABLE`, `UNSTABLE` ou `UNKNOWN` selon les données réellement
+  disponibles ;
+- excursions de bank supérieures à 35° avec le pic observé ;
+- ajout de carburant, utilisation du slew et augmentation du sim-rate ;
+- remises de gaz, touch-and-go, touchdown confirmé et nombre de rebonds.
+
+Les gates d'approche n'utilisent que des critères génériques disponibles
+(train, volets, vitesse verticale et bank). Hermès n'invente jamais une VAPP
+ou une configuration avion qu'il ne connaît pas.
+
+Le **Flight Review** est accessible pendant le vol et devient prêt au dépôt
+après `IN`. Il récapitule distance, temps airborne/block, carburant,
+landing rate, gates 1000/500, FDM et anomalies compagnie avant l'envoi final
+du PIREP.
+
+Ces observations sont persistées dans l'état local et survivent à une reprise
+après crash.
+
+### SOP Engine Air Inter
+
+Les observations FDM sont également mises en file locale avec un `fact_id`
+UUID puis transmises à Prométhée via
+`/api/v1/operations/{operation}/sop/facts`. Elles ne quittent la file Hermès
+qu'après une réponse serveur réussie, de sorte qu'une coupure réseau n'efface
+pas les faits opérationnels.
+
+La séparation des responsabilités est volontaire :
+
+- **Hermès** mesure et décrit les faits disponibles ;
+- **Prométhée** applique les règles compagnie ;
+- une donnée inconnue n'est jamais transformée en infraction ;
+- aucune pénalité ni aucun score n'est calculé dans Hermès.
+
+Les règles SOP sont administrables sous `/admin/promethee/sop`. Elles peuvent
+filtrer un fact code par opérateur numérique et par phase, choisir une sévérité
+`INFO`, `ADVISORY` ou `WARNING`, demander une revue pilote et/ou produire
+une alerte Dispatch. Changer par exemple la limite de roulage ne nécessite donc
+aucune nouvelle version d'Hermès : le client transmet le fait brut
+`TAXI_SPEED_MAX` et Prométhée décide du seuil applicable.
+
 ### Moteur de phases Hermès
 
 `FlightTrackingEngine` est l'unique source de vérité des phases de vol :
@@ -69,6 +175,68 @@ Une remise de gaz avant contact produit `GO_AROUND`. Un contact suivi d'un
 redécollage produit `TOUCH_AND_GO` et ne produit pas de faux `ON`. Lors
 d'une reprise après crash, la phase sauvegardée est restaurée au lieu de
 réinitialiser le vol à `ACARS_READY`.
+
+## Hermès Datalink v2
+
+Le Datalink est un transport opérationnel lié à une opération Air Inter. Hermès
+conserve localement les messages sortants, reçus de lecture et ACK tant que
+Prométhée n'a pas confirmé leur traitement.
+
+Catégories : `OPS`, `DISPATCH`, `WEATHER`, `SYSTEM`, `CREW`.
+
+Priorités canoniques :
+
+- `ROUTINE`
+- `ADVISORY`
+- `IMPORTANT`
+- `URGENT`
+
+Les anciennes valeurs `NORMAL` et `HIGH` restent acceptées pendant la
+transition et sont normalisées respectivement vers `ROUTINE` et
+`IMPORTANT`.
+
+Cycle serveur d'un message :
+
+```
+QUEUED (local Hermès)
+  -> SENT
+  -> DELIVERED
+  -> READ
+  -> ACKNOWLEDGED   (uniquement lorsqu'un ACK est demandé)
+```
+
+`DELIVERED` signifie que le destinataire a récupéré le message depuis
+Prométhée. `READ` est un reçu explicite distinct de l'ACK. Un ACK implique
+également la lecture côté serveur.
+
+## Air Inter Network / Pilot Presence
+
+Hermès publie un heartbeat opérationnel toutes les 15 secondes lorsqu'une
+opération Air Inter est active ou sélectionnée.
+
+Le heartbeat contient uniquement le contexte de simulation utile à l'OCC :
+
+- opération ;
+- simulateur et connecteur ;
+- phase de vol ;
+- position simulée lorsque disponible ;
+- version Hermès ;
+- état READY / TRACKING / RECOVERY.
+
+Prométhée enrichit ensuite la présence avec l'identité pilote, le vol prévu et
+l'appareil affecté depuis ses propres données. Le client ne peut donc pas
+s'auto-attribuer un autre vol ou un autre appareil dans l'annuaire.
+
+Une présence est considérée hors ligne après 45 secondes sans heartbeat. Les
+heartbeats ne sont **jamais** mis en file offline : rejouer un ancien heartbeat
+après reconnexion créerait une fausse présence en ligne.
+
+API :
+
+```
+POST /api/v1/operations/{operation}/presence/heartbeat
+GET  /api/v1/network/presence
+```
 
 ## Créer la distribution Windows (.exe)
 

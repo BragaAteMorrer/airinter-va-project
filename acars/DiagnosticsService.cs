@@ -28,7 +28,7 @@ internal static class DiagnosticsService
             connected,
             simulator,
             flight?.Phase ?? "NONE",
-            recorder.Pending.Count + recorder.PendingEvents.Count,
+            recorder.Pending.Count + recorder.PendingEvents.Count + recorder.PendingFacts.Count,
             recorder.RecoveryAvailable,
             recorder.Warning);
     }
