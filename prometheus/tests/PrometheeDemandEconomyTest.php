@@ -158,4 +158,113 @@ final class PrometheeDemandEconomyTest extends TestCase
         $this->assertSame('88', DB::table('promethee_settings')->where('key', 'pricing.demand.red_min')->value('value'));
         $this->assertSame('99', DB::table('promethee_settings')->where('key', 'pricing.demand.red_max')->value('value'));
     }
+
+    public function test_bbr_band_change_uses_inherited_subfleet_fare_and_restores_red_reference(): void
+    {
+        $admin = $this->createAdminUser();
+        $fleet = $this->createSubfleetWithAircraft(1);
+        $subfleet = $fleet['subfleet'];
+
+        $fare = Fare::factory()->create([
+            'code' => 'YBREST',
+            'name' => 'Air Inter Brest',
+            'type' => FareType::PASSENGER,
+            'price' => 218,
+            'capacity' => 100,
+            'active' => true,
+        ]);
+        $subfleet->fares()->syncWithoutDetaching([
+            $fare->id => ['price' => '177', 'cost' => null, 'capacity' => 100],
+        ]);
+
+        $flight = Flight::factory()->create([
+            'airline_id' => $subfleet->airline_id,
+            'active' => true,
+        ]);
+        $flight->subfleets()->syncWithoutDetaching([$subfleet->id]);
+
+        foreach ([
+            'pricing.bands.enabled' => '1',
+            'pricing.bands.blue' => '50',
+            'pricing.bands.white' => '80',
+        ] as $key => $value) {
+            DB::table('promethee_settings')->updateOrInsert(
+                ['key' => $key],
+                ['value' => $value, 'created_at' => now(), 'updated_at' => now()]
+            );
+        }
+
+        $this->actingAs($admin, 'web')->post('/admin/promethee/economy/flight-prices', [
+            'flight_ids' => [$flight->id],
+            'mode' => 'band',
+            'band' => 'blanc',
+        ])->assertStatus(302);
+
+        $whiteFare = DB::table('flight_fare')
+            ->where('flight_id', $flight->id)
+            ->where('fare_id', $fare->id)
+            ->first();
+        $whitePricing = DB::table('promethee_pricing')
+            ->where('flight_id', $flight->id)
+            ->where('fare_id', $fare->id)
+            ->first();
+
+        $this->assertSame(141.6, (float) $whiteFare->price);
+        $this->assertSame(177.0, (float) $whitePricing->red_price);
+        $this->assertSame('blanc', $whitePricing->band);
+        $this->assertSame(0.8, (float) $whitePricing->multiplier);
+
+        $this->actingAs($admin, 'web')->post('/admin/promethee/economy/flight-prices', [
+            'flight_ids' => [$flight->id],
+            'mode' => 'band',
+            'band' => 'rouge',
+        ])->assertStatus(302);
+
+        $redFare = DB::table('flight_fare')
+            ->where('flight_id', $flight->id)
+            ->where('fare_id', $fare->id)
+            ->first();
+        $redPricing = DB::table('promethee_pricing')
+            ->where('flight_id', $flight->id)
+            ->where('fare_id', $fare->id)
+            ->first();
+
+        $this->assertSame(177.0, (float) $redFare->price);
+        $this->assertSame(177.0, (float) $redPricing->red_price);
+        $this->assertSame('rouge', $redPricing->band);
+        $this->assertSame(1.0, (float) $redPricing->multiplier);
+    }
+
+    public function test_single_flight_price_editor_displays_inherited_subfleet_fare_instead_of_global_base(): void
+    {
+        $admin = $this->createAdminUser();
+        $fleet = $this->createSubfleetWithAircraft(1);
+        $subfleet = $fleet['subfleet'];
+
+        $fare = Fare::factory()->create([
+            'code' => 'YDISPLAY',
+            'name' => 'Inherited Economy',
+            'type' => FareType::PASSENGER,
+            'price' => 218,
+            'capacity' => 100,
+            'active' => true,
+        ]);
+        $subfleet->fares()->syncWithoutDetaching([
+            $fare->id => ['price' => '177', 'cost' => null, 'capacity' => 100],
+        ]);
+
+        $flight = Flight::factory()->create([
+            'airline_id' => $subfleet->airline_id,
+            'active' => true,
+        ]);
+        $flight->subfleets()->syncWithoutDetaching([$subfleet->id]);
+
+        $response = $this->actingAs($admin, 'web')
+            ->get('/admin/promethee/economy/flight-prices/'.$flight->id.'/edit');
+
+        $response->assertOk();
+        $response->assertSee('177,00', false);
+        $response->assertSee('RÉFÉRENCE ROUGE', false);
+    }
+
 }
