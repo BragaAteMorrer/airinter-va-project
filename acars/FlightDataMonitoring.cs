@@ -46,6 +46,10 @@ public sealed class FlightDataMonitor
     private bool bankExcursion;
     private double bankPeak;
     private DateTimeOffset bankStartedAt;
+    private bool taxiSegment;
+    private double taxiPeak;
+    private DateTimeOffset taxiPeakAt;
+    private string? taxiPhase;
 
     public void Reset()
     {
@@ -55,6 +59,10 @@ public sealed class FlightDataMonitor
         bankExcursion = false;
         bankPeak = 0;
         bankStartedAt = default;
+        taxiSegment = false;
+        taxiPeak = 0;
+        taxiPeakAt = default;
+        taxiPhase = null;
     }
 
     public void Restore(IEnumerable<FdmObservation>? existing)
@@ -73,6 +81,7 @@ public sealed class FlightDataMonitor
     {
         var result = new List<FdmObservation>();
 
+        RecordTaxiSpeed(current, phase, result);
         RecordApproachGate(current, phase, 1000, 1200, ref approach1000Recorded, result);
         RecordApproachGate(current, phase, 500, 1000, ref approach500Recorded, result);
         RecordBankExcursion(current, phase, result);
@@ -87,7 +96,51 @@ public sealed class FlightDataMonitor
         var result = new List<FdmObservation>();
         if (bankExcursion && current is not null)
             CloseBankExcursion(current, phase, result);
+        if (taxiSegment && current is not null)
+            CloseTaxiSegment(current, result);
         return result;
+    }
+
+    private void RecordTaxiSpeed(AircraftSnapshot current, FlightPhase phase, List<FdmObservation> result)
+    {
+        var taxi = phase is FlightPhase.Pushback or FlightPhase.TaxiOut or FlightPhase.TaxiIn;
+        if (taxi && current.OnGround == true && current.GroundSpeedKnots is { } speed)
+        {
+            if (!taxiSegment)
+            {
+                taxiSegment = true;
+                taxiPeak = speed;
+                taxiPeakAt = current.RecordedAt;
+                taxiPhase = FlightTrackingEngine.ToExternalPhase(phase);
+            }
+            else if (speed > taxiPeak)
+            {
+                taxiPeak = speed;
+                taxiPeakAt = current.RecordedAt;
+            }
+            return;
+        }
+
+        if (taxiSegment)
+            CloseTaxiSegment(current, result);
+    }
+
+    private void CloseTaxiSegment(AircraftSnapshot current, List<FdmObservation> result)
+    {
+        result.Add(new(
+            "TAXI_SPEED_MAX",
+            "ground",
+            taxiPeakAt,
+            $"Vitesse maximale observée pendant le roulage : {taxiPeak:0.0} kt.",
+            "info",
+            Math.Round(taxiPeak, 1),
+            "kt",
+            taxiPhase));
+
+        taxiSegment = false;
+        taxiPeak = 0;
+        taxiPeakAt = default;
+        taxiPhase = null;
     }
 
     private void RecordApproachGate(

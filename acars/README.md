@@ -134,9 +134,29 @@ landing rate, gates 1000/500, FDM et anomalies compagnie avant l'envoi final
 du PIREP.
 
 Ces observations sont persistées dans l'état local et survivent à une reprise
-après crash. Le contrat serveur `/acars/events` n'est pas étendu dans ce lot :
-les valeurs FDM détaillées restent locales tant qu'un schéma serveur dédié
-n'existe pas.
+après crash.
+
+### SOP Engine Air Inter
+
+Les observations FDM sont également mises en file locale avec un `fact_id`
+UUID puis transmises à Prométhée via
+`/api/v1/operations/{operation}/sop/facts`. Elles ne quittent la file Hermès
+qu'après une réponse serveur réussie, de sorte qu'une coupure réseau n'efface
+pas les faits opérationnels.
+
+La séparation des responsabilités est volontaire :
+
+- **Hermès** mesure et décrit les faits disponibles ;
+- **Prométhée** applique les règles compagnie ;
+- une donnée inconnue n'est jamais transformée en infraction ;
+- aucune pénalité ni aucun score n'est calculé dans Hermès.
+
+Les règles SOP sont administrables sous `/admin/promethee/sop`. Elles peuvent
+filtrer un fact code par opérateur numérique et par phase, choisir une sévérité
+`INFO`, `ADVISORY` ou `WARNING`, demander une revue pilote et/ou produire
+une alerte Dispatch. Changer par exemple la limite de roulage ne nécessite donc
+aucune nouvelle version d'Hermès : le client transmet le fait brut
+`TAXI_SPEED_MAX` et Prométhée décide du seuil applicable.
 
 ### Moteur de phases Hermès
 
