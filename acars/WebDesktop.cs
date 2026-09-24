@@ -25,11 +25,11 @@ public sealed class PrometheeWindow : Window
         new FsuipcConnector(SimulatorKind.FlightSimulator2004, "Microsoft Flight Simulator 2004"),
         new FsuipcConnector(SimulatorKind.FlightSimulatorX, "Microsoft Flight Simulator X"),
         new FsuipcConnector(SimulatorKind.Prepar3D, "Prepar3D")); private readonly FlightRecorder recorder = new();
-    private readonly TelemetryService telemetry; private readonly HermesDatalink datalink; private readonly WebView2 web = new();
+    private readonly TelemetryService telemetry; private readonly HermesDatalink datalink; private readonly HermesPresence presence; private readonly WebView2 web = new();
     private bool ticking; private DateTimeOffset nextDatalinkPollAt = DateTimeOffset.MinValue;
     public PrometheeWindow()
     {
-        telemetry = new(sim, recorder, client); datalink = new(client); Title = "Hermès ACARS — Air Inter";
+        telemetry = new(sim, recorder, client); datalink = new(client); presence = new(client); Title = "Hermès ACARS — Air Inter";
         Icon = BitmapFrame.Create(new Uri("pack://application:,,,/assets/hermes.ico", UriKind.Absolute));
         Width=1280; Height=840; MinWidth=900; MinHeight=620; WindowStartupLocation=WindowStartupLocation.CenterScreen; WindowState=WindowState.Maximized; Content=web;
         Loaded += async (_, _) => { await StartAsync(); await CheckForUpdatesAsync(); }; Closed += (_, _) => sim.Dispose();
@@ -76,12 +76,14 @@ public sealed class PrometheeWindow : Window
         ticking = true;
         try {
             await telemetry.Tick();
-            var operationId = recorder.Flight?.OperationId;
+            var operationId = recorder.Flight?.OperationId ?? presence.CurrentOperationId;
             if (client.Connected && !string.IsNullOrWhiteSpace(operationId)
                 && DateTimeOffset.UtcNow >= nextDatalinkPollAt) {
                 await datalink.SyncAsync(operationId);
                 nextDatalinkPollAt = DateTimeOffset.UtcNow.AddSeconds(10);
             }
+            if (client.Connected && !string.IsNullOrWhiteSpace(operationId))
+                await presence.HeartbeatIfDueAsync(operationId, BuildPresenceHeartbeat());
         } finally {
             ticking = false;
         }
@@ -95,6 +97,8 @@ public sealed class PrometheeWindow : Window
     private async Task<object> Route(string path, JsonElement? body)
     {
         var uri = new Uri("https://promethee.local" + path); var route = uri.AbsolutePath;
+        if (route == "/api/network")
+            return await Network(uri);
         if (route == "/api/datalink")
             return await Datalink(uri);
         if (route == "/api/datalink/send")
@@ -119,6 +123,36 @@ public sealed class PrometheeWindow : Window
             "/api/history" => recorder.History, "/api/diagnostics" => Diagnostics(), "/api/update/check" => await CheckUpdateStatusAsync(), "/api/open-external" => OpenExternal(body),
             _ => throw new InvalidOperationException("Commande ACARS inconnue.") };
     }
+    private async Task<object> Network(Uri uri)
+    {
+        var operationId = OptionalQueryParameter(uri, "operation");
+        if (client.Connected && !string.IsNullOrWhiteSpace(operationId)) {
+            var roster = await presence.HeartbeatIfDueAsync(operationId, BuildPresenceHeartbeat());
+            if (roster.HasValue) return roster.Value;
+        }
+        return await presence.RefreshNetworkAsync();
+    }
+
+    private PresenceHeartbeat BuildPresenceHeartbeat()
+    {
+        var latest = sim.LatestSnapshot;
+        var flight = recorder.Flight;
+        var recording = flight?.Recording == true;
+        var clientState = recorder.RecoveryAvailable ? "RECOVERY" : recording ? "TRACKING" : "READY";
+        var phase = flight?.Phase ?? "STANDBY";
+        var version = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "dev";
+        return new(
+            HermesPresence.SimulatorId(sim),
+            sim.Active?.Descriptor.ConnectorId,
+            phase,
+            latest?.Latitude,
+            latest?.Longitude,
+            latest?.AltitudeMslFeet,
+            version,
+            recording,
+            clientState);
+    }
+
     private async Task<object> Datalink(Uri uri)
     {
         var operationId = QueryParameter(uri, "operation");
@@ -165,13 +199,19 @@ public sealed class PrometheeWindow : Window
 
     private static string QueryParameter(Uri uri, string name)
     {
+        return OptionalQueryParameter(uri, name)
+            ?? throw new InvalidOperationException($"Paramètre {name} manquant.");
+    }
+
+    private static string? OptionalQueryParameter(Uri uri, string name)
+    {
         foreach (var part in uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries)) {
             var pair = part.Split('=', 2);
             if (Uri.UnescapeDataString(pair[0]) != name) continue;
             var value = pair.Length > 1 ? Uri.UnescapeDataString(pair[1].Replace("+", " ")) : "";
             if (!string.IsNullOrWhiteSpace(value)) return value;
         }
-        throw new InvalidOperationException($"Paramètre {name} manquant.");
+        return null;
     }
 
     private async Task<object> CheckUpdateStatusAsync()
@@ -233,6 +273,8 @@ public sealed class PrometheeWindow : Window
         remoteConfiguration=recorder.RemoteConfiguration,
         datalinkLastSuccessfulSyncAt=datalink.LastSuccessfulSyncAt,
         datalinkError=datalink.LastError,
+        presenceLastHeartbeatAt=presence.LastHeartbeatAt,
+        presenceError=presence.LastError,
         warning=recorder.Warning
     };
     private object About() => new {
@@ -253,6 +295,8 @@ public sealed class PrometheeWindow : Window
         remoteConfiguration=recorder.RemoteConfiguration,
         datalinkLastSuccessfulSyncAt=datalink.LastSuccessfulSyncAt,
         datalinkError=datalink.LastError,
+        presenceLastHeartbeatAt=presence.LastHeartbeatAt,
+        presenceError=presence.LastError,
         warning=recorder.Warning
     };
     private async Task<object> Login(JsonElement? body)

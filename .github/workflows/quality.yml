@@ -126,6 +126,9 @@ jobs:
           php -l modules/Promethee/Http/SopController.php
           php -l modules/Promethee/Services/SopEngineService.php
           php -l tests/SopEngineServiceTest.php
+          php -l modules/Promethee/Http/PresenceController.php
+          php -l modules/Promethee/Services/PresenceService.php
+          php -l tests/PresenceServiceTest.php
           php -l modules/Promethee/Services/OperationIdentityService.php
           php -l modules/Promethee/Services/SafetyAnalyzer.php
           php -l modules/Promethee/Services/AircraftOperationalStateService.php

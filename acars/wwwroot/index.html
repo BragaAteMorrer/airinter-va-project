@@ -17,6 +17,7 @@
       <button class="tab protected-tab" data-tab="map" disabled>Suivi du vol</button>
       <button class="tab protected-tab" data-tab="journal" disabled>Journal</button>
       <button class="tab protected-tab datalink-tab" data-tab="datalink" disabled>Datalink <span id="datalinkBadge" class="nav-badge" hidden>0</span></button>
+      <button class="tab protected-tab" data-tab="network" disabled>Air Inter Network <span id="networkBadge" class="nav-badge" hidden>0</span></button>
       <button class="tab protected-tab" data-tab="review" disabled>Flight Review</button>
       <button class="tab protected-tab" data-tab="settings" disabled>Paramètres</button>
     </nav>
@@ -185,6 +186,19 @@
         <div class="actions"><button class="primary" type="submit">Envoyer</button><button id="datalinkCancelReplyBtn" type="button" hidden>Annuler la réponse</button></div>
       </form>
       <p id="datalinkMessage" class="message" hidden role="status"></p>
+    </section>
+    <section id="network" class="panel">
+      <div class="workspace-title">
+        <div><span class="kicker">AIR INTER NETWORK</span><h2>Équipages connectés</h2><p class="hint">Présence opérationnelle Hermès. Un équipage passe automatiquement hors ligne si son heartbeat disparaît.</p></div>
+        <strong id="networkState" class="ready-state">STANDBY</strong>
+      </div>
+      <div class="cards">
+        <div><span>Équipages en ligne</span><strong id="networkCount">0</strong></div>
+        <div><span>Mon opération</span><strong id="networkOperation">—</strong></div>
+        <div><span>Dernière mise à jour</span><strong id="networkUpdated">—</strong></div>
+      </div>
+      <div id="networkCrews" class="observation-list"><p class="empty">Aucun équipage Hermès détecté.</p></div>
+      <p id="networkMessage" class="message" hidden role="status"></p>
     </section>
     <section id="review" class="panel">
       <div class="workspace-title"><div><span class="kicker">FLIGHT DATA MONITORING</span><h2>Flight Review</h2><p class="hint">Synthèse factuelle du vol. Les observations Hermès ne constituent pas, à elles seules, une pénalité compagnie.</p></div><strong id="reviewState" class="ready-state">EN VOL</strong></div>

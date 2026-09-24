@@ -209,6 +209,8 @@ body.auth-locked .recovery-center{width:min(760px,100%)}
 .datalink-message{display:grid;gap:10px;padding:13px 15px;border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:10px;background:#fff}
 .datalink-message.incoming{margin-right:7%}
 .datalink-message.outgoing{margin-left:7%;border-left-color:var(--ok);background:#f7fbf9}
+.datalink-message.priority-advisory{border-left-color:#d9981f}
+.datalink-message.priority-important{border-left-color:#d96b1f;background:#fff9f2}
 .datalink-message.priority-high{border-left-color:#d9981f}
 .datalink-message.priority-urgent{border-left-color:var(--red);background:#fff5f5}
 .datalink-message header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
@@ -225,3 +227,12 @@ body.auth-locked .recovery-center{width:min(760px,100%)}
 .inline-check{display:flex!important;align-items:center;gap:8px;padding-bottom:9px}
 .inline-check input{width:auto}
 @media(max-width:850px){.datalink-toolbar,.datalink-compose-meta{grid-template-columns:1fr}.datalink-message.incoming,.datalink-message.outgoing{margin:0}}
+
+
+/* Air Inter Network */
+.network-crew{display:grid;gap:6px;padding:13px 15px;border:1px solid var(--line);border-left:4px solid var(--ok);border-radius:10px;background:#f7fbf9}
+.network-crew-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.network-crew-heading strong{font-size:13px;color:var(--ink)}
+.network-crew-heading span{font:800 10px/1.2 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--muted)}
+.network-crew p{margin:0;color:var(--muted);font-size:11px}
+@media(max-width:700px){.network-crew-heading{align-items:flex-start;flex-direction:column;gap:3px}}

@@ -10,6 +10,7 @@ use Modules\Promethee\Http\HermesReleaseController;
 use Modules\Promethee\Http\SimBriefCallbackController;
 use Modules\Promethee\Http\DatalinkController;
 use Modules\Promethee\Http\SopController;
+use Modules\Promethee\Http\PresenceController;
 use App\Http\Controllers\Api\AcarsSimBriefController;
 
 // Browsers request this conventional path even though the branded icon lives
@@ -118,6 +119,7 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::post('/seasons/import', [PortalController::class,'importSchedule'])->name('seasons.import');
         Route::post('/safety', [PortalController::class,'generate'])->name('safety.generate');
         Route::get('/network', [PortalController::class,'network'])->name('network');
+        Route::get('/network/presence', [PresenceController::class,'index'])->name('network.presence');
         Route::get('/health', [PortalController::class,'health'])->name('health');
         Route::redirect('/catalogue', '/catalogue/flights')->name('catalogue');
         Route::get('/catalogue/{type}', [PortalController::class,'catalogue'])->where('type','flights|airports')->name('catalogue.type');
@@ -204,6 +206,8 @@ Route::middleware(['api','api.auth'])->prefix('api/v1')->group(function () {
     Route::get('/operations/{operation}/sop', [SopController::class, 'index']);
     Route::post('/operations/{operation}/sop/facts', [SopController::class, 'ingest']);
     Route::post('/operations/{operation}/sop/evaluations/{evaluation}/review', [SopController::class, 'review']);
+    Route::post('/operations/{operation}/presence/heartbeat', [PresenceController::class, 'heartbeat']);
+    Route::get('/network/presence', [PresenceController::class, 'index']);
     Route::post('/operations/{operation}/simbrief/session', [AcarsSimBriefController::class, 'sessionOperation']);
     Route::post('/operations/{operation}/simbrief/redirect', [AcarsSimBriefController::class, 'redirectOperation']);
     Route::post('/operations/{operation}/simbrief/account/import', [AcarsSimBriefController::class, 'importAccountOperation']);

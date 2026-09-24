@@ -209,6 +209,35 @@ QUEUED (local Hermès)
 Prométhée. `READ` est un reçu explicite distinct de l'ACK. Un ACK implique
 également la lecture côté serveur.
 
+## Air Inter Network / Pilot Presence
+
+Hermès publie un heartbeat opérationnel toutes les 15 secondes lorsqu'une
+opération Air Inter est active ou sélectionnée.
+
+Le heartbeat contient uniquement le contexte de simulation utile à l'OCC :
+
+- opération ;
+- simulateur et connecteur ;
+- phase de vol ;
+- position simulée lorsque disponible ;
+- version Hermès ;
+- état READY / TRACKING / RECOVERY.
+
+Prométhée enrichit ensuite la présence avec l'identité pilote, le vol prévu et
+l'appareil affecté depuis ses propres données. Le client ne peut donc pas
+s'auto-attribuer un autre vol ou un autre appareil dans l'annuaire.
+
+Une présence est considérée hors ligne après 45 secondes sans heartbeat. Les
+heartbeats ne sont **jamais** mis en file offline : rejouer un ancien heartbeat
+après reconnexion créerait une fausse présence en ligne.
+
+API :
+
+```
+POST /api/v1/operations/{operation}/presence/heartbeat
+GET  /api/v1/network/presence
+```
+
 ## Créer la distribution Windows (.exe)
 
 Depuis PowerShell à la racine du dépôt :

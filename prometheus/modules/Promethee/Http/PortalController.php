@@ -1305,7 +1305,7 @@ class PortalController extends Controller
         foreach ($recipients as $recipient) { $id=DB::table('promethee_messages')->insertGetId(['sender_id'=>$r->user()->id,'recipient_id'=>$recipient->id,'recipient_email'=>$recipient->email,'audience'=>$data['audience'],'subject'=>$data['subject'],'body'=>$data['body'],'shared_staff'=>$r->boolean('shared_staff') || $data['audience']==='staff','direction'=>'outbound','status'=>'queued','created_at'=>now(),'updated_at'=>now()]); try { Mail::raw($data['body'],fn($mail)=>$mail->to($recipient->email,$recipient->name)->subject($data['subject'])); DB::table('promethee_messages')->where('id',$id)->update(['status'=>'sent','sent_at'=>now(),'updated_at'=>now()]); } catch (\Throwable) { DB::table('promethee_messages')->where('id',$id)->update(['status'=>'failed','updated_at'=>now()]); } }
         return back()->with('success',$recipients->count().' message(s) préparé(s) pour envoi. Consultez le statut dans la boîte partagée.');
     }
-    public function network() {
+    public function network(\Modules\Promethee\Services\PresenceService $presence) {
         $monthStart=now()->startOfMonth();
         $monthCounts=DB::table('pireps')->select('flight_id',DB::raw('COUNT(*) as total'))->where('state',PirepState::ACCEPTED)->where('submitted_at','>=',$monthStart)->groupBy('flight_id');
         $totalCounts=DB::table('pireps')->select('flight_id',DB::raw('COUNT(*) as total'))->where('state',PirepState::ACCEPTED)->groupBy('flight_id');
@@ -1319,7 +1319,7 @@ class PortalController extends Controller
             ->leftJoinSub($totalCounts,'total_counts',fn ($join) => $join->on('flights.id','=','total_counts.flight_id'))
             ->select('flights.*',DB::raw("COALESCE(`{$monthAlias}`.`total`,0) as month_pireps"),DB::raw("COALESCE(`{$totalAlias}`.`total`,0) as total_pireps"))
             ->orderByDesc('month_pireps')->limit(100)->get();
-        return $this->page('network',['flights'=>$flights,'season'=>DB::table('promethee_seasons')->where('active',true)->first(),'subfleets'=>Subfleet::with('airline')->orderBy('type')->get(),'imports'=>DB::table('promethee_audit_logs')->where('action','schedule.imported')->latest()->limit(10)->get()]);
+        return $this->page('network',['flights'=>$flights,'season'=>DB::table('promethee_seasons')->where('active',true)->first(),'subfleets'=>Subfleet::with('airline')->orderBy('type')->get(),'imports'=>DB::table('promethee_audit_logs')->where('action','schedule.imported')->latest()->limit(10)->get(),'presence'=>$presence->network()]);
     }
     public function health() {
         $latest=DB::table('promethee_telemetry')->latest('recorded_at')->first();
