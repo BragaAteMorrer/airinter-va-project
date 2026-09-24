@@ -152,14 +152,14 @@
     <section id="settings" class="panel"><h2>Paramètres ACARS</h2><p class="hint">Les règles compagnie et la cadence live sont reçues de Prométhée ; ces réglages restent locaux et n’exécutent aucun code distant.</p>
       <form id="settingsForm" class="login-form">
         <label><span>Détection automatique</span><select name="autoDetection"><option value="true">Activée</option><option value="false">Désactivée</option></select></label>
-        <label><span>Forcer le simulateur (diagnostic)</span><select name="forcedSimulator"><option value="">Aucun — automatique</option><option value="msfs">MSFS 2020 / 2024 — SimConnect</option><option value="fs2004">FS2004 — FSUIPC (détection)</option><option value="fsx">FSX / Steam — FSUIPC (détection)</option><option value="p3d">Prepar3D — FSUIPC (détection)</option><option value="xplane">X-Plane 11 / 12 — UDP expérimental</option></select></label>
+        <label><span>Forcer le simulateur (diagnostic)</span><select name="forcedSimulator"><option value="">Aucun — automatique</option><option value="msfs">MSFS 2020 / 2024 — SimConnect</option><option value="fs2004">FS2004 — FSUIPC3</option><option value="fsx">FSX / Steam — FSUIPC4</option><option value="p3d">Prepar3D — FSUIPC4/6</option><option value="xplane">X-Plane 11 / 12 — UDP expérimental</option></select></label>
         <label><span>Heure du journal</span><select name="timeFormat"><option value="local">Locale</option><option value="utc">UTC</option></select></label>
         <label><span>Notifications locales</span><select name="notifications"><option value="true">Activées</option><option value="false">Désactivées</option></select></label>
         <button class="primary">Enregistrer les réglages</button>
       </form>
       <div class="settings-sections">
         <article><span class="kicker">COMPAGNIE</span><h3>Politique Prométhée</h3><p class="hint">Cadence live, règles de vol, versions minimales et dépôt PIREP sont imposés par Air Inter et affichés en lecture seule.</p></article>
-        <article><span class="kicker">INSTALLATION</span><h3>Compatibilité & version</h3><p class="hint">MSFS 2020/2024 via SimConnect · X-Plane 11/12 via UDP expérimental · FS2004/FSX/P3D préparés pour FSUIPC.</p><button type="button" id="checkUpdateBtn">Rechercher une mise à jour</button><p id="updateMessage" class="hint"></p></article>
+        <article><span class="kicker">INSTALLATION</span><h3>Compatibilité & version</h3><p class="hint">MSFS 2020/2024 via SimConnect · FS2004/FSX/P3D via FSUIPC · X-Plane 11/12 via UDP expérimental.</p><button type="button" id="checkUpdateBtn">Rechercher une mise à jour</button><p id="updateMessage" class="hint"></p></article>
         <article><span class="kicker">IDENTITÉ</span><h3>Air Inter ID</h3><p class="hint">Le flux OAuth2 Authorization Code + PKCE remplacera la saisie du mot de passe dans une prochaine étape. Aucun secret client ne sera embarqué.</p></article>
       </div>
       <p id="remotePolicy" class="message" hidden></p><p id="settingsMessage" class="message" hidden></p>
