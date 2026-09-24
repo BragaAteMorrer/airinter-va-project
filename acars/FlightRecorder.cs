@@ -29,13 +29,11 @@ public record FlightRecoveryInfo(
 public sealed class FlightRecorder
 {
     private TimeSpan positionInterval = TimeSpan.FromSeconds(15);
-    private static readonly TimeSpan InConfirmation = TimeSpan.FromSeconds(15);
     public readonly object Gate = new();
     public readonly SemaphoreSlim NetworkGate = new(1, 1);
     private readonly string folder;
     private Sample? previous;
     private DateTimeOffset? lastQueuedAt;
-    private DateTimeOffset? parkedSince;
     private readonly FlightTrackingEngine tracking = new();
     private bool recoveryRequired;
     public FlightState? Flight { get; private set; }
@@ -97,9 +95,18 @@ public sealed class FlightRecorder
         if (Flight is not null) throw new InvalidOperationException("Terminez le rapport en cours avant un nouveau départ.");
         recoveryRequired = false;
         if (!sample.OnGround) throw new InvalidOperationException("L'ACARS doit être démarré au sol, avant le départ du poste.");
-        tracking.Arm();
-        Flight = new(server, id, sample.RecordedAt, sample.Fuel, Phase: "BOARDING", BlockOff: sample.RecordedAt, OperationId: operationId) { Timeline = [new(sample.RecordedAt, "OUT"), new(sample.RecordedAt, "BOARDING")] }; previous = sample; Pending = []; PendingEvents = []; Track = [];
-        QueueEvent("OUT", sample); QueuePosition(sample); Save();
+        tracking.Arm(FlightPhase.Boarding);
+        Flight = new(server, id, sample.RecordedAt, sample.Fuel, Phase: "BOARDING", OperationId: operationId)
+        {
+            Timeline = [new(sample.RecordedAt, "BOARDING")]
+        };
+        previous = sample;
+        Pending = [];
+        PendingEvents = [];
+        Track = [];
+        tracking.Process(sample.ToSnapshot());
+        QueuePosition(sample);
+        Save();
     }}
     public void Start(string server, string id, AircraftSnapshot snapshot, string? operationId = null)
     {
@@ -109,11 +116,19 @@ public sealed class FlightRecorder
     }
     public void Resume(string server) { lock (Gate) {
         if (Flight is null || Flight.Server != server) throw new InvalidOperationException("Le serveur ne correspond pas au vol enregistré.");
-        tracking.Arm();
+        tracking.Restore(
+            FlightTrackingEngine.ParsePhase(Flight.Phase),
+            Flight.Journal.Any(x => x.Name == "ON"));
         recoveryRequired = false;
-        Flight = Flight with { Recording = true, BlockOff = Flight.BlockOff ?? Flight.Started }; previous = null; parkedSince = null; Save();
+        Flight = Flight with { Recording = true };
+        previous = null;
+        Save();
     }}
-    public void Pause() { lock (Gate) { if (Flight is not null) Flight = Flight with { Recording = false }; previous = null; parkedSince = null; Save(); }}
+    public void Pause() { lock (Gate) {
+        if (Flight is not null) Flight = Flight with { Recording = false };
+        previous = null;
+        Save();
+    }}
 
     /// <summary>New connector boundary. Legacy recorder logic remains intact during migration.</summary>
     public void Capture(AircraftSnapshot snapshot)
@@ -123,56 +138,46 @@ public sealed class FlightRecorder
 
     public void Capture(Sample s) { lock (Gate) {
         if (Flight is null || !Flight.Recording) return;
+
         var pendingBefore = Pending.Count;
         var eventsBefore = PendingEvents.Count;
-        RecordConnectorFacts(tracking.Process(s.ToSnapshot()), s);
+        var phaseBefore = Flight.Phase;
+        var decision = tracking.Process(s.ToSnapshot());
+        ApplyTrackingDecision(decision, s);
+
         Track.Add(new(s.RecordedAt, s.Lat, s.Lon, s.Altitude));
         if (Track.Count > 720) Track.RemoveRange(0, Track.Count - 720);
-        var changed = false;
+
+        var changed = Flight.Phase != phaseBefore;
         if (previous is not null) {
             var dt = (s.RecordedAt - previous.RecordedAt).TotalSeconds;
             if (dt > 0 && dt <= 10) {
-                var distance = Flight.Distance; var segment = Distance(previous.Lat, previous.Lon, s.Lat, s.Lon);
+                var distance = Flight.Distance;
+                var segment = Distance(previous.Lat, previous.Lon, s.Lat, s.Lon);
                 if (segment < Math.Max(1, dt * 1500 / 3600)) distance += segment;
                 else Warning = "Déplacement discontinu détecté ; segment exclu de la distance.";
+
                 var fuel = Flight.FuelUsed + Math.Max(0, previous.Fuel - s.Fuel);
                 var airborne = Flight.AirborneSeconds + (!previous.OnGround ? dt : 0);
                 Flight = Flight with { Distance = distance, FuelUsed = fuel, AirborneSeconds = airborne };
-                if (previous.OnGround && s.OnGround && Flight.Phase == "BOARDING" && s.Gs > 0.5) {
-                    SetPhase("PUSHBACK", "PUSHBACK", s); changed = true;
-                }
-                if (s.OnGround && (Flight.Phase == "BOARDING" || Flight.Phase == "PUSHBACK") && s.Gs >= 5) {
-                    SetPhase("TAXI_OUT", "TAXI OUT", s); changed = true;
-                }
-                if (previous.OnGround && !s.OnGround && Flight.Phase is not "LANDING" and not "TAXI_IN") {
-                    Flight = Flight with { Phase = "TAKEOFF", Takeoff = s.RecordedAt, Timeline = [.. Flight.Timeline, new(s.RecordedAt, "OFF"), new(s.RecordedAt, "TAKEOFF")] }; QueueEvent("OFF", s); QueueEvent("TAKEOFF", s); QueuePosition(s); changed = true;
-                }
-                if (Flight.Phase == "TAKEOFF" && (!s.OnGround && (s.Agl >= 500 || !s.GearDown))) { SetPhase("ENROUTE", "ENROUTE", s); changed = true; }
-                if (Flight.Phase == "ENROUTE" && !s.OnGround && s.Agl < 10000 && s.Vs < -100) { SetPhase("APPROACH", "APPROACH", s); changed = true; }
-                if (Flight.Phase == "APPROACH" && !s.OnGround && s.Agl < 3000 && s.GearDown && s.Flaps > 0) { SetPhase("FINAL", "FINAL", s); changed = true; }
-                if (!previous.OnGround && s.OnGround && Flight.Phase is not "LANDING" and not "TAXI_IN" and not "IN") {
-                    var rate = -Math.Abs(s.TouchdownVelocity * 60);
-                    Flight = Flight with { Phase = "LANDING", Landing = s.RecordedAt, LandingRate = rate, Timeline = [.. Flight.Timeline, new(s.RecordedAt, "ON"), new(s.RecordedAt, "LANDING")] };
-                    QueueEvent("ON", s); QueueEvent("LANDING", s); QueuePosition(s);
-                    if (Math.Abs(rate) >= Rules.HardLandingRate) AddIssue(s, "HARD_LANDING", $"Atterrissage dur : {Math.Abs(rate):0} ft/min.");
-                    changed = true;
-                }
-            } else if (dt > 10) Warning = "Interruption de télémétrie : durée et consommation peuvent être incomplètes.";
-        }
-        if (Flight.Phase == "LANDING" && s.OnGround && s.Gs < 30) { SetPhase("TAXI_IN", "TAXI IN", s); changed = true; }
-        if (s.OnGround && s.Gs > Rules.TaxiSpeed) AddIssue(s, "TAXI_OVERSPEED", $"Vitesse sol excessive au roulage : {s.Gs:0} kt.");
-        if (Flight.Phase == "FINAL" && !s.GearDown) AddIssue(s, "GEAR_UP_FINAL", "Train rentré en finale.");
-        if (Flight.Phase == "TAXI_IN" && s.OnGround && s.ParkingBrake && s.Gs < 2) {
-            parkedSince ??= s.RecordedAt;
-            if (s.RecordedAt - parkedSince >= InConfirmation) {
-                Flight = Flight with { Phase = "IN", BlockOn = s.RecordedAt, Timeline = [.. Flight.Timeline, new(s.RecordedAt, "IN")] }; QueueEvent("IN", s); QueuePosition(s); changed = true;
+            } else if (dt > 10) {
+                Warning = "Interruption de télémétrie : durée et consommation peuvent être incomplètes.";
             }
-        } else if (Flight.Phase != "IN") parkedSince = null;
-        if (lastQueuedAt is null || s.RecordedAt - lastQueuedAt >= positionInterval) { QueuePosition(s); changed = true; }
+        }
+
+        if (Flight.Phase is "PUSHBACK" or "TAXI_OUT" or "TAXI_IN"
+            && s.OnGround && s.Gs > Rules.TaxiSpeed)
+            AddIssue(s, "TAXI_OVERSPEED", $"Vitesse sol excessive au roulage : {s.Gs:0} kt.");
+
+        if (Flight.Phase == "FINAL" && !s.GearDown)
+            AddIssue(s, "GEAR_UP_FINAL", "Train rentré en finale.");
+
+        if (lastQueuedAt is null || s.RecordedAt - lastQueuedAt >= positionInterval) {
+            QueuePosition(s);
+            changed = true;
+        }
+
         previous = s;
-        // Persist at the queue cadence (and on phase changes), rather than once
-        // per telemetry tick. A restart can therefore lose at most the current
-        // unqueued second, never an acknowledged or queued ACARS message.
         if (changed || Pending.Count != pendingBefore || PendingEvents.Count != eventsBefore) Save();
     }}
 
@@ -195,7 +200,7 @@ public sealed class FlightRecorder
         var block = flight.BlockOn is null || flight.BlockOff is null ? 0 : (int)Math.Round((flight.BlockOn.Value - flight.BlockOff.Value).TotalMinutes);
         History.Insert(0, new(flight.PirepId, DateTimeOffset.UtcNow, Math.Round(flight.Distance, 2), (int)Math.Round(flight.AirborneSeconds / 60), block, Math.Round(flight.FuelUsed), flight.LandingRate, flight.Issues));
         if (History.Count > 25) History.RemoveRange(25, History.Count - 25);
-        SaveHistory(); Flight = null; previous = null; parkedSince = null; Track = []; recoveryRequired = false; Save();
+        SaveHistory(); Flight = null; previous = null; Track = []; recoveryRequired = false; Save();
     }}
 
     public FlightRecoveryInfo? GetRecoveryInfo()
@@ -227,7 +232,6 @@ public sealed class FlightRecorder
             ArchiveRecoveryState();
             Flight = null;
             previous = null;
-            parkedSince = null;
             lastQueuedAt = null;
             Pending = [];
             PendingEvents = [];
@@ -251,33 +255,89 @@ public sealed class FlightRecorder
                      .OrderByDescending(File.GetCreationTimeUtc).Skip(5))
             try { File.Delete(obsolete); } catch (IOException) { }
     }
-    private void SetPhase(string phase, string eventName, Sample sample) { if (Flight?.Phase == phase) return; Flight = Flight! with { Phase = phase, Timeline = [.. Flight.Timeline, new(sample.RecordedAt, eventName)] }; QueueEvent(eventName, sample); }
+    private static readonly HashSet<string> PhaseTimelineEvents = new(StringComparer.Ordinal) {
+        "PUSHBACK", "TAXI_OUT", "TAKEOFF", "CLIMB", "CRUISE", "DESCENT",
+        "APPROACH", "FINAL", "LANDING", "TAXI_IN", "IN"
+    };
+
+    private void ApplyTrackingDecision(TrackingDecision decision, Sample current)
+    {
+        if (Flight is null) return;
+
+        var nextPhase = FlightTrackingEngine.ToExternalPhase(decision.Phase);
+        if (!string.Equals(Flight.Phase, nextPhase, StringComparison.Ordinal))
+            Flight = Flight with { Phase = nextPhase };
+
+        foreach (var fact in decision.Events)
+        {
+            if (fact.Type == "OUT")
+                Flight = Flight with { BlockOff = fact.OccurredAt };
+            else if (fact.Type == "OFF")
+                Flight = Flight with { Takeoff = fact.OccurredAt };
+            else if (fact.Type == "ON")
+                Flight = Flight with {
+                    Landing = fact.OccurredAt,
+                    LandingRate = fact.Value ?? Flight.LandingRate
+                };
+            else if (fact.Type == "IN")
+                Flight = Flight with { BlockOn = fact.OccurredAt };
+
+            if (PhaseTimelineEvents.Contains(fact.Type)
+                && !Flight.Timeline.Any(x => x.Name == fact.Type && x.OccurredAt == fact.OccurredAt))
+                Flight = Flight with { Timeline = [.. Flight.Timeline, new(fact.OccurredAt, fact.Type)] };
+
+            QueueEvent(fact, current);
+
+            if (fact.Type == "TOUCHDOWN" && fact.Value is { } rate && Math.Abs(rate) >= Rules.HardLandingRate)
+                AddIssue(current with {
+                    RecordedAt = fact.OccurredAt,
+                    Lat = fact.Snapshot.Latitude ?? current.Lat,
+                    Lon = fact.Snapshot.Longitude ?? current.Lon
+                }, "HARD_LANDING", $"Atterrissage dur : {Math.Abs(rate):0} ft/min.");
+
+            if (fact.Type is "OUT" or "OFF" or "ON" or "IN")
+                QueuePosition(fact.Snapshot, current);
+        }
+    }
+
     private void AddIssue(Sample sample, string code, string message) {
         if (Flight is null || Flight.Issues.Any(x => x.Code == code)) return;
-        Flight = Flight with { Issues = [.. Flight.Issues, new(sample.RecordedAt, code, message)] }; Warning = message; QueueEvent(code, sample);
+        Flight = Flight with { Issues = [.. Flight.Issues, new(sample.RecordedAt, code, message)] };
+        Warning = message;
+        QueueEvent(code, sample);
     }
-    private void QueuePosition(Sample sample) { if (Pending.Any(x => x.Sample.SampleId == sample.SampleId)) return; Pending.Add(new(sample)); lastQueuedAt = sample.RecordedAt; }
+
+    private void QueuePosition(Sample sample) {
+        if (Pending.Any(x => x.Sample.SampleId == sample.SampleId)) return;
+        Pending.Add(new(sample));
+        lastQueuedAt = sample.RecordedAt;
+    }
+
+    private void QueuePosition(AircraftSnapshot snapshot, Sample fallback)
+    {
+        if (TryToLegacySample(snapshot, out var sample)) QueuePosition(sample);
+        else QueuePosition(fallback);
+    }
+
     private void QueueEvent(string name, Sample sample, double? value = null)
     {
+        if (PendingEvents.Any(x => x.Name == name && x.OccurredAt == sample.RecordedAt)) return;
         PendingEvents.Add(new(Guid.NewGuid(), name, sample.RecordedAt, sample.Lat, sample.Lon));
         if (Flight is not null && !Flight.Journal.Any(x => x.Name == name && x.OccurredAt == sample.RecordedAt))
             Flight = Flight with { Journal = [.. Flight.Journal, new(sample.RecordedAt, name, value)] };
     }
-    private void RecordConnectorFacts(TrackingDecision decision, Sample sample)
+
+    private void QueueEvent(FlightEvent fact, Sample fallback)
     {
-        // Phase transitions are still emitted by the proven legacy state machine.
-        // These facts are independent and therefore safe to add during migration.
-        foreach (var fact in decision.Events.Where(x => x.Type is "BEACON_ON" or "BEACON_OFF"
-            or "PARKING_BRAKE_ON" or "PARKING_BRAKE_OFF" or "GEAR_ON" or "GEAR_OFF"
-            or "LANDING_LIGHTS_ON" or "LANDING_LIGHTS_OFF" or "ENGINE_STARTED"
-            or "ENGINE_STOPPED" or "TOUCHDOWN" or "SLEW_ACTIVE" or "SIM_RATE_INCREASED"
-            or "FUEL_INCREASED" or "TOUCHDOWN_FIRST" or "TOUCHDOWN_BOUNCE"
-            or "BOUNCE" or "BOUNCE_COUNT"))
-        {
-            if (!PendingEvents.Any(x => x.Name == fact.Type && x.OccurredAt == fact.OccurredAt))
-                QueueEvent(fact.Type, sample, fact.Value);
-        }
+        var lat = fact.Snapshot.Latitude ?? fallback.Lat;
+        var lon = fact.Snapshot.Longitude ?? fallback.Lon;
+        if (PendingEvents.Any(x => x.Name == fact.Type && x.OccurredAt == fact.OccurredAt)) return;
+
+        PendingEvents.Add(new(Guid.NewGuid(), fact.Type, fact.OccurredAt, lat, lon));
+        if (Flight is not null && !Flight.Journal.Any(x => x.Name == fact.Type && x.OccurredAt == fact.OccurredAt))
+            Flight = Flight with { Journal = [.. Flight.Journal, new(fact.OccurredAt, fact.Type, fact.Value)] };
     }
+
     private static bool TryToLegacySample(AircraftSnapshot s, out Sample sample)
     {
         sample = default!;
