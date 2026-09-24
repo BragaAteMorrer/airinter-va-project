@@ -8,6 +8,7 @@ use Modules\Promethee\Http\AcarsConfigurationController;
 use Modules\Promethee\Http\OperationsV1Controller;
 use Modules\Promethee\Http\HermesReleaseController;
 use Modules\Promethee\Http\SimBriefCallbackController;
+use Modules\Promethee\Http\DatalinkController;
 use App\Http\Controllers\Api\AcarsSimBriefController;
 
 // Browsers request this conventional path even though the branded icon lives
@@ -121,6 +122,10 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::get('/catalogue/{type}', [PortalController::class,'catalogue'])->where('type','flights|airports')->name('catalogue.type');
         Route::get('/mailbox', [PortalController::class,'mailbox'])->name('mailbox');
         Route::post('/mailbox', [PortalController::class,'sendMessage'])->name('mailbox.send');
+        // Lot 5 transport surface for the future Dispatcher Desk.
+        Route::get('/datalink/messages', [DatalinkController::class, 'adminIndex'])->name('datalink.messages');
+        Route::post('/datalink/messages', [DatalinkController::class, 'adminSend'])->name('datalink.messages.send');
+        Route::post('/datalink/messages/{message}/ack', [DatalinkController::class, 'adminAcknowledge'])->name('datalink.messages.ack');
         Route::get('/automation', [PortalController::class,'automation'])->name('automation');
         Route::get('/automation/rules/{kind}/{id}', [PortalController::class,'automationRule'])->where('kind','badge|rank')->name('automation.rules.show');
         Route::post('/automation/awards', [PortalController::class,'createAutomationAward'])->name('automation.awards.create');
@@ -185,6 +190,9 @@ Route::middleware(['api','api.auth'])->prefix('api/v1')->group(function () {
     Route::post('/operations/{bid}/fleet-state/reconcile', [OperationsV1Controller::class, 'reconcileFleet']);
     Route::post('/operations/{bid}/pirep', [OperationsV1Controller::class, 'prefilePirep']);
     Route::post('/operations/{bid}/telemetry', [TelemetryController::class, 'storeOperation']);
+    Route::get('/operations/{operation}/datalink', [DatalinkController::class, 'index']);
+    Route::post('/operations/{operation}/datalink', [DatalinkController::class, 'send']);
+    Route::post('/operations/{operation}/datalink/{message}/ack', [DatalinkController::class, 'acknowledge']);
     Route::post('/operations/{operation}/simbrief/session', [AcarsSimBriefController::class, 'sessionOperation']);
     Route::post('/operations/{operation}/simbrief/redirect', [AcarsSimBriefController::class, 'redirectOperation']);
     Route::post('/operations/{operation}/simbrief/account/import', [AcarsSimBriefController::class, 'importAccountOperation']);
