@@ -72,6 +72,7 @@ window.prometheeI18n = @json($prometheeI18n);
     // are intentionally absent: their module manifests currently mark them inactive.
     $navigationGroups = [
         'navigation_welcome' => [
+            ['route' => 'promethee.dashboard', 'label' => 'dashboard', 'active' => 'promethee.dashboard'],
             ['route' => 'promethee.occ', 'label' => 'public_home', 'active' => 'promethee.occ'],
             ['route' => 'promethee.pilots', 'label' => 'community', 'active' => 'promethee.pilots*'],
             // The native map lives in the flight programme; keep its active
@@ -83,7 +84,8 @@ window.prometheeI18n = @json($prometheeI18n);
             ['route' => 'promethee.passport', 'label' => 'passport', 'active' => 'promethee.passport'],
             ['route' => 'promethee.assignments', 'label' => 'assignments', 'active' => 'promethee.assignments'],
             ['route' => 'promethee.bookings', 'label' => 'navigation_menu.bookings', 'active' => 'promethee.bookings'],
-            ['route' => 'promethee.public.pireps', 'label' => 'navigation_menu.reports', 'active' => 'promethee.public.pireps|promethee.pireps.*'],
+            ['route' => 'promethee.public.pireps', 'label' => 'navigation_menu.all_reports', 'active' => 'promethee.public.pireps|promethee.pireps.*'],
+            ['route' => 'promethee.public.pireps.mine', 'label' => 'navigation_menu.my_reports', 'active' => 'promethee.public.pireps.mine'],
             ['route' => 'promethee.shop', 'label' => 'shop', 'active' => 'promethee.shop*'],
             ['route' => 'promethee.transfers', 'label' => 'transfers', 'active' => 'promethee.transfers*'],
             ['route' => 'promethee.jumpseat', 'label' => 'jumpseat', 'active' => 'promethee.jumpseat*'],
@@ -119,10 +121,9 @@ window.prometheeI18n = @json($prometheeI18n);
         </div>
     </details>
 @endforeach
-<details @class(['nav-group', 'selected' => request()->routeIs('promethee.dashboard', 'admin.promethee.*')])>
+<details @class(['nav-group', 'selected' => request()->routeIs('admin.promethee.*')])>
     <summary>{{ __('promethee.navigation_private') }}<b aria-hidden="true">⌄</b></summary>
     <div class="nav-menu">
-        <a @class(['selected' => request()->routeIs('promethee.dashboard')]) href="{{ route('promethee.dashboard') }}">{{ __('promethee.dashboard') }}</a>
         @ability('admin','admin-access')
         <a @class(['selected' => request()->routeIs('admin.promethee.*')]) href="{{ route('admin.promethee.dashboard') }}">{{ __('promethee.administration') }}</a>
         @endability
