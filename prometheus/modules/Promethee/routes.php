@@ -25,6 +25,7 @@ Route::get('/pirep/{id}', [PortalController::class, 'pirep'])->middleware(['web'
 Route::middleware('web')->prefix('public')->name('promethee.public.')->group(function () {
     Route::get('/pilots', [PortalController::class, 'publicPilots'])->name('pilots');
     Route::get('/pireps', [PortalController::class, 'publicPireps'])->middleware('auth')->name('pireps');
+    Route::get('/pireps/mine', [PortalController::class, 'myPireps'])->middleware('auth')->name('pireps.mine');
     Route::get('/live', [PortalController::class, 'publicLive'])->name('live');
     Route::get('/live-data', [PortalController::class, 'liveData'])->name('live.data');
 });
