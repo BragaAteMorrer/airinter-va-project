@@ -125,6 +125,7 @@ jobs:
           php -l modules/Promethee/Services/DatalinkService.php
           php -l modules/Promethee/Services/DispatchDeskService.php
           php -l tests/DatalinkServiceTest.php
+          php -l tests/DispatchDeskTest.php
           php -l modules/Promethee/Services/OperationIdentityService.php
           php -l modules/Promethee/Services/SafetyAnalyzer.php
           php -l modules/Promethee/Services/AircraftOperationalStateService.php
