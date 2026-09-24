@@ -1297,7 +1297,7 @@ class PortalController extends Controller
         $row=$fareResolver->rows($flight)->first();
         $fare=$row['fare'] ?? null;
         $fareCode=$fare?->code ?: ($flight->airline?->icao === 'ICS' ? 'CGO' : ($flight->airline?->icao === 'ACF' ? 'T' : 'Y'));
-        $price=$row['current_price'] ?? 0.0;
+        $price=$row['current_price'] ?? null;
 
         return $this->page('economy-flight-price-edit',[
             'flight'=>$flight,
