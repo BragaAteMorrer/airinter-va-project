@@ -36,10 +36,13 @@ l'OFP généré, fermer cette fenêtre : Hermès importe automatiquement le brie
 dans Prométhée et inclut son `simbrief_id` lors du pré-dépôt du PIREP.
 
 La clé API SimBrief de la compagnie reste sur Prométhée et n'est jamais envoyée
-au client. Dans **Administration → Settings → simbrief**, renseigner **SimBrief
-Company API Key** puis enregistrer. Le champ est write-only : une clé déjà
-configurée n'est jamais réaffichée ; laisser le champ vide la conserve et sa
-suppression exige de cocher explicitement **Remove the stored credential**.
+au client. Sur une installation déjà existante, après déploiement de cette version, lancer
+une fois **Administration → Maintenance → Reseed** pour synchroniser les
+métadonnées du réglage (la valeur existante est conservée). Puis, dans
+**Administration → Settings → simbrief**, renseigner **SimBrief Company API
+Key** et enregistrer. Le champ est write-only : une clé déjà configurée n'est
+jamais réaffichée ; laisser le champ vide la conserve et sa suppression exige
+de cocher explicitement **Remove the stored credential**.
 
 Hermès reçoit uniquement `company_api_available: true/false` afin d'activer ou
 désactiver le mode **API SimBrief**. La valeur de la clé n'est jamais incluse
