@@ -107,5 +107,5 @@ return [
     ],
     'navigation_welcome' => 'Welcome', 'navigation_pilot' => 'Pilot area', 'navigation_company' => 'Company', 'navigation_operations' => 'Operations', 'navigation_private' => 'Private',
     'airlines' => 'Airlines', 'fleet' => 'Fleet', 'maintenance' => 'Maintenance',
-    'navigation_menu' => ['settings' => 'Settings', 'flight_map' => 'Flight map', 'reports' => 'My reports', 'bookings' => 'My bookings', 'downloads' => 'Downloads', 'live_flights' => 'Live flights'],
+    'navigation_menu' => ['settings' => 'Settings', 'flight_map' => 'Flight map', 'reports' => 'My reports', 'all_reports' => 'All reports', 'my_reports' => 'My reports', 'bookings' => 'My bookings', 'downloads' => 'Downloads', 'live_flights' => 'Live flights'],
 ];
