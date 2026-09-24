@@ -1210,6 +1210,12 @@ class PortalController extends Controller
     }
 
     public function economy(Request $r, EconomyFareResolver $fareResolver) {
+        foreach (['flight_dpt_airport', 'flight_arr_airport'] as $airportFilter) {
+            if ($r->filled($airportFilter)) {
+                $r->merge([$airportFilter => strtoupper(trim((string) $r->input($airportFilter)))]);
+            }
+        }
+
         $flightFilters=$r->validate(['flight_airline'=>'nullable|string|max:10','flight_origin'=>'nullable|string|size:2','flight_arrival'=>'nullable|string|size:2','flight_dpt_airport'=>'nullable|string|max:10','flight_arr_airport'=>'nullable|string|max:10','flight_search'=>'nullable|string|max:80','flight_select_all'=>'nullable|boolean']);
         $fuelFilters=$r->validate(['fuel_country'=>'nullable|string|size:2','fuel_region'=>'nullable|string|max:191','fuel_search'=>'nullable|string|max:80','fuel_select_all'=>'nullable|boolean']);
         $airportOptions=Airport::select('id','icao','name','country','region','location')->orderBy('country')->orderBy('region')->orderBy('location')->get();
