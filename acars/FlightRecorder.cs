@@ -137,20 +137,24 @@ public sealed class FlightRecorder
         Save();
     }}
 
-    /// <summary>New connector boundary. Legacy recorder logic remains intact during migration.</summary>
+    /// <summary>
+    /// Connector boundary. The original snapshot is preserved for FDM so
+    /// unavailable optional values remain UNKNOWN instead of becoming legacy 0s.
+    /// </summary>
     public void Capture(AircraftSnapshot snapshot)
     {
-        if (TryToLegacySample(snapshot, out var sample)) Capture(sample);
+        if (TryToLegacySample(snapshot, out var sample)) Capture(sample, snapshot);
     }
 
-    public void Capture(Sample s) { lock (Gate) {
+    public void Capture(Sample sample) => Capture(sample, sample.ToSnapshot());
+
+    private void Capture(Sample s, AircraftSnapshot snapshot) { lock (Gate) {
         if (Flight is null || !Flight.Recording) return;
 
         var pendingBefore = Pending.Count;
         var eventsBefore = PendingEvents.Count;
         var observationsBefore = Flight.Observations.Count;
         var phaseBefore = Flight.Phase;
-        var snapshot = s.ToSnapshot();
         var decision = tracking.Process(snapshot);
         ApplyTrackingDecision(decision, s);
         AddObservations(fdm.Process(snapshot, decision.Phase, decision.Events));
