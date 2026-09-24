@@ -25,8 +25,8 @@ class SopEngineService
         $path = $this->rulesPath();
         if (!is_file($path)) return $this->defaultRules();
 
-        $decoded = $this->readJson($path, []);
-        return is_array($decoded) && $decoded !== [] ? array_values($decoded) : $this->defaultRules();
+        $decoded = $this->readJson($path, null);
+        return is_array($decoded) ? array_values($decoded) : $this->defaultRules();
     }
 
     public function upsertRule(array $input, ?string $id = null): array
