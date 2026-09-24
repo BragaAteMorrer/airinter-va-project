@@ -10,6 +10,6 @@
         'your_progress' => 'İLERLEMENİZ', 'pilot_logbook' => 'Pilot uçuş günlüğü', 'validated_flights' => 'Uçuş günlüğünüzde doğrulanan uçuşlar', 'recent_activity' => 'Son etkinlik', 'latest_accepted_pireps' => 'SON KABUL EDİLEN PIREP’LER', 'view_operations_room' => 'Operasyon merkezini görüntüle', 'time' => 'Saat', 'airport' => 'Havalimanı', 'no_accepted_pireps' => 'Kabul edilmiş PIREP yok.',
     ],
     'navigation_welcome'=>'Hoş geldiniz', 'navigation_pilot'=>'Pilot alanı', 'navigation_company'=>'Havayolu', 'navigation_operations'=>'Operasyonlar', 'navigation_private'=>'Özel',
-    'navigation_menu'=>['settings'=>'Ayarlar', 'flight_map'=>'Uçuş haritası', 'reports'=>'Raporlarım', 'bookings'=>'Rezervasyonlarım', 'downloads'=>'İndirilenler', 'live_flights'=>'Canlı uçuşlar'],
+    'navigation_menu'=>['settings'=>'Ayarlar', 'flight_map'=>'Uçuş haritası', 'reports' => 'Raporlarım', 'all_reports' => 'Tüm raporlar', 'my_reports' => 'Raporlarım', 'bookings'=>'Rezervasyonlarım', 'downloads'=>'İndirilenler', 'live_flights'=>'Canlı uçuşlar'],
     'appearance'=>'Görünüm', 'appearance_style'=>'Renk görünümü', 'appearance_light'=>'Gündüz', 'appearance_dark'=>'Gece',
 ]);
