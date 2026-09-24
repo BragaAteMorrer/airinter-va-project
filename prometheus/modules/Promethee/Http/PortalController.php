@@ -957,7 +957,7 @@ class PortalController extends Controller
         try { $bids->addBid($flight,$r->user()); return back()->with('success','Vol '.$flight->ident.' réservé.'); }
         catch (\Throwable $e) { return back()->withErrors(['reservation'=>$e->getMessage() ?: 'Cette réservation ne peut pas être créée.']); }
     }
-    public function briefing(string $id, Request $r) {
+    public function briefing(string $id, Request $r, DemandProfileService $demand) {
         $flight=Flight::with(['airline','dpt_airport','arr_airport','alt_airport','subfleets'])->findOrFail($id);
         $weather=[];
         try {
@@ -973,6 +973,13 @@ class PortalController extends Controller
         $suggestedFuel=(int) round(\App\Support\Units\Fuel::make(ceil(max(250,$distance*3.2)), 'kg')->toUnit($fuelUnit));
         $briefing=DB::table('promethee_briefings')->where(['user_id'=>$r->user()->id,'flight_id'=>$flight->id])->first();
         $bid=Bid::with(['aircraft.subfleet'])->where(['user_id'=>$r->user()->id,'flight_id'=>$flight->id])->latest()->first();
+        $loadProfile = $bid?->aircraft
+            ? $demand->profile(
+                $bid->aircraft,
+                $flight,
+                app(\Modules\Promethee\Services\OperationIdentityService::class)->id($bid)
+            )
+            : null;
         $simbrief=SimBrief::with('aircraft')->where('user_id',$r->user()->id)
             ->where('flight_id',$flight->id)->latest('updated_at')->first();
 
@@ -992,7 +999,7 @@ class PortalController extends Controller
         return $this->page('briefing',[
             'flight'=>$flight,'weather'=>$weather,'briefing'=>$briefing,
             'suggestedFuel'=>$suggestedFuel,'fuelUnit'=>$fuelUnit,
-            'bid'=>$bid,'simbrief'=>$simbrief,
+            'bid'=>$bid,'simbrief'=>$simbrief,'loadProfile'=>$loadProfile,
             'lineFleetRestricted'=>$flightSubfleetIds->isNotEmpty(),
             'compatibleSubfleetCount'=>$compatibleSubfleetIds->count(),
             'compatibleAircraftCount'=>$compatibleAircraftCount,
