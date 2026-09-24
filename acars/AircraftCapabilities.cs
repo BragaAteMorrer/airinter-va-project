@@ -1,5 +1,8 @@
+using System.Text.Json.Serialization;
+
 namespace Promethee;
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum CapabilityAvailability
 {
     Unknown,
@@ -7,6 +10,7 @@ public enum CapabilityAvailability
     Unsupported
 }
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum AircraftDataCapability
 {
     Position,
@@ -161,6 +165,11 @@ public sealed class AircraftCapabilityMonitor
 
     public AircraftCapabilityReport Observe(
         SimulatorDescriptor connector,
+        AircraftSnapshot rawSnapshot) =>
+        AdaptAndObserve(connector, rawSnapshot).Report;
+
+    public (AircraftSnapshot Snapshot, AircraftCapabilityReport Report) AdaptAndObserve(
+        SimulatorDescriptor connector,
         AircraftSnapshot rawSnapshot)
     {
         var adapter = registry.Resolve(rawSnapshot);
@@ -184,7 +193,7 @@ public sealed class AircraftCapabilityMonitor
                 ResolveSource(adapter, connector, snapshot, capability)))
             .ToArray();
 
-        return new(
+        var report = new AircraftCapabilityReport(
             adapter.Id,
             adapter.DisplayName,
             BuildAircraftLabel(snapshot),
@@ -194,6 +203,7 @@ public sealed class AircraftCapabilityMonitor
             connector.Kind,
             snapshot.RecordedAt,
             states);
+        return (snapshot, report);
     }
 
     public void Reset()
