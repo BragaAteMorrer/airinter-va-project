@@ -16,6 +16,7 @@
       <button class="tab protected-tab" data-tab="record" disabled>Enregistrement</button>
       <button class="tab protected-tab" data-tab="map" disabled>Suivi du vol</button>
       <button class="tab protected-tab" data-tab="journal" disabled>Journal</button>
+      <button class="tab protected-tab" data-tab="review" disabled>Flight Review</button>
       <button class="tab protected-tab" data-tab="settings" disabled>Paramètres</button>
     </nav>
     <div class="display-controls" aria-label="Affichage Hermès"><label class="theme">Style<select id="era"><option value="modern">Moderne</option><option value="2000">Années 2000</option></select></label><label class="theme">Apparence<select id="appearance"><option value="light">Clair</option><option value="dark">Nuit</option></select></label></div>
@@ -145,10 +146,37 @@
       <div class="workspace-title"><div><span class="kicker">FLIGHT OPERATIONS</span><h2>Enregistrement ACARS</h2></div><strong id="flightSafetyState" class="ready-state">STANDBY</strong></div>
       <div id="preflightChecks" class="preflight-checks" aria-label="Contrôles avant départ"></div>
       <div class="cards"><div><span>Phase</span><strong id="phase">—</strong></div><div><span>Altitude</span><strong id="altitude">—</strong></div><div><span>GS</span><strong id="groundSpeed">—</strong></div><div><span>Carburant</span><strong id="fuel">—</strong></div><div><span>Distance</span><strong id="distance">—</strong></div><div><span>Temps de vol</span><strong id="airborne">—</strong></div><div><span>Synchronisation</span><strong id="pending">0</strong></div></div>
-      <p id="warning" class="hint"></p><div class="actions"><button id="startBtn" class="primary">Démarrer l’enregistrement</button><button id="pauseBtn">Pause</button><button id="resumeBtn">Reprendre</button><button id="syncBtn">Synchroniser</button><button id="fileBtn">Déposer le PIREP</button></div><p id="recordMessage" class="message" hidden></p>
+      <p id="warning" class="hint"></p><div class="actions"><button id="startBtn" class="primary">Démarrer l’enregistrement</button><button id="pauseBtn">Pause</button><button id="resumeBtn">Reprendre</button><button id="syncBtn">Synchroniser</button><button id="fileBtn">Revoir & déposer le PIREP</button></div><p id="recordMessage" class="message" hidden></p>
     </section>
     <section id="map" class="panel"><h2>Suivi du vol</h2><canvas id="flightMap" width="960" height="440" aria-label="Trajet enregistré"></canvas><div id="timeline" class="timeline"><p class="empty">En attente d’un vol.</p></div></section>
     <section id="journal" class="panel"><h2>Journal opérationnel</h2><p class="hint">Événements ACARS enregistrés localement et conservés durant une reprise de vol.</p><div id="journalEntries" class="timeline"><p class="empty">En attente d’un vol.</p></div></section>
+    <section id="review" class="panel">
+      <div class="workspace-title"><div><span class="kicker">FLIGHT DATA MONITORING</span><h2>Flight Review</h2><p class="hint">Synthèse factuelle du vol. Les observations Hermès ne constituent pas, à elles seules, une pénalité compagnie.</p></div><strong id="reviewState" class="ready-state">EN VOL</strong></div>
+      <div class="cards review-cards">
+        <div><span>Distance</span><strong id="reviewDistance">—</strong></div>
+        <div><span>Airborne</span><strong id="reviewAirborne">—</strong></div>
+        <div><span>Block</span><strong id="reviewBlock">—</strong></div>
+        <div><span>Fuel used</span><strong id="reviewFuel">—</strong></div>
+        <div><span>Landing rate</span><strong id="reviewLandingRate">—</strong></div>
+        <div><span>Max bank observé</span><strong id="reviewMaxBank">—</strong></div>
+        <div><span>Fuel ajouté</span><strong id="reviewFuelAdded">—</strong></div>
+        <div><span>Max sim rate</span><strong id="reviewSimRate">—</strong></div>
+      </div>
+      <div class="review-gates">
+        <article><span class="kicker">1000 FT AGL</span><strong id="review1000">NON OBSERVÉ</strong><p>Train, volets, VS et bank selon les données disponibles.</p></article>
+        <article><span class="kicker">500 FT AGL</span><strong id="review500">NON OBSERVÉ</strong><p>Contrôle générique, indépendant du score Air Inter.</p></article>
+        <article><span class="kicker">APPROCHE</span><strong id="reviewGoAround">0 remise de gaz</strong><p id="reviewBounce">0 rebond</p></article>
+      </div>
+      <div class="review-columns">
+        <article><h3>Observations FDM</h3><div id="fdmObservations" class="observation-list"><p class="empty">Aucune observation pour le moment.</p></div></article>
+        <article><h3>Anomalies / règles compagnie</h3><div id="reviewIssues" class="observation-list"><p class="empty">Aucune anomalie détectée.</p></div></article>
+      </div>
+      <div class="review-submit">
+        <p id="reviewHint" class="hint">Le dépôt du PIREP devient disponible après l'événement IN.</p>
+        <button id="submitReviewBtn" class="primary" type="button" disabled>Déposer le PIREP</button>
+      </div>
+      <p id="reviewMessage" class="message" hidden role="status"></p>
+    </section>
     <section id="settings" class="panel"><h2>Paramètres ACARS</h2><p class="hint">Les règles compagnie et la cadence live sont reçues de Prométhée ; ces réglages restent locaux et n’exécutent aucun code distant.</p>
       <form id="settingsForm" class="login-form">
         <label><span>Détection automatique</span><select name="autoDetection"><option value="true">Activée</option><option value="false">Désactivée</option></select></label>
