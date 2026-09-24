@@ -6,6 +6,7 @@ use App\Models\Enums\FareType;
 use App\Models\Fare;
 use App\Models\Flight;
 use Illuminate\Support\Facades\DB;
+use Modules\Promethee\Services\BbrReferenceRepairService;
 use Modules\Promethee\Services\DemandProfileService;
 
 final class PrometheeDemandEconomyTest extends TestCase
@@ -265,6 +266,121 @@ final class PrometheeDemandEconomyTest extends TestCase
         $response->assertOk();
         $response->assertSee('177,00', false);
         $response->assertSee('RÉFÉRENCE ROUGE', false);
+    }
+
+
+    public function test_legacy_band_only_corruption_is_repaired_to_inherited_subfleet_red_price(): void
+    {
+        $fleet = $this->createSubfleetWithAircraft(1);
+        $subfleet = $fleet['subfleet'];
+
+        $fare = Fare::factory()->create([
+            'code' => 'YLEGACY',
+            'name' => 'Legacy Brest Fare',
+            'type' => FareType::PASSENGER,
+            'price' => 218,
+            'capacity' => 100,
+            'active' => true,
+        ]);
+        $subfleet->fares()->syncWithoutDetaching([
+            $fare->id => ['price' => '177', 'cost' => null, 'capacity' => 100],
+        ]);
+
+        $flight = Flight::factory()->create([
+            'airline_id' => $subfleet->airline_id,
+            'active' => true,
+        ]);
+        $flight->subfleets()->syncWithoutDetaching([$subfleet->id]);
+        $flight->fares()->syncWithoutDetaching([
+            $fare->id => ['price' => '218', 'cost' => null, 'capacity' => 100],
+        ]);
+
+        DB::table('promethee_pricing')->insert([
+            'flight_id' => $flight->id,
+            'fare_id' => $fare->id,
+            'band' => 'rouge',
+            'red_price' => 218,
+            'multiplier' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('promethee_price_history')->insert([
+            'target' => 'ticket',
+            'subject_id' => $flight->id,
+            'field' => 'fare:'.$fare->id,
+            'before_price' => 177,
+            'after_price' => 218,
+            'context' => json_encode(['operation' => 'band', 'band' => 'blanc']),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $count = app(BbrReferenceRepairService::class)->repairLegacyBandOnlyReferences();
+
+        $this->assertSame(1, $count);
+        $this->assertSame(
+            177.0,
+            (float) DB::table('promethee_pricing')->where('flight_id', $flight->id)->where('fare_id', $fare->id)->value('red_price')
+        );
+        $this->assertSame(
+            177.0,
+            (float) DB::table('flight_fare')->where('flight_id', $flight->id)->where('fare_id', $fare->id)->value('price')
+        );
+    }
+
+    public function test_legacy_repair_does_not_overwrite_an_explicit_red_price_change(): void
+    {
+        $fleet = $this->createSubfleetWithAircraft(1);
+        $subfleet = $fleet['subfleet'];
+
+        $fare = Fare::factory()->create([
+            'code' => 'YEXPLICIT',
+            'name' => 'Explicit Fare',
+            'type' => FareType::PASSENGER,
+            'price' => 218,
+            'capacity' => 100,
+            'active' => true,
+        ]);
+        $subfleet->fares()->syncWithoutDetaching([
+            $fare->id => ['price' => '177', 'cost' => null, 'capacity' => 100],
+        ]);
+
+        $flight = Flight::factory()->create([
+            'airline_id' => $subfleet->airline_id,
+            'active' => true,
+        ]);
+        $flight->subfleets()->syncWithoutDetaching([$subfleet->id]);
+        $flight->fares()->syncWithoutDetaching([
+            $fare->id => ['price' => '218', 'cost' => null, 'capacity' => 100],
+        ]);
+
+        DB::table('promethee_pricing')->insert([
+            'flight_id' => $flight->id,
+            'fare_id' => $fare->id,
+            'band' => 'rouge',
+            'red_price' => 218,
+            'multiplier' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('promethee_price_history')->insert([
+            'target' => 'ticket',
+            'subject_id' => $flight->id,
+            'field' => 'fare:'.$fare->id,
+            'before_price' => 177,
+            'after_price' => 218,
+            'context' => json_encode(['operation' => 'set', 'value' => 218, 'band' => 'rouge']),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $count = app(BbrReferenceRepairService::class)->repairLegacyBandOnlyReferences();
+
+        $this->assertSame(0, $count);
+        $this->assertSame(
+            218.0,
+            (float) DB::table('promethee_pricing')->where('flight_id', $flight->id)->where('fare_id', $fare->id)->value('red_price')
+        );
     }
 
 }
