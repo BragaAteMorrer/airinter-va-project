@@ -46,7 +46,8 @@ public enum AircraftDataCapability
     SimulationRate,
     TouchdownRate,
     AircraftTitle,
-    AircraftIcao
+    AircraftIcao,
+    AircraftModel
 }
 
 public sealed record AircraftCapabilityState(
@@ -60,6 +61,7 @@ public sealed record AircraftCapabilityReport(
     string AircraftLabel,
     string? AircraftTitle,
     string? AircraftIcao,
+    string? AircraftModel,
     string ConnectorId,
     SimulatorKind Simulator,
     DateTimeOffset UpdatedAt,
@@ -114,7 +116,7 @@ public sealed class NamedAircraftAdapter(
 
     public bool Matches(AircraftSnapshot snapshot)
     {
-        var haystack = string.Join(" ", snapshot.AircraftTitle, snapshot.AircraftIcao).Trim();
+        var haystack = string.Join(" ", snapshot.AircraftTitle, snapshot.AircraftIcao, snapshot.AircraftModel).Trim();
         if (string.IsNullOrWhiteSpace(haystack)) return false;
         return titleTokens.All(token => haystack.Contains(token, StringComparison.OrdinalIgnoreCase));
     }
@@ -200,6 +202,7 @@ public sealed class AircraftCapabilityMonitor
             BuildAircraftLabel(snapshot),
             snapshot.AircraftTitle,
             snapshot.AircraftIcao,
+            snapshot.AircraftModel,
             connector.ConnectorId,
             connector.Kind,
             snapshot.RecordedAt,
@@ -256,15 +259,20 @@ public sealed class AircraftCapabilityMonitor
             connector.Kind,
             adapter.Id,
             snapshot.AircraftTitle?.Trim() ?? "",
-            snapshot.AircraftIcao?.Trim() ?? "");
+            snapshot.AircraftIcao?.Trim() ?? "",
+            snapshot.AircraftModel?.Trim() ?? "");
 
     private static string BuildAircraftLabel(AircraftSnapshot snapshot)
     {
         if (!string.IsNullOrWhiteSpace(snapshot.AircraftIcao)
             && !string.IsNullOrWhiteSpace(snapshot.AircraftTitle))
             return $"{snapshot.AircraftIcao} · {snapshot.AircraftTitle}";
+        if (!string.IsNullOrWhiteSpace(snapshot.AircraftModel)
+            && !string.IsNullOrWhiteSpace(snapshot.AircraftTitle))
+            return $"{snapshot.AircraftModel} · {snapshot.AircraftTitle}";
         return snapshot.AircraftTitle
             ?? snapshot.AircraftIcao
+            ?? snapshot.AircraftModel
             ?? "Aircraft identity unknown";
     }
 
@@ -304,6 +312,7 @@ public sealed class AircraftCapabilityMonitor
         AircraftDataCapability.TouchdownRate => s.TouchdownVerticalSpeedFeetPerMinute is not null,
         AircraftDataCapability.AircraftTitle => !string.IsNullOrWhiteSpace(s.AircraftTitle),
         AircraftDataCapability.AircraftIcao => !string.IsNullOrWhiteSpace(s.AircraftIcao),
+        AircraftDataCapability.AircraftModel => !string.IsNullOrWhiteSpace(s.AircraftModel),
         _ => false
     };
 
@@ -314,6 +323,7 @@ public sealed class AircraftCapabilityMonitor
             or AircraftDataCapability.AltitudeAgl
             or AircraftDataCapability.AircraftTitle
             or AircraftDataCapability.AircraftIcao
+            or AircraftDataCapability.AircraftModel
             => SimulatorCapabilities.Position,
 
         AircraftDataCapability.IndicatedAirspeed
