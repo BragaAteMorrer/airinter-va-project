@@ -1031,7 +1031,7 @@ const capabilityLabels = {
   OnGround: 'On ground', ParkingBrake: 'Parking brake', Gear: 'Gear', Flaps: 'Flaps', Spoilers: 'Spoilers',
   Engines: 'Engines', BeaconLight: 'Beacon', NavigationLight: 'Nav lights', StrobeLight: 'Strobes',
   LandingLight: 'Landing lights', TaxiLight: 'Taxi lights', SeatBeltSign: 'Seat belt sign', Doors: 'Doors',
-  Transponder: 'Transponder', Autopilot: 'Autopilot', Slew: 'Slew', Pause: 'Pause', SimulationRate: 'Sim rate',
+  Transponder: 'Transponder', Autopilot: 'Autopilot', ThrustStable: 'Thrust stable', Slew: 'Slew', Pause: 'Pause', SimulationRate: 'Sim rate',
   TouchdownRate: 'Touchdown rate', AircraftTitle: 'Aircraft title', AircraftIcao: 'Aircraft ICAO'
 };
 
