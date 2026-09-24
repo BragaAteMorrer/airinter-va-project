@@ -95,33 +95,40 @@ public sealed class FlightRecorder
         File.Move(temp, Path.Combine(folder, "state.json"), true);
     }
 
-    public void Start(string server, string id, Sample sample, string? operationId = null) { lock (Gate) {
-        if (Flight is not null) throw new InvalidOperationException("Terminez le rapport en cours avant un nouveau départ.");
-        recoveryRequired = false;
-        if (!sample.OnGround) throw new InvalidOperationException("L'ACARS doit être démarré au sol, avant le départ du poste.");
-        tracking.Arm(FlightPhase.Boarding);
-        fdm.Reset();
-        Flight = new(server, id, sample.RecordedAt, sample.Fuel, Phase: "BOARDING", OperationId: operationId)
-        {
-            Timeline = [new(sample.RecordedAt, "BOARDING")]
-        };
-        previous = sample;
-        previousSnapshot = initialSnapshot;
-        Pending = [];
-        PendingEvents = [];
-        Track = [];
-        var initialSnapshot = sample.ToSnapshot();
-        tracking.Process(initialSnapshot);
-        fdm.Process(initialSnapshot, FlightPhase.Boarding, []);
-        QueuePosition(sample, initialSnapshot);
-        Save();
-    }}
+    public void Start(string server, string id, Sample sample, string? operationId = null) =>
+        StartCore(server, id, sample, sample.ToSnapshot(), operationId);
+
     public void Start(string server, string id, AircraftSnapshot snapshot, string? operationId = null)
     {
         if (!TryToLegacySample(snapshot, out var sample))
-            throw new InvalidOperationException("Le connecteur ne fournit pas encore les données minimales pour démarrer le vol.");
-        Start(server, id, sample, operationId);
+            throw new InvalidOperationException("Le connecteur ne fournit pas les données minimales de navigation pour démarrer le vol.");
+        StartCore(server, id, sample, snapshot, operationId);
     }
+
+    private void StartCore(string server, string id, Sample sample, AircraftSnapshot snapshot, string? operationId)
+    {
+        lock (Gate) {
+            if (Flight is not null) throw new InvalidOperationException("Terminez le rapport en cours avant un nouveau départ.");
+            recoveryRequired = false;
+            if (snapshot.OnGround != true) throw new InvalidOperationException("L'ACARS doit être démarré au sol, avant le départ du poste.");
+            tracking.Arm(FlightPhase.Boarding);
+            fdm.Reset();
+            Flight = new(server, id, sample.RecordedAt, sample.Fuel, Phase: "BOARDING", OperationId: operationId)
+            {
+                Timeline = [new(sample.RecordedAt, "BOARDING")]
+            };
+            previous = sample;
+            previousSnapshot = snapshot;
+            Pending = [];
+            PendingEvents = [];
+            Track = [];
+            tracking.Process(snapshot);
+            fdm.Process(snapshot, FlightPhase.Boarding, []);
+            QueuePosition(sample, snapshot);
+            Save();
+        }
+    }
+
     public void Resume(string server) { lock (Gate) {
         if (Flight is null || Flight.Server != server) throw new InvalidOperationException("Le serveur ne correspond pas au vol enregistré.");
         tracking.Restore(
