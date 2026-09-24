@@ -99,7 +99,7 @@ public sealed class AircraftCapabilitiesTests
 
         Assert.Contains("\"Bank\"", json);
         Assert.Contains("\"Unknown\"", json);
-        Assert.DoesNotContain("\"Capability\":8", json);
+        Assert.DoesNotContain("\"Capability\":9", json);
     }
 
     private static AircraftSnapshot Snapshot(
