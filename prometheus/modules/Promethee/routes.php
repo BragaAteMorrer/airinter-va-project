@@ -165,7 +165,7 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
 });
 // SimBrief redirects the browser here after an API generation. The random state token
 // correlates the callback; the OFP is still imported only by the authenticated pilot.
-Route::middleware('web')->get('/simbrief/callback/{state}', SimBriefCallbackController::class)
+Route::middleware('web')->get('/simbrief/callback/{state}', [SimBriefCallbackController::class, '__invoke'])
     ->where('state', '[A-Za-z0-9]{64}')
     ->name('promethee.simbrief.callback');
 
