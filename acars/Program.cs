@@ -42,7 +42,7 @@ app.MapGet("/api/status", (PhpVmsClient client, SimConnectReader sim, FlightReco
             latest = sim.Latest,
             flight = recorder.Flight,
             track = recorder.Track,
-            pending = recorder.Pending.Count + recorder.PendingEvents.Count,
+            pending = recorder.Pending.Count + recorder.PendingEvents.Count + recorder.PendingFacts.Count,
             recoveryAvailable = recorder.RecoveryAvailable,
             recovery = recorder.GetRecoveryInfo(),
             warning = recorder.Warning
@@ -78,7 +78,7 @@ app.MapPost("/api/start", (StartRequest input, PhpVmsClient client, SimConnectRe
 {
     if (string.IsNullOrWhiteSpace(input.PirepId)) throw new InvalidOperationException("Saisissez l'identifiant du PIREP pré-déposé.");
     if (sim.Latest is null) throw new InvalidOperationException("Le simulateur ne fournit pas encore de position.");
-    recorder.Start(client.Server, input.PirepId.Trim(), sim.Latest);
+    recorder.Start(client.Server, input.PirepId.Trim(), sim.Latest, input.OperationId);
     return Results.Ok();
 });
 
@@ -133,7 +133,8 @@ app.MapPost("/api/rules", (AcarsRules rules, FlightRecorder recorder) => { recor
 app.MapGet("/api/diagnostics", (PhpVmsClient client, SimConnectReader sim, FlightRecorder recorder) =>
     Results.Json(new { generatedAt = DateTimeOffset.UtcNow, server = client.Server, connected = client.Connected,
         simulator = sim.Status, latest = sim.Latest, flight = recorder.Flight, pendingPositions = recorder.Pending.Count,
-        pendingEvents = recorder.PendingEvents.Count, remoteConfiguration = recorder.RemoteConfiguration, warning = recorder.Warning }));
+        pendingEvents = recorder.PendingEvents.Count, pendingSopFacts = recorder.PendingFacts.Count,
+        remoteConfiguration = recorder.RemoteConfiguration, warning = recorder.Warning }));
 
 app.MapPost("/api/file", async (PhpVmsClient client, FlightRecorder recorder) =>
 {
@@ -141,7 +142,8 @@ app.MapPost("/api/file", async (PhpVmsClient client, FlightRecorder recorder) =>
     FlightState flight;
     lock (recorder.Gate) {
         flight = recorder.Flight ?? throw new InvalidOperationException("Aucun vol en cours.");
-        if (recorder.Pending.Count > 0 || recorder.PendingEvents.Count > 0) throw new InvalidOperationException("La télémétrie n'est pas entièrement synchronisée.");
+        if (recorder.Pending.Count > 0 || recorder.PendingEvents.Count > 0 || recorder.PendingFacts.Count > 0)
+            throw new InvalidOperationException("La télémétrie et les faits SOP ne sont pas entièrement synchronisés.");
     }
     var report = new Dictionary<string, object> {
         ["distance"] = Math.Round(flight.Distance, 2),
@@ -186,7 +188,7 @@ static async Task<RemoteAcarsConfiguration> LoadRemoteConfiguration(PhpVmsClient
 }
 
 public sealed record LoginRequest(string Login, string Password);
-public sealed record StartRequest(string PirepId);
+public sealed record StartRequest(string PirepId, string? OperationId = null);
 
 public sealed class TelemetryWorker(SimConnectReader sim, FlightRecorder recorder, PhpVmsClient client) : BackgroundService
 {
@@ -208,13 +210,15 @@ public sealed class TelemetryWorker(SimConnectReader sim, FlightRecorder recorde
         try {
         List<Envelope> pending;
         List<AcarsEvent> events;
+        List<SopFactEnvelope> facts;
         FlightState? flight;
         lock (recorder.Gate) {
             flight = recorder.Flight;
             pending = recorder.Pending.Take(30).ToList();
             events = recorder.PendingEvents.Take(20).ToList();
+            facts = recorder.PendingFacts.Take(50).ToList();
         }
-        if (flight is null || (pending.Count == 0 && events.Count == 0)) return 0;
+        if (flight is null || (pending.Count == 0 && events.Count == 0 && facts.Count == 0)) return 0;
         if (pending.Count > 0) {
             // Promethee keeps the detailed, idempotent telemetry separately.
             // The standard phpVMS ACARS endpoint below remains the live-map
@@ -267,7 +271,24 @@ public sealed class TelemetryWorker(SimConnectReader sim, FlightRecorder recorde
             });
             recorder.AcknowledgeEvents(events.Select(x => x.EventId));
         }
-        return pending.Count + events.Count;
+        if (facts.Count > 0 && !string.IsNullOrWhiteSpace(flight.OperationId)) {
+            await client.Send($"v1/operations/{Uri.EscapeDataString(flight.OperationId)}/sop/facts", new {
+                facts = facts.Select(x => new {
+                    fact_id = x.FactId,
+                    code = x.Observation.Code,
+                    category = x.Observation.Category,
+                    occurred_at = x.Observation.OccurredAt,
+                    message = x.Observation.Message,
+                    source_severity = x.Observation.Severity,
+                    value = x.Observation.Value,
+                    unit = x.Observation.Unit,
+                    phase = x.Observation.Phase,
+                    status = x.Observation.Status
+                })
+            });
+            recorder.AcknowledgeFacts(facts.Select(x => x.FactId));
+        }
+        return pending.Count + events.Count + facts.Count;
         } finally {
             recorder.NetworkGate.Release();
         }
