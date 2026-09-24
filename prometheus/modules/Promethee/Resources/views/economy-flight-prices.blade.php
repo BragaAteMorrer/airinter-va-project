@@ -13,9 +13,10 @@
     <div class="form-grid">
         <label>Compagnie <select id="filter-airline"><option value="">Toutes</option>@foreach($airlines as $airline)<option value="{{ $airline->icao }}">{{ $airline->name }}</option>@endforeach</select></label>
         <label>Pays de départ <select id="filter-origin"><option value="">Tous</option>@foreach($countries as $country)<option value="{{ $country }}">{{ $country }}</option>@endforeach</select></label>
-        <label>Aéroport de départ <select id="filter-dpt-airport"><option value="">Tous</option>@foreach($airportOptions as $airport)<option value="{{ $airport->icao }}">{{ $airport->icao }} · {{ $airport->name }}</option>@endforeach</select></label>
+        <label>Aéroport de départ <input type="search" id="filter-dpt-airport" list="flight-price-airports" placeholder="Rechercher ICAO ou nom" autocomplete="off"></label>
         <label>Pays d’arrivée <select id="filter-arrival"><option value="">Tous</option>@foreach($countries as $country)<option value="{{ $country }}">{{ $country }}</option>@endforeach</select></label>
-        <label>Aéroport d’arrivée <select id="filter-arr-airport"><option value="">Tous</option>@foreach($airportOptions as $airport)<option value="{{ $airport->icao }}">{{ $airport->icao }} · {{ $airport->name }}</option>@endforeach</select></label>
+        <label>Aéroport d’arrivée <input type="search" id="filter-arr-airport" list="flight-price-airports" placeholder="Rechercher ICAO ou nom" autocomplete="off"></label>
+        <datalist id="flight-price-airports">@foreach($airportOptions as $airport)<option value="{{ $airport->icao }}" label="{{ $airport->name }} · {{ $airport->country }}"></option>@endforeach</datalist>
         <label>Recherche ligne <input id="filter-route" placeholder="ex. LFPO ou ITF452"></label>
     </div>
     <form method="post" action="{{ route('admin.promethee.economy.flight-prices') }}" id="flight-price-form">
@@ -69,7 +70,7 @@
 (() => {
  const ids=['airline','origin','dpt-airport','arrival','arr-airport','route']; const fields=Object.fromEntries(ids.map(id=>[id,document.querySelector('#filter-'+id)]));
  const rows=[...document.querySelectorAll('#flight-price-form tbody tr')];
- const apply=()=>rows.forEach(row=>{ const v=fields.route.value.toLowerCase(); row.hidden=!!((fields.airline.value&&row.dataset.airline!==fields.airline.value)||(fields.origin.value&&row.dataset.origin!==fields.origin.value)||(fields['dpt-airport'].value&&row.dataset.dptAirport!==fields['dpt-airport'].value)||(fields.arrival.value&&row.dataset.arrival!==fields.arrival.value)||(fields['arr-airport'].value&&row.dataset.arrAirport!==fields['arr-airport'].value)||(v&&!row.dataset.route.includes(v))); });
+ const apply=()=>rows.forEach(row=>{ const v=fields.route.value.toLowerCase(), departure=fields['dpt-airport'].value.trim().toUpperCase(), arrival=fields['arr-airport'].value.trim().toUpperCase(); row.hidden=!!((fields.airline.value&&row.dataset.airline!==fields.airline.value)||(fields.origin.value&&row.dataset.origin!==fields.origin.value)||(departure&&row.dataset.dptAirport!==departure)||(fields.arrival.value&&row.dataset.arrival!==fields.arrival.value)||(arrival&&row.dataset.arrAirport!==arrival)||(v&&!row.dataset.route.includes(v))); });
  const count=()=>{ const n=document.querySelectorAll('input[name="flight_ids[]"]:checked').length; document.querySelector('#selection-count').textContent=n ? n+' ligne(s) sélectionnée(s). Chaque ligne conserve sa propre référence Rouge lors d’un changement BBR.' : 'Aucune ligne sélectionnée.'; };
  const mode=document.querySelector('#bulk-price-mode'), value=document.querySelector('#bulk-price-value');
  const syncValue=()=>{ const needsValue=mode.value!=='band'; value.disabled=!needsValue; value.required=needsValue; if(!needsValue) value.value=''; value.placeholder=needsValue ? 'Ex. 218 ou -10' : 'Inutile pour un changement BBR'; };
