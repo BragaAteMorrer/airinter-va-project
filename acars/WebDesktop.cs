@@ -76,7 +76,7 @@ public sealed class PrometheeWindow : Window
         ticking = true;
         try {
             await telemetry.Tick();
-            var operationId = recorder.Flight?.OperationId;
+            var operationId = recorder.Flight?.OperationId ?? presence.CurrentOperationId;
             if (client.Connected && !string.IsNullOrWhiteSpace(operationId)
                 && DateTimeOffset.UtcNow >= nextDatalinkPollAt) {
                 await datalink.SyncAsync(operationId);
