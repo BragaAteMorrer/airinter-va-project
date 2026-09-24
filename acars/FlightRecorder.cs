@@ -285,10 +285,36 @@ public sealed class FlightRecorder
             || s.IndicatedAirspeedKnots is null || s.GroundSpeedKnots is null || s.VerticalSpeedFeetPerMinute is null
             || s.HeadingDegrees is null || s.FuelWeight is null || s.OnGround is null || s.GearDown is null
             || s.FlapsPercent is null || s.ParkingBrake is null) return false;
-        sample = new Sample(s.SampleId, s.RecordedAt, s.Latitude.Value, s.Longitude.Value, s.AltitudeMslFeet.Value,
-            s.AltitudeAglFeet.Value, s.IndicatedAirspeedKnots.Value, s.GroundSpeedKnots.Value,
-            s.VerticalSpeedFeetPerMinute.Value, s.HeadingDegrees.Value, s.FuelWeight.Value, s.OnGround.Value,
-            0, s.GearDown.Value, 0, s.FlapsPercent.Value, false, 0, 0, s.ParkingBrake.Value);
+        var engines = s.EnginesRunning ?? [];
+        sample = new Sample(
+            s.SampleId,
+            s.RecordedAt,
+            s.Latitude.Value,
+            s.Longitude.Value,
+            s.AltitudeMslFeet.Value,
+            s.AltitudeAglFeet.Value,
+            s.IndicatedAirspeedKnots.Value,
+            s.GroundSpeedKnots.Value,
+            s.VerticalSpeedFeetPerMinute.Value,
+            s.HeadingDegrees.Value,
+            s.FuelWeight.Value,
+            s.OnGround.Value,
+            s.BankDegrees ?? 0,
+            s.GearDown.Value,
+            (s.TouchdownVerticalSpeedFeetPerMinute ?? s.VerticalSpeedFeetPerMinute.Value) / 60d,
+            s.FlapsPercent.Value,
+            false,
+            0,
+            0,
+            s.ParkingBrake.Value,
+            BeaconLight: s.BeaconLight ?? false,
+            LandingLight: s.LandingLight ?? false,
+            Engine1Running: engines.ElementAtOrDefault(0),
+            Engine2Running: engines.ElementAtOrDefault(1),
+            Engine3Running: engines.ElementAtOrDefault(2),
+            Engine4Running: engines.ElementAtOrDefault(3),
+            SlewActive: s.SlewActive ?? false,
+            SimulationRate: s.SimulationRate ?? 1d);
         return true;
     }
     public static double Distance(double lat1, double lon1, double lat2, double lon2) {
