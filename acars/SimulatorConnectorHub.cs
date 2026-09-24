@@ -9,23 +9,24 @@ namespace Promethee;
 public sealed class SimulatorConnectorHub(params ISimulatorConnector[] connectors) : ISimulatorConnector
 {
     private static readonly TimeSpan SnapshotTimeout = TimeSpan.FromSeconds(15);
-    private static readonly TimeSpan TemporaryLossWindow = TimeSpan.FromSeconds(30);
-    private DateTimeOffset? lostSince;
-    private bool hadHealthySession;
     private SimulatorDescriptor? lastActiveDescriptor;
 
     public SimulatorDescriptor Descriptor { get; } = new(SimulatorKind.Unknown, "Détection automatique", "hub", SimulatorCapabilities.None);
     public SimulatorConnectionState ConnectionState => Active?.ConnectionState
-        ?? connectors.Select(x => x.ConnectionState).OrderByDescending(StateRank).FirstOrDefault();
+        ?? (TemporarilyLost ? SimulatorConnectionState.Connecting
+            : connectors.Select(x => x.ConnectionState).OrderByDescending(StateRank).FirstOrDefault());
     public string Status => Active?.Status
-        ?? connectors.FirstOrDefault(x => x.ConnectionState == SimulatorConnectionState.Connecting)?.Status
-        ?? connectors.FirstOrDefault(x => x.ConnectionState == SimulatorConnectionState.Detected)?.Status
-        ?? "Simulateur non détecté";
+        ?? (TemporarilyLost && lastActiveDescriptor is not null
+            ? lastActiveDescriptor.DisplayName + " — liaison perdue, reconnexion…"
+            : connectors.FirstOrDefault(x => x.ConnectionState == SimulatorConnectionState.Connecting)?.Status
+              ?? connectors.FirstOrDefault(x => x.ConnectionState == SimulatorConnectionState.Detected)?.Status
+              ?? "Simulateur non détecté");
     public AircraftSnapshot? LatestSnapshot => Active?.LatestSnapshot;
     public ISimulatorConnector? Active { get; private set; }
-    public SimulatorDescriptor? LastActiveDescriptor => Active?.Descriptor ?? lastActiveDescriptor;
-    public SimulatorSessionState SessionState { get; private set; } = SimulatorSessionState.Disconnected;
-    public DateTimeOffset? LostSince => lostSince;
+    public bool TemporarilyLost { get; private set; }
+    public DateTimeOffset? LostAt { get; private set; }
+    public DateTimeOffset? RecoveredAt { get; private set; }
+    public string LinkState => Active is not null ? "CONNECTED" : TemporarilyLost ? "RECONNECTING" : "NOT_DETECTED";
     public event Action<AircraftSnapshot>? SnapshotReceived;
 
     public IReadOnlyList<SimulatorConnectorStatus> Connectors => connectors.Select(x => new SimulatorConnectorStatus(
@@ -39,38 +40,23 @@ public sealed class SimulatorConnectorHub(params ISimulatorConnector[] connector
 
         if (Active is not null && !IsHealthy(Active)) {
             lastActiveDescriptor = Active.Descriptor;
-            lostSince ??= DateTimeOffset.UtcNow;
             Active = null;
+            TemporarilyLost = true;
+            LostAt ??= DateTimeOffset.UtcNow;
         }
 
         if (Active is null) {
-            Active = connectors.FirstOrDefault(IsHealthy);
+            var candidate = connectors.FirstOrDefault(IsHealthy);
+            if (candidate is not null) {
+                Active = candidate;
+                lastActiveDescriptor = candidate.Descriptor;
+                if (TemporarilyLost) RecoveredAt = DateTimeOffset.UtcNow;
+                TemporarilyLost = false;
+                LostAt = null;
+            }
         }
 
-        if (Active?.LatestSnapshot is { } snapshot) {
-            lastActiveDescriptor = Active.Descriptor;
-            lostSince = null;
-            hadHealthySession = true;
-            SessionState = SimulatorSessionState.Connected;
-            SnapshotReceived?.Invoke(snapshot);
-            return;
-        }
-
-        if (!hadHealthySession) {
-            SessionState = SimulatorSessionState.Disconnected;
-            return;
-        }
-
-        lostSince ??= DateTimeOffset.UtcNow;
-        var lossDuration = DateTimeOffset.UtcNow - lostSince.Value;
-        if (lossDuration <= TemporaryLossWindow) {
-            SessionState = SimulatorSessionState.TemporarilyLost;
-            return;
-        }
-
-        var connectorStillPresent = connectors.Any(x => x.ConnectionState is
-            SimulatorConnectionState.Detected or SimulatorConnectionState.Connecting or SimulatorConnectionState.Connected);
-        SessionState = connectorStillPresent ? SimulatorSessionState.Reconnecting : SimulatorSessionState.Disconnected;
+        if (Active?.LatestSnapshot is { } snapshot) SnapshotReceived?.Invoke(snapshot);
     }
 
     private static bool IsHealthy(ISimulatorConnector connector) =>

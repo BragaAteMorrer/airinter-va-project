@@ -23,7 +23,7 @@
   </aside>
   <main>
     <header>
-      <div><p class="kicker">DIRECTION DE L’EXPLOITATION AÉRIENNE</p><h1>Hermès</h1><p class="header-subtitle">Le client ACARS officiel d’Air Inter VA.</p></div>
+      <div><p class="kicker">DIRECTION DE L’EXPLOITATION AÉRIENNE</p><h1>Hermès</h1><p class="header-subtitle">Le client ACARS officiel de Prométhée.</p></div>
       <div class="header-status">
         <div class="pilot-state"><span id="serverState">Identité pilote à venir</span><span id="simState">Simulateur non détecté</span></div>
         <div class="ops-status" aria-label="État opérationnel Hermès">
@@ -34,44 +34,38 @@
         </div>
       </div>
     </header>
-    <section id="recoveryOverlay" class="recovery-overlay" hidden aria-modal="true" role="dialog" aria-labelledby="recoveryTitle">
-      <article class="recovery-dialog">
-        <div class="recovery-heading">
-          <div><span class="kicker">RÉCUPÉRATION DE VOL</span><h2 id="recoveryTitle">Un vol interrompu a été retrouvé</h2></div>
-          <strong id="recoveryPhase" class="ready-state">RECOVERY</strong>
-        </div>
-        <p id="recoveryLead">Hermès a conservé l’état du vol localement. Choisissez ce que vous souhaitez faire avant de préparer une autre opération.</p>
-        <div class="recovery-summary">
-          <div><span>PIREP</span><strong id="recoveryPirep">—</strong></div>
-          <div><span>Phase</span><strong id="recoveryPhaseValue">—</strong></div>
-          <div><span>Distance</span><strong id="recoveryDistance">—</strong></div>
-          <div><span>Temps airborne</span><strong id="recoveryAirborne">—</strong></div>
-          <div><span>À synchroniser</span><strong id="recoveryPending">—</strong></div>
-        </div>
-        <details id="recoveryDetails">
-          <summary>Consulter le vol interrompu</summary>
-          <div id="recoveryTimeline" class="timeline"></div>
-        </details>
-        <p id="recoveryMessage" class="message" hidden role="status"></p>
-        <div class="recovery-actions">
-          <button id="recoveryReviewBtn" type="button">Consulter</button>
-          <button id="recoveryAbandonBtn" type="button" class="danger-action">Abandonner</button>
-          <button id="recoveryResumeBtn" type="button" class="primary">Reprendre le vol</button>
-        </div>
-      </article>
+    <section id="recoveryCenter" class="recovery-center" hidden aria-live="assertive">
+      <div class="recovery-heading">
+        <div><span class="kicker">RECOVERY CENTER</span><h2>Vol interrompu détecté</h2><p id="recoverySummary">Hermès a retrouvé un vol enregistré localement.</p></div>
+        <strong id="recoveryPhase" class="ready-state">RECOVERY</strong>
+      </div>
+      <div class="recovery-metrics">
+        <div><span>PIREP</span><strong id="recoveryPirep">—</strong></div>
+        <div><span>Phase</span><strong id="recoveryPhaseValue">—</strong></div>
+        <div><span>Distance</span><strong id="recoveryDistance">—</strong></div>
+        <div><span>Temps de vol</span><strong id="recoveryAirborne">—</strong></div>
+        <div><span>Messages en attente</span><strong id="recoveryPending">0</strong></div>
+      </div>
+      <p id="recoveryHint" class="hint">Connectez-vous à votre compte Air Inter et reconnectez le simulateur pour reprendre exactement ce vol.</p>
+      <div class="actions recovery-actions">
+        <button id="recoveryResumeBtn" class="primary" type="button">Reprendre le vol</button>
+        <button id="recoveryReviewBtn" type="button">Consulter</button>
+        <button id="recoveryAbandonBtn" class="danger" type="button">Abandonner ce vol</button>
+      </div>
+      <div id="recoveryReview" class="recovery-review" hidden>
+        <h3>État local sauvegardé</h3>
+        <div id="recoveryTimeline" class="timeline"></div>
+      </div>
+      <p id="recoveryMessage" class="message" hidden role="status"></p>
     </section>
     <section id="connect" class="panel active auth-panel">
-      <div class="auth-mark"><span>AIR INTER VA</span><strong>Accès équipage</strong></div><h2>Connexion pilote</h2><p class="hint">Connectez-vous à votre compte Air Inter pour préparer et suivre votre vol.</p>
+      <div class="auth-mark"><span>AIR INTER VA</span><strong>Accès équipage</strong></div><h2>Connexion pilote</h2><p class="hint">Identifiez-vous avec votre compte pilote Air Inter pour préparer et suivre votre vol.</p>
       <form id="loginForm" class="login-form">
         <label>Identifiant pilote ou e-mail<input name="login" autocomplete="username" required></label>
         <label>Mot de passe<input name="password" type="password" autocomplete="current-password" required></label>
-        <button class="primary">Se connecter à Prométhée</button>
+        <button class="primary">Se connecter à Air Inter</button>
       </form>
       <p id="loginMessage" class="message" hidden role="status"></p>
-      <div class="login-diagnostics">
-        <span>Réseau compagnie</span><strong>Air Inter VA · Prométhée</strong>
-        <small>Authentification pilote sécurisée</small>
-      </div>
     </section>
     <section id="flight" class="panel">
       <div class="workspace-title"><div><span class="kicker">FLIGHT WORKSPACE</span><h2>Préparation opérationnelle</h2></div><strong id="readyState" class="ready-state">NOT READY</strong></div>
@@ -172,10 +166,11 @@
     </section>
   </main><script>
 window.addEventListener('error', event => {
-  const server = document.getElementById('loginServer');
-  const endpoint = document.getElementById('loginEndpoint');
-  if (server) server.textContent = 'Interface Hermès en erreur';
-  if (endpoint) endpoint.textContent = event.message || 'Erreur JavaScript inconnue';
+  const message = document.getElementById('loginMessage');
+  if (!message) return;
+  message.hidden = false;
+  message.classList.add('error');
+  message.textContent = 'Interface Hermès en erreur : ' + (event.message || 'erreur inconnue');
 });
 </script>
 <script src="/app.js"></script>

@@ -11,11 +11,6 @@ public static class DesktopProgram
 {
     [STAThread] public static void Main(string[] args)
     {
-        if (args.Length == 2 && args[0].Equals("--set-server", StringComparison.OrdinalIgnoreCase)) {
-            try { ServerConfiguration.Set(args[1]); MessageBox.Show("Serveur ACARS enregistré pour tous les pilotes.", "Prométhée ACARS"); }
-            catch (Exception e) { MessageBox.Show(e.Message + "\n\nLancez cette commande en administrateur.", "Prométhée ACARS", MessageBoxButton.OK, MessageBoxImage.Error); }
-            return;
-        }
         AppDomain.CurrentDomain.UnhandledException += (_, e) => {
             if (e.ExceptionObject is Exception ex) DiagnosticsService.RecordCrash(ex);
         };

@@ -90,7 +90,7 @@ public sealed class PrometheeWindow : Window
         return route switch {
             "/api/status" => Status(), "/api/about" => About(), "/api/login" => await Login(body),
             "/api/start" => Start(body), "/api/pause" => Pause(), "/api/resume" => Resume(),
-            "/api/recovery" => Recovery(), "/api/recovery/resume" => RecoveryResume(), "/api/recovery/abandon" => RecoveryAbandon(),
+            "/api/recovery" => Recovery(), "/api/recovery/resume" => ResumeRecovery(), "/api/recovery/abandon" => AbandonRecovery(),
             "/api/sync" => new { sent=await telemetry.SyncNow() }, "/api/report" => Report(), "/api/file" => await File(),
             "/api/history" => recorder.History, "/api/diagnostics" => Diagnostics(), "/api/update/check" => await CheckUpdateStatusAsync(), "/api/open-external" => OpenExternal(body),
             _ => throw new InvalidOperationException("Commande ACARS inconnue.") };
@@ -126,8 +126,6 @@ public sealed class PrometheeWindow : Window
     private object Status() => new {
         connected=client.Connected,
         sim=sim.Status,
-        simulatorSessionState=sim.SessionState.ToString(),
-        simulatorLostSince=sim.LostSince,
         detectedSimulators=SimulatorDetector.DetectRunning(),
         activeConnector=sim.Active is null ? null : new {
             id=sim.Active.Descriptor.ConnectorId,
@@ -137,11 +135,15 @@ public sealed class PrometheeWindow : Window
             experimental=sim.Active.Descriptor.IsExperimental
         },
         connectors=sim.Connectors,
+        simLinkState=sim.LinkState,
+        simLostAt=sim.LostAt,
+        simRecoveredAt=sim.RecoveredAt,
         latest=sim.LatestSnapshot,
         flight=recorder.Flight,
         track=recorder.Track,
         pending=recorder.Pending.Count+recorder.PendingEvents.Count,
-        recoveryAvailable=recorder.Flight is not null && !recorder.Flight.Recording,
+        recoveryAvailable=recorder.RecoveryAvailable,
+        recovery=recorder.GetRecoveryInfo(),
         syncState=telemetry.SyncState,
         lastSuccessfulSyncAt=telemetry.LastSuccessfulSyncAt,
         nextSyncAttemptAt=telemetry.NextSyncAttemptAt,
@@ -152,15 +154,13 @@ public sealed class PrometheeWindow : Window
     };
     private object About() => new {
         version=Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "dev",
-        server=ServerConfiguration.Get(),
-        loginEndpoint=ServerConfiguration.Get() + "/api/acars/session",
-        serverSource=ServerConfiguration.Source()
+        product="Hermès — Air Inter Virtual Airlines"
     };
     private object Diagnostics() => new {
         generatedAt=DateTimeOffset.UtcNow, configuredServer=ServerConfiguration.Get(), serverSource=ServerConfiguration.Source(), loginEndpoint=ServerConfiguration.Get() + "/api/acars/session", activeServer=client.Server, connected=client.Connected,
-        simulator=sim.Status, simulatorSessionState=sim.SessionState.ToString(), simulatorLostSince=sim.LostSince,
-        detectedSimulators=SimulatorDetector.DetectRunning(),
+        simulator=sim.Status, detectedSimulators=SimulatorDetector.DetectRunning(),
         activeConnector=sim.Active?.Descriptor, connectors=sim.Connectors,
+        simLinkState=sim.LinkState, simLostAt=sim.LostAt, simRecoveredAt=sim.RecoveredAt,
         latest=sim.LatestSnapshot, flight=recorder.Flight,
         pendingPositions=recorder.Pending.Count, pendingEvents=recorder.PendingEvents.Count,
         syncState=telemetry.SyncState, lastSuccessfulSyncAt=telemetry.LastSuccessfulSyncAt,
@@ -200,25 +200,37 @@ public sealed class PrometheeWindow : Window
         recorder.Start(client.Server, value.GetProperty("pirepId").GetString() ?? "", snapshot, operationId);
         return new { ok=true, operationId };
     }
-    private object Pause() { recorder.Pause(); return new {ok=true}; } private object Resume() { recorder.Resume(client.Server); return new {ok=true}; }
-
-    private object Recovery()
+    private object Pause() { recorder.Pause(); return new {ok=true}; }
+    private object Resume()
     {
-        var state = recorder.GetRecoverySnapshot();
-        return new { available = state is not null, flight = state };
-    }
-
-    private object RecoveryResume()
-    {
-        if (!client.Connected) throw new InvalidOperationException("Reconnectez-vous à votre compte Air Inter avant de reprendre le vol.");
+        if (!client.Connected) throw new InvalidOperationException("Reconnectez-vous à votre compte Air Inter avant de reprendre.");
+        if (sim.LatestSnapshot is null) throw new InvalidOperationException("Le simulateur doit être reconnecté avant de reprendre l’enregistrement.");
         recorder.Resume(client.Server);
-        return new { ok = true, flight = recorder.GetRecoverySnapshot() };
+        return new {ok=true};
     }
 
-    private object RecoveryAbandon()
+    private object Recovery() => new {
+        available = recorder.RecoveryAvailable,
+        info = recorder.GetRecoveryInfo(),
+        flight = recorder.RecoveryAvailable ? recorder.Flight : null,
+        timeline = recorder.RecoveryAvailable ? recorder.Flight?.Timeline : null,
+        journal = recorder.RecoveryAvailable ? recorder.Flight?.Journal : null,
+        track = recorder.RecoveryAvailable ? recorder.Track : []
+    };
+
+    private object ResumeRecovery()
     {
-        recorder.Abandon();
-        return new { ok = true };
+        if (!recorder.RecoveryAvailable) throw new InvalidOperationException("Aucun vol interrompu à reprendre.");
+        if (!client.Connected) throw new InvalidOperationException("Connectez-vous à votre compte Air Inter avant de reprendre ce vol.");
+        if (sim.LatestSnapshot is null) throw new InvalidOperationException("Reconnectez le simulateur avant de reprendre ce vol.");
+        recorder.Resume(client.Server);
+        return new { ok = true, flight = recorder.Flight, simulator = sim.Status };
+    }
+
+    private object AbandonRecovery()
+    {
+        recorder.AbandonRecovery();
+        return new { ok = true, archived = true };
     }
 
     private object Report() { var f=recorder.Flight ?? throw new InvalidOperationException("Aucun vol en cours."); return new {phase=f.Phase,distance=f.Distance,airborneMinutes=(int)Math.Round(f.AirborneSeconds/60)}; }

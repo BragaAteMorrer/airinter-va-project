@@ -115,98 +115,15 @@ async function login(form) {
     const response = await call('/api/login', body);
     pilotIdentity(response);
     setAuthenticated(true);
-    showMessage('#loginMessage', 'Connexion réussie. Vérification d’un éventuel vol interrompu…');
-    const recovery = await checkRecovery();
-    if (!recovery) {
-      await refreshOperations();
-      document.querySelector('[data-tab="flight"]').click();
-    }
+    showMessage('#loginMessage', 'Connexion réussie. Chargement de vos opérations…');
+    await refreshOperations();
+    if (lastStatus?.recoveryAvailable) document.querySelector('[data-tab="record"]').click();
+    else document.querySelector('[data-tab="flight"]').click();
   } catch (error) {
     showMessage('#loginMessage', error.message || 'Impossible de se connecter à Prométhée.', true);
   }
 }
 $('#loginForm').onsubmit = event => { event.preventDefault(); login(event.currentTarget); };
-
-
-function formatRecoveryTime(seconds) {
-  const value = Math.max(0, Number(seconds || 0));
-  const hours = Math.floor(value / 3600);
-  const minutes = Math.floor((value % 3600) / 60);
-  return hours ? `${hours} h ${String(minutes).padStart(2, '0')}` : `${minutes} min`;
-}
-
-function hideRecovery() {
-  const overlay = $('#recoveryOverlay');
-  if (overlay) overlay.hidden = true;
-}
-
-function renderRecovery(payload) {
-  const flight = payload?.flight;
-  const overlay = $('#recoveryOverlay');
-  if (!overlay || !payload?.available || !flight) {
-    hideRecovery();
-    return false;
-  }
-
-  setText($('#recoveryPirep'), flight.pirepId || flight.PirepId || '—');
-  setText($('#recoveryPhase'), flight.phase || flight.Phase || 'RECOVERY');
-  setText($('#recoveryPhaseValue'), flight.phase || flight.Phase || '—');
-  setText($('#recoveryDistance'), `${Number(flight.distance ?? flight.Distance ?? 0).toFixed(1)} NM`);
-  setText($('#recoveryAirborne'), formatRecoveryTime(flight.airborneSeconds ?? flight.AirborneSeconds));
-  const pendingPositions = Number(flight.pendingPositions ?? flight.PendingPositions ?? 0);
-  const pendingEvents = Number(flight.pendingEvents ?? flight.PendingEvents ?? 0);
-  setText($('#recoveryPending'), String(pendingPositions + pendingEvents));
-
-  const timeline = flight.timeline || flight.Timeline || [];
-  renderTimeline('#recoveryTimeline', timeline);
-  overlay.hidden = false;
-  return true;
-}
-
-async function checkRecovery() {
-  try {
-    const payload = unwrap(await call('/api/recovery'));
-    return renderRecovery(payload);
-  } catch (error) {
-    showMessage('#loginMessage', 'Impossible de lire l’état de récupération : ' + error.message, true);
-    return false;
-  }
-}
-
-$('#recoveryReviewBtn').onclick = () => {
-  const details = $('#recoveryDetails');
-  if (details) {
-    details.open = true;
-    details.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-};
-
-$('#recoveryResumeBtn').onclick = async () => {
-  try {
-    showMessage('#recoveryMessage', 'Reconnexion du vol interrompu…');
-    const payload = unwrap(await call('/api/recovery/resume'));
-    hideRecovery();
-    showMessage('#recordMessage', 'Vol restauré. Hermès reprend le tracking dès que la télémétrie simulateur est disponible.');
-    if (payload?.flight?.pirepId || payload?.flight?.PirepId) pirepId = payload.flight.pirepId || payload.flight.PirepId;
-    document.querySelector('[data-tab="record"]')?.click();
-    await refreshStatus();
-  } catch (error) {
-    showMessage('#recoveryMessage', error.message, true);
-  }
-};
-
-$('#recoveryAbandonBtn').onclick = async () => {
-  if (!confirm('Abandonner ce vol local ? Son résumé sera conservé dans l’historique Hermès, mais les données ACARS en attente ne seront plus envoyées.')) return;
-  try {
-    await call('/api/recovery/abandon');
-    hideRecovery();
-    showMessage('#loginMessage', 'Vol interrompu classé comme abandonné. Chargement de vos opérations…');
-    await refreshOperations();
-    document.querySelector('[data-tab="flight"]')?.click();
-  } catch (error) {
-    showMessage('#recoveryMessage', error.message, true);
-  }
-};
 
 function setIndicator(selector, state, label) {
   const node = $(selector);
@@ -977,6 +894,79 @@ function renderTimeline(selector, entries) {
   });
 }
 
+function renderRecovery(status) {
+  const center = $('#recoveryCenter');
+  if (!center) return;
+  const available = Boolean(status?.recoveryAvailable);
+  center.hidden = !available;
+  if (!available) return;
+
+  const info = status.recovery || {};
+  const read = (camel, pascal) => info[camel] ?? info[pascal];
+  const phase = read('phase', 'Phase') || 'INTERROMPU';
+  const pending = Number(read('pendingMessages', 'PendingMessages') || status.pending || 0);
+  const distance = Number(read('distance', 'Distance') || 0);
+  const airborne = Number(read('airborneMinutes', 'AirborneMinutes') || 0);
+  const started = read('started', 'Started');
+  const pirep = read('pirepId', 'PirepId') || '—';
+
+  setText($('#recoveryPirep'), pirep);
+  setText($('#recoveryPhase'), 'RECOVERY · ' + phase);
+  setText($('#recoveryPhaseValue'), phase);
+  setText($('#recoveryDistance'), distance.toFixed(1) + ' NM');
+  setText($('#recoveryAirborne'), airborne + ' min');
+  setText($('#recoveryPending'), String(pending));
+  setText($('#recoverySummary'), started
+    ? `Hermès a retrouvé le vol ${pirep} commencé le ${new Date(started).toLocaleString('fr-FR')}.`
+    : `Hermès a retrouvé le vol ${pirep} enregistré localement.`);
+
+  const resume = $('#recoveryResumeBtn');
+  const simReady = Boolean(status.latest);
+  resume.disabled = !connected || !simReady;
+  if (!connected) setText($('#recoveryHint'), 'Connectez-vous à votre compte Air Inter pour reprendre ce vol.');
+  else if (!simReady) setText($('#recoveryHint'), status.simLinkState === 'RECONNECTING'
+    ? 'Le simulateur a été perdu. Hermès attend sa reconnexion avant de reprendre.'
+    : 'Reconnectez le simulateur avant de reprendre ce vol.');
+  else setText($('#recoveryHint'), 'Compte et simulateur disponibles. La reprise peut continuer sans recréer le vol.');
+}
+
+$('#recoveryReviewBtn').onclick = async () => {
+  const review = $('#recoveryReview');
+  if (!review.hidden) { review.hidden = true; return; }
+  try {
+    const data = await call('/api/recovery');
+    renderTimeline('#recoveryTimeline', data.journal || data.timeline || []);
+    review.hidden = false;
+  } catch (error) {
+    showMessage('#recoveryMessage', error.message, true);
+  }
+};
+
+$('#recoveryResumeBtn').onclick = async () => {
+  try {
+    await call('/api/recovery/resume', {});
+    showMessage('#recoveryMessage', 'Vol repris. Hermès continue à partir de l’état local sauvegardé.');
+    $('#recoveryCenter').hidden = true;
+    document.querySelector('[data-tab="record"]')?.click();
+    await refreshStatus();
+  } catch (error) {
+    showMessage('#recoveryMessage', error.message, true);
+  }
+};
+
+$('#recoveryAbandonBtn').onclick = async () => {
+  const pirep = lastStatus?.recovery?.pirepId ?? lastStatus?.recovery?.PirepId ?? 'ce vol';
+  if (!confirm(`Abandonner ${pirep} ? L’état sera archivé localement avant nettoyage.`)) return;
+  try {
+    await call('/api/recovery/abandon', {});
+    $('#recoveryCenter').hidden = true;
+    showMessage(connected ? '#recordMessage' : '#loginMessage', 'Vol interrompu abandonné. Une copie de récupération a été archivée localement.');
+    await refreshStatus();
+  } catch (error) {
+    showMessage('#recoveryMessage', error.message, true);
+  }
+};
+
 function updateRemotePolicy(configuration) {
   const node = $('#remotePolicy');
   if (!configuration) { node.hidden = true; return; }
@@ -994,39 +984,34 @@ async function refreshStatus() {
     const latest = status.latest || {};
     const value = (camel, pascal) => latest[camel] ?? latest[pascal];
     if (status.connected && !connected) setAuthenticated(true);
-    const simulatorSessionState = String(status.simulatorSessionState || (status.latest ? 'Connected' : 'Disconnected')).toUpperCase();
-    readiness.simulator = simulatorSessionState === 'CONNECTED' && Boolean(status.latest);
+    readiness.simulator = Boolean(status.latest);
     const recording = Boolean(flight?.recording ?? flight?.Recording);
     const recovery = Boolean(status.recoveryAvailable);
     const pendingCount = Number(status.pending || 0);
     const syncState = String(status.syncState || 'IDLE').toUpperCase();
     const networkDegraded = syncState === 'RETRYING' && pendingCount > 0;
-    const simulatorDegraded = simulatorSessionState === 'TEMPORARILYLOST' || simulatorSessionState === 'RECONNECTING';
     setIndicator('#prometheeIndicator', !status.connected ? 'bad' : (networkDegraded ? 'warn' : 'ok'),
       !status.connected ? 'PROMÉTHÉE OFFLINE' : (networkDegraded ? 'PROMÉTHÉE RETRY' : 'PROMÉTHÉE'));
-    setIndicator('#simIndicator',
-      simulatorSessionState === 'CONNECTED' ? 'ok' : (simulatorDegraded ? 'warn' : 'bad'),
-      simulatorSessionState === 'CONNECTED' ? 'SIM' : (simulatorSessionState === 'TEMPORARILYLOST' ? 'SIM LOST' : (simulatorSessionState === 'RECONNECTING' ? 'SIM RECONNECT' : 'SIM WAIT')));
+    const simReconnecting = String(status.simLinkState || '').toUpperCase() === 'RECONNECTING';
+    setIndicator('#simIndicator', status.latest ? 'ok' : (simReconnecting ? 'warn' : ((status.detectedSimulators || []).length ? 'warn' : 'bad')),
+      status.latest ? 'SIM' : (simReconnecting ? 'SIM RECONNECT' : 'SIM WAIT'));
     setIndicator('#trackingIndicator', recording ? 'ok' : (recovery ? 'warn' : 'pending'), recording ? 'TRACKING' : (recovery ? 'RECOVERY' : 'TRACKING'));
     setIndicator('#syncIndicator', pendingCount === 0 ? 'ok' : (networkDegraded ? 'bad' : 'warn'), pendingCount === 0 ? 'SYNC' : `SYNC ${pendingCount}`);
     updateWorkflow();
+    renderRecovery(status);
     const simulators = (status.detectedSimulators || []).map(item => item.displayName || item.DisplayName).filter(Boolean);
     setText($('#simState'), simulators.length ? `${simulators.join(' · ')} — ${status.sim || 'connexion en attente'}` : status.sim || 'Simulateur non détecté');
     setText($('#pending'), String(status.pending ?? 0));
     setText($('#phase'), flight?.phase || flight?.Phase || '—');
     setText($('#distance'), flight ? `${Number(flight.distance ?? flight.Distance ?? 0).toFixed(1)} NM` : '—');
     setText($('#airborne'), flight ? `${Math.floor(Number(flight.airborneSeconds ?? flight.AirborneSeconds ?? 0) / 60)} min` : '—');
-    const warnings = [];
-    if (recording && simulatorDegraded) warnings.push(
-      simulatorSessionState === 'TEMPORARILYLOST'
-        ? 'Télémétrie simulateur temporairement perdue — Hermès conserve le vol actif et attend la reconnexion.'
-        : 'Reconnexion au simulateur en cours — le vol existant sera poursuivi, pas recréé.'
-    );
-    if (recording && networkDegraded) warnings.push(
-      `Prométhée indisponible — le vol continue d’être enregistré localement. ${pendingCount} message${pendingCount > 1 ? 's' : ''} en attente.`
-    );
-    if (status.warning) warnings.push(status.warning);
-    setText($('#warning'), warnings.join(' '));
+    const simulatorWarning = recording && simReconnecting
+      ? 'Liaison simulateur perdue — Hermès conserve le vol et tente une reconnexion automatique. Aucune donnée absente n’est inventée.'
+      : '';
+    const networkWarning = recording && networkDegraded
+      ? `Prométhée indisponible — le vol continue d’être enregistré localement. ${pendingCount} message${pendingCount > 1 ? 's' : ''} en attente ; votre vol reste sauvegardé.`
+      : '';
+    setText($('#warning'), simulatorWarning || networkWarning || status.warning || '');
     setText($('#altitude'), value('altitude', 'Altitude') == null ? '—' : `${Math.round(value('altitude', 'Altitude'))} ft`);
     setText($('#groundSpeed'), value('gs', 'Gs') == null ? '—' : `${Math.round(value('gs', 'Gs'))} kt`);
     setText($('#fuel'), value('fuel', 'Fuel') == null ? '—' : `${Math.round(value('fuel', 'Fuel'))} lb`);
@@ -1044,10 +1029,7 @@ refreshStatus();
 setInterval(refreshStatus, 1000);
 call('/api/about').then(info => {
   setText($('#build'), 'Version ' + info.version);
-  // Hermès est un client Air Inter VA : l’endpoint compagnie n’est pas configurable par le pilote.
-}).catch(error => {
-  showMessage('#loginMessage', error.message || 'Impossible de lire la configuration Hermès.', true);
-});
+}).catch(() => setText($('#build'), 'Version inconnue'));
 
 
 const checkUpdateBtn = $('#checkUpdateBtn');

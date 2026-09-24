@@ -13,13 +13,6 @@ public enum SimulatorKind
 
 public enum SimulatorConnectionState { NotDetected, Detected, Connecting, Connected, Faulted }
 
-/// <summary>
-/// High-level state of the pilot's simulator session. This deliberately sits
-/// above connector-specific states so a transient telemetry loss never looks
-/// like a new flight or a clean disconnect.
-/// </summary>
-public enum SimulatorSessionState { Disconnected, Connected, TemporarilyLost, Reconnecting }
-
 /// <summary>Features a connector has actually observed or can expose.</summary>
 [Flags]
 public enum SimulatorCapabilities
