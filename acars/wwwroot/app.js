@@ -37,6 +37,7 @@ let linkedSimBrief = null;
 let serverDispatch = null;
 let connected = false;
 let lastStatus = null;
+let lastFiledReview = null;
 let readiness = { operation: false, aircraft: false, ofp: false, pirep: false, simulator: false };
 
 function setAuthenticated(value) {
@@ -838,7 +839,10 @@ $('#startBtn').onclick = async () => {
 $('#pauseBtn').onclick = () => action('/api/pause', 'Enregistrement en pause.');
 $('#resumeBtn').onclick = () => action('/api/resume', 'Enregistrement repris.');
 $('#syncBtn').onclick = () => action('/api/sync', 'Données synchronisées.');
-$('#fileBtn').onclick = () => action('/api/file', 'PIREP déposé.');
+$('#fileBtn').onclick = () => {
+  document.querySelector('[data-tab="review"]')?.click();
+  renderReview(lastStatus?.review || lastStatus?.Review || lastFiledReview);
+};
 
 function drawMap(track) {
   const canvas = $('#flightMap');
@@ -893,6 +897,109 @@ function renderTimeline(selector, entries) {
     node.append(item);
   });
 }
+
+function reviewValue(review, camel, pascal = camel) {
+  return review?.[camel] ?? review?.[pascal] ?? null;
+}
+
+function renderObservations(selector, entries, emptyText) {
+  const node = $(selector);
+  if (!node) return;
+  node.replaceChildren();
+  if (!entries?.length) {
+    const empty = document.createElement('p');
+    empty.className = 'empty';
+    empty.textContent = emptyText;
+    node.append(empty);
+    return;
+  }
+  entries.forEach(entry => {
+    const item = document.createElement('article');
+    const severity = String(entry.severity ?? entry.Severity ?? 'info').toLowerCase();
+    item.className = 'observation ' + severity;
+    const code = entry.code ?? entry.Code ?? 'OBS';
+    const message = entry.message ?? entry.Message ?? '';
+    const occurredAt = entry.occurredAt ?? entry.OccurredAt;
+    const phase = entry.phase ?? entry.Phase;
+    const value = entry.value ?? entry.Value;
+    const unit = entry.unit ?? entry.Unit ?? '';
+    const meta = document.createElement('span');
+    const time = occurredAt ? new Date(occurredAt).toLocaleTimeString('fr-FR', { timeZone: localSettings.timeFormat === 'utc' ? 'UTC' : undefined }) : null;
+    meta.textContent = [time, phase, code].filter(Boolean).join(' · ');
+    const title = document.createElement('strong');
+    title.textContent = message || code;
+    const detail = document.createElement('small');
+    detail.textContent = value == null ? severity.toUpperCase() : (Number(value).toFixed(Number.isInteger(Number(value)) ? 0 : 1) + ' ' + unit).trim();
+    item.append(meta, title, detail);
+    node.append(item);
+  });
+}
+
+function renderReview(review) {
+  const current = review || lastFiledReview;
+  const state = $('#reviewState');
+  if (!current) {
+    if (state) { state.textContent = 'AUCUN VOL'; state.classList.remove('ready'); }
+    ['#reviewDistance','#reviewAirborne','#reviewBlock','#reviewFuel','#reviewLandingRate','#reviewMaxBank','#reviewFuelAdded','#reviewSimRate'].forEach(id => setText($(id), '—'));
+    setText($('#review1000'), 'NON OBSERVÉ');
+    setText($('#review500'), 'NON OBSERVÉ');
+    setText($('#reviewGoAround'), '0 remise de gaz');
+    setText($('#reviewBounce'), '0 rebond');
+    renderObservations('#fdmObservations', [], 'Aucune observation pour le moment.');
+    renderObservations('#reviewIssues', [], 'Aucune anomalie détectée.');
+    if ($('#submitReviewBtn')) $('#submitReviewBtn').disabled = true;
+    setText($('#reviewHint'), 'Le dépôt du PIREP devient disponible après l’événement IN.');
+    return;
+  }
+
+  const phase = String(reviewValue(current, 'phase', 'Phase') || '—');
+  const ready = Boolean(reviewValue(current, 'readyToFile', 'ReadyToFile'));
+  const filed = Boolean(lastFiledReview && !lastStatus?.review && !lastStatus?.Review);
+  if (state) {
+    state.textContent = filed ? 'PIREP DÉPOSÉ' : (ready ? 'READY TO FILE' : phase);
+    state.classList.toggle('ready', ready || filed);
+  }
+
+  setText($('#reviewDistance'), Number(reviewValue(current,'distance','Distance') || 0).toFixed(1) + ' NM');
+  setText($('#reviewAirborne'), Number(reviewValue(current,'airborneMinutes','AirborneMinutes') || 0) + ' min');
+  setText($('#reviewBlock'), Number(reviewValue(current,'blockMinutes','BlockMinutes') || 0) + ' min');
+  setText($('#reviewFuel'), Math.round(Number(reviewValue(current,'fuelUsed','FuelUsed') || 0)) + ' lb');
+  const landing = reviewValue(current,'landingRate','LandingRate');
+  setText($('#reviewLandingRate'), landing == null ? '—' : Math.round(Number(landing)) + ' ft/min');
+  const maxBank = reviewValue(current,'maxBankDegrees','MaxBankDegrees');
+  setText($('#reviewMaxBank'), maxBank == null ? '—' : Number(maxBank).toFixed(1) + '°');
+  setText($('#reviewFuelAdded'), Math.round(Number(reviewValue(current,'fuelAdded','FuelAdded') || 0)) + ' lb');
+  const simRate = reviewValue(current,'maxSimulationRate','MaxSimulationRate');
+  setText($('#reviewSimRate'), simRate == null ? 'x1' : 'x' + Number(simRate).toFixed(2).replace(/\.00$/,''));
+
+  setText($('#review1000'), reviewValue(current,'approach1000Status','Approach1000Status') || 'NON OBSERVÉ');
+  setText($('#review500'), reviewValue(current,'approach500Status','Approach500Status') || 'NON OBSERVÉ');
+  const goArounds = Number(reviewValue(current,'goAroundCount','GoAroundCount') || 0);
+  const bounces = Number(reviewValue(current,'bounceCount','BounceCount') || 0);
+  setText($('#reviewGoAround'), goArounds + ' remise' + (goArounds > 1 ? 's' : '') + ' de gaz');
+  setText($('#reviewBounce'), bounces + ' rebond' + (bounces > 1 ? 's' : ''));
+
+  renderObservations('#fdmObservations', reviewValue(current,'observations','Observations') || [], 'Aucune observation FDM.');
+  renderObservations('#reviewIssues', reviewValue(current,'issues','Issues') || [], 'Aucune anomalie détectée.');
+
+  const button = $('#submitReviewBtn');
+  if (button) button.disabled = !ready || filed;
+  setText($('#reviewHint'), ready
+    ? 'Vol arrivé au parking. Vérifiez la synthèse puis déposez le PIREP.'
+    : 'Flight Review en cours · phase ' + phase + '. Le dépôt sera disponible après IN.');
+}
+
+$('#submitReviewBtn').onclick = async () => {
+  try {
+    const result = await call('/api/file', {});
+    lastFiledReview = result.review || result.Review || lastStatus?.review || lastStatus?.Review || null;
+    showMessage('#reviewMessage', 'PIREP déposé. Flight Review archivé localement.');
+    renderReview(lastFiledReview);
+    await refreshStatus();
+  } catch (error) {
+    showMessage('#reviewMessage', error.message, true);
+  }
+};
 
 function renderRecovery(status) {
   const center = $('#recoveryCenter');
@@ -1020,6 +1127,7 @@ async function refreshStatus() {
     drawMap(status.track || []);
     renderTimeline('#timeline', flight?.timeline || flight?.Timeline || []);
     renderTimeline('#journalEntries', flight?.journal || flight?.Journal || flight?.timeline || flight?.Timeline || []);
+    renderReview(status.review || status.Review || lastFiledReview);
   } catch {}
 }
 
