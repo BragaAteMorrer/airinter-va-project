@@ -36,7 +36,8 @@ public sealed class FlightReviewTests
         Assert.Equal("IN", review.Phase);
         Assert.Equal("STABLE", review.Approach1000Status);
         Assert.Equal("UNSTABLE", review.Approach500Status);
-        Assert.Equal(-220, review.LandingRate, 0);
+        Assert.NotNull(review.LandingRate);
+        Assert.Equal(-220d, review.LandingRate!.Value, 0);
         Assert.Contains(review.Observations, x => x.Code == "APPROACH_1000_STABLE");
         Assert.Contains(review.Observations, x => x.Code == "APPROACH_500_UNSTABLE");
         Assert.Contains(review.Observations, x => x.Code == "TOUCHDOWN");
