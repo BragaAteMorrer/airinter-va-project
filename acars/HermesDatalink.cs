@@ -57,8 +57,8 @@ public interface IDatalinkTransport
 
 public sealed class PhpVmsDatalinkTransport(PhpVmsClient client) : IDatalinkTransport
 {
-    public bool Connected => transport.Connected;
-    public Task<JsonElement> Send(string path, object? body = null) => transport.Send(path, body);
+    public bool Connected => client.Connected;
+    public Task<JsonElement> Send(string path, object? body = null) => client.Send(path, body);
 }
 
 /// <summary>
