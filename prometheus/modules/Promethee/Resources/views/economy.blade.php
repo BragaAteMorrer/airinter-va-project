@@ -39,19 +39,19 @@
             <tbody>
             @forelse($flightPricing as $flight)
                 @php
-                    $displayFares = $flight->fares;
-                    if ($displayFares->isNotEmpty()) {
-                        $fareSummary = $displayFares->map(fn($fare) => $fare->code.' · '.$fare->name)->implode(' / ');
-                        $priceSummary = $displayFares->map(fn($fare) => $fare->code.' '.($fare->pivot->price ?: $fare->price).' '.setting('units.currency', 'EUR').($fare->type === \App\Models\Enums\FareType::CARGO ? '/kg' : '/pax'))->implode(' · ');
-                        $bands = $displayFares->map(fn($fare) => $pricingBands[$flight->id.'|'.$fare->id] ?? 'rouge')->unique()->values();
-                        $bandSummary = $bands->map(fn($band) => ucfirst($band))->implode(' / ');
-                    } else {
-                        $fareCode = $flight->airline?->icao === 'ICS' ? 'CGO' : ($flight->airline?->icao === 'ACF' ? 'T' : 'Y');
-                        $baseFare = $baseFares[$fareCode] ?? null;
-                        $fareDefault = $baseFareDefaults[$fareCode];
-                        $fareSummary = $fareCode.' · '.($baseFare?->name ?: $fareDefault['name']);
-                        $priceSummary = $fareCode.' '.($baseFare?->price ?: $fareDefault['price']).' '.setting('units.currency', 'EUR').($fareCode === 'CGO' ? '/kg' : '/pax');
-                        $bandSummary = 'Rouge';
+                    $displayFares = collect($flightFareDisplay[(string)$flight->id] ?? []);
+                    $fareSummary = $displayFares->map(fn($row) => $row['code'].' · '.$row['name'])->implode(' / ');
+                    $priceSummary = $displayFares->map(function($row) {
+                        if ($row['price'] === null) {
+                            return $row['code'].' · prix variable selon sous-flotte';
+                        }
+                        return $row['code'].' '.number_format((float)$row['price'], 2, ',', ' ').' '.setting('units.currency', 'EUR').($row['type'] === \App\Models\Enums\FareType::CARGO ? '/kg' : '/pax');
+                    })->implode(' · ');
+                    $bandSummary = $displayFares->pluck('band')->unique()->map(fn($band) => ucfirst($band))->implode(' / ');
+                    if ($displayFares->isEmpty()) {
+                        $fareSummary = 'Aucun tarif';
+                        $priceSummary = '—';
+                        $bandSummary = '—';
                     }
                 @endphp
                 <tr data-airline="{{ $flight->airline?->icao }}" data-origin="{{ $flight->dpt_airport?->country }}" data-arrival="{{ $flight->arr_airport?->country }}" data-dpt-airport="{{ $flight->dpt_airport_id }}" data-arr-airport="{{ $flight->arr_airport_id }}" data-route="{{ strtolower($flight->ident.' '.$flight->dpt_airport_id.' '.$flight->arr_airport_id) }}">
