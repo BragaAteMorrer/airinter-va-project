@@ -1,6 +1,6 @@
 <?php
 
-return [
+return array_replace_recursive([
     'dashboard'      => 'ホーム',
     'administration' => '管理員',
     'flight'         => 'フライト',
@@ -64,4 +64,4 @@ return [
     'wanttocontinue'       => '続けますか?',
     'continue'             => '続ける',
     'alwaystrustdomain'    => 'このドメインを信用する',
-];
+], ['toggleColors' => '配色を切り替え', 'dark' => 'ダーク', 'light' => 'ライト', 'auto' => '自動', 'map' => '地図', 'notes' => '備考']);

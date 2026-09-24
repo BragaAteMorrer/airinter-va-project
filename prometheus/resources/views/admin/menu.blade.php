@@ -103,6 +103,10 @@
       @ability('admin', 'settings')
       <li><a href="{{ url('/admin/settings') }}"><i class="pe-7s-config"></i>settings</a></li>
       @endability
+
+      @ability('admin', 'admin-access')
+      <li class="{{ request()->routeIs('admin.promethee.branding') ? 'active' : '' }}"><a href="{{ route('admin.promethee.branding') }}"><i class="pe-7s-photo"></i>identité visuelle</a></li>
+      @endability
     </ul>
   </div>
 </li>

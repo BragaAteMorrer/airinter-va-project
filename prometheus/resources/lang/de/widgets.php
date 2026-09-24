@@ -1,6 +1,6 @@
 <?php
 
-return [
+return array_replace_recursive([
     'latestnews' => [
         'news'        => 'News',
         'nonewsfound' => 'Keine News gefunden',
@@ -31,4 +31,4 @@ return [
         'hrago'      => 'Stunde zuvor|Stunden zuvor',
         'minago'     => 'Minute zuvor|Minuten zuvor',
     ],
-];
+], ['weather' => ['showdecoded' => 'Dekodiertes Wetter anzeigen']]);

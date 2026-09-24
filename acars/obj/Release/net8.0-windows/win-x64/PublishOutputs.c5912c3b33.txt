@@ -1,0 +1,17 @@
+C:\Users\nenea\Promethee-acars\Promethee.Acars.exe
+C:\Users\nenea\Promethee-acars\wwwroot\app.js
+C:\Users\nenea\Promethee-acars\wwwroot\fonts\Minitel.ttf
+C:\Users\nenea\Promethee-acars\wwwroot\index.html
+C:\Users\nenea\Promethee-acars\wwwroot\styles.css
+C:\Users\nenea\Promethee-acars\runtimes\win-x64\native\WebView2Loader.dll
+C:\Users\nenea\Promethee-acars\Promethee.Acars.dll
+C:\Users\nenea\Promethee-acars\Promethee.Acars.deps.json
+C:\Users\nenea\Promethee-acars\Promethee.Acars.runtimeconfig.json
+C:\Users\nenea\Promethee-acars\Promethee.Acars.pdb
+C:\Users\nenea\Promethee-acars\WebView2Loader.dll
+C:\Users\nenea\Promethee-acars\Microsoft.Web.WebView2.Core.dll
+C:\Users\nenea\Promethee-acars\Microsoft.Web.WebView2.WinForms.dll
+C:\Users\nenea\Promethee-acars\Microsoft.Web.WebView2.Wpf.dll
+C:\Users\nenea\Promethee-acars\Microsoft.Web.WebView2.Core.xml
+C:\Users\nenea\Promethee-acars\Microsoft.Web.WebView2.WinForms.xml
+C:\Users\nenea\Promethee-acars\Microsoft.Web.WebView2.Wpf.xml

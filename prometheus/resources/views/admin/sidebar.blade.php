@@ -1,3 +1,4 @@
+@php($adminBranding = app(\Modules\Promethee\Services\BrandingService::class)->active())
 <div class="sidebar" data-background-color="white" data-active-color="info">
 
   <!--
@@ -9,7 +10,7 @@
   <div class="sidebar-wrapper">
     <div class="logo">
       <a href="{{ url('/admin/dashboard') }}" class="admin-brand" aria-label="Air Inter Prométhée — administration">
-        <img src="{{ public_asset('/promethee-assets/logos/air-inter-stacked.png') }}" alt="Air Inter">
+        <img src="{{ $adminBranding['url'] }}" alt="{{ $adminBranding['label'] }}">
         <span>
           <b>Prométhée</b>
           <small>Centre d'opérations</small>

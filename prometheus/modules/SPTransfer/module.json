@@ -1,0 +1,24 @@
+{
+    "name": "SPTransfer",
+    "alias": "sptransfer",
+    "description": "phpVMS v7 module for a Hub/Airline Transfer feature",
+    "version": "1.8",
+    "readme_url": "https://github.com/PaintSplasher/phpvms7_SPTransfer?tab=readme-ov-file",
+    "license_url": "https://github.com/PaintSplasher/phpvms7_SPTransfer?tab=License-1-ov-file",
+    "attribution": {
+        "text": "SPTransfer by Sass-Projects",
+        "url": "https://github.com/PaintSplasher/phpvms7_sptransfer",
+        "img": null
+    },
+    "keywords": [],
+    "active": 0,
+    "order": 9001,
+    "providers": [
+        "Modules\\SPTransfer\\Providers\\AppServiceProvider",
+        "Modules\\SPTransfer\\Providers\\EventServiceProvider",
+        "Modules\\SPTransfer\\Providers\\RouteServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": []
+}

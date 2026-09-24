@@ -1,6 +1,6 @@
 <?php
 
-return [
+return array_replace_recursive([
     'flightnumber'     => 'Número do Voo',
     'flighttime'       => 'Tempo do Voo',
     'flighttype'       => 'Tipo de Voo',
@@ -49,4 +49,6 @@ return [
     'aircraftbooking'  => 'Reserva de Aeronave',
     'bookaircraft'     => 'Reservar Aeronave',
     'dontbookaircraft' => 'Não Reservar Aeronave',
-];
+], [
+    'type' => ['shuttle' => 'Ponte aéreo (programado)', 'addtl_shuttle' => 'Ponte aéreo (adicional)', 'cargo_in_cabin' => 'Passageiros/carga na cabine (programado)', 'addtl_cargo_in_cabin' => 'Passageiros/carga na cabine (adicional)', 'charter_cargo_in_cabin' => 'Passageiros/carga na cabine (fretado)', 'general_aviation' => 'Aviação geral', 'air_taxi' => 'Aviação executiva/táxi aéreo', 'company_specific' => 'Específico da companhia (não padrão)', 'other' => 'Outro (não padrão)'],
+]);

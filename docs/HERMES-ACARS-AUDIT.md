@@ -1,5 +1,10 @@
 # Hermès ACARS : audit fonctionnel et plan d'intégration
 
+> Cet audit ciblé doit être lu avec l'[audit de l'écosystème](AUDIT-ECOSYSTEME.md),
+> qui inventorie le socle phpVMS/Prometheus, les extensions Prométhée et Hermès.
+> Il ne propose pas de reconstruire les produits : toute évolution suit l'ordre
+> **existant → audit → conservation → amélioration → extension**.
+
 ## 1. Positionnement recommandé
 
 Hermès ne doit pas devenir un second site phpVMS. Il doit être le **poste de
@@ -113,8 +118,8 @@ un incident ; l'interface ne doit jamais confondre les deux.
   de synchronisation et tableau de santé administrateur.
 - Mise à jour signée de l'ACARS, version minimale imposable et canal stable/bêta.
 - Permissions dédiées et audit des actions sensibles. En particulier, l'accès
-  à un briefing doit toujours vérifier qu'il appartient au pilote authentifié ;
-  cette vérification est actuellement commentée dans le contrôleur API.
+  à un briefing vérifie désormais qu'il appartient au pilote authentifié ; ce
+  contrôle doit rester couvert par un test de non-divulgation inter-pilotes.
 
 ## 4. Intégration SimBrief recommandée
 

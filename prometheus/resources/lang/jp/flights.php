@@ -1,6 +1,6 @@
 <?php
 
-return [
+return array_replace_recursive([
     'flightnumber'     => 'フライトナンバー',
     'flighttime'       => '飛行時間',
     'flighttype'       => 'フライト種類',
@@ -49,4 +49,6 @@ return [
         'company_specific'       => '会社特別 (非標準)',
         'other'                  => 'その他 (非標準)',
     ],
-];
+], [
+    'viewflight' => '便を表示', 'addbid' => '予約を追加', 'removebid' => '予約を取り消す', 'createsimbrief' => 'SimBriefのフライトプランを作成', 'viewsimbrief' => 'SimBriefのフライトプランを表示', 'weather' => '気象', 'aircraftbooking' => '機材の予約', 'bookaircraft' => '機材を予約', 'dontbookaircraft' => '機材を予約しない',
+]);

@@ -1,60 +1,41 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Prométhée ACARS</title>
-  <link rel="stylesheet" href="/styles.css">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Hermès ACARS — Air Inter</title><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/layout-overrides.css">
 </head>
 <body>
   <aside class="rail">
-    <div class="mark">AIR INTER</div>
-    <strong>Prométhée ACARS</strong>
-    <nav>
+    <div class="brand"><img class="brand-logo" src="/air-inter-va-hermes.png" alt="Air Inter Hermès"><span>ACARS · OPÉRATIONS</span><strong>Hermès</strong></div>
+    <nav aria-label="Navigation ACARS">
       <button class="tab active" data-tab="connect">Connexion</button>
-      <button class="tab" data-tab="flight">Vol</button>
+      <button class="tab" data-tab="flight">Mes opérations</button>
       <button class="tab" data-tab="record">Enregistrement</button>
-      <button class="tab" data-tab="map">Carte</button>
-      <button class="tab" data-tab="history">Historique</button>
+      <button class="tab" data-tab="map">Suivi du vol</button>
+      <button class="tab" data-tab="journal">Journal</button>
+      <button class="tab" data-tab="settings">Paramètres</button>
     </nav>
-    <select id="era">
-      <option value="modern">Moderne</option>
-      <option value="minitel">Minitel</option>
-      <option value="web2000">Années 2000</option>
-    </select>
+    <label class="theme">Thème<select id="era"><option value="modern">Moderne</option><option value="web2000">Années 2000</option></select></label>
+    <small id="build"></small>
   </aside>
-
   <main>
     <header>
-      <div>
-        <span class="kicker">Centre Technique - Direction de l'Exploitation Aérienne</span>
-        <h1>Prométhée</h1>
-      </div>
-      <div class="status">
-        <span id="serverState">Déconnecté</span>
-        <span id="simState">Simulateur déconnecté</span>
-      </div>
+      <div><p class="kicker">DIRECTION DE L’EXPLOITATION AÉRIENNE</p><h1>Hermès</h1><p class="header-subtitle">Le client ACARS officiel de Prométhée.</p></div>
+      <div class="status"><span id="serverState">Identité pilote à venir</span><span id="simState">Simulateur non détecté</span></div>
     </header>
-
     <section id="connect" class="panel active">
-      <h2>Connexion phpVMS</h2>
-      <p class="hint">Connexion pilote sécurisée : votre mot de passe n'est jamais enregistré. La session ACARS expire automatiquement après 12 heures.</p>
-      <form id="loginForm" class="grid">
-        <label>Serveur phpVMS<input name="server" value="http://127.0.0.1:8088"></label>
-        <label>Identifiant pilote ou e-mail<input name="login" autocomplete="username"></label>
-        <label>Mot de passe<input name="password" type="password" autocomplete="current-password"></label>
-        <button>Connecter</button>
+      <h2>Connexion pilote</h2><p class="hint">Connectez-vous à votre compte Air Inter pour préparer et suivre votre vol.</p>
+      <form id="loginForm" class="login-form">
+        <label>Identifiant pilote ou e-mail<input name="login" autocomplete="username" required></label>
+        <label>Mot de passe<input name="password" type="password" autocomplete="current-password" required></label>
+        <button class="primary">Se connecter</button>
       </form>
-      <details class="legacy"><summary>Utiliser une clé API existante</summary>
-        <form id="configForm" class="grid">
-          <label>Serveur phpVMS<input name="server" value="http://127.0.0.1:8088"></label>
-          <label>Clé API pilote<input name="apiKey" type="password" autocomplete="off"></label>
-          <button>Connecter avec la clé API</button>
-        </form>
+      <p id="loginMessage" class="message" hidden role="status"></p>
+      <details class="advanced"><summary>Connexion avancée</summary>
+        <p>Réservée aux installations qui utilisent volontairement une clé API et un serveur personnalisé.</p>
+        <form id="configForm" class="login-form"><label>Serveur HTTPS<input name="server" placeholder="https://va.exemple.fr" required></label><label>Clé API<input name="apiKey" type="password" required></label><button>Connecter avec la clé API</button></form>
       </details>
-      <pre id="userBox"></pre>
     </section>
-
     <section id="flight" class="panel">
       <h2>Préparation du PIREP</h2>
       <div class="tools">
@@ -76,49 +57,22 @@
         <label>Block fuel lbs<input name="block_fuel" type="number" min="0" step="1"></label>
         <button>Pré-déposer le PIREP</button>
       </form>
-      <pre id="pirepBox"></pre>
     </section>
-
     <section id="record" class="panel">
-      <h2>Enregistrement</h2>
-      <div class="cards">
-        <div><span>Phase ACARS</span><strong id="phase">-</strong></div>
-        <div><span>Position</span><strong id="pos">-</strong></div>
-        <div><span>IAS</span><strong id="ias">-</strong></div>
-        <div><span>Vitesse sol</span><strong id="gs">-</strong></div>
-        <div><span>AGL</span><strong id="agl">-</strong></div>
-        <div><span>Carburant</span><strong id="fuel">-</strong></div>
-        <div><span>Distance</span><strong id="distance">-</strong></div>
-        <div><span>Temps de vol</span><strong id="airborne">-</strong></div>
-        <div><span>Tampon</span><strong id="pending">0</strong></div>
-      </div>
-      <p id="warning" class="hint" role="status"></p>
-      <div class="tools">
-        <input id="pirepId" placeholder="ID PIREP">
-        <button id="startBtn">Démarrer</button>
-        <button id="pauseBtn">Pause</button>
-        <button id="resumeBtn">Reprendre</button>
-        <button id="syncBtn">Synchroniser</button>
-        <button id="fileBtn">Déposer</button>
-        <button id="reportBtn">Rapport final</button>
-      </div>
-      <p class="hint">Les messages OUT, OFF, ON et IN sont envoyés automatiquement. Pour obtenir IN, immobilisez l'avion au parking et serrez le frein de parc 15 secondes.</p>
-      <pre id="recordBox"></pre>
+      <h2>Enregistrement ACARS</h2><div class="cards"><div><span>Phase</span><strong id="phase">—</strong></div><div><span>Altitude</span><strong id="altitude">—</strong></div><div><span>GS</span><strong id="groundSpeed">—</strong></div><div><span>Carburant</span><strong id="fuel">—</strong></div><div><span>Distance</span><strong id="distance">—</strong></div><div><span>Temps de vol</span><strong id="airborne">—</strong></div><div><span>Synchronisation</span><strong id="pending">0</strong></div></div>
+      <p id="warning" class="hint"></p><div class="actions"><button id="startBtn" class="primary">Démarrer l’enregistrement</button><button id="pauseBtn">Pause</button><button id="resumeBtn">Reprendre</button><button id="syncBtn">Synchroniser</button><button id="fileBtn">Déposer le PIREP</button></div><p id="recordMessage" class="message" hidden></p>
     </section>
-
-    <section id="map" class="panel">
-      <h2>Carte et timeline</h2>
-      <canvas id="flightMap" width="960" height="440" aria-label="Trajet enregistré"></canvas>
-      <div id="timeline" class="timeline"></div>
+    <section id="map" class="panel"><h2>Suivi du vol</h2><canvas id="flightMap" width="960" height="440" aria-label="Trajet enregistré"></canvas><div id="timeline" class="timeline"><p class="empty">En attente d’un vol.</p></div></section>
+    <section id="journal" class="panel"><h2>Journal opérationnel</h2><p class="hint">Événements ACARS enregistrés localement et conservés durant une reprise de vol.</p><div id="journalEntries" class="timeline"><p class="empty">En attente d’un vol.</p></div></section>
+    <section id="settings" class="panel"><h2>Paramètres ACARS</h2><p class="hint">Les règles compagnie et la cadence live sont reçues de Prométhée ; ces réglages restent locaux et n’exécutent aucun code distant.</p>
+      <form id="settingsForm" class="login-form">
+        <label><span>Détection automatique</span><select name="autoDetection"><option value="true">Activée</option><option value="false">Désactivée</option></select></label>
+        <label><span>Forcer le simulateur (diagnostic)</span><select name="forcedSimulator"><option value="">Aucun — automatique</option><option value="msfs">Microsoft Flight Simulator / SimConnect</option><option value="fsuipc">FSUIPC — non implémenté</option><option value="xplane">X-Plane — non implémenté</option></select></label>
+        <label><span>Heure du journal</span><select name="timeFormat"><option value="local">Locale</option><option value="utc">UTC</option></select></label>
+        <label><span>Notifications locales</span><select name="notifications"><option value="true">Activées</option><option value="false">Désactivées</option></select></label>
+        <button class="primary">Enregistrer les réglages</button>
+      </form>
+      <p id="remotePolicy" class="message" hidden></p><p id="settingsMessage" class="message" hidden></p>
     </section>
-
-    <section id="history" class="panel">
-      <h2>Historique & diagnostic</h2>
-      <div class="tools"><button id="historyBtn">Actualiser l'historique</button><button id="diagnosticBtn">Télécharger le diagnostic</button><button id="exportProfileBtn">Exporter le profil</button><label>Importer un profil<input id="profileFile" type="file" accept="application/json,.json"></label></div>
-      <form id="rulesForm" class="grid"><label>Limite roulage (kt)<input name="taxiSpeed" type="number" min="5" max="100" value="35"></label><label>Atterrissage dur (ft/min)<input name="hardLandingRate" type="number" min="100" max="2000" value="600"></label><button>Enregistrer les règles</button></form>
-      <pre id="historyBox"></pre>
-    </section>
-  </main>
-  <script src="/app.js"></script>
-</body>
-</html>
+  </main><script src="/app.js"></script>
+</body></html>

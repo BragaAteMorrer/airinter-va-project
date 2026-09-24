@@ -1,6 +1,6 @@
 <?php
 
-return [
+return array_replace_recursive([
     'dashboard'      => 'Dashboard',
     'administration' => 'Amministrazione',
     'flight'         => 'Volo|Voli',
@@ -64,4 +64,4 @@ return [
     'wanttocontinue'       => 'Vuoi continuare?',
     'continue'             => 'Continua',
     'alwaystrustdomain'    => 'Affidati sempre a questo dominio',
-];
+], ['toggleColors' => 'Cambia colori', 'dark' => 'Scuro', 'light' => 'Chiaro', 'auto' => 'Automatico', 'map' => 'Mappa', 'notes' => 'Note']);

@@ -1,6 +1,6 @@
 <?php
 
-return [
+return array_replace_recursive([
    // Tooltips
    'dashboard-t'        => 'Inizia il tuo viaggio',
    'home-t'             => 'Torna alla home',
@@ -253,4 +253,4 @@ return [
    'availmission'       => 'Missioni disponibili',
    'missions-t'         => 'Le nostre missioni di riposizionamento',
    'checkmission'       => 'Controlla tutte le missioni',
-];
+], ['mypassport' => 'Il mio passaporto', 'pilotcenter' => 'Area piloti', 'welcome_back' => 'Bentornato al Centro Operativo Volo.']);

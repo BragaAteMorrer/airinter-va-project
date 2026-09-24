@@ -2,6 +2,7 @@
   const i18n = window.prometheeI18n || {};
   const dateLocale = i18n.dateLocale || i18n.locale || 'fr-FR';
   const allowed = ['modern','2000','minitel'];
+  const appearances = ['light','dark'];
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let revealTimeout;
   let bootTimeout;
@@ -63,9 +64,23 @@
     bootMinitel();
     revealMinitelLines();
   };
+  const setAppearance = (appearance, persist = true) => {
+    if (!appearances.includes(appearance)) appearance = 'light';
+    if (persist) {
+      document.documentElement.dataset.appearanceTransition = 'true';
+      window.setTimeout(() => delete document.documentElement.dataset.appearanceTransition, 230);
+    }
+    document.documentElement.dataset.appearance = appearance;
+    if (persist) try { localStorage.setItem('promethee-appearance', appearance); } catch {}
+    const control = document.getElementById('appearance'); if (control) control.value = appearance;
+  };
   let initial = 'modern'; try { initial = localStorage.getItem('promethee-era') || 'modern'; } catch {}
   setEra(initial);
+  let initialAppearance; try { initialAppearance = localStorage.getItem('promethee-appearance'); } catch {}
+  setAppearance(appearances.includes(initialAppearance) ? initialAppearance : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'), false);
   document.getElementById('era')?.addEventListener('change',e => setEra(e.target.value));
+  document.getElementById('appearance')?.addEventListener('change',e => setAppearance(e.target.value));
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => { try { if (!localStorage.getItem('promethee-appearance')) setAppearance(event.matches ? 'dark' : 'light', false); } catch {} });
   document.querySelectorAll('[data-era-choice]').forEach(button => button.addEventListener('click',() => setEra(button.dataset.eraChoice)));
   document.querySelectorAll('[data-print]').forEach(button => button.addEventListener('click',() => window.print()));
   const tick = () => {
@@ -162,11 +177,71 @@
   };
 
   const bootSplitFlapBoards = () => document.querySelectorAll('[data-split-flap-board]').forEach((board) => {
-    board.querySelectorAll('.board-cell').forEach((field) => renderFlapField(field, true));
+    board.querySelectorAll('.board-cell:not(.split-flap-logo), .airline-logo-fallback').forEach((field) => renderFlapField(field, true));
     // External live updates can set data-flap-value; only affected palettes flip.
     new MutationObserver((changes) => changes.forEach((change) => {
       if (change.type === 'attributes' && change.attributeName === 'data-flap-value') renderFlapField(change.target);
     })).observe(board, {subtree: true, attributes: true, attributeFilter: ['data-flap-value']});
+
+    if (!board.dataset.boardUrl) return;
+    const makeCell = (tag, className, value, width) => {
+      const cell = document.createElement(tag);
+      cell.className = `board-cell ${className || ''}`.trim();
+      cell.dataset.flapWidth = width;
+      cell.textContent = value;
+      return cell;
+    };
+    const setLogo = (cell, flight) => {
+      cell.replaceChildren();
+      cell.setAttribute('aria-label', flight.airline_code);
+      if (flight.logo_url) {
+        const logo = document.createElement('img');
+        logo.src = flight.logo_url; logo.alt = flight.airline_code;
+        cell.append(logo);
+      } else {
+        const fallback = document.createElement('span');
+        fallback.className = 'airline-logo-fallback'; fallback.dataset.flapWidth = 4; fallback.textContent = flight.airline_code;
+        cell.append(fallback);
+        renderFlapField(fallback, true);
+      }
+    };
+    const makeRow = (flight, index) => {
+      const row = document.createElement('article');
+      row.className = 'split-flap-grid dispatch-flight'; row.dataset.boardFlight = flight.id;
+      row.style.setProperty('--board-row', index);
+      const logo = document.createElement('span');
+      logo.className = 'board-cell split-flap-logo airline-logo-cell'; setLogo(logo, flight);
+      const ident = makeCell('a', 'flight-cell flight-ident', flight.flight, 9); ident.href = flight.url;
+      row.append(logo, ident, makeCell('span', 'departure-cell', flight.departure, 4), makeCell('time', 'departure-time-cell', flight.departure_time, 5), makeCell('span', 'destination-cell destination', flight.destination, 28), makeCell('time', 'arrival-time-cell', flight.arrival_time, 5), makeCell('span', 'status-cell status', flight.status_label, 16));
+      row.querySelectorAll('.board-cell:not(.split-flap-logo)').forEach((field) => renderFlapField(field, true));
+      return row;
+    };
+    const updateRows = (flights) => {
+      const current = new Map([...board.querySelectorAll('[data-board-flight]')].map((row) => [row.dataset.boardFlight, row]));
+      const empty = board.querySelector('[data-board-empty]'); if (empty) empty.remove();
+      flights.forEach((flight, index) => {
+        let row = current.get(flight.id);
+        if (!row) { row = makeRow(flight, index); board.append(row); return; }
+        row.style.setProperty('--board-row', index); current.delete(flight.id);
+        const cells = row.querySelectorAll('.board-cell');
+        const values = [flight.flight, flight.departure, flight.departure_time, flight.destination, flight.arrival_time, flight.status_label];
+        setLogo(cells[0], flight); cells[1].href = flight.url;
+        values.forEach((value, cellIndex) => cells[cellIndex + 1].dataset.flapValue = value);
+        board.append(row);
+      });
+      current.forEach((row) => row.remove());
+      if (!flights.length) {
+        const message = document.createElement('p'); message.className = 'empty'; message.dataset.boardEmpty = '';
+        message.textContent = board.dataset.emptyText || '—'; board.append(message);
+      }
+    };
+    const refresh = async () => {
+      try {
+        const response = await fetch(board.dataset.boardUrl, {headers: {Accept: 'application/json'}});
+        if (response.ok) updateRows((await response.json()).flights || []);
+      } catch { /* Leave the last valid mechanical display in place. */ }
+    };
+    window.setInterval(refresh, Math.max(5, Number(board.dataset.boardRefresh) || 30) * 1000);
   });
   bootSplitFlapBoards();
 })();

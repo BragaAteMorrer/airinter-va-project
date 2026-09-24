@@ -62,7 +62,7 @@
         <div class="collapse navbar-collapse">
           <ul class="nav navbar-nav navbar-right">
             <li><a href="{{ url('/') }}"><i class="pe-7s-home"></i> Portail pilote</a></li>
-            <li><a href="{{ url('/admin/identity/identite') }}">Identité</a></li>
+            <li><a href="{{ route('admin.promethee.branding') }}">Identité visuelle</a></li>
             @yield('actions')
           </ul>
 

@@ -22,4 +22,5 @@ return [
     'suspendedmessage'         => 'アカウント停止状態です。管理員にお問い合わせください。',
     'transferhours'            => '転入時間',
     'loginwith'                => ':provider でログイン',
+    'sendresetlink'            => 'パスワード再設定リンクを送信',
 ];

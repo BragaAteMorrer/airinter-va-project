@@ -32,7 +32,7 @@ return [
     'newflightreport'      => 'Nuovo Rapporto di Volo',
     'submitted'            => 'Inviato',
 
-    'source_type' => [
+    'source_types' => [
         'manual' => 'Manuale',
         'acars'  => 'ACARS',
     ],

@@ -1,6 +1,6 @@
 <?php
 
-return [
+return array_replace_recursive([
    // Tooltips
    'dashboard-t'        => 'あなたの旅を始める',
    'home-t'             => 'ホームに戻る',
@@ -253,4 +253,4 @@ return [
    'availmission'       => '利用可能なミッション',
    'missions-t'         => '当社の再配置ミッション',
    'checkmission'       => 'すべてのミッションを確認',
-];
+], ['mypassport' => 'マイパスポート', 'pilotcenter' => 'パイロットセンター', 'welcome_back' => 'フライトオペレーションセンターへようこそ。']);

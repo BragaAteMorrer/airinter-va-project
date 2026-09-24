@@ -1,0 +1,27 @@
+{
+    "name": "fatihkoz/disposableairports",
+    "type": "phpvms-module",
+    "description": "phpVMS v7 module for Automated Airport Imports and Updates via Open Sources",
+    "authors": [
+        {
+            "name": "B.Fatih KOZ",
+            "email": "fatih.koz@gmail.com"
+        }
+    ],
+    "require": {
+        "composer/installers": "~1.0"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Modules\\DisposableAirports\\Providers\\DA_ServiceProvider",
+                "Modules\\DisposableAirports\\Providers\\DA_EventProvider"
+            ]
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\DisposableAirports\\": "."
+        }
+    }
+}

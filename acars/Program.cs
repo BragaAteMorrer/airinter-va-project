@@ -48,14 +48,18 @@ app.MapGet("/api/status", (PhpVmsClient client, SimConnectReader sim, FlightReco
     }
 });
 
-app.MapPost("/api/config", async (ConfigRequest input, PhpVmsClient client) =>
+app.MapPost("/api/config", async (ConfigRequest input, PhpVmsClient client, FlightRecorder recorder) =>
 {
     client.ConfigureApiKey(input.Server, input.ApiKey);
     var user = await client.Send("user");
-    return Results.Json(new { user });
+    var configuration = await LoadRemoteConfiguration(client, recorder);
+    return Results.Json(new { user, configuration });
 });
-app.MapPost("/api/login", async (LoginRequest input, PhpVmsClient client) =>
-    Results.Json(new { user = await client.SignIn(input.Server, input.Login, input.Password) }));
+app.MapPost("/api/login", async (LoginRequest input, PhpVmsClient client, FlightRecorder recorder) => {
+    var user = await client.SignIn(input.Server, input.Login, input.Password);
+    var configuration = await LoadRemoteConfiguration(client, recorder);
+    return Results.Json(new { user, configuration });
+});
 
 app.MapGet("/api/user", async (PhpVmsClient client) => Results.Json(await client.Send("user")));
 app.MapGet("/api/bids", async (PhpVmsClient client) => Results.Json(await client.Send("user/bids")));
@@ -106,7 +110,7 @@ app.MapPost("/api/rules", (AcarsRules rules, FlightRecorder recorder) => { recor
 app.MapGet("/api/diagnostics", (PhpVmsClient client, SimConnectReader sim, FlightRecorder recorder) =>
     Results.Json(new { generatedAt = DateTimeOffset.UtcNow, server = client.Server, connected = client.Connected,
         simulator = sim.Status, latest = sim.Latest, flight = recorder.Flight, pendingPositions = recorder.Pending.Count,
-        pendingEvents = recorder.PendingEvents.Count, warning = recorder.Warning }));
+        pendingEvents = recorder.PendingEvents.Count, remoteConfiguration = recorder.RemoteConfiguration, warning = recorder.Warning }));
 
 app.MapPost("/api/file", async (PhpVmsClient client, FlightRecorder recorder) =>
 {
@@ -146,6 +150,18 @@ static string FindAvailableLocalUrl()
     throw new InvalidOperationException("Les ports locaux 1974 à 1984 sont déjà utilisés. Fermez une autre instance de Promethee ACARS.");
 }
 
+static async Task<RemoteAcarsConfiguration> LoadRemoteConfiguration(PhpVmsClient client, FlightRecorder recorder)
+{
+    RemoteAcarsConfiguration configuration;
+    try {
+        configuration = RemoteAcarsConfiguration.Parse(await client.Send("promethee/acars/configuration"));
+    } catch (InvalidOperationException) {
+        configuration = RemoteAcarsConfiguration.Default;
+    }
+    recorder.ApplyRemoteConfiguration(configuration);
+    return configuration;
+}
+
 public sealed record ConfigRequest(string Server, string ApiKey);
 public sealed record LoginRequest(string Server, string Login, string Password);
 public sealed record StartRequest(string PirepId);
@@ -178,6 +194,34 @@ public sealed class TelemetryWorker(SimConnectReader sim, FlightRecorder recorde
         }
         if (flight is null || (pending.Count == 0 && events.Count == 0)) return 0;
         if (pending.Count > 0) {
+            // Promethee keeps the detailed, idempotent telemetry separately.
+            // The standard phpVMS ACARS endpoint below remains the live-map
+            // source and is intentionally not made dependent on this archive.
+            try {
+                await client.Send("promethee/pireps/" + Uri.EscapeDataString(flight.PirepId) + "/telemetry", new {
+                    samples = pending.Select(x => new {
+                        sample_id = x.Sample.SampleId,
+                        recorded_at = x.Sample.RecordedAt,
+                        lat = x.Sample.Lat,
+                        lon = x.Sample.Lon,
+                        altitude_msl = x.Sample.Altitude,
+                        agl = x.Sample.Agl,
+                        ias = x.Sample.Ias,
+                        gs = x.Sample.Gs,
+                        vs = x.Sample.Vs,
+                        heading = x.Sample.Heading,
+                        fuel = x.Sample.Fuel,
+                        bank = x.Sample.Bank,
+                        on_ground = x.Sample.OnGround,
+                        gear_down = x.Sample.GearDown,
+                        landing_flaps = x.Sample.Flaps > 0,
+                        thrust_stable = x.Sample.ThrustStable
+                    })
+                });
+            } catch (InvalidOperationException) {
+                // A server can be upgraded independently of the desktop app.
+                // Standard ACARS sync is still useful and remains idempotent.
+            }
             await client.Send("pireps/" + Uri.EscapeDataString(flight.PirepId) + "/acars/positions", new {
                 positions = pending.Select(x => new {
                 id = x.Sample.SampleId,

@@ -1,0 +1,163 @@
+/* Appearance is independent from the selected historical era. */
+html[data-appearance="dark"] {
+  color-scheme: dark;
+  --color-background:#081522; --color-surface:#0d1b29; --color-surface-secondary:#122536; --color-surface-elevated:#172d40;
+  --color-text:#edf4fa; --color-text-secondary:#b5c6d5; --color-text-muted:#8ea5b8; --color-border:#29455d; --color-border-strong:#42647f;
+  --color-primary:#55a9df; --color-primary-hover:#82c4ed; --color-accent:#d94a52; --color-success:#6fbd9b; --color-warning:#e6be69; --color-danger:#ec8080; --color-info:#78b5e8;
+  --shadow-small:0 4px 12px #02080e66; --shadow-medium:0 10px 28px #02080e80;
+  --paper:var(--color-background); --panel:var(--color-surface); --ink:var(--color-text); --muted:var(--color-text-muted); --line:var(--color-border); --blue:var(--color-primary); --navy:#0a1c2c; --shadow:var(--shadow-small);
+}
+html[data-appearance="dark"] body{background:var(--color-background);color:var(--color-text)}
+html[data-appearance="dark"] .topbar,html[data-appearance="dark"] .footer{background:var(--color-surface);border-color:var(--color-border)}
+html[data-appearance="dark"] .sidebar{background:#0a1c2c;color:var(--color-text-secondary)}
+html[data-appearance="dark"] .panel,html[data-appearance="dark"] .stat,html[data-appearance="dark"] .ops-clock,html[data-appearance="dark"] .control-strip article{background:var(--color-surface);border-color:var(--color-border);box-shadow:var(--shadow-small)}
+html[data-appearance="dark"] th{background:var(--color-surface-secondary);color:var(--color-text-secondary)} html[data-appearance="dark"] td,html[data-appearance="dark"] .event,html[data-appearance="dark"] .pilot-numbers{border-color:var(--color-border)}
+html[data-appearance="dark"] input,html[data-appearance="dark"] select,html[data-appearance="dark"] textarea{background:var(--color-surface-elevated);color:var(--color-text);border-color:var(--color-border-strong)}
+html[data-appearance="dark"] input::placeholder,html[data-appearance="dark"] textarea::placeholder{color:var(--color-text-muted);opacity:1} html[data-appearance="dark"] input:focus,html[data-appearance="dark"] select:focus,html[data-appearance="dark"] textarea:focus{outline-color:var(--color-primary-hover)}
+html[data-appearance="dark"] input:-webkit-autofill{-webkit-text-fill-color:var(--color-text);-webkit-box-shadow:0 0 0 1000px var(--color-surface-elevated) inset}
+html[data-appearance="dark"] .callout{background:#10283a;border-color:var(--color-accent)} html[data-appearance="dark"] .notice{background:#123326;border-color:#3e8063;color:var(--color-text)} html[data-appearance="dark"] .notice.error{background:#3a2025;border-color:#a7555d;color:var(--color-text)}
+html[data-appearance="dark"] .calendar-day.outside,html[data-appearance="dark"] .weekday,html[data-appearance="dark"] .round-link,html[data-appearance="dark"] .avatar-text{background:var(--color-surface-secondary);color:var(--color-text-secondary)} html[data-appearance="dark"] .calendar-event{background:#153552;color:#d9ecfa}
+html[data-appearance="dark"] .bulletin{background:var(--color-surface);color:var(--color-text);border-color:var(--color-border)} html[data-appearance="dark"] .bulletin p,html[data-appearance="dark"] .report-intro{color:var(--color-text-secondary)}
+/* Tables can receive page-specific light row fills. Reset the complete row and
+   every cell here: the content must never inherit a light foreground on night. */
+html[data-appearance="dark"] table tbody tr,
+html[data-appearance="dark"] table tbody tr:nth-child(odd),
+html[data-appearance="dark"] table tbody tr:nth-child(even){background:var(--color-surface)!important;color:var(--color-text)!important}
+html[data-appearance="dark"] table tbody tr:hover{background:var(--color-surface-secondary)!important;color:var(--color-text)!important}
+html[data-appearance="dark"] table tbody td,
+html[data-appearance="dark"] table tbody td strong,
+html[data-appearance="dark"] table tbody td a{color:var(--color-text)!important;border-color:var(--color-border)!important}
+html[data-appearance="dark"] table .tag{background:var(--color-surface-secondary);color:var(--color-text)!important;border-color:var(--color-border-strong)}
+/* Remaining pale operational surfaces used outside generic panels. */
+html[data-appearance="dark"] .signal,html[data-appearance="dark"] .route-board article,html[data-appearance="dark"] .map-selection,html[data-appearance="dark"] .line-meta div,html[data-appearance="dark"] .fare-chips span,html[data-appearance="dark"] .report-summary,html[data-appearance="dark"] .report-tabs span{background:var(--color-surface-secondary);color:var(--color-text);border-color:var(--color-border)}
+html[data-appearance="dark"] .live-aircraft span{background:var(--color-surface-elevated);color:var(--color-text)}
+/* The split-flap keeps its physical black panel, ivory characters and amber indicators. */
+html[data-era="2000"][data-appearance="dark"]{--color-background:#111a29;--color-surface:#1b293a;--color-surface-secondary:#26394d;--color-surface-elevated:#30455a;--color-text:#f0f4f7;--color-text-secondary:#c7d3df;--color-text-muted:#a5b8c9;--color-border:#66809a;--color-border-strong:#9db2c5;--color-primary:#79b5dc;--color-primary-hover:#b9ddf0;--color-accent:#e16b70;--paper:var(--color-background);--panel:var(--color-surface);--ink:var(--color-text);--muted:var(--color-text-muted);--line:var(--color-border);--blue:var(--color-primary);--navy:#17253b;--shadow:2px 3px 0 #09111b}
+html[data-era="2000"][data-appearance="dark"] .sidebar{background:#1b293a} html[data-era="2000"][data-appearance="dark"] .topbar{background:linear-gradient(#365873,#213b52);border-color:#7591a9} html[data-era="2000"][data-appearance="dark"] .sidebar nav{background:#193e64} html[data-era="2000"][data-appearance="dark"] .sidebar::before{background:#245b78} html[data-era="2000"][data-appearance="dark"] .sidebar::after{background:#5d829b}
+html[data-era="2000"][data-appearance="dark"] .nav-menu{background:var(--color-surface);border-color:var(--color-border-strong);box-shadow:2px 2px 0 #09111b} html[data-era="2000"][data-appearance="dark"] .nav-menu a{color:var(--color-text);border-color:var(--color-border)} html[data-era="2000"][data-appearance="dark"] .nav-menu a:hover,html[data-era="2000"][data-appearance="dark"] .nav-menu a.selected{background:#304d65;color:#fff}
+html[data-era="2000"][data-appearance="dark"] .hero{background:linear-gradient(135deg,#183d68,#315d84);border-color:#7397b8} html[data-era="2000"][data-appearance="dark"] button,html[data-era="2000"][data-appearance="dark"] .button{background:linear-gradient(#45667f,#263d52);color:#f5f8fb;border-color:#a4b9c9} html[data-era="2000"][data-appearance="dark"] button:active,html[data-era="2000"][data-appearance="dark"] .button:active{border-style:inset}
+html[data-era="minitel"] .appearance-control{display:none}
+/* Modern night: explicit counterparts for the branded light-era rules. */
+html[data-era="modern"][data-appearance="dark"] body{background:var(--color-background)}
+html[data-era="modern"][data-appearance="dark"] .sidebar{background:linear-gradient(165deg,#081a2c 0%,#0b2439 62%,#102d45 100%);box-shadow:8px 0 28px #02080e66}
+html[data-era="modern"][data-appearance="dark"] .nav-group summary,
+html[data-era="modern"][data-appearance="dark"] .nav-link{color:var(--color-text-secondary)}
+html[data-era="modern"][data-appearance="dark"] .nav-group:hover summary,
+html[data-era="modern"][data-appearance="dark"] .nav-group.selected summary,
+html[data-era="modern"][data-appearance="dark"] .nav-link:hover,
+html[data-era="modern"][data-appearance="dark"] .nav-link.selected{color:var(--color-primary-hover)}
+html[data-era="modern"][data-appearance="dark"] .nav-menu{background:var(--color-surface-elevated);border-color:var(--color-border-strong);box-shadow:0 12px 25px #02080e99}
+html[data-era="modern"][data-appearance="dark"] .nav-menu a{color:var(--color-text-secondary)}
+html[data-era="modern"][data-appearance="dark"] .nav-menu a:hover,
+html[data-era="modern"][data-appearance="dark"] .nav-menu a.selected{background:#1c3c56;color:var(--color-text)}
+html[data-era="modern"][data-appearance="dark"] .topbar{background:#0d1b29;border-color:var(--color-border);backdrop-filter:none}
+html[data-era="modern"][data-appearance="dark"] .topbar .breadcrumb{color:var(--color-text-secondary)}
+html[data-era="modern"][data-appearance="dark"] .theme-control{color:var(--color-text-secondary)}
+html[data-era="modern"][data-appearance="dark"] .theme-control select{background:var(--color-surface-elevated);color:var(--color-text);border-color:var(--color-border-strong)}
+html[data-era="modern"][data-appearance="dark"] .pilot-card-link{background:#142b3e;border-color:var(--color-border);color:var(--color-text);box-shadow:none}
+html[data-era="modern"][data-appearance="dark"] .pilot-card-link:hover{background:#19354b;border-color:var(--color-primary);color:var(--color-text)}
+html[data-era="modern"][data-appearance="dark"] .pilot-identity strong{color:var(--color-text)}
+html[data-era="modern"][data-appearance="dark"] .pilot-identity small,
+html[data-era="modern"][data-appearance="dark"] .pilot-space-actions a{color:var(--color-text-muted)}
+html[data-era="modern"][data-appearance="dark"] .ops-header{background:linear-gradient(110deg,#10273a 0%,#0d1f30 66%,#123e5a 100%);border-left-color:var(--color-primary);box-shadow:var(--shadow-medium)}
+html[data-era="modern"][data-appearance="dark"] .ops-header::after{opacity:.48}
+html[data-era="modern"][data-appearance="dark"] .ops-header h1{color:var(--color-text)}
+html[data-era="modern"][data-appearance="dark"] .ops-header p{color:var(--color-text-secondary)}
+html[data-era="modern"][data-appearance="dark"] .ops-header .tag{background:#163a54;color:var(--color-text);border-color:#4d7898}
+html[data-era="modern"][data-appearance="dark"] .ops-clock{background:#091827;border-color:#315774;box-shadow:0 8px 20px #02080e88}
+html[data-era="modern"][data-appearance="dark"] .ops-clock span,
+html[data-era="modern"][data-appearance="dark"] .ops-clock small{color:#a9c8dc}
+html[data-era="modern"][data-appearance="dark"] .ops-clock strong{color:#7fc6ef}
+html[data-era="modern"][data-appearance="dark"] .control-strip article > span{color:#71b9e5}
+html[data-era="modern"][data-appearance="dark"] .control-strip article small{color:var(--color-text-secondary)}
+html[data-era="modern"][data-appearance="dark"] .control-strip article strong{color:var(--color-text)}
+html[data-era="modern"][data-appearance="dark"] .panel-heading .eyebrow{color:#71b9e5}
+html[data-era="modern"][data-appearance="dark"] .world-clock > span{color:#9dd1ee}
+html[data-era="modern"][data-appearance="dark"] .world-clock strong{color:#74c4ef}
+html[data-era="modern"][data-appearance="dark"] .world-clock small{color:#b1c9d9}
+html[data-era="modern"][data-appearance="dark"] .button.outline,
+html[data-era="modern"][data-appearance="dark"] button.outline{background:var(--color-surface-elevated);color:var(--color-primary-hover);border-color:var(--color-border-strong);box-shadow:none}
+/* 1999–2005 night: strong blue-grey panes and bevels, not the modern palette. */
+html[data-era="2000"][data-appearance="dark"] body{background:#111a29}
+html[data-era="2000"][data-appearance="dark"] .workspace{background:var(--color-background);border-color:var(--color-border)}
+html[data-era="2000"][data-appearance="dark"] .sidebar{color:var(--color-text);border-bottom-color:#5d829b}
+html[data-era="2000"][data-appearance="dark"] .brand,html[data-era="2000"][data-appearance="dark"] .pilot-space{color:var(--color-text)}
+html[data-era="2000"][data-appearance="dark"] .nav-group summary,
+html[data-era="2000"][data-appearance="dark"] .nav-link{color:#f2f6fa;border-color:#79a1bd}
+html[data-era="2000"][data-appearance="dark"] .nav-group.selected summary,
+html[data-era="2000"][data-appearance="dark"] .nav-group:hover summary,
+html[data-era="2000"][data-appearance="dark"] .nav-link.selected,
+html[data-era="2000"][data-appearance="dark"] .nav-link:hover{background:#a8404b;color:#fff}
+html[data-era="2000"][data-appearance="dark"] .topbar{color:#edf4fa;background:linear-gradient(#385d78,#20394f)}
+html[data-era="2000"][data-appearance="dark"] .topbar .breadcrumb,
+html[data-era="2000"][data-appearance="dark"] .topbar .breadcrumb span,
+html[data-era="2000"][data-appearance="dark"] .topbar time,
+html[data-era="2000"][data-appearance="dark"] .theme-control{color:#e0edf6}
+html[data-era="2000"][data-appearance="dark"] .theme-control select{background:#263c50;color:#f5f8fb;border-color:#9ab2c5}
+html[data-era="2000"][data-appearance="dark"] h1,html[data-era="2000"][data-appearance="dark"] h2,html[data-era="2000"][data-appearance="dark"] h3{color:var(--color-text)}
+html[data-era="2000"][data-appearance="dark"] p{color:var(--color-text-secondary)}
+html[data-era="2000"][data-appearance="dark"] .ops-header{background:#172a3d;border-bottom-color:#79b5dc;padding:18px;box-shadow:2px 3px 0 #09111b}
+html[data-era="2000"][data-appearance="dark"] .ops-header .eyebrow{color:#f08084}
+html[data-era="2000"][data-appearance="dark"] .ops-clock{background:#112133;border-color:#91aabd;border-top-color:#e16b70;box-shadow:2px 3px 0 #09111b}
+html[data-era="2000"][data-appearance="dark"] .ops-clock span,html[data-era="2000"][data-appearance="dark"] .ops-clock small{color:#c8dae8}
+html[data-era="2000"][data-appearance="dark"] .ops-clock strong{color:#a9d9f4}
+html[data-era="2000"][data-appearance="dark"] .panel,html[data-era="2000"][data-appearance="dark"] .stat,html[data-era="2000"][data-appearance="dark"] .control-strip article{background:var(--color-surface);border-color:var(--color-border-strong);box-shadow:2px 3px 0 #09111b}
+html[data-era="2000"][data-appearance="dark"] .panel-heading{background:linear-gradient(#345b79,#1c3851);border-color:#718ea5;color:#f4f8fb}
+html[data-era="2000"][data-appearance="dark"] .panel-heading h2,html[data-era="2000"][data-appearance="dark"] .panel-heading .eyebrow,html[data-era="2000"][data-appearance="dark"] .panel-heading a{color:#f4f8fb}
+html[data-era="2000"][data-appearance="dark"] .control-strip article > span{color:#9fcee9}
+html[data-era="2000"][data-appearance="dark"] .control-strip article small{color:#c5d5e1}
+html[data-era="2000"][data-appearance="dark"] .control-strip article strong{color:#f3f7fa}
+html[data-era="2000"][data-appearance="dark"] .world-clock{background:#1d3042;border-top-color:#79b5dc!important}
+html[data-era="2000"][data-appearance="dark"] .world-clock > span{color:#b8dbef}
+html[data-era="2000"][data-appearance="dark"] .world-clock strong{color:#8dcced}
+html[data-era="2000"][data-appearance="dark"] .world-clock small{color:#c3d2de}
+html[data-era="2000"][data-appearance="dark"] .footer{background:#1c3448;border-color:#668fa9;color:#d3e2ed}
+html[data-era="2000"][data-appearance="dark"] .button.outline{background:linear-gradient(#3a566d,#23394b);color:#e9f4fb;border-color:#9ab2c5}
+/* Responsive guardrails: content reflows, while dense tables retain a usable
+   horizontal scroll area instead of shrinking text below accessible sizes. */
+@media (min-width:1920px){
+  html[data-era="modern"] main{max-width:1920px;padding-left:clamp(72px,6vw,160px);padding-right:clamp(72px,6vw,160px)}
+  html[data-era="modern"] .sidebar{padding-left:clamp(48px,6vw,160px);padding-right:clamp(48px,6vw,160px)}
+  html[data-era="modern"] .ops-header{min-height:300px}
+}
+@media (max-width:1100px){
+  html[data-era="modern"] .ops-header{padding:clamp(24px,4vw,38px)}
+  html[data-era="modern"] .world-clock-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media (max-width:760px){
+  html[data-era="modern"] main{padding:24px 16px 42px}
+  html[data-era="modern"] .topbar{height:auto;min-height:0;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;padding:9px 16px}
+  html[data-era="modern"] .topbar .breadcrumb,html[data-era="modern"] .topbar time{display:none}
+  html[data-era="modern"] .theme-control{margin-left:0;gap:5px;font-size:9px}
+  html[data-era="modern"] .theme-control select{width:auto;min-width:0;max-width:112px;min-height:34px;padding:5px 7px}
+  html[data-era="modern"] .ops-header{display:grid;gap:22px;margin-bottom:18px;padding:26px 20px;min-height:0}
+  html[data-era="modern"] .ops-header h1{font-size:clamp(29px,9vw,40px);overflow-wrap:anywhere}
+  html[data-era="modern"] .ops-header p{font-size:13px}
+  html[data-era="modern"] .ops-header::after{right:-310px;top:-80px;opacity:.25}
+  html[data-era="modern"] .ops-clock{width:100%;min-width:0;text-align:left}
+  html[data-era="modern"] .control-strip{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:18px}
+  html[data-era="modern"] .control-strip article{min-width:0;padding:13px 14px}
+  html[data-era="modern"] .control-strip strong{font-size:28px}
+  html[data-era="modern"] .world-clock-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  html[data-era="modern"] .world-clock{min-width:0}
+  html[data-era="modern"] .panel{padding:18px}
+  html[data-era="modern"] .panel.world-clocks{padding:18px}
+  html[data-era="modern"] .table-wrap{margin-inline:-18px;padding-inline:18px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  html[data-era="modern"] table{min-width:680px}
+}
+@media (max-width:420px){
+  html[data-era="modern"] .sidebar{padding-inline:12px}
+  html[data-era="modern"] .sidebar nav{justify-content:flex-start}
+  html[data-era="modern"] .topbar{justify-content:space-between;padding-inline:12px}
+  html[data-era="modern"] .theme-control{width:calc(50% - 4px);justify-content:space-between}
+  html[data-era="modern"] .theme-control select{max-width:92px}
+  html[data-era="modern"] .appearance-control{width:100%}
+  html[data-era="modern"] .appearance-control select{max-width:none;flex:1}
+  html[data-era="modern"] main{padding-inline:12px}
+  html[data-era="modern"] .ops-header{padding:22px 16px}
+  html[data-era="modern"] .control-strip{grid-template-columns:1fr}
+  html[data-era="modern"] .world-clock-grid{grid-template-columns:1fr}
+  html[data-era="modern"] .panel{padding:16px}
+}
+html[data-appearance-transition] body,html[data-appearance-transition] .topbar,html[data-appearance-transition] .sidebar,html[data-appearance-transition] .panel,html[data-appearance-transition] .stat,html[data-appearance-transition] input,html[data-appearance-transition] select,html[data-appearance-transition] textarea{transition:background-color 190ms ease,color 190ms ease,border-color 190ms ease,box-shadow 190ms ease}
+@media(prefers-reduced-motion:reduce){html[data-appearance-transition] *{transition:none!important}}
