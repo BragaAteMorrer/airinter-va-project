@@ -71,7 +71,8 @@ public sealed record AircraftSnapshot(
     double? PitchDegrees = null,
     double? BankDegrees = null,
     double? TouchdownVerticalSpeedFeetPerMinute = null,
-    bool? ThrustStable = null);
+    bool? ThrustStable = null,
+    string? AircraftModel = null);
 
 /// <summary>
 /// Boundary between the ACARS core and simulator-specific code. Connectors must
