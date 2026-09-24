@@ -52,6 +52,37 @@ dans les réponses API, les diagnostics Hermès ou les logs d'activité. Il faut
 
 Les positions et événements non envoyés sont conservés localement après une coupure. Après un redémarrage, le pilote doit explicitement reprendre le vol : l'application ne rattache jamais silencieusement des données à un ancien PIREP.
 
+### Hermès Datalink
+
+Hermès dispose d'un transport opérationnel bidirectionnel lié à une
+`operation_id` Prométhée.
+
+Le contrat v1 distingue les catégories `OPS`, `DISPATCH`, `WEATHER`,
+`SYSTEM` et `CREW`, ainsi que les priorités `NORMAL`, `HIGH` et
+`URGENT`. Un message peut exiger un accusé de réception (`requires_ack`)
+et répondre à un message précédent via `reply_to`.
+
+Le client est **local-first** :
+
+- un message cockpit est écrit dans `datalink.json` avant tout appel réseau ;
+- chaque envoi possède un `client_message_id` UUID afin que les retries
+  serveur soient idempotents ;
+- les ACK sont eux aussi mis en file locale ;
+- une coupure Prométhée laisse le vol et la messagerie utilisables ;
+- Hermès retente automatiquement la synchronisation pendant un vol actif et
+  l'interface Datalink peut la déclencher manuellement.
+
+Prométhée utilise pour ce lot un stockage JSON verrouillé dans
+`storage/app/promethee/datalink`. Aucun schéma phpVMS n'est modifié. Ce
+stockage constitue le transport v1 ; le futur Dispatcher Desk consommera le
+même service et pourra remplacer la persistance sans casser le contrat Hermès.
+
+Les routes pilote sont sous
+`/api/v1/operations/{operation}/datalink`. Une surface admin protégée sous
+`/admin/promethee/datalink/messages` permet déjà au futur Dispatcher
+d'injecter, lire et acquitter les messages sans exposer cette capacité aux
+pilotes.
+
 ### Aircraft capabilities et adapters
 
 Hermès maintient désormais un profil de capacités **par avion et par
