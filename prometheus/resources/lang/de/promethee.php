@@ -10,6 +10,6 @@
         'your_progress' => 'IHR FORTSCHRITT', 'pilot_logbook' => 'Pilotenflugbuch', 'validated_flights' => 'In Ihrem Flugbuch bestätigte Flüge', 'recent_activity' => 'Letzte Aktivitäten', 'latest_accepted_pireps' => 'LETZTE AKZEPTIERTE PIREPs', 'view_operations_room' => 'Betriebszentrale anzeigen', 'time' => 'Zeit', 'airport' => 'Flughafen', 'no_accepted_pireps' => 'Kein akzeptierter PIREP.',
     ],
     'navigation_welcome'=>'Willkommen', 'navigation_pilot'=>'Pilotenbereich', 'navigation_company'=>'Fluggesellschaft', 'navigation_operations'=>'Flugbetrieb', 'navigation_private'=>'Privat',
-    'navigation_menu'=>['settings'=>'Einstellungen', 'flight_map'=>'Flugkarte', 'reports'=>'Meine Berichte', 'bookings'=>'Meine Buchungen', 'downloads'=>'Downloads', 'live_flights'=>'Live-Flüge'],
+    'navigation_menu'=>['settings'=>'Einstellungen', 'flight_map'=>'Flugkarte', 'reports' => 'Meine Berichte', 'all_reports' => 'Alle Berichte', 'my_reports' => 'Meine Berichte', 'bookings'=>'Meine Buchungen', 'downloads'=>'Downloads', 'live_flights'=>'Live-Flüge'],
     'appearance'=>'Darstellung', 'appearance_style'=>'Farbdarstellung', 'appearance_light'=>'Tag', 'appearance_dark'=>'Nacht',
 ]);
