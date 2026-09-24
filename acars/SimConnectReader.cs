@@ -25,7 +25,7 @@ public sealed class SimConnectReader : ISimulatorConnector
 
     private IntPtr handle; private readonly Dispatch callback;
     private string? aircraftTitle;
-    private string? aircraftIcao;
+    private string? aircraftModel;
     public Sample? Latest { get; private set; }
     public string Status { get; private set; } = "Simulateur non détecté";
     public event Action<Sample>? Received;
@@ -80,14 +80,14 @@ public sealed class SimConnectReader : ISimulatorConnector
             return;
         }
         if(requestId==ModelRequestId){
-            aircraftIcao=ReadFixedString(data,length,128);
+            aircraftModel=ReadFixedString(data,length,128);
             return;
         }
         if(requestId!=MainRequestId||length<40+definitions.Length*8)return;
         var v=new double[definitions.Length];Marshal.Copy(IntPtr.Add(data,40),v,0,v.Length);if(v.Any(x=>!double.IsFinite(x))||Math.Abs(v[0])>90||Math.Abs(v[1])>180)return;
         Latest=new Sample(Guid.NewGuid(),DateTimeOffset.UtcNow,v[0],v[1],v[2],v[3],v[4],v[5],v[6],v[7],v[8],v[9]!=0,v[10],v[11]>=99,v[12],v[13],v[14]!=0,v[15],v[16],v[17]!=0,
             v[18]!=0,v[19]!=0,v[20]!=0,v[21]!=0,v[22]!=0,v[23]!=0,v[24]!=0,v[25]);
-        LatestSnapshot=Latest.ToSnapshot() with { AircraftTitle=aircraftTitle, AircraftIcao=aircraftIcao };
+        LatestSnapshot=Latest.ToSnapshot() with { AircraftTitle=aircraftTitle, AircraftModel=aircraftModel };
         Status="Connecté à MSFS";Received?.Invoke(Latest); SnapshotReceived?.Invoke(LatestSnapshot);
     }
     private static string? ReadFixedString(IntPtr data,uint length,int size){
@@ -97,7 +97,7 @@ public sealed class SimConnectReader : ISimulatorConnector
     }
     private void Close(){
         if(handle!=IntPtr.Zero){SimConnect_Close(handle);handle=IntPtr.Zero;}
-        Latest=null;LatestSnapshot=null;aircraftTitle=null;aircraftIcao=null;
+        Latest=null;LatestSnapshot=null;aircraftTitle=null;aircraftModel=null;
     } public void Dispose()=>Close();
     [UnmanagedFunctionPointer(CallingConvention.StdCall)] private delegate void Dispatch(IntPtr data,uint length,IntPtr context);
     [DllImport("SimConnect.dll",CharSet=CharSet.Ansi)] private static extern int SimConnect_Open(out IntPtr handle,string name,IntPtr window,uint message,IntPtr signal,uint index);
