@@ -93,6 +93,8 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::post('/calendar', [PortalController::class,'saveEvent'])->name('calendar.save');
         Route::delete('/calendar/{id}', [PortalController::class,'deleteEvent'])->name('calendar.delete');
         Route::post('/pilots/{id}', [PortalController::class,'saveMember'])->name('pilots.save');
+        Route::get('/tarifs-bbr', [PortalController::class,'bbrSettings'])->name('bbr');
+        Route::post('/tarifs-bbr', [PortalController::class,'saveBbrSettings'])->name('bbr.save');
         Route::get('/economy', [PortalController::class,'economy'])->name('economy');
         Route::get('/economy/flight-prices/edit', [PortalController::class,'flightPriceEditor'])->name('economy.flight-prices.edit');
         Route::get('/economy/flight-prices/{flight}/edit', [PortalController::class,'flightPriceEdit'])->name('economy.flight-prices.line-edit');
