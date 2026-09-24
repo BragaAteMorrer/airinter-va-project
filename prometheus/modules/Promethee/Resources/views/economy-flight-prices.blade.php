@@ -64,7 +64,7 @@
 </section>
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script>
 (() => {
  const ids=['airline','origin','dpt-airport','arrival','arr-airport','route']; const fields=Object.fromEntries(ids.map(id=>[id,document.querySelector('#filter-'+id)]));
@@ -77,4 +77,4 @@
  Object.values(fields).forEach(field=>field.addEventListener('input',apply)); document.querySelectorAll('input[name="flight_ids[]"]').forEach(box=>box.addEventListener('change',count)); document.querySelector('#flight-select-all').addEventListener('change',event=>{ rows.filter(row=>!row.hidden).forEach(row=>row.querySelector('input[name="flight_ids[]"]').checked=event.target.checked); count(); }); count();
 })();
 </script>
-@endsection
+@endpush
