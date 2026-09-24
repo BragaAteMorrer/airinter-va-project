@@ -55,6 +55,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start-acars.ps1
 - Grille tarifaire bleu/blanc/rouge configurable.
 - Bulletin sécurité mensuel anonymisé à partir des PIREPs et de la télémétrie.
 - API télémétrie Prométhée.
+- SOP Engine Air Inter : faits FDM Hermès, règles compagnie administrables, revue pilote et alertes Dispatch sous `/admin/promethee/sop`.
 - ACARS Windows local avec tampon disque et dépôt de PIREP.
 - Espace administration protégé sous `/admin/promethee` (pilotage, règles de progression, tarifs, réseau et messagerie).
 - Recalcul badges/grades : `php artisan promethee:progression-recalculate`, exécuté chaque heure par le scheduler Laravel.

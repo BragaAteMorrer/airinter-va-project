@@ -62,10 +62,10 @@ public sealed class ReferenceFlightE2ETests
         Assert.Equal(FlightPhase.In, engine.Phase);
         Assert.Contains(events, x => x.Type == "IN");
 
-        Assert.Single(events.Where(x => x.Type == "OUT"));
-        Assert.Single(events.Where(x => x.Type == "OFF"));
-        Assert.Single(events.Where(x => x.Type == "ON"));
-        Assert.Single(events.Where(x => x.Type == "IN"));
+        Assert.Single(events, x => x.Type == "OUT");
+        Assert.Single(events, x => x.Type == "OFF");
+        Assert.Single(events, x => x.Type == "ON");
+        Assert.Single(events, x => x.Type == "IN");
     }
 
     [Fact]
@@ -112,6 +112,7 @@ public sealed class ReferenceFlightE2ETests
 
         recorder.AcknowledgePositions(recorder.Pending.Select(x => x.Sample.SampleId).ToArray());
         recorder.AcknowledgeEvents(recorder.PendingEvents.Select(x => x.EventId).ToArray());
+        recorder.AcknowledgeFacts(recorder.PendingFacts.Select(x => x.FactId).ToArray());
         recorder.Complete();
         Assert.Null(recorder.Flight);
     }

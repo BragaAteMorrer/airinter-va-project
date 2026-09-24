@@ -25,10 +25,11 @@ public sealed class PrometheeWindow : Window
         new FsuipcConnector(SimulatorKind.FlightSimulator2004, "Microsoft Flight Simulator 2004"),
         new FsuipcConnector(SimulatorKind.FlightSimulatorX, "Microsoft Flight Simulator X"),
         new FsuipcConnector(SimulatorKind.Prepar3D, "Prepar3D")); private readonly FlightRecorder recorder = new();
-    private readonly TelemetryService telemetry; private readonly WebView2 web = new(); private bool ticking;
+    private readonly TelemetryService telemetry; private readonly HermesDatalink datalink; private readonly HermesPresence presence; private readonly WebView2 web = new();
+    private bool ticking; private DateTimeOffset nextDatalinkPollAt = DateTimeOffset.MinValue;
     public PrometheeWindow()
     {
-        telemetry = new(sim, recorder, client); Title = "Hermès ACARS — Air Inter";
+        telemetry = new(sim, recorder, client); datalink = new(client); presence = new(client); Title = "Hermès ACARS — Air Inter";
         Icon = BitmapFrame.Create(new Uri("pack://application:,,,/assets/hermes.ico", UriKind.Absolute));
         Width=1280; Height=840; MinWidth=900; MinHeight=620; WindowStartupLocation=WindowStartupLocation.CenterScreen; WindowState=WindowState.Maximized; Content=web;
         Loaded += async (_, _) => { await StartAsync(); await CheckForUpdatesAsync(); }; Closed += (_, _) => sim.Dispose();
@@ -69,7 +70,24 @@ public sealed class PrometheeWindow : Window
         }
     }
 
-    private async Task Tick() { if (ticking) return; ticking=true; try { await telemetry.Tick(); } finally { ticking=false; } }
+    private async Task Tick()
+    {
+        if (ticking) return;
+        ticking = true;
+        try {
+            await telemetry.Tick();
+            var operationId = recorder.Flight?.OperationId ?? presence.CurrentOperationId;
+            if (client.Connected && !string.IsNullOrWhiteSpace(operationId)
+                && DateTimeOffset.UtcNow >= nextDatalinkPollAt) {
+                await datalink.SyncAsync(operationId);
+                nextDatalinkPollAt = DateTimeOffset.UtcNow.AddSeconds(10);
+            }
+            if (client.Connected && !string.IsNullOrWhiteSpace(operationId))
+                await presence.HeartbeatIfDueAsync(operationId, BuildPresenceHeartbeat());
+        } finally {
+            ticking = false;
+        }
+    }
     private async Task Handle(string raw)
     {
         string id=""; try { using var doc=JsonDocument.Parse(raw); var root=doc.RootElement; id=root.GetProperty("id").GetString() ?? ""; var path=root.GetProperty("path").GetString() ?? ""; var body=root.TryGetProperty("body",out var b)?b.Clone():(JsonElement?)null;
@@ -79,6 +97,16 @@ public sealed class PrometheeWindow : Window
     private async Task<object> Route(string path, JsonElement? body)
     {
         var uri = new Uri("https://promethee.local" + path); var route = uri.AbsolutePath;
+        if (route == "/api/network")
+            return await Network(uri);
+        if (route == "/api/datalink")
+            return await Datalink(uri);
+        if (route == "/api/datalink/send")
+            return await DatalinkSend(uri, body);
+        if (route == "/api/datalink/read")
+            return await DatalinkRead(uri, body);
+        if (route == "/api/datalink/ack")
+            return await DatalinkAck(uri, body);
         if (route.StartsWith("/api/v1/", StringComparison.Ordinal)) {
             var remote = route["/api/".Length..];
             if (body.HasValue && body.Value.ValueKind != JsonValueKind.Null) {
@@ -91,10 +119,101 @@ public sealed class PrometheeWindow : Window
             "/api/status" => Status(), "/api/about" => About(), "/api/login" => await Login(body),
             "/api/start" => Start(body), "/api/pause" => Pause(), "/api/resume" => Resume(),
             "/api/recovery" => Recovery(), "/api/recovery/resume" => ResumeRecovery(), "/api/recovery/abandon" => AbandonRecovery(),
-            "/api/sync" => new { sent=await telemetry.SyncNow() }, "/api/report" => Report(), "/api/file" => await File(),
+            "/api/sync" => new { sent=await telemetry.SyncNow() }, "/api/report" => Report(), "/api/review" => recorder.GetReview() ?? throw new InvalidOperationException("Aucun vol en cours."), "/api/capabilities" => sim.AircraftCapabilities ?? throw new InvalidOperationException("Aucun profil de capacités avion disponible."), "/api/file" => await File(),
             "/api/history" => recorder.History, "/api/diagnostics" => Diagnostics(), "/api/update/check" => await CheckUpdateStatusAsync(), "/api/open-external" => OpenExternal(body),
             _ => throw new InvalidOperationException("Commande ACARS inconnue.") };
     }
+    private async Task<object> Network(Uri uri)
+    {
+        var operationId = OptionalQueryParameter(uri, "operation");
+        if (client.Connected && !string.IsNullOrWhiteSpace(operationId)) {
+            var roster = await presence.HeartbeatIfDueAsync(operationId, BuildPresenceHeartbeat());
+            if (roster.HasValue) return roster.Value;
+        }
+        return await presence.RefreshNetworkAsync();
+    }
+
+    private PresenceHeartbeat BuildPresenceHeartbeat()
+    {
+        var latest = sim.LatestSnapshot;
+        var flight = recorder.Flight;
+        var recording = flight?.Recording == true;
+        var clientState = recorder.RecoveryAvailable ? "RECOVERY" : recording ? "TRACKING" : "READY";
+        var phase = flight?.Phase ?? "STANDBY";
+        var version = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "dev";
+        return new(
+            HermesPresence.SimulatorId(sim),
+            sim.Active?.Descriptor.ConnectorId,
+            phase,
+            latest?.Latitude,
+            latest?.Longitude,
+            latest?.AltitudeMslFeet,
+            version,
+            recording,
+            clientState);
+    }
+
+    private async Task<object> Datalink(Uri uri)
+    {
+        var operationId = QueryParameter(uri, "operation");
+        return await datalink.SyncAsync(operationId);
+    }
+
+    private async Task<object> DatalinkSend(Uri uri, JsonElement? body)
+    {
+        var operationId = QueryParameter(uri, "operation");
+        if (!body.HasValue || body.Value.ValueKind != JsonValueKind.Object)
+            throw new InvalidOperationException("Message datalink manquant.");
+
+        var value = body.Value;
+        var message = value.TryGetProperty("body", out var text) ? text.GetString() ?? "" : "";
+        var category = value.TryGetProperty("category", out var categoryValue) ? categoryValue.GetString() ?? "CREW" : "CREW";
+        var priority = value.TryGetProperty("priority", out var priorityValue) ? priorityValue.GetString() ?? "ROUTINE" : "ROUTINE";
+        var requiresAck = value.TryGetProperty("requires_ack", out var ackValue)
+            && ackValue.ValueKind is JsonValueKind.True or JsonValueKind.False
+            && ackValue.GetBoolean();
+        var replyTo = value.TryGetProperty("reply_to", out var replyValue) && replyValue.ValueKind == JsonValueKind.String
+            ? replyValue.GetString()
+            : null;
+
+        return await datalink.SendAsync(operationId, message, category, priority, requiresAck, replyTo);
+    }
+
+    private async Task<object> DatalinkRead(Uri uri, JsonElement? body)
+    {
+        var operationId = QueryParameter(uri, "operation");
+        if (!body.HasValue || body.Value.ValueKind != JsonValueKind.Object
+            || !body.Value.TryGetProperty("message_id", out var messageValue))
+            throw new InvalidOperationException("Message datalink à marquer comme lu manquant.");
+        return await datalink.MarkReadAsync(operationId, messageValue.GetString() ?? "");
+    }
+
+    private async Task<object> DatalinkAck(Uri uri, JsonElement? body)
+    {
+        var operationId = QueryParameter(uri, "operation");
+        if (!body.HasValue || body.Value.ValueKind != JsonValueKind.Object
+            || !body.Value.TryGetProperty("message_id", out var messageValue))
+            throw new InvalidOperationException("Message datalink à acquitter manquant.");
+        return await datalink.AcknowledgeAsync(operationId, messageValue.GetString() ?? "");
+    }
+
+    private static string QueryParameter(Uri uri, string name)
+    {
+        return OptionalQueryParameter(uri, name)
+            ?? throw new InvalidOperationException($"Paramètre {name} manquant.");
+    }
+
+    private static string? OptionalQueryParameter(Uri uri, string name)
+    {
+        foreach (var part in uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries)) {
+            var pair = part.Split('=', 2);
+            if (Uri.UnescapeDataString(pair[0]) != name) continue;
+            var value = pair.Length > 1 ? Uri.UnescapeDataString(pair[1].Replace("+", " ")) : "";
+            if (!string.IsNullOrWhiteSpace(value)) return value;
+        }
+        return null;
+    }
+
     private async Task<object> CheckUpdateStatusAsync()
     {
         try {
@@ -139,9 +258,11 @@ public sealed class PrometheeWindow : Window
         simLostAt=sim.LostAt,
         simRecoveredAt=sim.RecoveredAt,
         latest=sim.LatestSnapshot,
+        aircraftCapabilities=sim.AircraftCapabilities,
         flight=recorder.Flight,
+        review=recorder.GetReview(),
         track=recorder.Track,
-        pending=recorder.Pending.Count+recorder.PendingEvents.Count,
+        pending=recorder.Pending.Count+recorder.PendingEvents.Count+recorder.PendingFacts.Count,
         recoveryAvailable=recorder.RecoveryAvailable,
         recovery=recorder.GetRecoveryInfo(),
         syncState=telemetry.SyncState,
@@ -150,6 +271,10 @@ public sealed class PrometheeWindow : Window
         syncFailures=telemetry.ConsecutiveFailures,
         syncError=telemetry.LastSyncError,
         remoteConfiguration=recorder.RemoteConfiguration,
+        datalinkLastSuccessfulSyncAt=datalink.LastSuccessfulSyncAt,
+        datalinkError=datalink.LastError,
+        presenceLastHeartbeatAt=presence.LastHeartbeatAt,
+        presenceError=presence.LastError,
         warning=recorder.Warning
     };
     private object About() => new {
@@ -161,12 +286,18 @@ public sealed class PrometheeWindow : Window
         simulator=sim.Status, detectedSimulators=SimulatorDetector.DetectRunning(),
         activeConnector=sim.Active?.Descriptor, connectors=sim.Connectors,
         simLinkState=sim.LinkState, simLostAt=sim.LostAt, simRecoveredAt=sim.RecoveredAt,
-        latest=sim.LatestSnapshot, flight=recorder.Flight,
+        latest=sim.LatestSnapshot, aircraftCapabilities=sim.AircraftCapabilities, flight=recorder.Flight, review=recorder.GetReview(),
         pendingPositions=recorder.Pending.Count, pendingEvents=recorder.PendingEvents.Count,
+        pendingSopFacts=recorder.PendingFacts.Count,
         syncState=telemetry.SyncState, lastSuccessfulSyncAt=telemetry.LastSuccessfulSyncAt,
         nextSyncAttemptAt=telemetry.NextSyncAttemptAt, syncFailures=telemetry.ConsecutiveFailures,
         syncError=telemetry.LastSyncError,
-        remoteConfiguration=recorder.RemoteConfiguration, warning=recorder.Warning
+        remoteConfiguration=recorder.RemoteConfiguration,
+        datalinkLastSuccessfulSyncAt=datalink.LastSuccessfulSyncAt,
+        datalinkError=datalink.LastError,
+        presenceLastHeartbeatAt=presence.LastHeartbeatAt,
+        presenceError=presence.LastError,
+        warning=recorder.Warning
     };
     private async Task<object> Login(JsonElement? body)
     {
@@ -215,6 +346,8 @@ public sealed class PrometheeWindow : Window
         flight = recorder.RecoveryAvailable ? recorder.Flight : null,
         timeline = recorder.RecoveryAvailable ? recorder.Flight?.Timeline : null,
         journal = recorder.RecoveryAvailable ? recorder.Flight?.Journal : null,
+        observations = recorder.RecoveryAvailable ? recorder.Flight?.Observations : null,
+        review = recorder.RecoveryAvailable ? recorder.GetReview() : null,
         track = recorder.RecoveryAvailable ? recorder.Track : []
     };
 
@@ -233,7 +366,25 @@ public sealed class PrometheeWindow : Window
         return new { ok = true, archived = true };
     }
 
-    private object Report() { var f=recorder.Flight ?? throw new InvalidOperationException("Aucun vol en cours."); return new {phase=f.Phase,distance=f.Distance,airborneMinutes=(int)Math.Round(f.AirborneSeconds/60)}; }
-    private async Task<object> File() { await TelemetryService.SendPending(client, recorder); var f=recorder.Flight ?? throw new InvalidOperationException("Aucun vol en cours."); if (f.Phase != "IN") throw new InvalidOperationException("Attendez l’arrivée au parking avant de déposer le PIREP."); await client.Send($"pireps/{Uri.EscapeDataString(f.PirepId)}/file", new { distance=Math.Round(f.Distance,2), flight_time=Math.Max(1,(int)Math.Round(f.AirborneSeconds/60)), fuel_used=Math.Round(f.FuelUsed), block_time=Math.Max(1,(int)Math.Round(((f.BlockOn ?? DateTimeOffset.UtcNow)-f.BlockOff!.Value).TotalMinutes)), block_off_time=f.BlockOff, block_on_time=f.BlockOn, created_at=f.BlockOn, landing_rate=f.LandingRate }); recorder.Complete(); return new {ok=true}; }
+    private object Report() => recorder.GetReview() ?? throw new InvalidOperationException("Aucun vol en cours.");
+    private async Task<object> File()
+    {
+        await TelemetryService.SendPending(client, recorder);
+        var f = recorder.Flight ?? throw new InvalidOperationException("Aucun vol en cours.");
+        if (f.Phase != "IN") throw new InvalidOperationException("Attendez l’arrivée au parking avant de déposer le PIREP.");
+        var review = recorder.GetReview() ?? throw new InvalidOperationException("Flight Review indisponible.");
+        await client.Send($"pireps/{Uri.EscapeDataString(f.PirepId)}/file", new {
+            distance=Math.Round(f.Distance,2),
+            flight_time=Math.Max(1,(int)Math.Round(f.AirborneSeconds/60)),
+            fuel_used=Math.Round(f.FuelUsed),
+            block_time=Math.Max(1,(int)Math.Round(((f.BlockOn ?? DateTimeOffset.UtcNow)-f.BlockOff!.Value).TotalMinutes)),
+            block_off_time=f.BlockOff,
+            block_on_time=f.BlockOn,
+            created_at=f.BlockOn,
+            landing_rate=f.LandingRate
+        });
+        recorder.Complete();
+        return new { ok=true, review };
+    }
     private static string UserMessage(Exception e) => e is InvalidOperationException ? e.Message : "Une erreur inattendue est survenue. Réessayez plus tard.";
 }
