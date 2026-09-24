@@ -44,6 +44,28 @@ public sealed class FlightReviewTests
     }
 
     [Fact]
+    public void Connector_unknown_bank_remains_unknown_in_recorder_review()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "AirInter-Hermes-Review-Tests", Guid.NewGuid().ToString("N"));
+        var recorder = new FlightRecorder(folder);
+        var t = DateTimeOffset.Parse("2026-09-24T18:00:00Z");
+
+        recorder.Start("https://promethee.example", "pirep-unknown", A(t, true, 0, 0, 0, true, bank: null));
+        recorder.Capture(A(t.AddSeconds(5), true, 8, 0, 0, false, bank: null));
+        recorder.Capture(A(t.AddSeconds(10), false, 150, 80, 1300, false, bank: null));
+        recorder.Capture(A(t.AddSeconds(20), false, 250, 3500, 1500, false, gearDown: false, bank: null));
+        recorder.Capture(A(t.AddMinutes(10), false, 380, 9000, -900, false, gearDown: false, bank: null));
+        recorder.Capture(A(t.AddMinutes(12), false, 180, 1200, -700, false, gearDown: true, flaps: 25, bank: null));
+        recorder.Capture(A(t.AddMinutes(12).AddSeconds(5), false, 170, 950, -700, false, gearDown: true, flaps: 25, bank: null));
+
+        var review = recorder.GetReview();
+
+        Assert.NotNull(review);
+        Assert.Equal("UNKNOWN", review!.Approach1000Status);
+        Assert.Contains(review.Observations, x => x.Code == "APPROACH_1000_UNKNOWN");
+    }
+
+    [Fact]
     public void Fdm_observations_survive_crash_recovery()
     {
         var folder = Path.Combine(Path.GetTempPath(), "AirInter-Hermes-Review-Tests", Guid.NewGuid().ToString("N"));
@@ -68,6 +90,34 @@ public sealed class FlightReviewTests
         var review = recovered.GetReview();
         Assert.Equal("STABLE", review!.Approach1000Status);
     }
+
+    private static AircraftSnapshot A(
+        DateTimeOffset time,
+        bool onGround,
+        double gs,
+        double agl,
+        double vs,
+        bool parking,
+        bool gearDown = true,
+        double flaps = 0,
+        double? bank = 0) =>
+        new(
+            Guid.NewGuid(),
+            time,
+            Latitude: 48.7,
+            Longitude: 2.3,
+            AltitudeMslFeet: agl + 300,
+            AltitudeAglFeet: agl,
+            IndicatedAirspeedKnots: gs,
+            GroundSpeedKnots: gs,
+            VerticalSpeedFeetPerMinute: vs,
+            HeadingDegrees: 180,
+            FuelWeight: 8000,
+            OnGround: onGround,
+            ParkingBrake: parking,
+            GearDown: gearDown,
+            FlapsPercent: flaps,
+            BankDegrees: bank);
 
     private static Sample S(
         DateTimeOffset time,
