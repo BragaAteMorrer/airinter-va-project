@@ -285,12 +285,12 @@
   type: boolean
   description: 'If no subfleets are assigned to a flight, only company aircraft will be used'
 - key: simbrief.api_key
-  name: 'Simbrief API Key'
+  name: 'SimBrief Company API Key'
   group: simbrief
   value: ''
   options: ''
-  type: string
-  description: 'Your Simbrief API key'
+  type: secret
+  description: 'Company SimBrief API key used server-side by Prométhée. It is never sent to Hermès.'
 - key: simbrief.only_bids
   name: 'Only allow for bids'
   group: simbrief

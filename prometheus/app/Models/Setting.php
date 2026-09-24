@@ -71,8 +71,17 @@ class Setting extends Model
 
     public function getActivitylogOptions(): LogOptions
     {
+        // Setting values can contain credentials (SimBrief, CAPTCHA, webhooks,
+        // etc.). Keep them out of the persisted activity-log payload entirely.
         return LogOptions::defaults()
-            ->logOnly($this->fillable)
+            ->logOnly([
+                'name',
+                'key',
+                'group',
+                'type',
+                'options',
+                'description',
+            ])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }

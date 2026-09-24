@@ -7,6 +7,7 @@ use Modules\Promethee\Http\AcarsOperationsController;
 use Modules\Promethee\Http\AcarsConfigurationController;
 use Modules\Promethee\Http\OperationsV1Controller;
 use Modules\Promethee\Http\HermesReleaseController;
+use Modules\Promethee\Http\SimBriefCallbackController;
 use App\Http\Controllers\Api\AcarsSimBriefController;
 
 // Browsers request this conventional path even though the branded icon lives
@@ -87,6 +88,8 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::get('/identite', [PortalController::class, 'branding'])->name('branding');
         Route::post('/identite', [PortalController::class, 'saveBranding'])->name('branding.save');
         Route::post('/identite/importer', [PortalController::class, 'importBranding'])->name('branding.import');
+        Route::get('/simbrief', [PortalController::class, 'adminSimbrief'])->name('simbrief');
+        Route::post('/simbrief/sync', [PortalController::class, 'syncSimbrief'])->name('simbrief.sync');
         Route::post('/calendar', [PortalController::class,'saveEvent'])->name('calendar.save');
         Route::delete('/calendar/{id}', [PortalController::class,'deleteEvent'])->name('calendar.delete');
         Route::post('/pilots/{id}', [PortalController::class,'saveMember'])->name('pilots.save');
@@ -157,6 +160,12 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::put('/downloads/{file}', [PortalController::class,'updateDownload'])->name('downloads.update');
         Route::delete('/downloads/{file}', [PortalController::class,'deleteDownload'])->name('downloads.delete');
 });
+// SimBrief redirects the browser here after an API generation. The random state token
+// correlates the callback; the OFP is still imported only by the authenticated pilot.
+Route::middleware('web')->get('/simbrief/callback/{state}', SimBriefCallbackController::class)
+    ->where('state', '[A-Za-z0-9]{64}')
+    ->name('promethee.simbrief.callback');
+
 // Update discovery is intentionally public: Hermès checks before the pilot signs in.
 Route::middleware('api')->get('/api/v1/hermes/releases/latest', [HermesReleaseController::class, 'latest']);
 

@@ -20,7 +20,27 @@
                   @endcomponent
                 </p></td>
               <td align="center">
-                @if($setting->type === 'date')
+                @if($setting->type === 'secret' || $setting->key === 'simbrief.api_key')
+                  @php($secretConfigured = trim((string) $setting->value) !== '')
+                  <div class="text-left">
+                    {{ Form::password($setting->id, [
+                        'class' => 'form-control',
+                        'autocomplete' => 'new-password',
+                        'placeholder' => $secretConfigured ? 'Configured — enter a new value to replace it' : 'Not configured',
+                    ]) }}
+                    <small class="text-muted d-block mt-1">
+                      {{ $secretConfigured
+                          ? 'Configured on the server. The stored value is never displayed. Leave this field blank to keep it.'
+                          : 'Not configured. The value will be stored only on Prométhée.' }}
+                    </small>
+                    @if($secretConfigured)
+                      <label class="mt-2 mb-0">
+                        {{ Form::checkbox('_clear_secret['.$setting->id.']', 1, false) }}
+                        Remove the stored credential
+                      </label>
+                    @endif
+                  </div>
+                @elseif($setting->type === 'date')
                   {{ Form::input('text', $setting->id, $setting->value, ['class' => 'form-control', 'id' => 'datepicker']) }}
                 @elseif($setting->type === 'boolean' || $setting->type === 'bool')
                   {{ Form::hidden($setting->id, 0)  }}

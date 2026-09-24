@@ -62,12 +62,12 @@ return [
     /*
      * URL for fetching Simbrief aircraft and airframe data
      */
-    'simbrief_airframes_url' => 'http://www.simbrief.com/api/inputs.airframes.json',
+    'simbrief_airframes_url' => 'https://www.simbrief.com/api/inputs.airframes.json',
 
     /*
      * URL for fetching Simbrief layouts data
      */
-    'simbrief_layouts_url' => 'http://www.simbrief.com/api/inputs.list.json',
+    'simbrief_layouts_url' => 'https://www.simbrief.com/api/inputs.list.json',
 
     /*
      * Your vaCentral API key

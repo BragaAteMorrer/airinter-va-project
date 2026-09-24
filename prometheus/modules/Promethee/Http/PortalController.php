@@ -1579,6 +1579,34 @@ class PortalController extends Controller
         if (!empty($data['rule_id'])) DB::table('promethee_rank_rules')->where('id',$data['rule_id'])->update($payload); else DB::table('promethee_rank_rules')->insert($payload+['created_at'=>now()]);
         return back()->with('success','Règle de grade enregistrée.');
     }
+    public function adminSimbrief()
+    {
+        return $this->page('admin.simbrief', [
+            'apiConfigured' => filled(setting('simbrief.api_key')),
+            'aircraftCount' => \App\Models\SimBriefAircraft::count(),
+            'airframeCount' => \App\Models\SimBriefAirframe::count(),
+            'layoutCount' => \App\Models\SimBriefLayout::count(),
+            'lastSync' => DB::table('promethee_settings')->where('key', 'simbrief.support_synced_at')->value('value'),
+        ]);
+    }
+
+    public function syncSimbrief(\App\Services\SimBriefService $simbrief)
+    {
+        $airframesOk = $simbrief->getAircraftAndAirframes();
+        $layoutsOk = $simbrief->GetBriefingLayouts();
+
+        if (!$airframesOk || !$layoutsOk) {
+            return back()->withErrors(['simbrief' => 'La synchronisation SimBrief est incomplète. Consultez les logs serveur avant de réessayer.']);
+        }
+
+        DB::table('promethee_settings')->updateOrInsert(
+            ['key' => 'simbrief.support_synced_at'],
+            ['value' => now('UTC')->toIso8601String(), 'created_at' => now(), 'updated_at' => now()]
+        );
+
+        return back()->with('success', 'Avions, airframes et layouts SimBrief synchronisés.');
+    }
+
     public function branding(BrandingService $branding) {
         return $this->page('admin.branding', ['logos' => $branding->logos(), 'branding' => $branding->active()]);
     }

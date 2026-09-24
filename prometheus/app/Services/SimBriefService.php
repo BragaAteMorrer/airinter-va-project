@@ -117,10 +117,30 @@ class SimBriefService extends Service
         array $payload,
         array $fares = []
     ): ?SimBrief {
+        $xml = '<OFP>'.self::arrayToXml($payload).'</OFP>';
+
+        return $this->persistFetchedXml($user_id, $ofp_id, $flight_id, $ac_id, $xml, $fares);
+    }
+
+    /**
+     * Persist an OFP already returned by SimBrief without downloading it again.
+     * Keeping the original XML intact is important: SimBrief arrays and repeated
+     * nodes do not round-trip reliably through the legacy json=1 representation.
+     */
+    public function persistFetchedXml(
+        string $user_id,
+        string $ofp_id,
+        string $flight_id,
+        string $ac_id,
+        string $body,
+        array $fares = []
+    ): ?SimBrief {
         try {
-            $xml = simplexml_load_string('<OFP>'.self::arrayToXml($payload).'</OFP>', SimBriefXML::class);
-            if (!$xml) {
-                Log::error('SimBrief | Unable to convert fetched OFP to XML', ['ofp_id' => $ofp_id]);
+            /** @var SimBriefXML|false $ofp */
+            $ofp = simplexml_load_string($body, SimBriefXML::class);
+            if (!$ofp) {
+                Log::error('SimBrief | Unable to parse fetched OFP XML', ['ofp_id' => $ofp_id]);
+
                 return null;
             }
 
@@ -128,28 +148,38 @@ class SimBriefService extends Service
                 'user_id' => $user_id,
                 'flight_id' => $flight_id,
                 'aircraft_id' => $ac_id,
-                'ofp_xml' => $xml->asXML(),
+                'ofp_xml' => $ofp->asXML(),
             ];
+
             if (!empty($fares)) {
                 $attrs['fare_data'] = json_encode($fares);
             }
 
-            $acarsXml = $this->getAcarsOFP($xml);
+            $acarsXml = $this->getAcarsOFP($ofp);
             if (!empty($acarsXml)) {
                 $attrs['acars_xml'] = $acarsXml->asXML();
             } else {
-                $acarsBody = str_replace('<OFP>', '<VMSAcars Type="FlightPlan" version="1.0" generated="'.time().'">', $xml->asXML());
+                $acarsBody = str_replace(
+                    '<OFP>',
+                    '<VMSAcars Type="FlightPlan" version="1.0" generated="'.time().'">',
+                    $ofp->asXML()
+                );
                 $acarsBody = str_replace('</OFP>', '</VMSAcars>', $acarsBody);
                 $acars = simplexml_load_string($acarsBody);
-                if ($acars) $attrs['acars_xml'] = $acars->asXML();
+                if ($acars) {
+                    $attrs['acars_xml'] = $acars->asXML();
+                }
             }
 
             return SimBrief::updateOrCreate(['id' => $ofp_id], $attrs);
         } catch (\Throwable $e) {
-            Log::error('SimBrief | Failed to persist fetched OFP', [
-                'ofp_id' => $ofp_id, 'flight_id' => $flight_id,
-                'aircraft_id' => $ac_id, 'error' => $e->getMessage(),
+            Log::error('SimBrief | Failed to persist fetched OFP XML', [
+                'ofp_id' => $ofp_id,
+                'flight_id' => $flight_id,
+                'aircraft_id' => $ac_id,
+                'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -184,8 +214,6 @@ class SimBriefService extends Service
             }
         } catch (GuzzleException $e) {
             Log::error('Simbrief HTTP Error: '.$e->getMessage());
-            dd($e);
-
             return null;
         }
 
@@ -273,7 +301,7 @@ class SimBriefService extends Service
      * Get Aircraft and Airframe Data from SimBrief
      * Insert or Update relevant models, for proper and detailed flight planning
      */
-    public function getAircraftAndAirframes()
+    public function getAircraftAndAirframes(): bool
     {
         $url = config('phpvms.simbrief_airframes_url');
         $sbdata = Http::get($url);
@@ -311,16 +339,20 @@ class SimBriefService extends Service
                     'details' => json_encode($ac),
                 ]);
             }
-        } else {
-            Log::error('SimBrief | An Error Occured while trying to get aircraft and airframe data!');
+
+            return true;
         }
+
+        Log::error('SimBrief | An Error Occured while trying to get aircraft and airframe data!');
+
+        return false;
     }
 
     /**
      * Get OFP Layouts from SimBrief
      * Insert or Update relevant model for proper flight planning
      */
-    public function GetBriefingLayouts()
+    public function GetBriefingLayouts(): bool
     {
         $url = config('phpvms.simbrief_layouts_url');
         $sbdata = Http::get($url);
@@ -341,8 +373,12 @@ class SimBriefService extends Service
                     'name_long' => $sb['name_long'],
                 ]);
             }
-        } else {
-            Log::error('SimBrief | An Error Occured while trying to get layout data!');
+
+            return true;
         }
+
+        Log::error('SimBrief | An Error Occured while trying to get layout data!');
+
+        return false;
     }
 }

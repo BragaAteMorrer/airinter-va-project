@@ -40,6 +40,16 @@ jobs:
           fi
       - name: Validate Hermes interface JavaScript
         run: node --check acars/wwwroot/app.js
+      - name: Guard Air Inter-only Hermès authentication
+        shell: bash
+        run: |
+          set -euo pipefail
+          forbidden="$(git grep -nEI '(ConfigureApiKey|X-API-Key|Connexion avancée|/api/config)' -- acars || true)"
+          if [[ -n "$forbidden" ]]; then
+            echo "Legacy generic authentication must not return to Hermès:"
+            echo "$forbidden"
+            exit 1
+          fi
 
   hermes:
     name: Hermes tests
@@ -118,6 +128,13 @@ jobs:
           php -l modules/Promethee/routes.php
           php -l app/Http/Controllers/Api/AcarsSessionController.php
           php -l app/Http/Controllers/Api/AcarsSimBriefController.php
+          php -l app/Services/SimBriefService.php
+          php -l modules/Promethee/Http/SimBriefCallbackController.php
+          php -l modules/Promethee/Services/SimBriefApiSessionService.php
+          php -l tests/SimBriefApiSessionServiceTest.php
+          php -l tests/SimBriefTest.php
+          php -l app/Http/Controllers/Admin/SettingsController.php
+          php -l app/Models/Setting.php
           php -l app/Providers/RouteServiceProvider.php
           php -l modules/Promethee/Config/departure-board.php
           php -l app/Console/Commands/CheckPrometheeTranslations.php

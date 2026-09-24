@@ -348,4 +348,35 @@ final class SimBriefTest extends TestCase
         $this->assertEquals(1, $all_briefs->count());
         $this->assertEquals($sb_ignored->id, $all_briefs[0]->id);
     }
+
+    public function test_persist_fetched_xml_preserves_native_ofp(): void
+    {
+        $userinfo = $this->createUserData();
+        $user = $userinfo['user'];
+        $aircraft = $userinfo['aircraft']->first();
+        $flight = Flight::factory()->create([
+            'dpt_airport_id' => 'OMAA',
+            'arr_airport_id' => 'OMDB',
+        ]);
+
+        $this->mockXmlResponse(['simbrief/acars_briefing.xml']);
+        $xml = file_get_contents(__DIR__.'/data/simbrief/briefing.xml');
+        $this->assertNotFalse($xml);
+
+        /** @var SimBriefService $service */
+        $service = app(SimBriefService::class);
+        $briefing = $service->persistFetchedXml(
+            (string) $user->id,
+            'account-import-test',
+            (string) $flight->id,
+            (string) $aircraft->id,
+            $xml
+        );
+
+        $this->assertNotNull($briefing);
+        $this->assertSame('OMAA', (string) $briefing->xml->origin->icao_code);
+        $this->assertSame('OMDB', (string) $briefing->xml->destination->icao_code);
+        $this->assertStringContainsString('<OFP>', $briefing->ofp_xml);
+        $this->assertStringContainsString('<VMSAcars', $briefing->acars_xml);
+    }
 }

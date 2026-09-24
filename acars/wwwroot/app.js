@@ -473,6 +473,7 @@ async function selectOperation(operation) {
   });
   setText($('#selectedFlight'), `${displayFlightIdent(flight)} — ${flight.departure || '?'} → ${flight.arrival || '?'}`);
   const simbrief = operation.simbrief || {};
+  updateSimBriefAvailability(simbrief);
   setText($('#operationBrief'), simbrief.available
     ? `OFP SimBrief disponible · type ${simbrief.type || 'à confirmer'}`
     : `OFP à préparer · type ${simbrief.type || 'à confirmer'}`);
@@ -581,7 +582,28 @@ function applyBriefing(briefing, sourceLabel) {
   updateWorkflow();
 }
 
+function updateSimBriefAvailability(simbrief = selectedOperation?.simbrief || {}) {
+  const available = simbrief.company_api_available === true;
+  const apiButton = document.querySelector('[data-plan-mode="api"]');
+  const apiHint = document.querySelector('[data-plan-panel="api"] .hint');
+  if (apiButton) {
+    apiButton.disabled = !available;
+    apiButton.title = available
+      ? 'Clé API compagnie configurée dans Prométhée'
+      : 'La clé API compagnie doit être configurée dans Prométhée.';
+  }
+  if (apiHint) {
+    apiHint.textContent = available
+      ? 'Mode compagnie disponible : la clé API SimBrief reste sur Prométhée et n’est jamais transmise à Hermès.'
+      : 'Mode compagnie indisponible : configurez la clé API SimBrief dans l’administration Prométhée.';
+  }
+  if (!available && localSettings.flightPlanMode === 'api') setPlanMode('account');
+}
+
 function setPlanMode(mode) {
+  if (mode === 'api' && selectedOperation?.simbrief?.company_api_available === false) {
+    mode = 'account';
+  }
   localSettings.flightPlanMode = mode;
   localStorage.prometheeAcarsSettings = JSON.stringify(localSettings);
   $$('[data-plan-mode]').forEach(button => button.classList.toggle('active', button.dataset.planMode === mode));
@@ -654,7 +676,7 @@ $('#simbriefAccountImportBtn').onclick = async () => {
     const briefing = unwrap(await call(simbriefPath('account/import'), {
       aircraft_id: aircraftId,
       username: username || null,
-      pilot_id: username ? null : pilotId
+      pilot_id: pilotId || null
     }));
     linkedSimBrief = { ...(linkedSimBrief || {}), static_id: briefing.static_id, edit_url: briefing.edit_url };
     const editButton = $('#simbriefAccountEditBtn');
@@ -732,6 +754,7 @@ $('#simbriefBtn').onclick = async () => {
       route: form.elements.route.value.trim(),
       level: form.elements.level.value ? Number(form.elements.level.value) : null
     }));
+    if (!session.state) throw new Error('Prométhée n’a pas créé de session SimBrief valide.');
     const popup = window.open('about:blank', 'PrometheeSimBrief', 'width=900,height=720');
     if (!popup) throw new Error('Autorisez les fenêtres contextuelles pour ouvrir SimBrief.');
     const dispatch = document.createElement('form');
@@ -759,7 +782,7 @@ $('#simbriefBtn').onclick = async () => {
         try {
           const briefing = unwrap(await call(simbriefPath('import'), {
             aircraft_id: aircraftId,
-            ofp_id: session.ofp_id
+            state: session.state
           }));
           applyBriefing(briefing, 'l’API SimBrief');
           return;

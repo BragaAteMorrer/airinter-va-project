@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Modules\Promethee\Services\OperationIdentityService;
+use Modules\Promethee\Services\SimBriefApiSessionService;
 
 class AcarsSimBriefController extends Controller
 {
@@ -24,7 +25,8 @@ class AcarsSimBriefController extends Controller
         private readonly FareService $fareSvc,
         private readonly SimBriefService $simBriefSvc,
         private readonly UserService $userSvc,
-        private readonly OperationIdentityService $operationIdentity
+        private readonly OperationIdentityService $operationIdentity,
+        private readonly SimBriefApiSessionService $apiSessions
     ) {}
 
     /**
@@ -45,21 +47,29 @@ class AcarsSimBriefController extends Controller
         abort_if(empty($type), 422, 'Le type SimBrief de cet appareil n’est pas configuré.');
 
         $timestamp = now()->timestamp;
-        $outputPage = url('/');
-        $outputPageForSignature = str_replace('http://', '', $outputPage);
-        $signatureInput = $flight->dpt_airport_id.$flight->arr_airport_id.$type.$timestamp.$outputPageForSignature;
-        $ofpId = $timestamp.'_'.md5($flight->dpt_airport_id.$flight->arr_airport_id.$type);
+        $staticId = $this->staticId($request, $user->ident, $flight->id, $aircraft->id);
+        $operationId = (string) ($request->input('operation_id') ?: $flight->id);
+        $apiSession = $this->apiSessions->create(
+            (int) $user->id,
+            $operationId,
+            (string) $flight->id,
+            (string) $aircraft->id,
+            $staticId
+        );
+        $outputPage = route('promethee.simbrief.callback', ['state' => $apiSession['state']]);
+        $signatureInput = $flight->dpt_airport_id.$flight->arr_airport_id.$type.$timestamp.$outputPage;
 
         return response()->json([
             'operation_id' => $request->input('operation_id'),
             'worker_url' => 'https://www.simbrief.com/ofp/ofp.loader.api.php',
-            'ofp_id' => $ofpId,
+            'state' => $apiSession['state'],
+            'expires_in' => 1800,
             'flight_id' => $flight->id,
             'aircraft_id' => $aircraft->id,
             'parameters' => [
                 'orig' => $flight->dpt_airport_id,
                 'dest' => $flight->arr_airport_id,
-                'altn' => $plan['alternate'],
+                'altn' => $plan['alternate'] === 'AUTO' ? null : $plan['alternate'],
                 'route' => $plan['route'],
                 'fl' => $plan['level'],
                 'type' => $type,
@@ -67,12 +77,12 @@ class AcarsSimBriefController extends Controller
                 'airline' => $flight->airline->icao,
                 'fltnum' => $flight->flight_number,
                 'callsign' => setting('simbrief.callsign', true) ? $user->ident : $flight->airline->icao.$flight->flight_number,
-                'static_id' => $this->staticId($request, $user->ident, $flight->id, $aircraft->id),
+                'static_id' => $staticId,
                 'planformat' => 'lido',
                 'units' => 'KGS',
                 'navlog' => '1',
                 'maps' => 'detail',
-                'outputpage' => $outputPageForSignature,
+                'outputpage' => $outputPage,
                 'timestamp' => $timestamp,
                 'apicode' => md5($apiKey.$signatureInput),
             ],
@@ -137,34 +147,39 @@ class AcarsSimBriefController extends Controller
 
         [$flight, $aircraft] = $this->getEligibleOperation($flight_id, $attrs['aircraft_id']);
         $staticId = $this->staticId($request, (string) Auth::id(), $flight->id, $aircraft->id);
-        $query = !empty($attrs['username'])
-            ? ['username' => $attrs['username'], 'static_id' => $staticId, 'json' => 1]
-            : ['userid' => $attrs['pilot_id'], 'static_id' => $staticId, 'json' => 1];
 
-        $response = Http::acceptJson()->timeout(15)->get('https://www.simbrief.com/api/xml.fetcher.php', $query);
+        // A Pilot ID lets us address the exact static_id created for this Air Inter
+        // operation. With an alias, SimBrief officially exposes the user's latest
+        // OFP; the route check below prevents attaching an unrelated plan.
+        $query = !empty($attrs['pilot_id'])
+            ? ['userid' => $attrs['pilot_id'], 'static_id' => $staticId]
+            : ['username' => $attrs['username']];
+
+        $response = Http::accept('application/xml')->timeout(15)
+            ->get('https://www.simbrief.com/api/xml.fetcher.php', $query);
         abort_unless($response->successful(), 502, 'SimBrief n’a pas pu retourner le dernier OFP de ce compte.');
-        $ofp = $response->json();
-        abort_unless(is_array($ofp), 502, 'Réponse SimBrief invalide.');
 
-        $origin = strtoupper((string) data_get($ofp, 'origin.icao_code', ''));
-        $destination = strtoupper((string) data_get($ofp, 'destination.icao_code', ''));
+        $body = $response->body();
+        $ofp = @simplexml_load_string($body, \App\Models\SimBriefXML::class);
+        abort_if($ofp === false, 502, 'Réponse XML SimBrief invalide.');
+
+        $origin = strtoupper((string) $ofp->origin->icao_code);
+        $destination = strtoupper((string) $ofp->destination->icao_code);
         abort_unless($origin === strtoupper($flight->dpt_airport_id) && $destination === strtoupper($flight->arr_airport_id), 409,
             "Le dernier OFP SimBrief est {$origin} → {$destination}, mais l’opération sélectionnée est {$flight->dpt_airport_id} → {$flight->arr_airport_id}.");
 
-        // Account mode used to return an ephemeral JSON plan only. Persist the
-        // exact generated OFP in the existing phpVMS SimBrief table as well so
-        // the following PIREP can attach to a concrete SimBrief row.
-        $requestId = (string) data_get($ofp, 'params.request_id', '');
-        abort_if($requestId === '', 502, 'SimBrief n’a pas retourné l’identifiant de l’OFP généré.');
-        // Account import already owns the complete OFP payload returned by
-        // SimBrief. Persist that exact payload instead of downloading it again
-        // through the legacy request-id endpoint.
-        $persisted = $this->simBriefSvc->persistFetchedOfp(
+        $requestId = trim((string) $ofp->params->request_id);
+        abort_if($requestId === '', 502, 'SimBrief n’a pas retourné l’identifiant interne de l’OFP généré.');
+
+        // Persist the original XML unchanged. phpVMS, its SimBriefXML model and
+        // the ACARS flight-plan parser are XML-native, so no lossy JSON -> XML
+        // reconstruction is needed.
+        $persisted = $this->simBriefSvc->persistFetchedXml(
             (string) Auth::id(),
             $requestId,
             (string) $flight->id,
             (string) $aircraft->id,
-            $ofp,
+            $body,
             $this->operationFares($flight, $aircraft)
         );
         abort_if($persisted === null, 502, 'L’OFP SimBrief a été reçu mais sa persistance dans Prométhée a échoué. Consultez les logs SimBrief pour le détail.');
@@ -178,13 +193,13 @@ class AcarsSimBriefController extends Controller
             'aircraft_id' => $aircraft->id,
             'origin' => $origin,
             'destination' => $destination,
-            'alternate' => (string) data_get($ofp, 'alternate.icao_code', ''),
-            'route' => (string) data_get($ofp, 'general.route', ''),
-            'initial_altitude' => (string) data_get($ofp, 'general.initial_altitude', ''),
-            'block_fuel' => (float) data_get($ofp, 'fuel.plan_ramp', 0),
-            'estimated_time_enroute' => (int) data_get($ofp, 'times.est_time_enroute', 0),
-            'generated_at' => data_get($ofp, 'params.time_generated'),
-            'aircraft_type' => data_get($ofp, 'aircraft.icaocode'),
+            'alternate' => (string) $ofp->alternate->icao_code,
+            'route' => (string) $ofp->general->route,
+            'initial_altitude' => (string) $ofp->general->initial_altitude,
+            'block_fuel' => (float) $ofp->fuel->plan_ramp,
+            'estimated_time_enroute' => (int) $ofp->times->est_time_enroute,
+            'generated_at' => (string) $ofp->params->time_generated,
+            'aircraft_type' => (string) $ofp->aircraft->icaocode,
         ]);
     }
 
@@ -193,28 +208,62 @@ class AcarsSimBriefController extends Controller
     {
         $attrs = $request->validate([
             'aircraft_id' => 'required|string',
-            'ofp_id' => ['required', 'string', 'max:100', 'regex:/^[A-Za-z0-9_-]+$/'],
+            'state' => ['nullable', 'string', 'regex:/^[A-Za-z0-9]{64}$/', 'required_without:ofp_id'],
+            'ofp_id' => ['nullable', 'string', 'max:100', 'regex:/^[A-Za-z0-9_-]+$/', 'required_without:state'],
         ]);
 
-        // Recheck authorization on import: callers must not be able to bypass session creation.
-        $this->getEligibleOperation($flight_id, $attrs['aircraft_id']);
+        [$flight, $aircraft] = $this->getEligibleOperation($flight_id, $attrs['aircraft_id']);
+        $ofpId = $attrs['ofp_id'] ?? null;
+        $apiSession = null;
+
+        if (!empty($attrs['state'])) {
+            $apiSession = $this->apiSessions->forUser($attrs['state'], (int) Auth::id());
+            abort_if($apiSession === null, 410, 'La session de génération SimBrief a expiré. Relancez la génération.');
+
+            $sameOperation = (string) ($apiSession['flight_id'] ?? '') === (string) $flight->id
+                && (string) ($apiSession['aircraft_id'] ?? '') === (string) $aircraft->id
+                && (!$request->filled('operation_id')
+                    || (string) ($apiSession['operation_id'] ?? '') === (string) $request->input('operation_id'));
+            abort_unless($sameOperation, 409, 'La réponse SimBrief ne correspond pas à l’opération sélectionnée.');
+
+            $ofpId = $apiSession['ofp_id'] ?? null;
+            abort_if(empty($ofpId), 409, 'SimBrief n’a pas encore renvoyé l’OFP. Terminez la génération dans la fenêtre SimBrief.');
+        }
+
         $simbrief = $this->simBriefSvc->downloadOfp(
             (string) Auth::id(),
-            $attrs['ofp_id'],
-            $flight_id,
-            $attrs['aircraft_id'],
-            $this->operationFares(...$this->getEligibleOperation($flight_id, $attrs['aircraft_id']))
+            (string) $ofpId,
+            (string) $flight->id,
+            (string) $aircraft->id,
+            $this->operationFares($flight, $aircraft)
         );
         abort_if($simbrief === null, 404, 'L’OFP SimBrief n’est pas encore disponible.');
 
         $xml = $simbrief->xml;
+        $origin = strtoupper((string) $xml->origin->icao_code);
+        $destination = strtoupper((string) $xml->destination->icao_code);
+        if ($origin !== strtoupper($flight->dpt_airport_id) || $destination !== strtoupper($flight->arr_airport_id)) {
+            $simbrief->delete();
+            abort(409, "L’OFP SimBrief reçu est {$origin} → {$destination}, mais l’opération sélectionnée est {$flight->dpt_airport_id} → {$flight->arr_airport_id}.");
+        }
+
+        if (!empty($attrs['state'])) {
+            $this->apiSessions->forget($attrs['state']);
+        }
+
+        $staticId = $apiSession['static_id'] ?? null;
 
         return response()->json([
             'operation_id' => $request->input('operation_id'),
             'id' => $simbrief->id,
+            'source' => 'simbrief_company_api',
+            'static_id' => $staticId,
+            'edit_url' => $staticId
+                ? 'https://www.simbrief.com/system/dispatch.php?editflight=last&static_id='.rawurlencode($staticId)
+                : null,
             'aircraft_id' => $simbrief->aircraft_id,
-            'origin' => (string) $xml->origin->icao_code,
-            'destination' => (string) $xml->destination->icao_code,
+            'origin' => $origin,
+            'destination' => $destination,
             'alternate' => (string) $xml->alternate->icao_code,
             'route' => (string) $xml->general->route,
             'initial_altitude' => (string) $xml->general->initial_altitude,
