@@ -62,10 +62,10 @@ public sealed class ReferenceFlightE2ETests
         Assert.Equal(FlightPhase.In, engine.Phase);
         Assert.Contains(events, x => x.Type == "IN");
 
-        Assert.Single(events.Where(x => x.Type == "OUT"));
-        Assert.Single(events.Where(x => x.Type == "OFF"));
-        Assert.Single(events.Where(x => x.Type == "ON"));
-        Assert.Single(events.Where(x => x.Type == "IN"));
+        Assert.Single(events, x => x.Type == "OUT");
+        Assert.Single(events, x => x.Type == "OFF");
+        Assert.Single(events, x => x.Type == "ON");
+        Assert.Single(events, x => x.Type == "IN");
     }
 
     [Fact]
