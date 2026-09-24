@@ -7,6 +7,81 @@ use Illuminate\Support\Facades\Schema;
 
 class BbrReferenceRepairService
 {
+    public function repairBlankBulkReferences(): int
+    {
+        if (!Schema::hasTable('promethee_pricing')
+            || !Schema::hasTable('promethee_price_history')
+            || !Schema::hasTable('flight_subfleet')
+            || !Schema::hasTable('subfleet_fare')) {
+            return 0;
+        }
+
+        $repaired = 0;
+
+        DB::transaction(function () use (&$repaired) {
+            foreach (DB::table('promethee_pricing')
+                ->where('red_price', '<=', 0)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get() as $pricing) {
+                if (!$this->lastRedMutationWasBlank(
+                    (string) $pricing->flight_id,
+                    (int) $pricing->fare_id
+                )) {
+                    continue;
+                }
+
+                $inherited = $this->inheritedSubfleetPrice(
+                    (string) $pricing->flight_id,
+                    (int) $pricing->fare_id
+                );
+                if ($inherited === null || $inherited <= 0) {
+                    continue;
+                }
+
+                $key = [
+                    'flight_id' => $pricing->flight_id,
+                    'fare_id' => $pricing->fare_id,
+                ];
+                $currentFare = DB::table('flight_fare')->where($key)->first();
+                $before = $currentFare?->price !== null ? (float) $currentFare->price : null;
+                $multiplier = (float) ($pricing->multiplier ?: 1);
+                $after = round($inherited * $multiplier, 2);
+
+                DB::table('promethee_pricing')->where('id', $pricing->id)->update([
+                    'red_price' => round($inherited, 2),
+                    'updated_at' => now(),
+                ]);
+
+                DB::table('flight_fare')->updateOrInsert(
+                    $key,
+                    ['price' => (string) $after, 'updated_at' => now()]
+                );
+
+                DB::table('promethee_price_history')->insert([
+                    'target' => 'ticket',
+                    'subject_id' => (string) $pricing->flight_id,
+                    'field' => 'fare:'.$pricing->fare_id,
+                    'before_price' => $before,
+                    'after_price' => $after,
+                    'context' => json_encode([
+                        'operation' => 'repair_blank_bulk_bbr_reference',
+                        'band' => $pricing->band,
+                        'old_red_price' => (float) $pricing->red_price,
+                        'red_price' => round($inherited, 2),
+                        'reason' => 'blank_bulk_red_mutation_was_cast_to_zero',
+                    ]),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                $repaired++;
+            }
+        });
+
+        return $repaired;
+    }
+
     public function repairLegacyBandOnlyReferences(): int
     {
         if (!Schema::hasTable('promethee_pricing')
@@ -101,6 +176,34 @@ class BbrReferenceRepairService
         })->unique()->values();
 
         return $prices->count() === 1 ? (float) $prices->first() : null;
+    }
+
+    private function lastRedMutationWasBlank(string $flightId, int $fareId): bool
+    {
+        $history = DB::table('promethee_price_history')
+            ->where('target', 'ticket')
+            ->where('subject_id', $flightId)
+            ->where('field', 'fare:'.$fareId)
+            ->orderBy('id')
+            ->get(['context']);
+
+        $lastMutationWasBlank = false;
+        $sawMutation = false;
+
+        foreach ($history as $entry) {
+            $context = json_decode((string) $entry->context, true) ?: [];
+            $operation = $context['operation'] ?? null;
+
+            if (!in_array($operation, ['set', 'add', 'percent'], true)) {
+                continue;
+            }
+
+            $sawMutation = true;
+            $value = $context['value'] ?? null;
+            $lastMutationWasBlank = $value === null || $value === '';
+        }
+
+        return $sawMutation && $lastMutationWasBlank;
     }
 
     private function hasExplicitRedPriceChange(string $flightId, int $fareId): bool

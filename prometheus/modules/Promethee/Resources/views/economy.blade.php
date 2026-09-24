@@ -109,7 +109,7 @@
 </section>
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script>
 (() => {
   const fields=['airline','origin','dpt-airport','arrival','arr-airport','route'].map(name=>document.querySelector('#filter-'+name));
@@ -129,4 +129,4 @@
   document.querySelectorAll('#fuel-scope-form input[name="scopes[]"]').forEach(box=>box.addEventListener('change',countFuel)); countFuel();
 })();
 </script>
-@endsection
+@endpush
