@@ -343,11 +343,11 @@ public sealed class HermesDatalink
             outbox = state?.Outbox ?? [];
             pendingAcks = state?.Acks ?? [];
             Trim();
-        } catch (JsonException) {
+        } catch (Exception exception) when (exception is JsonException or IOException or UnauthorizedAccessException) {
             messages = [];
             outbox = [];
             pendingAcks = [];
-            LastError = "Le cache datalink local était illisible et a été réinitialisé.";
+            LastError = "Le cache datalink local était illisible ou inaccessible et a été réinitialisé.";
         }
     }
 
@@ -367,7 +367,23 @@ public sealed class HermesDatalink
     private void Trim()
     {
         if (messages.Count <= 500) return;
-        var keep = messages.OrderByDescending(x => x.CreatedAt).Take(500).Select(x => x.Id).ToHashSet();
+
+        var protectedIds = new HashSet<string>(
+            pendingAcks.Select(x => x.MessageId)
+                .Concat(outbox.Select(x => "local-" + x.ClientMessageId))
+                .Concat(messages
+                    .Where(x => x.LocalPending || (x.RequiresAck && x.AcknowledgedAt is null))
+                    .Select(x => x.Id)),
+            StringComparer.Ordinal);
+
+        var keep = new HashSet<string>(protectedIds, StringComparer.Ordinal);
+        var room = Math.Max(0, 500 - keep.Count);
+        foreach (var message in messages
+                     .Where(x => !protectedIds.Contains(x.Id))
+                     .OrderByDescending(x => x.CreatedAt)
+                     .Take(room))
+            keep.Add(message.Id);
+
         messages.RemoveAll(x => !keep.Contains(x.Id));
     }
 
