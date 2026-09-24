@@ -123,6 +123,9 @@ jobs:
           php -l modules/Promethee/Http/DatalinkController.php
           php -l modules/Promethee/Services/DatalinkService.php
           php -l tests/DatalinkServiceTest.php
+          php -l modules/Promethee/Http/SopController.php
+          php -l modules/Promethee/Services/SopEngineService.php
+          php -l tests/SopEngineServiceTest.php
           php -l modules/Promethee/Services/OperationIdentityService.php
           php -l modules/Promethee/Services/SafetyAnalyzer.php
           php -l modules/Promethee/Services/AircraftOperationalStateService.php
