@@ -227,7 +227,7 @@ public sealed class FlightRecorder
             return new(
                 Flight.PirepId,
                 Flight.Phase,
-                Flight.Phase == "IN" && Pending.Count == 0 && PendingEvents.Count == 0,
+                Flight.Phase == "IN",
                 Math.Round(Flight.Distance, 2),
                 (int)Math.Round(Flight.AirborneSeconds / 60),
                 block,
