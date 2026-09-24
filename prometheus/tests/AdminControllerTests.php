@@ -6,6 +6,7 @@ use App\Models\Role;
 use App\Models\Setting;
 use App\Models\Subfleet;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 final class AdminControllerTests extends TestCase
 {
@@ -65,6 +66,13 @@ final class AdminControllerTests extends TestCase
         $this->assertSame(
             'replacement-simbrief-secret',
             Setting::where('key', 'simbrief.api_key')->value('value')
+        );
+        $this->assertSame(
+            0,
+            DB::table('activity_log')
+                ->where('properties', 'like', '%replacement-simbrief-secret%')
+                ->count(),
+            'Secret setting values must never be persisted in the activity log.'
         );
 
         $this->actingAs($user, 'web')->post('/admin/settings', [
