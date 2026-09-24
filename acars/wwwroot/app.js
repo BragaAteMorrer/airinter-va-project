@@ -676,7 +676,7 @@ $('#simbriefAccountImportBtn').onclick = async () => {
     const briefing = unwrap(await call(simbriefPath('account/import'), {
       aircraft_id: aircraftId,
       username: username || null,
-      pilot_id: username ? null : pilotId
+      pilot_id: pilotId || null
     }));
     linkedSimBrief = { ...(linkedSimBrief || {}), static_id: briefing.static_id, edit_url: briefing.edit_url };
     const editButton = $('#simbriefAccountEditBtn');
@@ -754,6 +754,7 @@ $('#simbriefBtn').onclick = async () => {
       route: form.elements.route.value.trim(),
       level: form.elements.level.value ? Number(form.elements.level.value) : null
     }));
+    if (!session.state) throw new Error('Prométhée n’a pas créé de session SimBrief valide.');
     const popup = window.open('about:blank', 'PrometheeSimBrief', 'width=900,height=720');
     if (!popup) throw new Error('Autorisez les fenêtres contextuelles pour ouvrir SimBrief.');
     const dispatch = document.createElement('form');
@@ -781,7 +782,7 @@ $('#simbriefBtn').onclick = async () => {
         try {
           const briefing = unwrap(await call(simbriefPath('import'), {
             aircraft_id: aircraftId,
-            ofp_id: session.ofp_id
+            state: session.state
           }));
           applyBriefing(briefing, 'l’API SimBrief');
           return;
