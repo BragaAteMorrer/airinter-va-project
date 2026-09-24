@@ -84,6 +84,26 @@ public sealed class FlightTrackingEngineTests
     }
 
     [Fact]
+    public void Accelerating_takeoff_roll_enters_takeoff_before_off()
+    {
+        var engine = new FlightTrackingEngine();
+        engine.Arm(FlightPhase.Boarding);
+        var t = DateTimeOffset.Parse("2026-09-21T12:00:00Z");
+
+        engine.Process(Snapshot(t, true, 0, 0, 0, true));
+        engine.Process(Snapshot(t.AddSeconds(5), true, 12, 0, 0, false));
+        engine.Process(Snapshot(t.AddSeconds(10), true, 22, 0, 0, false));
+        var roll = engine.Process(Snapshot(t.AddSeconds(14), true, 42, 0, 0, false));
+
+        Assert.Equal(FlightPhase.Takeoff, roll.Phase);
+        Assert.Contains(roll.Events, x => x.Type == "TAKEOFF");
+        Assert.DoesNotContain(roll.Events, x => x.Type == "OFF");
+
+        var airborne = engine.Process(Snapshot(t.AddSeconds(17), false, 145, 50, 1300, false));
+        Assert.Contains(airborne.Events, x => x.Type == "OFF");
+    }
+
+    [Fact]
     public void Go_around_before_touchdown_returns_to_climb_without_on()
     {
         var engine = new FlightTrackingEngine();
