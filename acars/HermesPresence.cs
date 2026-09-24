@@ -64,7 +64,8 @@ public sealed class HermesPresence
 
         try
         {
-            return await HeartbeatNowAsync(operationId, heartbeat);
+            await HeartbeatNowAsync(operationId, heartbeat);
+            return LastNetwork;
         }
         catch (Exception exception) when (exception is InvalidOperationException or HttpRequestException or TaskCanceledException)
         {
