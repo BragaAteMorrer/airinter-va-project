@@ -16,7 +16,7 @@ class SimBriefApiSessionService
 {
     private const TTL_MINUTES = 30;
 
-    public function create(int $userId, string $operationId, string $flightId, string $aircraftId): array
+    public function create(int $userId, string $operationId, string $flightId, string $aircraftId, string $staticId): array
     {
         $state = Str::random(64);
         $session = [
@@ -25,6 +25,7 @@ class SimBriefApiSessionService
             'operation_id' => $operationId,
             'flight_id' => $flightId,
             'aircraft_id' => $aircraftId,
+            'static_id' => $staticId,
             'ofp_id' => null,
             'created_at' => now()->toIso8601String(),
             'completed_at' => null,
