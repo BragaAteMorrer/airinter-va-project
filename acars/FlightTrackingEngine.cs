@@ -75,7 +75,7 @@ public sealed class FlightTrackingEngine
 
         DetectSystemChanges(previous, current, events);
 
-        DetectDepartureFromStand(current, events);
+        DetectDepartureFromStand(previous, current, events);
         DetectTakeoffOrBounce(previous, current, events);
         DetectAirbornePhases(previous, current, events);
         DetectTouchdown(previous, current, events);
@@ -128,7 +128,7 @@ public sealed class FlightTrackingEngine
         _ => FlightPhase.AcarsReady,
     };
 
-    private void DetectDepartureFromStand(AircraftSnapshot current, List<FlightEvent> events)
+    private void DetectDepartureFromStand(AircraftSnapshot before, AircraftSnapshot current, List<FlightEvent> events)
     {
         if (current.OnGround != true) return;
         var gs = current.GroundSpeedKnots ?? 0;
@@ -148,6 +148,19 @@ public sealed class FlightTrackingEngine
                 events.Add(new("OUT", current.RecordedAt, current));
             Transition(FlightPhase.TaxiOut, "TAXI_OUT", current, events);
         }
+
+        // Distinguish an actual takeoff roll from ordinary taxi before the
+        // aircraft becomes airborne. This prevents runway acceleration from
+        // being misclassified as a taxi-speed exceedance.
+        if (Phase == FlightPhase.TaxiOut
+            && before.OnGround == true
+            && before.GroundSpeedKnots is { } previousGs)
+        {
+            var dt = (current.RecordedAt - before.RecordedAt).TotalSeconds;
+            var acceleration = dt is > 0 and <= 10 ? (gs - previousGs) / dt : 0;
+            if (gs >= 30 && acceleration >= 1.5)
+                Transition(FlightPhase.Takeoff, "TAKEOFF", current, events);
+        }
     }
 
     private void DetectTakeoffOrBounce(AircraftSnapshot before, AircraftSnapshot current, List<FlightEvent> events)
@@ -160,6 +173,11 @@ public sealed class FlightTrackingEngine
             landingConfirmed = false;
             Phase = FlightPhase.Landing;
             events.Add(new("BOUNCE", current.RecordedAt, current, bounceCount));
+            return;
+        }
+
+        if (Phase == FlightPhase.Takeoff) {
+            events.Add(new("OFF", current.RecordedAt, current));
             return;
         }
 
