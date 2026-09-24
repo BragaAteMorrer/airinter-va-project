@@ -10,6 +10,6 @@
         'your_progress' => 'あなたの進捗', 'pilot_logbook' => 'パイロットログブック', 'validated_flights' => 'ログブック内の承認済みフライト', 'recent_activity' => '最近の活動', 'latest_accepted_pireps' => '最新の承認済み PIREP', 'view_operations_room' => '運航センターを表示', 'time' => '時刻', 'airport' => '空港', 'no_accepted_pireps' => '承認済みの PIREP はありません。',
     ],
     'navigation_welcome'=>'ようこそ', 'navigation_pilot'=>'パイロットエリア', 'navigation_company'=>'航空会社', 'navigation_operations'=>'運航', 'navigation_private'=>'プライベート',
-    'navigation_menu'=>['settings'=>'設定', 'flight_map'=>'フライトマップ', 'reports'=>'私のレポート', 'bookings'=>'私の予約', 'downloads'=>'ダウンロード', 'live_flights'=>'リアルタイム便'],
+    'navigation_menu'=>['settings'=>'設定', 'flight_map'=>'フライトマップ', 'reports' => '私のレポート', 'all_reports' => 'すべてのレポート', 'my_reports' => '自分のレポート', 'bookings'=>'私の予約', 'downloads'=>'ダウンロード', 'live_flights'=>'リアルタイム便'],
     'appearance'=>'外観', 'appearance_style'=>'配色', 'appearance_light'=>'昼', 'appearance_dark'=>'夜',
 ]);
