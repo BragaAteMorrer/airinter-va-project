@@ -101,6 +101,7 @@ $$('.tab').forEach(button => {
     button.classList.add('active');
     $('#' + button.dataset.tab).classList.add('active');
     if (button.dataset.tab === 'datalink') refreshDatalink();
+    if (button.dataset.tab === 'network') refreshNetwork();
   };
 });
 
@@ -121,6 +122,7 @@ async function login(form) {
     setAuthenticated(true);
     showMessage('#loginMessage', 'Connexion réussie. Chargement de vos opérations…');
     await refreshOperations();
+    await refreshNetwork();
     if (lastStatus?.recoveryAvailable) document.querySelector('[data-tab="record"]').click();
     else document.querySelector('[data-tab="flight"]').click();
   } catch (error) {
@@ -455,6 +457,7 @@ async function selectOperation(operation) {
   selectedAircraft = operation.aircraft?.id ? operation.aircraft : null;
   lastDatalinkSnapshot = null;
   setTimeout(refreshDatalink, 0);
+  setTimeout(refreshNetwork, 0);
   updateWorkflow();
   $$('.operation').forEach(node => node.classList.remove('selected'));
   if (document.activeElement?.classList?.contains('operation')) document.activeElement.classList.add('selected');
@@ -1071,6 +1074,93 @@ $('#datalinkForm').onsubmit = async event => {
   }
 };
 
+
+function networkRead(object, snake, camel = snake) {
+  return object?.[snake] ?? object?.[camel] ?? null;
+}
+
+function renderNetwork(payload) {
+  const data = unwrap(payload) || {};
+  const crews = Array.isArray(data.crews) ? data.crews : [];
+  const operationId = currentDatalinkOperation();
+  const generatedAt = data.generated_at || data.generatedAt;
+  const count = Number(data.online_count ?? data.onlineCount ?? crews.length);
+
+  setText($('#networkCount'), String(count));
+  setText($('#networkOperation'), operationId || '—');
+  setText($('#networkUpdated'), generatedAt
+    ? new Date(generatedAt).toLocaleTimeString('fr-FR', { timeZone: localSettings.timeFormat === 'utc' ? 'UTC' : undefined })
+    : '—');
+
+  const state = $('#networkState');
+  if (state) {
+    state.textContent = count > 0 ? 'ONLINE' : 'STANDBY';
+    state.classList.toggle('ready', count > 0);
+  }
+
+  const badge = $('#networkBadge');
+  if (badge) {
+    badge.hidden = count <= 0;
+    badge.textContent = String(count);
+  }
+
+  const list = $('#networkCrews');
+  if (!list) return;
+  list.replaceChildren();
+
+  if (!crews.length) {
+    const empty = document.createElement('p');
+    empty.className = 'empty';
+    empty.textContent = 'Aucun équipage Hermès connecté actuellement.';
+    list.append(empty);
+    return;
+  }
+
+  crews.forEach(crew => {
+    const pilot = crew.pilot || {};
+    const flight = crew.flight || {};
+    const aircraft = crew.aircraft || {};
+    const item = document.createElement('article');
+    item.className = 'network-crew';
+
+    const heading = document.createElement('div');
+    heading.className = 'network-crew-heading';
+    const title = document.createElement('strong');
+    title.textContent = [pilot.ident || 'PILOT', flight.ident].filter(Boolean).join(' · ');
+    const route = document.createElement('span');
+    route.textContent = [flight.departure, flight.arrival].filter(Boolean).join(' → ') || 'Opération Air Inter';
+    heading.append(title, route);
+
+    const details = document.createElement('p');
+    const phase = crew.phase || 'STANDBY';
+    const simulator = String(crew.simulator || 'unknown').toUpperCase();
+    const plane = [aircraft.registration, aircraft.icao].filter(Boolean).join(' · ') || 'Appareil non affecté';
+    const version = crew.hermes_version || crew.hermesVersion || 'version inconnue';
+    const age = Number(crew.age_seconds ?? crew.ageSeconds ?? 0);
+    details.textContent = `${plane} · ${phase} · ${simulator} · Hermès ${version} · signal ${age}s`;
+
+    item.append(heading, details);
+    list.append(item);
+  });
+}
+
+let networkRefreshing = false;
+async function refreshNetwork() {
+  if (!connected || networkRefreshing) return;
+  networkRefreshing = true;
+  try {
+    const operationId = currentDatalinkOperation();
+    const path = '/api/network' + (operationId ? '?operation=' + encodeURIComponent(operationId) : '');
+    const network = await call(path);
+    renderNetwork(network);
+    showMessage('#networkMessage', '');
+  } catch (error) {
+    showMessage('#networkMessage', error.message, true);
+  } finally {
+    networkRefreshing = false;
+  }
+}
+
 function drawMap(track) {
   const canvas = $('#flightMap');
   const context = canvas.getContext('2d');
@@ -1408,6 +1498,7 @@ drawMap([]);
 refreshStatus();
 setInterval(refreshStatus, 1000);
 setInterval(refreshDatalink, 5000);
+setInterval(refreshNetwork, 15000);
 call('/api/about').then(info => {
   setText($('#build'), 'Version ' + info.version);
 }).catch(() => setText($('#build'), 'Version inconnue'));
