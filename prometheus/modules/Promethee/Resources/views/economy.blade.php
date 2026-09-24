@@ -23,9 +23,10 @@
     <form method="get" action="{{ route('admin.promethee.economy') }}#prix-vols" class="form-grid">
             <label>Compagnie <select id="filter-airline" name="flight_airline"><option value="">Toutes</option>@foreach($airlines as $airline)<option value="{{ $airline->icao }}" @selected(($flightFilters['flight_airline'] ?? '') === $airline->icao)>{{ $airline->name }}</option>@endforeach</select></label>
             <label>Pays de départ <select id="filter-origin" name="flight_origin"><option value="">Tous</option>@foreach($countries as $country)<option value="{{ $country }}" @selected(($flightFilters['flight_origin'] ?? '') === $country)>{{ $country }}</option>@endforeach</select></label>
-            <label>Aéroport de départ <select id="filter-dpt-airport" name="flight_dpt_airport"><option value="">Tous</option>@foreach($airportOptions as $airport)<option value="{{ $airport->icao }}" @selected(($flightFilters['flight_dpt_airport'] ?? '') === $airport->icao)>{{ $airport->icao }} · {{ $airport->name }}</option>@endforeach</select></label>
+            <label>Aéroport de départ <input type="search" id="filter-dpt-airport" name="flight_dpt_airport" list="economy-airports" value="{{ $flightFilters['flight_dpt_airport'] ?? '' }}" placeholder="Rechercher ICAO ou nom" autocomplete="off"></label>
             <label>Pays d’arrivée <select id="filter-arrival" name="flight_arrival"><option value="">Tous</option>@foreach($countries as $country)<option value="{{ $country }}" @selected(($flightFilters['flight_arrival'] ?? '') === $country)>{{ $country }}</option>@endforeach</select></label>
-            <label>Aéroport d’arrivée <select id="filter-arr-airport" name="flight_arr_airport"><option value="">Tous</option>@foreach($airportOptions as $airport)<option value="{{ $airport->icao }}" @selected(($flightFilters['flight_arr_airport'] ?? '') === $airport->icao)>{{ $airport->icao }} · {{ $airport->name }}</option>@endforeach</select></label>
+            <label>Aéroport d’arrivée <input type="search" id="filter-arr-airport" name="flight_arr_airport" list="economy-airports" value="{{ $flightFilters['flight_arr_airport'] ?? '' }}" placeholder="Rechercher ICAO ou nom" autocomplete="off"></label>
+            <datalist id="economy-airports">@foreach($airportOptions as $airport)<option value="{{ $airport->icao }}" label="{{ $airport->name }} · {{ $airport->country }}"></option>@endforeach</datalist>
             <label>Recherche ligne <input id="filter-route" name="flight_search" value="{{ $flightFilters['flight_search'] ?? '' }}" placeholder="ex. LFPO ou ITF452"></label>
             <button type="submit" id="apply-flight-filters">Appliquer les filtres</button>
             <a class="button outline" href="{{ route('admin.promethee.economy') }}#prix-vols">Réinitialiser</a>
@@ -114,7 +115,8 @@
 (() => {
   const fields=['airline','origin','dpt-airport','arrival','arr-airport','route'].map(name=>document.querySelector('#filter-'+name));
   const apply=()=>document.querySelectorAll('#prix-vols tbody tr[data-route]').forEach(row=>{
-    const visible=(!fields[0].value||row.dataset.airline===fields[0].value)&&(!fields[1].value||row.dataset.origin===fields[1].value)&&(!fields[2].value||row.dataset.dptAirport===fields[2].value)&&(!fields[3].value||row.dataset.arrival===fields[3].value)&&(!fields[4].value||row.dataset.arrAirport===fields[4].value)&&(!fields[5].value||row.dataset.route.includes(fields[5].value.toLowerCase()));
+    const departure=fields[2].value.trim().toUpperCase(), arrival=fields[4].value.trim().toUpperCase();
+    const visible=(!fields[0].value||row.dataset.airline===fields[0].value)&&(!fields[1].value||row.dataset.origin===fields[1].value)&&(!departure||row.dataset.dptAirport===departure)&&(!fields[3].value||row.dataset.arrival===fields[3].value)&&(!arrival||row.dataset.arrAirport===arrival)&&(!fields[5].value||row.dataset.route.includes(fields[5].value.toLowerCase()));
     row.hidden=!visible;
   });
   fields.forEach(field=>field.addEventListener('input',apply));
