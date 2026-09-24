@@ -16,6 +16,7 @@
       <button class="tab protected-tab" data-tab="record" disabled>Enregistrement</button>
       <button class="tab protected-tab" data-tab="map" disabled>Suivi du vol</button>
       <button class="tab protected-tab" data-tab="journal" disabled>Journal</button>
+      <button class="tab protected-tab datalink-tab" data-tab="datalink" disabled>Datalink <span id="datalinkBadge" class="nav-badge" hidden>0</span></button>
       <button class="tab protected-tab" data-tab="review" disabled>Flight Review</button>
       <button class="tab protected-tab" data-tab="settings" disabled>Paramètres</button>
     </nav>
@@ -161,6 +162,30 @@
     </section>
     <section id="map" class="panel"><h2>Suivi du vol</h2><canvas id="flightMap" width="960" height="440" aria-label="Trajet enregistré"></canvas><div id="timeline" class="timeline"><p class="empty">En attente d’un vol.</p></div></section>
     <section id="journal" class="panel"><h2>Journal opérationnel</h2><p class="hint">Événements ACARS enregistrés localement et conservés durant une reprise de vol.</p><div id="journalEntries" class="timeline"><p class="empty">En attente d’un vol.</p></div></section>
+    <section id="datalink" class="panel">
+      <div class="workspace-title">
+        <div><span class="kicker">AIR INTER DATALINK</span><h2>OPS / Cockpit</h2><p class="hint">Messages opérationnels liés à l'opération sélectionnée. Les envois et ACK sont conservés localement en cas de coupure.</p></div>
+        <strong id="datalinkState" class="ready-state">STANDBY</strong>
+      </div>
+      <div class="datalink-toolbar">
+        <div><span>Opération</span><strong id="datalinkOperation">—</strong></div>
+        <div><span>Dernière synchro</span><strong id="datalinkLastSync">—</strong></div>
+        <div><span>File locale</span><strong id="datalinkPending">0</strong></div>
+        <button id="datalinkRefreshBtn" type="button">Synchroniser</button>
+      </div>
+      <div id="datalinkMessages" class="datalink-messages"><p class="empty">Sélectionnez une opération Air Inter.</p></div>
+      <form id="datalinkForm" class="datalink-compose">
+        <div class="datalink-compose-meta">
+          <label><span>Type</span><select name="category"><option value="CREW">Crew</option><option value="DISPATCH">Dispatch</option><option value="WEATHER">Weather</option><option value="OPS">Ops</option></select></label>
+          <label><span>Priorité</span><select name="priority"><option value="NORMAL">Normal</option><option value="HIGH">High</option><option value="URGENT">Urgent</option></select></label>
+          <label class="inline-check"><input type="checkbox" name="requires_ack" value="true"> Demander un ACK</label>
+        </div>
+        <label><span>Message</span><textarea name="body" maxlength="2000" rows="4" placeholder="Message à Air Inter OPS…" required></textarea></label>
+        <input type="hidden" name="reply_to" value="">
+        <div class="actions"><button class="primary" type="submit">Envoyer</button><button id="datalinkCancelReplyBtn" type="button" hidden>Annuler la réponse</button></div>
+      </form>
+      <p id="datalinkMessage" class="message" hidden role="status"></p>
+    </section>
     <section id="review" class="panel">
       <div class="workspace-title"><div><span class="kicker">FLIGHT DATA MONITORING</span><h2>Flight Review</h2><p class="hint">Synthèse factuelle du vol. Les observations Hermès ne constituent pas, à elles seules, une pénalité compagnie.</p></div><strong id="reviewState" class="ready-state">EN VOL</strong></div>
       <div class="cards review-cards">
