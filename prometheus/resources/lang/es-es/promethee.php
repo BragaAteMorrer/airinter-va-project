@@ -10,6 +10,6 @@
         'your_progress' => 'TU PROGRESO', 'pilot_logbook' => 'Libro de vuelo del piloto', 'validated_flights' => 'Vuelos validados en tu libro de vuelo', 'recent_activity' => 'Actividad reciente', 'latest_accepted_pireps' => 'ÚLTIMOS PIREPs ACEPTADOS', 'view_operations_room' => 'Ver sala de operaciones', 'time' => 'Hora', 'airport' => 'Aeropuerto', 'no_accepted_pireps' => 'No hay PIREPs aceptados.',
     ],
     'navigation_welcome'=>'Bienvenida', 'navigation_pilot'=>'Área de piloto', 'navigation_company'=>'Compañía', 'navigation_operations'=>'Operaciones', 'navigation_private'=>'Privado',
-    'navigation_menu'=>['settings'=>'Configuración', 'flight_map'=>'Mapa de vuelos', 'reports'=>'Mis informes', 'bookings'=>'Mis reservas', 'downloads'=>'Descargas', 'live_flights'=>'Vuelos en tiempo real'],
+    'navigation_menu'=>['settings'=>'Configuración', 'flight_map'=>'Mapa de vuelos', 'reports' => 'Mis informes', 'all_reports' => 'Todos los informes', 'my_reports' => 'Mis informes', 'bookings'=>'Mis reservas', 'downloads'=>'Descargas', 'live_flights'=>'Vuelos en tiempo real'],
     'appearance'=>'Apariencia', 'appearance_style'=>'Apariencia cromática', 'appearance_light'=>'Día', 'appearance_dark'=>'Noche',
 ]);
