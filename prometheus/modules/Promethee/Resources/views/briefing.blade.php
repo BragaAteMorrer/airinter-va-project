@@ -28,6 +28,17 @@
             <small>{{ $bid?->aircraft?->registration ?: __('promethee_briefing.aircraft_pending') }}</small>
         </article>
         <article>
+            <span>Charge prévue</span>
+            <strong>{{ $loadProfile ? $loadProfile['passengers'].' / '.$loadProfile['capacity'].' pax' : '—' }}</strong>
+            <small>
+                @if($loadProfile)
+                    {{ number_format($loadProfile['load_factor_percent'], 1, ',', ' ') }} % · vol {{ strtoupper($loadProfile['band']) }}
+                @else
+                    Affectez d’abord un appareil dans Hermès
+                @endif
+            </small>
+        </article>
+        <article>
             <span>SimBrief</span>
             <strong>{{ $simbrief ? __('promethee_briefing.ofp_available') : __('promethee_briefing.ofp_missing') }}</strong>
             <small>{{ $simbrief ? optional($simbrief->updated_at)->setTimezone('Europe/Paris')->format('d/m/Y H:i') : __('promethee_briefing.ofp_in_hermes') }}</small>
