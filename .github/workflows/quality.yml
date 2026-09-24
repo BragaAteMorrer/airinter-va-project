@@ -126,6 +126,9 @@ jobs:
           php -l modules/Promethee/Services/SafetyAnalyzer.php
           php -l modules/Promethee/Services/AircraftOperationalStateService.php
           php -l modules/Promethee/Services/DemandProfileService.php
+          php -l modules/Promethee/Services/EconomyFareResolver.php
+          php -l modules/Promethee/Services/BbrReferenceRepairService.php
+          php -l modules/Promethee/Database/migrations/2026_09_24_000013_repair_bbr_red_references.php
           php -l tests/PrometheeDemandEconomyTest.php
           php -l modules/Promethee/routes.php
           php -l app/Http/Controllers/Api/AcarsSessionController.php

@@ -15,7 +15,7 @@ use App\Services\FileService;
 use App\Services\UserService;
 use App\Support\Money;
 use App\Support\Countries;
-use Modules\Promethee\Services\{BrandingService,BulletinService,DemandProfileService,EconomyService,FlightOpsService,SafetyAnalyzer};
+use Modules\Promethee\Services\{BrandingService,BulletinService,DemandProfileService,EconomyFareResolver,EconomyService,FlightOpsService,SafetyAnalyzer};
 
 class PortalController extends Controller
 {
@@ -1209,7 +1209,7 @@ class PortalController extends Controller
         return redirect()->route('admin.promethee.bbr')->with('success', 'Tarification et remplissage Bleu-Blanc-Rouge enregistrés.');
     }
 
-    public function economy(Request $r) {
+    public function economy(Request $r, EconomyFareResolver $fareResolver) {
         $flightFilters=$r->validate(['flight_airline'=>'nullable|string|max:10','flight_origin'=>'nullable|string|size:2','flight_arrival'=>'nullable|string|size:2','flight_dpt_airport'=>'nullable|string|max:10','flight_arr_airport'=>'nullable|string|max:10','flight_search'=>'nullable|string|max:80','flight_select_all'=>'nullable|boolean']);
         $fuelFilters=$r->validate(['fuel_country'=>'nullable|string|size:2','fuel_region'=>'nullable|string|max:191','fuel_search'=>'nullable|string|max:80','fuel_select_all'=>'nullable|boolean']);
         $airportOptions=Airport::select('id','icao','name','country','region','location')->orderBy('country')->orderBy('region')->orderBy('location')->get();
@@ -1220,7 +1220,7 @@ class PortalController extends Controller
             ->when($flightFilters['flight_dpt_airport'] ?? null,fn($query,$airport)=>$query->where('dpt_airport_id',$airport))
             ->when($flightFilters['flight_arr_airport'] ?? null,fn($query,$airport)=>$query->where('arr_airport_id',$airport))
             ->when($flightFilters['flight_search'] ?? null,fn($query,$search)=>$query->where(fn($where)=>$where->where('flight_number','like','%'.$search.'%')->orWhere('route_code','like','%'.$search.'%')->orWhere('dpt_airport_id','like','%'.$search.'%')->orWhere('arr_airport_id','like','%'.$search.'%')))
-            ->with(['airline','fares','dpt_airport','arr_airport'])
+            ->with(['airline','fares','subfleets.fares','dpt_airport','arr_airport'])
             ->orderBy('airline_id')->orderBy('dpt_airport_id')->orderBy('arr_airport_id')->get();
         $fuelPricing=Airport::select('id','icao','name','country','region','fuel_jeta_cost','fuel_100ll_cost','fuel_mogas_cost')
             ->when($fuelFilters['fuel_country'] ?? null,fn($query,$country)=>$query->where('country',$country))
@@ -1239,6 +1239,18 @@ class PortalController extends Controller
             $fuelScopes->push($scopeFromAirports($countryAirports,$country,null));
             foreach ($countryAirports->filter(fn($airport)=>filled($airport->region))->groupBy('region') as $region=>$regionAirports) $fuelScopes->push($scopeFromAirports($regionAirports,$country,$region));
         }
+        $flightFareDisplay=$flightPricing->mapWithKeys(fn($flight)=>[
+            (string)$flight->id=>$fareResolver->rows($flight)->map(fn($row)=>[
+                'fare_id'=>$row['fare_id'],
+                'code'=>$row['fare']->code,
+                'name'=>$row['fare']->name,
+                'type'=>$row['fare']->type,
+                'price'=>$row['current_price'],
+                'band'=>$row['band'],
+                'ambiguous'=>$row['ambiguous'],
+            ])->all(),
+        ]);
+
         return $this->page('economy',['fares'=>Fare::where('active',true)->get(),'airlines'=>Airline::all(),
             'history'=>DB::table('promethee_changes')->orderByDesc('id')->limit(15)->get(),
             'priceHistory'=>DB::table('promethee_price_history')->latest()->limit(120)->get(),
@@ -1246,37 +1258,55 @@ class PortalController extends Controller
             'diagnostics'=>$this->pricingDiagnostics(),'seasons'=>DB::table('promethee_seasons')->orderByDesc('starts_on')->get(['id','name','starts_on','ends_on','active']),
             'subfleets'=>Subfleet::with('airline')->orderBy('name')->get(['id','name','airline_id','type']),
             'preview'=>$r->session()->get('promethee.preview'),'bandSettings'=>$this->bandSettings(),'airportOptions'=>$airportOptions,
-            'flightPricing'=>$flightPricing,'fuelPricing'=>$fuelPricing,'fuelScopes'=>$fuelScopes,'flightFilters'=>$flightFilters,'fuelFilters'=>$fuelFilters,'flightSelectAll'=>$r->boolean('flight_select_all'),'fuelSelectAll'=>$r->boolean('fuel_select_all'),
+            'flightPricing'=>$flightPricing,'flightFareDisplay'=>$flightFareDisplay,'fuelPricing'=>$fuelPricing,'fuelScopes'=>$fuelScopes,'flightFilters'=>$flightFilters,'fuelFilters'=>$fuelFilters,'flightSelectAll'=>$r->boolean('flight_select_all'),'fuelSelectAll'=>$r->boolean('fuel_select_all'),
             'baseFares'=>Fare::whereIn('code',['Y','T','CGO'])->get()->keyBy('code'),'baseFareDefaults'=>$this->fareDefaults(),
             'pricingBands'=>DB::table('promethee_pricing')->get()->mapWithKeys(fn($row)=>[$row->flight_id.'|'.$row->fare_id=>$row->band]),
             'loadFactor'=>(float)(DB::table('promethee_settings')->where('key','pricing.simulation.load_factor')->value('value') ?: 70),
             'countries'=>$airportOptions->pluck('country')->filter()->unique()->sort()->values(),
             'regions'=>$airportOptions->filter(fn($airport)=>filled($airport->region))->map(fn($airport)=>['country'=>$airport->country,'region'=>$airport->region])->unique()->values()]);
     }
-    public function flightPriceEditor(Request $r) {
+    public function flightPriceEditor(Request $r, EconomyFareResolver $fareResolver) {
         $airportOptions=Airport::select('id','icao','name','country','region')->orderBy('country')->orderBy('icao')->get();
-        $flightPricing=Flight::where('active',true)->with(['airline','fares','dpt_airport','arr_airport'])
+        $flightPricing=Flight::where('active',true)->with(['airline','fares','subfleets.fares','dpt_airport','arr_airport'])
             ->orderBy('airline_id')->orderBy('dpt_airport_id')->orderBy('arr_airport_id')->get();
+        $flightFareDisplay=$flightPricing->mapWithKeys(fn($flight)=>[
+            (string)$flight->id=>$fareResolver->rows($flight)->map(fn($row)=>[
+                'fare_id'=>$row['fare_id'],
+                'code'=>$row['fare']->code,
+                'name'=>$row['fare']->name,
+                'type'=>$row['fare']->type,
+                'price'=>$row['current_price'],
+                'band'=>$row['band'],
+                'ambiguous'=>$row['ambiguous'],
+            ])->all(),
+        ]);
+
         return $this->page('economy-flight-prices',[
             'airlines'=>Airline::orderBy('name')->get(),
             'airportOptions'=>$airportOptions,
             'countries'=>$airportOptions->pluck('country')->filter()->unique()->sort()->values(),
             'flightPricing'=>$flightPricing,
+            'flightFareDisplay'=>$flightFareDisplay,
             'baseFares'=>Fare::whereIn('code',['Y','T','CGO'])->get()->keyBy('code'),'baseFareDefaults'=>$this->fareDefaults(),
             'pricingBands'=>DB::table('promethee_pricing')->get()->mapWithKeys(fn($row)=>[$row->flight_id.'|'.$row->fare_id=>$row->band]),
             'selectedFlights'=>collect($r->query('flights',[]))->push($r->query('flight'))->filter()->map(fn($id)=>(string)$id)->unique()->values()->all(),
         ]);
     }
-    public function flightPriceEdit(string $flight) {
-        $flight=Flight::with(['airline','fares','dpt_airport','arr_airport'])->findOrFail($flight);
-        $fareCode=$flight->airline?->icao === 'ICS' ? 'CGO' : ($flight->airline?->icao === 'ACF' ? 'T' : 'Y');
-        $baseFare=Fare::withTrashed()->where('code',$fareCode)->first();
-        $defaultPrices=['Y'=>218.0,'T'=>352.0,'CGO'=>1.5];
-        $fare=$flight->fares->first() ?: $baseFare;
-        $price=(float)($fare?->pivot?->price ?: $fare?->price ?: $defaultPrices[$fareCode]);
+    public function flightPriceEdit(string $flight, EconomyFareResolver $fareResolver) {
+        $flight=Flight::with(['airline','fares','subfleets.fares','dpt_airport','arr_airport'])->findOrFail($flight);
+        $row=$fareResolver->rows($flight)->first();
+        $fare=$row['fare'] ?? null;
+        $fareCode=$fare?->code ?: ($flight->airline?->icao === 'ICS' ? 'CGO' : ($flight->airline?->icao === 'ACF' ? 'T' : 'Y'));
+        $price=$row['current_price'] ?? null;
+
         return $this->page('economy-flight-price-edit',[
-            'flight'=>$flight,'fare'=>$fare,'fareCode'=>$fareCode,'price'=>$price,
-            'band'=>$fare ? (DB::table('promethee_pricing')->where('flight_id',$flight->id)->where('fare_id',$fare->id)->value('band') ?: 'rouge') : 'rouge',
+            'flight'=>$flight,
+            'fare'=>$fare,
+            'fareCode'=>$fareCode,
+            'price'=>$price,
+            'band'=>$row['band'] ?? 'rouge',
+            'redPrice'=>$row['red_price'] ?? $price,
+            'fareAmbiguous'=>$row['ambiguous'] ?? false,
         ]);
     }
     public function fuelPriceEdit(Request $r, string $country) {
@@ -1416,38 +1446,94 @@ class PortalController extends Controller
         } catch (\Throwable $e) { $errors[]='ligne '.($created+count($errors)+2); } }
         fclose($handle); DB::table('promethee_audit_logs')->insert(['actor_id'=>$r->user()->id,'action'=>'schedule.imported','subject_type'=>'schedule','subject_id'=>null,'context'=>json_encode(['created'=>$created,'errors'=>$errors]),'created_at'=>now(),'updated_at'=>now()]); return back()->with('success',"Import : {$created} ligne(s) traitée(s).".(count($errors) ? ' Erreurs : '.implode(', ',$errors) : ''));
     }
-    public function changeFlightPrices(Request $r) {
-        $data=$r->validate(['flight_ids'=>'required|array|min:1','flight_ids.*'=>'exists:flights,id','mode'=>'required|in:set,add,percent,band','value'=>'nullable|numeric','band'=>'required|in:keep,bleu,blanc,rouge']);
+    public function changeFlightPrices(Request $r, EconomyFareResolver $fareResolver) {
+        $data=$r->validate([
+            'flight_ids'=>'required|array|min:1',
+            'flight_ids.*'=>'exists:flights,id',
+            'mode'=>'required|in:set,add,percent,band',
+            'value'=>'nullable|numeric',
+            'band'=>'required|in:keep,bleu,blanc,rouge',
+        ]);
         if ($data['mode'] !== 'band' && !array_key_exists('value',$data)) abort(422,'Une valeur est requise.');
+
         $bandSettings=$this->bandSettings();
-        DB::transaction(function () use ($data,$r,$bandSettings) {
-            foreach (Flight::with(['fares','airline'])->whereIn('id',$data['flight_ids'])->lockForUpdate()->get() as $flight) {
-                $fares=$flight->fares;
-                if ($fares->isEmpty()) {
-                    $code=$flight->airline?->icao==='ICS' ? 'CGO' : ($flight->airline?->icao==='ACF' ? 'T' : 'Y');
-                    $defaults=['Y'=>['name'=>'Air Inter Economy','type'=>0,'price'=>218], 'T'=>['name'=>'Air Charter International','type'=>0,'price'=>352], 'CGO'=>['name'=>'Inter Cargo Service','type'=>1,'price'=>1.5]];
-                    $fare=Fare::withTrashed()->where('code',$code)->first();
-                    if ($fare?->trashed()) $fare->restore();
-                    $fares=collect([$fare ?: Fare::create(['code'=>$code,'name'=>$defaults[$code]['name'],'type'=>$defaults[$code]['type'],'price'=>$defaults[$code]['price'],'active'=>true])]);
+        $multipliers=[
+            'bleu'=>$bandSettings['blue']/100,
+            'blanc'=>$bandSettings['white']/100,
+            'rouge'=>1.0,
+        ];
+
+        DB::transaction(function () use ($data,$r,$fareResolver,$multipliers) {
+            $flights=Flight::with(['fares','airline','subfleets.fares'])
+                ->whereIn('id',$data['flight_ids'])
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($flights as $flight) {
+                foreach ($fareResolver->rows($flight) as $row) {
+                    $fare=$row['fare'];
+                    $pricing=$row['pricing'];
+                    $current=$row['current_price'];
+
+                    if ($current === null && $data['mode'] !== 'set') {
+                        abort(422,'La ligne '.$flight->ident.' a plusieurs prix selon la sous-flotte. Fixez d’abord explicitement le prix Rouge pour unifier cette ligne.');
+                    }
+
+                    // No Prométhée BBR record means the inherited phpVMS fare is
+                    // the RED reference. A colour-only change must never replace
+                    // that reference with the global fare default.
+                    $red=$pricing ? (float)$pricing->red_price : (float)$current;
+                    $newRed=match($data['mode']) {
+                        'band' => $red,
+                        'set' => (float)$data['value'],
+                        'add' => $red+(float)$data['value'],
+                        'percent' => $red*(1+(float)$data['value']/100),
+                    };
+
+                    $oldBand=$pricing?->band ?? 'rouge';
+                    $band=$data['band']==='keep' ? $oldBand : $data['band'];
+                    $next=round($newRed*$multipliers[$band],2);
+
+                    if ($newRed < 0 || $next < 0) abort(422,'Un prix ne peut pas être négatif.');
+
+                    DB::table('flight_fare')->updateOrInsert(
+                        ['flight_id'=>$flight->id,'fare_id'=>$fare->id],
+                        ['price'=>(string)$next,'updated_at'=>now()]
+                    );
+                    DB::table('promethee_pricing')->updateOrInsert(
+                        ['flight_id'=>$flight->id,'fare_id'=>$fare->id],
+                        [
+                            'red_price'=>round($newRed,2),
+                            'band'=>$band,
+                            'multiplier'=>$multipliers[$band],
+                            'updated_at'=>now(),
+                            'created_at'=>$pricing?->created_at ?? now(),
+                        ]
+                    );
+                    DB::table('promethee_price_history')->insert([
+                        'target'=>'ticket',
+                        'subject_id'=>$flight->id,
+                        'field'=>'fare:'.$fare->id,
+                        'before_price'=>$current,
+                        'after_price'=>$next,
+                        'context'=>json_encode([
+                            'label'=>$flight->ident,
+                            'operation'=>$data['mode'],
+                            'value'=>$data['value'] ?? null,
+                            'band'=>$band,
+                            'red_price'=>$newRed,
+                            'source'=>$pricing ? 'promethee_red_reference' : 'phpvms_effective_fare',
+                        ]),
+                        'created_at'=>now(),
+                        'updated_at'=>now(),
+                    ]);
                 }
-                foreach ($fares as $fare) {
-                $current=(float)($fare->pivot?->price ?: $fare->price);
-                $pricing=DB::table('promethee_pricing')->where(['flight_id'=>$flight->id,'fare_id'=>$fare->id])->first();
-                $oldBand=$pricing->band ?? 'rouge';
-                $multipliers=['bleu'=>$bandSettings['blue']/100,'blanc'=>$bandSettings['white']/100,'rouge'=>1];
-                $red=(float)($pricing->red_price ?? ($current/$multipliers[$oldBand]));
-                $newRed=$data['mode']==='band' ? $red : ($data['mode']==='set' ? (float)$data['value'] : ($data['mode']==='add' ? $red+(float)$data['value'] : $red*(1+(float)$data['value']/100)));
-                $band=$data['band']==='keep' ? $oldBand : $data['band'];
-                $next=round($newRed*$multipliers[$band],2);
-                if ($next<0) abort(422,'Un prix ne peut pas être négatif.');
-                DB::table('flight_fare')->updateOrInsert(['flight_id'=>$flight->id,'fare_id'=>$fare->id],['price'=>(string)round($next,2),'updated_at'=>now()]);
-                DB::table('promethee_pricing')->updateOrInsert(['flight_id'=>$flight->id,'fare_id'=>$fare->id],['red_price'=>$newRed,'band'=>$band,'multiplier'=>$multipliers[$band],'updated_at'=>now(),'created_at'=>$pricing?->created_at ?? now()]);
-                DB::table('promethee_price_history')->insert(['target'=>'ticket','subject_id'=>$flight->id,'field'=>'fare:'.$fare->id,'before_price'=>$current,'after_price'=>$next,'context'=>json_encode(['label'=>$flight->ident,'operation'=>$data['mode'],'value'=>$data['value'] ?? null,'band'=>$band]),'created_at'=>now(),'updated_at'=>now()]);
-            }
             }
         });
+
         return back()->with('success','Prix des lignes sélectionnées mis à jour.');
     }
+
     public function changeFuelPrices(Request $r) {
         $data=$r->validate(['country'=>'required_without:scope_keys|nullable|string|size:2','region'=>'nullable|string|max:191','scope_keys'=>'nullable|array|min:1','scope_keys.*'=>'string|max:200','fuel_type'=>'required|in:fuel_jeta_cost,fuel_100ll_cost,fuel_mogas_cost','mode'=>'required|in:set,add,percent','value'=>'required|numeric']);
         $scopes=collect($data['scope_keys'] ?? [strtoupper((string)$data['country']).'|'.($data['region'] ?? '')])->filter(function($key) {
