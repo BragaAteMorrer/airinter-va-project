@@ -129,6 +129,7 @@ jobs:
           php -l app/Http/Controllers/Api/AcarsSessionController.php
           php -l app/Http/Controllers/Api/AcarsSimBriefController.php
           php -l app/Http/Controllers/Admin/SettingsController.php
+          php -l app/Models/Setting.php
           php -l app/Providers/RouteServiceProvider.php
           php -l modules/Promethee/Config/departure-board.php
           php -l app/Console/Commands/CheckPrometheeTranslations.php
