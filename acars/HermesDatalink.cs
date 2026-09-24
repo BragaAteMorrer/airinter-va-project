@@ -116,6 +116,12 @@ public sealed class HermesDatalink
         await networkGate.WaitAsync();
         try
         {
+            // Another Hermès instance may have replayed and persisted queued
+            // actions while this instance was still alive. Refresh the
+            // local-first state before deciding what still needs network I/O,
+            // otherwise stale in-memory READ/ACK/outbox entries can be sent twice.
+            lock (gate) Load();
+
             if (!transport.Connected)
             {
                 LastError = "Prométhée hors ligne — messages et reçus conservés localement.";
