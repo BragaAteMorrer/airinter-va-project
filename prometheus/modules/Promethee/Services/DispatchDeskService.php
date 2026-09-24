@@ -269,6 +269,8 @@ class DispatchDeskService
             'aircraft' => $bid->aircraft?->registration,
             'departure' => $bid->flight?->dpt_airport_id,
             'arrival' => $bid->flight?->arr_airport_id,
+            'arrival_lat' => $bid->flight?->arr_airport?->lat,
+            'arrival_lon' => $bid->flight?->arr_airport?->lon,
             'state' => $status,
             'phase' => $payload['phase'] ?? null,
             'recorded_at' => $recordedAt,
@@ -527,6 +529,7 @@ class DispatchDeskService
                 PirepState::ACCEPTED,
                 PirepState::REJECTED,
                 PirepState::CANCELLED,
+                PirepState::DELETED,
             ], true)
             || in_array($pirep->status, [PirepStatus::ARRIVED, PirepStatus::CANCELLED], true);
     }
