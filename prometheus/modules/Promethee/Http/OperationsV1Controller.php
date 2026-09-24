@@ -29,7 +29,7 @@ use Modules\Promethee\Services\AircraftOperationalStateService;
  */
 class OperationsV1Controller extends Controller
 {
-    private const SIMULATORS = ['fs2004', 'fsx', 'msfs2020', 'msfs2024', 'xplane'];
+    private const SIMULATORS = ['fs2004', 'fsx', 'p3d', 'msfs2020', 'msfs2024', 'xplane'];
 
     public function __construct(
         private readonly UserService $userSvc,
