@@ -148,6 +148,7 @@ public sealed class FlightRecorder
 
         var pendingBefore = Pending.Count;
         var eventsBefore = PendingEvents.Count;
+        var observationsBefore = Flight.Observations.Count;
         var phaseBefore = Flight.Phase;
         var snapshot = s.ToSnapshot();
         var decision = tracking.Process(snapshot);
@@ -187,7 +188,8 @@ public sealed class FlightRecorder
         }
 
         previous = s;
-        if (changed || Pending.Count != pendingBefore || PendingEvents.Count != eventsBefore) Save();
+        if (changed || Pending.Count != pendingBefore || PendingEvents.Count != eventsBefore
+            || Flight.Observations.Count != observationsBefore) Save();
     }}
 
     public void AcknowledgePositions(IEnumerable<Guid> ids) { lock (Gate) { var set = ids.ToHashSet(); Pending.RemoveAll(x => set.Contains(x.Sample.SampleId)); Save(); }}
