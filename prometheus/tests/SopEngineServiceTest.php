@@ -73,7 +73,7 @@ final class SopEngineServiceTest extends TestCase
         $low = $service->ingest('op_456', 42, [$base + ['fact_id'=>'22222222-2222-4222-8222-222222222222']]);
         $this->assertCount(0, array_filter($low['new_evaluations'], fn ($item) => $item['rule_id'] === $rule['id']));
 
-        $service->upsertRule($rule + ['threshold' => 30], 'custom_taxi');
+        $service->upsertRule(array_merge($rule, ['threshold' => 30]), 'custom_taxi');
         $high = $service->ingest('op_456', 42, [$base + ['fact_id'=>'33333333-3333-4333-8333-333333333333']]);
         $this->assertCount(1, array_filter($high['new_evaluations'], fn ($item) => $item['rule_id'] === 'custom_taxi'));
     }
