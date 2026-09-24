@@ -67,7 +67,10 @@ public sealed record AircraftSnapshot(
     bool? Paused = null,
     double? SimulationRate = null,
     string? AircraftTitle = null,
-    string? AircraftIcao = null);
+    string? AircraftIcao = null,
+    double? PitchDegrees = null,
+    double? BankDegrees = null,
+    double? TouchdownVerticalSpeedFeetPerMinute = null);
 
 /// <summary>
 /// Boundary between the ACARS core and simulator-specific code. Connectors must
@@ -96,5 +99,7 @@ public static class SimulatorSnapshotMapper
         FuelWeight: sample.Fuel, GearDown: sample.GearDown, FlapsPercent: sample.Flaps,
         BeaconLight: sample.BeaconLight, LandingLight: sample.LandingLight,
         EnginesRunning: [sample.Engine1Running, sample.Engine2Running, sample.Engine3Running, sample.Engine4Running],
-        SlewActive: sample.SlewActive, SimulationRate: sample.SimulationRate);
+        SlewActive: sample.SlewActive, SimulationRate: sample.SimulationRate,
+        BankDegrees: sample.Bank,
+        TouchdownVerticalSpeedFeetPerMinute: sample.TouchdownVelocity * 60d);
 }
