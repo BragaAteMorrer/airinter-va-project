@@ -9,6 +9,7 @@ public record FlightState(string Server, string PirepId, DateTimeOffset Started,
     double FuelUsed = 0, double AirborneSeconds = 0, double? LandingRate = null, bool Recording = true, string? OperationId = null)
 {
     public List<FlightIssue> Issues { get; init; } = [];
+    public List<FdmObservation> Observations { get; init; } = [];
     public List<PhaseEntry> Timeline { get; init; } = [];
     public List<FlightJournalEntry> Journal { get; init; } = [];
 }
@@ -20,7 +21,8 @@ public record FlightJournalEntry(DateTimeOffset OccurredAt, string Name, double?
 public record AcarsRules(double TaxiSpeed = 35, double HardLandingRate = 600);
 public record TrackPoint(DateTimeOffset RecordedAt, double Lat, double Lon, double Altitude);
 public record FlightSummary(string PirepId, DateTimeOffset CompletedAt, double Distance, int AirborneMinutes,
-    int BlockMinutes, double FuelUsed, double? LandingRate, IReadOnlyList<FlightIssue> Issues);
+    int BlockMinutes, double FuelUsed, double? LandingRate, IReadOnlyList<FlightIssue> Issues,
+    IReadOnlyList<FdmObservation>? Observations = null);
 public record FlightRecoveryInfo(
     string PirepId, string? OperationId, string Server, string Phase, DateTimeOffset Started,
     DateTimeOffset? LastTrackAt, double Distance, int AirborneMinutes, double FuelUsed,
@@ -35,6 +37,7 @@ public sealed class FlightRecorder
     private Sample? previous;
     private DateTimeOffset? lastQueuedAt;
     private readonly FlightTrackingEngine tracking = new();
+    private readonly FlightDataMonitor fdm = new();
     private bool recoveryRequired;
     public FlightState? Flight { get; private set; }
     public List<TrackPoint> Track { get; private set; } = [];
@@ -96,6 +99,7 @@ public sealed class FlightRecorder
         recoveryRequired = false;
         if (!sample.OnGround) throw new InvalidOperationException("L'ACARS doit être démarré au sol, avant le départ du poste.");
         tracking.Arm(FlightPhase.Boarding);
+        fdm.Reset();
         Flight = new(server, id, sample.RecordedAt, sample.Fuel, Phase: "BOARDING", OperationId: operationId)
         {
             Timeline = [new(sample.RecordedAt, "BOARDING")]
@@ -104,7 +108,9 @@ public sealed class FlightRecorder
         Pending = [];
         PendingEvents = [];
         Track = [];
-        tracking.Process(sample.ToSnapshot());
+        var initialSnapshot = sample.ToSnapshot();
+        tracking.Process(initialSnapshot);
+        fdm.Process(initialSnapshot, FlightPhase.Boarding, []);
         QueuePosition(sample);
         Save();
     }}
@@ -119,6 +125,7 @@ public sealed class FlightRecorder
         tracking.Restore(
             FlightTrackingEngine.ParsePhase(Flight.Phase),
             Flight.Journal.Any(x => x.Name == "ON"));
+        fdm.Restore(Flight.Observations);
         recoveryRequired = false;
         Flight = Flight with { Recording = true };
         previous = null;
@@ -142,8 +149,10 @@ public sealed class FlightRecorder
         var pendingBefore = Pending.Count;
         var eventsBefore = PendingEvents.Count;
         var phaseBefore = Flight.Phase;
-        var decision = tracking.Process(s.ToSnapshot());
+        var snapshot = s.ToSnapshot();
+        var decision = tracking.Process(snapshot);
         ApplyTrackingDecision(decision, s);
+        AddObservations(fdm.Process(snapshot, decision.Phase, decision.Events));
 
         Track.Add(new(s.RecordedAt, s.Lat, s.Lon, s.Altitude));
         if (Track.Count > 720) Track.RemoveRange(0, Track.Count - 720);
@@ -197,11 +206,45 @@ public sealed class FlightRecorder
         if (Flight?.Phase != "IN") throw new InvalidOperationException("Attendez l'événement IN : avion arrêté au parking, frein de parc serré.");
         if (Pending.Count > 0 || PendingEvents.Count > 0) throw new InvalidOperationException("Des messages ACARS restent à synchroniser.");
         var flight = Flight;
+        AddObservations(fdm.Flush(previous?.ToSnapshot(), FlightTrackingEngine.ParsePhase(flight.Phase)));
+        flight = Flight!;
         var block = flight.BlockOn is null || flight.BlockOff is null ? 0 : (int)Math.Round((flight.BlockOn.Value - flight.BlockOff.Value).TotalMinutes);
-        History.Insert(0, new(flight.PirepId, DateTimeOffset.UtcNow, Math.Round(flight.Distance, 2), (int)Math.Round(flight.AirborneSeconds / 60), block, Math.Round(flight.FuelUsed), flight.LandingRate, flight.Issues));
+        History.Insert(0, new(flight.PirepId, DateTimeOffset.UtcNow, Math.Round(flight.Distance, 2), (int)Math.Round(flight.AirborneSeconds / 60), block, Math.Round(flight.FuelUsed), flight.LandingRate, flight.Issues, flight.Observations));
         if (History.Count > 25) History.RemoveRange(25, History.Count - 25);
         SaveHistory(); Flight = null; previous = null; Track = []; recoveryRequired = false; Save();
     }}
+
+    public FlightReview? GetReview()
+    {
+        lock (Gate) {
+            if (Flight is null) return null;
+            var block = Flight.BlockOff is null
+                ? 0
+                : (int)Math.Round(((Flight.BlockOn ?? DateTimeOffset.UtcNow) - Flight.BlockOff.Value).TotalMinutes);
+            var observations = Flight.Observations ?? [];
+            string? gateStatus(string prefix) => observations
+                .LastOrDefault(x => x.Code.StartsWith(prefix, StringComparison.Ordinal))?.Status;
+            return new(
+                Flight.PirepId,
+                Flight.Phase,
+                Flight.Phase == "IN" && Pending.Count == 0 && PendingEvents.Count == 0,
+                Math.Round(Flight.Distance, 2),
+                (int)Math.Round(Flight.AirborneSeconds / 60),
+                block,
+                Math.Round(Flight.FuelUsed),
+                Flight.LandingRate,
+                gateStatus("APPROACH_1000_"),
+                gateStatus("APPROACH_500_"),
+                (int)observations.Where(x => x.Code == "BOUNCE").Select(x => x.Value ?? 0).DefaultIfEmpty(0).Max(),
+                observations.Count(x => x.Code == "GO_AROUND"),
+                observations.Where(x => x.Code == "EXCESSIVE_BANK").Select(x => x.Value).Where(x => x is not null).Select(x => x!.Value).DefaultIfEmpty().Max() is var maxBank && maxBank > 0 ? maxBank : null,
+                Math.Round(observations.Where(x => x.Code == "FUEL_ADDED").Sum(x => x.Value ?? 0)),
+                observations.Where(x => x.Code == "SIM_RATE").Select(x => x.Value).Where(x => x is not null).Select(x => x!.Value).DefaultIfEmpty().Max() is var maxRate && maxRate > 0 ? maxRate : null,
+                Flight.Issues,
+                observations,
+                Flight.Timeline);
+        }
+    }
 
     public FlightRecoveryInfo? GetRecoveryInfo()
     {
@@ -298,6 +341,17 @@ public sealed class FlightRecorder
             if (fact.Type is "OUT" or "OFF" or "ON" or "IN")
                 QueuePosition(fact.Snapshot, current);
         }
+    }
+
+    private void AddObservations(IEnumerable<FdmObservation> observations)
+    {
+        if (Flight is null) return;
+        var additions = observations
+            .Where(item => !Flight.Observations.Any(existing =>
+                existing.Code == item.Code && existing.OccurredAt == item.OccurredAt))
+            .ToList();
+        if (additions.Count == 0) return;
+        Flight = Flight with { Observations = [.. Flight.Observations, .. additions] };
     }
 
     private void AddIssue(Sample sample, string code, string message) {
