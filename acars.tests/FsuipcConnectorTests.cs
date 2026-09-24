@@ -69,7 +69,8 @@ public sealed class FsuipcConnectorTests
         Assert.Equal("pirep-fsuipc", recorder.Flight!.PirepId);
         Assert.Equal(8200, recorder.Flight.InitialFuel);
         Assert.NotEmpty(recorder.Pending);
-        Assert.Contains(recorder.PendingEvents, x => x.Name == "OUT");
+        Assert.Equal("BOARDING", recorder.Flight.Phase);
+        Assert.Empty(recorder.PendingEvents);
     }
 
     private static FsuipcConnector Connector(FakeSession session, bool detected) =>
