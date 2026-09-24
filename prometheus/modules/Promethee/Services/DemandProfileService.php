@@ -105,11 +105,12 @@ class DemandProfileService
         });
 
         if ($capacity <= 0) {
-            $capacity = (int) DB::table('flight_fare as flightfare')
+            $capacity = DB::table('flight_fare as flightfare')
                 ->join('fares', 'fares.id', '=', 'flightfare.fare_id')
                 ->where('flightfare.flight_id', $flight->id)
                 ->where('fares.type', FareType::PASSENGER)
-                ->sum(DB::raw('COALESCE(flightfare.capacity, fares.capacity, 0)'));
+                ->get(['flightfare.capacity as flight_capacity', 'fares.capacity as base_capacity'])
+                ->sum(fn ($row) => (int) ($row->flight_capacity ?: $row->base_capacity ?: 0));
         }
 
         return $this->capacityCache[$key] = max(0, (int) $capacity);
@@ -160,7 +161,30 @@ class DemandProfileService
 
     public function typeKey(Aircraft $aircraft): string
     {
-        $key = strtoupper(trim((string) ($aircraft->icao ?: $aircraft->subfleet?->type ?: $aircraft->subfleet?->name ?: $aircraft->name)));
+        $label = $this->typeLabel($aircraft);
+        $canonical = [
+            'Airbus A319' => 'A319',
+            'Airbus A320' => 'A320',
+            'Airbus A321' => 'A321',
+            'Airbus A300' => 'A300',
+            'Airbus A310' => 'A310',
+            'Airbus A330' => 'A330',
+            'Airbus A340' => 'A340',
+            'Fokker 100' => 'F100',
+            'Fokker 27' => 'F27',
+            'Sud Aviation Caravelle' => 'CARAVELLE',
+            'Dassault Mercure' => 'MERCURE',
+            'Nord 262' => 'N262',
+            'Vickers Viscount' => 'VISCOUNT',
+            'Boeing 747' => 'B747',
+            'Douglas DC-8' => 'DC8',
+        ];
+
+        if (isset($canonical[$label])) {
+            return $canonical[$label];
+        }
+
+        $key = strtoupper(trim((string) ($aircraft->icao ?: $aircraft->subfleet?->type ?: $label)));
 
         return preg_replace('/[^A-Z0-9]+/', '', $key) ?: 'AIRCRAFT';
     }
@@ -170,9 +194,9 @@ class DemandProfileService
         $icao = strtoupper((string) $aircraft->icao);
         $name = Str::lower((string) ($aircraft->subfleet?->name ?? $aircraft->name ?? ''));
 
-        if ($icao === 'A319' || str_contains($name, 'a319')) return 'Airbus A319';
-        if ($icao === 'A320' || str_contains($name, 'a320')) return 'Airbus A320';
-        if ($icao === 'A321' || str_contains($name, 'a321')) return 'Airbus A321';
+        if (in_array($icao, ['A319', 'A19N'], true) || str_contains($name, 'a319')) return 'Airbus A319';
+        if (in_array($icao, ['A320', 'A20N'], true) || str_contains($name, 'a320')) return 'Airbus A320';
+        if (in_array($icao, ['A321', 'A21N'], true) || str_contains($name, 'a321')) return 'Airbus A321';
         if (str_starts_with($icao, 'A30') || str_contains($name, 'a300')) return 'Airbus A300';
         if ($icao === 'A310' || str_contains($name, 'a310')) return 'Airbus A310';
         if (str_starts_with($icao, 'A33') || str_contains($name, 'a330')) return 'Airbus A330';
