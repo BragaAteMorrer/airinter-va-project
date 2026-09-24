@@ -15,13 +15,13 @@ use Illuminate\Support\Str;
 /** API contract used by the desktop ACARS; it deliberately exposes only the pilot's own operations. */
 class AcarsOperationsController extends Controller
 {
-    private const SIMULATORS = ['fs2004', 'fsx', 'msfs2020', 'msfs2024', 'xplane'];
+    private const SIMULATORS = ['fs2004', 'fsx', 'p3d', 'msfs2020', 'msfs2024', 'xplane'];
 
     public function __construct(private readonly UserService $userSvc) {}
 
     public function index(Request $request)
     {
-        $data = $request->validate(['simulator' => 'nullable|in:fs2004,fsx,msfs2020,msfs2024,xplane']);
+        $data = $request->validate(['simulator' => 'nullable|in:fs2004,fsx,p3d,msfs2020,msfs2024,xplane']);
         $simulator = $data['simulator'] ?? 'msfs2020';
         $bids = Bid::with(['flight.airline', 'flight.subfleets', 'aircraft.subfleet'])
             ->where('user_id', $request->user()->id)->latest()->get();
