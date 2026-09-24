@@ -1454,7 +1454,10 @@ class PortalController extends Controller
             'value'=>'nullable|numeric',
             'band'=>'required|in:keep,bleu,blanc,rouge',
         ]);
-        if ($data['mode'] !== 'band' && !array_key_exists('value',$data)) abort(422,'Une valeur est requise.');
+        if ($data['mode'] !== 'band'
+            && (!array_key_exists('value', $data) || $data['value'] === null || $data['value'] === '')) {
+            abort(422, 'Une valeur est requise pour modifier le prix Rouge.');
+        }
 
         $bandSettings=$this->bandSettings();
         $multipliers=[
