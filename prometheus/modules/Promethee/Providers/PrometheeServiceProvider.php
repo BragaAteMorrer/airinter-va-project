@@ -35,5 +35,6 @@ class PrometheeServiceProvider extends ServiceProvider
         app(ModuleService::class)->addAdminLink('Prométhée · Identité', '/admin/promethee/identite', 'pe-7s-photo');
         app(ModuleService::class)->addAdminLink('Prométhée · SimBrief', '/admin/promethee/simbrief', 'pe-7s-plane');
         app(ModuleService::class)->addAdminLink('Prométhée · SOP', '/admin/promethee/sop', 'pe-7s-shield');
+        app(ModuleService::class)->addAdminLink('Prométhée · Network', '/admin/promethee/network', 'pe-7s-global');
     }
 }
