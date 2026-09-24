@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use App\Models\Airport;
 use App\Models\Enums\FareType;
 use App\Models\Fare;
 use App\Models\Flight;
@@ -624,5 +625,55 @@ final class PrometheeDemandEconomyTest extends TestCase
             (float) DB::table('promethee_pricing')->where('flight_id', $flight->id)->where('fare_id', $fare->id)->value('red_price')
         );
     }
+
+
+    public function test_economy_airport_filters_are_searchable_and_normalize_lowercase_icao(): void
+    {
+        $admin = $this->createAdminUser();
+
+        $orly = Airport::factory()->create([
+            'id' => 'LFPO',
+            'icao' => 'LFPO',
+            'iata' => 'ORY',
+            'name' => 'Paris-Orly',
+            'country' => 'FR',
+        ]);
+        $roissy = Airport::factory()->create([
+            'id' => 'LFPG',
+            'icao' => 'LFPG',
+            'iata' => 'CDG',
+            'name' => 'Paris-Charles de Gaulle',
+            'country' => 'FR',
+        ]);
+        $marseille = Airport::factory()->create([
+            'id' => 'LFML',
+            'icao' => 'LFML',
+            'iata' => 'MRS',
+            'name' => 'Marseille-Provence',
+            'country' => 'FR',
+        ]);
+
+        $orlyFlight = Flight::factory()->create([
+            'dpt_airport_id' => $orly->id,
+            'arr_airport_id' => $marseille->id,
+            'active' => true,
+        ]);
+        $roissyFlight = Flight::factory()->create([
+            'dpt_airport_id' => $roissy->id,
+            'arr_airport_id' => $marseille->id,
+            'active' => true,
+        ]);
+
+        $response = $this->actingAs($admin, 'web')
+            ->get('/admin/promethee/economy?flight_dpt_airport=lfpo');
+
+        $response->assertOk();
+        $response->assertSee('type="search" id="filter-dpt-airport"', false);
+        $response->assertSee('list="economy-airports"', false);
+        $response->assertSee('Paris-Orly', false);
+        $response->assertSee($orlyFlight->ident, false);
+        $response->assertDontSee($roissyFlight->ident, false);
+    }
+
 
 }
