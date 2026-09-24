@@ -228,9 +228,10 @@ public sealed class FlightTrackingEngine
         if (Phase is FlightPhase.Boarding or FlightPhase.AcarsReady or FlightPhase.Pushback or FlightPhase.TaxiOut)
             return;
 
-        var rate = current.TouchdownVerticalSpeedFeetPerMinute
+        var observedRate = current.TouchdownVerticalSpeedFeetPerMinute
             ?? current.VerticalSpeedFeetPerMinute
             ?? before.VerticalSpeedFeetPerMinute;
+        var rate = observedRate is null ? null : -Math.Abs(observedRate.Value);
 
         Phase = FlightPhase.Landing;
         events.Add(new("LANDING", current.RecordedAt, current, rate));
