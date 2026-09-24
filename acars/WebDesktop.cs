@@ -91,7 +91,7 @@ public sealed class PrometheeWindow : Window
             "/api/status" => Status(), "/api/about" => About(), "/api/login" => await Login(body),
             "/api/start" => Start(body), "/api/pause" => Pause(), "/api/resume" => Resume(),
             "/api/recovery" => Recovery(), "/api/recovery/resume" => ResumeRecovery(), "/api/recovery/abandon" => AbandonRecovery(),
-            "/api/sync" => new { sent=await telemetry.SyncNow() }, "/api/report" => Report(), "/api/review" => recorder.GetReview() ?? throw new InvalidOperationException("Aucun vol en cours."), "/api/file" => await File(),
+            "/api/sync" => new { sent=await telemetry.SyncNow() }, "/api/report" => Report(), "/api/review" => recorder.GetReview() ?? throw new InvalidOperationException("Aucun vol en cours."), "/api/capabilities" => sim.AircraftCapabilities ?? throw new InvalidOperationException("Aucun profil de capacités avion disponible."), "/api/file" => await File(),
             "/api/history" => recorder.History, "/api/diagnostics" => Diagnostics(), "/api/update/check" => await CheckUpdateStatusAsync(), "/api/open-external" => OpenExternal(body),
             _ => throw new InvalidOperationException("Commande ACARS inconnue.") };
     }
@@ -139,6 +139,7 @@ public sealed class PrometheeWindow : Window
         simLostAt=sim.LostAt,
         simRecoveredAt=sim.RecoveredAt,
         latest=sim.LatestSnapshot,
+        aircraftCapabilities=sim.AircraftCapabilities,
         flight=recorder.Flight,
         review=recorder.GetReview(),
         track=recorder.Track,
@@ -162,7 +163,7 @@ public sealed class PrometheeWindow : Window
         simulator=sim.Status, detectedSimulators=SimulatorDetector.DetectRunning(),
         activeConnector=sim.Active?.Descriptor, connectors=sim.Connectors,
         simLinkState=sim.LinkState, simLostAt=sim.LostAt, simRecoveredAt=sim.RecoveredAt,
-        latest=sim.LatestSnapshot, flight=recorder.Flight, review=recorder.GetReview(),
+        latest=sim.LatestSnapshot, aircraftCapabilities=sim.AircraftCapabilities, flight=recorder.Flight, review=recorder.GetReview(),
         pendingPositions=recorder.Pending.Count, pendingEvents=recorder.PendingEvents.Count,
         syncState=telemetry.SyncState, lastSuccessfulSyncAt=telemetry.LastSuccessfulSyncAt,
         nextSyncAttemptAt=telemetry.NextSyncAttemptAt, syncFailures=telemetry.ConsecutiveFailures,

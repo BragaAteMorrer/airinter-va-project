@@ -13,7 +13,7 @@ public record FlightState(string Server, string PirepId, DateTimeOffset Started,
     public List<PhaseEntry> Timeline { get; init; } = [];
     public List<FlightJournalEntry> Journal { get; init; } = [];
 }
-public record Envelope(Sample Sample);
+public record Envelope(Sample Sample, AircraftSnapshot? Snapshot = null);
 public record AcarsEvent(Guid EventId, string Name, DateTimeOffset OccurredAt, double Lat, double Lon);
 public record FlightIssue(DateTimeOffset OccurredAt, string Code, string Message, string Severity = "warning");
 public record PhaseEntry(DateTimeOffset OccurredAt, string Name);
@@ -35,6 +35,7 @@ public sealed class FlightRecorder
     public readonly SemaphoreSlim NetworkGate = new(1, 1);
     private readonly string folder;
     private Sample? previous;
+    private AircraftSnapshot? previousSnapshot;
     private DateTimeOffset? lastQueuedAt;
     private readonly FlightTrackingEngine tracking = new();
     private readonly FlightDataMonitor fdm = new();
@@ -94,32 +95,40 @@ public sealed class FlightRecorder
         File.Move(temp, Path.Combine(folder, "state.json"), true);
     }
 
-    public void Start(string server, string id, Sample sample, string? operationId = null) { lock (Gate) {
-        if (Flight is not null) throw new InvalidOperationException("Terminez le rapport en cours avant un nouveau départ.");
-        recoveryRequired = false;
-        if (!sample.OnGround) throw new InvalidOperationException("L'ACARS doit être démarré au sol, avant le départ du poste.");
-        tracking.Arm(FlightPhase.Boarding);
-        fdm.Reset();
-        Flight = new(server, id, sample.RecordedAt, sample.Fuel, Phase: "BOARDING", OperationId: operationId)
-        {
-            Timeline = [new(sample.RecordedAt, "BOARDING")]
-        };
-        previous = sample;
-        Pending = [];
-        PendingEvents = [];
-        Track = [];
-        var initialSnapshot = sample.ToSnapshot();
-        tracking.Process(initialSnapshot);
-        fdm.Process(initialSnapshot, FlightPhase.Boarding, []);
-        QueuePosition(sample);
-        Save();
-    }}
+    public void Start(string server, string id, Sample sample, string? operationId = null) =>
+        StartCore(server, id, sample, sample.ToSnapshot(), operationId);
+
     public void Start(string server, string id, AircraftSnapshot snapshot, string? operationId = null)
     {
         if (!TryToLegacySample(snapshot, out var sample))
-            throw new InvalidOperationException("Le connecteur ne fournit pas encore les données minimales pour démarrer le vol.");
-        Start(server, id, sample, operationId);
+            throw new InvalidOperationException("Le connecteur ne fournit pas les données minimales de navigation pour démarrer le vol.");
+        StartCore(server, id, sample, snapshot, operationId);
     }
+
+    private void StartCore(string server, string id, Sample sample, AircraftSnapshot snapshot, string? operationId)
+    {
+        lock (Gate) {
+            if (Flight is not null) throw new InvalidOperationException("Terminez le rapport en cours avant un nouveau départ.");
+            recoveryRequired = false;
+            if (snapshot.OnGround != true) throw new InvalidOperationException("L'ACARS doit être démarré au sol, avant le départ du poste.");
+            tracking.Arm(FlightPhase.Boarding);
+            fdm.Reset();
+            Flight = new(server, id, sample.RecordedAt, sample.Fuel, Phase: "BOARDING", OperationId: operationId)
+            {
+                Timeline = [new(sample.RecordedAt, "BOARDING")]
+            };
+            previous = sample;
+            previousSnapshot = snapshot;
+            Pending = [];
+            PendingEvents = [];
+            Track = [];
+            tracking.Process(snapshot);
+            fdm.Process(snapshot, FlightPhase.Boarding, []);
+            QueuePosition(sample, snapshot);
+            Save();
+        }
+    }
+
     public void Resume(string server) { lock (Gate) {
         if (Flight is null || Flight.Server != server) throw new InvalidOperationException("Le serveur ne correspond pas au vol enregistré.");
         tracking.Restore(
@@ -129,11 +138,13 @@ public sealed class FlightRecorder
         recoveryRequired = false;
         Flight = Flight with { Recording = true };
         previous = null;
+        previousSnapshot = null;
         Save();
     }}
     public void Pause() { lock (Gate) {
         if (Flight is not null) Flight = Flight with { Recording = false };
         previous = null;
+        previousSnapshot = null;
         Save();
     }}
 
@@ -180,18 +191,21 @@ public sealed class FlightRecorder
         }
 
         if (Flight.Phase is "PUSHBACK" or "TAXI_OUT" or "TAXI_IN"
-            && s.OnGround && s.Gs > Rules.TaxiSpeed)
-            AddIssue(s, "TAXI_OVERSPEED", $"Vitesse sol excessive au roulage : {s.Gs:0} kt.");
+            && snapshot.OnGround == true
+            && snapshot.GroundSpeedKnots is { } taxiGs
+            && taxiGs > Rules.TaxiSpeed)
+            AddIssue(s, "TAXI_OVERSPEED", $"Vitesse sol excessive au roulage : {taxiGs:0} kt.");
 
-        if (Flight.Phase == "FINAL" && !s.GearDown)
+        if (Flight.Phase == "FINAL" && snapshot.GearDown == false)
             AddIssue(s, "GEAR_UP_FINAL", "Train rentré en finale.");
 
         if (lastQueuedAt is null || s.RecordedAt - lastQueuedAt >= positionInterval) {
-            QueuePosition(s);
+            QueuePosition(s, snapshot);
             changed = true;
         }
 
         previous = s;
+        previousSnapshot = snapshot;
         if (changed || Pending.Count != pendingBefore || PendingEvents.Count != eventsBefore
             || Flight.Observations.Count != observationsBefore) Save();
     }}
@@ -212,12 +226,12 @@ public sealed class FlightRecorder
         if (Flight?.Phase != "IN") throw new InvalidOperationException("Attendez l'événement IN : avion arrêté au parking, frein de parc serré.");
         if (Pending.Count > 0 || PendingEvents.Count > 0) throw new InvalidOperationException("Des messages ACARS restent à synchroniser.");
         var flight = Flight;
-        AddObservations(fdm.Flush(previous?.ToSnapshot(), FlightTrackingEngine.ParsePhase(flight.Phase)));
+        AddObservations(fdm.Flush(previousSnapshot, FlightTrackingEngine.ParsePhase(flight.Phase)));
         flight = Flight!;
         var block = flight.BlockOn is null || flight.BlockOff is null ? 0 : (int)Math.Round((flight.BlockOn.Value - flight.BlockOff.Value).TotalMinutes);
         History.Insert(0, new(flight.PirepId, DateTimeOffset.UtcNow, Math.Round(flight.Distance, 2), (int)Math.Round(flight.AirborneSeconds / 60), block, Math.Round(flight.FuelUsed), flight.LandingRate, flight.Issues, flight.Observations));
         if (History.Count > 25) History.RemoveRange(25, History.Count - 25);
-        SaveHistory(); Flight = null; previous = null; Track = []; recoveryRequired = false; Save();
+        SaveHistory(); Flight = null; previous = null; previousSnapshot = null; Track = []; recoveryRequired = false; Save();
     }}
 
     public FlightReview? GetReview()
@@ -285,6 +299,7 @@ public sealed class FlightRecorder
             ArchiveRecoveryState();
             Flight = null;
             previous = null;
+            previousSnapshot = null;
             lastQueuedAt = null;
             Pending = [];
             PendingEvents = [];
@@ -371,16 +386,16 @@ public sealed class FlightRecorder
         QueueEvent(code, sample);
     }
 
-    private void QueuePosition(Sample sample) {
+    private void QueuePosition(Sample sample, AircraftSnapshot? snapshot = null) {
         if (Pending.Any(x => x.Sample.SampleId == sample.SampleId)) return;
-        Pending.Add(new(sample));
+        Pending.Add(new(sample, snapshot));
         lastQueuedAt = sample.RecordedAt;
     }
 
     private void QueuePosition(AircraftSnapshot snapshot, Sample fallback)
     {
-        if (TryToLegacySample(snapshot, out var sample)) QueuePosition(sample);
-        else QueuePosition(fallback);
+        if (TryToLegacySample(snapshot, out var sample)) QueuePosition(sample, snapshot);
+        else QueuePosition(fallback, snapshot);
     }
 
     private void QueueEvent(string name, Sample sample, double? value = null)
@@ -407,8 +422,7 @@ public sealed class FlightRecorder
         sample = default!;
         if (s.Latitude is null || s.Longitude is null || s.AltitudeMslFeet is null || s.AltitudeAglFeet is null
             || s.IndicatedAirspeedKnots is null || s.GroundSpeedKnots is null || s.VerticalSpeedFeetPerMinute is null
-            || s.HeadingDegrees is null || s.FuelWeight is null || s.OnGround is null || s.GearDown is null
-            || s.FlapsPercent is null || s.ParkingBrake is null) return false;
+            || s.HeadingDegrees is null || s.FuelWeight is null || s.OnGround is null) return false;
         var engines = s.EnginesRunning ?? [];
         sample = new Sample(
             s.SampleId,
@@ -424,13 +438,13 @@ public sealed class FlightRecorder
             s.FuelWeight.Value,
             s.OnGround.Value,
             s.BankDegrees ?? 0,
-            s.GearDown.Value,
+            s.GearDown ?? false,
             (s.TouchdownVerticalSpeedFeetPerMinute ?? s.VerticalSpeedFeetPerMinute.Value) / 60d,
-            s.FlapsPercent.Value,
+            s.FlapsPercent ?? 0,
             false,
             0,
             0,
-            s.ParkingBrake.Value,
+            s.ParkingBrake ?? false,
             BeaconLight: s.BeaconLight ?? false,
             LandingLight: s.LandingLight ?? false,
             Engine1Running: engines.ElementAtOrDefault(0),

@@ -145,6 +145,17 @@
     <section id="record" class="panel">
       <div class="workspace-title"><div><span class="kicker">FLIGHT OPERATIONS</span><h2>Enregistrement ACARS</h2></div><strong id="flightSafetyState" class="ready-state">STANDBY</strong></div>
       <div id="preflightChecks" class="preflight-checks" aria-label="Contrôles avant départ"></div>
+      <section id="aircraftCapabilities" class="capability-panel" hidden>
+        <div class="capability-heading">
+          <div><span class="kicker">AIRCRAFT DATA PROFILE</span><h3 id="capabilityAircraft">Appareil détecté</h3><p id="capabilityAdapter" class="hint"></p></div>
+          <div class="capability-counts" aria-label="Résumé des capacités">
+            <span class="supported"><b id="capabilitySupported">0</b> supported</span>
+            <span class="unknown"><b id="capabilityUnknown">0</b> unknown</span>
+            <span class="unsupported"><b id="capabilityUnsupported">0</b> unsupported</span>
+          </div>
+        </div>
+        <div id="capabilityMatrix" class="capability-matrix"></div>
+      </section>
       <div class="cards"><div><span>Phase</span><strong id="phase">—</strong></div><div><span>Altitude</span><strong id="altitude">—</strong></div><div><span>GS</span><strong id="groundSpeed">—</strong></div><div><span>Carburant</span><strong id="fuel">—</strong></div><div><span>Distance</span><strong id="distance">—</strong></div><div><span>Temps de vol</span><strong id="airborne">—</strong></div><div><span>Synchronisation</span><strong id="pending">0</strong></div></div>
       <p id="warning" class="hint"></p><div class="actions"><button id="startBtn" class="primary">Démarrer l’enregistrement</button><button id="pauseBtn">Pause</button><button id="resumeBtn">Reprendre</button><button id="syncBtn">Synchroniser</button><button id="fileBtn">Revoir & déposer le PIREP</button></div><p id="recordMessage" class="message" hidden></p>
     </section>

@@ -108,13 +108,25 @@ public sealed class TelemetryService(ISimulatorConnector sim, FlightRecorder rec
                     ? $"promethee/pireps/{Uri.EscapeDataString(flight.PirepId)}/telemetry"
                     : $"v1/operations/{Uri.EscapeDataString(flight.OperationId)}/telemetry";
                 await client.Send(telemetryPath, new {
-                        samples = pending.Select(x => new {
+                        samples = pending.Select(x => {
+                        var raw = x.Snapshot;
+                        return new {
                             sample_id=x.Sample.SampleId, recorded_at=x.Sample.RecordedAt, lat=x.Sample.Lat, lon=x.Sample.Lon,
-                            altitude_msl=x.Sample.Altitude, agl=x.Sample.Agl, ias=x.Sample.Ias, gs=x.Sample.Gs,
-                            vs=x.Sample.Vs, heading=x.Sample.Heading, fuel=x.Sample.Fuel, bank=x.Sample.Bank,
-                            on_ground=x.Sample.OnGround, gear_down=x.Sample.GearDown, landing_flaps=x.Sample.Flaps > 0,
-                            thrust_stable=x.Sample.ThrustStable, phase=flight.Phase
-                        })
+                            altitude_msl=raw?.AltitudeMslFeet ?? x.Sample.Altitude,
+                            agl=raw?.AltitudeAglFeet ?? x.Sample.Agl,
+                            ias=raw?.IndicatedAirspeedKnots ?? x.Sample.Ias,
+                            gs=raw?.GroundSpeedKnots ?? x.Sample.Gs,
+                            vs=raw?.VerticalSpeedFeetPerMinute ?? x.Sample.Vs,
+                            heading=raw?.HeadingDegrees ?? x.Sample.Heading,
+                            fuel=raw?.FuelWeight ?? x.Sample.Fuel,
+                            bank=raw?.BankDegrees,
+                            on_ground=raw?.OnGround ?? x.Sample.OnGround,
+                            gear_down=raw?.GearDown,
+                            landing_flaps=raw?.FlapsPercent is { } flaps ? flaps > 0 : (bool?)null,
+                            thrust_stable=raw?.ThrustStable ?? (raw is null ? (bool?)x.Sample.ThrustStable : null),
+                            phase=flight.Phase
+                        };
+                    })
                     });
                 } catch (InvalidOperationException) {
                     // The detailed archive is optional during a rolling server

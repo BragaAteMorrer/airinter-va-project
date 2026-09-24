@@ -1024,6 +1024,50 @@ $('#submitReviewBtn').onclick = async () => {
   }
 };
 
+const capabilityLabels = {
+  Position: 'Position', AltitudeMsl: 'Altitude MSL', AltitudeAgl: 'Altitude AGL',
+  IndicatedAirspeed: 'IAS', GroundSpeed: 'Ground speed', VerticalSpeed: 'Vertical speed',
+  Heading: 'Heading', Track: 'Track', Pitch: 'Pitch', Bank: 'Bank', Fuel: 'Fuel', GrossWeight: 'Gross weight',
+  OnGround: 'On ground', ParkingBrake: 'Parking brake', Gear: 'Gear', Flaps: 'Flaps', Spoilers: 'Spoilers',
+  Engines: 'Engines', BeaconLight: 'Beacon', NavigationLight: 'Nav lights', StrobeLight: 'Strobes',
+  LandingLight: 'Landing lights', TaxiLight: 'Taxi lights', SeatBeltSign: 'Seat belt sign', Doors: 'Doors',
+  Transponder: 'Transponder', Autopilot: 'Autopilot', ThrustStable: 'Thrust stable', Slew: 'Slew', Pause: 'Pause', SimulationRate: 'Sim rate',
+  TouchdownRate: 'Touchdown rate', AircraftTitle: 'Aircraft title', AircraftIcao: 'Aircraft ICAO', AircraftModel: 'Aircraft model'
+};
+
+function renderAircraftCapabilities(report) {
+  const panel = $('#aircraftCapabilities');
+  if (!panel) return;
+  if (!report) { panel.hidden = true; return; }
+  panel.hidden = false;
+  const read = (camel, pascal) => report?.[camel] ?? report?.[pascal];
+  setText($('#capabilityAircraft'), read('aircraftLabel','AircraftLabel') || 'Appareil non identifié');
+  const adapterName = read('adapterName','AdapterName') || 'Generic aircraft';
+  const connector = read('connectorId','ConnectorId') || 'connector';
+  setText($('#capabilityAdapter'), adapterName + ' · ' + connector);
+  setText($('#capabilitySupported'), String(read('supportedCount','SupportedCount') ?? 0));
+  setText($('#capabilityUnknown'), String(read('unknownCount','UnknownCount') ?? 0));
+  setText($('#capabilityUnsupported'), String(read('unsupportedCount','UnsupportedCount') ?? 0));
+
+  const matrix = $('#capabilityMatrix');
+  matrix.replaceChildren();
+  const entries = read('capabilities','Capabilities') || [];
+  entries.forEach(entry => {
+    const capability = entry.capability ?? entry.Capability;
+    const availability = String(entry.availability ?? entry.Availability ?? 'Unknown');
+    const source = entry.source ?? entry.Source ?? '';
+    const item = document.createElement('span');
+    item.className = 'capability-item ' + availability.toLowerCase();
+    const label = document.createElement('strong');
+    label.textContent = capabilityLabels[capability] || capability;
+    const state = document.createElement('small');
+    state.textContent = availability.toUpperCase();
+    item.title = source;
+    item.append(label, state);
+    matrix.append(item);
+  });
+}
+
 function renderRecovery(status) {
   const center = $('#recoveryCenter');
   if (!center) return;
@@ -1129,6 +1173,7 @@ async function refreshStatus() {
     setIndicator('#syncIndicator', pendingCount === 0 ? 'ok' : (networkDegraded ? 'bad' : 'warn'), pendingCount === 0 ? 'SYNC' : `SYNC ${pendingCount}`);
     updateWorkflow();
     renderRecovery(status);
+    renderAircraftCapabilities(status.aircraftCapabilities || status.AircraftCapabilities);
     const simulators = (status.detectedSimulators || []).map(item => item.displayName || item.DisplayName).filter(Boolean);
     setText($('#simState'), simulators.length ? `${simulators.join(' · ')} — ${status.sim || 'connexion en attente'}` : status.sim || 'Simulateur non détecté');
     setText($('#pending'), String(status.pending ?? 0));

@@ -52,6 +52,35 @@ dans les réponses API, les diagnostics Hermès ou les logs d'activité. Il faut
 
 Les positions et événements non envoyés sont conservés localement après une coupure. Après un redémarrage, le pilote doit explicitement reprendre le vol : l'application ne rattache jamais silencieusement des données à un ancien PIREP.
 
+### Aircraft capabilities et adapters
+
+Hermès maintient désormais un profil de capacités **par avion et par
+connecteur**. Chaque donnée est classée dans un des trois états suivants :
+
+- `SUPPORTED` : la donnée a réellement été observée au moins une fois pour
+  l'avion courant ;
+- `UNKNOWN` : le connecteur sait exposer cette famille de données, mais
+  Hermès ne l'a pas encore reçue pour cet avion ;
+- `UNSUPPORTED` : le connecteur actif n'expose explicitement pas cette
+  famille de données.
+
+Un changement d'identité avion réinitialise les observations afin qu'une
+capacité vue sur un appareil ne soit jamais transférée au suivant.
+
+Le registre d'adapters contient un fallback `generic` et reconnaît
+actuellement les identités Fenix A320, PMDG, Flight Sim Labs et TFDi MD-11.
+Cette reconnaissance **n'est pas une promesse de support** : les capacités
+restent déterminées par la télémétrie réellement reçue. Les adapters sont
+cependant placés dans le chemin de normalisation du hub afin de pouvoir
+ajouter ultérieurement des intégrations vendor-specific sans modifier le
+recorder.
+
+Le recorder accepte maintenant un vol même lorsque certaines données systèmes
+optionnelles (train, volets, frein de parc, bank) sont absentes, à condition
+que les données minimales de navigation nécessaires au suivi soient présentes.
+Les valeurs absentes restent `null` dans la télémétrie détaillée et ne
+déclenchent pas de faux événements FDM.
+
 ### Flight Data Monitoring et Flight Review
 
 Hermès collecte désormais des **observations factuelles** séparées des règles
