@@ -134,6 +134,8 @@ jobs:
           php -l modules/Promethee/Services/SafetyAnalyzer.php
           php -l modules/Promethee/Services/AircraftOperationalStateService.php
           php -l modules/Promethee/Services/DemandProfileService.php
+          php -l modules/Promethee/Services/AirInterCabinProfileService.php
+          php -l modules/Promethee/Config/cabin-profiles.php
           php -l modules/Promethee/Services/EconomyFareResolver.php
           php -l modules/Promethee/Services/BbrReferenceRepairService.php
           php -l modules/Promethee/Database/migrations/2026_09_24_000013_repair_bbr_red_references.php
@@ -141,6 +143,7 @@ jobs:
           php -l modules/Promethee/Database/migrations/2026_09_25_000015_ensure_simbrief_api_key_setting.php
           php -l tests/PrometheeDemandEconomyTest.php
           php -l modules/Promethee/routes.php
+          php -l app/Http/Controllers/Auth/RegisterController.php
           php -l app/Http/Controllers/Api/AcarsSessionController.php
           php -l app/Http/Controllers/Api/AcarsSimBriefController.php
           php -l app/Services/SimBriefService.php
