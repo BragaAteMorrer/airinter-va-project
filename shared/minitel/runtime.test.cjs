@@ -173,6 +173,21 @@ test('M6 exposes color and monochrome display modes without altering logical col
   assert.equal(screen.snapshot().cells[1][1].attrs.foreground, 'yellow');
 });
 
+
+test('logical input may exceed 40 display columns for M5/M6 forms', () => {
+  const input = new MinitelInputBuffer(160);
+  for (let i = 0; i < 160; i += 1) assert.equal(input.append('A'), true);
+  assert.equal(input.value.length, 160);
+  assert.equal(input.append('B'), false);
+});
+
+test('fresh Videotex transmission may skip untouched blank cells after clear-screen', () => {
+  const screen = new MinitelScreenBuffer();
+  screen.write(2, 3, 'AIR');
+  const ops = transmissionOperations(screen.snapshot(), null, { skipDefaultBlank: true });
+  assert.deepEqual(ops.map(op => [op.row, op.column]), [[2,3],[2,4],[2,5]]);
+});
+
 (async () => {
   let failures = 0;
   for (const [name, fn] of tests) {
