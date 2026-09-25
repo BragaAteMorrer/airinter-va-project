@@ -19,7 +19,8 @@
     briefing: null,
     dispatch: null,
     result: null,
-    simbriefApiState: null
+    simbriefApiState: null,
+    operationPage: 1
   };
 
   let shell;
@@ -246,21 +247,33 @@
         screen.write(2, 1, 'MES OPERATIONS', { foreground: 'yellow' });
         if (renderLoadingOrError(screen)) return;
         screen.write(4, 1, 'N VOL      TRAJET       ETAT', { foreground: 'cyan' });
-        const items = state.collection?.operations || [];
-        items.slice(0, 7).forEach((item, index) => {
+        const allItems = state.collection?.operations || [];
+        const operationPages = Math.max(1, Math.ceil(allItems.length / 7));
+        state.operationPage = Math.max(1, Math.min(operationPages, state.operationPage));
+        const items = allItems.slice((state.operationPage - 1) * 7, state.operationPage * 7);
+        items.forEach((item, index) => {
           const row = 6 + index * 2;
           const flight = item.flight || {};
           screen.write(row, 1, String(index + 1) + ' ' + fit(flight.ident, 8) + ' ' + fit(flight.departure + '>' + flight.arrival, 11) + ' ' + fit(item.status, 13));
           screen.write(row + 1, 3, fit(item.aircraft?.registration || 'APPAREIL A SELECTIONNER', 35), { foreground: item.aircraft ? 'green' : 'yellow' });
         });
-        if (!items.length) screen.write(8, 4, 'AUCUNE OPERATION RESERVEE');
-        screen.write(20, 1, 'CHOIX : ' + current.input.value + ' + ENVOI', { foreground: 'yellow' });
-        writeFooter(screen);
+        if (!allItems.length) screen.write(8, 4, 'AUCUNE OPERATION RESERVEE');
+        screen.write(20, 1, 'CHOIX : ' + current.input.value + '  PAGE ' + state.operationPage + '/' + operationPages, { foreground: 'yellow' });
+        writeFooter(screen, operationPages > 1);
       },
       acceptInput: (key) => /^[1-7]$/.test(key),
       send: (value) => {
-        const item = (state.collection?.operations || [])[Number(value) - 1];
+        const allItems = state.collection?.operations || [];
+        const item = allItems[((state.operationPage - 1) * 7) + Number(value) - 1];
         if (item) action('select-operation', { operation: item });
+      },
+      next: () => {
+        const pages = Math.max(1, Math.ceil((state.collection?.operations || []).length / 7));
+        state.operationPage = Math.min(pages, state.operationPage + 1);
+      },
+      previous: () => {
+        if (state.operationPage > 1) { state.operationPage -= 1; return null; }
+        return 'home';
       }
     }));
 
@@ -534,6 +547,7 @@
       } else if (target === 'operations') {
         const data = await requestJson(state.bootstrap.endpoints.operations);
         state.collection = data.data || { operations: [] };
+        state.operationPage = 1;
       } else if (['flights', 'routes', 'fleet', 'pilots', 'calendar'].includes(target)) {
         state.collection = await requestJson(pageUrl(state.bootstrap.endpoints[target], {
           q: state.query,
