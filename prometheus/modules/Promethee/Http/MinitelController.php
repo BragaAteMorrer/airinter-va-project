@@ -228,8 +228,8 @@ class MinitelController extends Controller
             'items' => collect($page->items())->map(fn ($event) => [
                 'id' => (int) $event->id,
                 'title' => $event->title,
-                'starts_at' => optional($event->starts_at ? \Carbon\CarbonImmutable::parse($event->starts_at) : null)?->setTimezone('Europe/Paris')->format('d/m H:i'),
-                'ends_at' => optional($event->ends_at ? \Carbon\CarbonImmutable::parse($event->ends_at) : null)?->setTimezone('Europe/Paris')->format('d/m H:i'),
+                'starts_at' => $event->starts_at ? \Carbon\CarbonImmutable::parse($event->starts_at)->setTimezone('Europe/Paris')->format('d/m H:i') : null,
+                'ends_at' => $event->ends_at ? \Carbon\CarbonImmutable::parse($event->ends_at)->setTimezone('Europe/Paris')->format('d/m H:i') : null,
                 'location' => $event->location ?? null,
             ])->values(),
             'pagination' => $this->paginationPayload($page),
