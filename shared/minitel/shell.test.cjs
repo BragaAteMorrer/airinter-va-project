@@ -7,6 +7,7 @@ const {
   EXIT_REASONS,
   buildServiceLine,
   createBootSequence,
+  createSettingsPage,
   registerSystemPages,
   MinitelShell
 } = require('./shell.js');
@@ -199,6 +200,63 @@ test('start wires GUIDE and CONNEXION/FIN as global system commands', async () =
   session.dispatch('Enter');
   keyboard.afterDispatch(outcome);
   assert.equal(exitReason, EXIT_REASONS.CONNECT_END);
+});
+
+
+test('M6 boot sequence contains real alphamosaic Air Inter cells', () => {
+  const frames = createBootSequence({ product: 'PROMETHEE', identity: 'IT199' });
+  const mosaicCells = frames.flatMap(frame => frame.cells.flat()).filter(cell => cell.attrs.mosaic);
+  assert.ok(mosaicCells.length > 0);
+  assert.ok(mosaicCells.some(cell => cell.attrs.foreground === 'blue'));
+});
+
+test('M6 settings page changes speed and monochrome preference through terminal input', () => {
+  const session = new runtime.MinitelSession({
+    homePageId: 'home',
+    speed: 'fast',
+    context: {}
+  }).register(new runtime.MinitelPage('home', { onRender: () => {} }));
+  registerSystemPages(session, { speed: 'fast', displayMode: 'color' });
+  session.go(SYSTEM_PAGES.SETTINGS, { recordHistory: false });
+
+  session.dispatch('1');
+  session.dispatch('Enter');
+  assert.equal(session.context.__minitelPreferenceChange.speed, 'authentic');
+  assert.equal(session.context.__minitelPreferences.speed, 'authentic');
+
+  session.dispatch('5');
+  session.dispatch('Enter');
+  assert.equal(session.context.__minitelPreferenceChange.displayMode, 'monochrome');
+  assert.equal(session.context.__minitelPreferences.displayMode, 'monochrome');
+});
+
+test('M6 shell applies renderer preferences and reports them to the client', () => {
+  let persisted = null;
+  const renderer = {
+    speed: null,
+    mode: null,
+    setSpeed(value) { this.speed = value; return true; },
+    setDisplayMode(value) { this.mode = value; return true; }
+  };
+  const session = new runtime.MinitelSession({ homePageId: 'home' })
+    .register(new runtime.MinitelPage('home', { onRender: () => {} }));
+  const shell = new MinitelShell({
+    document: new FakeDocument(),
+    window: new FakeWindow(true),
+    host: new FakeElement('main'),
+    session,
+    renderer,
+    speed: 'fast',
+    displayMode: 'color',
+    onPreferencesChange: value => { persisted = value; }
+  });
+
+  const result = shell.applyPreferences({ speed: 'authentic', displayMode: 'monochrome' });
+  assert.equal(result.speed, 'authentic');
+  assert.equal(result.displayMode, 'monochrome');
+  assert.equal(renderer.speed, 'authentic');
+  assert.equal(renderer.mode, 'monochrome');
+  assert.deepEqual(persisted, { speed: 'authentic', displayMode: 'monochrome' });
 });
 
 (async () => {
