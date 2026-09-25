@@ -268,7 +268,10 @@ class AcarsSimBriefController extends Controller
 
     public function readinessOperation(Request $request, string $operation): JsonResponse
     {
-        $resolved = $this->resolver->resolveOperation($operation, Auth::user());
+        [, $aircraftId, $operationId] = $this->operationContext($operation);
+        $request->merge(['aircraft_id' => $aircraftId, 'operation_id' => $operationId]);
+        $attrs = $this->validatePlanningRequest($request);
+        $resolved = $this->resolver->resolveOperation($operation, Auth::user(), $attrs);
 
         return response()->json([
             'data' => $this->resolver->publicView($resolved),
