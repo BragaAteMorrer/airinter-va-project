@@ -7,6 +7,7 @@ use App\Models\Airport;
 use App\Models\Bid;
 use App\Models\Enums\AircraftState;
 use App\Models\Enums\AircraftStatus;
+use App\Models\Enums\FareType;
 use App\Models\Flight;
 use App\Models\User;
 use App\Services\FareService;
@@ -101,7 +102,7 @@ class SimBriefOperationResolver
             'Le niveau de vol résolu doit être compris entre FL010 et FL600.');
 
         $profile = $this->demand->profile($aircraft, $flight, $operationId);
-        $effectiveFares = $this->effectiveFares($flight, $aircraft);
+        $effectiveFares = $this->effectiveFares($flight, $aircraft, (int) $profile['capacity']);
 
         $callsign = setting('simbrief.callsign', true)
             ? trim((string) $user->ident)
@@ -340,9 +341,9 @@ class SimBriefOperationResolver
         ];
     }
 
-    private function effectiveFares(Flight $flight, Aircraft $aircraft): array
+    private function effectiveFares(Flight $flight, Aircraft $aircraft, int $cabinCapacity): array
     {
-        return $this->fares
+        $fares = $this->fares
             ->getFareWithOverrides($aircraft->subfleet?->fares ?? collect(), $flight->fares)
             ->filter(fn ($fare) => $fare->active && !empty($fare->capacity))
             ->map(fn ($fare) => [
@@ -355,8 +356,40 @@ class SimBriefOperationResolver
                 'price' => (float) $fare->price,
                 'cost' => (float) $fare->cost,
             ])
-            ->values()
-            ->all();
+            ->values();
+
+        $passengerIndexes = $fares
+            ->keys()
+            ->filter(fn ($index) => ($fares[$index]['type'] ?? null) === FareType::PASSENGER)
+            ->values();
+
+        $databasePassengerCapacity = $passengerIndexes
+            ->sum(fn ($index) => (int) ($fares[$index]['capacity'] ?? 0));
+
+        if ($cabinCapacity > 0 && $databasePassengerCapacity > 0
+            && $databasePassengerCapacity !== $cabinCapacity
+            && $passengerIndexes->isNotEmpty()) {
+            $remaining = $cabinCapacity;
+            $lastIndex = $passengerIndexes->last();
+
+            foreach ($passengerIndexes as $index) {
+                if ($index === $lastIndex) {
+                    $newCapacity = $remaining;
+                } else {
+                    $share = (int) round(
+                        $cabinCapacity * ((int) $fares[$index]['capacity'] / $databasePassengerCapacity)
+                    );
+                    $newCapacity = max(0, min($remaining, $share));
+                    $remaining -= $newCapacity;
+                }
+
+                $fare = $fares[$index];
+                $fare['capacity'] = $newCapacity;
+                $fares[$index] = $fare;
+            }
+        }
+
+        return $fares->values()->all();
     }
 
     private function readinessChecks(
