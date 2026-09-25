@@ -1,4 +1,4 @@
-# 3615 AIRINTER — Minitel Runtime (M0 + M1 + M2 + M3 + M4)
+# 3615 AIRINTER — Minitel Runtime (M0 + M1 + M2 + M3 + M4 + M5)
 
 This directory contains the shared, framework-free foundation for the Air Inter Videotex experience used by Prométhée and Hermès.
 
@@ -160,3 +160,39 @@ uses the same `/api/start` command.
 
 M5 will extend the terminal after start with the full in-flight workspace:
 live telemetry, phase management, Datalink, journal, network and Flight Review.
+
+
+## M5 — Hermès in-flight operations
+
+M5 extends `3615 HERMES` after ACARS start and keeps the terminal on the same
+local recorder, telemetry worker, Datalink store and presence services as the
+modern UI.
+
+Supported in-flight surfaces:
+
+- live phase, altitude, IAS/GS, vertical speed, heading, fuel, distance,
+  airborne time and synchronization queue;
+- pause and resume of the existing local FlightRecorder;
+- forced telemetry/SOP synchronization;
+- Datalink local-first mailbox with periodic refresh;
+- Datalink READ and ACK receipts;
+- keyboard-only message/reply composition (160-character terminal surface,
+  while the backend retains its larger protocol limit);
+- operational journal/timeline pagination;
+- Air Inter Network crew presence and heartbeat-backed refresh;
+- Flight Review summary;
+- Flight Review FDM observations and company-rule issues;
+- final PIREP filing after the recorder reaches IN;
+- Recovery Center entry and recovery resume after an interrupted Hermès session.
+
+The Minitel does not calculate flight phases or FDM scores. Phase transitions,
+flight metrics and observations come directly from `FlightRecorder`,
+`FlightTrackingEngine` and `FlightDataMonitor`.
+
+Datalink remains local-first: outgoing messages, READ receipts and ACKs are
+queued by `HermesDatalink` before network I/O, exactly as in the graphical UI.
+Air Inter Network uses `HermesPresence`; no stale presence is replayed.
+
+M5 deliberately keeps recovery abandonment in the graphical interface because
+it archives and clears local flight state. Recovery resume itself is available
+from the terminal.
