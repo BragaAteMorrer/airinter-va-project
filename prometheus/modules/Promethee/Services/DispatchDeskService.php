@@ -19,13 +19,14 @@ class DispatchDeskService
         private readonly DatalinkService $datalink,
         private readonly FlightOpsService $flightOps,
         private readonly SafetyAnalyzer $safetyAnalyzer,
+        private readonly AirInterNetworkService $airInterNetwork,
     ) {}
 
     public function board(): array
     {
         $bids = Bid::query()
             ->with([
-                'user:id,name,pilot_id',
+                'user:id,name,pilot_id,airline_id,vatsim_id,ivao_id',
                 'flight.airline',
                 'flight.dpt_airport',
                 'flight.arr_airport',
@@ -93,7 +94,7 @@ class DispatchDeskService
 
         $bid = Bid::query()
             ->with([
-                'user:id,name,pilot_id,email',
+                'user:id,name,pilot_id,email,airline_id,vatsim_id,ivao_id',
                 'flight.airline',
                 'flight.dpt_airport',
                 'flight.arr_airport',
@@ -147,8 +148,9 @@ class DispatchDeskService
             'overview' => [
                 'pilot' => [
                     'id' => $bid->user_id,
-                    'ident' => $bid->user?->pilot_id,
+                    'ident' => $bid->user?->ident ?? $bid->user?->pilot_id,
                     'name' => $bid->user?->name,
+                    'networks' => $summary['pilot']['networks'] ?? null,
                 ],
                 'preflight_checks' => [
                     ['code' => 'OPERATION', 'ready' => true, 'label' => 'Opération réservée'],
@@ -233,6 +235,14 @@ class DispatchDeskService
                 'paused' => $operations->where('status', 'PAUSED')->count(),
                 'attention' => $operations->filter(fn (array $operation) => count($operation['alerts']) > 0)->count(),
                 'pending_ops_ack' => $operations->sum('datalink.pending_ops_ack'),
+                'vatsim_online' => $operations->filter(fn (array $operation) =>
+                    collect(data_get($operation, 'pilot.networks.online_connections', []))
+                        ->contains(fn (array $connection) => ($connection['network'] ?? null) === 'VATSIM')
+                )->count(),
+                'ivao_online' => $operations->filter(fn (array $operation) =>
+                    collect(data_get($operation, 'pilot.networks.online_connections', []))
+                        ->contains(fn (array $connection) => ($connection['network'] ?? null) === 'IVAO')
+                )->count(),
             ],
             'operations' => $operations->values(),
         ];
@@ -287,6 +297,21 @@ class DispatchDeskService
         ], $payload);
 
         $alerts = $live['alerts'] ?? [];
+        $onlineNetworks = $bid->user
+            ? $this->airInterNetwork->pilot($bid->user)
+            : ['linked' => false, 'online' => false, 'connections' => [], 'online_connections' => [], 'primary' => null];
+
+        $networkCallsign = strtoupper(trim((string) data_get($onlineNetworks, 'primary.callsign', '')));
+        $scheduledCallsign = strtoupper(trim((string) ($bid->flight?->ident ?? '')));
+        if ($networkCallsign !== '' && $scheduledCallsign !== ''
+            && preg_replace('/[^A-Z0-9]/', '', $networkCallsign) !== preg_replace('/[^A-Z0-9]/', '', $scheduledCallsign)) {
+            $alerts[] = [
+                'level' => 'warning',
+                'label' => 'Callsign réseau '.$networkCallsign.' différent du vol prévu '.$scheduledCallsign,
+                'code' => 'NETWORK_CALLSIGN_MISMATCH',
+            ];
+        }
+
         if ($pendingOpsAck > 0) {
             $alerts[] = [
                 'level' => 'warning',
@@ -310,8 +335,9 @@ class DispatchDeskService
             ],
             'pilot' => [
                 'id' => $bid->user_id,
-                'ident' => $bid->user?->pilot_id,
+                'ident' => $bid->user?->ident ?? $bid->user?->pilot_id,
                 'name' => $bid->user?->name,
+                'networks' => $onlineNetworks,
             ],
             'aircraft' => $bid->aircraft ? [
                 'id' => $bid->aircraft->id,
