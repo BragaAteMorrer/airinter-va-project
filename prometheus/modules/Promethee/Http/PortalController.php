@@ -494,6 +494,7 @@ class PortalController extends Controller
             'airlines' => Airline::where('active', true)->orderBy('name')->get(['id','name','icao']),
             'airports' => Airport::orderBy('icao')->get(['id','icao','name','location']),
             'countries' => Countries::getSelectList(),
+            'timezones' => DateTimeZone::listIdentifiers(),
         ]);
     }
     public function updateProfile(Request $r) {
