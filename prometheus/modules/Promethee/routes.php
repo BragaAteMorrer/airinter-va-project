@@ -2,6 +2,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Frontend\LanguageController;
 use Modules\Promethee\Http\PortalController;
+use Modules\Promethee\Http\MinitelController;
 use Modules\Promethee\Http\TelemetryController;
 use Modules\Promethee\Http\AcarsOperationsController;
 use Modules\Promethee\Http\AcarsConfigurationController;
@@ -42,6 +43,13 @@ Route::redirect('/dfleet', '/fleet', 301)->middleware('web');
 Route::middleware(['web','auth'])->name('promethee.')->group(function () {
     Route::get('/', [PortalController::class,'dashboard'])->name('dashboard');
     Route::get('/departure-board-data', [PortalController::class,'departureBoardData'])->name('departure-board.data');
+    Route::prefix('minitel')->name('minitel.')->group(function () {
+        Route::get('/bootstrap', [MinitelController::class, 'bootstrap'])->name('bootstrap');
+        Route::get('/flights', [MinitelController::class, 'flights'])->name('flights');
+        Route::get('/fleet', [MinitelController::class, 'fleet'])->name('fleet');
+        Route::get('/pilots', [MinitelController::class, 'pilots'])->name('pilots');
+        Route::get('/profile', [MinitelController::class, 'profile'])->name('profile');
+    });
     Route::get('/profile', [PortalController::class,'profile'])->name('profile');
     Route::get('/profile/edit', [PortalController::class,'editProfile'])->name('profile.edit');
     Route::patch('/profile', [PortalController::class,'updateProfile'])->name('profile.update');
