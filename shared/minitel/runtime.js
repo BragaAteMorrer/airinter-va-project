@@ -8,6 +8,13 @@
   const WIDTH = 40;
   const HEIGHT = 25;
   const SERVICE_ROW = 0;
+  const MOSAIC_COLUMNS = 2;
+  const MOSAIC_ROWS = 3;
+
+  const DISPLAY_MODES = Object.freeze({
+    color: 'color',
+    monochrome: 'monochrome'
+  });
 
   const ACTIONS = Object.freeze({
     SEND: 'ENVOI',
@@ -37,16 +44,31 @@
     doubleWidth: false,
     doubleHeight: false,
     mosaic: false,
+    mosaicMask: 0,
+    separatedMosaic: false,
     concealed: false
   });
 
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
+  function normalizeMosaicMask(value) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return 0;
+    return clamp(Math.trunc(number), 0, 63);
+  }
+
+  function mosaicBits(mask) {
+    const value = normalizeMosaicMask(mask);
+    return Object.freeze(Array.from({ length: 6 }, (_, index) => Boolean(value & (1 << index))));
+  }
+
   class MinitelCell {
     constructor(character = ' ', attrs = {}) {
       const chars = Array.from(String(character || ' '));
       this.character = chars.length ? chars[0] : ' ';
-      this.attrs = Object.freeze({ ...DEFAULT_ATTRS, ...attrs });
+      const normalized = { ...DEFAULT_ATTRS, ...attrs };
+      if (normalized.mosaic) normalized.mosaicMask = normalizeMosaicMask(normalized.mosaicMask);
+      this.attrs = Object.freeze(normalized);
       Object.freeze(this);
     }
   }
@@ -97,6 +119,22 @@
         if (c >= 0 && this.set(r, c, character, attrs)) written += 1;
         c += 1;
       }
+      return written;
+    }
+
+    mosaic(row, column, mask, attrs = {}) {
+      return this.set(row, column, ' ', {
+        ...attrs,
+        mosaic: true,
+        mosaicMask: normalizeMosaicMask(mask)
+      });
+    }
+
+    writeMosaic(row, column, masks, attrs = {}) {
+      let written = 0;
+      Array.from(masks || []).forEach((mask, index) => {
+        if (this.mosaic(row, column + index, mask, attrs)) written += 1;
+      });
       return written;
     }
 
@@ -375,6 +413,9 @@
     WIDTH,
     HEIGHT,
     SERVICE_ROW,
+    MOSAIC_COLUMNS,
+    MOSAIC_ROWS,
+    DISPLAY_MODES,
     ACTIONS,
     SPEEDS,
     DEFAULT_ATTRS,
@@ -384,6 +425,8 @@
     MinitelPage,
     MinitelSession,
     mapKeyboardEvent,
+    normalizeMosaicMask,
+    mosaicBits,
     transmissionOperations,
     transmissionDelay,
     minitelCapability
