@@ -8,6 +8,14 @@
   const WIDTH = 40;
   const HEIGHT = 25;
   const SERVICE_ROW = 0;
+  const MOSAIC_COLUMNS = 2;
+  const MOSAIC_ROWS = 3;
+  const MAX_INPUT_LENGTH = 2048;
+
+  const DISPLAY_MODES = Object.freeze({
+    color: 'color',
+    monochrome: 'monochrome'
+  });
 
   const ACTIONS = Object.freeze({
     SEND: 'ENVOI',
@@ -37,16 +45,31 @@
     doubleWidth: false,
     doubleHeight: false,
     mosaic: false,
+    mosaicMask: 0,
+    separatedMosaic: false,
     concealed: false
   });
 
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
+  function normalizeMosaicMask(value) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return 0;
+    return clamp(Math.trunc(number), 0, 63);
+  }
+
+  function mosaicBits(mask) {
+    const value = normalizeMosaicMask(mask);
+    return Object.freeze(Array.from({ length: 6 }, (_, index) => Boolean(value & (1 << index))));
+  }
+
   class MinitelCell {
     constructor(character = ' ', attrs = {}) {
       const chars = Array.from(String(character || ' '));
       this.character = chars.length ? chars[0] : ' ';
-      this.attrs = Object.freeze({ ...DEFAULT_ATTRS, ...attrs });
+      const normalized = { ...DEFAULT_ATTRS, ...attrs };
+      if (normalized.mosaic) normalized.mosaicMask = normalizeMosaicMask(normalized.mosaicMask);
+      this.attrs = Object.freeze(normalized);
       Object.freeze(this);
     }
   }
@@ -100,6 +123,22 @@
       return written;
     }
 
+    mosaic(row, column, mask, attrs = {}) {
+      return this.set(row, column, ' ', {
+        ...attrs,
+        mosaic: true,
+        mosaicMask: normalizeMosaicMask(mask)
+      });
+    }
+
+    writeMosaic(row, column, masks, attrs = {}) {
+      let written = 0;
+      Array.from(masks || []).forEach((mask, index) => {
+        if (this.mosaic(row, column + index, mask, attrs)) written += 1;
+      });
+      return written;
+    }
+
     fill(row, fromColumn, toColumn, character = ' ', attrs = {}) {
       const start = clamp(fromColumn, 0, this.width - 1);
       const end = clamp(toColumn, 0, this.width - 1);
@@ -135,7 +174,7 @@
 
   class MinitelInputBuffer {
     constructor(maxLength = WIDTH) {
-      this.maxLength = clamp(Number(maxLength) || WIDTH, 1, WIDTH);
+      this.maxLength = clamp(Number(maxLength) || WIDTH, 1, MAX_INPUT_LENGTH);
       this.value = '';
     }
 
@@ -335,12 +374,20 @@
     return Object.keys(DEFAULT_ATTRS).every((key) => left[key] === right[key]);
   }
 
-  function transmissionOperations(snapshot, previousSnapshot = null) {
+  function isDefaultBlank(cell) {
+    return Boolean(cell)
+      && cell.character === ' '
+      && Object.keys(DEFAULT_ATTRS).every((key) => cell.attrs[key] === DEFAULT_ATTRS[key]);
+  }
+
+  function transmissionOperations(snapshot, previousSnapshot = null, options = {}) {
     const operations = [];
+    const skipDefaultBlank = Boolean(options.skipDefaultBlank);
     for (let row = 0; row < HEIGHT; row += 1) {
       for (let column = 0; column < WIDTH; column += 1) {
         const cell = snapshot.cells[row][column];
         const previous = previousSnapshot?.cells?.[row]?.[column];
+        if (!previous && skipDefaultBlank && isDefaultBlank(cell)) continue;
         if (!previous || previous.character !== cell.character || !sameAttrs(previous.attrs, cell.attrs)) {
           operations.push(Object.freeze({ row, column, cell }));
         }
@@ -375,6 +422,10 @@
     WIDTH,
     HEIGHT,
     SERVICE_ROW,
+    MOSAIC_COLUMNS,
+    MOSAIC_ROWS,
+    MAX_INPUT_LENGTH,
+    DISPLAY_MODES,
     ACTIONS,
     SPEEDS,
     DEFAULT_ATTRS,
@@ -384,6 +435,9 @@
     MinitelPage,
     MinitelSession,
     mapKeyboardEvent,
+    normalizeMosaicMask,
+    mosaicBits,
+    isDefaultBlank,
     transmissionOperations,
     transmissionDelay,
     minitelCapability
