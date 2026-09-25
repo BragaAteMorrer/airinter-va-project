@@ -1,0 +1,6 @@
+.promethee-minitel-overlay{position:fixed;inset:0;z-index:2147483000;min-height:100dvh;background:#111}
+.promethee-minitel-overlay .ai-minitel-shell-host,.promethee-minitel-overlay .ai-minitel-shell{height:100%}
+.promethee-minitel-overlay .ai-minitel-shell-terminal{overflow:auto}
+.ai-minitel-fatal{display:grid;place-items:center;width:min(100%,40ch);min-height:25em;padding:2em;background:#050505;color:#f26767;font-family:"Minitel","Courier New",monospace;white-space:pre-line;text-align:center;line-height:1.4}
+html[data-era="minitel"][data-minitel-runtime="m2"] body{overflow:hidden}
+@media(max-width:899px),(pointer:coarse){html[data-era="minitel"][data-minitel-runtime="m2"] body{overflow:auto}}

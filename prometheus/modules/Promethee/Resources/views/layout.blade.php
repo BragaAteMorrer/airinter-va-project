@@ -1,17 +1,24 @@
 <!doctype html>
-<html lang="{{ app()->getLocale() }}" data-era="modern" data-appearance="light">
+<html lang="{{ app()->getLocale() }}" data-era="modern" data-appearance="light" data-minitel-runtime="m2" @auth data-minitel-bootstrap="{{ route('promethee.minitel.bootstrap') }}" @endauth>
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <title>@yield('title', __('promethee.operations_centre')) · Prométhée · Air Inter</title>
-<script>(() => { try { const era=localStorage.getItem('promethee-era'), appearance=localStorage.getItem('promethee-appearance'); document.documentElement.dataset.era=['modern','2000','minitel'].includes(era)?era:'modern'; document.documentElement.dataset.appearance=['light','dark'].includes(appearance)?appearance:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'); } catch (_) {} })();</script>
+<script>(() => { try { const era=localStorage.getItem('promethee-era'), appearance=localStorage.getItem('promethee-appearance'), minitelSessionDisabled=sessionStorage.getItem('promethee-minitel-session-disabled')==='1'; const selectedEra=['modern','2000','minitel'].includes(era)?era:'modern'; document.documentElement.dataset.era=(selectedEra==='minitel'&&minitelSessionDisabled)?'modern':selectedEra; document.documentElement.dataset.appearance=['light','dark'].includes(appearance)?appearance:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'); } catch (_) {} })();</script>
 <link rel="stylesheet" href="{{ asset('promethee-assets/promethee.css') }}">
 <link rel="stylesheet" href="{{ asset('promethee-assets/promethee-v2.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-v2.css')) }}">
 <link rel="stylesheet" href="{{ asset('promethee-assets/promethee-distinction.css') }}">
 <link rel="stylesheet" href="{{ asset('promethee-assets/promethee-community.css') }}">
 <link rel="stylesheet" href="{{ asset('promethee-assets/airinter-eras.css') }}">
 <link rel="stylesheet" href="{{ asset('promethee-assets/promethee-appearance.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-appearance.css')) }}">
+<link rel="stylesheet" href="{{ asset('promethee-assets/minitel/minitel-runtime.css') }}?v={{ filemtime(public_path('promethee-assets/minitel/minitel-runtime.css')) }}">
+<link rel="stylesheet" href="{{ asset('promethee-assets/minitel/minitel-shell.css') }}?v={{ filemtime(public_path('promethee-assets/minitel/minitel-shell.css')) }}">
+<link rel="stylesheet" href="{{ asset('promethee-assets/promethee-minitel.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-minitel.css')) }}">
+<script src="{{ asset('promethee-assets/minitel/runtime.js') }}?v={{ filemtime(public_path('promethee-assets/minitel/runtime.js')) }}" defer></script>
+<script src="{{ asset('promethee-assets/minitel/renderer.js') }}?v={{ filemtime(public_path('promethee-assets/minitel/renderer.js')) }}" defer></script>
+<script src="{{ asset('promethee-assets/minitel/shell.js') }}?v={{ filemtime(public_path('promethee-assets/minitel/shell.js')) }}" defer></script>
 <script src="{{ asset('promethee-assets/promethee.js') }}?v={{ filemtime(public_path('promethee-assets/promethee.js')) }}" defer></script>
+<script src="{{ asset('promethee-assets/promethee-minitel.js') }}?v={{ filemtime(public_path('promethee-assets/promethee-minitel.js')) }}" defer></script>
 <script src="{{ asset('promethee-assets/navigation-groups.js') }}" defer></script>
 @php
     // Keeping the array out of the @json directive is deliberate: Blade's

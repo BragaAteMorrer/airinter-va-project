@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>3615 AIRINTER — M1</title>
+  <link rel="stylesheet" href="./minitel-runtime.css">
+  <link rel="stylesheet" href="./minitel-shell.css">
+  <style>
+    html,body,#app{height:100%;margin:0}
+    body{background:#111}
+    .demo-modern{min-height:100%;display:grid;place-items:center;background:#f5f7f8;color:#173144;font:16px system-ui}
+    .demo-modern div{max-width:560px;text-align:center;padding:28px}
+    .demo-modern button{padding:10px 16px}
+  </style>
+</head>
+<body>
+  <main id="app"></main>
+
+  <script src="./runtime.js"></script>
+  <script src="./renderer.js"></script>
+  <script src="./shell.js"></script>
+  <script>
+    (async () => {
+      const mt = window.AirInterMinitel;
+      const host = document.getElementById('app');
+
+      const home = new mt.MinitelPage('home', {
+        onRender: (_context, screen, session) => {
+          screen.write(0, 0, mt.buildServiceLine({ service: '3615 AIRINTER', identity: 'IT199', state: 'C' }), { foreground: 'cyan' });
+          screen.write(3, 10, 'AIR INTER', { foreground: 'yellow' });
+          screen.write(5, 7, 'CENTRE DES OPERATIONS');
+          screen.write(8, 4, '1  TABLEAU DES VOLS', { foreground: 'cyan' });
+          screen.write(9, 4, '2  DOSSIER PILOTE', { foreground: 'cyan' });
+          screen.write(10, 4, '3  HERMES', { foreground: 'cyan' });
+          screen.write(17, 4, 'VOTRE CHOIX : ' + session.input.value, { foreground: 'yellow' });
+          screen.write(23, 0, 'GUIDE SOMMAIRE RETOUR SUITE      ENVOI', { foreground: 'cyan' });
+        },
+        acceptInput: (key) => /^[123]$/.test(key),
+        send: (value) => value === '1' ? 'flights' : value === '2' ? 'profile' : value === '3' ? 'hermes' : null
+      });
+
+      const flights = new mt.MinitelPage('flights', {
+        onRender: (_context, screen) => {
+          screen.write(0, 0, mt.buildServiceLine({ service: '3615 AIRINTER', identity: 'IT199', state: 'C' }), { foreground: 'cyan' });
+          screen.write(2, 1, 'DEPARTS ORLY', { foreground: 'yellow' });
+          screen.write(4, 1, 'VOL     DEST.       DEP     ETAT', { foreground: 'cyan' });
+          screen.write(5, 1, '--------------------------------------');
+          screen.write(7, 1, 'ITF049  VICHY       14:35   EMBARQ.');
+          screen.write(8, 1, 'ITF749  ROME        14:45   A L HEURE');
+          screen.write(9, 1, 'ITF870  NICE        15:05   RETARDE', { foreground: 'red' });
+          screen.write(22, 1, 'RETOUR: PAGE PRECEDENTE');
+          screen.write(23, 0, 'GUIDE SOMMAIRE RETOUR SUITE      ENVOI', { foreground: 'cyan' });
+        }
+      });
+
+      const profile = new mt.MinitelPage('profile', {
+        onRender: (_context, screen) => {
+          screen.write(0, 0, mt.buildServiceLine({ service: '3615 AIRINTER', identity: 'IT199', state: 'C' }), { foreground: 'cyan' });
+          screen.write(3, 2, 'DOSSIER PILOTE', { foreground: 'yellow' });
+          screen.write(6, 2, 'MATRICULE........ IT199');
+          screen.write(7, 2, 'COMPAGNIE........ AIR INTER');
+          screen.write(8, 2, 'SESSION.......... OUVERTE', { foreground: 'green' });
+          screen.write(22, 2, 'RETOUR: PAGE PRECEDENTE');
+        }
+      });
+
+      const hermes = new mt.MinitelPage('hermes', {
+        onRender: (_context, screen) => {
+          screen.write(0, 0, mt.buildServiceLine({ service: '3615 HERMES', identity: 'IT199', state: 'C' }), { foreground: 'cyan' });
+          screen.write(4, 10, 'H E R M E S', { foreground: 'yellow' });
+          screen.write(7, 4, 'SYSTEME ACARS AIR INTER');
+          screen.write(10, 4, 'SIMULATEUR...... NON CONNECTE');
+          screen.write(11, 4, 'PILOTE.......... IT199');
+          screen.write(22, 2, 'RETOUR: PAGE PRECEDENTE');
+        }
+      });
+
+      const session = new mt.MinitelSession({
+        homePageId: 'home',
+        speed: 'fast',
+        context: {}
+      });
+      session.register(home).register(flights).register(profile).register(hermes);
+
+      let keyboard = null;
+      const shell = new mt.MinitelShell({
+        host,
+        session,
+        service: '3615 AIRINTER',
+        product: 'PROMETHEE',
+        identity: 'IT199',
+        onExit: (reason) => {
+          keyboard?.detach?.();
+          host.innerHTML =
+            '<section class="demo-modern"><div><h1>Mode Minitel quitté</h1>' +
+            '<p>Sortie sécurisée : ' + String(reason) + '.</p>' +
+            '<p>Dans Prométhée/Hermès, cette action reviendra au thème moderne sans supprimer la préférence desktop.</p>' +
+            '<button type="button" id="restart">Relancer la démo Minitel</button></div></section>';
+          document.getElementById('restart')?.addEventListener('click', () => location.reload());
+        }
+      });
+
+      const capability = shell.capability();
+      if (!capability.allowed) {
+        shell.showFallback(capability.reason || 'unsupported');
+        return;
+      }
+
+      shell.mount();
+      const renderer = new mt.MinitelDomRenderer(shell.terminalNode, { speed: 'fast' });
+      keyboard = new mt.MinitelKeyboardController(session, renderer, document);
+      shell.renderer = renderer;
+      shell.keyboard = keyboard;
+
+      await shell.start();
+      renderer.showCursor(17, 18, true);
+    })().catch((error) => {
+      console.error(error);
+      document.body.dataset.minitelError = 'true';
+    });
+  </script>
+</body>
+</html>

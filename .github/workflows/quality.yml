@@ -42,6 +42,19 @@ jobs:
           node --check acars/wwwroot/i18n.js
           node --check acars/wwwroot/app.js
           node tools/check_hermes_i18n.cjs
+      - name: Validate Minitel M0 runtime
+        run: |
+          node --check shared/minitel/runtime.js
+          node --check shared/minitel/renderer.js
+          node --check shared/minitel/shell.js
+          node --check prometheus/public/promethee-assets/promethee-minitel.js
+          node --check acars/wwwroot/hermes-minitel-core.js
+          node --check acars/wwwroot/hermes-minitel.js
+          node shared/minitel/runtime.test.cjs
+          node shared/minitel/shell.test.cjs
+          node tools/check_minitel_renderer.test.cjs
+          node tools/check_hermes_minitel.test.cjs
+          node tools/check_minitel_assets.cjs
       - name: Validate upstream maintenance tooling
         run: |
           python -m py_compile tools/phpvms_upstream_audit.py
@@ -125,6 +138,8 @@ jobs:
         shell: bash
         run: |
           php -l modules/Promethee/Http/PortalController.php
+          php -l modules/Promethee/Http/MinitelController.php
+          php -l modules/Promethee/Http/MinitelOperationsController.php
           php -l modules/Promethee/Http/AcarsOperationsController.php
           php -l modules/Promethee/Http/OperationsV1Controller.php
           php -l modules/Promethee/Http/TelemetryController.php
@@ -153,6 +168,7 @@ jobs:
           php -l modules/Promethee/routes.php
           php -l app/Http/Controllers/Auth/RegisterController.php
           php -l tests/RegistrationTest.php
+          php -l tests/MinitelProjectionTest.php
           php -l app/Notifications/Messages/AdminUserRegistered.php
           php -l app/Notifications/Messages/UserRejected.php
           php -l app/Notifications/Messages/UserRegistered.php
@@ -186,3 +202,26 @@ jobs:
           php -l modules/Promethee/Console/CheckPrometheeTranslations.php
           php -l modules/Promethee/Console/CheckTranslations.php
           for file in resources/lang/*/promethee.php resources/lang/*/promethee_briefing.php; do php -l "$file"; done
+
+
+  minitel-release-gate:
+    name: Minitel M7 release gate
+    runs-on: ubuntu-latest
+    needs:
+      - repository-hygiene
+      - hermes
+      - promethee
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run M7 acceptance gate
+        run: |
+          node --check tools/check_minitel_release.cjs
+          node tools/check_minitel_release.cjs --report-dir TestResults/minitel-m7
+      - name: Upload M7 acceptance report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: minitel-m7-release-report
+          path: TestResults/minitel-m7/
+          if-no-files-found: error
