@@ -1,14 +1,207 @@
 @extends('promethee::layout')
+
 @section('title', 'Flotte')
+
 @section('content')
-@php
-    $fleetSortUrl = function (string $column): string {
-        $nextDirection = request('sort') === $column && request('direction', 'asc') === 'asc' ? 'desc' : 'asc';
-        return route('promethee.fleet', array_merge(request()->query(), ['sort' => $column, 'direction' => $nextDirection, 'page' => null]));
-    };
-    $sortIndicator = fn (string $column) => request('sort', 'registration') === $column ? (request('direction', 'asc') === 'asc' ? ' ↑' : ' ↓') : '';
-@endphp
-<div class="ops-header compact"><div><span class="eyebrow">AIR INTER · EXPLOITATION</span><h1>La flotte.</h1><p>Disponibilités et rattachement opérationnel des appareils.</p></div><span class="tag">{{ number_format($aircraft->total()) }} appareil(s)</span></div>
-<section class="panel"><form method="get" class="flight-filter"><label class="filter-wide">Rechercher<input name="q" value="{{ request('q') }}" placeholder="Immatriculation, type ou sous-flotte"></label><label>Compagnie<select name="airline"><option value="">Toutes</option>@foreach($airlines as $airline)<option value="{{ $airline->id }}" @selected((string) request('airline') === (string) $airline->id)>{{ $airline->icao }} · {{ $airline->name }}</option>@endforeach</select></label><button>Filtrer</button><a class="button outline" href="{{ route('promethee.fleet') }}">Réinitialiser</a></form></section>
-<section class="panel table-wrap"><table><thead><tr><th>Compagnie</th><th><a href="{{ $fleetSortUrl('registration') }}">Immatriculation{{ $sortIndicator('registration') }}</a></th><th><a href="{{ $fleetSortUrl('icao') }}">Code ICAO{{ $sortIndicator('icao') }}</a></th><th><a href="{{ $fleetSortUrl('subfleet') }}">Flotte{{ $sortIndicator('subfleet') }}</a></th><th><a href="{{ $fleetSortUrl('hub') }}">Base{{ $sortIndicator('hub') }}</a></th><th><a href="{{ $fleetSortUrl('airport') }}">Localisation{{ $sortIndicator('airport') }}</a></th><th><a href="{{ $fleetSortUrl('flight_time') }}">Temps de vol{{ $sortIndicator('flight_time') }}</a></th><th>Potentiel avant visite</th><th><a href="{{ $fleetSortUrl('landing_time') }}">Dernier vol{{ $sortIndicator('landing_time') }}</a></th><th><a href="{{ $fleetSortUrl('state') }}">Situation{{ $sortIndicator('state') }}</a></th><th><a href="{{ $fleetSortUrl('status') }}">Statut{{ $sortIndicator('status') }}</a></th></tr></thead><tbody>@forelse($aircraft as $plane)<tr><td>@if($plane->subfleet?->airline?->promethee_logo)<img src="{{ $plane->subfleet->airline->promethee_logo }}" alt="{{ $plane->subfleet->airline->name }}" style="width:48px;max-height:28px;object-fit:contain">@else{{ $plane->subfleet?->airline?->icao ?: '—' }}@endif</td><td><a href="{{ route('promethee.aircraft.show', $plane->registration) }}"><strong>{{ $plane->registration }}</strong></a></td><td>{{ $plane->icao ?: '—' }}</td><td>{{ $plane->subfleet?->name ?: '—' }}</td><td>{{ $plane->hub_id ?: '—' }}</td><td>{{ $plane->airport?->icao ?: $plane->airport_id ?: '—' }}</td><td>{{ intdiv((int) $plane->flight_time, 60) }} h {{ (int) $plane->flight_time % 60 }} min</td><td>@if($plane->maintenance_hours_remaining !== null){{ number_format($plane->maintenance_hours_remaining, 0, ',', ' ') }} h@endif @if($plane->maintenance_hours_remaining !== null && $plane->maintenance_cycles_remaining !== null) · @endif @if($plane->maintenance_cycles_remaining !== null){{ number_format($plane->maintenance_cycles_remaining, 0, ',', ' ') }} cycles@endif @if($plane->maintenance_hours_remaining === null && $plane->maintenance_cycles_remaining === null)—@endif</td><td>{{ $plane->landing_time ? $plane->landingTime?->locale('fr')->diffForHumans() : '—' }}</td><td><span class="tag">{{ $plane->state_label }}</span></td><td><span class="tag">{{ $plane->status_label }}</span></td></tr>@empty<tr><td colspan="11">Aucun appareil ne correspond à la recherche.</td></tr>@endforelse</tbody></table></section>{{ $aircraft->links('pagination::bootstrap-4') }}
+    @php
+        $fleetSortUrl = function (string $column): string {
+            $nextDirection =
+                request('sort') === $column && request('direction', 'asc') === 'asc'
+                    ? 'desc'
+                    : 'asc';
+
+            return route(
+                'promethee.fleet',
+                array_merge(
+                    request()->query(),
+                    [
+                        'sort' => $column,
+                        'direction' => $nextDirection,
+                        'page' => null,
+                    ]
+                )
+            );
+        };
+
+        $sortIndicator = fn (string $column) =>
+            request('sort', 'registration') === $column
+                ? (request('direction', 'asc') === 'asc' ? ' ↑' : ' ↓')
+                : '';
+    @endphp
+
+    <div class="ops-header compact">
+        <div>
+            <span class="eyebrow">AIR INTER · EXPLOITATION</span>
+            <h1>La flotte.</h1>
+            <p>Disponibilités et rattachement opérationnel des appareils.</p>
+        </div>
+
+        <span class="tag">{{ number_format($aircraft->total()) }} appareil(s)</span>
+    </div>
+
+    <section class="panel">
+        <form method="get" class="flight-filter">
+            <label class="filter-wide">
+                Rechercher
+                <input
+                    name="q"
+                    value="{{ request('q') }}"
+                    placeholder="Immatriculation, type ou sous-flotte"
+                >
+            </label>
+
+            <label>
+                Compagnie
+                <select name="airline">
+                    <option value="">Toutes</option>
+
+                    @foreach($airlines as $airline)
+                        <option
+                            value="{{ $airline->id }}"
+                            @selected((string) request('airline') === (string) $airline->id)
+                        >
+                            {{ $airline->icao }} · {{ $airline->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </label>
+
+            <button type="submit">Filtrer</button>
+            <a class="button outline" href="{{ route('promethee.fleet') }}">Réinitialiser</a>
+        </form>
+    </section>
+
+    <section class="panel table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Compagnie</th>
+                    <th>
+                        <a href="{{ $fleetSortUrl('registration') }}">
+                            Immatriculation{{ $sortIndicator('registration') }}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="{{ $fleetSortUrl('icao') }}">
+                            Code ICAO{{ $sortIndicator('icao') }}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="{{ $fleetSortUrl('subfleet') }}">
+                            Flotte{{ $sortIndicator('subfleet') }}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="{{ $fleetSortUrl('hub') }}">
+                            Base{{ $sortIndicator('hub') }}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="{{ $fleetSortUrl('airport') }}">
+                            Localisation{{ $sortIndicator('airport') }}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="{{ $fleetSortUrl('flight_time') }}">
+                            Temps de vol{{ $sortIndicator('flight_time') }}
+                        </a>
+                    </th>
+                    <th>Potentiel avant visite</th>
+                    <th>
+                        <a href="{{ $fleetSortUrl('landing_time') }}">
+                            Dernier vol{{ $sortIndicator('landing_time') }}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="{{ $fleetSortUrl('state') }}">
+                            Situation{{ $sortIndicator('state') }}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="{{ $fleetSortUrl('status') }}">
+                            Statut{{ $sortIndicator('status') }}
+                        </a>
+                    </th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @forelse($aircraft as $plane)
+                    <tr>
+                        <td>
+                            @if($plane->subfleet?->airline?->promethee_logo)
+                                <img
+                                    src="{{ $plane->subfleet->airline->promethee_logo }}"
+                                    alt="{{ $plane->subfleet->airline->name }}"
+                                    style="width:48px;max-height:28px;object-fit:contain"
+                                >
+                            @else
+                                {{ $plane->subfleet?->airline?->icao ?: '—' }}
+                            @endif
+                        </td>
+
+                        <td>
+                            <a href="{{ route('promethee.aircraft.show', $plane->registration) }}">
+                                <strong>{{ $plane->registration }}</strong>
+                            </a>
+                        </td>
+
+                        <td>{{ $plane->icao ?: '—' }}</td>
+                        <td>{{ $plane->subfleet?->name ?: '—' }}</td>
+                        <td>{{ $plane->hub_id ?: '—' }}</td>
+                        <td>{{ $plane->airport?->icao ?: $plane->airport_id ?: '—' }}</td>
+
+                        <td>
+                            {{ intdiv((int) $plane->flight_time, 60) }} h
+                            {{ (int) $plane->flight_time % 60 }} min
+                        </td>
+
+                        <td>
+                            @if($plane->maintenance_hours_remaining !== null)
+                                {{ number_format($plane->maintenance_hours_remaining, 0, ',', ' ') }} h
+                            @endif
+
+                            @if(
+                                $plane->maintenance_hours_remaining !== null
+                                && $plane->maintenance_cycles_remaining !== null
+                            )
+                                ·
+                            @endif
+
+                            @if($plane->maintenance_cycles_remaining !== null)
+                                {{ number_format($plane->maintenance_cycles_remaining, 0, ',', ' ') }} cycles
+                            @endif
+
+                            @if(
+                                $plane->maintenance_hours_remaining === null
+                                && $plane->maintenance_cycles_remaining === null
+                            )
+                                —
+                            @endif
+                        </td>
+
+                        <td>
+                            {{ $plane->landing_time
+                                ? $plane->landingTime?->locale('fr')->diffForHumans()
+                                : '—' }}
+                        </td>
+
+                        <td>
+                            <span class="tag">{{ $plane->state_label }}</span>
+                        </td>
+
+                        <td>
+                            <span class="tag">{{ $plane->status_label }}</span>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="11">Aucun appareil ne correspond à la recherche.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </section>
+
+    {{ $aircraft->links('pagination::bootstrap-4') }}
 @endsection
