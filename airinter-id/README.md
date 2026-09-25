@@ -70,12 +70,13 @@ cd ~/airinter-id
 cp .env.example .env
 composer install --no-dev --optimize-autoloader
 php artisan key:generate
+php artisan vendor:publish --tag=passport-migrations
 php artisan migrate --force
 php artisan passport:keys
 php artisan optimize
 ```
 
-Passport's OAuth tables must also be installed according to the installed Passport version. On a fresh deployment run the Passport install/setup command before registering clients.
+Passport 13 requires its migrations to be published into the application; they are intentionally kept explicit instead of relying on hidden package migrations.
 
 Storage permissions:
 
