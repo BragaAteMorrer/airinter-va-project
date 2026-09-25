@@ -1,4 +1,4 @@
-# 3615 AIRINTER — Minitel Runtime (M0 + M1 + M2 + M3 + M4 + M5)
+# 3615 AIRINTER — Minitel Runtime (M0 + M1 + M2 + M3 + M4 + M5 + M6)
 
 This directory contains the shared, framework-free foundation for the Air Inter Videotex experience used by Prométhée and Hermès.
 
@@ -196,3 +196,32 @@ Air Inter Network uses `HermesPresence`; no stale presence is replayed.
 M5 deliberately keeps recovery abandonment in the graphical interface because
 it archives and clears local flight state. Recovery resume itself is available
 from the terminal.
+
+
+## M6 — Videotex fidelity
+
+M6 hardens the visual and interaction fidelity of the shared terminal without
+changing any Prométhée or Hermès business rule.
+
+Shared fidelity features:
+
+- real 2×3 alphamosaic cells with a six-bit mask;
+- joined and separated mosaic rendering;
+- a semi-graphic Air Inter service mark in the boot sequence;
+- the complete logical Videotex palette including blue;
+- color display or monochrome/luminance rendering;
+- a restrained CRT scanline/vignette layer;
+- a warmer physical Minitel-inspired terminal chassis instead of a generic dark terminal;
+- three transmission profiles: authentic (120 characters/s), fast and instant;
+- fresh-screen rendering models a clear-screen operation and transmits only useful cells instead of 1,000 blank cells;
+- terminal settings are available from GUIDE → 0 and CONNEXION/FIN → 3;
+- the shell owns cursor placement on system pages independently of Prométhée/Hermès business clients;
+- logical input buffers may exceed 40 characters while the physical display remains strictly 40 columns;
+- Prométhée and Hermès persist the same speed/display preferences using shared local keys.
+
+The renderer keeps logical Videotex colors in the buffer. Monochrome mode maps
+those logical colors to luminance levels at render time, so application pages do
+not need separate monochrome markup.
+
+The shell itself does not own persistent storage. Prométhée and Hermès persist
+the shared terminal preferences and inject them back into the shell on startup.
