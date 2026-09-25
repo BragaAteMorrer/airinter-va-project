@@ -72,7 +72,7 @@
   const updateCursor = () => {
     if (!renderer || !session) return;
     const page = session.currentPageId;
-    if (page === 'home') return renderer.showCursor(18, Math.min(39, 16 + session.input.value.length), true);
+    if (page === 'home') return renderer.showCursor(19, Math.min(39, 16 + session.input.value.length), true);
     if (['flight-search', 'fleet-search', 'pilot-search'].includes(page)) {
       return renderer.showCursor(9, Math.min(39, 4 + session.input.value.length), true);
     }
@@ -92,19 +92,21 @@
         screen.write(4, 7, 'CENTRE DES OPERATIONS');
         screen.write(6, 2, '1 DEPARTS / MOUVEMENTS', { foreground: 'cyan' });
         screen.write(7, 2, '2 RECHERCHER UN VOL', { foreground: 'cyan' });
-        screen.write(8, 2, '3 FLOTTE', { foreground: 'cyan' });
-        screen.write(9, 2, '4 PILOTES', { foreground: 'cyan' });
-        screen.write(10, 2, '5 MON DOSSIER', { foreground: 'cyan' });
-        screen.write(12, 2, 'VOLS   ' + fit(state.bootstrap?.stats?.flights, 6));
-        screen.write(13, 2, 'PILOTES' + fit(state.bootstrap?.stats?.pilots, 6));
-        screen.write(14, 2, 'EN VOL ' + fit(state.bootstrap?.stats?.active, 6));
-        screen.write(15, 2, 'AUJ.   ' + fit(state.bootstrap?.stats?.today, 6));
-        screen.write(18, 2, 'VOTRE CHOIX : ' + current.input.value, { foreground: 'yellow' });
+        screen.write(8, 2, '3 ROUTES', { foreground: 'cyan' });
+        screen.write(9, 2, '4 FLOTTE', { foreground: 'cyan' });
+        screen.write(10, 2, '5 PILOTES', { foreground: 'cyan' });
+        screen.write(11, 2, '6 CALENDRIER', { foreground: 'cyan' });
+        screen.write(12, 2, '7 MON DOSSIER', { foreground: 'cyan' });
+        screen.write(14, 2, 'VOLS   ' + fit(state.bootstrap?.stats?.flights, 6));
+        screen.write(15, 2, 'PILOTES' + fit(state.bootstrap?.stats?.pilots, 6));
+        screen.write(16, 2, 'EN VOL ' + fit(state.bootstrap?.stats?.active, 6));
+        screen.write(17, 2, 'AUJ.   ' + fit(state.bootstrap?.stats?.today, 6));
+        screen.write(19, 2, 'VOTRE CHOIX : ' + current.input.value, { foreground: 'yellow' });
         writeFooter(screen);
       },
-      acceptInput: (key) => /^[1-5]$/.test(key),
+      acceptInput: (key) => /^[1-7]$/.test(key),
       send: (value) => {
-        const targets = { '1': 'departures', '2': 'flight-search', '3': 'fleet-search', '4': 'pilot-search', '5': 'profile' };
+        const targets = { '1': 'departures', '2': 'flight-search', '3': 'routes', '4': 'fleet-search', '5': 'pilot-search', '6': 'calendar', '7': 'profile' };
         if (targets[value]) action('open', { target: targets[value], page: 1 });
       }
     }));
@@ -159,6 +161,14 @@
       previous: () => pageBack('flights', 'flight-search')
     }));
 
+    session.register(new mt.MinitelPage('routes', {
+      onRender: (_context, screen) => renderListHeader(screen, 'ROUTES AIR INTER', 'DEPART  ARRIVEE  VOLS  PLAGE HORAIRE', (item, row) => {
+        screen.write(row, 1, fit(item.departure, 7) + ' ' + fit(item.arrival, 8) + ' ' + fit(item.flights, 5) + ' ' + fit((item.first_departure || '--:--') + '-' + (item.last_departure || '--:--'), 14));
+      }),
+      next: () => paginate('routes', 1),
+      previous: () => pageBack('routes', 'home')
+    }));
+
     session.register(new mt.MinitelPage('fleet', {
       onRender: (_context, screen) => renderListHeader(screen, 'FLOTTE AIR INTER', 'IMMATR.   TYPE   BASE   ETAT', (item, row) => {
         screen.write(row, 1, fit(item.registration, 10) + ' ' + fit(item.icao, 6) + ' ' + fit(item.airport || '---', 5) + ' ' + fit(item.status, 14));
@@ -175,6 +185,15 @@
       }),
       next: () => paginate('pilots', 1),
       previous: () => pageBack('pilots', 'pilot-search')
+    }));
+
+    session.register(new mt.MinitelPage('calendar', {
+      onRender: (_context, screen) => renderListHeader(screen, 'CALENDRIER', 'DATE        EVENEMENT', (item, row) => {
+        screen.write(row, 1, fit(item.starts_at || '--/-- --:--', 11) + ' ' + fit(item.title, 26));
+        if (item.location) screen.write(row + 1, 3, fit(item.location, 35), { foreground: 'cyan' });
+      }),
+      next: () => paginate('calendar', 1),
+      previous: () => pageBack('calendar', 'home')
     }));
 
     session.register(new mt.MinitelPage('profile', {
@@ -268,7 +287,7 @@
         state.collection = { items: data.flights || [] };
       } else if (target === 'profile') {
         state.collection = await json(state.bootstrap.endpoints.profile);
-      } else if (['flights', 'fleet', 'pilots'].includes(target)) {
+      } else if (['flights', 'routes', 'fleet', 'pilots', 'calendar'].includes(target)) {
         state.collection = await json(pageUrl(state.bootstrap.endpoints[target], {
           q: state.query,
           page: state.page
