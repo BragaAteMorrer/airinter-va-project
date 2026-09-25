@@ -14,6 +14,7 @@ use Modules\Promethee\Console\LocalUserCommand;
 use Modules\Promethee\Console\RecalculateProgressionCommand;
 use Modules\Promethee\Console\SyncRegionalOperationsCommand;
 use Modules\Promethee\Listeners\ProgressionEventListener;
+use Modules\Promethee\Listeners\RegionalOperationsEventListener;
 
 class PrometheeServiceProvider extends ServiceProvider
 {
@@ -31,6 +32,7 @@ class PrometheeServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__.'/../Database/migrations');
         $this->loadRoutesFrom(__DIR__.'/../routes.php');
         Event::listen(PirepAccepted::class, [ProgressionEventListener::class, 'onPirepAccepted']);
+        Event::listen(PirepAccepted::class, [RegionalOperationsEventListener::class, 'onPirepAccepted']);
         Event::listen(UserStatsChanged::class, [ProgressionEventListener::class, 'onUserStatsChanged']);
         if ($this->app->runningInConsole()) {
             $this->commands([BulletinCommand::class, CheckPrometheeTranslations::class, CheckTranslations::class, LocalUserCommand::class, RecalculateProgressionCommand::class, SyncRegionalOperationsCommand::class]);
