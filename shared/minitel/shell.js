@@ -45,10 +45,10 @@
     const identity = String(options.identity || '').toUpperCase().slice(0, 8);
     const clock = options.clock || formatClock(options.date);
     const state = String(options.state || 'C').slice(0, 1).toUpperCase();
-    const left = pad(service, 18);
-    const middle = pad(identity, 8);
     const right = pad(clock, 5, 'left') + ' ' + state;
-    return (left + middle + ' ' + right).slice(0, runtime.WIDTH).padEnd(runtime.WIDTH, ' ');
+    const leftWidth = runtime.WIDTH - right.length;
+    const left = (pad(service, 18) + pad(identity, 8)).slice(0, leftWidth).padEnd(leftWidth, ' ');
+    return left + right;
   }
 
   function writeCentered(screen, row, text, attrs = {}) {
