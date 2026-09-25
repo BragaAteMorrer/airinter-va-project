@@ -923,7 +923,12 @@ class PortalController extends Controller
             'basePrice'=>(float) (DB::table('promethee_settings')->where('key', 'jumpseat.base_price')->value('value') ?: 0.13),
             'discount'=>(float) setting('dbasic.jumpseat_discount', 0),
             'wallet'=>$journal->getBalance(),
-            'orders'=>DB::table('promethee_transfer_requests as request')->join('airports','airports.id','=','request.target_airport_id')->where('request.user_id',$pilot->id)->where('request.type','jumpseat')->select('request.*','airports.icao','airports.name as airport_name')->latest('request.created_at')->get()
+            'orders'=>DB::table('promethee_transfer_requests as request')
+                ->leftJoin('airports','airports.id','=','request.target_airport_id')
+                ->leftJoin('airlines','airlines.id','=','request.target_airline_id')
+                ->where('request.user_id',$pilot->id)->where('request.type','jumpseat')
+                ->select('request.*','airports.icao','airports.name as airport_name','airlines.icao as airline_icao','airlines.name as airline_name')
+                ->latest('request.created_at')->get()
         ]);
     }
     public function requestJumpseat(Request $r, FinanceService $finance) {
