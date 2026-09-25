@@ -48,6 +48,7 @@ return [
         'client_secret' => env('VATSIM_CLIENT_SECRET'),
         'scopes'        => env('VATSIM_SCOPES', '') === '' ? [] : explode(',', env('VATSIM_SCOPES', '')),
         'redirect'      => '/oauth/vatsim/callback',
+        'data_url'      => env('VATSIM_DATA_URL', 'https://data.vatsim.net/v3/vatsim-data.json'),
 
         // For local development only
         'test' => env('VATSIM_TEST', false),
@@ -59,5 +60,6 @@ return [
         'client_secret' => env('IVAO_CLIENT_SECRET'),
         'scopes'        => env('IVAO_SCOPES', '') === '' ? [] : explode(',', env('IVAO_SCOPES', '')),
         'redirect'      => '/oauth/ivao/callback',
+        'data_url'      => env('IVAO_DATA_URL', 'https://api.ivao.aero/v2/tracker/whazzup'),
     ],
 ];
