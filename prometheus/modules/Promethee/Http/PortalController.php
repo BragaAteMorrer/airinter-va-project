@@ -6,6 +6,7 @@ use App\Models\Enums\{AircraftState,AircraftStatus,FlightType,PirepState,PirepSt
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\File as Filesystem;
 use Illuminate\Support\Facades\Hash;
@@ -1759,24 +1760,71 @@ class PortalController extends Controller
         ]);
     }
 
-    public function saveSimbriefApiKey(Request $r, \Modules\Promethee\Services\SimBriefCompanyKeyService $companyKey)
+    public function saveSimbriefSettings(Request $r)
     {
         $data = $r->validate([
-            'api_key' => 'required|string|min:8|max:512',
+            'api_key' => ['nullable', 'string', 'max:255'],
+            'clear_api_key' => ['nullable', 'boolean'],
         ]);
 
-        $companyKey->save($data['api_key']);
+        $clear = $r->boolean('clear_api_key');
+        $incoming = trim((string) ($data['api_key'] ?? ''));
+        $current = (string) (DB::table('settings')
+            ->where('key', 'simbrief.api_key')
+            ->value('value') ?? '');
 
-        return redirect()->route('admin.promethee.simbrief')
-            ->with('success', 'Clé API SimBrief enregistrée côté serveur.');
-    }
+        if (!$clear && $incoming === '') {
+            if ($current === '') {
+                return back()->withErrors([
+                    'simbrief' => 'Saisissez la clé API compagnie SimBrief avant d’enregistrer.',
+                ]);
+            }
 
-    public function deleteSimbriefApiKey(\Modules\Promethee\Services\SimBriefCompanyKeyService $companyKey)
-    {
-        $companyKey->delete();
+            return back()->with('success', 'Clé API SimBrief inchangée.');
+        }
 
-        return redirect()->route('admin.promethee.simbrief')
-            ->with('success', 'Clé API SimBrief supprimée de Prométhée.');
+        $value = $clear ? '' : $incoming;
+        $now = now();
+        $existing = DB::table('settings')->where('key', 'simbrief.api_key')->first();
+
+        if ($existing) {
+            DB::table('settings')->where('key', 'simbrief.api_key')->update([
+                'name' => 'SimBrief Company API Key',
+                'group' => 'simbrief',
+                'type' => 'secret',
+                'description' => 'Company SimBrief API key used server-side by Prométhée. It is never sent to Hermès.',
+                'value' => $value,
+                'updated_at' => $now,
+            ]);
+        } else {
+            DB::table('settings')->insert([
+                'id' => 'simbrief_api_key',
+                'offset' => 0,
+                'order' => 99,
+                'key' => 'simbrief.api_key',
+                'name' => 'SimBrief Company API Key',
+                'value' => $value,
+                'default' => null,
+                'group' => 'simbrief',
+                'type' => 'secret',
+                'options' => '',
+                'description' => 'Company SimBrief API key used server-side by Prométhée. It is never sent to Hermès.',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
+
+        $cache = config('cache.keys.SETTINGS');
+        if (is_array($cache) && isset($cache['key'])) {
+            Cache::forget($cache['key'].'simbrief.api_key');
+        }
+
+        return back()->with(
+            'success',
+            $clear
+                ? 'Clé API SimBrief supprimée. Le mode API compagnie est désormais désactivé.'
+                : 'Clé API SimBrief enregistrée. Le mode API compagnie est disponible pour Hermès.'
+        );
     }
 
     public function syncSimbrief(\App\Services\SimBriefService $simbrief)

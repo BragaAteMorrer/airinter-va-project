@@ -17,6 +17,9 @@
         @if($errors->has('simbrief'))
           <div class="alert alert-danger">{{ $errors->first('simbrief') }}</div>
         @endif
+        @if($errors->has('api_key'))
+          <div class="alert alert-danger">{{ $errors->first('api_key') }}</div>
+        @endif
 
         <div class="row">
           <div class="col-sm-4">
@@ -41,6 +44,43 @@
             </div>
           </div>
         </div>
+
+        <hr>
+        <h5>Clé API compagnie</h5>
+        <p class="text-muted">
+          {{ $apiConfigured
+              ? 'Une clé est déjà enregistrée. Laissez le champ vide pour la conserver, ou saisissez une nouvelle clé pour la remplacer.'
+              : 'Saisissez la clé API SimBrief attribuée à Air Inter VA. Elle restera uniquement côté serveur.' }}
+        </p>
+        <form method="post" action="{{ route('admin.promethee.simbrief.settings') }}" autocomplete="off" style="margin-bottom:24px">
+          @csrf
+          <div class="form-group">
+            <label for="simbrief-api-key">SimBrief Company API Key</label>
+            <input
+              id="simbrief-api-key"
+              class="form-control"
+              type="password"
+              name="api_key"
+              value=""
+              maxlength="255"
+              autocomplete="new-password"
+              spellcheck="false"
+              placeholder="{{ $apiConfigured ? '•••••••••••••••• · laisser vide pour conserver' : 'Coller la clé API SimBrief ici' }}"
+            >
+            <p class="help-block">La clé n’est jamais réaffichée, envoyée à Hermès, ni exposée dans le JavaScript.</p>
+          </div>
+          @if($apiConfigured)
+            <div class="checkbox">
+              <label>
+                <input type="checkbox" name="clear_api_key" value="1">
+                Supprimer la clé actuellement enregistrée
+              </label>
+            </div>
+          @endif
+          <button class="btn btn-primary" type="submit">
+            {{ $apiConfigured ? 'Enregistrer / remplacer la clé' : 'Enregistrer la clé API' }}
+          </button>
+        </form>
 
         <h5>Fonctions actives</h5>
         <ul>
