@@ -547,6 +547,17 @@ class OperationsV1Controller extends Controller
 
         abort_if(!$bid->aircraft_id, 409, 'Sélectionnez un appareil avant de préparer le PIREP.');
         $ofp = $this->operationOfp($bid);
+        if ($request->filled('level')) {
+            $rawLevel = strtoupper(trim((string) $request->input('level')));
+            $rawLevel = preg_replace('/^FL\\s*/', '', $rawLevel);
+            if (is_numeric($rawLevel)) {
+                $numericLevel = (float) $rawLevel;
+                $request->merge([
+                    'level' => (int) round($numericLevel > 600 ? $numericLevel / 100 : $numericLevel),
+                ]);
+            }
+        }
+
         $plan = $request->validate([
             'route' => 'nullable|string|max:4000',
             'level' => 'nullable|integer|min:10|max:600',
