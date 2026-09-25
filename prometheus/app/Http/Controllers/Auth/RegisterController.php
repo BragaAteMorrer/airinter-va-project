@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Contracts\Controller;
+use App\Models\Airline;
 use App\Models\Enums\UserState;
 use App\Models\Invite;
 use App\Models\User;
@@ -73,14 +74,15 @@ class RegisterController extends Controller
             }
         }
 
-        $airlines = $this->airlineRepo->selectBoxList();
+        $airline = $this->airInterAirline();
         $userFields = UserField::where(['show_on_registration' => true, 'active' => true, 'internal' => false])->get();
 
         return view('auth.register', [
             'airports'   => [],
-            'airlines'   => $airlines,
+            'airline'    => $airline,
             'countries'  => Countries::getSelectList(),
             'timezones'  => Timezonelist::toArray(),
+            'defaultTimezone' => 'Europe/Paris',
             'userFields' => $userFields,
             'hubs_only'  => setting('pilots.home_hubs_only'),
             'invite'     => $invite ?? null,
@@ -100,8 +102,8 @@ class RegisterController extends Controller
         $rules = [
             'name'            => 'required|max:255',
             'email'           => 'required|email|max:255|unique:users,email',
-            'airline_id'      => 'required',
             'home_airport_id' => 'required',
+            'timezone'        => ['required', 'timezone'],
             'password'        => 'required|min:5|confirmed',
             'toc_accepted'    => 'accepted',
         ];
@@ -185,6 +187,9 @@ class RegisterController extends Controller
 
         // Default options
         $opts = $request->all();
+        // Air Inter VA is the mandatory entry company. Ignore any client-supplied airline_id.
+        $opts['airline_id'] = $this->airInterAirline()->id;
+        $opts['timezone'] = $this->normalizeTimezone($opts['timezone'] ?? null);
         $opts['password'] = Hash::make($opts['password']);
 
         if (setting('general.record_user_ip', true)) {
@@ -206,7 +211,7 @@ class RegisterController extends Controller
             UserFieldValue::updateOrCreate([
                 'user_field_id' => $field->id,
                 'user_id'       => $user->id,
-            ], ['value' => $opts[$field_name]]);
+            ], ['value' => $opts[$field_name] ?? null]);
         }
 
         return $user;
@@ -220,6 +225,10 @@ class RegisterController extends Controller
      */
     public function register(Request $request): RedirectResponse|View
     {
+        $request->merge([
+            'timezone' => $this->normalizeTimezone($request->input('timezone')),
+        ]);
+
         $this->validator($request->all())->validate();
 
         $user = $this->create($request);
@@ -230,5 +239,34 @@ class RegisterController extends Controller
         $this->guard()->login($user);
 
         return redirect(config('phpvms.login_redirect'));
+    }
+
+    private function normalizeTimezone(mixed $timezone): string
+    {
+        $timezone = trim((string) $timezone);
+        if ($timezone === '') {
+            return 'Europe/Paris';
+        }
+
+        if (in_array($timezone, timezone_identifiers_list(), true)) {
+            return $timezone;
+        }
+
+        // Never persist browser aliases/garbage. Air Inter's operational
+        // fallback remains Paris time while the pilot can choose another
+        // valid IANA zone in the registration form.
+        return 'Europe/Paris';
+    }
+
+    private function airInterAirline(): Airline
+    {
+        $airline = Airline::query()
+            ->where('icao', 'ITF')
+            ->where('active', true)
+            ->first();
+
+        abort_if(!$airline, 503, 'Air Inter (ITF) n’est pas configurée comme compagnie active.');
+
+        return $airline;
     }
 }

@@ -1,12 +1,18 @@
 @component('mail::message')
-  # Thanks for signing up, {{ $user->name }}!
+# Bienvenue chez Air Inter, {{ $user->name }}
 
-  Your account is ready to use.
+Votre accès pilote est désormais ouvert.
 
-  @component('mail::button', ['url' => url('/login')])
-    Visit your account now!
-  @endcomponent
+Prométhée devient votre centre des opérations : réservation d’un vol Air Inter, affectation de l’appareil, préparation SimBrief, suivi Hermès et débriefing.
 
-  Thanks,<br>
-  Management, {{ config('app.name') }}
+@component('mail::button', ['url' => url('/login')])
+ACCÉDER À PROMÉTHÉE
+@endcomponent
+
+Votre identifiant pilote et votre mot de passe restent strictement personnels.
+
+Bon vol et bienvenue dans la ligne,
+
+**Direction de l’Exploitation Aérienne**  
+Air Inter Virtual Airlines
 @endcomponent

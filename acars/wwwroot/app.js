@@ -563,7 +563,11 @@ function renderOperationLoad(aircraft) {
   }
   const label = aircraft.type_label || aircraft.subfleet || aircraft.name || 'Appareil';
   const band = String(aircraft.band || aircraft.pricing_band || 'rouge').toUpperCase();
-  node.textContent = label + ' · ' + (aircraft.passengers ?? '—') + ' / ' + (aircraft.capacity ?? '—') + ' passagers · ' + (aircraft.load_factor_percent ?? '—') + ' % · vol ' + band;
+  const cabin = aircraft.cabin_profile?.label || aircraft.cabinProfile?.label || '';
+  node.textContent = label
+    + (cabin ? ' · ' + cabin : '')
+    + ' · ' + (aircraft.passengers ?? '—') + ' / ' + (aircraft.capacity ?? '—')
+    + ' passagers · ' + (aircraft.load_factor_percent ?? '—') + ' % · vol ' + band;
   node.hidden = false;
 }
 
@@ -758,9 +762,10 @@ async function assertSimBriefReady(form, mode = 'company') {
   const registration = resolved?.aircraft?.registration || 'appareil';
   const type = resolved?.aircraft?.simbrief_type || resolved?.aircraft?.icao || 'type inconnu';
   const pax = resolved?.demand?.passengers;
+  const cabin = resolved?.demand?.cabin_profile?.label || resolved?.demand?.cabinProfile?.label || '';
   showMessage(
     '#simbriefState',
-    `Résolution BDD OK · ${flight} · ${origin} → ${destination} · ${registration} · ${type}${Number.isFinite(Number(pax)) ? ' · ' + pax + ' pax' : ''}.`
+    `Résolution BDD OK · ${flight} · ${origin} → ${destination} · ${registration} · ${type}${cabin ? ' · ' + cabin : ''}${Number.isFinite(Number(pax)) ? ' · ' + pax + ' pax' : ''}.`
   );
   return resolved;
 }

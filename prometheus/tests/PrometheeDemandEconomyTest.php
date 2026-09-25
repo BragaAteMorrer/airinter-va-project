@@ -75,6 +75,60 @@ final class PrometheeDemandEconomyTest extends TestCase
         $this->assertSame($first, $second);
     }
 
+    public function test_air_inter_cabin_profile_overrides_generic_capacity_without_database_change(): void
+    {
+        config([
+            'promethee.cabin-profiles.profiles.air_inter_test_172' => [
+                'label' => 'Air Inter Test · 172 sièges',
+                'capacity' => 172,
+            ],
+            'promethee.cabin-profiles.by_registration.F-GPMB' => 'air_inter_test_172',
+        ]);
+
+        $fleet = $this->createSubfleetWithAircraft(1);
+        $subfleet = $fleet['subfleet'];
+        $aircraft = $fleet['aircraft']->first();
+
+        $aircraft->update([
+            'registration' => 'F-GPMB',
+            'icao' => 'A320',
+            'name' => 'Airbus A320',
+        ]);
+
+        $fare = Fare::factory()->create([
+            'code' => 'YPROFILE',
+            'name' => 'Generic phpVMS Capacity',
+            'type' => FareType::PASSENGER,
+            'capacity' => 180,
+            'active' => true,
+        ]);
+        $subfleet->fares()->syncWithoutDetaching([
+            $fare->id => ['capacity' => 180, 'price' => null, 'cost' => null],
+        ]);
+
+        $flight = Flight::factory()->create([
+            'airline_id' => $subfleet->airline_id,
+            'load_factor' => 100,
+            'load_factor_variance' => 0,
+        ]);
+        $flight->subfleets()->syncWithoutDetaching([$subfleet->id]);
+
+        /** @var DemandProfileService $service */
+        $service = app(DemandProfileService::class);
+        $profile = $service->profile(
+            $aircraft->fresh('subfleet'),
+            $flight->fresh(),
+            'OP_AIR_INTER_CABIN'
+        );
+
+        $this->assertSame(180, $profile['database_capacity']);
+        $this->assertSame(172, $profile['capacity']);
+        $this->assertSame(172, $profile['passengers']);
+        $this->assertSame('air_inter_profile', $profile['capacity_source']);
+        $this->assertSame('air_inter_test_172', $profile['cabin_profile']['key']);
+        $this->assertSame('Air Inter Test · 172 sièges', $profile['cabin_profile']['label']);
+    }
+
     public function test_flight_load_factor_overrides_default_bbr_load_range(): void
     {
         $fleet = $this->createSubfleetWithAircraft(1);

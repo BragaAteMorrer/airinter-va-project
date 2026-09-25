@@ -1,8 +1,12 @@
 @component('mail::message')
-  # {{ $news->subject }}
+# {{ $news->subject }}
 
-  {!! $news->body !!}
+{!! $news->body !!}
 
-  Thanks,<br>
-  {{ config('app.name') }}
+@component('mail::button', ['url' => url('/')])
+OUVRIR AIR INTER VA
+@endcomponent
+
+**Direction de l’Exploitation Aérienne**  
+Air Inter Virtual Airlines
 @endcomponent

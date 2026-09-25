@@ -23,7 +23,7 @@ class PirepAccepted extends Notification implements ShouldQueue
         parent::__construct();
 
         $this->setMailable(
-            'PIREP Accepted!',
+            'Air Inter · Compte-rendu de vol accepté',
             'notifications.mail.pirep.accepted',
             ['pirep' => $this->pirep]
         );

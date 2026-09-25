@@ -1,9 +1,16 @@
 @component('mail::message')
-  # Hi {{ $user->name }},
+# Votre candidature Air Inter
 
-  Your registration to our airline was denied. Please contact
-  an administrator with any questions you may have.
+Bonjour {{ $user->name }},
 
-  Thanks,<br>
-  Management, {{ config('app.name') }}
+Après examen, votre demande d’inscription Air Inter VA n’a pas été validée en l’état.
+
+Si vous pensez qu’une information manque à votre dossier ou si vous souhaitez obtenir des précisions, vous pouvez contacter l’équipe Air Inter VA.
+
+@component('mail::button', ['url' => url('/')])
+CONTACTER / RETOURNER SUR AIR INTER VA
+@endcomponent
+
+**Direction de l’Exploitation Aérienne**  
+Air Inter Virtual Airlines
 @endcomponent

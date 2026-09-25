@@ -1,12 +1,24 @@
 @component('mail::message')
-  # You have been invited to join {{ config('app.name') }}!
+# Invitation Air Inter
 
-  You can use the link below to register an account with this email address.
+Vous avez été invité à rejoindre **Air Inter Virtual Airlines**.
 
-  @component('mail::button', ['url' => $invite->link])
-    Register now
-  @endcomponent
+Votre invitation permet de créer directement votre dossier pilote avec cette adresse e-mail.
 
-  Thanks,<br>
-  Management, {{ config('app.name') }}
+@component('mail::panel')
+**Compagnie d’entrée :** Air Inter · ITF  
+**Espace opérations :** Prométhée  
+**Client ACARS :** Hermès
+@endcomponent
+
+@component('mail::button', ['url' => $invite->link])
+CRÉER MON DOSSIER PILOTE
+@endcomponent
+
+Cette invitation est personnelle. Si vous n’êtes pas à l’origine de cette demande, vous pouvez simplement ignorer ce message.
+
+À bientôt à bord,
+
+**Direction de l’Exploitation Aérienne**  
+Air Inter Virtual Airlines
 @endcomponent

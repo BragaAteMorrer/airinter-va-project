@@ -1,17 +1,21 @@
 @component('mail::message')
-  Your new login details for {{ config('app.name') }} follow:
+# Nouveaux accès Prométhée
 
-  Do not share this information with anyone else! <br/>
-  <strong>E-Mail Address:</strong> {{ $user->email }}<br/>
-  <strong>Temporary Password:</strong> {{ $newpw }}<br/><br/>
+Bonjour,
 
-  Your account is now ready for use.<br/>
-  Upon first login, please reset your password.
+De nouveaux identifiants de connexion ont été générés pour votre compte Air Inter.
 
-  @component('mail::button', ['url' => url('/login')])
-    Login & Reset Password
-  @endcomponent
+@component('mail::panel')
+**Adresse e-mail :** {{ $user->email }}  
+**Mot de passe temporaire :** {{ $newpw }}
+@endcomponent
 
-  Thanks,<br/>
-  Management, {{ config('app.name') }}
+Pour votre sécurité, ce mot de passe doit être remplacé dès votre première connexion et ne doit être transmis à personne.
+
+@component('mail::button', ['url' => url('/login')])
+SE CONNECTER À PROMÉTHÉE
+@endcomponent
+
+**Direction de l’Exploitation Aérienne**  
+Air Inter Virtual Airlines
 @endcomponent

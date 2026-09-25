@@ -20,7 +20,7 @@ class PirepRejected extends Notification implements ShouldQueue
         parent::__construct();
 
         $this->setMailable(
-            'PIREP Rejected!',
+            'Air Inter · Compte-rendu de vol à revoir',
             'notifications.mail.pirep.rejected',
             ['pirep' => $this->pirep]
         );
