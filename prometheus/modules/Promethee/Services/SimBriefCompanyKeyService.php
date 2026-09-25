@@ -12,7 +12,13 @@ class SimBriefCompanyKeyService
 
     public function configured(): bool
     {
-        return filled($this->get());
+        try {
+            return filled($this->get());
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return false;
+        }
     }
 
     public function get(): ?string
