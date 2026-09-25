@@ -2156,15 +2156,19 @@ class PortalController extends Controller
             'active'=>'nullable|boolean',
         ]);
         $airportId=strtoupper($data['airport_id']);
-        if ($data['kind']==='hub') {
-            DB::table('promethee_operational_bases')->where('kind','hub')->where('airport_id','!=',$airportId)->update(['kind'=>'regional','heavy_maintenance'=>false,'updated_at'=>now()]);
+        if ($data['kind'] === 'hub' && $airportId !== 'LFPO') {
+            return back()->withErrors(['airport_id'=>'Orly (LFPO) est le seul hub Air Inter VA. Les autres bases doivent être des plateformes régionales.'])->withInput();
+        }
+        $kind = $airportId === 'LFPO' ? 'hub' : 'regional';
+        if ($airportId === 'LFPO') {
+            DB::table('promethee_operational_bases')->where('kind','hub')->where('airport_id','!=','LFPO')->update(['kind'=>'regional','heavy_maintenance'=>false,'updated_at'=>now()]);
         }
         DB::table('promethee_operational_bases')->updateOrInsert(
             ['airport_id'=>$airportId],
             [
-                'kind'=>$data['kind'],
+                'kind'=>$kind,
                 'small_maintenance'=>$r->boolean('small_maintenance'),
-                'heavy_maintenance'=>$data['kind'] === 'hub' && $r->boolean('heavy_maintenance'),
+                'heavy_maintenance'=>$airportId === 'LFPO' && $r->boolean('heavy_maintenance'),
                 'active'=>$r->boolean('active'),
                 'created_at'=>now(),'updated_at'=>now(),
             ]
