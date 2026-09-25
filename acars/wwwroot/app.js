@@ -46,7 +46,7 @@ let readiness = { operation: false, aircraft: false, ofp: false, pirep: false, s
 function setAuthenticated(value) {
   connected = Boolean(value);
   document.body.classList.toggle('auth-locked', !connected);
-  $('.protected-tab').forEach(tab => { tab.disabled = !connected; });
+  document.querySelectorAll('.protected-tab').forEach(tab => { tab.disabled = !connected; });
   window.dispatchEvent(new CustomEvent('hermes:auth-changed', { detail: { authenticated: connected } }));
 }
 setAuthenticated(false);
