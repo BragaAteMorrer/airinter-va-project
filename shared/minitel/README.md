@@ -1,4 +1,4 @@
-# 3615 AIRINTER — Minitel Runtime (M0 + M1 + M2 + M3)
+# 3615 AIRINTER — Minitel Runtime (M0 + M1 + M2 + M3 + M4)
 
 This directory contains the shared, framework-free foundation for the Air Inter Videotex experience used by Prométhée and Hermès.
 
@@ -129,3 +129,34 @@ cannot be bypassed by selecting a catalogue entry.
 
 All mutations use the authenticated web session, explicit HTTP verbs and CSRF.
 No destructive action is triggered by rendering a screen.
+
+
+## M4 — Hermès preparation
+
+M4 enables the same shared 40×25 runtime inside the Hermès desktop/WebView UI.
+
+Hermès now exposes `minitel` as an approved era. The terminal can be entered
+from the display selector and is restored on the next launch. The external shell
+escape remains independent from the ACARS workflow and returns Hermès to the
+modern era.
+
+The M4 preparation flow is keyboard-only and uses the existing Hermès bridge:
+
+- secure pilot login through the existing local `/api/login` command;
+- qualified operation list and reservable-flight search;
+- reservation through Prométhée Operations V1;
+- operation selection and refresh;
+- aircraft eligibility and assignment;
+- SimBrief readiness, account redirect, Pilot ID import, company API session and import;
+- PIREP prefile;
+- dispatch/readiness display;
+- simulator/preflight status;
+- transition to local ACARS recording only when both server readiness and local
+  simulator safety checks are satisfied.
+
+No operational rule is duplicated in the Minitel client. Remote mutations use
+the same `/api/v1/operations/*` surface as the modern Hermès UI; local tracking
+uses the same `/api/start` command.
+
+M5 will extend the terminal after start with the full in-flight workspace:
+live telemetry, phase management, Datalink, journal, network and Flight Review.
