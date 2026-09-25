@@ -2164,7 +2164,7 @@ class PortalController extends Controller
             [
                 'kind'=>$data['kind'],
                 'small_maintenance'=>$r->boolean('small_maintenance'),
-                'heavy_maintenance'=>$r->boolean('heavy_maintenance'),
+                'heavy_maintenance'=>$data['kind'] === 'hub' && $r->boolean('heavy_maintenance'),
                 'active'=>$r->boolean('active'),
                 'created_at'=>now(),'updated_at'=>now(),
             ]
