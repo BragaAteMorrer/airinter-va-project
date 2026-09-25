@@ -175,7 +175,7 @@
     }));
 
     for (const [id, title, hint, target] of [
-      ['flight-search', 'RECHERCHE VOL', 'VOL / DEPART / ARRIVEE', 'flights'],
+      ['flight-search', 'RECHERCHE VOL', 'ITF749 OU LFPO>LIRF', 'flights'],
       ['fleet-search', 'RECHERCHE FLOTTE', 'IMMATRICULATION / TYPE', 'fleet'],
       ['pilot-search', 'RECHERCHE PILOTE', 'MATRICULE / NOM', 'pilots']
     ]) {
@@ -223,12 +223,12 @@
         const items = state.collection?.items || [];
         items.slice(0, 7).forEach((item, index) => {
           const row = 6 + index * 2;
-          screen.write(row, 1, String(index + 1) + ' ' + fit(item.ident, 8) + ' ' + fit(item.departure, 4) + ' ' + fit(item.departure_time || '--:--', 5) + ' ' + fit(item.arrival, 4) + ' ' + fit(item.arrival_time || '--:--', 5));
-          screen.write(row + 1, 3, fit((item.departure_name || '') + ' > ' + (item.arrival_name || ''), 35), { foreground: 'cyan' });
+          screen.write(row, 1, String(index + 1) + ' ' + fit(item.ident, 8) + ' ' + fit(item.departure, 4) + ' > ' + fit(item.arrival, 4));
+          screen.write(row + 1, 3, fit((item.airline?.icao || 'ITF') + ' / ' + (item.route || 'ROUTE PROGRAMMEE'), 35), { foreground: 'cyan' });
         });
-        if (!items.length) screen.write(8, 7, 'AUCUN RESULTAT');
-        const pagination = state.collection?.pagination || {};
-        screen.write(20, 1, 'PAGE ' + fit(pagination.page || 1, 3) + '/' + fit(pagination.last_page || 1, 3) + ' TOTAL ' + fit(pagination.total || 0, 5));
+        if (!items.length) screen.write(8, 7, 'AUCUN VOL RESERVABLE');
+        const pagination = state.collection?.pagination || { page: 1, last_page: 1, total: items.length };
+        screen.write(20, 1, 'RESULTATS ' + fit(pagination.total ?? items.length, 5));
         screen.write(21, 1, 'CHOIX : ' + current.input.value + ' + ENVOI = RESERVER', { foreground: 'yellow' });
         writeFooter(screen, true);
       },
@@ -237,8 +237,7 @@
         const item = (state.collection?.items || [])[Number(value) - 1];
         if (item) action('reserve-flight', { flight: item });
       },
-      next: () => paginate('flights', 1),
-      previous: () => pageBack('flights', 'flight-search')
+      previous: () => 'flight-search'
     }));
 
     session.register(new mt.MinitelPage('operations', {
@@ -548,7 +547,23 @@
         const data = await requestJson(state.bootstrap.endpoints.operations);
         state.collection = data.data || { operations: [] };
         state.operationPage = 1;
-      } else if (['flights', 'routes', 'fleet', 'pilots', 'calendar'].includes(target)) {
+      } else if (target === 'flights') {
+        const raw = String(state.query || '').trim().toUpperCase();
+        const params = {};
+        const routeMatch = raw.match(/^([A-Z0-9]{3,8})\s*(?:>|-|\s)\s*([A-Z0-9]{3,8})$/);
+        if (routeMatch) {
+          params.dep_icao = routeMatch[1];
+          params.arr_icao = routeMatch[2];
+        } else if (raw) {
+          params.flight_number = raw;
+        }
+        const data = await requestJson(pageUrl(state.bootstrap.endpoints.operation_search, params));
+        const items = data.data || [];
+        state.collection = {
+          items,
+          pagination: { page: 1, last_page: 1, total: items.length, has_more: false }
+        };
+      } else if (['routes', 'fleet', 'pilots', 'calendar'].includes(target)) {
         state.collection = await requestJson(pageUrl(state.bootstrap.endpoints[target], {
           q: state.query,
           page: state.page
