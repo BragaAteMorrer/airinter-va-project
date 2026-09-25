@@ -39,8 +39,9 @@
       <label>Type
         <select name="kind">
           <option value="regional">Plateforme régionale</option>
-          <option value="hub">Hub principal</option>
+          <option value="hub">Hub principal — LFPO uniquement</option>
         </select>
+        <small>Orly (LFPO) est le seul hub autorisé.</small>
       </label>
       <label><input type="checkbox" name="small_maintenance" value="1" checked> Petite maintenance</label>
       <label><input type="checkbox" name="heavy_maintenance" value="1"> Grosse maintenance</label>
