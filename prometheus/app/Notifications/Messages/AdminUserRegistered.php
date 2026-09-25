@@ -20,7 +20,7 @@ class AdminUserRegistered extends Notification implements ShouldQueue
         parent::__construct();
 
         $this->setMailable(
-            'A new user registered',
+            'Prométhée · Nouvelle candidature pilote Air Inter',
             'notifications.mail.admin.user.registered',
             ['user' => $user]
         );
