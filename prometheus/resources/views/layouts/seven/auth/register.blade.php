@@ -38,7 +38,7 @@
         <select name="home_airport_id" id="home_airport_id" required
           class="airport_search @if ($hubs_only) hubs_only @endif @error('home_airport_id') is-invalid @enderror">
           @foreach ($airports as $airport_id => $airport_label)
-            <option value="{{ $airport_id }}" @selected($airport_id === old('home_airport_id'))>{{ $airport_label }}</option>
+            <option value="{{ $airport_id }}" @if ($airport_id === old('home_airport_id')) selected @endif>{{ $airport_label }}</option>
           @endforeach
         </select>
         @error('home_airport_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -48,7 +48,7 @@
         <label for="country">@lang('common.country')</label>
         <select name="country" id="country" class="@error('country') is-invalid @enderror">
           @foreach ($countries as $country_id => $country_label)
-            <option value="{{ $country_id }}" @selected($country_id === old('country'))>{{ $country_label }}</option>
+            <option value="{{ $country_id }}" @if ($country_id === old('country')) selected @endif>{{ $country_label }}</option>
           @endforeach
         </select>
         @error('country')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -60,7 +60,7 @@
           @foreach ($timezones as $group_name => $group_timezones)
             <optgroup label="{{ $group_name }}">
               @foreach ($group_timezones as $timezone_id => $timezone_label)
-                <option value="{{ $timezone_id }}" @selected($timezone_id === old('timezone', $defaultTimezone))>{{ $timezone_label }}</option>
+                <option value="{{ $timezone_id }}" @if ($timezone_id === old('timezone', $defaultTimezone)) selected @endif>{{ $timezone_label }}</option>
               @endforeach
             </optgroup>
           @endforeach
