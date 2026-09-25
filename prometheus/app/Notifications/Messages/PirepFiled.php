@@ -20,7 +20,7 @@ class PirepFiled extends Notification implements ShouldQueue
         parent::__construct();
 
         $this->setMailable(
-            'New PIREP Submitted',
+            'Prométhée · Nouveau compte-rendu de vol',
             'notifications.mail.admin.pirep.submitted',
             ['pirep' => $this->pirep]
         );
