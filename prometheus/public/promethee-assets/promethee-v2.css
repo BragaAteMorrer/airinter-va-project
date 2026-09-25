@@ -1413,41 +1413,8 @@ html[data-era="minitel"] .departure-board .split-flap-grid{
 .hermes-public-points span{padding:7px 10px;border:1px solid var(--line);border-radius:999px;background:#f8fafc;font-size:10px;font-weight:750}
 @media(max-width:760px){.hermes-public-showcase{grid-template-columns:1fr}}
 
-
-/* Flight schedule airline colour coding */
-.line-card {
-  --airline-accent: var(--ops-blue);
-  --airline-tint: #0b5cad0d;
-  position: relative;
-  overflow: hidden;
-  border-top: 4px solid var(--airline-accent);
-  background-image: linear-gradient(135deg, var(--airline-tint), transparent 42%);
-}
-.line-card.airline-air-inter {
-  --airline-accent: #0b5cad;
-  --airline-tint: #0b5cad12;
-}
-.line-card.airline-air-charter {
-  --airline-accent: #d92732;
-  --airline-tint: #d9273212;
-}
-.line-card.airline-ics {
-  --airline-accent: #e0ad16;
-  --airline-tint: #f2c14e20;
-}
-.line-card .eyebrow { color: var(--airline-accent); }
-.line-card .airport-pair i {
-  background: linear-gradient(90deg, var(--airline-accent), color-mix(in srgb, var(--airline-accent) 32%, white), var(--airline-accent));
-}
-.line-card .round-link {
-  border-color: color-mix(in srgb, var(--airline-accent) 42%, var(--line));
-  color: var(--airline-accent);
-}
-html[data-era="2000"] .line-card { border-top-color: var(--airline-accent); }
-html[data-era="minitel"] .line-card {
-  background-image: none;
-  border-top-color: var(--airline-accent);
-}
-html[data-era="minitel"] .line-card.airline-air-inter { --airline-accent: var(--minitel-blue); }
-html[data-era="minitel"] .line-card.airline-air-charter { --airline-accent: var(--minitel-red); }
-html[data-era="minitel"] .line-card.airline-ics { --airline-accent: var(--minitel-yellow); }
+/* Flight map airline route legend */
+.map-legend .route-legend { width: 24px; height: 3px; display: inline-block; border-radius: 999px; margin-left: 10px; }
+.map-legend .route-legend.air-inter { background: #0b5cad; }
+.map-legend .route-legend.air-charter { background: #d92732; }
+.map-legend .route-legend.ics { background: #e0ad16; }
