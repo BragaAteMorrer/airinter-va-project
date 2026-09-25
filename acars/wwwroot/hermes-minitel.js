@@ -680,7 +680,9 @@
         if (value === '2') { hm.reviewListMode = 'observations'; hm.reviewListPage = 1; return 'review-list'; }
         if (value === '3') { hm.reviewListMode = 'issues'; hm.reviewListPage = 1; return 'review-list'; }
       },
-      previous: () => 'flight-live',
+      previous: () => hm.status?.recoveryAvailable
+        ? 'recovery'
+        : ((hm.status?.flight || hm.status?.Flight) ? 'flight-live' : 'home'),
       repeat: (_ctx, refresh) => { if (refresh) setAction('load-review', { stay: true }); }
     }));
 
