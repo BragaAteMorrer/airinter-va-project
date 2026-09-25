@@ -142,6 +142,44 @@ for (const contract of ['mosaicMask', 'separatedMosaic', 'DISPLAY_MODES', 'MAX_I
   }
 }
 
+const sharedRenderer = fs.readFileSync(path.join(root, 'shared', 'minitel', 'renderer.js'), 'utf8');
+const loginCss = fs.readFileSync(path.join(root, 'prometheus', 'public', 'promethee-assets', 'login.css'), 'utf8');
+const loginJs = fs.readFileSync(path.join(root, 'prometheus', 'public', 'promethee-assets', 'login.js'), 'utf8');
+
+for (const contract of [
+  "setAttribute('tabindex', '0')",
+  "addEventListener('keydown', this.onKeyDown, true)",
+  "addEventListener('pointerdown'"
+]) {
+  if (!sharedRenderer.includes(contract)) {
+    failures += 1;
+    console.error('Missing Minitel keyboard/focus contract:', contract);
+  }
+}
+
+for (const contract of ['#001cff', '#ff2028', '#39ff4a']) {
+  if (!sharedRuntimeCss.includes(contract) || !loginCss.includes(contract)) {
+    failures += 1;
+    console.error('Missing colorful Videotex palette contract:', contract);
+  }
+}
+
+for (const contract of ["event.code==='NumpadEnter'", "event.key==='F10'||event.key==='End'", "TAPEZ 3615 AIR INTER PUIS ENVOI"]) {
+  if (!loginJs.includes(contract)) {
+    failures += 1;
+    console.error('Missing Minitel login keyboard contract:', contract);
+  }
+}
+
+for (const [label, source] of [['Prométhée', client], ['Hermès', hermesClient]]) {
+  for (const contract of ['titleBand', 'noticeBand', "background: 'green'"]) {
+    if (!source.includes(contract)) {
+      failures += 1;
+      console.error(label + ' is missing directory-style Videotex UI contract:', contract);
+    }
+  }
+}
+
 if (!hermesApp.includes("['modern', '2000', 'minitel']")) {
   failures += 1;
   console.error('Hermès Minitel era is not enabled in app.js.');
