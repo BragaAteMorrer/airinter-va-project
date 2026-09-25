@@ -194,18 +194,23 @@
         screen.write(8, 2, '2 RECHERCHER / RESERVER VOL', { foreground: 'cyan' });
         screen.write(9, 2, '3 PREPARATION OPERATIONNELLE', { foreground: 'cyan' });
         screen.write(10, 2, '4 ETAT SIMULATEUR', { foreground: 'cyan' });
-        screen.write(12, 2, 'PROMETHEE...... ' + (hm.status?.connected ? 'CONNECTE' : 'HORS LIGNE'), { foreground: hm.status?.connected ? 'green' : 'red' });
-        screen.write(13, 2, 'SIMULATEUR..... ' + (hm.status?.latest ? 'CONNECTE' : 'EN ATTENTE'), { foreground: hm.status?.latest ? 'green' : 'yellow' });
-        screen.write(14, 2, 'OPERATION...... ' + fit(opRef() || 'AUCUNE', 18));
-        screen.write(18, 2, 'VOTRE CHOIX : ' + current.input.value, { foreground: 'yellow' });
+        screen.write(11, 2, '5 VOL EN COURS / ACARS', { foreground: 'cyan' });
+        if (hm.status?.recoveryAvailable) screen.write(12, 2, '6 RECOVERY CENTER', { foreground: 'yellow' });
+        screen.write(14, 2, 'PROMETHEE...... ' + (hm.status?.connected ? 'CONNECTE' : 'HORS LIGNE'), { foreground: hm.status?.connected ? 'green' : 'red' });
+        screen.write(15, 2, 'SIMULATEUR..... ' + (hm.status?.latest ? 'CONNECTE' : 'EN ATTENTE'), { foreground: hm.status?.latest ? 'green' : 'yellow' });
+        screen.write(16, 2, 'OPERATION...... ' + fit(opRef() || hm.status?.flight?.operationId || 'AUCUNE', 18));
+        screen.write(18, 2, 'TRACKING....... ' + ((hm.status?.flight?.recording ?? hm.status?.flight?.Recording) ? 'ACTIF' : 'ARRETE'), { foreground: (hm.status?.flight?.recording ?? hm.status?.flight?.Recording) ? 'green' : 'yellow' });
+        screen.write(20, 2, 'VOTRE CHOIX : ' + current.input.value, { foreground: 'yellow' });
         footer(screen);
       },
-      acceptInput: key => /^[1-4]$/.test(key),
+      acceptInput: key => /^[1-6]$/.test(key),
       send: value => {
         if (value === '1') setAction('load-operations');
         if (value === '2') return 'search';
         if (value === '3') setAction('open-preparation');
         if (value === '4') setAction('load-status');
+        if (value === '5') setAction('open-flight-live');
+        if (value === '6' && hm.status?.recoveryAvailable) return 'recovery';
       }
     }));
 
@@ -867,6 +872,121 @@
         return show(terminalSession.go('result'), true);
       }
 
+      if (pending.type === 'open-flight-live') {
+        await refreshStatus();
+        const flight = hm.status?.flight || hm.status?.Flight;
+        if (!flight) {
+          if (hm.status?.recoveryAvailable) return show(terminalSession.go('recovery'), true);
+          throw new Error('AUCUN VOL ACARS EN COURS');
+        }
+        const operationId = flight.operationId || flight.OperationId;
+        if (!hm.operation && operationId) {
+          try { await loadOperation({ operation_id: operationId }); } catch {}
+        }
+        return show(terminalSession.go('flight-live'), true);
+      }
+
+      if (pending.type === 'pause-flight') {
+        await runCall('/api/pause', {});
+        await refreshStatus();
+        setResult('ENREGISTREMENT EN PAUSE', 'HERMES CONSERVE LE VOL LOCAL', 'REPRENEZ AVANT DE CONTINUER');
+        return show(terminalSession.go('result'), true);
+      }
+
+      if (pending.type === 'resume-flight') {
+        await runCall('/api/resume', {});
+        await refreshStatus();
+        return show(terminalSession.go('flight-live'), true);
+      }
+
+      if (pending.type === 'sync-flight') {
+        const result = await runCall('/api/sync', {});
+        await refreshStatus();
+        setResult('SYNCHRONISATION TERMINEE', String(result?.sent ?? 0) + ' ELEMENT(S) TRANSMIS', 'PROMETHEE ' + core.telemetrySummary(hm.status || {}).syncState);
+        return show(terminalSession.go('result'), true);
+      }
+
+      if (pending.type === 'load-datalink') {
+        const operationId = opRef() || core.telemetrySummary(hm.status || {}).operationId;
+        if (!operationId) throw new Error('OPERATION DATALINK INTROUVABLE');
+        hm.datalink = await runCall('/api/datalink?operation=' + encodeURIComponent(operationId));
+        hm.lastDatalinkRefreshAt = Date.now();
+        if (!pending.stay) hm.datalinkPage = 1;
+        return show(terminalSession.go(pending.stay ? terminalSession.currentPageId : 'datalink'), true);
+      }
+
+      if (pending.type === 'datalink-read') {
+        const operationId = opRef() || core.telemetrySummary(hm.status || {}).operationId;
+        hm.datalink = await runCall('/api/datalink/read?operation=' + encodeURIComponent(operationId), { message_id: pending.message.id });
+        hm.selectedMessage = core.datalinkSnapshot(hm.datalink).messages.find(item => item.id === pending.message.id) || pending.message;
+        hm.lastDatalinkRefreshAt = Date.now();
+        return show(terminalSession.go('datalink-message'), true);
+      }
+
+      if (pending.type === 'datalink-ack') {
+        const operationId = opRef() || core.telemetrySummary(hm.status || {}).operationId;
+        hm.datalink = await runCall('/api/datalink/ack?operation=' + encodeURIComponent(operationId), { message_id: pending.message.id });
+        hm.selectedMessage = core.datalinkSnapshot(hm.datalink).messages.find(item => item.id === pending.message.id) || pending.message;
+        hm.lastDatalinkRefreshAt = Date.now();
+        return show(terminalSession.go('datalink-message'), true);
+      }
+
+      if (pending.type === 'datalink-send') {
+        const operationId = opRef() || core.telemetrySummary(hm.status || {}).operationId;
+        hm.datalink = await runCall('/api/datalink/send?operation=' + encodeURIComponent(operationId), {
+          body: pending.body,
+          category: 'CREW',
+          priority: 'ROUTINE',
+          requires_ack: false,
+          reply_to: pending.replyTo || null
+        });
+        hm.replyTo = null;
+        hm.datalinkPage = 1;
+        hm.lastDatalinkRefreshAt = Date.now();
+        const queued = core.datalinkSnapshot(hm.datalink).pendingOutbound;
+        setResult('MESSAGE DATALINK', queued ? 'CONSERVE EN FILE LOCALE' : 'TRANSMIS A AIR INTER OPS', queued ? 'RENVOI AUTOMATIQUE PREVU' : 'LIAISON SYNCHRONISEE');
+        return show(terminalSession.go('result'), true);
+      }
+
+      if (pending.type === 'load-network') {
+        const operationId = opRef() || core.telemetrySummary(hm.status || {}).operationId;
+        const route = '/api/network' + (operationId ? '?operation=' + encodeURIComponent(operationId) : '');
+        hm.network = await runCall(route);
+        hm.lastNetworkRefreshAt = Date.now();
+        if (!pending.stay) hm.networkPage = 1;
+        return show(terminalSession.go(pending.stay ? terminalSession.currentPageId : 'network'), true);
+      }
+
+      if (pending.type === 'load-review') {
+        await refreshStatus();
+        hm.review = hm.status?.review || hm.status?.Review || null;
+        if (!hm.review && hm.status?.recoveryAvailable) {
+          const recovery = await runCall('/api/recovery');
+          hm.review = recovery?.review || recovery?.Review || null;
+        }
+        if (!hm.review && hm.status?.flight) hm.review = await runCall('/api/review');
+        return show(terminalSession.go(pending.stay ? terminalSession.currentPageId : 'review'), true);
+      }
+
+      if (pending.type === 'file-pirep') {
+        const result = await runCall('/api/file', {});
+        hm.filedReview = result?.review || result?.Review || hm.review || hm.status?.review || null;
+        hm.review = hm.filedReview;
+        await refreshStatus();
+        return show(terminalSession.go('review'), true);
+      }
+
+      if (pending.type === 'resume-recovery') {
+        const result = await runCall('/api/recovery/resume', {});
+        await refreshStatus();
+        const flight = result?.flight || hm.status?.flight || {};
+        const operationId = flight.operationId || flight.OperationId || hm.status?.recovery?.operationId || hm.status?.recovery?.OperationId;
+        if (operationId) {
+          try { await loadOperation({ operation_id: operationId }); } catch {}
+        }
+        return show(terminalSession.go('flight-live'), true);
+      }
+
       if (pending.type === 'start-flight') {
         hm.dispatch = await runCall(path('/dispatch'));
         await refreshStatus();
@@ -876,8 +996,8 @@
         if (!pirepId) throw new Error('PIREP PRE-DEPOSE INTROUVABLE');
         await runCall('/api/start', { pirepId: String(pirepId), operationId: opRef() });
         await refreshStatus();
-        setResult('ENREGISTREMENT DEMARRE', 'HERMES TRACKING ACTIF', 'LE SUIVI DETAILLE ARRIVE AU LOT M5');
-        return show(terminalSession.go('result'), true);
+        hm.review = hm.status?.review || hm.status?.Review || null;
+        return show(terminalSession.go('flight-live'), true);
       }
     } catch (error) {
       return fail(error);
@@ -892,11 +1012,34 @@
   };
 
   const tick = async () => {
-    if (!hm.active) return;
-    const previous = hm.status;
+    if (!hm.active || !terminalSession) return;
     await refreshStatus();
-    if (!hm.active || previous === hm.status) return;
-    if (['home', 'preparation', 'dispatch', 'simulator'].includes(terminalSession.currentPageId)) {
+    if (!hm.active) return;
+
+    const page = terminalSession.currentPageId;
+    const now = Date.now();
+
+    if (page === 'datalink' && now - hm.lastDatalinkRefreshAt >= 5000) {
+      const operationId = opRef() || core.telemetrySummary(hm.status || {}).operationId;
+      if (operationId) {
+        try {
+          hm.datalink = await runCall('/api/datalink?operation=' + encodeURIComponent(operationId));
+          hm.lastDatalinkRefreshAt = now;
+        } catch {}
+      }
+    }
+
+    if (page === 'network' && now - hm.lastNetworkRefreshAt >= 15000) {
+      const operationId = opRef() || core.telemetrySummary(hm.status || {}).operationId;
+      try {
+        hm.network = await runCall('/api/network' + (operationId ? '?operation=' + encodeURIComponent(operationId) : ''));
+        hm.lastNetworkRefreshAt = now;
+      } catch {}
+    }
+
+    if (page === 'review') hm.review = hm.status?.review || hm.status?.Review || hm.review;
+
+    if (['home', 'preparation', 'dispatch', 'simulator', 'flight-live', 'journal', 'datalink', 'network', 'review', 'recovery'].includes(page)) {
       await show(terminalSession.render(), false);
     }
   };
