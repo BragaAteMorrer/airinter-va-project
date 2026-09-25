@@ -2,11 +2,11 @@
 @section('title','Planification réseau')
 @section('content')
 <div class="ops-header compact"><div><span class="eyebrow">PLANIFICATION</span><h1>Réseau et saison.</h1><p>Indicateurs issus des PIREP acceptés : un outil de décision, pas une donnée financière réelle.</p></div><a class="button" href="{{ route('admin.promethee.seasons') }}">Gérer les saisons</a></div>
-<section class="control-strip"><article><span>Équipages Hermès</span><strong id="presenceCount">{{ $presence['online_count'] ?? 0 }}</strong><small>connectés actuellement</small></article><article><span>Saison active</span><strong>{{ $season?->name ?? '—' }}</strong><small>{{ $season ? $season->starts_on.' → '.$season->ends_on : 'Aucune saison définie' }}</small></article><article><span>Lignes étudiées</span><strong>{{ $flights->count() }}</strong><small>actives et visibles</small></article><article><span>Flottes</span><strong>{{ $subfleets->count() }}</strong><small>compatibilités publiées</small></article></section>
+<section class="control-strip"><article><span>Équipages Hermès</span><strong id="presenceCount">{{ $presence['online_count'] ?? 0 }}</strong><small>connectés actuellement</small></article><article><span>VATSIM</span><strong id="vatsimCount">{{ $presence['by_network']['VATSIM'] ?? 0 }}</strong><small>pilotes Air Inter détectés</small></article><article><span>IVAO</span><strong id="ivaoCount">{{ $presence['by_network']['IVAO'] ?? 0 }}</strong><small>pilotes Air Inter détectés</small></article><article><span>Saison active</span><strong>{{ $season?->name ?? '—' }}</strong><small>{{ $season ? $season->starts_on.' → '.$season->ends_on : 'Aucune saison définie' }}</small></article><article><span>Lignes étudiées</span><strong>{{ $flights->count() }}</strong><small>actives et visibles</small></article><article><span>Flottes</span><strong>{{ $subfleets->count() }}</strong><small>compatibilités publiées</small></article></section>
 <section class="panel table-wrap">
   <div class="panel-heading"><div><span class="eyebrow">AIR INTER NETWORK</span><h2>Équipages Hermès en ligne</h2><p>Un équipage disparaît automatiquement si Hermès cesse d’envoyer son heartbeat.</p></div><span id="presenceGenerated" class="muted">{{ $presence['generated_at'] ?? '' }}</span></div>
   <table>
-    <thead><tr><th>Pilote</th><th>Vol</th><th>Appareil</th><th>Phase</th><th>Simulateur</th><th>Hermès</th><th>Dernier signal</th></tr></thead>
+    <thead><tr><th>Pilote</th><th>Vol</th><th>Appareil</th><th>Phase</th><th>Réseaux</th><th>Simulateur</th><th>Hermès</th><th>Dernier signal</th></tr></thead>
     <tbody id="presenceRows">
       @forelse(($presence['crews'] ?? []) as $crew)
       <tr>
@@ -14,12 +14,28 @@
         <td><strong>{{ $crew['flight']['ident'] ?? '—' }}</strong><br><small>{{ ($crew['flight']['departure'] ?? '—').' → '.($crew['flight']['arrival'] ?? '—') }}</small></td>
         <td>{{ $crew['aircraft']['registration'] ?? '—' }}<br><small>{{ $crew['aircraft']['icao'] ?? '' }}</small></td>
         <td>{{ $crew['phase'] ?? 'STANDBY' }}</td>
+        <td>
+          @php($connections = $crew['online_networks']['online_connections'] ?? [])
+          @if(count($connections))
+            @foreach($connections as $connection)
+              <strong>{{ $connection['network'] ?? '—' }}</strong> {{ $connection['callsign'] ?? '' }}
+              @if(data_get($connection,'flight_plan.departure') || data_get($connection,'flight_plan.arrival'))
+                <br><small>{{ data_get($connection,'flight_plan.departure','—') }} → {{ data_get($connection,'flight_plan.arrival','—') }}</small>
+              @endif
+              @if(!$loop->last)<br>@endif
+            @endforeach
+          @elseif($crew['online_networks']['linked'] ?? false)
+            <span class="muted">Lié · offline</span>
+          @else
+            <span class="muted">Non lié</span>
+          @endif
+        </td>
         <td>{{ strtoupper($crew['simulator'] ?? 'unknown') }}</td>
         <td>{{ $crew['hermes_version'] ?? '—' }}</td>
         <td>{{ $crew['age_seconds'] ?? 0 }} s</td>
       </tr>
       @empty
-      <tr><td colspan="7">Aucun équipage Hermès connecté actuellement.</td></tr>
+      <tr><td colspan="8">Aucun équipage Hermès connecté actuellement.</td></tr>
       @endforelse
     </tbody>
   </table>
@@ -29,23 +45,39 @@
   const endpoint = @json(route('admin.promethee.network.presence'));
   const rows = document.getElementById('presenceRows');
   const count = document.getElementById('presenceCount');
+  const vatsimCount = document.getElementById('vatsimCount');
+  const ivaoCount = document.getElementById('ivaoCount');
   const generated = document.getElementById('presenceGenerated');
   const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
   const render = payload => {
     const data = payload?.data ?? payload ?? {};
     const crews = Array.isArray(data.crews) ? data.crews : [];
     count.textContent = String(data.online_count ?? crews.length);
+    vatsimCount.textContent = String(data.by_network?.VATSIM ?? 0);
+    ivaoCount.textContent = String(data.by_network?.IVAO ?? 0);
     generated.textContent = data.generated_at ?? '';
-    rows.innerHTML = crews.length ? crews.map(crew => `
+    rows.innerHTML = crews.length ? crews.map(crew => {
+      const networkConnections = crew.online_networks?.online_connections || [];
+      const networkText = networkConnections.length
+        ? networkConnections.map(connection => {
+            const route = connection.flight_plan?.departure || connection.flight_plan?.arrival
+              ? '<br><small>' + esc(connection.flight_plan?.departure || '—') + ' → ' + esc(connection.flight_plan?.arrival || '—') + '</small>'
+              : '';
+            return '<strong>' + esc(connection.network || '—') + '</strong> ' + esc(connection.callsign || '') + route;
+          }).join('<br>')
+        : (crew.online_networks?.linked ? '<span class="muted">Lié · offline</span>' : '<span class="muted">Non lié</span>');
+      return `
       <tr>
         <td><strong>${esc(crew.pilot?.ident || '—')}</strong><br><small>${esc(crew.pilot?.name || '')}</small></td>
         <td><strong>${esc(crew.flight?.ident || '—')}</strong><br><small>${esc(crew.flight?.departure || '—')} → ${esc(crew.flight?.arrival || '—')}</small></td>
         <td>${esc(crew.aircraft?.registration || '—')}<br><small>${esc(crew.aircraft?.icao || '')}</small></td>
         <td>${esc(crew.phase || 'STANDBY')}</td>
+        <td>${networkText}</td>
         <td>${esc(String(crew.simulator || 'unknown').toUpperCase())}</td>
         <td>${esc(crew.hermes_version || '—')}</td>
         <td>${esc(crew.age_seconds ?? 0)} s</td>
-      </tr>`).join('') : '<tr><td colspan="7">Aucun équipage Hermès connecté actuellement.</td></tr>';
+      </tr>`;
+    }).join('') : '<tr><td colspan="8">Aucun équipage Hermès connecté actuellement.</td></tr>';
   };
   const refresh = async () => {
     try {
