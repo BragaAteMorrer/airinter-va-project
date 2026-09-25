@@ -53,6 +53,7 @@ Route::middleware(['web','auth'])->name('promethee.')->group(function () {
         Route::get('/calendar', [MinitelController::class, 'calendar'])->name('calendar');
         Route::get('/profile', [MinitelController::class, 'profile'])->name('profile');
         Route::get('/operations', [MinitelOperationsController::class, 'index'])->name('operations');
+        Route::get('/operations/search-flights', [MinitelOperationsController::class, 'searchFlights'])->name('operations.search-flights');
         Route::post('/flights/{flight}/reserve', [MinitelOperationsController::class, 'reserve'])->name('operations.reserve');
         Route::get('/operations/{operation}', [MinitelOperationsController::class, 'show'])->name('operations.show');
         Route::get('/operations/{operation}/aircraft', [MinitelOperationsController::class, 'aircraft'])->name('operations.aircraft');
