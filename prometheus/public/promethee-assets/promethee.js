@@ -78,7 +78,11 @@
   setEra(initial);
   let initialAppearance; try { initialAppearance = localStorage.getItem('promethee-appearance'); } catch {}
   setAppearance(appearances.includes(initialAppearance) ? initialAppearance : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'), false);
-  document.getElementById('era')?.addEventListener('change',e => setEra(e.target.value));
+  document.getElementById('era')?.addEventListener('change',e => {
+    const nextEra = e.target.value;
+    setEra(nextEra);
+    if (document.documentElement.dataset.minitelRuntime === 'm2' && nextEra === 'minitel') window.location.reload();
+  });
   document.getElementById('appearance')?.addEventListener('change',e => setAppearance(e.target.value));
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => { try { if (!localStorage.getItem('promethee-appearance')) setAppearance(event.matches ? 'dark' : 'light', false); } catch {} });
   document.querySelectorAll('[data-era-choice]').forEach(button => button.addEventListener('click',() => setEra(button.dataset.eraChoice)));
