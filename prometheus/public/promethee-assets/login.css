@@ -648,3 +648,296 @@ html[data-login-era="minitel"] {
         font-size: 12px
     }
 }
+
+
+/* --- Minitel Videotex service layout (auth) --- */
+html[data-login-era="minitel"] body.promethee-auth{
+    min-height:100dvh;
+    overflow:hidden;
+    background:#020202;
+    color:#f8f8ef;
+    font-family:Minitel,"Courier New",monospace
+}
+html[data-login-era="minitel"] .login-shell{
+    display:grid;
+    grid-template-rows:auto minmax(0,1fr);
+    width:min(94vw,calc(100dvh - 24px),900px);
+    height:min(94vw,calc(100dvh - 24px),900px);
+    min-height:0;
+    margin:12px auto;
+    padding:clamp(18px,2.8vmin,34px);
+    overflow:hidden;
+    border:1px solid #6c6a60;
+    border-radius:24px 24px 34px 34px;
+    background:linear-gradient(145deg,#e5dfcc,#cbc4b0 62%,#a9a18e);
+    box-shadow:0 28px 70px #000a,inset 0 2px 0 #fff9;
+    box-sizing:border-box
+}
+html[data-login-era="minitel"] .login-topbar,
+html[data-login-era="minitel"] .login-layout{
+    width:100%;
+    max-width:none
+}
+html[data-login-era="minitel"] .login-topbar{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    align-items:stretch;
+    gap:0;
+    margin:0;
+    padding:0;
+    border:10px solid #111;
+    border-bottom:0;
+    background:#000
+}
+html[data-login-era="minitel"] .login-wordmark{
+    min-width:0;
+    padding:10px 14px;
+    background:#001cff;
+    color:#fff;
+    font-family:inherit;
+    font-size:clamp(18px,2.4vmin,28px);
+    font-weight:400;
+    line-height:1;
+    letter-spacing:.06em
+}
+html[data-login-era="minitel"] .login-wordmark:before{
+    width:auto;
+    height:auto;
+    margin-right:10px;
+    padding:1px 5px;
+    content:"3615";
+    display:inline-block;
+    background:#fff35a;
+    color:#001cff;
+    font:inherit
+}
+html[data-login-era="minitel"] .login-era{
+    display:flex;
+    align-items:center;
+    padding:6px 8px;
+    background:#39ff4a;
+    color:#000;
+    font-family:inherit;
+    font-size:clamp(12px,1.5vmin,16px);
+    font-weight:400
+}
+html[data-login-era="minitel"] .login-era select{
+    min-height:28px;
+    margin-left:6px;
+    padding:1px 4px;
+    border:1px solid #000;
+    border-radius:0;
+    background:#39ff4a;
+    color:#000;
+    font:inherit
+}
+html[data-login-era="minitel"] .login-appearance{display:none}
+html[data-login-era="minitel"] .login-layout{
+    display:grid;
+    grid-template-columns:1fr;
+    min-height:0;
+    margin:0;
+    overflow:hidden;
+    border:10px solid #111;
+    border-top:0;
+    border-radius:0 0 14px 14px;
+    background:#000;
+    box-shadow:none
+}
+html[data-login-era="minitel"] .login-intro{
+    min-height:0;
+    padding:0;
+    background:#001cff;
+    color:#fff;
+    border:0;
+    border-bottom:4px solid #000
+}
+html[data-login-era="minitel"] .login-intro>div:first-child{
+    display:grid;
+    grid-template-rows:auto auto auto
+}
+html[data-login-era="minitel"] .login-intro small{
+    display:block;
+    padding:5px 12px 3px;
+    color:#58f7ff;
+    font:inherit;
+    font-size:clamp(12px,1.5vmin,16px);
+    letter-spacing:.08em
+}
+html[data-login-era="minitel"] .login-intro h1{
+    margin:0;
+    padding:5px 12px;
+    background:#001cff;
+    color:#fff35a;
+    font:inherit;
+    font-size:clamp(20px,2.6vmin,30px);
+    line-height:1;
+    letter-spacing:.08em;
+    text-shadow:none
+}
+html[data-login-era="minitel"] .login-intro h1:before{
+    content:"AIR INTER  ";
+    color:#fff
+}
+html[data-login-era="minitel"] .login-intro p{
+    display:block;
+    margin:0;
+    padding:5px 12px;
+    background:#ff2028;
+    color:#fff;
+    font:inherit;
+    font-size:clamp(12px,1.5vmin,16px);
+    line-height:1.15
+}
+html[data-login-era="minitel"] .login-route{display:none}
+html[data-login-era="minitel"] .login-panel{
+    display:block;
+    min-height:0;
+    padding:clamp(10px,1.6vmin,18px);
+    overflow:auto;
+    background:#000;
+    color:#f8f8ef;
+    border:0;
+    border-radius:0;
+    box-shadow:none
+}
+html[data-login-era="minitel"] .login-form-heading{
+    margin:0 0 8px
+}
+html[data-login-era="minitel"] .login-form-heading h2{
+    margin:0;
+    padding:4px 8px;
+    background:#001cff;
+    color:#fff;
+    font:inherit;
+    font-size:clamp(15px,2vmin,20px);
+    font-weight:400;
+    line-height:1.1;
+    letter-spacing:.05em
+}
+html[data-login-era="minitel"] .login-form-heading p{
+    margin:0;
+    padding:4px 8px;
+    background:#ff2028;
+    color:#fff;
+    font:inherit;
+    font-size:clamp(12px,1.5vmin,16px);
+    line-height:1.15
+}
+html[data-login-era="minitel"] .minitel-access{
+    margin:0 0 8px;
+    padding:6px 8px;
+    border:0;
+    border-radius:0;
+    background:#001cff
+}
+html[data-login-era="minitel"] .minitel-access p,
+html[data-login-era="minitel"] .minitel-access label{
+    margin:0 0 4px;
+    color:#fff35a;
+    font:inherit;
+    font-size:clamp(12px,1.5vmin,16px);
+    line-height:1.1
+}
+html[data-login-era="minitel"] .minitel-access strong{color:#fff}
+html[data-login-era="minitel"] #minitel-access-code{
+    width:100%;
+    min-height:28px;
+    padding:2px 6px;
+    border:1px solid #58f7ff;
+    border-radius:0;
+    background:#000;
+    color:#58f7ff;
+    font:inherit;
+    font-size:clamp(13px,1.7vmin,18px);
+    text-transform:uppercase
+}
+html[data-login-era="minitel"] .minitel-access-status{
+    min-height:18px;
+    margin-top:4px;
+    color:#fff35a;
+    font:inherit;
+    font-size:clamp(11px,1.35vmin,14px)
+}
+html[data-login-era="minitel"] .login-form .field{
+    margin-bottom:7px
+}
+html[data-login-era="minitel"] .login-form label{
+    margin-bottom:2px;
+    color:#58f7ff;
+    font:inherit;
+    font-size:clamp(12px,1.5vmin,16px);
+    font-weight:400
+}
+html[data-login-era="minitel"] .login-form input{
+    width:100%;
+    min-height:30px;
+    padding:2px 6px;
+    border:1px solid #58f7ff;
+    border-radius:0;
+    background:#000;
+    color:#f8f8ef;
+    font:inherit;
+    font-size:clamp(13px,1.7vmin,18px);
+    caret-color:#fff35a
+}
+html[data-login-era="minitel"] .login-form input:focus,
+html[data-login-era="minitel"] #minitel-access-code:focus{
+    outline:0;
+    border-color:#fff35a;
+    box-shadow:0 0 0 1px #fff35a
+}
+html[data-login-era="minitel"] .login-form input:disabled{
+    border-color:#444;
+    background:#111;
+    color:#666
+}
+html[data-login-era="minitel"] .login-submit{
+    width:100%;
+    min-height:32px;
+    margin-top:3px;
+    border:0;
+    border-radius:0;
+    background:#39ff4a;
+    color:#000;
+    font:inherit;
+    font-size:clamp(14px,1.8vmin,19px);
+    font-weight:400;
+    text-align:right;
+    padding:3px 12px;
+    cursor:pointer
+}
+html[data-login-era="minitel"] .login-submit:before{content:"ENVOI  "}
+html[data-login-era="minitel"] .login-submit:hover:not(:disabled),
+html[data-login-era="minitel"] .login-submit:focus-visible{
+    background:#fff35a;
+    color:#000;
+    box-shadow:none;
+    transform:none;
+    outline:0
+}
+html[data-login-era="minitel"] .login-links{
+    margin-top:7px;
+    padding:4px 8px;
+    background:#001cff;
+    font:inherit;
+    font-size:clamp(11px,1.35vmin,14px)
+}
+html[data-login-era="minitel"] .login-links a{color:#fff;text-decoration:none}
+html[data-login-era="minitel"] .oauth-login,
+html[data-login-era="minitel"] .login-footer{display:none}
+html[data-login-era="minitel"] .text-danger{
+    color:#fff35a!important;
+    font-family:inherit
+}
+@media(max-width:899px),(pointer:coarse){
+    html[data-login-era="minitel"] body.promethee-auth{overflow:auto}
+    html[data-login-era="minitel"] .login-shell{
+        width:min(100% - 12px,720px);
+        height:auto;
+        min-height:calc(100dvh - 12px);
+        margin:6px auto;
+        padding:10px;
+        border-radius:12px
+    }
+}
