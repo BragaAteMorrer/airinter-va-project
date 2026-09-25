@@ -213,6 +213,10 @@ class PortalController extends Controller
                     ->orWhereBetween('maintenance.rem_cb', [0, $warningCycles])
                     ->orWhereBetween('maintenance.rem_cc', [0, $warningCycles]);
             })
+            ->when($r->user() && !$r->user()->ability('admin', 'admin-access') && (setting('pireps.restrict_aircraft_to_rank', false) || setting('pireps.restrict_aircraft_to_typerating', false)), function ($query) use ($r) {
+                $allowedSubfleetIds = app(UserService::class)->getAllowableSubfleets($r->user())->pluck('id');
+                $query->whereIn('aircraft.subfleet_id', $allowedSubfleetIds);
+            })
             ->limit(12)->get()
             ->sortBy(fn ($item) => min(array_filter([
                 is_numeric($item->rem_ta) ? (float) $item->rem_ta : INF,
