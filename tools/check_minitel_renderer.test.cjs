@@ -17,8 +17,13 @@ class FakeElement {
     this.attributes = new Map();
     this._textContent = '';
     this._innerHTML = '';
+    this.listeners = new Map();
+    this.focused = false;
   }
   appendChild(child) { this.children.push(child); return child; }
+  addEventListener(name, handler, options) { this.listeners.set(name, { handler, options }); }
+  removeEventListener(name) { this.listeners.delete(name); }
+  focus() { this.focused = true; }
   setAttribute(name, value) { this.attributes.set(name, String(value)); }
   removeAttribute(name) { this.attributes.delete(name); }
   toggleAttribute(name, force) {
@@ -59,6 +64,9 @@ const renderer = new MinitelDomRenderer(host, {
 assert.equal(host.dataset.displayMode, 'monochrome');
 assert.equal(renderer.screenNode.dataset.displayMode, 'monochrome');
 assert.equal(renderer.speed, 'authentic');
+assert.equal(host.attributes.get('tabindex'), '0');
+assert.equal(host.focused, true);
+assert.equal(host.listeners.has('pointerdown'), true);
 
 const screen = new runtime.MinitelScreenBuffer();
 screen.mosaic(3, 4, 21, {
