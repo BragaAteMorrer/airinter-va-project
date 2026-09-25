@@ -99,6 +99,9 @@ class PrometheeUserImporter
         // Air Inter VA currently uses IT + a zero-padded pilot id. Store the
         // existing public identity as a convenience alias; the immutable link
         // remains provider + external_user_id.
-        return 'IT'.str_pad((string) ((int) ($legacy->pilot_id ?? 0)), 3, '0', STR_PAD_LEFT);
+        $prefix = (string) env('PROMETHEE_PILOT_ID_PREFIX', 'IT');
+        $length = max(1, (int) env('PROMETHEE_PILOT_ID_LENGTH', 3));
+
+        return $prefix.str_pad((string) ((int) ($legacy->pilot_id ?? 0)), $length, '0', STR_PAD_LEFT);
     }
 }
