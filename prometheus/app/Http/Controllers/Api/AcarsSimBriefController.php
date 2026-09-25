@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Http;
 use Modules\Promethee\Services\OperationIdentityService;
 use Modules\Promethee\Services\SimBriefApiSessionService;
 use Modules\Promethee\Services\DemandProfileService;
+use Modules\Promethee\Services\SimBriefOperationResolver;
 
 class AcarsSimBriefController extends Controller
 {
@@ -28,7 +29,8 @@ class AcarsSimBriefController extends Controller
         private readonly UserService $userSvc,
         private readonly OperationIdentityService $operationIdentity,
         private readonly SimBriefApiSessionService $apiSessions,
-        private readonly DemandProfileService $demandProfile
+        private readonly DemandProfileService $demandProfile,
+        private readonly SimBriefOperationResolver $resolver
     ) {}
 
     /**
