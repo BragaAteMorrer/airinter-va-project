@@ -19,7 +19,7 @@ for (const name of names) {
 }
 
 const client = fs.readFileSync(path.join(root, 'prometheus', 'public', 'promethee-assets', 'promethee-minitel.js'), 'utf8');
-for (const contract of ['departures', 'flights', 'fleet', 'pilots', 'profile']) {
+for (const contract of ['departures', 'flights', 'routes', 'fleet', 'pilots', 'calendar', 'profile']) {
   if (!client.includes(contract)) {
     failures += 1;
     console.error('Missing Prométhée M2 client surface:', contract);
