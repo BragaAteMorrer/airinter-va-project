@@ -450,7 +450,8 @@ public sealed class FlightRecorder
             Engine3Running: engines.ElementAtOrDefault(2),
             Engine4Running: engines.ElementAtOrDefault(3),
             SlewActive: s.SlewActive ?? false,
-            SimulationRate: s.SimulationRate ?? 1d);
+            SimulationRate: s.SimulationRate ?? 1d,
+            Pitch: s.PitchDegrees ?? 0d);
         return true;
     }
     public static double Distance(double lat1, double lon1, double lat2, double lon2) {
