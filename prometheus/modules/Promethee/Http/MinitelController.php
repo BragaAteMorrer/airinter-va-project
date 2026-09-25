@@ -40,6 +40,7 @@ class MinitelController extends Controller
                 'calendar' => route('promethee.minitel.calendar'),
                 'profile' => route('promethee.minitel.profile'),
                 'operations' => route('promethee.minitel.operations'),
+                'operation_search' => route('promethee.minitel.operations.search-flights'),
                 'reserve_base' => url('/minitel/flights'),
                 'operation_base' => url('/minitel/operations'),
             ],
