@@ -1,6 +1,6 @@
 <?php return array_replace(require __DIR__.'/../en/promethee.php', [
     'dashboard'=>'Panel de control', 'operations'=>'Operaciones', 'flight_schedule'=>'Programa de vuelos', 'calendar'=>'Calendario', 'community'=>'Comunidad', 'latest_pireps'=>'Últimos PIREP', 'flight_safety'=>'Seguridad de vuelo', 'public_home'=>'Inicio público', 'completed_flights'=>'Vuelos realizados', 'language'=>'Idioma', 'display'=>'Pantalla', 'display_style'=>'Estilo de visualización', 'modern'=>'Moderno', 'year_2000'=>'Años 2000', 'skip_to_content'=>'Ir al contenido', 'operations_centre'=>'Centro de operaciones', 'virtual_airline'=>'Aerolínea virtual', 'pilot_area'=>'Área de piloto', 'visitor_access'=>'Acceso de visitante', 'view_my_profile'=>'Ver mi perfil', 'logout'=>'Cerrar sesión', 'read_only'=>'Solo lectura', 'login'=>'Iniciar sesión', 'register'=>'Registrarse', 'input_error'=>'Revise la información introducida', 'pilot_login'=>'Acceso de piloto', 'login_intro'=>'Acceda a su libro de vuelo y a las operaciones.', 'minitel_instruction'=>'marque el servicio antes de identificarse.', 'service_code'=>'CÓDIGO DEL SERVICIO', 'welcome_aboard'=>'Bienvenido a bordo.', 'login_welcome'=>'Entre en el espacio de piloto de Air Inter y prepare su próxima rotación.', 'powered_by'=>'Desarrollado por phpVMS', 'flight_not_found'=>'¡Vuelo no encontrado!',
-    'dispatch_desk'=>'Centro de despacho', 'admin_pilots'=>'Gestión de pilotos', 'admin_ranks'=>'Gestión de rangos',
+    'dispatch_desk' => 'Centro de despacho', 'admin_pilots' => 'Gestión de pilotos', 'admin_ranks' => 'Gestión de rangos',
     'dashboard_page' => [
         'title' => 'Panel de control', 'eyebrow' => 'DIRECCIÓN DE OPERACIONES AÉREAS', 'heading' => 'Panel de situación Promethee.', 'intro' => 'Actividad de la red, salidas por preparar, seguridad y operaciones comerciales.',
         'paris_time' => 'HORA DE PARÍS', 'active_flights' => 'Vuelos en curso', 'open_pireps' => 'PIREPs abiertos / en pausa', 'pending' => 'Pendiente de revisión', 'admin_queue' => 'Cola de PIREPs de administración', 'today' => 'Hoy',
@@ -13,4 +13,5 @@
     'navigation_welcome'=>'Bienvenida', 'navigation_pilot'=>'Área de piloto', 'navigation_company'=>'Compañía', 'navigation_operations'=>'Operaciones', 'navigation_private'=>'Privado',
     'navigation_menu'=>['settings'=>'Configuración', 'flight_map'=>'Mapa de vuelos', 'reports' => 'Mis informes', 'all_reports' => 'Todos los informes', 'my_reports' => 'Mis informes', 'bookings'=>'Mis reservas', 'downloads'=>'Descargas', 'live_flights'=>'Vuelos en tiempo real'],
     'appearance'=>'Apariencia', 'appearance_style'=>'Apariencia cromática', 'appearance_light'=>'Día', 'appearance_dark'=>'Noche',
+    'company_finances' => 'Finanzas de las compañías',
 ]);
