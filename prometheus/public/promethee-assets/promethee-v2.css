@@ -1393,3 +1393,14 @@ html[data-era="minitel"] .departure-board .split-flap-grid {
   column-gap: 7px;
   min-width: 1140px;
 }
+
+/* Beta board: city labels stay on one mechanical row. */
+.occ-title small{display:inline-block;margin-top:4px;font-size:9px;letter-spacing:1.25px;color:inherit}
+html:not([data-era="minitel"]) .departure-board .split-flap-grid{
+  grid-template-columns:64px minmax(138px,.8fr) minmax(310px,1.35fr) 84px minmax(360px,1.55fr) 84px minmax(220px,1fr);
+  min-width:1450px;
+}
+html[data-era="minitel"] .departure-board .split-flap-grid{
+  grid-template-columns:64px minmax(138px,.8fr) minmax(310px,1.35fr) 84px minmax(360px,1.55fr) 84px minmax(220px,1fr);
+  min-width:1450px;
+}
