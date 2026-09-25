@@ -8,7 +8,18 @@
   <table><thead><tr><th>Appareil</th><th>Compagnie</th><th>Position / capacité</th><th>Heures A/B/C restantes</th><th>Cycles A/B/C restants</th></tr></thead>
   <tbody>
   @forelse($upcomingMaintenance as $item)
-    <tr><td><a href="{{ route('promethee.aircraft.show', $item->registration) }}"><strong>{{ $item->registration }}</strong></a> · {{ $item->icao }}</td><td>{{ $item->airline_icao ?: '—' }}</td><td><strong>{{ $item->airport_id ?: '—' }}</strong> · @if($item->heavy_maintenance)petite + grosse maintenance@elseif($item->small_maintenance)petite maintenance@elseaucune capacité technique@endif</td><td>{{ $item->rem_ta ?? '—' }} / {{ $item->rem_tb ?? '—' }} / {{ $item->rem_tc ?? '—' }} h</td><td>{{ $item->rem_ca ?? '—' }} / {{ $item->rem_cb ?? '—' }} / {{ $item->rem_cc ?? '—' }}</td></tr>
+    <tr><td><a href="{{ route('promethee.aircraft.show', $item->registration) }}"><strong>{{ $item->registration }}</strong></a> · {{ $item->icao }}</td><td>{{ $item->airline_icao ?: '—' }}</td>
+<td>
+  <strong>{{ $item->airport_id ?: '—' }}</strong> ·
+  @if($item->heavy_maintenance)
+    petite + grosse maintenance
+  @elseif($item->small_maintenance)
+    petite maintenance
+  @else
+    aucune capacité technique
+  @endif
+</td>
+<td>{{ $item->rem_ta ?? '—' }} / {{ $item->rem_tb ?? '—' }} / {{ $item->rem_tc ?? '—' }} h</td><td>{{ $item->rem_ca ?? '—' }} / {{ $item->rem_cb ?? '—' }} / {{ $item->rem_cc ?? '—' }}</td></tr>
   @empty
     <tr><td colspan="5">Aucun appareil dans la fenêtre d’alerte configurée.</td></tr>
   @endforelse
