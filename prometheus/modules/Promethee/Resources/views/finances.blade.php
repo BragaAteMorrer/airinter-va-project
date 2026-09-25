@@ -66,9 +66,9 @@
         <div class="finance-chart-row">
           <strong>{{ $point['label'] }}</strong>
           <div class="finance-bars">
-            <div class="finance-bar-line"><span>Crédits</span><i style="width:{{ $creditWidth }}%"></i><b>{{ new AppSupportMoney($point['credits']) }}</b></div>
-            <div class="finance-bar-line"><span>Débits</span><i style="width:{{ $debitWidth }}%"></i><b>{{ new AppSupportMoney($point['debits']) }}</b></div>
-            <div class="finance-bar-line"><span>Net</span><i style="width:{{ $netWidth }}%"></i><b>{{ new AppSupportMoney($point['net']) }}</b></div>
+            <div class="finance-bar-line"><span>Crédits</span><i style="width:{{ $creditWidth }}%"></i><b>{{ new \App\Support\Money($point['credits']) }}</b></div>
+            <div class="finance-bar-line"><span>Débits</span><i style="width:{{ $debitWidth }}%"></i><b>{{ new \App\Support\Money($point['debits']) }}</b></div>
+            <div class="finance-bar-line"><span>Net</span><i style="width:{{ $netWidth }}%"></i><b>{{ new \App\Support\Money($point['net']) }}</b></div>
           </div>
         </div>
       @endforeach
