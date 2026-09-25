@@ -1,4 +1,4 @@
-# 3615 AIRINTER — Minitel Runtime (M0 + M1)
+# 3615 AIRINTER — Minitel Runtime (M0 + M1 + M2)
 
 This directory contains the shared, framework-free foundation for the Air Inter Videotex experience used by Prométhée and Hermès.
 
@@ -80,4 +80,24 @@ These commands are also executed by the repository Quality workflow.
 9. The shell never mutates the saved Minitel preference itself; Prométhée/Hermès decide how to persist device/session fallback.
 10. Shell/runtime tests run in repository CI.
 
-Prométhée/Hermès business pages remain outside M0/M1. M2 can now integrate the shell into Prométhée consultation screens.
+## M2 — Prométhée consultation
+
+M2 mounts the shared runtime in Prométhée and adds an authenticated, read-only projection for:
+
+- departures / movements;
+- flight search and paginated schedule;
+- routes;
+- fleet;
+- pilots;
+- calendar;
+- current pilot profile.
+
+The browser client lives in `prometheus/public/promethee-assets/promethee-minitel.js`.
+The Laravel projection lives in `modules/Promethee/Http/MinitelController.php`.
+All M2 routes are GET-only; reservations, SimBrief, PIREP filing and other mutations remain out of scope until M3.
+
+Public runtime copies under `prometheus/public/promethee-assets/minitel/` are checked against `shared/minitel/` by `tools/check_minitel_assets.cjs` so Prométhée cannot silently drift from the shared contract.
+
+Mobile fallback is session-only: it temporarily presents the modern UI without deleting the saved desktop Minitel preference. An explicit desktop exit persists the modern era.
+
+M3 can now add operational actions on top of this consultation surface without duplicating phpVMS business rules.
