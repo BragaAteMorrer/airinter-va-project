@@ -8,15 +8,21 @@ namespace Modules\Promethee\Services;
  */
 class SafetyAnalyzer
 {
-    public const VERSION = 1;
+    public const VERSION = 2;
     public function analyze(?float $landingRate, array $samples, float $hardThreshold = 600): array
     {
-        usort($samples, fn ($a,$b) => strcmp($a['recorded_at'], $b['recorded_at']));
+        usort($samples, fn ($a,$b) => strcmp((string) ($a['recorded_at'] ?? ''), (string) ($b['recorded_at'] ?? '')));
         $approaches = [];
         $previous = null;
         $overspeed = null;
         $speedEvents = 0;
         $above = false;
+
+        $known250 = $exceeded250 = false;
+        $knownTaxi = $exceededTaxi = false;
+        $knownBank = $exceededBank = false;
+        $knownPitch = $exceededPitch = false;
+
         foreach ($samples as $s) {
             if (isset($s['ias'], $s['max_ias']) && $s['max_ias'] > 0) {
                 $exceeded = $s['ias'] > $s['max_ias'];
@@ -26,6 +32,25 @@ class SafetyAnalyzer
             } else {
                 $above = false;
             }
+
+            $airborne = ($s['on_ground'] ?? null) === false;
+            if ($airborne && isset($s['ias'], $s['altitude_msl'])) {
+                $known250 = true;
+                if ((float) $s['altitude_msl'] < 10000 && (float) $s['ias'] > 250) $exceeded250 = true;
+            }
+            if (($s['on_ground'] ?? null) === true && isset($s['gs'])) {
+                $knownTaxi = true;
+                if ((float) $s['gs'] > 30) $exceededTaxi = true;
+            }
+            if ($airborne && isset($s['bank'])) {
+                $knownBank = true;
+                if (abs((float) $s['bank']) > 35) $exceededBank = true;
+            }
+            if ($airborne && isset($s['pitch'])) {
+                $knownPitch = true;
+                if (abs((float) $s['pitch']) > 20) $exceededPitch = true;
+            }
+
             // A checkpoint needs two nearby samples bracketing 1000 ft on descent.
             if ($previous && isset($previous['agl'], $s['agl'])
                 && $previous['agl'] > 1000 && $s['agl'] <= 1000
@@ -37,7 +62,7 @@ class SafetyAnalyzer
                 $known = true;
                 foreach ($required as $key) if (!isset($s[$key])) $known = false;
                 $stable = $known ? (
-                    $s['vref'] > 0 && $s['ias'] >= $s['vref'] - 5 && $s['ias'] <= $s['vref'] + 20
+                    $s['vref'] > 0 && $s['ias'] >= $s['vref'] - 5 && $s['ias'] <= $s['vref'] + 10
                     && $s['vs'] >= -1000 && $s['vs'] <= 0 && abs($s['bank']) <= 15
                     && $s['gear_down'] && $s['landing_flaps'] && $s['thrust_stable'] && $s['checklist_complete']
                     && abs($s['localizer_dots']) <= 1 && abs($s['glideslope_dots']) <= 1
@@ -46,9 +71,15 @@ class SafetyAnalyzer
             }
             $previous = $s;
         }
+
         return [
             'hard_landing' => $landingRate === null ? null : abs($landingRate) >= $hardThreshold,
-            'overspeed' => $overspeed, 'speed_events' => $speedEvents,
+            'overspeed' => $overspeed,
+            'speed_events' => $speedEvents,
+            'speed_250_below_10000' => $known250 ? $exceeded250 : null,
+            'taxi_overspeed' => $knownTaxi ? $exceededTaxi : null,
+            'bank_exceedance' => $knownBank ? $exceededBank : null,
+            'pitch_exceedance' => $knownPitch ? $exceededPitch : null,
             'approaches' => $approaches,
         ];
     }
@@ -71,7 +102,19 @@ class SafetyAnalyzer
             $safetyEvents[] = $this->event('LANDING_RATE', 'info', 'Taux de toucher observé.', null, ['landing_rate_fpm' => $landingRate]);
         }
         if ($analysis['overspeed'] === true) {
-            $safetyEvents[] = $this->event('OVERSPEED', 'warning', 'Dépassement de la limite de vitesse transmise.', null, ['events' => $analysis['speed_events']]);
+            $safetyEvents[] = $this->event('OVERSPEED', 'warning', 'Dépassement de la limite VNE/VMO/MMO transmise.', null, ['events' => $analysis['speed_events']]);
+        }
+        if ($analysis['speed_250_below_10000'] === true) {
+            $safetyEvents[] = $this->event('SPEED_250_BELOW_10000', 'warning', 'IAS supérieure à 250 kt sous 10 000 ft MSL.');
+        }
+        if ($analysis['taxi_overspeed'] === true) {
+            $safetyEvents[] = $this->event('TAXI_OVERSPEED', 'warning', 'Vitesse sol supérieure à 30 kt au sol.');
+        }
+        if ($analysis['bank_exceedance'] === true) {
+            $safetyEvents[] = $this->event('BANK_EXCEEDANCE', 'warning', 'Inclinaison supérieure à 35° en vol.');
+        }
+        if ($analysis['pitch_exceedance'] === true) {
+            $safetyEvents[] = $this->event('PITCH_EXCEEDANCE', 'warning', 'Assiette absolue supérieure à 20° en vol.');
         }
 
         $operationsEvents = [];
@@ -100,7 +143,7 @@ class SafetyAnalyzer
                 'approach_checkpoints_evaluable' => count($knownApproaches),
             ],
             'safety' => [
-                'status' => $this->sectionStatus($safetyEvents, $analysis['hard_landing'] !== null || $analysis['overspeed'] !== null),
+                'status' => $this->sectionStatus($safetyEvents, collect(['hard_landing','overspeed','speed_250_below_10000','taxi_overspeed','bank_exceedance','pitch_exceedance'])->contains(fn ($key) => $analysis[$key] !== null)),
                 'events' => $safetyEvents,
             ],
             'operations' => [
@@ -188,24 +231,43 @@ class SafetyAnalyzer
     }
     public function aggregate(iterable $flights, string $month): array
     {
-        $report = ['month'=>$month,'version'=>self::VERSION,'flights'=>0,
-            'hard_landing'=>['evaluated'=>0,'exceeded'=>0,'unknown'=>0],
-            'overspeed'=>['evaluated'=>0,'exceeded'=>0,'unknown'=>0],
+        $indicatorKeys = ['hard_landing','overspeed','speed_250_below_10000','taxi_overspeed','bank_exceedance','pitch_exceedance'];
+        $report = [
+            'month'=>$month,
+            'version'=>self::VERSION,
+            'flights'=>0,
             'approach'=>['stable'=>0,'unstable'=>0,'unknown'=>0,'flights_without_checkpoint'=>0],
-            'speed_events'=>0, 'thresholds'=>['hard_landing_fpm'=>600,'checkpoint_agl_ft'=>1000]];
+            'speed_events'=>0,
+            'thresholds'=>[
+                'hard_landing_fpm'=>600,
+                'checkpoint_agl_ft'=>1000,
+                'vref_minus_kt'=>5,
+                'vref_plus_kt'=>10,
+                'below_10000_max_ias_kt'=>250,
+                'taxi_max_gs_kt'=>30,
+                'max_bank_deg'=>35,
+                'max_pitch_deg'=>20,
+            ],
+        ];
+        foreach ($indicatorKeys as $key) $report[$key] = ['evaluated'=>0,'exceeded'=>0,'unknown'=>0];
+
         foreach ($flights as $f) {
             $report['flights']++;
-            $r = $this->analyze($f['landing_rate'], $f['samples']);
-            foreach (['hard_landing','overspeed'] as $key) {
-                if ($r[$key] === null) $report[$key]['unknown']++;
-                else { $report[$key]['evaluated']++; if ($r[$key]) $report[$key]['exceeded']++; }
+            $result = $this->analyze($f['landing_rate'], $f['samples']);
+            foreach ($indicatorKeys as $key) {
+                if ($result[$key] === null) $report[$key]['unknown']++;
+                else {
+                    $report[$key]['evaluated']++;
+                    if ($result[$key]) $report[$key]['exceeded']++;
+                }
             }
-            $report['speed_events'] += $r['speed_events'];
-            if (!$r['approaches']) $report['approach']['flights_without_checkpoint']++;
-            foreach ($r['approaches'] as $stable) {
+            $report['speed_events'] += $result['speed_events'];
+            if (!$result['approaches']) $report['approach']['flights_without_checkpoint']++;
+            foreach ($result['approaches'] as $stable) {
                 $report['approach'][$stable === null ? 'unknown' : ($stable ? 'stable' : 'unstable')]++;
             }
         }
         return $report;
     }
+
 }
