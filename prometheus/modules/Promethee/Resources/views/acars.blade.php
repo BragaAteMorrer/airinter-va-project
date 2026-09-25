@@ -50,10 +50,10 @@
         <span class="eyebrow">PARCOURS OPÉRATIONNEL</span>
         <h2>Ce qu’Hermès enregistre</h2>
         <div class="route-list">
-            <article><strong>OUT</strong><span>Départ du parking et début du temps bloc.</span></article>
-            <article><strong>OFF</strong><span>Décollage, suivi de la route et de la télémétrie.</span></article>
-            <article><strong>ON</strong><span>Atterrissage et mesure du taux de toucher.</span></article>
-            <article><strong>IN</strong><span>Arrivée au parking et autorisation de déposer le PIREP.</span></article>
+            <article><strong>OUT</strong><span>Départ du parking, début du temps bloc et de la télémétrie.</span></article>
+            <article><strong>OFF</strong><span>Décollage, suivi du vol et de la télémétrie.</span></article>
+            <article><strong>ON</strong><span>Atterrissage et enregistrement des données d’arrivée.</span></article>
+            <article><strong>IN</strong><span>Arrivée au parking, fin du temps bloc et envoi du PIREP.</span></article>
         </div>
     </section>
 </div>
