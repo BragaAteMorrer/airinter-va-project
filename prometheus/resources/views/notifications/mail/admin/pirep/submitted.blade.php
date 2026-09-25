@@ -1,12 +1,17 @@
 @component('mail::message')
-  # New PIREP Submitted
+# Nouveau compte-rendu de vol
 
-  A new PIREP has been submitted by {{ $pirep->user->ident }} {{ $pirep->user->name }}
+Un nouveau PIREP vient d’être transmis à l’exploitation.
 
-  @component('mail::button', ['url' => route('admin.pireps.edit', [$pirep->id])])
-    View PIREP
-  @endcomponent
+@component('mail::panel')
+**Pilote :** {{ $pirep->user->ident }} · {{ $pirep->user->name }}  
+**Vol :** {{ $pirep->ident ?? $pirep->id }}  
+**Route :** {{ $pirep->dpt_airport_id ?? '—' }} → {{ $pirep->arr_airport_id ?? '—' }}
+@endcomponent
 
-  Thanks,<br>
-  {{ config('app.name') }}
+@component('mail::button', ['url' => route('admin.pireps.edit', [$pirep->id])])
+OUVRIR LE PIREP DANS PROMÉTHÉE
+@endcomponent
+
+Prométhée · Air Inter VA
 @endcomponent
