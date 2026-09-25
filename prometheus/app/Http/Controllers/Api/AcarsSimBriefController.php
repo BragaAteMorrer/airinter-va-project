@@ -41,19 +41,22 @@ class AcarsSimBriefController extends Controller
     {
         $attrs = $this->validatePlanningRequest($request);
         $user = Auth::user();
-        [$flight, $aircraft] = $this->getEligibleOperation($flight_id, $attrs['aircraft_id']);
-        $plan = $this->effectivePlanning($flight, $attrs);
+        $resolved = $this->resolver->resolveFlightAircraft(
+            $flight_id,
+            $attrs['aircraft_id'],
+            $user,
+            $request->input('operation_id'),
+            $attrs
+        );
+        $flight = $resolved['flight_model'];
+        $aircraft = $resolved['aircraft_model'];
 
         $apiKey = app(\Modules\Promethee\Services\SimBriefCompanyKeyService::class)->get();
         abort_if(empty($apiKey), 503, 'La clé API SimBrief de la compagnie n’est pas configurée.');
 
-        $type = $aircraft->simbrief_type ?: ($aircraft->subfleet->simbrief_type ?: $aircraft->icao);
-        abort_if(empty($type), 422, 'Le type SimBrief de cet appareil n’est pas configuré.');
-
         $timestamp = now()->timestamp;
-        $operationId = (string) ($request->input('operation_id') ?: $flight->id);
-        $demand = $this->demandProfile->profile($aircraft, $flight, $operationId);
-        $staticId = $this->staticId($request, $user->ident, $flight->id, $aircraft->id);
+        $operationId = $resolved['operation_id'];
+        $staticId = $this->staticId($request, $user->ident, (string) $flight->id, (string) $aircraft->id);
         $apiSession = $this->apiSessions->create(
             (int) $user->id,
             $operationId,
@@ -61,42 +64,30 @@ class AcarsSimBriefController extends Controller
             (string) $aircraft->id,
             $staticId
         );
+
         $outputPage = route('promethee.simbrief.callback', ['state' => $apiSession['state']]);
-        $signatureInput = $flight->dpt_airport_id.$flight->arr_airport_id.$type.$timestamp.$outputPage;
+        $parameters = $resolved['parameters'];
+        $signatureInput = $parameters['orig'].$parameters['dest'].$parameters['type'].$timestamp.$outputPage;
+        $parameters['static_id'] = $staticId;
+        $parameters['outputpage'] = $outputPage;
+        $parameters['timestamp'] = $timestamp;
+        $parameters['apicode'] = md5($apiKey.$signatureInput);
 
         return response()->json([
-            'operation_id' => $request->input('operation_id'),
+            'operation_id' => $operationId,
             'worker_url' => 'https://www.simbrief.com/ofp/ofp.loader.api.php',
             'state' => $apiSession['state'],
             'expires_in' => 1800,
             'flight_id' => $flight->id,
             'aircraft_id' => $aircraft->id,
-            'parameters' => [
-                'orig' => $flight->dpt_airport_id,
-                'dest' => $flight->arr_airport_id,
-                'altn' => $plan['alternate'] === 'AUTO' ? null : $plan['alternate'],
-                'route' => $plan['route'],
-                'fl' => $plan['level'],
-                'type' => $type,
-                'reg' => $aircraft->registration,
-                'pax' => $demand['capacity'] > 0 ? $demand['passengers'] : null,
-                'airline' => $flight->airline->icao,
-                'fltnum' => $flight->flight_number,
-                'callsign' => setting('simbrief.callsign', true) ? $user->ident : $flight->airline->icao.$flight->flight_number,
-                'static_id' => $staticId,
-                'planformat' => 'lido',
-                'units' => 'KGS',
-                'navlog' => '1',
-                'maps' => 'detail',
-                'outputpage' => $outputPage,
-                'timestamp' => $timestamp,
-                'apicode' => md5($apiKey.$signatureInput),
-            ],
+            'resolved' => $this->resolver->publicView($resolved),
+            'parameters' => $parameters,
         ]);
     }
 
 
     /**
+     * Account mode: return a SimBrief Dispatch Redirect URL    /**
      * Account mode: return a SimBrief Dispatch Redirect URL with the operation
      * pre-filled. This does not require the VA API key and never handles the
      * pilot's Navigraph password.
@@ -104,44 +95,33 @@ class AcarsSimBriefController extends Controller
     public function redirect(Request $request, string $flight_id): JsonResponse
     {
         $attrs = $this->validatePlanningRequest($request);
-        [$flight, $aircraft] = $this->getEligibleOperation($flight_id, $attrs['aircraft_id']);
-        $plan = $this->effectivePlanning($flight, $attrs);
-        $type = $aircraft->simbrief_type ?: ($aircraft->subfleet->simbrief_type ?: $aircraft->icao);
-        abort_if(empty($type), 422, 'Le type SimBrief de cet appareil n’est pas configuré.');
+        $user = Auth::user();
+        $resolved = $this->resolver->resolveFlightAircraft(
+            $flight_id,
+            $attrs['aircraft_id'],
+            $user,
+            $request->input('operation_id'),
+            $attrs
+        );
+        $flight = $resolved['flight_model'];
+        $aircraft = $resolved['aircraft_model'];
 
-        $staticId = $this->staticId($request, (string) Auth::id(), $flight->id, $aircraft->id);
-        $operationId = (string) ($request->input('operation_id') ?: $flight->id);
-        $demand = $this->demandProfile->profile($aircraft, $flight, $operationId);
-
-        $parameters = array_filter([
-            'airline' => $flight->airline->icao,
-            'fltnum' => $flight->flight_number,
-            'type' => $type,
-            'orig' => $flight->dpt_airport_id,
-            'dest' => $flight->arr_airport_id,
-            'altn' => $plan['alternate'] === 'AUTO' ? null : $plan['alternate'],
-            'route' => $plan['route'] ?: null,
-            'fl' => $plan['level'] ?: null,
-            'reg' => $aircraft->registration ?: null,
-            'pax' => $demand['capacity'] > 0 ? $demand['passengers'] : null,
-            'callsign' => $flight->airline->icao.$flight->flight_number,
-            'units' => 'KGS',
-            'planformat' => 'LIDO',
-            'navlog' => '1',
-            'maps' => 'detail',
-            'static_id' => $staticId,
-        ], fn ($value) => $value !== null && $value !== '');
+        $staticId = $this->staticId($request, (string) $user->ident, (string) $flight->id, (string) $aircraft->id);
+        $parameters = $resolved['parameters'];
+        $parameters['static_id'] = $staticId;
 
         return response()->json([
-            'operation_id' => $request->input('operation_id'),
+            'operation_id' => $resolved['operation_id'],
             'url' => 'https://dispatch.simbrief.com/options/custom?'.http_build_query($parameters, '', '&', PHP_QUERY_RFC3986),
             'edit_url' => 'https://www.simbrief.com/system/dispatch.php?editflight=last&static_id='.rawurlencode($staticId),
             'static_id' => $staticId,
+            'resolved' => $this->resolver->publicView($resolved),
             'parameters' => $parameters,
         ]);
     }
 
     /**
+     * Account mode: fetch the latest OFP explicitly requested by the pilot.    /**
      * Account mode: fetch the latest OFP explicitly requested by the pilot.
      * SimBrief documents this endpoint for user-triggered imports only.
      */
