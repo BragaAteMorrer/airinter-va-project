@@ -47,8 +47,10 @@ jobs:
           node --check shared/minitel/runtime.js
           node --check shared/minitel/renderer.js
           node --check shared/minitel/shell.js
+          node --check prometheus/public/promethee-assets/promethee-minitel.js
           node shared/minitel/runtime.test.cjs
           node shared/minitel/shell.test.cjs
+          node tools/check_minitel_assets.cjs
       - name: Validate upstream maintenance tooling
         run: |
           python -m py_compile tools/phpvms_upstream_audit.py
@@ -132,6 +134,7 @@ jobs:
         shell: bash
         run: |
           php -l modules/Promethee/Http/PortalController.php
+          php -l modules/Promethee/Http/MinitelController.php
           php -l modules/Promethee/Http/AcarsOperationsController.php
           php -l modules/Promethee/Http/OperationsV1Controller.php
           php -l modules/Promethee/Http/TelemetryController.php
