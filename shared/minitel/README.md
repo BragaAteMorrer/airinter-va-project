@@ -1,4 +1,4 @@
-# 3615 AIRINTER — Minitel Runtime (M0 + M1 + M2)
+# 3615 AIRINTER — Minitel Runtime (M0 + M1 + M2 + M3)
 
 This directory contains the shared, framework-free foundation for the Air Inter Videotex experience used by Prométhée and Hermès.
 
@@ -101,3 +101,31 @@ Public runtime copies under `prometheus/public/promethee-assets/minitel/` are ch
 Mobile fallback is session-only: it temporarily presents the modern UI without deleting the saved desktop Minitel preference. An explicit desktop exit persists the modern era.
 
 M3 can now add operational actions on top of this consultation surface without duplicating phpVMS business rules.
+
+
+## M3 — Prométhée operations
+
+M3 makes the terminal operational while preserving the existing Prométhée/phpVMS business rules.
+
+The Minitel web-session facade delegates to `OperationsV1Controller` and
+`AcarsSimBriefController`; it does not implement an independent reservation,
+aircraft, dispatch, SimBrief or PIREP ruleset.
+
+Supported keyboard-driven flows:
+
+- qualified reservable-flight search;
+- reservation through the existing `BidService` flow;
+- current operation list and operation detail;
+- eligible-aircraft listing and aircraft selection;
+- operational briefing;
+- dispatch/readiness checks;
+- SimBrief account redirect and Pilot ID import;
+- SimBrief company-key generation session and generated OFP import;
+- PIREP prefile through the existing operation facade.
+
+The ordinary M2 flight catalogue remains read-only. The M3 reservation search
+uses `OperationsV1Controller::searchFlights()` so pilot/subfleet qualification
+cannot be bypassed by selecting a catalogue entry.
+
+All mutations use the authenticated web session, explicit HTTP verbs and CSRF.
+No destructive action is triggered by rendering a screen.
