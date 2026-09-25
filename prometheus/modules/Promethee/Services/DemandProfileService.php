@@ -11,9 +11,14 @@ use Illuminate\Support\Str;
 class DemandProfileService
 {
     private array $capacityCache = [];
+    private array $cabinProfileCache = [];
     private array $bandCache = [];
     private array $profileCache = [];
     private ?array $settingsCache = null;
+
+    public function __construct(
+        private readonly AirInterCabinProfileService $cabinProfiles
+    ) {}
 
     public function settings(): array
     {
@@ -80,7 +85,7 @@ class DemandProfileService
 
     public function capacityFor(Aircraft $aircraft, Flight $flight): int
     {
-        $key = $flight->id.'|'.$aircraft->subfleet_id;
+        $key = $flight->id.'|'.$aircraft->id;
         if (array_key_exists($key, $this->capacityCache)) {
             return $this->capacityCache[$key];
         }
@@ -119,7 +124,11 @@ class DemandProfileService
                 ->sum(fn ($row) => (int) ($row->flight_capacity ?: $row->base_capacity ?: 0));
         }
 
-        return $this->capacityCache[$key] = max(0, (int) $capacity);
+        $databaseCapacity = max(0, (int) $capacity);
+        $resolved = $this->cabinProfiles->resolve($aircraft, $databaseCapacity);
+        $this->cabinProfileCache[$key] = $resolved;
+
+        return $this->capacityCache[$key] = (int) $resolved['capacity'];
     }
 
     public function profile(Aircraft $aircraft, Flight $flight, string $operationId): array
@@ -152,6 +161,8 @@ class DemandProfileService
             $operationId.'|'.$flight->id.'|'.$aircraft->id.'|'.$band
         );
         $capacity = $this->capacityFor($aircraft, $flight);
+        $cabinProfile = $this->cabinProfileCache[$flight->id.'|'.$aircraft->id]
+            ?? $this->cabinProfiles->resolve($aircraft, $capacity);
         $passengers = $capacity > 0
             ? min($capacity, max(0, (int) round($capacity * $load / 100)))
             : 0;
@@ -161,6 +172,12 @@ class DemandProfileService
             'band_label' => ucfirst($band),
             'fare_percent' => $settings['fares'][$band],
             'capacity' => $capacity,
+            'capacity_source' => $cabinProfile['source'],
+            'database_capacity' => $cabinProfile['database_capacity'],
+            'cabin_profile' => [
+                'key' => $cabinProfile['key'],
+                'label' => $cabinProfile['label'],
+            ],
             'load_factor_percent' => $load,
             'passengers' => $passengers,
             'load_range' => [
