@@ -6,6 +6,27 @@
 
   const SESSION_DISABLE_KEY = 'promethee-minitel-session-disabled';
   const ERA_KEY = 'promethee-era';
+  const MINITEL_SPEED_KEY = 'airinter-minitel-speed';
+  const MINITEL_DISPLAY_KEY = 'airinter-minitel-display';
+
+  const readMinitelPreferences = () => {
+    let speed = 'fast';
+    let displayMode = 'color';
+    try {
+      const storedSpeed = localStorage.getItem(MINITEL_SPEED_KEY);
+      const storedDisplay = localStorage.getItem(MINITEL_DISPLAY_KEY);
+      if (storedSpeed && mt.SPEEDS[storedSpeed]) speed = storedSpeed;
+      if (storedDisplay && mt.DISPLAY_MODES[storedDisplay]) displayMode = storedDisplay;
+    } catch (_) {}
+    return { speed, displayMode };
+  };
+
+  const persistMinitelPreferences = (preferences) => {
+    try {
+      if (mt.SPEEDS[preferences.speed]) localStorage.setItem(MINITEL_SPEED_KEY, preferences.speed);
+      if (mt.DISPLAY_MODES[preferences.displayMode]) localStorage.setItem(MINITEL_DISPLAY_KEY, preferences.displayMode);
+    } catch (_) {}
+  };
 
   const state = {
     bootstrap: null,
@@ -782,11 +803,15 @@
     host.className = 'promethee-minitel-overlay';
     document.body.appendChild(host);
 
+    const terminalPreferences = readMinitelPreferences();
     shell = new mt.MinitelShell({
       host,
       service: '3615 AIRINTER',
       product: 'PROMETHEE',
       identity: '',
+      speed: terminalPreferences.speed,
+      displayMode: terminalPreferences.displayMode,
+      onPreferencesChange: persistMinitelPreferences,
       onExit: exitMinitel
     });
 
@@ -797,12 +822,15 @@
     }
 
     shell.mount();
-    renderer = new mt.MinitelDomRenderer(shell.terminalNode, { speed: 'fast' });
+    renderer = new mt.MinitelDomRenderer(shell.terminalNode, {
+      speed: terminalPreferences.speed,
+      displayMode: terminalPreferences.displayMode
+    });
 
     try {
       const bootstrapUrl = document.documentElement.dataset.minitelBootstrap;
       state.bootstrap = await requestJson(bootstrapUrl);
-      session = new mt.MinitelSession({ homePageId: 'home', speed: 'fast', context: {} });
+      session = new mt.MinitelSession({ homePageId: 'home', speed: terminalPreferences.speed, context: {} });
       registerPages();
       keyboard = new mt.MinitelKeyboardController(session, renderer, document, {
         afterDispatch: () => { handleAction(); }
