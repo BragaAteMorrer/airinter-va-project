@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Enums\PirepState;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class CompanyAccessService
 {
@@ -25,6 +26,10 @@ class CompanyAccessService
 
     public function minimumHoursForAirline(int $airlineId): int
     {
+        if (!Schema::hasTable('promethee_airline_access_rules')) {
+            return 0;
+        }
+
         return (int) (DB::table('promethee_airline_access_rules')
             ->where('airline_id', $airlineId)
             ->value('min_flight_hours') ?? 0);
@@ -38,6 +43,13 @@ class CompanyAccessService
     public function allowedAirlineIds(User $user): Collection
     {
         $minutes = $this->flightMinutes($user);
+
+        if (!Schema::hasTable('promethee_airline_access_rules')) {
+            return DB::table('airlines')
+                ->where('active', true)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id);
+        }
 
         return DB::table('airlines')
             ->leftJoin('promethee_airline_access_rules as access', 'access.airline_id', '=', 'airlines.id')
