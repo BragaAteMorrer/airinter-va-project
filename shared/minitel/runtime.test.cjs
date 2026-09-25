@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const {
   WIDTH, HEIGHT, ACTIONS, MinitelScreenBuffer, MinitelInputBuffer,
   MinitelPage, MinitelSession, mapKeyboardEvent,
-  transmissionOperations, transmissionDelay
+  transmissionOperations, transmissionDelay, minitelCapability
 } = require('./runtime.js');
 
 const tests = [];
@@ -58,10 +58,10 @@ test('keyboard maps historical commands', () => {
 
 test('session supports numeric menus and history without a mouse', () => {
   const home = new MinitelPage('home', {
-    onRender: (_ctx, screen) => {
+    onRender: (_ctx, screen, session) => {
       screen.write(0, 0, '3615 AIRINTER');
       screen.write(4, 2, '1 VOLS');
-      screen.write(20, 2, 'CHOIX:');
+      screen.write(20, 2, 'CHOIX: ' + session.input.value);
     },
     send: (value) => value === '1' ? 'flights' : null
   });
@@ -71,7 +71,8 @@ test('session supports numeric menus and history without a mouse', () => {
   const session = new MinitelSession({ homePageId: 'home' });
   session.register(home).register(flights);
   session.start();
-  session.dispatch('1');
+  const typed = session.dispatch('1');
+  assert.match(typed.snapshot.cells[20].map(c => c.character).join(''), /CHOIX: 1/);
   const entered = session.dispatch('Enter');
   assert.equal(session.currentPageId, 'flights');
   assert.match(entered.snapshot.cells[0].map(c => c.character).join(''), /^VOLS AIR INTER/);
@@ -111,9 +112,35 @@ test('transmission order is row-major, left to right then top to bottom', () => 
   assert.equal(ops.length, WIDTH * HEIGHT);
 });
 
+test('unchanged snapshots do not retransmit unchanged cells', () => {
+  const screen = new MinitelScreenBuffer();
+  screen.write(0, 0, 'AIR INTER', { foreground: 'yellow' });
+  const before = screen.snapshot();
+  const after = screen.clone().snapshot();
+  assert.equal(transmissionOperations(after, before).length, 0);
+});
+
 test('speed profiles remain bounded', () => {
   assert.equal(transmissionDelay('instant'), 0);
   assert.ok(transmissionDelay('authentic') > transmissionDelay('fast'));
+});
+
+test('mobile/coarse environments are rejected without changing preferences', () => {
+  const desktop = {
+    innerWidth: 1440,
+    matchMedia: (query) => ({ matches: query.includes('fine') || query.includes('hover: hover') }),
+    navigator: { userAgentData: { mobile: false } }
+  };
+  assert.equal(minitelCapability(desktop).allowed, true);
+
+  const mobile = {
+    innerWidth: 390,
+    matchMedia: (query) => ({ matches: query.includes('coarse') }),
+    navigator: { userAgentData: { mobile: true } }
+  };
+  const result = minitelCapability(mobile);
+  assert.equal(result.allowed, false);
+  assert.equal(result.reason, 'screen');
 });
 
 (async () => {
