@@ -200,8 +200,8 @@
       Object.assign(this, handlers);
     }
 
-    render(context, screen) {
-      if (typeof this.onRender === 'function') this.onRender(context, screen);
+    render(context, screen, session) {
+      if (typeof this.onRender === 'function') this.onRender(context, screen, session);
       return screen;
     }
   }
@@ -250,7 +250,7 @@
       const page = this.currentPage();
       if (!page) throw new Error('No current Minitel page.');
       this.screen.clear();
-      page.render(this.context, this.screen);
+      page.render(this.context, this.screen, this);
       return this.screen.snapshot();
     }
 
@@ -354,6 +354,23 @@
     return Number.isFinite(cps) ? Math.max(1, Math.round(1000 / cps)) : 0;
   }
 
+  function minitelCapability(environment = {}) {
+    const width = Number(environment.innerWidth || environment.screen?.width || 0);
+    const matchMedia = typeof environment.matchMedia === 'function'
+      ? environment.matchMedia.bind(environment)
+      : null;
+    const finePointer = matchMedia ? Boolean(matchMedia('(pointer: fine)').matches) : true;
+    const canHover = matchMedia ? Boolean(matchMedia('(hover: hover)').matches) : true;
+    const coarseOnly = matchMedia ? Boolean(matchMedia('(pointer: coarse)').matches) && !finePointer : false;
+    const hasKeyboard = environment.navigator?.userAgentData?.mobile === true ? false : !coarseOnly;
+    const allowed = width >= 900 && finePointer && canHover && hasKeyboard;
+    let reason = null;
+    if (width && width < 900) reason = 'screen';
+    else if (!finePointer || !canHover || coarseOnly) reason = 'pointer';
+    else if (!hasKeyboard) reason = 'keyboard';
+    return Object.freeze({ allowed, reason, width, finePointer, canHover, hasKeyboard });
+  }
+
   return Object.freeze({
     WIDTH,
     HEIGHT,
@@ -368,6 +385,7 @@
     MinitelSession,
     mapKeyboardEvent,
     transmissionOperations,
-    transmissionDelay
+    transmissionDelay,
+    minitelCapability
   });
 });
