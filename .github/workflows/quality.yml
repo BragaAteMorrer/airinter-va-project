@@ -137,6 +137,7 @@ jobs:
           php -l modules/Promethee/Services/BbrReferenceRepairService.php
           php -l modules/Promethee/Database/migrations/2026_09_24_000013_repair_bbr_red_references.php
           php -l modules/Promethee/Database/migrations/2026_09_25_000014_repair_blank_bulk_bbr_references.php
+          php -l modules/Promethee/Database/migrations/2026_09_25_000015_ensure_simbrief_api_key_setting.php
           php -l tests/PrometheeDemandEconomyTest.php
           php -l modules/Promethee/routes.php
           php -l app/Http/Controllers/Api/AcarsSessionController.php
@@ -145,6 +146,7 @@ jobs:
           php -l modules/Promethee/Http/SimBriefCallbackController.php
           php -l modules/Promethee/Services/SimBriefApiSessionService.php
           php -l tests/SimBriefApiSessionServiceTest.php
+          php -l tests/PrometheeSimBriefAdminTest.php
           php -l tests/SimBriefTest.php
           php -l app/Http/Controllers/Admin/SettingsController.php
           php -l app/Models/Setting.php
