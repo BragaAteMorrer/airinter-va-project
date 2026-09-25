@@ -1404,3 +1404,11 @@ html[data-era="minitel"] .departure-board .split-flap-grid{
   grid-template-columns:64px minmax(138px,.8fr) minmax(310px,1.35fr) 84px minmax(360px,1.55fr) 84px minmax(220px,1fr);
   min-width:1450px;
 }
+
+.hermes-public-showcase{display:grid;grid-template-columns:minmax(220px,.72fr) minmax(0,1.28fr);gap:28px;align-items:center}
+.hermes-public-visual{display:grid;place-items:center;padding:24px;border-radius:10px;background:linear-gradient(145deg,#0d3154,#071b2d)}
+.hermes-public-visual img{display:block;width:min(100%,430px);height:auto}
+.hermes-public-showcase h2{font-size:27px;margin:8px 0 10px}
+.hermes-public-points{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.hermes-public-points span{padding:7px 10px;border:1px solid var(--line);border-radius:999px;background:#f8fafc;font-size:10px;font-weight:750}
+@media(max-width:760px){.hermes-public-showcase{grid-template-columns:1fr}}
