@@ -302,7 +302,7 @@ class PortalController extends Controller
                     $row->setAttribute('board_departure_at', $departure->setTimezone('Europe/Paris'));
                     $row->setAttribute('board_departure_time', $departure->setTimezone('Europe/Paris')->format('H:i'));
                     $row->setAttribute('board_arrival_time', $arrival?->setTimezone('Europe/Paris')->format('H:i') ?? '----');
-                    $row->setAttribute('board_departure_airport', $this->airportCode($flight->dpt_airport, $flight->dpt_airport_id));
+                    $row->setAttribute('board_departure_airport', $this->airportDestination($flight->dpt_airport, $flight->dpt_airport_id));
                     $row->setAttribute('board_destination', $this->airportDestination($flight->arr_airport, $flight->arr_airport_id));
                     $row->setAttribute('board_status', $this->boardStatus($pirep));
                     $row->setAttribute('board_logo_url', $this->airlineLogoUrl($flight->airline));
@@ -371,7 +371,7 @@ class PortalController extends Controller
                 })->filter(fn (Flight $flight) => $flight->next_departure_at !== null)
                 ->sortBy('next_departure_at')->take(10)->values(),
             'homeAirportId'=>$homeAirportId,
-            'recentPireps'=>Pirep::where('state',PirepState::ACCEPTED)->with(['airline','aircraft'])->orderByDesc('submitted_at')->limit(8)->get(),
+            'recentPireps'=>Pirep::where('state',PirepState::ACCEPTED)->with(['airline','aircraft','user'])->orderByDesc('submitted_at')->limit(8)->get(),
             'topRoutes'=>Pirep::select('dpt_airport_id','arr_airport_id',DB::raw('COUNT(*) as total'))
                 ->where('state',PirepState::ACCEPTED)->where('submitted_at','>=',$monthStart)
                 ->groupBy('dpt_airport_id','arr_airport_id')->orderByDesc('total')->limit(8)->get(),
