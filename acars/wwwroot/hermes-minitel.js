@@ -32,6 +32,8 @@
     networkPage: 1,
     review: null,
     filedReview: null,
+    reviewListMode: 'observations',
+    reviewListPage: 1,
     lastDatalinkRefreshAt: 0,
     lastNetworkRefreshAt: 0
   };
@@ -111,6 +113,7 @@
     if (page === 'journal') return renderer.showCursor(20, Math.min(39, 9 + value), true);
     if (page === 'network') return renderer.showCursor(20, Math.min(39, 9 + value), true);
     if (page === 'review') return renderer.showCursor(20, Math.min(39, 9 + value), true);
+    if (page === 'review-list') return renderer.showCursor(20, Math.min(39, 9 + value), true);
     if (page === 'recovery') return renderer.showCursor(20, Math.min(39, 9 + value), true);
     renderer.showCursor(0, 0, false);
   };
@@ -646,19 +649,58 @@
         screen.write(13, 2, 'MAX BANK...... ' + fit(review.maxBank == null ? '---' : Number(review.maxBank).toFixed(1) + ' DEG', 18));
         screen.write(14, 2, 'SIM RATE MAX.. ' + fit(review.maxSimulationRate == null ? 'X1' : 'X' + Number(review.maxSimulationRate).toFixed(2), 18));
         screen.write(16, 2, 'OBSERVATIONS.. ' + fit(review.observations.length, 5) + ' ANOM. ' + fit(review.issues.length, 4));
-        if (review.readyToFile && !hm.filedReview) screen.write(18, 2, '1 DEPOSER LE PIREP', { foreground: 'green' });
-        else if (hm.filedReview) screen.write(18, 2, 'PIREP DEPOSE / ARCHIVE LOCAL', { foreground: 'green' });
-        else screen.write(18, 2, 'DEPOT DISPONIBLE APRES IN');
+        if (review.readyToFile && !hm.filedReview) screen.write(18, 2, '1 DEPOSER PIREP  2 OBS.  3 ANOM.', { foreground: 'green' });
+        else if (hm.filedReview) screen.write(18, 2, '2 OBSERVATIONS   3 ANOMALIES', { foreground: 'green' });
+        else screen.write(18, 2, '2 OBSERVATIONS   3 ANOMALIES');
         screen.write(20, 2, 'CHOIX : ' + current.input.value, { foreground: 'yellow' });
         footer(screen);
       },
-      acceptInput: key => key === '1',
+      acceptInput: key => /^[1-3]$/.test(key),
       send: value => {
         const review = core.reviewSummary(hm.review || hm.status?.review || {});
         if (value === '1' && review.readyToFile && !hm.filedReview) setAction('file-pirep');
+        if (value === '2') { hm.reviewListMode = 'observations'; hm.reviewListPage = 1; return 'review-list'; }
+        if (value === '3') { hm.reviewListMode = 'issues'; hm.reviewListPage = 1; return 'review-list'; }
       },
       previous: () => 'flight-live',
       repeat: (_ctx, refresh) => { if (refresh) setAction('load-review', { stay: true }); }
+    }));
+
+    terminalSession.register(new mt.MinitelPage('review-list', {
+      onRender: (_ctx, screen, current) => {
+        serviceLine(screen);
+        const review = core.reviewSummary(hm.review || hm.filedReview || hm.status?.review || {});
+        const entries = hm.reviewListMode === 'issues' ? review.issues : review.observations;
+        const title = hm.reviewListMode === 'issues' ? 'ANOMALIES / REGLES' : 'OBSERVATIONS FDM';
+        screen.write(2, 1, title, { foreground: 'yellow' });
+        const pages = Math.max(1, Math.ceil(entries.length / 5));
+        hm.reviewListPage = Math.max(1, Math.min(pages, hm.reviewListPage));
+        const items = entries.slice((hm.reviewListPage - 1) * 5, hm.reviewListPage * 5);
+        items.forEach((entry, index) => {
+          const row = 5 + index * 3;
+          const at = entry.occurredAt || entry.OccurredAt;
+          const code = entry.code || entry.Code || 'OBS';
+          const message = entry.message || entry.Message || '';
+          const severity = String(entry.severity || entry.Severity || 'INFO').toUpperCase();
+          screen.write(row, 1, core.timeLabel(at) + ' ' + fit(code, 16) + ' ' + fit(severity, 8), { foreground: severity === 'ERROR' || severity === 'CRITICAL' ? 'red' : (severity === 'WARNING' ? 'yellow' : 'cyan') });
+          screen.write(row + 1, 3, fit(message, 36));
+          const value = entry.value ?? entry.Value;
+          const unit = entry.unit || entry.Unit || '';
+          if (value != null) screen.write(row + 2, 5, fit(String(value) + (unit ? ' ' + unit : ''), 30));
+        });
+        if (!entries.length) screen.write(8, 5, 'AUCUNE DONNEE A SIGNALER');
+        screen.write(20, 2, 'PAGE ' + hm.reviewListPage + '/' + pages + '  RETOUR REVIEW');
+        footer(screen, pages > 1);
+      },
+      next: () => {
+        const review = core.reviewSummary(hm.review || hm.filedReview || hm.status?.review || {});
+        const entries = hm.reviewListMode === 'issues' ? review.issues : review.observations;
+        hm.reviewListPage = Math.min(Math.max(1, Math.ceil(entries.length / 5)), hm.reviewListPage + 1);
+      },
+      previous: () => {
+        if (hm.reviewListPage > 1) { hm.reviewListPage -= 1; return null; }
+        return 'review';
+      }
     }));
 
     terminalSession.register(new mt.MinitelPage('recovery', {
@@ -694,7 +736,7 @@
         screen.write(18, 2, 'SOMMAIRE : ACCUEIL');
         footer(screen);
       },
-      previous: () => hm.operation ? 'preparation' : 'home'
+      previous: () => (hm.status?.flight || hm.status?.Flight) ? 'flight-live' : (hm.operation ? 'preparation' : 'home')
     }));
   };
 
@@ -745,10 +787,13 @@
         hm.pilot = response?.user || response || {};
         hm.authenticated = true;
         if (typeof setAuthenticated === 'function') setAuthenticated(true);
-        terminalSession.homePageId = 'home';
         await refreshStatus();
         await loadMe();
-        return show(terminalSession.go('home'), true);
+        const loginTarget = hm.status?.recoveryAvailable
+          ? 'recovery'
+          : ((hm.status?.flight?.recording ?? hm.status?.flight?.Recording) ? 'flight-live' : 'home');
+        terminalSession.homePageId = loginTarget === 'home' ? 'home' : loginTarget;
+        return show(terminalSession.go(loginTarget), true);
       }
 
       if (!hm.authenticated) throw new Error('CONNECTEZ-VOUS A AIR INTER');
@@ -1039,7 +1084,7 @@
 
     if (page === 'review') hm.review = hm.status?.review || hm.status?.Review || hm.review;
 
-    if (['home', 'preparation', 'dispatch', 'simulator', 'flight-live', 'journal', 'datalink', 'network', 'review', 'recovery'].includes(page)) {
+    if (['home', 'preparation', 'dispatch', 'simulator', 'flight-live', 'journal', 'datalink', 'network', 'review', 'review-list', 'recovery'].includes(page)) {
       await show(terminalSession.render(), false);
     }
   };
@@ -1073,10 +1118,23 @@
     renderer = new mt.MinitelDomRenderer(shell.terminalNode, { speed: 'fast' });
     await refreshStatus();
     hm.authenticated = Boolean(hm.status?.connected);
-    if (hm.authenticated) await loadMe();
+    if (hm.authenticated) {
+      await loadMe();
+      const knownOperation = hm.status?.flight?.operationId || hm.status?.flight?.OperationId
+        || hm.status?.recovery?.operationId || hm.status?.recovery?.OperationId;
+      if (knownOperation) {
+        try { await loadOperation({ operation_id: knownOperation }); } catch {}
+      }
+    }
+
+    const initialPage = !hm.authenticated
+      ? 'login-user'
+      : (hm.status?.recoveryAvailable
+          ? 'recovery'
+          : ((hm.status?.flight?.recording ?? hm.status?.flight?.Recording) ? 'flight-live' : 'home'));
 
     terminalSession = new mt.MinitelSession({
-      homePageId: hm.authenticated ? 'home' : 'login-user',
+      homePageId: initialPage,
       speed: 'fast',
       context: {}
     });
