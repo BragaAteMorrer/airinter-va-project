@@ -17,11 +17,13 @@ return new class extends Migration {
                 $table->boolean('heavy_maintenance')->default(false);
                 $table->boolean('active')->default(true);
                 $table->timestamps();
-                $table->index(['kind', 'active']);
+                $table->index(['kind', 'active'], 'prom_ops_kind_active_idx');
             });
         }
 
-        if (!Schema::hasTable('promethee_aircraft_bases')) {
+        $aircraftBasesAlreadyExisted = Schema::hasTable('promethee_aircraft_bases');
+
+        if (!$aircraftBasesAlreadyExisted) {
             Schema::create('promethee_aircraft_bases', function (Blueprint $table) {
                 $table->unsignedInteger('aircraft_id')->primary();
                 $table->string('base_airport_id', 8);
@@ -30,8 +32,22 @@ return new class extends Migration {
                 $table->unsignedBigInteger('repatriation_mission_id')->nullable();
                 $table->timestamp('last_auto_return_at')->nullable();
                 $table->timestamps();
-                $table->index(['base_airport_id', 'away_since']);
+                $table->index(['base_airport_id', 'away_since'], 'prom_aircraft_base_away_idx');
             });
+        } else {
+            // A previous run may have created the table and then failed while
+            // Laravel was adding its auto-named index (MySQL identifier > 64 chars).
+            $physicalTable = DB::getTablePrefix().'promethee_aircraft_bases';
+            $indexExists = collect(DB::select(
+                'SHOW INDEX FROM `'.$physicalTable.'` WHERE Key_name = ?',
+                ['prom_aircraft_base_away_idx']
+            ))->isNotEmpty();
+
+            if (!$indexExists) {
+                Schema::table('promethee_aircraft_bases', function (Blueprint $table) {
+                    $table->index(['base_airport_id', 'away_since'], 'prom_aircraft_base_away_idx');
+                });
+            }
         }
 
         if (!Schema::hasTable('promethee_airline_access_rules')) {
@@ -55,7 +71,7 @@ return new class extends Migration {
                 $table->timestamp('completed_at')->nullable();
                 $table->timestamps();
                 $table->unique(['mission_id', 'user_id'], 'prom_mission_booking_unique');
-                $table->index(['mission_id', 'status']);
+                $table->index(['mission_id', 'status'], 'prom_mission_status_idx');
             });
         }
 
