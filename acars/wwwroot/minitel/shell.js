@@ -115,7 +115,7 @@
   function createGuidePage(options = {}) {
     const service = options.service || '3615 AIRINTER';
     return new runtime.MinitelPage(SYSTEM_PAGES.GUIDE, {
-      onRender: (_context, screen) => {
+      onRender: (_context, screen, session) => {
         screen.write(0, 0, buildServiceLine({ service, state: 'C' }), { foreground: 'cyan' });
         screen.write(2, 2, 'GUIDE CLAVIER', { foreground: 'yellow' });
         screen.write(4, 2, 'ENTER      ENVOI');
@@ -128,6 +128,7 @@
         screen.write(11, 2, 'PAGE DOWN  SUITE');
         screen.write(12, 2, 'F10        CONNEXION/FIN');
         screen.write(15, 2, '0          REGLAGES VIDEOTEX', { foreground: 'cyan' });
+        screen.write(18, 2, 'CHOIX : ' + session.input.value, { foreground: 'yellow' });
         screen.write(21, 2, 'CTRL+ALT+M SORTIE URGENCE', { foreground: 'red' });
         screen.write(23, 0, 'SOMMAIRE  RETOUR                ENVOI', { foreground: 'cyan' });
       },
@@ -360,6 +361,7 @@
 
         this.keyboard.afterDispatch = (outcome, command, event) => {
           downstreamAfterDispatch?.(outcome, command, event);
+          this.syncSystemCursor();
           const preferenceChange = this.session?.context?.__minitelPreferenceChange;
           if (preferenceChange) {
             this.session.context.__minitelPreferenceChange = null;
@@ -389,15 +391,36 @@
       return { started: true, capability, snapshot };
     }
 
+    syncSystemCursor() {
+      if (!this.session || !this.renderer?.showCursor) return;
+      const page = this.session.currentPageId;
+      const length = this.session.input?.value?.length || 0;
+      if (page === SYSTEM_PAGES.GUIDE) {
+        this.renderer.showCursor(18, Math.min(runtime.WIDTH - 1, 10 + length), true);
+        return;
+      }
+      if (page === SYSTEM_PAGES.SETTINGS) {
+        this.renderer.showCursor(20, Math.min(runtime.WIDTH - 1, 10 + length), true);
+        return;
+      }
+      if (page === SYSTEM_PAGES.EXIT) {
+        this.renderer.showCursor(15, Math.min(runtime.WIDTH - 1, 19 + length), true);
+      }
+    }
+
     openGuide() {
       if (!this.session) return null;
-      return this.session.go(SYSTEM_PAGES.GUIDE);
+      const snapshot = this.session.go(SYSTEM_PAGES.GUIDE);
+      this.syncSystemCursor();
+      return snapshot;
     }
 
     openSettings(returnPage = null) {
       if (!this.session) return null;
       if (returnPage) this.session.context.__minitelSettingsReturnPage = returnPage;
-      return this.session.go(SYSTEM_PAGES.SETTINGS);
+      const snapshot = this.session.go(SYSTEM_PAGES.SETTINGS);
+      this.syncSystemCursor();
+      return snapshot;
     }
 
     applyPreferences(preferences = {}) {
@@ -419,7 +442,9 @@
     openExit() {
       if (!this.session) return null;
       this.session.context.__minitelExitReturnPage = this.session.currentPageId;
-      return this.session.go(SYSTEM_PAGES.EXIT);
+      const snapshot = this.session.go(SYSTEM_PAGES.EXIT);
+      this.syncSystemCursor();
+      return snapshot;
     }
 
     onGlobalKeyDown(event) {
