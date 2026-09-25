@@ -16,12 +16,21 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 final class RegistrationTest extends TestCase
 {
+    private Airline $airInter;
+
     protected function setUp(): void
     {
         parent::setUp();
 
         // Create a default user to prevent redirection to the installer
         User::factory()->create();
+
+        $this->airInter = Airline::factory()->create([
+            'icao' => 'ITF',
+            'iata' => 'IT',
+            'name' => 'Air Inter',
+            'active' => true,
+        ]);
     }
 
     /**
@@ -55,14 +64,14 @@ final class RegistrationTest extends TestCase
 
     protected function getUserData(): array
     {
-        $airline = Airline::factory()->create();
         $home = Airport::factory()->create(['hub' => true]);
 
         return [
             'name'                  => 'Test User',
             'email'                 => 'test@phpvms.net',
-            'airline_id'            => $airline->id,
+            'airline_id'            => $this->airInter->id,
             'home_airport_id'       => $home->id,
+            'timezone'              => 'Europe/Paris',
             'password'              => 'secret',
             'password_confirmation' => 'secret',
             'toc_accepted'          => true,
@@ -79,6 +88,47 @@ final class RegistrationTest extends TestCase
 
         $this->post('/register', $this->getUserData())
             ->assertRedirect('/dashboard');
+    }
+
+    public function test_registration_forces_air_inter_and_normalizes_invalid_timezone(): void
+    {
+        $this->updateSetting('general.disable_registrations', false);
+        $this->updateSetting('general.invite_only_registrations', false);
+        $this->updateSetting('pilots.auto_accept', true);
+
+        $otherAirline = Airline::factory()->create([
+            'icao' => 'ACF',
+            'name' => 'Another Carrier',
+            'active' => true,
+        ]);
+
+        $data = $this->getUserData();
+        $data['email'] = 'airinter-only@example.test';
+        $data['airline_id'] = $otherAirline->id;
+        $data['timezone'] = 'Browser/Invalid-Alias';
+
+        $this->post('/register', $data)->assertRedirect('/dashboard');
+
+        $user = User::query()->where('email', 'airinter-only@example.test')->firstOrFail();
+        $this->assertSame($this->airInter->id, $user->airline_id);
+        $this->assertSame('Europe/Paris', $user->timezone);
+    }
+
+    public function test_registration_preserves_valid_iana_timezone(): void
+    {
+        $this->updateSetting('general.disable_registrations', false);
+        $this->updateSetting('general.invite_only_registrations', false);
+        $this->updateSetting('pilots.auto_accept', true);
+
+        $data = $this->getUserData();
+        $data['email'] = 'montreal-time@example.test';
+        $data['timezone'] = 'America/Toronto';
+
+        $this->post('/register', $data)->assertRedirect('/dashboard');
+
+        $user = User::query()->where('email', 'montreal-time@example.test')->firstOrFail();
+        $this->assertSame('America/Toronto', $user->timezone);
+        $this->assertSame($this->airInter->id, $user->airline_id);
     }
 
     public function test_access_to_registration_when_registration_disabled(): void
