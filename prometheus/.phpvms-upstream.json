@@ -1,0 +1,51 @@
+{
+  "repository": "phpvms/phpvms",
+  "version": "7.0.10",
+  "tag": "7.0.10",
+  "commit": "46a0e88e9a962bb6f91f35b959cee9c047c5918a",
+  "released_at": "2026-06-26T23:59:34Z",
+  "release_asset": "phpvms-7.0.10.zip",
+  "release_sha256": "9612a2003e2b69276bddffaee9d4b09b66e21f11aa5345b34d31e6d7f89af843",
+  "local_root": "prometheus",
+  "ignored_prefixes": [
+    "vendor/",
+    "node_modules/",
+    "storage/",
+    "bootstrap/cache/"
+  ],
+  "local_owned_prefixes": [
+    "modules/Promethee/",
+    "public/promethee-assets/"
+  ],
+  "core_extensions": [],
+  "known_core_overrides": [
+    {
+      "path": "config/app.php",
+      "reason": "Bootstraps Promethee early and sets the Air Inter locale defaults."
+    },
+    {
+      "path": "app/Providers/RouteServiceProvider.php",
+      "reason": "Keeps legacy phpVMS pages under /legacy and redirects retired public report URLs to Promethee."
+    },
+    {
+      "path": "app/Http/Controllers/Frontend/FlightController.php",
+      "reason": "Keeps the legacy flight screen compatible with Promethee weather data while carrying upstream fixes."
+    },
+    {
+      "path": "app/Http/Controllers/Frontend/ProfileController.php",
+      "reason": "Adds accepted PIREP history to the legacy profile while carrying upstream profile hardening."
+    },
+    {
+      "path": "app/Models/Flight.php",
+      "reason": "Air Inter display formatting for flight identifiers."
+    },
+    {
+      "path": "app/Models/Pirep.php",
+      "reason": "Air Inter display formatting for flight identifiers."
+    },
+    {
+      "path": "app/Services/SimBriefService.php",
+      "reason": "Promethee/Hermes SimBrief persistence and import bridge."
+    }
+  ]
+}

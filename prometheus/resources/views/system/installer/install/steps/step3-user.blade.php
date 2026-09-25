@@ -8,9 +8,6 @@
                 <form method="post" action="{{ route('installer.usersetup') }}">
                     @csrf
                     <table class="table" width="25%">
-
-         		{{-- Legacy importer unavailable --}}           
-
                         <tr>
                             <td colspan="2">
                                 <h4>Airline Information</h4>

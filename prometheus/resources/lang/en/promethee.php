@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'dispatch_desk' => 'Dispatch Desk',
+    'admin_pilots' => 'Pilot management',
+    'admin_ranks' => 'Rank management',
     'administration' => 'Administration',
     'dashboard' => 'Dashboard',
     'operations' => 'Operations',

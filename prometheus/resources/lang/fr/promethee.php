@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'dispatch_desk' => 'Dispatch Desk',
+    'admin_pilots' => 'Gestion des pilotes',
+    'admin_ranks' => 'Gestion des grades',
     'administration' => 'Administration', 'dashboard' => 'Tableau de bord', 'operations' => 'Opérations',
     'flight_schedule' => 'Programme des vols', 'acars' => 'Hermès (ACARS)', 'calendar' => 'Calendrier',
     'community' => 'La communauté', 'latest_pireps' => 'Derniers PIREPs', 'flight_safety' => 'Sécurité des vols',

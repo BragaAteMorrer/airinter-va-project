@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Console\Commands;
+namespace Modules\Promethee\Console;
 
 use Illuminate\Console\Command;
 

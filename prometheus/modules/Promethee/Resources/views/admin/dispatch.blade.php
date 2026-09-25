@@ -81,6 +81,7 @@
     const operationBase = @json(url('/admin/promethee/dispatch/operations'));
     const datalinkSendUrl = @json(route('admin.promethee.datalink.messages.send'));
     const datalinkAckBase = @json(url('/admin/promethee/datalink/messages'));
+    const canDispatchActions = @json((bool) ($canDispatchActions ?? false));
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
     const state = { operations: [], selected: null, detail: null, tab: 'overview', timer: null, map: null, layer: null, trackLayer: null };
@@ -123,13 +124,26 @@
         return 'neutral';
     }
 
+    function validCoordinate(lat, lon) {
+        const latitude = Number(lat), longitude = Number(lon);
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+        if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) return null;
+        return [latitude, longitude];
+    }
+
     function initMap() {
         const node = document.querySelector('#dispatch-map');
         if (!node || !window.L || state.map) return;
-        state.map = L.map(node, {scrollWheelZoom:true, minZoom:2, maxZoom:12}).setView([46.6, 2.5], 5);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution:'© OpenStreetMap'}).addTo(state.map);
+        state.map = L.map(node, {scrollWheelZoom:true, zoomControl:true, minZoom:2, maxZoom:12}).setView([46.6, 2.5], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'© OpenStreetMap'}).addTo(state.map);
         state.layer = L.layerGroup().addTo(state.map);
         state.trackLayer = L.layerGroup().addTo(state.map);
+
+        const resize = () => state.map?.invalidateSize({pan:false});
+        requestAnimationFrame(resize);
+        setTimeout(resize, 120);
+        if (window.ResizeObserver) new ResizeObserver(resize).observe(node);
+        window.addEventListener('resize', resize, {passive:true});
     }
 
     function renderMap(operations) {
@@ -138,9 +152,9 @@
         state.layer.clearLayers();
         const points = [];
         operations.forEach(op => {
-            const lat = op.live?.lat, lon = op.live?.lon;
-            if (lat === null || lat === undefined || lon === null || lon === undefined) return;
-            const marker = L.marker([lat, lon], {
+            const point = validCoordinate(op.live?.lat, op.live?.lon);
+            if (!point) return;
+            const marker = L.marker(point, {
                 icon: L.divIcon({className:'aircraft-marker dispatch-aircraft-marker', html:'✈', iconSize:[24,24]})
             }).addTo(state.layer);
             marker.bindPopup(
@@ -149,7 +163,7 @@
                 esc(op.phase || op.status) + ' · ' + number(op.live?.altitude, ' ft')
             );
             marker.on('click', () => selectOperation(op.operation_id));
-            points.push([lat, lon]);
+            points.push(point);
         });
         if (points.length && !state.selected) state.map.fitBounds(points, {padding:[30,30], maxZoom:7});
     }
@@ -160,8 +174,8 @@
         state.trackLayer.clearLayers();
 
         const points = (state.detail?.track?.points || [])
-            .filter(point => point.lat !== null && point.lat !== undefined && point.lon !== null && point.lon !== undefined)
-            .map(point => [Number(point.lat), Number(point.lon)]);
+            .map(point => validCoordinate(point.lat, point.lon))
+            .filter(Boolean);
 
         if (!points.length) return;
 
@@ -346,10 +360,10 @@
     function renderWeather() {
         const w = state.detail?.weather || {};
         const messages = w.messages || [];
-        return '<div class="dispatch-action-bar">' +
+        return (canDispatchActions ? '<div class="dispatch-action-bar">' +
             '<button type="button" class="button secondary" data-quick="weather">Préparer météo</button>' +
             '<button type="button" class="button secondary" data-quick="runway">Préparer piste</button>' +
-        '</div>' +
+        '</div>' : '<div class="notice">Consultation pilote : les commandes OPS restent réservées au dispatch.</div>') +
         '<p class="muted">' + esc(w.note) + '</p>' +
         '<div class="dispatch-message-list">' +
             (messages.length ? messages.map(renderMessage).join('') : '<div class="dispatch-empty-inline">Aucun message WEATHER sur cette opération.</div>') +
@@ -391,7 +405,7 @@
             '<header><strong>' + esc(message.sender_label) + '</strong><span>' + esc(message.category) + ' · ' + esc(message.priority) + ' · ' + time(message.created_at) + '</span></header>' +
             '<p>' + esc(message.body) + '</p>' +
             '<footer>' + badge(message.status || 'SENT', message.status === 'ACKNOWLEDGED' ? 'ok' : 'neutral') +
-                (needsAck ? '<button type="button" class="button compact" data-ack="' + esc(message.id) + '">ACK OPS</button>' : '') +
+                (canDispatchActions && needsAck ? '<button type="button" class="button compact" data-ack="' + esc(message.id) + '">ACK OPS</button>' : '') +
             '</footer>' +
         '</article>';
     }
@@ -415,7 +429,7 @@
 
     function renderMessages() {
         const messages = state.detail?.messages?.messages || [];
-        return composeBox() + '<div class="dispatch-message-list">' +
+        return (canDispatchActions ? composeBox() : '<div class="notice">Messagerie en lecture seule pour les pilotes. Les réponses OPS sont réservées au dispatch.</div>') + '<div class="dispatch-message-list">' +
             (messages.length ? messages.slice().reverse().map(renderMessage).join('') : '<div class="dispatch-empty-inline">Aucun échange Datalink.</div>') +
         '</div>';
     }

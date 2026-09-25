@@ -28,27 +28,8 @@ class RouteServiceProvider extends ServiceProvider
         $this->mapWebRoutes();
         $this->mapAdminRoutes();
         $this->mapApiRoutes();
-        // $this->mapImporterRoutes();
         $this->mapInstallerRoutes();
         $this->mapUpdaterRoutes();
-    }
-
-    private function mapImporterRoutes()
-    {
-        Route::group([
-            'as'         => 'importer.',
-            'prefix'     => 'importer',
-            'middleware' => ['web'],
-            'namespace'  => 'App\Http\Controllers\System',
-        ], function () {
-            Route::get('/', 'ImporterController@index')->name('index');
-            Route::post('/config', 'ImporterController@config')->name('config');
-            Route::post('/dbtest', 'ImporterController@dbtest')->name('dbtest');
-
-            // Run the actual importer process. Additional middleware
-            Route::post('/run', 'ImporterController@run')->middleware('api')->name('run');
-            Route::post('/complete', 'ImporterController@complete')->name('complete');
-        });
     }
 
     private function mapInstallerRoutes()
@@ -379,13 +360,22 @@ class RouteServiceProvider extends ServiceProvider
             Route::resource('pages', 'PagesController')->middleware('ability:admin,pages');
 
             // rankings
-            Route::resource('ranks', 'RankController')->middleware('ability:admin,ranks');
+            Route::prefix('promethee')->group(function () {
+                Route::resource('ranks', 'RankController')->middleware('ability:admin,ranks');
+            });
             Route::match([
                 'get',
                 'post',
                 'put',
                 'delete',
-            ], 'ranks/{id}/subfleets', 'RankController@subfleets')->middleware('ability:admin,ranks');
+            ], 'promethee/ranks/{id}/subfleets', 'RankController@subfleets')->name('ranks.subfleets')->middleware('ability:admin,ranks');
+
+            // Backward-compatible phpVMS admin bookmarks. Canonical URLs now live under /admin/promethee.
+            Route::get('ranks', fn () => redirect()->route('admin.ranks.index', [], 301))->middleware('ability:admin,ranks');
+            Route::get('ranks/create', fn () => redirect()->route('admin.ranks.create', [], 301))->middleware('ability:admin,ranks');
+            Route::get('ranks/{id}/edit', fn (int $id) => redirect()->route('admin.ranks.edit', [$id], 301))->middleware('ability:admin,ranks');
+            Route::get('ranks/{id}', fn (int $id) => redirect()->route('admin.ranks.show', [$id], 301))->middleware('ability:admin,ranks');
+            Route::match(['get','post','put','delete'], 'ranks/{id}/subfleets', 'RankController@subfleets')->middleware('ability:admin,ranks');
 
             // settings
             Route::match(['get'], 'settings', 'SettingsController@index')->middleware('ability:admin,settings');
@@ -484,19 +474,21 @@ class RouteServiceProvider extends ServiceProvider
             /**
              * USERS
              */
-            Route::delete('users/{id}/award/{award_id}', 'UserController@destroy_user_award')
+            Route::delete('promethee/users/{id}/award/{award_id}', 'UserController@destroy_user_award')
                 ->name('users.destroy_user_award')->middleware('ability:admin,users');
 
-            Route::get('users/{id}/regen_apikey', 'UserController@regen_apikey')
+            Route::get('promethee/users/{id}/regen_apikey', 'UserController@regen_apikey')
                 ->name('users.regen_apikey')->middleware('ability:admin,users');
 
-            Route::get('users/{id}/verify_email', 'UserController@verify_email')
+            Route::get('promethee/users/{id}/verify_email', 'UserController@verify_email')
                 ->name('users.verify_email')->middleware('ability:admin,users');
 
-            Route::get('users/{id}/request_email_verification', 'UserController@request_email_verification')
+            Route::get('promethee/users/{id}/request_email_verification', 'UserController@request_email_verification')
                 ->name('users.request_email_verification')->middleware('ability:admin,users');
 
-            Route::resource('users', 'UserController')->middleware('ability:admin,users');
+            Route::prefix('promethee')->group(function () {
+                Route::resource('users', 'UserController')->middleware('ability:admin,users');
+            });
 
             Route::resource('invites', 'InviteController')->middleware('ability:admin,users')
                 ->except([
@@ -510,7 +502,18 @@ class RouteServiceProvider extends ServiceProvider
                 'post',
                 'put',
                 'delete',
-            ], 'users/{id}/typeratings', 'UserController@typeratings')->middleware('ability:admin,users');
+            ], 'promethee/users/{id}/typeratings', 'UserController@typeratings')->name('users.typeratings')->middleware('ability:admin,users');
+
+            // Compatibility aliases for old phpVMS admin user URLs.
+            Route::get('users', fn () => redirect()->route('admin.users.index', [], 301))->middleware('ability:admin,users');
+            Route::get('users/create', fn () => redirect()->route('admin.users.create', [], 301))->middleware('ability:admin,users');
+            Route::get('users/{id}/edit', fn (int $id) => redirect()->route('admin.users.edit', [$id], 301))->middleware('ability:admin,users');
+            Route::get('users/{id}', fn (int $id) => redirect()->route('admin.users.show', [$id], 301))->middleware('ability:admin,users');
+            Route::delete('users/{id}/award/{award_id}', 'UserController@destroy_user_award')->middleware('ability:admin,users');
+            Route::get('users/{id}/regen_apikey', 'UserController@regen_apikey')->middleware('ability:admin,users');
+            Route::get('users/{id}/verify_email', 'UserController@verify_email')->middleware('ability:admin,users');
+            Route::get('users/{id}/request_email_verification', 'UserController@request_email_verification')->middleware('ability:admin,users');
+            Route::match(['get','post','put','delete'], 'users/{id}/typeratings', 'UserController@typeratings')->middleware('ability:admin,users');
 
             // defaults
             Route::get('', ['uses' => 'DashboardController@index'])
@@ -598,16 +601,12 @@ class RouteServiceProvider extends ServiceProvider
                 Route::get('news', 'NewsController@index');
                 Route::get('status', 'StatusController@status');
                 Route::get('version', 'StatusController@status');
-                // Password grant for the first-party desktop ACARS only. It returns
-                // a 12-hour bearer token; the password is never stored by either side.
-                Route::post('acars/session', 'AcarsSessionController@store')->middleware('throttle:5,1');
             });
 
             /*
              * These need to be authenticated with a user's API key
              */
             Route::group(['middleware' => ['api.auth']], function () {
-                Route::delete('acars/session', 'AcarsSessionController@destroy');
                 Route::get('airlines', 'AirlineController@index');
                 Route::get('airlines/{id}', 'AirlineController@get');
 
@@ -628,10 +627,6 @@ class RouteServiceProvider extends ServiceProvider
                 Route::get('flights/{id}/briefing', 'FlightController@briefing')->name('flights.briefing');
                 Route::get('flights/{id}/route', 'FlightController@route');
                 Route::get('flights/{id}/aircraft', 'FlightController@aircraft');
-                Route::post('acars/flights/{flight_id}/simbrief/session', 'AcarsSimBriefController@session');
-                Route::post('acars/flights/{flight_id}/simbrief/redirect', 'AcarsSimBriefController@redirect');
-                Route::post('acars/flights/{flight_id}/simbrief/account/import', 'AcarsSimBriefController@importAccount');
-                Route::post('acars/flights/{flight_id}/simbrief/import', 'AcarsSimBriefController@import');
 
                 Route::get('pireps', 'UserController@pireps');
                 Route::put('pireps/{pirep_id}', 'PirepController@update');

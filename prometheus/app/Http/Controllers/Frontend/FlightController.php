@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Frontend;
 use App\Contracts\Controller;
 use App\Models\Aircraft;
 use App\Models\Bid;
+use App\Models\Enums\AircraftStatus;
+use App\Models\Enums\AircraftState;
 use App\Models\Enums\FlightType;
 use App\Models\Flight;
 use App\Models\Typerating;
@@ -111,6 +113,7 @@ class FlightController extends Controller
             // Build type ratings collection by considering user's capabilities
             $type_ratings = $user->typeratings;
         } else {
+            $user_subfleets = null;
             $allowed_flights = [];
             // Build aircraft icao codes array from complete fleet
             $icao_codes = Aircraft::groupBy('icao')->orderBy('icao')->pluck('icao')->toArray();
@@ -149,6 +152,9 @@ class FlightController extends Controller
             ->sortable('flight_number')->orderBy('route_code')->orderBy('route_leg')
             ->paginate();
 
+        // phpVMS 7.0.10: expose the number of actually available aircraft per flight.
+        $ac_counts = $this->CountAvailableAircraftForFlights($flights, $user_subfleets);
+
         $saved_flights = [];
         $bids = Bid::where('user_id', Auth::id())->get();
         foreach ($bids as $bid) {
@@ -163,6 +169,7 @@ class FlightController extends Controller
 
         return view('flights.index', [
             'user'          => $user,
+            'ac_counts'     => $ac_counts,
             'airlines'      => $this->airlineRepo->selectBoxList(true),
             'airports'      => [],
             'flights'       => $flights,
@@ -288,4 +295,91 @@ class FlightController extends Controller
             'acars_plugin' => $this->moduleSvc->isModuleActive('VMSAcars'),
         ]);
     }
+
+    /**
+     * Count aircraft which are genuinely selectable for each displayed flight.
+     * Imported from phpVMS 7.0.10 and kept here while the legacy flight screen exists.
+     */
+    private function CountAvailableAircraftForFlights($flights, $user_subfleets = null): array
+    {
+        $counts = [];
+        $batchSize = 50;
+
+        foreach ($flights->chunk($batchSize) as $batch) {
+            $airportIds = $batch->pluck('dpt_airport_id')->unique()->toArray();
+            $airlineIds = collect($batch)->pluck('airline_id')->unique()->toArray();
+
+            $explicitSubfleetIds = collect($batch)
+                ->flatMap(fn($f) => $f->subfleets->pluck('id'))
+                ->unique()
+                ->toArray();
+
+            $hasOpenFlights = collect($batch)->contains(fn($f) => $f->subfleets->isEmpty());
+            $fallbackSubfleetIds = [];
+            if ($hasOpenFlights) {
+                $fallbackSubfleetIds = DB::table('subfleets')
+                    ->when(setting('flights.only_company_aircraft', false), function ($query) use ($airlineIds) {
+                        return $query->whereIn('airline_id', $airlineIds);
+                    })
+                    ->pluck('id')
+                    ->toArray();
+            }
+
+            $subfleetIds = array_unique(array_merge($explicitSubfleetIds, $fallbackSubfleetIds));
+            if ($user_subfleets !== null) {
+                $subfleetIds = array_intersect($subfleetIds, $user_subfleets);
+            }
+
+            $aircraftQuery = Aircraft::query()
+                ->where('status', AircraftStatus::ACTIVE)
+                ->where('state', AircraftState::PARKED)
+                ->whereIn('airport_id', $airportIds);
+
+            if (!empty($subfleetIds)) {
+                $aircraftQuery->whereIn('subfleet_id', $subfleetIds);
+            }
+
+            $aircraftData = $aircraftQuery
+                ->select('airport_id', 'subfleet_id', DB::raw('COUNT(*) as count'))
+                ->groupBy('airport_id', 'subfleet_id')
+                ->get()
+                ->groupBy('airport_id')
+                ->map(fn($airportAircrafts) => $airportAircrafts
+                    ->groupBy('subfleet_id')
+                    ->map(fn($subfleetGroup) => collect($subfleetGroup)->sum('count')))
+                ->toArray();
+
+            $onlyCompanyAircraft = setting('flights.only_company_aircraft', false);
+            $airlineSubfleetIdsCache = [];
+            $uniqueAirlineIds = $batch->pluck('airline_id')->unique()->toArray();
+            $subfleetRows = DB::table('subfleets')
+                ->when($onlyCompanyAircraft, fn($q) => $q->whereIn('airline_id', $uniqueAirlineIds))
+                ->select('id', 'airline_id')
+                ->get();
+
+            foreach ($uniqueAirlineIds as $airlineId) {
+                $airlineSubfleetIdsCache[$airlineId] = $onlyCompanyAircraft
+                    ? $subfleetRows->where('airline_id', $airlineId)->pluck('id')->toArray()
+                    : $subfleetRows->pluck('id')->toArray();
+            }
+
+            foreach ($batch as $flight) {
+                $count = 0;
+                if ($flight->subfleets->isEmpty()) {
+                    foreach ($airlineSubfleetIdsCache[$flight->airline_id] ?? [] as $sfId) {
+                        $count += $aircraftData[$flight->dpt_airport_id][$sfId] ?? 0;
+                    }
+                } else {
+                    foreach ($flight->subfleets as $subfleet) {
+                        $count += $aircraftData[$flight->dpt_airport_id][$subfleet->id] ?? 0;
+                    }
+                }
+
+                $counts[$flight->id] = $count;
+            }
+        }
+
+        return $counts;
+    }
+
 }

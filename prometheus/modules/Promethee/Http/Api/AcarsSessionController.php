@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace Modules\Promethee\Http\Api;
 
 use App\Contracts\Controller;
 use App\Exceptions\PilotIdNotFound;
