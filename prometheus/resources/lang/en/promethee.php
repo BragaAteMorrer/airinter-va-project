@@ -5,7 +5,7 @@ return [
     'dashboard' => 'Dashboard',
     'operations' => 'Operations',
     'flight_schedule' => 'Flight schedule',
-    'acars' => 'Promethee ACARS',
+    'acars' => 'Hermes (ACARS)',
     'calendar' => 'Calendar',
     'community' => 'Community',
     'latest_pireps' => 'Latest PIREPs',
