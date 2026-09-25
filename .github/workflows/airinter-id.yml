@@ -42,6 +42,10 @@ jobs:
         run: |
           cp .env.example .env
           php artisan key:generate
+          php artisan vendor:publish --tag=passport-migrations --force
+          touch database/database.sqlite
+          DB_CONNECTION=sqlite DB_DATABASE=database/database.sqlite php artisan migrate --force
+          php artisan passport:keys --force
           php artisan about
           php artisan route:list
       - name: Run tests
