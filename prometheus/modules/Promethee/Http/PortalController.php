@@ -16,7 +16,7 @@ use App\Services\FileService;
 use App\Services\UserService;
 use App\Support\Money;
 use App\Support\Countries;
-use Modules\Promethee\Services\{BrandingService,BulletinService,DemandProfileService,EconomyFareResolver,EconomyService,FlightOpsService,SafetyAnalyzer};
+use Modules\Promethee\Services\{BrandingService,BulletinService,CompanyAccessService,DemandProfileService,EconomyFareResolver,EconomyService,FlightOpsService,RegionalOperationsService,SafetyAnalyzer};
 
 class PortalController extends Controller
 {
@@ -110,13 +110,47 @@ class PortalController extends Controller
     }
 
     public function finances(Request $r) {
-        $monthStart = now('Europe/Paris')->startOfMonth()->utc();
+        $period = $r->validate(['period' => 'nullable|in:month,6months,year'])['period'] ?? 'month';
+        $parisNow = now('Europe/Paris');
+        $start = match ($period) {
+            '6months' => $parisNow->copy()->subMonths(5)->startOfMonth(),
+            'year' => $parisNow->copy()->startOfYear(),
+            default => $parisNow->copy()->startOfMonth(),
+        };
+        $startUtc = $start->copy()->utc();
         $airlines = Airline::where('active', 1)->with('journal')->orderBy('name')->get();
 
-        $financeRows = $airlines->map(function (Airline $airline) use ($monthStart) {
+        $financeRows = $airlines->map(function (Airline $airline) use ($startUtc, $start, $parisNow) {
             $journal = $airline->journal;
-            $credits = $journal ? (int) $journal->transactions()->where('post_date', '>=', $monthStart)->sum('credit') : 0;
-            $debits = $journal ? (int) $journal->transactions()->where('post_date', '>=', $monthStart)->sum('debit') : 0;
+            $transactions = $journal
+                ? $journal->transactions()->where('post_date', '>=', $startUtc)->orderBy('post_date')->get()
+                : collect();
+
+            $monthly = [];
+            $cursor = $start->copy()->startOfMonth();
+            while ($cursor->lte($parisNow)) {
+                $key = $cursor->format('Y-m');
+                $monthly[$key] = [
+                    'label' => $cursor->translatedFormat('M Y'),
+                    'credits' => 0,
+                    'debits' => 0,
+                    'net' => 0,
+                ];
+                $cursor->addMonth();
+            }
+
+            foreach ($transactions as $transaction) {
+                $key = \Carbon\Carbon::parse($transaction->post_date)->timezone('Europe/Paris')->format('Y-m');
+                if (!isset($monthly[$key])) continue;
+                $credit = (int) $transaction->credit;
+                $debit = (int) $transaction->debit;
+                $monthly[$key]['credits'] += $credit;
+                $monthly[$key]['debits'] += $debit;
+                $monthly[$key]['net'] += $credit - $debit;
+            }
+
+            $credits = (int) $transactions->sum('credit');
+            $debits = (int) $transactions->sum('debit');
 
             return [
                 'airline' => $airline,
@@ -124,11 +158,12 @@ class PortalController extends Controller
                 'credits' => new Money($credits),
                 'debits' => new Money($debits),
                 'net' => new Money($credits - $debits),
-                'transactions' => $journal ? $journal->transactions()->where('post_date', '>=', $monthStart)->count() : 0,
+                'transactions' => $transactions->count(),
+                'monthly' => array_values($monthly),
             ];
         });
 
-        return $this->page('finances', compact('financeRows'));
+        return $this->page('finances', compact('financeRows', 'period', 'start'));
     }
 
     public function fleet(Request $r) {
@@ -180,6 +215,17 @@ class PortalController extends Controller
             $plane->setAttribute('state_label', AircraftState::$labels[$plane->state] ?? 'Inconnu');
             $plane->setAttribute('status_label', __(AircraftStatus::$labels[$plane->status] ?? 'aircraft.status.active'));
             $plane->subfleet?->airline?->setAttribute('promethee_logo', $this->airlineLogoUrl($plane->subfleet->airline));
+        });
+        $baseAssignments = DB::table('promethee_aircraft_bases as assignment')
+            ->leftJoin('promethee_operational_bases as base', 'base.airport_id', '=', 'assignment.base_airport_id')
+            ->whereIn('assignment.aircraft_id', $aircraft->getCollection()->pluck('id'))
+            ->select('assignment.*', 'base.kind as base_kind', 'base.small_maintenance', 'base.heavy_maintenance')
+            ->get()->keyBy('aircraft_id');
+        $aircraft->getCollection()->each(function (Aircraft $plane) use ($baseAssignments) {
+            $assignment = $baseAssignments->get($plane->id);
+            $plane->setAttribute('operational_base_id', $assignment?->base_airport_id ?: $plane->hub_id ?: 'LFPO');
+            $plane->setAttribute('operational_base_kind', $assignment?->base_kind ?: (($plane->hub_id ?: 'LFPO') === 'LFPO' ? 'hub' : 'regional'));
+            $plane->setAttribute('away_since', $assignment?->away_since);
         });
         return $this->page('fleet', compact('aircraft', 'airlines'));
     }
@@ -867,7 +913,8 @@ class PortalController extends Controller
        return back()->with('success', 'Téléchargement supprimé.');
    }
     /** Current missions and circuits. Completion is derived from accepted PIREPs. */
-    public function missions(Request $r) {
+    public function missions(Request $r, RegionalOperationsService $regionalOperations) {
+        $regionalOperations->sync();
         $today = today('Europe/Paris')->toDateString(); $userId = $r->user()->id;
         $reports = Pirep::where('user_id',$userId)->where('state',PirepState::ACCEPTED)
             ->get(['id','flight_id','dpt_airport_id','arr_airport_id','submitted_at']);
@@ -881,13 +928,36 @@ class PortalController extends Controller
         $missions = DB::table('promethee_missions')->where('active',true)
             ->where(fn($q)=>$q->whereNull('starts_on')->orWhere('starts_on','<=',$today))
             ->where(fn($q)=>$q->whereNull('ends_on')->orWhere('ends_on','>=',$today))->orderBy('ends_on')->get()
-            ->map(function ($mission) use ($matches) { $mission->completion = $matches($mission); return $mission; });
+            ->map(function ($mission) use ($matches, $userId) {
+                $mission->completion = $matches($mission);
+                $mission->booking = DB::table('promethee_mission_bookings')
+                    ->where('mission_id', $mission->id)
+                    ->where('user_id', $userId)
+                    ->latest('created_at')->first();
+                $mission->reserved_by_other = DB::table('promethee_mission_bookings')
+                    ->where('mission_id', $mission->id)
+                    ->where('user_id', '!=', $userId)
+                    ->where('status', 'reserved')->exists();
+                if ($mission->aircraft_id) {
+                    $mission->aircraft_registration = Aircraft::where('id', $mission->aircraft_id)->value('registration');
+                }
+                return $mission;
+            });
         $circuits = DB::table('promethee_circuits')->where('active',true)
             ->where(fn($q)=>$q->whereNull('starts_on')->orWhere('starts_on','<=',$today))
             ->where(fn($q)=>$q->whereNull('ends_on')->orWhere('ends_on','>=',$today))->orderBy('ends_on')->get()
             ->map(function ($circuit) use ($matches) { $circuit->legs=DB::table('promethee_circuit_legs')->where('circuit_id',$circuit->id)->orderBy('position')->get()->map(function($leg) use($matches){ $leg->completion=$matches($leg); return $leg; }); $circuit->completed=$circuit->legs->isNotEmpty() && $circuit->legs->every(fn($leg)=>$leg->completion); return $circuit; });
         return $this->page('missions', compact('missions','circuits'));
     }
+
+    public function reserveMission(int $id, Request $r, FinanceService $finance, RegionalOperationsService $regionalOperations) {
+        $mission = DB::table('promethee_missions')->where('id', $id)->where('active', true)->first();
+        abort_unless($mission, 404);
+        abort_unless($mission->mission_type === 'repatriation', 422, 'Cette mission ne nécessite pas de réservation.');
+        $regionalOperations->reserveRepatriationMission($id, $r->user(), $finance);
+        return back()->with('success', 'Mission de rapatriement réservée. Votre position pilote a été ajustée si un jumpseat était nécessaire.');
+    }
+
     public function assignments(Request $r) {
         $month=$r->query('month',now('Europe/Paris')->format('Y-m'));
         abort_unless((bool)preg_match('/^\\d{4}-(0[1-9]|1[0-2])$/',$month),422,'Mois invalide.');
@@ -898,7 +968,7 @@ class PortalController extends Controller
     }
     public function shop(Request $r) { $pilot=$r->user()->fresh('journal'); $journal=$pilot->journal ?: $pilot->initJournal(); $wallet=$journal->getBalance(); $items=DB::table('promethee_shop_items')->where('active',true)->orderBy('price')->get(); $orders=DB::table('promethee_shop_orders as orders')->join('promethee_shop_items as items','items.id','=','orders.item_id')->where('orders.user_id',$pilot->id)->select('orders.*','items.name')->latest('purchased_at')->get(); return $this->page('shop',compact('wallet','items','orders')); }
     public function buyShopItem(int $id, Request $r, FinanceService $finance) { return DB::transaction(function() use($id,$r,$finance) { $item=DB::table('promethee_shop_items')->where('id',$id)->where('active',true)->lockForUpdate()->first(); abort_unless($item,404); $user=$r->user()->fresh('journal'); $journal=$user->journal ?: $user->initJournal(); if((int)$journal->getBalance()->getAmount() < (int)$item->price) return back()->withErrors(['shop'=>'Solde phpVMS insuffisant.']); $finance->debitFromJournal($journal,new Money($item->price),$user,'Boutique : '.$item->name,'shop','shop'); DB::table('promethee_shop_orders')->insert(['user_id'=>$user->id,'item_id'=>$item->id,'price'=>$item->price,'purchased_at'=>now(),'created_at'=>now(),'updated_at'=>now()]); return back()->with('success','Achat enregistré dans votre journal phpVMS.'); }); }
-    public function transfers(Request $r) { return $this->page('transfers',['requests'=>DB::table('promethee_transfer_requests')->where('user_id',$r->user()->id)->latest()->get(),'airlines'=>Airline::where('active',true)->orderBy('name')->get(['id','name']),'hubs'=>Airport::where('hub',true)->orderBy('id')->get(['id','name'])]); }
+    public function transfers(Request $r) { return redirect()->route('promethee.airlines')->with('success','Les transferts ont été remplacés par l’accès automatique aux compagnies selon vos heures de vol.'); }
     /** Same formula as the historical Prometheus jumpseat: configurable base per nautical mile. */
     private function jumpseatQuote(User $user, Airport $destination): array {
         $originId = $user->curr_airport_id ?: $user->home_airport_id;
@@ -1071,6 +1141,7 @@ class PortalController extends Controller
     }
     public function reserveFlight(string $id, Request $r, \App\Services\BidService $bids) {
         $flight=Flight::where(['id'=>$id,'active'=>true,'visible'=>true])->firstOrFail();
+        abort_unless(app(CompanyAccessService::class)->canAccessAirline($r->user(), (int) $flight->airline_id), 403, 'Cette compagnie n’est pas encore accessible avec votre nombre d’heures de vol.');
         try { $bids->addBid($flight,$r->user()); return back()->with('success','Vol '.$flight->ident.' réservé.'); }
         catch (\Throwable $e) { return back()->withErrors(['reservation'=>$e->getMessage() ?: 'Cette réservation ne peut pas être créée.']); }
     }
@@ -1749,7 +1820,7 @@ class PortalController extends Controller
             'activeCircuits' => DB::table('promethee_circuits')->where('active',true)->count(),
             'monthlyAssignments' => DB::table('promethee_assignments')->where('month',now('Europe/Paris')->format('Y-m'))->count(),
             'shopItems' => DB::table('promethee_shop_items')->where('active',true)->count(),
-            'pendingTransfers' => DB::table('promethee_transfer_requests')->whereIn('type',['hub','airline'])->where('status','pending')->count(),
+            'regionalBases' => DB::table('promethee_operational_bases')->where('active',true)->count(),
             'jumpseatCount' => DB::table('promethee_transfer_requests')->where('type','jumpseat')->count(),
             'simbriefApiConfigured' => app(\Modules\Promethee\Services\SimBriefCompanyKeyService::class)->configured(),
         ]);
@@ -2018,13 +2089,87 @@ class PortalController extends Controller
     public function adminAirlines(Request $r) {
         $filters=$r->validate(['q'=>'nullable|string|max:80','active'=>'nullable|in:all,active,inactive']);
         $airlines=Airline::query()->when($filters['q'] ?? null, fn($query,$q)=>$query->where(fn($nested)=>$nested->where('name','like','%'.$q.'%')->orWhere('icao','like','%'.$q.'%')->orWhere('iata','like','%'.$q.'%')->orWhere('callsign','like','%'.$q.'%')))->when(($filters['active'] ?? 'all') !== 'all', fn($query)=>$query->where('active',($filters['active'] ?? '')==='active'))->orderBy('name')->get();
+        $accessRules = DB::table('promethee_airline_access_rules')->pluck('min_flight_hours', 'airline_id');
+        $airlines->each(fn (Airline $airline) => $airline->setAttribute('min_flight_hours', (int) ($accessRules[$airline->id] ?? 0)));
         return $this->page('admin-airlines', ['airlines'=>$airlines,'countries'=>Countries::getSelectList()]);
     }
     public function saveAdminAirline(Request $r) {
-        $data=$r->validate(['id'=>'nullable|integer|exists:airlines,id','icao'=>'required|string|max:5','iata'=>'nullable|string|max:5','name'=>'required|string|max:191','callsign'=>'nullable|string|max:191','logo'=>'nullable|url|max:2000','country'=>'nullable|string|size:2','active'=>'nullable|boolean']);
-        $attributes=collect($data)->except('id')->all(); $attributes['active']=$r->boolean('active');
-        if (!empty($data['id'])) Airline::findOrFail($data['id'])->update($attributes); else Airline::create($attributes);
-        return back()->with('success','Compagnie enregistrée.');
+        $data=$r->validate(['id'=>'nullable|integer|exists:airlines,id','icao'=>'required|string|max:5','iata'=>'nullable|string|max:5','name'=>'required|string|max:191','callsign'=>'nullable|string|max:191','logo'=>'nullable|url|max:2000','country'=>'nullable|string|size:2','active'=>'nullable|boolean','min_flight_hours'=>'nullable|integer|min:0|max:100000']);
+        $attributes=collect($data)->except(['id','min_flight_hours'])->all(); $attributes['active']=$r->boolean('active');
+        if (!empty($data['id'])) {
+            $airline = Airline::findOrFail($data['id']); $airline->update($attributes);
+        } else {
+            $airline = Airline::create($attributes);
+        }
+        DB::table('promethee_airline_access_rules')->updateOrInsert(
+            ['airline_id'=>$airline->id],
+            ['min_flight_hours'=>(int)($data['min_flight_hours'] ?? 0),'created_at'=>now(),'updated_at'=>now()]
+        );
+        return back()->with('success','Compagnie et seuil d’accès enregistrés.');
+    }
+
+    public function regionalOperations(Request $r, RegionalOperationsService $operations) {
+        $operations->sync();
+        $bases = DB::table('promethee_operational_bases as base')
+            ->leftJoin('airports', 'airports.id', '=', 'base.airport_id')
+            ->select('base.*', 'airports.name as airport_name')
+            ->orderByRaw("CASE WHEN base.kind = 'hub' THEN 0 ELSE 1 END")
+            ->orderBy('base.airport_id')->get();
+        $aircraft = Aircraft::with('subfleet.airline')->orderBy('registration')->get();
+        $assignments = DB::table('promethee_aircraft_bases')->get()->keyBy('aircraft_id');
+        $settings = $operations->settings();
+        return $this->page('admin-regional-operations', compact('bases','aircraft','assignments','settings'));
+    }
+
+    public function saveRegionalOperations(Request $r) {
+        $data = $r->validate([
+            'mission_after_days'=>'required|integer|min:1|max:365',
+            'auto_return_after_days'=>'required|integer|min:2|max:730|gt:mission_after_days',
+            'reward_multiplier'=>'required|numeric|min:1|max:10',
+        ]);
+        foreach ([
+            'regional.repatriation_mission_after_days'=>$data['mission_after_days'],
+            'regional.auto_return_after_days'=>$data['auto_return_after_days'],
+            'regional.repatriation_reward_multiplier'=>$data['reward_multiplier'],
+        ] as $key=>$value) {
+            DB::table('promethee_settings')->updateOrInsert(['key'=>$key],['value'=>(string)$value,'created_at'=>now(),'updated_at'=>now()]);
+        }
+        return back()->with('success','Règles de rapatriement enregistrées.');
+    }
+
+    public function saveRegionalBase(Request $r) {
+        $data=$r->validate([
+            'airport_id'=>'required|string|max:8|exists:airports,id',
+            'kind'=>'required|in:hub,regional',
+            'small_maintenance'=>'nullable|boolean',
+            'heavy_maintenance'=>'nullable|boolean',
+            'active'=>'nullable|boolean',
+        ]);
+        $airportId=strtoupper($data['airport_id']);
+        if ($data['kind']==='hub') {
+            DB::table('promethee_operational_bases')->where('kind','hub')->where('airport_id','!=',$airportId)->update(['kind'=>'regional','heavy_maintenance'=>false,'updated_at'=>now()]);
+        }
+        DB::table('promethee_operational_bases')->updateOrInsert(
+            ['airport_id'=>$airportId],
+            [
+                'kind'=>$data['kind'],
+                'small_maintenance'=>$r->boolean('small_maintenance'),
+                'heavy_maintenance'=>$r->boolean('heavy_maintenance'),
+                'active'=>$r->boolean('active'),
+                'created_at'=>now(),'updated_at'=>now(),
+            ]
+        );
+        return back()->with('success','Base opérationnelle enregistrée.');
+    }
+
+    public function assignAircraftBase(Request $r) {
+        $data=$r->validate(['aircraft_id'=>'required|integer|exists:aircraft,id','base_airport_id'=>'required|string|max:8|exists:promethee_operational_bases,airport_id']);
+        DB::table('promethee_aircraft_bases')->updateOrInsert(
+            ['aircraft_id'=>$data['aircraft_id']],
+            ['base_airport_id'=>strtoupper($data['base_airport_id']),'assigned_at'=>now(),'away_since'=>null,'repatriation_mission_id'=>null,'created_at'=>now(),'updated_at'=>now()]
+        );
+        Aircraft::where('id',$data['aircraft_id'])->update(['hub_id'=>strtoupper($data['base_airport_id'])]);
+        return back()->with('success','Base de l’appareil mise à jour.');
     }
     public function adminPassport() { return $this->page('admin-passport',['enabled'=>DB::table('promethee_settings')->where('key','passport.enabled')->value('value') !== '0','showMap'=>DB::table('promethee_settings')->where('key','passport.map_enabled')->value('value') !== '0']); }
     public function savePassportSettings(Request $r) { $r->validate(['enabled'=>'nullable|boolean','map_enabled'=>'nullable|boolean']); foreach(['passport.enabled'=>$r->boolean('enabled'),'passport.map_enabled'=>$r->boolean('map_enabled')] as $key=>$value) DB::table('promethee_settings')->updateOrInsert(['key'=>$key],['value'=>$value?'1':'0','created_at'=>now(),'updated_at'=>now()]); return back()->with('success','Paramètres du passeport enregistrés.'); }
