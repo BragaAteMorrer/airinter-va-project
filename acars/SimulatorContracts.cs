@@ -72,6 +72,8 @@ public sealed record AircraftSnapshot(
     double? BankDegrees = null,
     double? TouchdownVerticalSpeedFeetPerMinute = null,
     bool? ThrustStable = null,
+    double? LocalizerDots = null,
+    double? GlideslopeDots = null,
     string? AircraftModel = null);
 
 /// <summary>
@@ -105,5 +107,7 @@ public static class SimulatorSnapshotMapper
         PitchDegrees: sample.Pitch,
         BankDegrees: sample.Bank,
         TouchdownVerticalSpeedFeetPerMinute: sample.TouchdownVelocity * 60d,
-        ThrustStable: sample.ThrustStable);
+        ThrustStable: sample.ThrustStable,
+        LocalizerDots: sample.LocalizerDots,
+        GlideslopeDots: sample.GlideslopeDots);
 }
