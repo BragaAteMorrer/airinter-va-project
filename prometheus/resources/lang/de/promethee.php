@@ -1,6 +1,6 @@
 <?php return array_replace(require __DIR__.'/../en/promethee.php', [
     'dashboard'=>'Übersicht', 'operations'=>'Flugbetrieb', 'flight_schedule'=>'Flugplan', 'calendar'=>'Kalender', 'community'=>'Gemeinschaft', 'latest_pireps'=>'Letzte PIREPs', 'flight_safety'=>'Flugsicherheit', 'public_home'=>'Öffentliche Startseite', 'completed_flights'=>'Durchgeführte Flüge', 'language'=>'Sprache', 'display'=>'Anzeige', 'display_style'=>'Anzeigestil', 'modern'=>'Modern', 'year_2000'=>'2000er', 'skip_to_content'=>'Zum Inhalt springen', 'operations_centre'=>'Betriebszentrale', 'virtual_airline'=>'Virtuelle Fluggesellschaft', 'pilot_area'=>'Pilotenbereich', 'visitor_access'=>'Gastzugang', 'view_my_profile'=>'Mein Profil anzeigen', 'logout'=>'Abmelden', 'read_only'=>'Nur lesen', 'login'=>'Anmelden', 'register'=>'Registrieren', 'input_error'=>'Bitte Eingaben überprüfen', 'pilot_login'=>'Pilotenanmeldung', 'login_intro'=>'Greifen Sie auf Ihr Flugbuch und den Flugbetrieb zu.', 'minitel_instruction'=>'Wählen Sie den Dienst, bevor Sie sich anmelden.', 'service_code'=>'DIENSTCODE', 'welcome_aboard'=>'Willkommen an Bord.', 'login_welcome'=>'Betreten Sie den Air-Inter-Pilotenbereich und bereiten Sie Ihre nächste Rotation vor.', 'powered_by'=>'Bereitgestellt von phpVMS', 'flight_not_found'=>'Flug nicht gefunden!',
-    'dispatch_desk'=>'Dispatch-Zentrale', 'admin_pilots'=>'Pilotenverwaltung', 'admin_ranks'=>'Rangverwaltung',
+    'dispatch_desk' => 'Dispatch-Zentrale', 'admin_pilots' => 'Pilotenverwaltung', 'admin_ranks' => 'Rangverwaltung',
     'dashboard_page' => [
         'title' => 'Übersicht', 'eyebrow' => 'FLUGBETRIEBSLEITUNG', 'heading' => 'Promethee-Lageübersicht.', 'intro' => 'Netzwerkaktivität, vorzubereitende Abflüge, Sicherheit und kommerzieller Flugbetrieb.',
         'paris_time' => 'PARISER ZEIT', 'active_flights' => 'Flüge in Durchführung', 'open_pireps' => 'Offene / pausierte PIREPs', 'pending' => 'Zu prüfen', 'admin_queue' => 'Admin-PIREPs in Warteschlange', 'today' => 'Heute',
@@ -13,4 +13,5 @@
     'navigation_welcome'=>'Willkommen', 'navigation_pilot'=>'Pilotenbereich', 'navigation_company'=>'Fluggesellschaft', 'navigation_operations'=>'Flugbetrieb', 'navigation_private'=>'Privat',
     'navigation_menu'=>['settings'=>'Einstellungen', 'flight_map'=>'Flugkarte', 'reports' => 'Meine Berichte', 'all_reports' => 'Alle Berichte', 'my_reports' => 'Meine Berichte', 'bookings'=>'Meine Buchungen', 'downloads'=>'Downloads', 'live_flights'=>'Live-Flüge'],
     'appearance'=>'Darstellung', 'appearance_style'=>'Farbdarstellung', 'appearance_light'=>'Tag', 'appearance_dark'=>'Nacht',
+    'company_finances' => 'Unternehmensfinanzen',
 ]);
