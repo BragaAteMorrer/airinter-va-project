@@ -5,6 +5,28 @@
   const core = window.HermesMinitelCore;
   if (!mt || !core) return;
 
+  const MINITEL_SPEED_KEY = 'airinter-minitel-speed';
+  const MINITEL_DISPLAY_KEY = 'airinter-minitel-display';
+
+  const readMinitelPreferences = () => {
+    let speed = 'fast';
+    let displayMode = 'color';
+    try {
+      const storedSpeed = localStorage.getItem(MINITEL_SPEED_KEY);
+      const storedDisplay = localStorage.getItem(MINITEL_DISPLAY_KEY);
+      if (storedSpeed && mt.SPEEDS[storedSpeed]) speed = storedSpeed;
+      if (storedDisplay && mt.DISPLAY_MODES[storedDisplay]) displayMode = storedDisplay;
+    } catch {}
+    return { speed, displayMode };
+  };
+
+  const persistMinitelPreferences = (preferences) => {
+    try {
+      if (mt.SPEEDS[preferences.speed]) localStorage.setItem(MINITEL_SPEED_KEY, preferences.speed);
+      if (mt.DISPLAY_MODES[preferences.displayMode]) localStorage.setItem(MINITEL_DISPLAY_KEY, preferences.displayMode);
+    } catch {}
+  };
+
   const hm = {
     active: false,
     authenticated: false,
@@ -1117,11 +1139,15 @@
     host.className = 'hermes-minitel-overlay';
     document.body.appendChild(host);
 
+    const terminalPreferences = readMinitelPreferences();
     shell = new mt.MinitelShell({
       host,
       service: '3615 HERMES',
       product: 'HERMES',
       identity: '',
+      speed: terminalPreferences.speed,
+      displayMode: terminalPreferences.displayMode,
+      onPreferencesChange: persistMinitelPreferences,
       onExit: () => {
         try { localStorage.hermesEra = 'modern'; } catch {}
         window.location.reload();
@@ -1135,7 +1161,10 @@
     }
 
     shell.mount();
-    renderer = new mt.MinitelDomRenderer(shell.terminalNode, { speed: 'fast' });
+    renderer = new mt.MinitelDomRenderer(shell.terminalNode, {
+      speed: terminalPreferences.speed,
+      displayMode: terminalPreferences.displayMode
+    });
     await refreshStatus();
     hm.authenticated = Boolean(hm.status?.connected);
     if (hm.authenticated) {
@@ -1155,7 +1184,7 @@
 
     terminalSession = new mt.MinitelSession({
       homePageId: hm.authenticated ? 'home' : 'login-user',
-      speed: 'fast',
+      speed: terminalPreferences.speed,
       inputLength: 160,
       context: {}
     });
