@@ -34,8 +34,10 @@ class MinitelController extends Controller
             'endpoints' => [
                 'departures' => route('promethee.departure-board.data'),
                 'flights' => route('promethee.minitel.flights'),
+                'routes' => route('promethee.minitel.routes'),
                 'fleet' => route('promethee.minitel.fleet'),
                 'pilots' => route('promethee.minitel.pilots'),
+                'calendar' => route('promethee.minitel.calendar'),
                 'profile' => route('promethee.minitel.profile'),
             ],
             'updated_at' => now()->toIso8601String(),
@@ -161,6 +163,74 @@ class MinitelController extends Controller
                 'airline' => $pilot->airline?->icao ?: $pilot->airline?->name,
                 'home_airport' => $pilot->home_airport_id,
                 'flight_time' => (int) ($pilot->flight_time ?? 0),
+            ])->values(),
+            'pagination' => $this->paginationPayload($page),
+        ]);
+    }
+
+    public function routes(Request $request): JsonResponse
+    {
+        $filters = $request->validate([
+            'q' => 'nullable|string|max:32',
+            'page' => 'nullable|integer|min:1|max:999',
+        ]);
+
+        $query = Flight::query()
+            ->where('active', true)
+            ->where('visible', true)
+            ->select([
+                'dpt_airport_id',
+                'arr_airport_id',
+                DB::raw('COUNT(*) as flights_count'),
+                DB::raw('MIN(dpt_time) as first_departure'),
+                DB::raw('MAX(dpt_time) as last_departure'),
+            ])
+            ->groupBy('dpt_airport_id', 'arr_airport_id');
+
+        if (!empty($filters['q'])) {
+            $term = '%'.strtoupper(trim($filters['q'])).'%';
+            $query->where(function ($routes) use ($term) {
+                $routes->where('dpt_airport_id', 'like', $term)
+                    ->orWhere('arr_airport_id', 'like', $term)
+                    ->orWhere('route_code', 'like', $term);
+            });
+        }
+
+        $page = $query->orderBy('dpt_airport_id')->orderBy('arr_airport_id')
+            ->paginate(self::PER_PAGE)
+            ->withQueryString();
+
+        return response()->json([
+            'items' => collect($page->items())->map(fn ($route) => [
+                'departure' => $route->dpt_airport_id,
+                'arrival' => $route->arr_airport_id,
+                'flights' => (int) $route->flights_count,
+                'first_departure' => $route->first_departure ? substr((string) $route->first_departure, 0, 5) : null,
+                'last_departure' => $route->last_departure ? substr((string) $route->last_departure, 0, 5) : null,
+            ])->values(),
+            'pagination' => $this->paginationPayload($page),
+        ]);
+    }
+
+    public function calendar(Request $request): JsonResponse
+    {
+        $filters = $request->validate([
+            'page' => 'nullable|integer|min:1|max:999',
+        ]);
+
+        $page = DB::table('promethee_events')
+            ->where('ends_at', '>=', now())
+            ->orderBy('starts_at')
+            ->paginate(self::PER_PAGE)
+            ->withQueryString();
+
+        return response()->json([
+            'items' => collect($page->items())->map(fn ($event) => [
+                'id' => (int) $event->id,
+                'title' => $event->title,
+                'starts_at' => optional($event->starts_at ? \Carbon\CarbonImmutable::parse($event->starts_at) : null)?->setTimezone('Europe/Paris')->format('d/m H:i'),
+                'ends_at' => optional($event->ends_at ? \Carbon\CarbonImmutable::parse($event->ends_at) : null)?->setTimezone('Europe/Paris')->format('d/m H:i'),
+                'location' => $event->location ?? null,
             ])->values(),
             'pagination' => $this->paginationPayload($page),
         ]);
