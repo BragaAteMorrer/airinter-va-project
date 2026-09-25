@@ -36,7 +36,7 @@ class RegionalOperationsService
         $cleared = 0;
 
         $assignments = DB::table('promethee_aircraft_bases')->get()->keyBy('aircraft_id');
-        $aircraft = Aircraft::query()->get(['id', 'registration', 'airport_id', 'hub_id']);
+        $aircraft = Aircraft::query()->get(['id', 'registration', 'airport_id', 'hub_id', 'landing_time']);
 
         foreach ($aircraft as $plane) {
             $assignment = $assignments->get($plane->id);
@@ -74,7 +74,7 @@ class RegionalOperationsService
             $awaySince = $assignment->away_since ? \Carbon\Carbon::parse($assignment->away_since) : null;
             if (!$awaySince) {
                 DB::table('promethee_aircraft_bases')->where('aircraft_id', $plane->id)->update([
-                    'away_since' => now(),
+                    'away_since' => $plane->landing_time ?: now(),
                     'updated_at' => now(),
                 ]);
                 continue;
