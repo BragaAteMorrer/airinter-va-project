@@ -1696,7 +1696,9 @@ class PortalController extends Controller
     public function safety(Request $r,BulletinService $service) {
         $month=$this->month($r);
         $saved=DB::table('promethee_bulletins')->where('month',$month)->first();
-        return $this->page('safety',['report'=>$saved ? json_decode($saved->report,true) : $service->build($month),'month'=>$month,'saved'=>$saved]);
+        $report=$saved ? json_decode($saved->report,true) : $service->build($month);
+        if (($report['version'] ?? 0) < SafetyAnalyzer::VERSION) $report=$service->build($month);
+        return $this->page('safety',['report'=>$report,'month'=>$month,'saved'=>$saved]);
     }
     public function generate(Request $r,BulletinService $service) {
         $d=$r->validate(['month'=>'required|date_format:Y-m']);
