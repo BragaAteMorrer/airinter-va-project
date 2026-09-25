@@ -256,16 +256,21 @@
       registerSystemPages(this.session, { service: this.service });
 
       if (this.keyboard) {
-        this.keyboard.commandInterceptor = (command) => {
+        const downstreamInterceptor = this.keyboard.commandInterceptor;
+        const downstreamAfterDispatch = this.keyboard.afterDispatch;
+
+        this.keyboard.commandInterceptor = async (command, event, activeSession) => {
           if (command.action === runtime.ACTIONS.GUIDE) {
             return { handled: true, action: command.action, snapshot: this.openGuide() };
           }
           if (command.action === runtime.ACTIONS.CONNECT_END) {
             return { handled: true, action: command.action, snapshot: this.openExit() };
           }
-          return null;
+          return downstreamInterceptor ? downstreamInterceptor(command, event, activeSession) : null;
         };
-        this.keyboard.afterDispatch = () => {
+
+        this.keyboard.afterDispatch = (outcome, command, event) => {
+          downstreamAfterDispatch?.(outcome, command, event);
           if (this.session?.context?.__minitelExitRequested) {
             this.session.context.__minitelExitRequested = false;
             this.exit(EXIT_REASONS.CONNECT_END);
