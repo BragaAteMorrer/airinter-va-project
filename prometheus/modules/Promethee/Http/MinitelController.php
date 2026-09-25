@@ -39,6 +39,9 @@ class MinitelController extends Controller
                 'pilots' => route('promethee.minitel.pilots'),
                 'calendar' => route('promethee.minitel.calendar'),
                 'profile' => route('promethee.minitel.profile'),
+                'operations' => route('promethee.minitel.operations'),
+                'reserve_base' => url('/minitel/flights'),
+                'operation_base' => url('/minitel/operations'),
             ],
             'updated_at' => now()->toIso8601String(),
         ]);
