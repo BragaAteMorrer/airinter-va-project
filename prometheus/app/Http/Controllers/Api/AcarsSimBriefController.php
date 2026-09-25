@@ -73,7 +73,6 @@ class AcarsSimBriefController extends Controller
 
 
     /**
-     * Account mode: return a SimBrief Dispatch Redirect URL    /**
      * Account mode: return a SimBrief Dispatch Redirect URL with the operation
      * pre-filled. This does not require the VA API key and never handles the
      * pilot's Navigraph password.
@@ -107,7 +106,6 @@ class AcarsSimBriefController extends Controller
     }
 
     /**
-     * Account mode: fetch the latest OFP explicitly requested by the pilot.    /**
      * Account mode: fetch the latest OFP explicitly requested by the pilot.
      * SimBrief documents this endpoint for user-triggered imports only.
      */
@@ -186,7 +184,7 @@ class AcarsSimBriefController extends Controller
         ]);
     }
 
-    /** Import the generated OFP into Promethee and return data useful to Hermes. */    /** Import the generated OFP into Promethee and return data useful to Hermes. */
+    /** Import the generated OFP into Promethee and return data useful to Hermes. */
     public function import(Request $request, string $flight_id): JsonResponse
     {
         $attrs = $request->validate([
