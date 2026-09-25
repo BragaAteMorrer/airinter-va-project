@@ -19,7 +19,7 @@ for (const name of names) {
 }
 
 const client = fs.readFileSync(path.join(root, 'prometheus', 'public', 'promethee-assets', 'promethee-minitel.js'), 'utf8');
-for (const contract of ['departures', 'flights', 'routes', 'fleet', 'pilots', 'calendar', 'profile']) {
+for (const contract of ['departures', 'flights', 'routes', 'fleet', 'pilots', 'calendar', 'profile', 'operations', 'operation_search']) {
   if (!client.includes(contract)) {
     failures += 1;
     console.error('Missing Prométhée M2 client surface:', contract);
@@ -28,3 +28,25 @@ for (const contract of ['departures', 'flights', 'routes', 'fleet', 'pilots', 'c
 
 if (failures) process.exitCode = 1;
 else console.log('\nMinitel shared/public assets are synchronized.');
+
+const m3Contracts = [
+  'reserve-flight',
+  'select-aircraft',
+  'load-briefing',
+  'prefile-pirep',
+  'load-dispatch',
+  'simbrief-redirect',
+  'simbrief-account-import',
+  'simbrief-company-session',
+  'simbrief-company-import'
+];
+for (const contract of m3Contracts) {
+  if (!client.includes(contract)) {
+    failures += 1;
+    console.error('Missing Prométhée M3 action:', contract);
+  }
+}
+if (!client.includes('endpoints.operation_search')) {
+  failures += 1;
+  console.error('M3 reservable flight search must use Operations V1 projection.');
+}
