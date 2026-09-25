@@ -55,10 +55,10 @@
     revealTimeout = window.setTimeout(() => document.body.classList.remove('minitel-enter'), 760);
   };
 
-  const setEra = (era) => {
+  const setEra = (era, persist = true) => {
     if (!allowed.includes(era)) era = 'modern';
     document.documentElement.dataset.era = era;
-    try { localStorage.setItem('promethee-era',era); } catch {}
+    if (persist) try { localStorage.setItem('promethee-era',era); } catch {}
     const control = document.getElementById('era'); if (control) control.value = era;
     document.querySelectorAll('[data-era-choice]').forEach(button => button.setAttribute('aria-pressed',String(button.dataset.eraChoice === era)));
     bootMinitel();
@@ -74,8 +74,16 @@
     if (persist) try { localStorage.setItem('promethee-appearance', appearance); } catch {}
     const control = document.getElementById('appearance'); if (control) control.value = appearance;
   };
-  let initial = 'modern'; try { initial = localStorage.getItem('promethee-era') || 'modern'; } catch {}
-  setEra(initial);
+  let initial = 'modern';
+  let minitelSessionFallback = false;
+  try {
+    initial = localStorage.getItem('promethee-era') || 'modern';
+    minitelSessionFallback = document.documentElement.dataset.minitelRuntime === 'm2'
+      && initial === 'minitel'
+      && sessionStorage.getItem('promethee-minitel-session-disabled') === '1';
+    if (minitelSessionFallback) initial = 'modern';
+  } catch {}
+  setEra(initial, !minitelSessionFallback);
   let initialAppearance; try { initialAppearance = localStorage.getItem('promethee-appearance'); } catch {}
   setAppearance(appearances.includes(initialAppearance) ? initialAppearance : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'), false);
   document.getElementById('era')?.addEventListener('change',e => {
