@@ -202,3 +202,26 @@ jobs:
           php -l modules/Promethee/Console/CheckPrometheeTranslations.php
           php -l modules/Promethee/Console/CheckTranslations.php
           for file in resources/lang/*/promethee.php resources/lang/*/promethee_briefing.php; do php -l "$file"; done
+
+
+  minitel-release-gate:
+    name: Minitel M7 release gate
+    runs-on: ubuntu-latest
+    needs:
+      - repository-hygiene
+      - hermes
+      - promethee
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run M7 acceptance gate
+        run: |
+          node --check tools/check_minitel_release.cjs
+          node tools/check_minitel_release.cjs --report-dir TestResults/minitel-m7
+      - name: Upload M7 acceptance report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: minitel-m7-release-report
+          path: TestResults/minitel-m7/
+          if-no-files-found: error
