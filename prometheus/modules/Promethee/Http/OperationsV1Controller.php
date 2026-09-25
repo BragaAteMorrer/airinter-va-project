@@ -79,8 +79,12 @@ class OperationsV1Controller extends Controller
         $allowedSubfleets = $this->userSvc->getAllowableSubfleets($request->user())->values();
         $allowedIds = $allowedSubfleets->pluck('id')->map(fn ($id) => (int) $id)->all();
 
+        $allowedAirlineIds = app(\Modules\Promethee\Services\CompanyAccessService::class)
+            ->allowedAirlineIds($request->user());
+
         $query = Flight::query()
             ->with(['airline:id,icao,iata,name', 'subfleets:id,name,type'])
+            ->whereIn('airline_id', $allowedAirlineIds)
             ->where('active', true)
             ->where('visible', true)
             ->when($flightNumber !== '', fn ($q) => $q->where('flight_number', $flightNumber))
@@ -140,6 +144,13 @@ class OperationsV1Controller extends Controller
             ->where('active', true)
             ->where('visible', true)
             ->firstOrFail();
+
+        abort_unless(
+            app(\Modules\Promethee\Services\CompanyAccessService::class)
+                ->canAccessAirline($request->user(), (int) $flight->airline_id),
+            403,
+            'Cette compagnie n’est pas encore accessible avec votre nombre d’heures de vol.'
+        );
 
         try {
             $bid = $bids->addBid($flight, $request->user());
