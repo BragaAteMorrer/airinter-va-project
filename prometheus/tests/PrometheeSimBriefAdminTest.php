@@ -30,6 +30,22 @@ final class PrometheeSimBriefAdminTest extends TestCase
         $response->assertDontSee($secret, false);
     }
 
+    public function test_saved_key_invalidates_the_phpvms_setting_cache(): void
+    {
+        $admin = $this->createAdminUser();
+        $this->putSecret('SIMBRIEF_OLD_VALUE');
+
+        $this->assertSame('SIMBRIEF_OLD_VALUE', (string) setting('simbrief.api_key'));
+
+        $this->actingAs($admin, 'web')
+            ->post('/admin/promethee/simbrief/settings', [
+                'api_key' => 'SIMBRIEF_NEW_VALUE',
+            ])
+            ->assertRedirect();
+
+        $this->assertSame('SIMBRIEF_NEW_VALUE', (string) setting('simbrief.api_key'));
+    }
+
     public function test_blank_api_key_keeps_existing_secret(): void
     {
         $admin = $this->createAdminUser();
