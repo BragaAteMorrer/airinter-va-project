@@ -127,6 +127,8 @@ public sealed class TelemetryService(ISimulatorConnector sim, FlightRecorder rec
                             gear_down=raw?.GearDown,
                             landing_flaps=raw?.FlapsPercent is { } flaps ? flaps > 0 : (bool?)null,
                             thrust_stable=raw?.ThrustStable ?? (raw is null ? (bool?)x.Sample.ThrustStable : null),
+                            localizer_dots=raw?.LocalizerDots ?? (raw is null ? (double?)x.Sample.LocalizerDots : null),
+                            glideslope_dots=raw?.GlideslopeDots ?? (raw is null ? (double?)x.Sample.GlideslopeDots : null),
                             phase=flight.Phase
                         };
                     })
@@ -137,7 +139,7 @@ public sealed class TelemetryService(ISimulatorConnector sim, FlightRecorder rec
                 }
                 await client.Send($"pireps/{Uri.EscapeDataString(flight.PirepId)}/acars/positions", new { positions = pending.Select(x => new {
                     id=x.Sample.SampleId, lat=x.Sample.Lat, lon=x.Sample.Lon, altitude_msl=x.Sample.Altitude, altitude_agl=x.Sample.Agl,
-                    gs=x.Sample.Gs, vs=x.Sample.Vs, heading=x.Sample.Heading, fuel=x.Sample.Fuel, sim_time=x.Sample.RecordedAt, created_at=x.Sample.RecordedAt }) });
+                    gs=x.Sample.Gs, ias=x.Sample.Ias, vs=x.Sample.Vs, heading=x.Sample.Heading, fuel=x.Sample.Fuel, sim_time=x.Sample.RecordedAt, created_at=x.Sample.RecordedAt }) });
                 recorder.AcknowledgePositions(pending.Select(x => x.Sample.SampleId));
             }
             if (events.Count > 0) {

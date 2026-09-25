@@ -31,6 +31,7 @@ class PositionRequest extends FormRequest
             'positions.*.heading'      => 'sometimes|numeric|between:0,360',
             'positions.*.vs'           => 'sometimes',
             'positions.*.gs'           => 'sometimes',
+            'positions.*.ias'          => 'sometimes|numeric',
             'positions.*.transponder'  => 'sometimes',
             'positions.*.autopilot'    => 'sometimes',
             'positions.*.fuel'         => 'sometimes|numeric',
