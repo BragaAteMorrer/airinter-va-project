@@ -1292,6 +1292,8 @@ function renderNetwork(payload) {
   const count = Number(data.online_count ?? data.onlineCount ?? crews.length);
 
   setText($('#networkCount'), String(count));
+  setText($('#networkVatsim'), String(data.by_network?.VATSIM ?? data.byNetwork?.VATSIM ?? 0));
+  setText($('#networkIvao'), String(data.by_network?.IVAO ?? data.byNetwork?.IVAO ?? 0));
   setText($('#networkOperation'), operationId || '—');
   setText($('#networkUpdated'), generatedAt
     ? new Date(generatedAt).toLocaleTimeString('fr-FR', { timeZone: localSettings.timeFormat === 'utc' ? 'UTC' : undefined })
@@ -1342,7 +1344,16 @@ function renderNetwork(payload) {
     const plane = [aircraft.registration, aircraft.icao].filter(Boolean).join(' · ') || 'Appareil non affecté';
     const version = crew.hermes_version || crew.hermesVersion || 'version inconnue';
     const age = Number(crew.age_seconds ?? crew.ageSeconds ?? 0);
-    details.textContent = `${plane} · ${phase} · ${simulator} · Hermès ${version} · signal ${age}s`;
+    const connections = crew.online_networks?.online_connections || crew.onlineNetworks?.onlineConnections || [];
+    const linked = Boolean(crew.online_networks?.linked ?? crew.onlineNetworks?.linked);
+    const networkText = connections.length
+      ? connections.map(connection => {
+          const route = connection.flight_plan || connection.flightPlan || {};
+          const sector = [route.departure, route.arrival].filter(Boolean).join('→');
+          return [connection.network, connection.callsign, sector].filter(Boolean).join(' ');
+        }).join(' · ')
+      : (linked ? 'Réseaux liés · offline' : 'Réseaux non liés');
+    details.textContent = `${plane} · ${phase} · ${simulator} · ${networkText} · Hermès ${version} · signal ${age}s`;
 
     item.append(heading, details);
     list.append(item);
