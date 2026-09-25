@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Console\Commands\ConfigureFirstPartyClients;
 use App\Console\Commands\ImportPrometheeUsers;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
@@ -28,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->commands([
+                ConfigureFirstPartyClients::class,
                 ImportPrometheeUsers::class,
             ]);
         }
