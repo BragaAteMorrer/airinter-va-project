@@ -46,7 +46,9 @@ jobs:
         run: |
           node --check shared/minitel/runtime.js
           node --check shared/minitel/renderer.js
+          node --check shared/minitel/shell.js
           node shared/minitel/runtime.test.cjs
+          node shared/minitel/shell.test.cjs
       - name: Validate upstream maintenance tooling
         run: |
           python -m py_compile tools/phpvms_upstream_audit.py
