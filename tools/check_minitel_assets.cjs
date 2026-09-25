@@ -98,6 +98,37 @@ for (const [label, source] of [['Prométhée', client], ['Hermès', hermesClient
 
 const sharedShell = fs.readFileSync(path.join(root, 'shared', 'minitel', 'shell.js'), 'utf8');
 const sharedRuntime = fs.readFileSync(path.join(root, 'shared', 'minitel', 'runtime.js'), 'utf8');
+const sharedRuntimeCss = fs.readFileSync(path.join(root, 'shared', 'minitel', 'minitel-runtime.css'), 'utf8');
+const sharedShellCss = fs.readFileSync(path.join(root, 'shared', 'minitel', 'minitel-shell.css'), 'utf8');
+
+for (const contract of [
+  'aspect-ratio:32/25',
+  'container-type:size',
+  'font-size:clamp(10px,3.15cqh,30px)',
+  'grid-template-columns:repeat(40,minmax(0,1fr))'
+]) {
+  if (!sharedRuntimeCss.includes(contract)) {
+    failures += 1;
+    console.error('Missing responsive Minitel CRT contract:', contract);
+  }
+}
+for (const contract of [
+  '--mt-chassis-size:min(94vw,calc(100dvh - 92px),1040px)',
+  'aspect-ratio:1/1',
+  'max-width:100%',
+  'max-height:100%'
+]) {
+  if (!sharedShellCss.includes(contract)) {
+    failures += 1;
+    console.error('Missing responsive Minitel chassis contract:', contract);
+  }
+}
+for (const forbidden of ['aspect-ratio:40/25', 'width:min(100%,720px)', 'font-size:clamp(12px,2.1vw,24px)']) {
+  if (sharedRuntimeCss.includes(forbidden) || sharedShellCss.includes(forbidden)) {
+    failures += 1;
+    console.error('Legacy squashed Minitel layout returned:', forbidden);
+  }
+}
 for (const contract of ['__system_settings', 'AUTHENTIQUE  1200/75', 'MONOCHROME / LUMINANCE', 'writeAirInterMosaic']) {
   if (!sharedShell.includes(contract)) {
     failures += 1;
