@@ -58,10 +58,42 @@ let localSettings = { ...defaultSettings, ...savedSettings };
 
 const era = $('#era');
 const appearance = $('#appearance');
+const language = $('#language');
+const allowedLanguages = ['fr', 'en'];
 const allowedEras = ['modern', '2000'];
 const reservedEras = ['minitel'];
 const allowedAppearances = ['light', 'dark'];
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const hermesTranslations = {
+  fr: {
+    'nav.connect':'Connexion','nav.flight':'Mes opérations','nav.record':'Enregistrement','nav.map':'Suivi du vol',
+    'nav.journal':'Journal','nav.datalink':'Datalink','nav.network':'Air Inter Network','nav.review':'Flight Review','nav.settings':'Paramètres',
+    'display.language':'Langue','display.style':'Style','display.modern':'Moderne','display.2000':'Années 2000','display.appearance':'Apparence','display.light':'Clair','display.dark':'Nuit',
+    'header.direction':'DIRECTION DE L’EXPLOITATION AÉRIENNE','header.subtitle':'Le client ACARS officiel d’Air Inter VA.',
+    'auth.crew':'Accès équipage','auth.title':'Connexion pilote','auth.hint':'Identifiez-vous avec votre compte pilote Air Inter pour préparer et suivre votre vol.',
+    'auth.login':'Identifiant pilote ou e-mail','auth.password':'Mot de passe','auth.submit':'Se connecter à Air Inter'
+  },
+  en: {
+    'nav.connect':'Sign in','nav.flight':'My operations','nav.record':'Recording','nav.map':'Flight tracking',
+    'nav.journal':'Logbook','nav.datalink':'Datalink','nav.network':'Air Inter Network','nav.review':'Flight Review','nav.settings':'Settings',
+    'display.language':'Language','display.style':'Style','display.modern':'Modern','display.2000':'2000s','display.appearance':'Appearance','display.light':'Light','display.dark':'Night',
+    'header.direction':'FLIGHT OPERATIONS DEPARTMENT','header.subtitle':'The official Air Inter VA ACARS client.',
+    'auth.crew':'Crew access','auth.title':'Pilot sign in','auth.hint':'Sign in with your Air Inter pilot account to prepare and track your flight.',
+    'auth.login':'Pilot ID or email','auth.password':'Password','auth.submit':'Sign in to Air Inter'
+  }
+};
+
+function applyLanguage(value, persist = true) {
+  const nextLanguage = allowedLanguages.includes(value) ? value : 'fr';
+  document.documentElement.lang = nextLanguage;
+  if (language) language.value = nextLanguage;
+  document.querySelectorAll('[data-i18n]').forEach(node => {
+    const translated = hermesTranslations[nextLanguage]?.[node.dataset.i18n];
+    if (translated) node.textContent = translated;
+  });
+  if (persist) localStorage.hermesLanguage = nextLanguage;
+}
 
 function applyDisplay(eraValue, appearanceValue, persist = true) {
   const nextEra = allowedEras.includes(eraValue) ? eraValue : 'modern';
@@ -85,6 +117,9 @@ const storedAppearance = localStorage.hermesAppearance || (matchMedia('(prefers-
 applyDisplay(reservedEras.includes(storedEra) ? 'modern' : storedEra, storedAppearance, false);
 era.onchange = () => applyDisplay(era.value, document.body.dataset.appearance);
 appearance.onchange = () => applyDisplay(document.body.dataset.era, appearance.value);
+const storedLanguage = localStorage.hermesLanguage || 'fr';
+applyLanguage(storedLanguage, false);
+if (language) language.onchange = () => applyLanguage(language.value);
 Object.entries(localSettings).forEach(([key, value]) => {
   if (settingsForm.elements[key]) settingsForm.elements[key].value = value;
 });

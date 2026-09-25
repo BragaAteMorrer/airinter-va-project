@@ -2,7 +2,7 @@
 
 return [
     'administration' => 'Administration', 'dashboard' => 'Tableau de bord', 'operations' => 'Opérations',
-    'flight_schedule' => 'Programme des vols', 'acars' => 'ACARS Prométhée', 'calendar' => 'Calendrier',
+    'flight_schedule' => 'Programme des vols', 'acars' => 'Hermès (ACARS)', 'calendar' => 'Calendrier',
     'community' => 'La communauté', 'latest_pireps' => 'Derniers PIREPs', 'flight_safety' => 'Sécurité des vols',
     'public_home' => 'Accueil public', 'completed_flights' => 'Vols réalisés', 'language' => 'Langue',
     'display' => 'Écran', 'display_style' => "Style d'affichage", 'modern' => 'Moderne', 'year_2000' => 'Années 2000', 'minitel' => 'Minitel',
@@ -50,6 +50,7 @@ return [
         'time' => 'Temps', 'airport' => 'Aéroport', 'no_accepted_pireps' => 'Aucun PIREP accepté.',
     ],
     'navigation_welcome' => 'Bienvenue', 'navigation_pilot' => 'Espace pilote', 'navigation_company' => 'Compagnie', 'navigation_operations' => 'Opérations', 'navigation_private' => 'Privé',
+    'company_finances' => 'Finances des compagnies',
     'airlines' => 'Compagnies', 'fleet' => 'Flotte', 'maintenance' => 'Maintenance',
     'navigation_menu' => ['settings' => 'Paramètres', 'flight_map' => 'Carte des vols', 'reports' => 'Mes rapports', 'all_reports' => 'Tous les rapports', 'my_reports' => 'Mes rapports', 'bookings' => 'Mes réservations', 'downloads' => 'Téléchargements', 'live_flights' => 'Vols en temps réel'],
     'appearance' => 'Apparence', 'appearance_style' => 'Apparence colorimétrique', 'appearance_light' => 'Jour', 'appearance_dark' => 'Nuit',

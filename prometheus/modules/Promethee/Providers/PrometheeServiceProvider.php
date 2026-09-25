@@ -13,6 +13,7 @@ class PrometheeServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../Config/departure-board.php', 'departure-board');
+        $this->mergeConfigFrom(__DIR__.'/../Config/maintenance-warning.php', 'maintenance-warning');
         $this->mergeConfigFrom(__DIR__.'/../Config/acars.php', 'acars');
     }
 

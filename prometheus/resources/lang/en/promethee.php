@@ -5,7 +5,7 @@ return [
     'dashboard' => 'Dashboard',
     'operations' => 'Operations',
     'flight_schedule' => 'Flight schedule',
-    'acars' => 'Promethee ACARS',
+    'acars' => 'Hermes (ACARS)',
     'calendar' => 'Calendar',
     'community' => 'Community',
     'latest_pireps' => 'Latest PIREPs',
@@ -106,6 +106,7 @@ return [
         'time' => 'Time', 'airport' => 'Airport', 'no_accepted_pireps' => 'No accepted PIREP.',
     ],
     'navigation_welcome' => 'Welcome', 'navigation_pilot' => 'Pilot area', 'navigation_company' => 'Company', 'navigation_operations' => 'Operations', 'navigation_private' => 'Private',
+    'company_finances' => 'Company finances',
     'airlines' => 'Airlines', 'fleet' => 'Fleet', 'maintenance' => 'Maintenance',
     'navigation_menu' => ['settings' => 'Settings', 'flight_map' => 'Flight map', 'reports' => 'My reports', 'all_reports' => 'All reports', 'my_reports' => 'My reports', 'bookings' => 'My bookings', 'downloads' => 'Downloads', 'live_flights' => 'Live flights'],
 ];

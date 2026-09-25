@@ -102,6 +102,7 @@ public static class SimulatorSnapshotMapper
         BeaconLight: sample.BeaconLight, LandingLight: sample.LandingLight,
         EnginesRunning: [sample.Engine1Running, sample.Engine2Running, sample.Engine3Running, sample.Engine4Running],
         SlewActive: sample.SlewActive, SimulationRate: sample.SimulationRate,
+        PitchDegrees: sample.Pitch,
         BankDegrees: sample.Bank,
         TouchdownVerticalSpeedFeetPerMinute: sample.TouchdownVelocity * 60d,
         ThrustStable: sample.ThrustStable);

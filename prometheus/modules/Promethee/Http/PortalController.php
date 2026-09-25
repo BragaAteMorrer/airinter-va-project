@@ -92,8 +92,43 @@ class PortalController extends Controller
                 $term = trim((string) $r->query('q'));
                 $query->where(fn ($airlines) => $airlines->where('name', 'like', "%{$term}%")->orWhere('icao', 'like', "%{$term}%")->orWhere('iata', 'like', "%{$term}%"));
             })->orderBy('name')->get();
-        $airlines->each(fn (Airline $airline) => $airline->setAttribute('promethee_logo', $this->airlineLogoUrl($airline)));
+        $accessCounts = [];
+        $userService = app(UserService::class);
+        User::where('state', UserState::ACTIVE)->get()->each(function (User $pilot) use (&$accessCounts, $userService) {
+            try {
+                $airlineIds = $userService->getAllowableSubfleets($pilot)->pluck('airline_id')->filter()->unique();
+            } catch (\Throwable) {
+                $airlineIds = collect([$pilot->airline_id])->filter();
+            }
+            foreach ($airlineIds as $airlineId) $accessCounts[(int) $airlineId] = ($accessCounts[(int) $airlineId] ?? 0) + 1;
+        });
+        $airlines->each(function (Airline $airline) use ($accessCounts) {
+            $airline->setAttribute('promethee_logo', $this->airlineLogoUrl($airline));
+            $airline->setAttribute('eligible_users_count', $accessCounts[(int) $airline->id] ?? $airline->users_count);
+        });
         return $this->page('airlines', compact('airlines'));
+    }
+
+    public function finances(Request $r) {
+        $monthStart = now('Europe/Paris')->startOfMonth()->utc();
+        $airlines = Airline::where('active', 1)->with('journal')->orderBy('name')->get();
+
+        $financeRows = $airlines->map(function (Airline $airline) use ($monthStart) {
+            $journal = $airline->journal;
+            $credits = $journal ? (int) $journal->transactions()->where('post_date', '>=', $monthStart)->sum('credit') : 0;
+            $debits = $journal ? (int) $journal->transactions()->where('post_date', '>=', $monthStart)->sum('debit') : 0;
+
+            return [
+                'airline' => $airline,
+                'balance' => $journal ? $journal->getBalance() : new Money(0),
+                'credits' => new Money($credits),
+                'debits' => new Money($debits),
+                'net' => new Money($credits - $debits),
+                'transactions' => $journal ? $journal->transactions()->where('post_date', '>=', $monthStart)->count() : 0,
+            ];
+        });
+
+        return $this->page('finances', compact('financeRows'));
     }
 
     public function fleet(Request $r) {
@@ -133,7 +168,15 @@ class PortalController extends Controller
                     ->select($aircraftTable.'.*')->orderBy('fleet_sort_subfleets.name', $direction);
             }, fn ($query) => $query->orderBy($sortColumns[$sort], $direction))
             ->paginate(40)->withQueryString();
-        $aircraft->getCollection()->each(function (Aircraft $plane) {
+        $maintenanceByAircraft = DB::table('disposable_maintenance')
+            ->whereIn('aircraft_id', $aircraft->getCollection()->pluck('id'))
+            ->get()->keyBy('aircraft_id');
+        $aircraft->getCollection()->each(function (Aircraft $plane) use ($maintenanceByAircraft) {
+            $maintenance = $maintenanceByAircraft->get($plane->id);
+            $hours = collect([$maintenance?->rem_ta, $maintenance?->rem_tb, $maintenance?->rem_tc])->filter(fn ($value) => is_numeric($value));
+            $cycles = collect([$maintenance?->rem_ca, $maintenance?->rem_cb, $maintenance?->rem_cc])->filter(fn ($value) => is_numeric($value));
+            $plane->setAttribute('maintenance_hours_remaining', $hours->isNotEmpty() ? $hours->min() : null);
+            $plane->setAttribute('maintenance_cycles_remaining', $cycles->isNotEmpty() ? $cycles->min() : null);
             $plane->setAttribute('state_label', AircraftState::$labels[$plane->state] ?? 'Inconnu');
             $plane->setAttribute('status_label', __(AircraftStatus::$labels[$plane->status] ?? 'aircraft.status.active'));
             $plane->subfleet?->airline?->setAttribute('promethee_logo', $this->airlineLogoUrl($plane->subfleet->airline));
@@ -153,7 +196,38 @@ class PortalController extends Controller
                 $allowedSubfleetIds = app(UserService::class)->getAllowableSubfleets($r->user())->pluck('id');
                 $query->whereIn('aircraft.subfleet_id', $allowedSubfleetIds);
             })->orderBy('maintenance.curr_state')->paginate(40);
-        return $this->page('maintenance', compact('maintenance'));
+
+        $warningHours = (int) config('maintenance-warning.hours', 100);
+        $warningCycles = (int) config('maintenance-warning.cycles', 2);
+        $upcomingMaintenance = DB::table('disposable_maintenance as maintenance')
+            ->join('aircraft as aircraft', 'aircraft.id', '=', 'maintenance.aircraft_id')
+            ->leftJoin('subfleets as subfleets', 'subfleets.id', '=', 'aircraft.subfleet_id')
+            ->leftJoin('airlines as airlines', 'airlines.id', '=', 'subfleets.airline_id')
+            ->select(['maintenance.*', 'aircraft.registration', 'aircraft.icao', 'airlines.name as airline_name', 'airlines.icao as airline_icao'])
+            ->whereNull('maintenance.act_note')
+            ->where(function ($query) use ($warningHours, $warningCycles) {
+                $query->whereBetween('maintenance.rem_ta', [0, $warningHours])
+                    ->orWhereBetween('maintenance.rem_tb', [0, $warningHours])
+                    ->orWhereBetween('maintenance.rem_tc', [0, $warningHours])
+                    ->orWhereBetween('maintenance.rem_ca', [0, $warningCycles])
+                    ->orWhereBetween('maintenance.rem_cb', [0, $warningCycles])
+                    ->orWhereBetween('maintenance.rem_cc', [0, $warningCycles]);
+            })
+            ->when($r->user() && !$r->user()->ability('admin', 'admin-access') && (setting('pireps.restrict_aircraft_to_rank', false) || setting('pireps.restrict_aircraft_to_typerating', false)), function ($query) use ($r) {
+                $allowedSubfleetIds = app(UserService::class)->getAllowableSubfleets($r->user())->pluck('id');
+                $query->whereIn('aircraft.subfleet_id', $allowedSubfleetIds);
+            })
+            ->limit(12)->get()
+            ->sortBy(fn ($item) => min(array_filter([
+                is_numeric($item->rem_ta) ? (float) $item->rem_ta : INF,
+                is_numeric($item->rem_tb) ? (float) $item->rem_tb : INF,
+                is_numeric($item->rem_tc) ? (float) $item->rem_tc : INF,
+                is_numeric($item->rem_ca) ? (float) $item->rem_ca * 25 : INF,
+                is_numeric($item->rem_cb) ? (float) $item->rem_cb * 25 : INF,
+                is_numeric($item->rem_cc) ? (float) $item->rem_cc * 25 : INF,
+            ], fn ($value) => is_finite($value)) ?: [INF]))->values();
+
+        return $this->page('maintenance', compact('maintenance', 'upcomingMaintenance', 'warningHours', 'warningCycles'));
     }
 
     /** Operational record for one aircraft, including type-specific downloads. */
@@ -302,7 +376,7 @@ class PortalController extends Controller
                     $row->setAttribute('board_departure_at', $departure->setTimezone('Europe/Paris'));
                     $row->setAttribute('board_departure_time', $departure->setTimezone('Europe/Paris')->format('H:i'));
                     $row->setAttribute('board_arrival_time', $arrival?->setTimezone('Europe/Paris')->format('H:i') ?? '----');
-                    $row->setAttribute('board_departure_airport', $this->airportCode($flight->dpt_airport, $flight->dpt_airport_id));
+                    $row->setAttribute('board_departure_airport', $this->airportDestination($flight->dpt_airport, $flight->dpt_airport_id));
                     $row->setAttribute('board_destination', $this->airportDestination($flight->arr_airport, $flight->arr_airport_id));
                     $row->setAttribute('board_status', $this->boardStatus($pirep));
                     $row->setAttribute('board_logo_url', $this->airlineLogoUrl($flight->airline));
@@ -371,7 +445,7 @@ class PortalController extends Controller
                 })->filter(fn (Flight $flight) => $flight->next_departure_at !== null)
                 ->sortBy('next_departure_at')->take(10)->values(),
             'homeAirportId'=>$homeAirportId,
-            'recentPireps'=>Pirep::where('state',PirepState::ACCEPTED)->with(['airline','aircraft'])->orderByDesc('submitted_at')->limit(8)->get(),
+            'recentPireps'=>Pirep::where('state',PirepState::ACCEPTED)->with(['airline','aircraft','user'])->orderByDesc('submitted_at')->limit(8)->get(),
             'topRoutes'=>Pirep::select('dpt_airport_id','arr_airport_id',DB::raw('COUNT(*) as total'))
                 ->where('state',PirepState::ACCEPTED)->where('submitted_at','>=',$monthStart)
                 ->groupBy('dpt_airport_id','arr_airport_id')->orderByDesc('total')->limit(8)->get(),
@@ -494,6 +568,7 @@ class PortalController extends Controller
             'airlines' => Airline::where('active', true)->orderBy('name')->get(['id','name','icao']),
             'airports' => Airport::orderBy('icao')->get(['id','icao','name','location']),
             'countries' => Countries::getSelectList(),
+            'timezones' => \DateTimeZone::listIdentifiers(),
         ]);
     }
     public function updateProfile(Request $r) {
@@ -527,25 +602,12 @@ class PortalController extends Controller
      * Pilot passport. A country is stamped after an accepted flight touching
      * one of its airports; no editable or duplicate passport data is stored.
      */
-   public function passport(Request $r) {
-        $pilot = $r->user();
-        // Raw aggregates are not handled by Laravel's table-prefix grammar.
-        // Build the actual configured airport table name explicitly instead.
-        $airportCountry = DB::getTablePrefix().'airports.country';
-        $countries = DB::query()->fromSub(
-            Pirep::query()->selectRaw('dpt_airport_id as airport_id, submitted_at as stamped_at')
-                ->where('user_id', $pilot->id)->where('state', PirepState::ACCEPTED)
-                ->unionAll(Pirep::query()->selectRaw('arr_airport_id as airport_id, submitted_at as stamped_at')
-                    ->where('user_id', $pilot->id)->where('state', PirepState::ACCEPTED)),
-            'stamps'
-        )->join('airports', 'airports.id', '=', 'stamps.airport_id')
-            ->whereNotNull('airports.country')->where('airports.country', '!=', '')
-            // Do not qualify stamped_at here: phpVMS prefixes derived-table
-            // aliases (for example phpvms7_stamps), while raw SQL is not
-            // rewritten by Laravel's table-prefix grammar.
-            ->select('airports.country', DB::raw('MIN(stamped_at) as first_visit'), DB::raw('MAX(stamped_at) as last_visit'), DB::raw('COUNT(*) as legs'))
-            ->groupBy('airports.country')->orderBy('airports.country')->get();
 
+   public function passport(Request $r) {
+        $viewer = $r->user();
+
+        // Raw aggregates are not handled by Laravel's table-prefix grammar.
+        $airportCountry = DB::getTablePrefix().'airports.country';
         $ranking = DB::query()->fromSub(
             Pirep::query()->select('user_id', 'dpt_airport_id as airport_id')->where('state', PirepState::ACCEPTED)
                 ->unionAll(Pirep::query()->select('user_id', 'arr_airport_id as airport_id')->where('state', PirepState::ACCEPTED)),
@@ -556,8 +618,24 @@ class PortalController extends Controller
             ->select('users.id', 'users.name', 'users.pilot_id', DB::raw('COUNT(DISTINCT '.$airportCountry.') as countries'))
             ->groupBy('users.id', 'users.name', 'users.pilot_id')->orderByDesc('countries')->orderBy('users.pilot_id')->limit(20)->get();
 
+        $allowedPilotIds = $ranking->pluck('id')->map(fn ($id) => (int) $id)->push((int) $viewer->id)->unique();
+        $requestedPilotId = (int) $r->query('pilot', $viewer->id);
+        if (!$allowedPilotIds->contains($requestedPilotId)) $requestedPilotId = (int) $viewer->id;
+        $pilot = User::find($requestedPilotId) ?: $viewer;
+
+        $countries = DB::query()->fromSub(
+            Pirep::query()->selectRaw('dpt_airport_id as airport_id, submitted_at as stamped_at')
+                ->where('user_id', $pilot->id)->where('state', PirepState::ACCEPTED)
+                ->unionAll(Pirep::query()->selectRaw('arr_airport_id as airport_id, submitted_at as stamped_at')
+                    ->where('user_id', $pilot->id)->where('state', PirepState::ACCEPTED)),
+            'stamps'
+        )->join('airports', 'airports.id', '=', 'stamps.airport_id')
+            ->whereNotNull('airports.country')->where('airports.country', '!=', '')
+            ->select('airports.country', DB::raw('MIN(stamped_at) as first_visit'), DB::raw('MAX(stamped_at) as last_visit'), DB::raw('COUNT(*) as legs'))
+            ->groupBy('airports.country')->orderBy('airports.country')->get();
+
         abort_unless(DB::table('promethee_settings')->where('key','passport.enabled')->value('value') !== '0', 404);
-        return $this->page('passport', compact('pilot', 'countries', 'ranking'));
+        return $this->page('passport', compact('pilot', 'viewer', 'countries', 'ranking'));
    }
    /** The pilot's phpVMS bids projected as operational states. */
    public function bookings(Request $r) {
@@ -845,7 +923,12 @@ class PortalController extends Controller
             'basePrice'=>(float) (DB::table('promethee_settings')->where('key', 'jumpseat.base_price')->value('value') ?: 0.13),
             'discount'=>(float) setting('dbasic.jumpseat_discount', 0),
             'wallet'=>$journal->getBalance(),
-            'orders'=>DB::table('promethee_transfer_requests as request')->join('airports','airports.id','=','request.target_airport_id')->where('request.user_id',$pilot->id)->where('request.type','jumpseat')->select('request.*','airports.icao','airports.name as airport_name')->latest('request.created_at')->get()
+            'orders'=>DB::table('promethee_transfer_requests as request')
+                ->leftJoin('airports','airports.id','=','request.target_airport_id')
+                ->leftJoin('airlines','airlines.id','=','request.target_airline_id')
+                ->where('request.user_id',$pilot->id)->where('request.type','jumpseat')
+                ->select('request.*','airports.icao','airports.name as airport_name','airlines.icao as airline_icao','airlines.name as airline_name')
+                ->latest('request.created_at')->get()
         ]);
     }
     public function requestJumpseat(Request $r, FinanceService $finance) {
@@ -858,7 +941,7 @@ class PortalController extends Controller
             if (!$originId) return back()->withErrors(['jumpseat'=>'Votre aéroport actuel est introuvable.']);
             if ($originId === $airport->id) return back()->withErrors(['jumpseat'=>'Vous êtes déjà positionné à cet aéroport.']);
             $quote=$this->jumpseatQuote($user,$airport);
-            if ($r->boolean('preview')) return back()->with('success','Tarif du jumpseat : '.$quote['origin']->icao.' → '.$airport->icao.' · '.$quote['distance'].' NM · '.$quote['amount'].'.');
+            if ($r->boolean('preview')) return back()->withInput()->with('jumpseat_quote', $quote['origin']->icao.' → '.$airport->icao.' · '.$quote['distance'].' NM · '.$quote['amount']);
             if((int)$journal->getBalance()->getAmount() < (int)$quote['amount']->getAmount()) return back()->withErrors(['jumpseat'=>'Solde phpVMS insuffisant pour ce jumpseat ('.$quote['amount'].').']);
             $finance->debitFromJournal($journal,$quote['amount'],$user,'Jumpseat '.$quote['origin']->icao.' > '.$airport->icao,'jumpseat','jumpseat');
             if ($user->airline?->journal) $finance->creditToJournal($user->airline->journal,$quote['amount'],$user,'Jumpseat de '.$user->name.' ('.$quote['origin']->icao.' > '.$airport->icao.')','jumpseat','jumpseat');
@@ -870,8 +953,8 @@ class PortalController extends Controller
     public function requestTransfer(Request $r, FinanceService $finance) { $data=$r->validate(['type'=>'required|in:airline,hub,jumpseat','target_airline_id'=>'nullable|required_if:type,airline|required_if:type,jumpseat|exists:airlines,id','target_airport_id'=>'nullable|required_if:type,hub|exists:airports,id','reason'=>'nullable|string|max:2000']); if($data['type']==='jumpseat') return DB::transaction(function() use($data,$r,$finance) { $user=$r->user()->fresh('journal'); $price=(int)(DB::table('promethee_settings')->where('key','jumpseat.price')->value('value') ?: 2500); if((int)$user->journal->getBalance()->getAmount()<$price)return back()->withErrors(['transfer'=>'Solde phpVMS insuffisant pour le jumpseat.']); $airline=Airline::findOrFail($data['target_airline_id']); $finance->debitFromJournal($user->journal,new Money($price),$user,'Jumpseat : '.$airline->name,'jumpseat','jumpseat'); DB::table('promethee_transfer_requests')->insert(['user_id'=>$user->id,'type'=>'jumpseat','target_airline_id'=>$airline->id,'reason'=>$data['reason']??null,'status'=>'approved','decision_note'=>'Accord automatique après paiement.','decided_at'=>now(),'created_at'=>now(),'updated_at'=>now()]); return back()->with('success','Jumpseat accordé et débité de votre journal phpVMS.'); }); DB::table('promethee_transfer_requests')->insert(['user_id'=>$r->user()->id,'type'=>$data['type'],'target_airline_id'=>$data['target_airline_id']??null,'target_airport_id'=>$data['target_airport_id']??null,'reason'=>$data['reason']??null,'status'=>'pending','created_at'=>now(),'updated_at'=>now()]); return back()->with('success','Demande de transfert transmise au staff.'); }
     public function flights(Request $r) {
         $filters = $r->validate([
-            'departure'   => 'nullable|string|max:8',
-            'arrival'     => 'nullable|string|max:8',
+            'departure'   => 'nullable|string|max:80',
+            'arrival'     => 'nullable|string|max:80',
             'airline_id'  => 'nullable|integer|exists:airlines,id',
             'subfleet_id' => 'nullable|integer|exists:subfleets,id',
             'flight_type' => 'nullable|string|size:1',
@@ -883,9 +966,27 @@ class PortalController extends Controller
             'sort'        => 'nullable|in:departure,ident,distance',
         ]);
 
+        $resolveAirport = function (?string $value): ?string {
+            $value = trim((string) $value);
+            if ($value === '') return null;
+            $upper = strtoupper($value);
+            return Airport::query()
+                ->where(function ($airports) use ($value, $upper) {
+                    $airports->where('id', $upper)
+                        ->orWhere('icao', $upper)
+                        ->orWhere('iata', $upper)
+                        ->orWhere('name', 'like', '%'.$value.'%')
+                        ->orWhere('location', 'like', '%'.$value.'%');
+                })
+                ->orderByRaw('CASE WHEN id = ? OR icao = ? OR iata = ? THEN 0 ELSE 1 END', [$upper, $upper, $upper])
+                ->value('id');
+        };
+        $selectedDeparture = $resolveAirport($filters['departure'] ?? null);
+        $selectedArrival = $resolveAirport($filters['arrival'] ?? null);
+
         $q = Flight::where('active', true)->where('visible', true)->with(['airline', 'fares', 'dpt_airport', 'arr_airport', 'subfleets']);
-        if ($r->filled('departure')) $q->where('dpt_airport_id', strtoupper($filters['departure']));
-        if ($r->filled('arrival')) $q->where('arr_airport_id', strtoupper($filters['arrival']));
+        if ($r->filled('departure')) $selectedDeparture ? $q->where('dpt_airport_id', $selectedDeparture) : $q->whereRaw('1 = 0');
+        if ($r->filled('arrival')) $selectedArrival ? $q->where('arr_airport_id', $selectedArrival) : $q->whereRaw('1 = 0');
         if ($r->filled('airline_id')) $q->where('airline_id', $filters['airline_id']);
         if ($r->filled('subfleet_id')) $q->whereHas('subfleets', fn ($subfleets) => $subfleets->where('subfleets.id', $filters['subfleet_id']));
         if ($r->filled('flight_type')) $q->where('flight_type', $filters['flight_type']);
@@ -933,7 +1034,7 @@ class PortalController extends Controller
         ]);
         $mapByCode = $mapAirports->keyBy('code');
         $mapRoutes = collect();
-        if ($r->filled('departure') || $r->filled('arrival')) {
+        if ($selectedDeparture || $selectedArrival) {
             $mapRoutes = (clone $q)->reorder()->select('dpt_airport_id', 'arr_airport_id')->distinct()->limit(160)->get()
                 ->map(fn ($flight) => ['from' => $mapByCode->get($flight->dpt_airport_id), 'to' => $mapByCode->get($flight->arr_airport_id)])
                 ->filter(fn ($route) => $route['from'] && $route['to'])->values();
@@ -947,6 +1048,8 @@ class PortalController extends Controller
                 ->mapWithKeys(fn ($type) => [$type => FlightType::label($type)]),
             'mapAirports' => $mapAirports,
             'mapRoutes' => $mapRoutes,
+            'selectedDeparture' => $selectedDeparture,
+            'selectedArrival' => $selectedArrival,
         ]);
     }
     public function flight(string $id) {
@@ -1602,7 +1705,9 @@ class PortalController extends Controller
     public function safety(Request $r,BulletinService $service) {
         $month=$this->month($r);
         $saved=DB::table('promethee_bulletins')->where('month',$month)->first();
-        return $this->page('safety',['report'=>$saved ? json_decode($saved->report,true) : $service->build($month),'month'=>$month,'saved'=>$saved]);
+        $report=$saved ? json_decode($saved->report,true) : $service->build($month);
+        if (($report['version'] ?? 0) < SafetyAnalyzer::VERSION) $report=$service->build($month);
+        return $this->page('safety',['report'=>$report,'month'=>$month,'saved'=>$saved]);
     }
     public function generate(Request $r,BulletinService $service) {
         $d=$r->validate(['month'=>'required|date_format:Y-m']);

@@ -7,13 +7,13 @@
         <h1>{{ $flight->ident }}</h1>
         <p>{{ $flight->dpt_airport_id }} → {{ $flight->arr_airport_id }} · {{ $flight->flight_type }}</p>
     </div>
-    <div class="toolbar">@if($reservation)<span class="tag">Vol déjà réservé</span>@else<form method="post" action="{{ route('promethee.flights.reserve',$flight->id) }}">@csrf<button class="button">Réserver ce vol</button></form>@endif<a class="button outline" href="{{ route('promethee.flights.briefing',$flight->id) }}">Préparer le vol</a><a class="button" href="{{ route('promethee.acars') }}">Ouvrir ACARS ↗</a></div>
+    <div class="toolbar"><a class="button outline" href="{{ route('promethee.flights') }}">← Retour au programme</a>@if($reservation)<span class="tag">Vol déjà réservé</span>@else<form method="post" action="{{ route('promethee.flights.reserve',$flight->id) }}">@csrf<button class="button">Réserver ce vol</button></form>@endif<a class="button outline" href="{{ route('promethee.flights.briefing',$flight->id) }}">Préparer le vol</a><a class="button" href="{{ route('promethee.acars') }}">Ouvrir ACARS ↗</a></div>
 </div>
 
 <section class="control-strip">
     <article><span>Départ publié</span><strong>{{ $flight->dpt_time ?: '—' }}</strong><small>{{ $flight->dpt_airport?->name }}</small></article>
     <article><span>Arrivée publiée</span><strong>{{ $flight->arr_time ?: '—' }}</strong><small>{{ $flight->arr_airport?->name }}</small></article>
-    <article><span>Remplissage</span><strong>{{ $flight->load_factor ?? setting('flights.default_load_factor') }}%</strong><small>Facteur phpVMS</small></article>
+    <article><span>Remplissage</span><strong>{{ $flight->load_factor ?? setting('flights.default_load_factor') }}%</strong><small>Facteur Hermès</small></article>
     <article><span>PIREP acceptés</span><strong>{{ $stats['pireps'] }}</strong><small>Sur cette ligne</small></article>
     <article><span>Niveau</span><strong>{{ $flight->level ?: '—' }}</strong><small>Planifié</small></article>
 </section>

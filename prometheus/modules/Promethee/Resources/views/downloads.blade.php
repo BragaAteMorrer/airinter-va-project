@@ -36,7 +36,7 @@
         <a class="button outline" href="{{ route('promethee.downloads.category',$key) }}">Voir la catégorie ↗</a>
     </div>
     <div class="route-list">
-        @forelse($entries->take(3) as $file)
+        @forelse($entries as $file)
         @php
             $extension = strtoupper(pathinfo(parse_url((string) $file->path, PHP_URL_PATH) ?: '', PATHINFO_EXTENSION));
             $updated = $file->updated_at ?: $file->created_at;

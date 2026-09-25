@@ -11,22 +11,22 @@
   <aside class="rail">
     <div class="brand"><img class="brand-logo" src="/air-inter-va-hermes.png" alt="Hermès — Air Inter VA"><span>ACARS · OPÉRATIONS</span><strong>Hermès</strong></div>
     <nav aria-label="Navigation ACARS">
-      <button class="tab active" data-tab="connect">Connexion</button>
-      <button class="tab protected-tab" data-tab="flight" disabled>Mes opérations</button>
-      <button class="tab protected-tab" data-tab="record" disabled>Enregistrement</button>
-      <button class="tab protected-tab" data-tab="map" disabled>Suivi du vol</button>
-      <button class="tab protected-tab" data-tab="journal" disabled>Journal</button>
-      <button class="tab protected-tab datalink-tab" data-tab="datalink" disabled>Datalink <span id="datalinkBadge" class="nav-badge" hidden>0</span></button>
-      <button class="tab protected-tab" data-tab="network" disabled>Air Inter Network <span id="networkBadge" class="nav-badge" hidden>0</span></button>
-      <button class="tab protected-tab" data-tab="review" disabled>Flight Review</button>
-      <button class="tab protected-tab" data-tab="settings" disabled>Paramètres</button>
+      <button class="tab active" data-tab="connect"><span data-i18n="nav.connect">Connexion</span></button>
+      <button class="tab protected-tab" data-tab="flight" disabled><span data-i18n="nav.flight">Mes opérations</span></button>
+      <button class="tab protected-tab" data-tab="record" disabled><span data-i18n="nav.record">Enregistrement</span></button>
+      <button class="tab protected-tab" data-tab="map" disabled><span data-i18n="nav.map">Suivi du vol</span></button>
+      <button class="tab protected-tab" data-tab="journal" disabled><span data-i18n="nav.journal">Journal</span></button>
+      <button class="tab protected-tab datalink-tab" data-tab="datalink" disabled><span data-i18n="nav.datalink">Datalink</span> <span id="datalinkBadge" class="nav-badge" hidden>0</span></button>
+      <button class="tab protected-tab" data-tab="network" disabled><span data-i18n="nav.network">Air Inter Network</span> <span id="networkBadge" class="nav-badge" hidden>0</span></button>
+      <button class="tab protected-tab" data-tab="review" disabled><span data-i18n="nav.review">Flight Review</span></button>
+      <button class="tab protected-tab" data-tab="settings" disabled><span data-i18n="nav.settings">Paramètres</span></button>
     </nav>
-    <div class="display-controls" aria-label="Affichage Hermès"><label class="theme">Style<select id="era"><option value="modern">Moderne</option><option value="2000">Années 2000</option></select></label><label class="theme">Apparence<select id="appearance"><option value="light">Clair</option><option value="dark">Nuit</option></select></label></div>
+    <div class="display-controls" aria-label="Affichage Hermès"><label class="theme"><span data-i18n="display.language">Langue</span><select id="language"><option value="fr">Français</option><option value="en">English</option></select></label><label class="theme"><span data-i18n="display.style">Style</span><select id="era"><option value="modern" data-i18n="display.modern">Moderne</option><option value="2000" data-i18n="display.2000">Années 2000</option></select></label><label class="theme"><span data-i18n="display.appearance">Apparence</span><select id="appearance"><option value="light" data-i18n="display.light">Clair</option><option value="dark" data-i18n="display.dark">Nuit</option></select></label></div>
     <small id="build"></small>
   </aside>
   <main>
     <header>
-      <div><p class="kicker">DIRECTION DE L’EXPLOITATION AÉRIENNE</p><h1>Hermès</h1><p class="header-subtitle">Le client ACARS officiel d’Air Inter VA.</p></div>
+      <div><p class="kicker" data-i18n="header.direction">DIRECTION DE L’EXPLOITATION AÉRIENNE</p><h1>Hermès</h1><p class="header-subtitle" data-i18n="header.subtitle">Le client ACARS officiel d’Air Inter VA.</p></div>
       <div class="header-status">
         <div class="pilot-state"><span id="serverState">Identité pilote à venir</span><span id="simState">Simulateur non détecté</span></div>
         <div class="ops-status" aria-label="État opérationnel Hermès">
@@ -62,11 +62,11 @@
       <p id="recoveryMessage" class="message" hidden role="status"></p>
     </section>
     <section id="connect" class="panel active auth-panel">
-      <div class="auth-mark"><span>AIR INTER VA</span><strong>Accès équipage</strong></div><h2>Connexion pilote</h2><p class="hint">Identifiez-vous avec votre compte pilote Air Inter pour préparer et suivre votre vol.</p>
+      <div class="auth-mark"><span>AIR INTER VA</span><strong data-i18n="auth.crew">Accès équipage</strong></div><h2 data-i18n="auth.title">Connexion pilote</h2><p class="hint" data-i18n="auth.hint">Identifiez-vous avec votre compte pilote Air Inter pour préparer et suivre votre vol.</p>
       <form id="loginForm" class="login-form">
-        <label>Identifiant pilote ou e-mail<input name="login" autocomplete="username" required></label>
-        <label>Mot de passe<input name="password" type="password" autocomplete="current-password" required></label>
-        <button class="primary">Se connecter à Air Inter</button>
+        <label><span data-i18n="auth.login">Identifiant pilote ou e-mail</span><input name="login" autocomplete="username" required></label>
+        <label><span data-i18n="auth.password">Mot de passe</span><input name="password" type="password" autocomplete="current-password" required></label>
+        <button class="primary"><span data-i18n="auth.submit">Se connecter à Air Inter</span></button>
       </form>
       <p id="loginMessage" class="message" hidden role="status"></p>
     </section>

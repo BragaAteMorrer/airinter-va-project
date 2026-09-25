@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 230" role="img" aria-labelledby="title">
+  <title>Air Inter Prométhée</title>
+  <rect width="620" height="230" rx="16" fill="#fff"/>
+  <g font-family="Arial, Helvetica, sans-serif" font-style="italic" font-weight="900">
+    <text x="34" y="70" fill="#1264b4" font-size="60" letter-spacing="-4">AIR</text>
+    <text x="192" y="70" fill="#e7273a" font-size="60" letter-spacing="-4">INTER</text>
+  </g>
+  <rect x="0" y="96" width="620" height="69" fill="#075b9d"/>
+  <rect x="0" y="165" width="620" height="24" fill="#078fc2"/>
+  <text x="30" y="151" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-style="italic" font-weight="900" font-size="65" letter-spacing="-4">PROMÉTHÉE</text>
+  <path d="M22 202h124l-17 9H40z" fill="#e7273a"/>
+  <path d="M147 202h124l-17 9h-90z" fill="#1264b4"/>
+  <path d="M272 202h124l-17 9h-90z" fill="#f2c14e"/>
+</svg>
