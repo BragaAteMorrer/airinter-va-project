@@ -188,10 +188,15 @@ class SimBriefOperationResolver
 
     public function publicView(array $resolved): array
     {
+        $checks = collect($resolved['checks']);
+        $accountChecks = $checks->reject(fn ($check) => ($check['code'] ?? null) === 'COMPANY_API');
+
         return [
             'contract_version' => '1.0',
             'operation_id' => $resolved['operation_id'],
-            'ready' => collect($resolved['checks'])->every(fn ($check) => $check['ready']),
+            'ready' => $checks->every(fn ($check) => $check['ready']),
+            'ready_company_api' => $checks->every(fn ($check) => $check['ready']),
+            'ready_account' => $accountChecks->every(fn ($check) => $check['ready']),
             'flight' => $resolved['flight'],
             'airline' => $resolved['airline'],
             'origin' => $resolved['origin'],
