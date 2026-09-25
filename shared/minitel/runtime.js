@@ -10,6 +10,7 @@
   const SERVICE_ROW = 0;
   const MOSAIC_COLUMNS = 2;
   const MOSAIC_ROWS = 3;
+  const MAX_INPUT_LENGTH = 2048;
 
   const DISPLAY_MODES = Object.freeze({
     color: 'color',
@@ -173,7 +174,7 @@
 
   class MinitelInputBuffer {
     constructor(maxLength = WIDTH) {
-      this.maxLength = clamp(Number(maxLength) || WIDTH, 1, WIDTH);
+      this.maxLength = clamp(Number(maxLength) || WIDTH, 1, MAX_INPUT_LENGTH);
       this.value = '';
     }
 
@@ -373,12 +374,20 @@
     return Object.keys(DEFAULT_ATTRS).every((key) => left[key] === right[key]);
   }
 
-  function transmissionOperations(snapshot, previousSnapshot = null) {
+  function isDefaultBlank(cell) {
+    return Boolean(cell)
+      && cell.character === ' '
+      && Object.keys(DEFAULT_ATTRS).every((key) => cell.attrs[key] === DEFAULT_ATTRS[key]);
+  }
+
+  function transmissionOperations(snapshot, previousSnapshot = null, options = {}) {
     const operations = [];
+    const skipDefaultBlank = Boolean(options.skipDefaultBlank);
     for (let row = 0; row < HEIGHT; row += 1) {
       for (let column = 0; column < WIDTH; column += 1) {
         const cell = snapshot.cells[row][column];
         const previous = previousSnapshot?.cells?.[row]?.[column];
+        if (!previous && skipDefaultBlank && isDefaultBlank(cell)) continue;
         if (!previous || previous.character !== cell.character || !sameAttrs(previous.attrs, cell.attrs)) {
           operations.push(Object.freeze({ row, column, cell }));
         }
@@ -415,6 +424,7 @@
     SERVICE_ROW,
     MOSAIC_COLUMNS,
     MOSAIC_ROWS,
+    MAX_INPUT_LENGTH,
     DISPLAY_MODES,
     ACTIONS,
     SPEEDS,
@@ -427,6 +437,7 @@
     mapKeyboardEvent,
     normalizeMosaicMask,
     mosaicBits,
+    isDefaultBlank,
     transmissionOperations,
     transmissionDelay,
     minitelCapability
