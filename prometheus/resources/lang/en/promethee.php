@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'dispatch_desk' => 'Dispatch Desk',
+    'dispatch_desk' => 'Dispatch desk',
     'admin_pilots' => 'Pilot management',
     'admin_ranks' => 'Rank management',
     'administration' => 'Administration',
