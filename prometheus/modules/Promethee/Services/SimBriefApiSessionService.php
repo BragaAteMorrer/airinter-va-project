@@ -16,8 +16,14 @@ class SimBriefApiSessionService
 {
     private const TTL_MINUTES = 30;
 
-    public function create(int $userId, string $operationId, string $flightId, string $aircraftId, string $staticId): array
-    {
+    public function create(
+        int $userId,
+        string $operationId,
+        string $flightId,
+        string $aircraftId,
+        string $staticId,
+        ?string $expectedOfpId = null
+    ): array {
         $state = Str::random(64);
         $session = [
             'state' => $state,
@@ -26,7 +32,10 @@ class SimBriefApiSessionService
             'flight_id' => $flightId,
             'aircraft_id' => $aircraftId,
             'static_id' => $staticId,
-            'ofp_id' => null,
+            // SimBrief API v1 uses a deterministic OFP identifier:
+            // timestamp + "_" + first 10 chars of MD5(orig + dest + type).
+            // It is known before generation and must not depend on a callback.
+            'ofp_id' => $expectedOfpId,
             'created_at' => now()->toIso8601String(),
             'completed_at' => null,
         ];
