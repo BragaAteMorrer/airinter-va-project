@@ -20,7 +20,7 @@ class UserRegistered extends Notification implements ShouldQueue
         parent::__construct();
 
         $this->setMailable(
-            'Welcome to '.config('app.name').'!',
+            'Air Inter · Votre accès pilote est ouvert',
             'notifications.mail.user.registered',
             ['user' => $this->user]
         );
