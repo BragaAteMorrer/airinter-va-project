@@ -12,7 +12,9 @@ use Modules\Promethee\Console\CheckPrometheeTranslations;
 use Modules\Promethee\Console\CheckTranslations;
 use Modules\Promethee\Console\LocalUserCommand;
 use Modules\Promethee\Console\RecalculateProgressionCommand;
+use Modules\Promethee\Console\SyncRegionalOperationsCommand;
 use Modules\Promethee\Listeners\ProgressionEventListener;
+use Modules\Promethee\Listeners\RegionalOperationsEventListener;
 
 class PrometheeServiceProvider extends ServiceProvider
 {
@@ -30,13 +32,15 @@ class PrometheeServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__.'/../Database/migrations');
         $this->loadRoutesFrom(__DIR__.'/../routes.php');
         Event::listen(PirepAccepted::class, [ProgressionEventListener::class, 'onPirepAccepted']);
+        Event::listen(PirepAccepted::class, [RegionalOperationsEventListener::class, 'onPirepAccepted']);
         Event::listen(UserStatsChanged::class, [ProgressionEventListener::class, 'onUserStatsChanged']);
         if ($this->app->runningInConsole()) {
-            $this->commands([BulletinCommand::class, CheckPrometheeTranslations::class, CheckTranslations::class, LocalUserCommand::class, RecalculateProgressionCommand::class]);
+            $this->commands([BulletinCommand::class, CheckPrometheeTranslations::class, CheckTranslations::class, LocalUserCommand::class, RecalculateProgressionCommand::class, SyncRegionalOperationsCommand::class]);
         }
         $this->app->afterResolving(Schedule::class, function (Schedule $schedule) {
             $schedule->command('promethee:bulletin')->monthlyOn(1, '06:00')->timezone('Europe/Paris')->withoutOverlapping();
             $schedule->command('promethee:progression-recalculate')->everyFiveMinutes()->withoutOverlapping();
+            $schedule->command('promethee:regional-operations-sync')->hourly()->withoutOverlapping();
         });
     }
     public function registerLinks(): void

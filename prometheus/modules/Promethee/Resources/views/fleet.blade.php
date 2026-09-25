@@ -92,9 +92,7 @@
                         </a>
                     </th>
                     <th>
-                        <a href="{{ $fleetSortUrl('hub') }}">
-                            Base{{ $sortIndicator('hub') }}
-                        </a>
+                        Base opérationnelle
                     </th>
                     <th>
                         <a href="{{ $fleetSortUrl('airport') }}">
@@ -148,7 +146,13 @@
 
                         <td>{{ $plane->icao ?: '—' }}</td>
                         <td>{{ $plane->subfleet?->name ?: '—' }}</td>
-                        <td>{{ $plane->hub_id ?: '—' }}</td>
+                        <td>
+                            <strong>{{ $plane->operational_base_id }}</strong>
+                            <small>{{ $plane->operational_base_kind === 'hub' ? 'Hub principal' : 'Plateforme régionale' }}</small>
+                            @if($plane->away_since)
+                                <br><span class="tag">Hors base {{ \Carbon\Carbon::parse($plane->away_since)->locale('fr')->diffForHumans() }}</span>
+                            @endif
+                        </td>
                         <td>{{ $plane->airport?->icao ?: $plane->airport_id ?: '—' }}</td>
 
                         <td>

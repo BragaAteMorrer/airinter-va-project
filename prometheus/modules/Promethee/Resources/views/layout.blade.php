@@ -93,7 +93,6 @@ window.prometheeI18n = @json($prometheeI18n);
             ['route' => 'promethee.public.pireps.mine', 'label' => 'navigation_menu.my_reports', 'active' => 'promethee.public.pireps.mine', 'emphasis' => true],
             ['route' => 'promethee.public.pireps', 'label' => 'navigation_menu.all_reports', 'active' => 'promethee.public.pireps|promethee.pireps.*'],
             ['route' => 'promethee.shop', 'label' => 'shop', 'active' => 'promethee.shop*'],
-            ['route' => 'promethee.transfers', 'label' => 'transfers', 'active' => 'promethee.transfers*'],
             ['route' => 'promethee.jumpseat', 'label' => 'jumpseat', 'active' => 'promethee.jumpseat*'],
             ['route' => 'promethee.acars', 'label' => 'acars', 'active' => 'promethee.acars'],
         ],
