@@ -1,0 +1,14 @@
+/vendor
+/node_modules
+/public/hot
+/public/storage
+/storage/*.key
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
+.env
+.phpunit.result.cache
+auth.json
+npm-debug.log
+yarn-error.log

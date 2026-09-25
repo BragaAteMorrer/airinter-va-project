@@ -1,0 +1,53 @@
+name: Air Inter ID
+
+on:
+  pull_request:
+    paths:
+      - 'airinter-id/**'
+      - '.github/workflows/airinter-id.yml'
+  push:
+    branches:
+      - master
+      - 'feature/**'
+      - 'chore/**'
+    paths:
+      - 'airinter-id/**'
+      - '.github/workflows/airinter-id.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  identity:
+    name: Laravel identity service
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: airinter-id
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_sqlite, openssl
+          coverage: none
+      - name: Validate Composer manifest
+        run: composer validate --strict --no-check-publish
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+      - name: Check PHP syntax
+        run: find app config database routes tests -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Verify Laravel boot and routes
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          php artisan vendor:publish --tag=passport-migrations --force
+          touch database/database.sqlite
+          DB_CONNECTION=sqlite DB_DATABASE=database/database.sqlite php artisan migrate --force
+          php artisan passport:keys --force
+          DB_CONNECTION=sqlite DB_DATABASE=database/database.sqlite php artisan airinter-id:configure-clients
+          php artisan about
+          php artisan route:list
+      - name: Run tests
+        run: php artisan test
