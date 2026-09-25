@@ -2135,7 +2135,11 @@ class PortalController extends Controller
         $bases = DB::table('promethee_operational_bases as base')
             ->leftJoin('airports', 'airports.id', '=', 'base.airport_id')
             ->select('base.*', 'airports.name as airport_name')
-            ->orderByRaw("CASE WHEN base.kind = 'hub' THEN 0 ELSE 1 END")
+            // Keep this prefix-aware: phpVMS prefixes table aliases as well
+            // (e.g. "base" becomes "phpvms7_base"), while raw SQL does not.
+            // The only supported kinds are "hub" and "regional", so the
+            // query builder can safely sort the wrapped alias directly.
+            ->orderBy('base.kind')
             ->orderBy('base.airport_id')->get();
         $aircraft = Aircraft::with('subfleet.airline')->orderBy('registration')->get();
         $assignments = DB::table('promethee_aircraft_bases')->get()->keyBy('aircraft_id');
