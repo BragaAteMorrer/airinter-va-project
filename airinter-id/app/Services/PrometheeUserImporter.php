@@ -15,7 +15,6 @@ class PrometheeUserImporter
 
         DB::connection('promethee')
             ->table('users')
-            ->whereNull('deleted_at')
             ->orderBy('id')
             ->chunkById(200, function ($rows) use (&$stats, $syncPasswords, $progress) {
                 foreach ($rows as $legacy) {
@@ -37,15 +36,17 @@ class PrometheeUserImporter
                             $created = true;
                         }
 
-                        $state = match ((int) $legacy->state) {
-                            0 => 'pending',
-                            1 => 'active',
-                            2 => 'rejected',
-                            3 => 'on_leave',
-                            4 => 'suspended',
-                            5 => 'deleted',
-                            default => 'suspended',
-                        };
+                        $state = $legacy->deleted_at !== null
+                            ? 'deleted'
+                            : match ((int) $legacy->state) {
+                                0 => 'pending',
+                                1 => 'active',
+                                2 => 'rejected',
+                                3 => 'on_leave',
+                                4 => 'suspended',
+                                5 => 'deleted',
+                                default => 'suspended',
+                            };
 
                         $user->display_name = (string) $legacy->name;
                         $user->preferred_locale ??= 'fr';
@@ -61,25 +62,27 @@ class PrometheeUserImporter
 
                         $user->save();
 
-                        $identity = LegacyIdentity::updateOrCreate(
-                            [
-                                'provider' => 'promethee',
-                                'external_user_id' => (string) $legacy->id,
+                        $identity = LegacyIdentity::firstOrNew([
+                            'provider' => 'promethee',
+                            'external_user_id' => (string) $legacy->id,
+                        ]);
+                        $identity->fill([
+                            'user_id' => $user->id,
+                            'external_email' => $email,
+                            'external_ident' => $this->legacyIdent($legacy),
+                            'metadata' => [
+                                'pilot_id' => (int) ($legacy->pilot_id ?? 0),
+                                'airline_id' => (int) ($legacy->airline_id ?? 0),
+                                'rank_id' => $legacy->rank_id === null ? null : (int) $legacy->rank_id,
+                                'legacy_state' => (int) $legacy->state,
+                                'legacy_deleted_at' => $legacy->deleted_at,
                             ],
-                            [
-                                'user_id' => $user->id,
-                                'external_email' => $email,
-                                'external_ident' => $this->legacyIdent($legacy),
-                                'metadata' => [
-                                    'pilot_id' => (int) ($legacy->pilot_id ?? 0),
-                                    'airline_id' => (int) ($legacy->airline_id ?? 0),
-                                    'rank_id' => $legacy->rank_id === null ? null : (int) $legacy->rank_id,
-                                    'legacy_state' => (int) $legacy->state,
-                                ],
-                                'linked_at' => now(),
-                                'last_synced_at' => now(),
-                            ],
-                        );
+                            'last_synced_at' => now(),
+                        ]);
+                        if (!$identity->exists) {
+                            $identity->linked_at = now();
+                        }
+                        $identity->save();
 
                         $stats[$created ? 'created' : 'updated']++;
                         if ($identity->wasRecentlyCreated) {
