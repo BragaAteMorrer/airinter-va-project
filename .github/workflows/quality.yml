@@ -48,6 +48,7 @@ jobs:
           node --check shared/minitel/renderer.js
           node --check shared/minitel/shell.js
           node --check prometheus/public/promethee-assets/promethee-minitel.js
+          node --check prometheus/public/promethee-assets/login.js
           node --check acars/wwwroot/hermes-minitel-core.js
           node --check acars/wwwroot/hermes-minitel.js
           node shared/minitel/runtime.test.cjs
