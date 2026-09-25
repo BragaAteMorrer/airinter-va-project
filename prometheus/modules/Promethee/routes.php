@@ -11,6 +11,7 @@ use Modules\Promethee\Http\SimBriefCallbackController;
 use Modules\Promethee\Http\DatalinkController;
 use Modules\Promethee\Http\SopController;
 use Modules\Promethee\Http\PresenceController;
+use Modules\Promethee\Http\DispatchDeskController;
 use App\Http\Controllers\Api\AcarsSimBriefController;
 
 // Browsers request this conventional path even though the branded icon lives
@@ -124,6 +125,9 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::post('/seasons/import', [PortalController::class,'importSchedule'])->name('seasons.import');
         Route::post('/safety', [PortalController::class,'generate'])->name('safety.generate');
         Route::get('/network', [PortalController::class,'network'])->name('network');
+        Route::get('/dispatch', [DispatchDeskController::class, 'index'])->name('dispatch');
+        Route::get('/dispatch/feed', [DispatchDeskController::class, 'feed'])->name('dispatch.feed');
+        Route::get('/dispatch/operations/{operation}', [DispatchDeskController::class, 'operation'])->name('dispatch.operation');
         Route::get('/network/presence', [PresenceController::class,'index'])->name('network.presence');
         Route::get('/health', [PortalController::class,'health'])->name('health');
         Route::redirect('/catalogue', '/catalogue/flights')->name('catalogue');
