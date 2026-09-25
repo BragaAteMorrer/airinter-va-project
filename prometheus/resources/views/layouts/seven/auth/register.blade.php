@@ -132,7 +132,21 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       new TomSelect('#country');
-      new TomSelect('#timezone', { searchField: ['text', 'value'] });
+
+      const timezoneSelect = document.getElementById('timezone');
+      const browserTimezone = (() => {
+        try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; }
+        catch (_) { return ''; }
+      })();
+      if (!@json((bool) old('timezone')) && browserTimezone
+          && Array.from(timezoneSelect.options).some(option => option.value === browserTimezone)) {
+        timezoneSelect.value = browserTimezone;
+      }
+      new TomSelect('#timezone', {
+        searchField: ['text', 'value'],
+        placeholder: 'Europe/Paris'
+      });
+
       const toc = document.getElementById('toc_accepted');
       const submit = document.getElementById('register_button');
       const sync = () => submit.disabled = !toc.checked;
