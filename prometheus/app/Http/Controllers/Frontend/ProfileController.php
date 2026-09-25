@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Frontend;
 use App\Contracts\Controller;
 use App\Events\ProfileUpdated;
 use App\Models\User;
+use App\Models\Airline;
 use App\Models\UserField;
 use App\Models\UserFieldValue;
 use App\Models\Pirep;
@@ -122,8 +123,13 @@ class ProfileController extends Controller
             $airports = ['' => ''];
         }
 
-        $airlines = $this->airlineRepo->selectBoxList();
+        $airInter = Airline::query()
+            ->whereRaw('UPPER(icao) = ?', ['ITF'])
+            ->where('active', true)
+            ->firstOrFail();
+        $airlines = [$airInter->id => trim('Air Inter · '.($airInter->icao ?: 'ITF'))];
         $userFields = $this->userRepo->getUserFields($user);
+        $onlineNetworks = app(\Modules\Promethee\Services\AirInterNetworkService::class)->pilot($user);
 
         return view('profile.edit', [
             'user'       => $user,
@@ -133,6 +139,7 @@ class ProfileController extends Controller
             'countries'  => Countries::getSelectList(),
             'timezones'  => Timezonelist::toArray(),
             'userFields' => $userFields,
+            'onlineNetworks' => $onlineNetworks,
         ]);
     }
 
@@ -171,6 +178,21 @@ class ProfileController extends Controller
         }
 
         $req_data = $request->all();
+
+        // Air Inter is the mandatory operating company. Network identities
+        // are OAuth-owned and must never be editable as free text.
+        $airInter = Airline::query()
+            ->whereRaw('UPPER(icao) = ?', ['ITF'])
+            ->where('active', true)
+            ->firstOrFail();
+        $req_data['airline_id'] = $airInter->id;
+        unset($req_data['vatsim_id'], $req_data['ivao_id']);
+
+        $timezone = trim((string) ($req_data['timezone'] ?? ''));
+        $req_data['timezone'] = in_array($timezone, timezone_identifiers_list(), true)
+            ? $timezone
+            : 'Europe/Paris';
+
         if (!$request->filled('password')) {
             unset($req_data['password']);
         } else {
