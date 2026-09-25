@@ -4,6 +4,8 @@ Standalone identity and SSO service for the Air Inter VA ecosystem.
 
 **Production target:** `https://id.airinter-va.org`
 
+Runbook cPanel : [`docs/maintenance/AIR_INTER_ID_CPANEL.md`](../docs/maintenance/AIR_INTER_ID_CPANEL.md)
+
 Air Inter ID is deliberately separate from phpVMS/Prométhée. It owns authentication and security identity; Prométhée remains the source of truth for operational pilot data.
 
 ## Responsibilities
