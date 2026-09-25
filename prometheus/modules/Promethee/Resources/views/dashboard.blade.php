@@ -3,7 +3,7 @@
 @section('content')
 <div class="ops-header">
     <div>
-        <span class="eyebrow">{{ __('promethee.dashboard_page.eyebrow') }}</span>
+        <span class="eyebrow occ-title">OPERATION CONTROL CENTER<br><small>CENTRE DES OPÉRATIONS AÉRIENNES</small></span>
         <h1>{{ __('promethee.dashboard_page.heading') }}</h1>
         <p>{{ __('promethee.dashboard_page.intro') }}</p>
     </div>
@@ -53,7 +53,7 @@
                         @if($flight['logo_url'])<img src="{{ $flight['logo_url'] }}" alt="{{ $flight['airline_code'] }}">@else<span class="airline-logo-fallback" data-flap-width="4">{{ $flight['airline_code'] }}</span>@endif
                     </span>
                     <a class="board-cell flight-cell flight-ident" href="{{ $flight['url'] }}" data-flap-width="9">{{ $flight['flight'] }}</a>
-                    <span class="board-cell departure-cell" data-flap-width="4">{{ $flight['departure'] }}</span>
+                    <span class="board-cell departure-cell" data-flap-width="24">{{ $flight['departure'] }}</span>
                     <time class="board-cell departure-time-cell" data-flap-width="5">{{ $flight['departure_time'] }}</time>
                     <span class="board-cell destination-cell destination" data-flap-width="28">{{ $flight['destination'] }}</span>
                     <time class="board-cell arrival-time-cell" data-flap-width="5">{{ $flight['arrival_time'] }}</time>
@@ -70,7 +70,7 @@
         <span class="eyebrow">{{ __('promethee.dashboard_page.control_post') }}</span>
         <h2>{{ __('promethee.dashboard_page.quick_actions') }}</h2>
         <a class="signal" href="{{ route('promethee.operations') }}"><b>OPS</b><span>{{ __('promethee.dashboard_page.operations_room') }}</span></a>
-        <a class="signal" href="{{ route('promethee.acars') }}"><b>ACR</b><span>ACARS Prométhée</span></a>
+        <a class="signal" href="{{ route('promethee.acars') }}"><b>ACR</b><span>Hermès (ACARS)</span></a>
         <a class="signal" href="{{ route('promethee.safety') }}"><b>SV</b><span>{{ __('promethee.dashboard_page.safety_bulletin') }}</span></a>
     </aside>
 </div>
@@ -91,7 +91,7 @@
         @if($lastBulletin)
             <div class="mini-bulletin"><strong>{{ $lastBulletin->month }}</strong><span>{{ __('promethee.dashboard_page.last_bulletin') }}</span><a href="{{ route('promethee.safety',['month'=>$lastBulletin->month]) }}">{{ __('promethee.dashboard_page.open') }} ↗</a></div>
         @else
-            <div class="mini-bulletin"><strong>{{ __('promethee.dashboard_page.draft') }}</strong><span>{{ __('promethee.dashboard_page.no_bulletin') }}</span><a href="{{ route('promethee.safety') }}">{{ __('promethee.dashboard_page.calculate') }} ↗</a></div>
+            <div class="mini-bulletin"><strong>{{ __('promethee.dashboard_page.draft') }}</strong><span>{{ __('promethee.dashboard_page.no_bulletin') }}</span><a href="{{ route('promethee.safety') }}">Aperçu calculé ↗</a></div>
         @endif
     </section>
     <section class="panel">
@@ -104,7 +104,7 @@
     <div class="panel-heading"><div><span class="eyebrow">{{ __('promethee.dashboard_page.latest_accepted_pireps') }}</span><h2>{{ __('promethee.dashboard_page.recent_activity') }}</h2></div><a href="{{ route('promethee.operations') }}">{{ __('promethee.dashboard_page.view_operations_room') }} ↗</a></div>
     <div class="table-wrap">
         <table>
-            <thead><tr><th>{{ __('promethee.flight') }}</th><th>{{ __('promethee.route') }}</th><th>{{ __('promethee.aircraft') }}</th><th>{{ __('promethee.dashboard_page.time') }}</th><th>{{ __('promethee.landing') }}</th><th>{{ __('promethee.dashboard_page.airport') }}</th></tr></thead>
+            <thead><tr><th>{{ __('promethee.flight') }}</th><th>{{ __('promethee.route') }}</th><th>{{ __('promethee.aircraft') }}</th><th>{{ __('promethee.dashboard_page.time') }}</th><th>Pilote</th><th>Date</th></tr></thead>
             <tbody>
             @forelse($recentPireps as $pirep)
                 <tr>
@@ -112,7 +112,7 @@
                     <td>{{ $pirep->dpt_airport_id }} → {{ $pirep->arr_airport_id }}</td>
                     <td>{{ $pirep->aircraft?->registration ?? '—' }}</td>
                     <td>{{ $pirep->flight_time ? floor($pirep->flight_time / 60).'h '.str_pad($pirep->flight_time % 60,2,'0',STR_PAD_LEFT) : '—' }}</td>
-                    <td>{{ $pirep->landing_rate ? number_format($pirep->landing_rate,0,',',' ') . ' ft/min' : '—' }}</td>
+                    <td>{{ $pirep->user?->pilot_id ?: '—' }}@if($pirep->user?->name) · {{ $pirep->user->name }}@endif</td>
                     <td>{{ optional($pirep->submitted_at)->setTimezone('Europe/Paris')->format('d/m H:i') }}</td>
                 </tr>
             @empty
