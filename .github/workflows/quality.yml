@@ -135,6 +135,7 @@ jobs:
         run: |
           php -l modules/Promethee/Http/PortalController.php
           php -l modules/Promethee/Http/MinitelController.php
+          php -l modules/Promethee/Http/MinitelOperationsController.php
           php -l modules/Promethee/Http/AcarsOperationsController.php
           php -l modules/Promethee/Http/OperationsV1Controller.php
           php -l modules/Promethee/Http/TelemetryController.php
