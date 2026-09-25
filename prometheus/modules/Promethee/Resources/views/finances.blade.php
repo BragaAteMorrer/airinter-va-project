@@ -127,9 +127,9 @@
             @foreach($row['monthly'] as $point)
             <tr>
               <td><strong>{{ $point['full_label'] }}</strong></td>
-              <td>{{ new AppSupportMoney($point['credits']) }}</td>
-              <td>{{ new AppSupportMoney($point['debits']) }}</td>
-              <td class="{{ $point['net'] < 0 ? 'negative' : 'positive' }}">{{ new AppSupportMoney($point['net']) }}</td>
+              <td>{{ $point['credits_money'] }}</td>
+              <td>{{ $point['debits_money'] }}</td>
+              <td class="{{ $point['net'] < 0 ? 'negative' : 'positive' }}">{{ $point['net_money'] }}</td>
               <td>{{ number_format($point['margin'],1,',',' ') }}%</td>
               <td>{{ $point['transactions'] }}</td>
               <td>
