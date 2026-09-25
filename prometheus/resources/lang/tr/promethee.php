@@ -1,6 +1,6 @@
 <?php return array_replace(require __DIR__.'/../en/promethee.php', [
     'dashboard'=>'Kontrol paneli', 'operations'=>'Operasyonlar', 'flight_schedule'=>'Uçuş programı', 'calendar'=>'Takvim', 'community'=>'Topluluk', 'latest_pireps'=>'Son PIREP’ler', 'flight_safety'=>'Uçuş güvenliği', 'public_home'=>'Genel ana sayfa', 'completed_flights'=>'Tamamlanan uçuşlar', 'language'=>'Dil', 'display'=>'Ekran', 'display_style'=>'Görüntü stili', 'modern'=>'Modern', 'year_2000'=>'2000’ler', 'skip_to_content'=>'İçeriğe geç', 'operations_centre'=>'Operasyon merkezi', 'virtual_airline'=>'Sanal havayolu', 'pilot_area'=>'Pilot alanı', 'visitor_access'=>'Ziyaretçi erişimi', 'view_my_profile'=>'Profilimi görüntüle', 'logout'=>'Çıkış yap', 'read_only'=>'Salt okunur', 'login'=>'Giriş yap', 'register'=>'Kayıt ol', 'input_error'=>'Lütfen girilen bilgileri kontrol edin', 'pilot_login'=>'Pilot girişi', 'login_intro'=>'Uçuş günlüğünüze ve operasyonlara erişin.', 'minitel_instruction'=>'giriş yapmadan önce hizmeti arayın.', 'service_code'=>'HİZMET KODU', 'welcome_aboard'=>'Uçağa hoş geldiniz.', 'login_welcome'=>'Air Inter pilot alanına girin ve sonraki rotasyonunuzu hazırlayın.', 'powered_by'=>'phpVMS tarafından desteklenmektedir', 'flight_not_found'=>'Uçuş bulunamadı!',
-    'dispatch_desk'=>'Dispatch masası', 'admin_pilots'=>'Pilot yönetimi', 'admin_ranks'=>'Rütbe yönetimi',
+    'dispatch_desk' => 'Dispatch merkezi', 'admin_pilots' => 'Pilot yönetimi', 'admin_ranks' => 'Rütbe yönetimi',
     'dashboard_page' => [
         'title' => 'Kontrol paneli', 'eyebrow' => 'HAVA OPERASYONLARI YÖNETİMİ', 'heading' => 'Promethee durum panosu.', 'intro' => 'Ağ etkinliği, hazırlanacak kalkışlar, emniyet ve ticari operasyonlar.',
         'paris_time' => 'PARİS SAATİ', 'active_flights' => 'Devam eden uçuşlar', 'open_pireps' => 'Açık / duraklatılmış PIREP’ler', 'pending' => 'İncelenecek', 'admin_queue' => 'Yönetici PIREP kuyruğu', 'today' => 'Bugün',
@@ -13,4 +13,5 @@
     'navigation_welcome'=>'Hoş geldiniz', 'navigation_pilot'=>'Pilot alanı', 'navigation_company'=>'Havayolu', 'navigation_operations'=>'Operasyonlar', 'navigation_private'=>'Özel',
     'navigation_menu'=>['settings'=>'Ayarlar', 'flight_map'=>'Uçuş haritası', 'reports' => 'Raporlarım', 'all_reports' => 'Tüm raporlar', 'my_reports' => 'Raporlarım', 'bookings'=>'Rezervasyonlarım', 'downloads'=>'İndirilenler', 'live_flights'=>'Canlı uçuşlar'],
     'appearance'=>'Görünüm', 'appearance_style'=>'Renk görünümü', 'appearance_light'=>'Gündüz', 'appearance_dark'=>'Gece',
+    'company_finances' => 'Şirket finansları',
 ]);
