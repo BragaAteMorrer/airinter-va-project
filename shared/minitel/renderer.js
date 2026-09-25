@@ -149,7 +149,9 @@
         });
       }
 
-      const operations = runtime.transmissionOperations(snapshot, previous);
+      const operations = runtime.transmissionOperations(snapshot, previous, {
+        skipDefaultBlank: previous === null
+      });
       const delay = runtime.transmissionDelay(speed);
       for (const operation of operations) {
         if (controller.signal.aborted) return;
