@@ -25,6 +25,7 @@
   "promethee": {
     "pages": [
       "home",
+      "departures",
       "flight-search",
       "flights",
       "operations",
@@ -36,7 +37,9 @@
       "dispatch",
       "action-result",
       "routes",
+      "fleet-search",
       "fleet",
+      "pilot-search",
       "pilots",
       "calendar",
       "profile"
