@@ -71,7 +71,7 @@ class RegionalOperationsService
                 continue;
             }
 
-            $awaySince = $assignment->away_since ? now()->parse($assignment->away_since) : null;
+            $awaySince = $assignment->away_since ? \Carbon\Carbon::parse($assignment->away_since) : null;
             if (!$awaySince) {
                 DB::table('promethee_aircraft_bases')->where('aircraft_id', $plane->id)->update([
                     'away_since' => now(),
