@@ -19,7 +19,7 @@ class InviteLink extends Notification
         parent::__construct();
 
         $this->setMailable(
-            'You have been invited to join '.config('app.name'),
+            'Air Inter · Invitation à rejoindre la compagnie',
             'notifications.mail.user.invite',
             ['invite' => $invite]
         );
