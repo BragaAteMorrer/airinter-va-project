@@ -106,6 +106,12 @@ public sealed class PhpVmsClient
                 ? direct.GetString()
                 : null;
 
+            if (message is null && root.TryGetProperty("detail", out var detail) && detail.ValueKind == JsonValueKind.String)
+                message = detail.GetString();
+
+            if (message is null && root.TryGetProperty("title", out var title) && title.ValueKind == JsonValueKind.String)
+                message = title.GetString();
+
             if (message is null && root.TryGetProperty("error", out var error)) {
                 if (error.ValueKind == JsonValueKind.String) message = error.GetString();
                 else if (error.ValueKind == JsonValueKind.Object
