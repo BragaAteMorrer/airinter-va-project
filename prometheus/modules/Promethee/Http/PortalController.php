@@ -97,7 +97,7 @@ class PortalController extends Controller
         User::where('state', UserState::ACTIVE)->get()->each(function (User $pilot) use (&$accessCounts, $userService) {
             try {
                 $airlineIds = $userService->getAllowableSubfleets($pilot)->pluck('airline_id')->filter()->unique();
-            } catch (Throwable) {
+            } catch (\Throwable) {
                 $airlineIds = collect([$pilot->airline_id])->filter();
             }
             foreach ($airlineIds as $airlineId) $accessCounts[(int) $airlineId] = ($accessCounts[(int) $airlineId] ?? 0) + 1;
