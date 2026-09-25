@@ -1,32 +1,24 @@
-@extends('app')
+@extends('auth.onboarding_layout')
+@section('title', 'Vérification de votre adresse e-mail')
+@section('hero-title', 'Confirmez votre adresse e-mail.')
+@section('hero-copy', 'Cette étape permet de sécuriser votre dossier pilote avant l’ouverture de votre accès Air Inter.')
 
 @section('content')
-  <div class="container">
-    <div class="row justify-content-center">
-      <div class="col-md-8">
-        <div class="card">
-          <div class="card-header">{{ __('Verify Your Email Address') }}</div>
+  <div class="airinter-status">
+    <div class="airinter-status-icon">@</div>
+    <span class="airinter-kicker" style="color:#1765e9">VÉRIFICATION E-MAIL</span>
+    <h2>Consultez votre boîte de réception</h2>
 
-          <div class="card-body">
-            @if (session('resent'))
-              <div class="alert alert-success" role="alert">
-                {{ __('A fresh verification link has been sent to your email address.') }}
-              </div>
-            @endif
+    @if (session('resent'))
+      <div class="alert alert-success">Un nouveau lien de vérification vient de vous être envoyé.</div>
+    @endif
 
-            {{ __('Before proceeding, please check your email for a verification link.') }}
-            {{ __('If you did not receive the email') }},
+    <p>Un lien de vérification a été envoyé à votre adresse e-mail. Cliquez dessus pour poursuivre votre inscription Air Inter.</p>
+    <p>Vous n’avez rien reçu ? Vérifiez les courriers indésirables ou demandez un nouvel envoi.</p>
 
-            <form class="d-inline" method="POST" action="{{ route('verification.resend') }}">
-              @csrf
-              <button type="submit" class="btn btn-link p-0 m-0 align-baseline">
-                {{ __('click here to request another') }}
-              </button>
-              .
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
+    <form method="POST" action="{{ route('verification.resend') }}">
+      @csrf
+      <button type="submit" class="airinter-submit">RENVOYER LE LIEN DE VÉRIFICATION</button>
+    </form>
   </div>
 @endsection
