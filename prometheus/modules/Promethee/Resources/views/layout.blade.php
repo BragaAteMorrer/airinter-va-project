@@ -40,7 +40,7 @@ window.prometheeI18n = @json($prometheeI18n);
 <body>
 <a class="skip" href="#main">{{ __('promethee.skip_to_content') }}</a>
 <aside class="sidebar">
-<a class="brand" href="{{ route('promethee.dashboard') }}"><span class="brand-logo-shell"><img class="brand-logo" src="{{ $branding['url'] }}" alt="Air Inter"><img class="brand-logo-minitel" src="{{ asset('promethee-assets/logos/air-inter-minitel.png') }}" alt="Air Inter"></span><span class="brand-caption">{{ __('promethee.virtual_airline') }}<br>{{ __('promethee.french_domestic_network') }}</span></a>
+<a class="brand promethee-brand" href="{{ route('promethee.dashboard') }}"><span class="brand-logo-shell"><img class="brand-logo" src="{{ asset('promethee-assets/logos/promethee-mark.svg') }}" alt="Prométhée · Air Inter"><img class="brand-logo-minitel" src="{{ asset('promethee-assets/logos/air-inter-minitel.png') }}" alt="Air Inter"></span></a>
 <div class="system-name"><span class="eyebrow">{{ __('promethee.operations_centre') }}</span><strong>Prométhée<span class="cursor">_</span></strong><small>{{ __('promethee.airline_slogan') }}</small></div>
 @auth
 @php
@@ -75,24 +75,22 @@ window.prometheeI18n = @json($prometheeI18n);
             ['route' => 'promethee.dashboard', 'label' => 'dashboard', 'active' => 'promethee.dashboard'],
             ['route' => 'promethee.occ', 'label' => 'public_home', 'active' => 'promethee.occ'],
             ['route' => 'promethee.pilots', 'label' => 'community', 'active' => 'promethee.pilots*'],
-            // The native map lives in the flight programme; keep its active
-            // state in Operations so only one accordion section opens.
-            ['route' => 'promethee.flights', 'label' => 'navigation_menu.flight_map', 'active' => 'promethee.welcome.flight-map'],
+            ['route' => 'promethee.calendar', 'label' => 'calendar', 'active' => 'promethee.calendar*'],
         ],
         'navigation_pilot' => [
             ['route' => 'promethee.profile', 'label' => 'open_profile', 'active' => 'promethee.profile'],
             ['route' => 'promethee.passport', 'label' => 'passport', 'active' => 'promethee.passport'],
             ['route' => 'promethee.assignments', 'label' => 'assignments', 'active' => 'promethee.assignments'],
             ['route' => 'promethee.bookings', 'label' => 'navigation_menu.bookings', 'active' => 'promethee.bookings'],
+            ['route' => 'promethee.public.pireps.mine', 'label' => 'navigation_menu.my_reports', 'active' => 'promethee.public.pireps.mine', 'emphasis' => true],
             ['route' => 'promethee.public.pireps', 'label' => 'navigation_menu.all_reports', 'active' => 'promethee.public.pireps|promethee.pireps.*'],
-            ['route' => 'promethee.public.pireps.mine', 'label' => 'navigation_menu.my_reports', 'active' => 'promethee.public.pireps.mine'],
             ['route' => 'promethee.shop', 'label' => 'shop', 'active' => 'promethee.shop*'],
             ['route' => 'promethee.transfers', 'label' => 'transfers', 'active' => 'promethee.transfers*'],
             ['route' => 'promethee.jumpseat', 'label' => 'jumpseat', 'active' => 'promethee.jumpseat*'],
             ['route' => 'promethee.acars', 'label' => 'acars', 'active' => 'promethee.acars'],
         ],
         'navigation_company' => [
-            ['route' => 'promethee.pilots', 'label' => 'community', 'active' => 'promethee.pilots*'],
+            ['route' => 'promethee.finances', 'label' => 'company_finances', 'active' => 'promethee.finances'],
             ['route' => 'promethee.airlines', 'label' => 'airlines', 'active' => 'promethee.airlines'],
             ['route' => 'promethee.fleet', 'label' => 'fleet', 'active' => 'promethee.fleet'],
             ['route' => 'promethee.maintenance', 'label' => 'maintenance', 'active' => 'promethee.maintenance'],
@@ -102,7 +100,6 @@ window.prometheeI18n = @json($prometheeI18n);
             ['route' => 'promethee.flights', 'label' => 'flight_schedule', 'active' => 'promethee.flights*'],
             ['route' => 'promethee.operations', 'label' => 'operations', 'active' => 'promethee.operations'],
             ['route' => 'promethee.missions', 'label' => 'missions_circuits', 'active' => 'promethee.missions'],
-            ['route' => 'promethee.calendar', 'label' => 'calendar', 'active' => 'promethee.calendar*'],
             ['route' => 'promethee.live', 'label' => 'navigation_menu.live_flights', 'active' => 'promethee.live'],
             ['route' => 'promethee.safety', 'label' => 'flight_safety', 'active' => 'promethee.safety*'],
         ],
@@ -115,7 +112,7 @@ window.prometheeI18n = @json($prometheeI18n);
         <div class="nav-menu">
             @foreach($links as $link)
                 @if(\Illuminate\Support\Facades\Route::has($link['route']))
-                <a @class(['selected' => request()->routeIs(...explode('|', $link['active']))]) href="{{ route($link['route']) }}">{{ __('promethee.'.$link['label']) }}</a>
+                <a @class(['selected' => request()->routeIs(...explode('|', $link['active'])), 'nav-emphasis' => ($link['emphasis'] ?? false)]) href="{{ route($link['route']) }}">{{ __('promethee.'.$link['label']) }}</a>
                 @endif
             @endforeach
         </div>
