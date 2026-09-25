@@ -132,14 +132,19 @@ class AcarsSimBriefController extends Controller
             'username' => ['nullable', 'string', 'max:100'],
             'pilot_id' => ['nullable', 'regex:/^\d{1,7}$/'],
         ]);
-        abort_if(empty($attrs['username']) && empty($attrs['pilot_id']), 422, 'Renseignez votre alias Navigraph ou votre Pilot ID SimBrief.');
+        abort_if(empty($attrs['username']) && empty($attrs['pilot_id']), 422,
+            'Renseignez votre alias Navigraph ou votre Pilot ID SimBrief.');
 
-        [$flight, $aircraft] = $this->getEligibleOperation($flight_id, $attrs['aircraft_id']);
-        $staticId = $this->staticId($request, (string) Auth::id(), $flight->id, $aircraft->id);
+        $resolved = $this->resolver->resolveFlightAircraft(
+            $flight_id,
+            $attrs['aircraft_id'],
+            Auth::user(),
+            $request->input('operation_id')
+        );
+        $flight = $resolved['flight_model'];
+        $aircraft = $resolved['aircraft_model'];
+        $staticId = $this->staticId($request, (string) Auth::id(), (string) $flight->id, (string) $aircraft->id);
 
-        // A Pilot ID lets us address the exact static_id created for this Air Inter
-        // operation. With an alias, SimBrief officially exposes the user's latest
-        // OFP; the route check below prevents attaching an unrelated plan.
         $query = !empty($attrs['pilot_id'])
             ? ['userid' => $attrs['pilot_id'], 'static_id' => $staticId]
             : ['username' => $attrs['username']];
@@ -154,27 +159,29 @@ class AcarsSimBriefController extends Controller
 
         $origin = strtoupper((string) $ofp->origin->icao_code);
         $destination = strtoupper((string) $ofp->destination->icao_code);
-        abort_unless($origin === strtoupper($flight->dpt_airport_id) && $destination === strtoupper($flight->arr_airport_id), 409,
-            "Le dernier OFP SimBrief est {$origin} → {$destination}, mais l’opération sélectionnée est {$flight->dpt_airport_id} → {$flight->arr_airport_id}.");
+        abort_unless(
+            $origin === $resolved['origin']['icao'] && $destination === $resolved['destination']['icao'],
+            409,
+            "Le dernier OFP SimBrief est {$origin} → {$destination}, mais l’opération résolue est "
+            .$resolved['origin']['icao'].' → '.$resolved['destination']['icao'].'.'
+        );
 
         $requestId = trim((string) $ofp->params->request_id);
         abort_if($requestId === '', 502, 'SimBrief n’a pas retourné l’identifiant interne de l’OFP généré.');
 
-        // Persist the original XML unchanged. phpVMS, its SimBriefXML model and
-        // the ACARS flight-plan parser are XML-native, so no lossy JSON -> XML
-        // reconstruction is needed.
         $persisted = $this->simBriefSvc->persistFetchedXml(
             (string) Auth::id(),
             $requestId,
             (string) $flight->id,
             (string) $aircraft->id,
             $body,
-            $this->operationFares($flight, $aircraft)
+            $resolved['fares']
         );
-        abort_if($persisted === null, 502, 'L’OFP SimBrief a été reçu mais sa persistance dans Prométhée a échoué. Consultez les logs SimBrief pour le détail.');
+        abort_if($persisted === null, 502,
+            'L’OFP SimBrief a été reçu mais sa persistance dans Prométhée a échoué. Consultez les logs SimBrief pour le détail.');
 
         return response()->json([
-            'operation_id' => $request->input('operation_id'),
+            'operation_id' => $resolved['operation_id'],
             'id' => $persisted->id,
             'source' => 'simbrief_account',
             'static_id' => $staticId,
@@ -189,10 +196,11 @@ class AcarsSimBriefController extends Controller
             'estimated_time_enroute' => (int) $ofp->times->est_time_enroute,
             'generated_at' => (string) $ofp->params->time_generated,
             'aircraft_type' => (string) $ofp->aircraft->icaocode,
+            'resolved' => $this->resolver->publicView($resolved),
         ]);
     }
 
-    /** Import the generated OFP into Promethee and return data useful to Hermes. */
+    /** Import the generated OFP into Promethee and return data useful to Hermes. */    /** Import the generated OFP into Promethee and return data useful to Hermes. */
     public function import(Request $request, string $flight_id): JsonResponse
     {
         $attrs = $request->validate([
@@ -201,7 +209,14 @@ class AcarsSimBriefController extends Controller
             'ofp_id' => ['nullable', 'string', 'max:100', 'regex:/^[A-Za-z0-9_-]+$/', 'required_without:state'],
         ]);
 
-        [$flight, $aircraft] = $this->getEligibleOperation($flight_id, $attrs['aircraft_id']);
+        $resolved = $this->resolver->resolveFlightAircraft(
+            $flight_id,
+            $attrs['aircraft_id'],
+            Auth::user(),
+            $request->input('operation_id')
+        );
+        $flight = $resolved['flight_model'];
+        $aircraft = $resolved['aircraft_model'];
         $ofpId = $attrs['ofp_id'] ?? null;
         $apiSession = null;
 
@@ -212,11 +227,12 @@ class AcarsSimBriefController extends Controller
             $sameOperation = (string) ($apiSession['flight_id'] ?? '') === (string) $flight->id
                 && (string) ($apiSession['aircraft_id'] ?? '') === (string) $aircraft->id
                 && (!$request->filled('operation_id')
-                    || (string) ($apiSession['operation_id'] ?? '') === (string) $request->input('operation_id'));
+                    || (string) ($apiSession['operation_id'] ?? '') === (string) $resolved['operation_id']);
             abort_unless($sameOperation, 409, 'La réponse SimBrief ne correspond pas à l’opération sélectionnée.');
 
             $ofpId = $apiSession['ofp_id'] ?? null;
-            abort_if(empty($ofpId), 409, 'SimBrief n’a pas encore renvoyé l’OFP. Terminez la génération dans la fenêtre SimBrief.');
+            abort_if(empty($ofpId), 409,
+                'SimBrief n’a pas encore renvoyé l’OFP. Terminez la génération dans la fenêtre SimBrief.');
         }
 
         $simbrief = $this->simBriefSvc->downloadOfp(
@@ -224,16 +240,19 @@ class AcarsSimBriefController extends Controller
             (string) $ofpId,
             (string) $flight->id,
             (string) $aircraft->id,
-            $this->operationFares($flight, $aircraft)
+            $resolved['fares']
         );
         abort_if($simbrief === null, 404, 'L’OFP SimBrief n’est pas encore disponible.');
 
         $xml = $simbrief->xml;
         $origin = strtoupper((string) $xml->origin->icao_code);
         $destination = strtoupper((string) $xml->destination->icao_code);
-        if ($origin !== strtoupper($flight->dpt_airport_id) || $destination !== strtoupper($flight->arr_airport_id)) {
+        if ($origin !== $resolved['origin']['icao'] || $destination !== $resolved['destination']['icao']) {
             $simbrief->delete();
-            abort(409, "L’OFP SimBrief reçu est {$origin} → {$destination}, mais l’opération sélectionnée est {$flight->dpt_airport_id} → {$flight->arr_airport_id}.");
+            abort(409,
+                "L’OFP SimBrief reçu est {$origin} → {$destination}, mais l’opération résolue est "
+                .$resolved['origin']['icao'].' → '.$resolved['destination']['icao'].'.'
+            );
         }
 
         if (!empty($attrs['state'])) {
@@ -243,7 +262,7 @@ class AcarsSimBriefController extends Controller
         $staticId = $apiSession['static_id'] ?? null;
 
         return response()->json([
-            'operation_id' => $request->input('operation_id'),
+            'operation_id' => $resolved['operation_id'],
             'id' => $simbrief->id,
             'source' => 'simbrief_company_api',
             'static_id' => $staticId,
@@ -259,11 +278,11 @@ class AcarsSimBriefController extends Controller
             'block_fuel' => (float) $xml->fuel->plan_ramp,
             'estimated_time_enroute' => (int) $xml->times->est_time_enroute,
             'briefing_url' => route('api.flights.briefing', ['id' => $simbrief->id]),
+            'resolved' => $this->resolver->publicView($resolved),
         ]);
     }
 
-
-    public function sessionOperation(Request $request, string $operation): JsonResponse
+    public function sessionOperation(Request $request, string $operation): JsonResponse    public function sessionOperation(Request $request, string $operation): JsonResponse
     {
         [$flightId, $aircraftId, $operationId] = $this->operationContext($operation);
         $request->merge(['aircraft_id' => $aircraftId, 'operation_id' => $operationId]);
