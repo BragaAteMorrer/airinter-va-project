@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'dispatch_desk' => 'Dispatch Desk',
+    'dispatch_desk' => 'Centre de dispatch',
     'admin_pilots' => 'Gestion des pilotes',
     'admin_ranks' => 'Gestion des grades',
     'administration' => 'Administration', 'dashboard' => 'Tableau de bord', 'operations' => 'Opérations',
