@@ -37,5 +37,6 @@ class PrometheeServiceProvider extends ServiceProvider
         app(ModuleService::class)->addAdminLink('Prométhée · Tarifs BBR', '/admin/promethee/tarifs-bbr', 'pe-7s-ticket');
         app(ModuleService::class)->addAdminLink('Prométhée · SOP', '/admin/promethee/sop', 'pe-7s-shield');
         app(ModuleService::class)->addAdminLink('Prométhée · Network', '/admin/promethee/network', 'pe-7s-global');
+        app(ModuleService::class)->addAdminLink('Prométhée · Dispatch', '/admin/promethee/dispatch', 'pe-7s-monitor');
     }
 }
