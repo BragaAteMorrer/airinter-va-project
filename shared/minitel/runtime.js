@@ -330,13 +330,18 @@
     }
   }
 
+  function sameAttrs(left, right) {
+    if (!left || !right) return false;
+    return Object.keys(DEFAULT_ATTRS).every((key) => left[key] === right[key]);
+  }
+
   function transmissionOperations(snapshot, previousSnapshot = null) {
     const operations = [];
     for (let row = 0; row < HEIGHT; row += 1) {
       for (let column = 0; column < WIDTH; column += 1) {
         const cell = snapshot.cells[row][column];
         const previous = previousSnapshot?.cells?.[row]?.[column];
-        if (!previous || previous.character !== cell.character || previous.attrs !== cell.attrs) {
+        if (!previous || previous.character !== cell.character || !sameAttrs(previous.attrs, cell.attrs)) {
           operations.push(Object.freeze({ row, column, cell }));
         }
       }
