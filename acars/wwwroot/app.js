@@ -444,7 +444,7 @@ async function searchFlights() {
   if (aircraftType) params.set('icao_type', aircraftType);
   try {
     showMessage('#flightMessage', 'Recherche dans le programme…');
-    renderOperations(await call('/api/flights' + (params.size ? '?' + params.toString() : '')));
+    renderOperations(await call('/api/v1/flights' + (params.size ? '?' + params.toString() : '')));
     showMessage('#flightMessage', '');
   } catch (error) {
     showMessage('#flightMessage', error.message, true);
@@ -533,6 +533,17 @@ function renderOperationLoad(aircraft) {
 }
 
 async function selectOperation(operation) {
+  if (!operation?.operation_id && !operation?.bid_id && operation?.id) {
+    try {
+      showMessage('#flightMessage', 'Réservation du vol dans Prométhée…');
+      operation = unwrap(await call('/api/v1/flights/' + encodeURIComponent(operation.id) + '/reserve', {}));
+      showMessage('#flightMessage', '');
+    } catch (error) {
+      showMessage('#flightMessage', 'Réservation impossible : ' + error.message, true);
+      return;
+    }
+  }
+
   selectedOperation = operation;
   selectedAircraft = operation.aircraft?.id ? operation.aircraft : null;
   renderOperationLoad(selectedAircraft);
