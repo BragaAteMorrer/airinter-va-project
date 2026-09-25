@@ -716,6 +716,55 @@ function simbriefPath(suffix) {
   return `/api/v1/operations/${encodeURIComponent(operationRef)}/simbrief/${suffix}`;
 }
 
+function simBriefPlanningPayload(form) {
+  const payload = {};
+  const aircraftId = form.elements.aircraft_id.value;
+  if (aircraftId) payload.aircraft_id = aircraftId;
+
+  const alternate = form.elements.alt_airport_id.value.trim().toUpperCase();
+  if (alternate) payload.alternate = alternate;
+
+  const route = form.elements.route.value.trim();
+  if (route) payload.route = route;
+
+  const rawLevel = form.elements.level.value.trim();
+  if (rawLevel) {
+    const level = Number(rawLevel);
+    if (!Number.isFinite(level) || level < 10 || level > 600)
+      throw new Error('Le niveau de vol doit être compris entre FL010 et FL600.');
+    payload.level = Math.round(level);
+  }
+
+  return payload;
+}
+
+async function assertSimBriefReady(form, mode = 'company') {
+  const resolved = unwrap(await call(simbriefPath('readiness'), simBriefPlanningPayload(form)));
+  const ready = mode === 'account'
+    ? Boolean(resolved?.ready_account)
+    : Boolean(resolved?.ready_company_api ?? resolved?.ready);
+
+  if (!ready) {
+    const failed = (resolved?.checks || [])
+      .filter(check => check?.ready === false && (mode !== 'account' || check?.code !== 'COMPANY_API'))
+      .map(check => check?.label)
+      .filter(Boolean);
+    throw new Error('SimBrief non prêt' + (failed.length ? ' : ' + failed.join(' · ') : '.'));
+  }
+
+  const flight = resolved?.flight?.ident || resolved?.flight?.number || 'vol';
+  const origin = resolved?.origin?.icao || '—';
+  const destination = resolved?.destination?.icao || '—';
+  const registration = resolved?.aircraft?.registration || 'appareil';
+  const type = resolved?.aircraft?.simbrief_type || resolved?.aircraft?.icao || 'type inconnu';
+  const pax = resolved?.demand?.passengers;
+  showMessage(
+    '#simbriefState',
+    `Résolution BDD OK · ${flight} · ${origin} → ${destination} · ${registration} · ${type}${Number.isFinite(Number(pax)) ? ' · ' + pax + ' pax' : ''}.`
+  );
+  return resolved;
+}
+
 function normalizeFlightLevel(value) {
   const altitude = Number(value);
   if (!Number.isFinite(altitude) || altitude <= 0) return undefined;
@@ -798,13 +847,10 @@ $('#simbriefAccountOpenBtn').onclick = async () => {
   localSettings.simbriefPilotId = pilotId;
   localStorage.prometheeAcarsSettings = JSON.stringify(localSettings);
   try {
+    showMessage('#simbriefState', 'Vérification des données Air Inter en BDD…');
+    await assertSimBriefReady(form, 'account');
     showMessage('#simbriefState', 'Envoi de la préparation Air Inter vers SimBrief…');
-    const payload = unwrap(await call(simbriefPath('redirect'), {
-      aircraft_id: aircraftId,
-      alternate: form.elements.alt_airport_id.value.trim().toUpperCase() || null,
-      route: form.elements.route.value.trim() || null,
-      level: form.elements.level.value ? Number(form.elements.level.value) : null
-    }));
+    const payload = unwrap(await call(simbriefPath('redirect'), simBriefPlanningPayload(form)));
     linkedSimBrief = payload;
     const editButton = $('#simbriefAccountEditBtn');
     if (editButton) editButton.hidden = !payload.edit_url;
@@ -948,13 +994,10 @@ $('#simbriefBtn').onclick = async () => {
   const aircraftId = form.elements.aircraft_id.value;
   if (!flightId || !aircraftId) return showMessage('#simbriefState', 'Sélectionnez un vol et un appareil.', true);
   try {
+    showMessage('#simbriefState', 'Vérification des données Air Inter en BDD…');
+    await assertSimBriefReady(form, 'company');
     showMessage('#simbriefState', 'Préparation de la demande SimBrief…');
-    const session = unwrap(await call(simbriefPath('session'), {
-      aircraft_id: aircraftId,
-      alternate: form.elements.alt_airport_id.value.trim().toUpperCase(),
-      route: form.elements.route.value.trim(),
-      level: form.elements.level.value ? Number(form.elements.level.value) : null
-    }));
+    const session = unwrap(await call(simbriefPath('session'), simBriefPlanningPayload(form)));
     if (!session.state) throw new Error('Prométhée n’a pas créé de session SimBrief valide.');
     const popup = window.open('about:blank', 'PrometheeSimBrief', 'width=900,height=720');
     if (!popup) throw new Error('Autorisez les fenêtres contextuelles pour ouvrir SimBrief.');

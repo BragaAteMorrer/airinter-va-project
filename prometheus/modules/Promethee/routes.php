@@ -221,6 +221,7 @@ Route::middleware(['api','api.auth'])->prefix('api/v1')->group(function () {
     Route::post('/operations/{operation}/sop/evaluations/{evaluation}/review', [SopController::class, 'review']);
     Route::post('/operations/{operation}/presence/heartbeat', [PresenceController::class, 'heartbeat']);
     Route::get('/network/presence', [PresenceController::class, 'index']);
+    Route::post('/operations/{operation}/simbrief/readiness', [AcarsSimBriefController::class, 'readinessOperation']);
     Route::post('/operations/{operation}/simbrief/session', [AcarsSimBriefController::class, 'sessionOperation']);
     Route::post('/operations/{operation}/simbrief/redirect', [AcarsSimBriefController::class, 'redirectOperation']);
     Route::post('/operations/{operation}/simbrief/account/import', [AcarsSimBriefController::class, 'importAccountOperation']);

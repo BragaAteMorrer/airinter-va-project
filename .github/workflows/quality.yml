@@ -146,7 +146,9 @@ jobs:
           php -l app/Services/SimBriefService.php
           php -l modules/Promethee/Http/SimBriefCallbackController.php
           php -l modules/Promethee/Services/SimBriefApiSessionService.php
+          php -l modules/Promethee/Services/SimBriefOperationResolver.php
           php -l tests/SimBriefApiSessionServiceTest.php
+          php -l tests/SimBriefOperationResolverTest.php
           php -l tests/PrometheeSimBriefAdminTest.php
           php -l tests/SimBriefTest.php
           php -l app/Http/Controllers/Admin/SettingsController.php

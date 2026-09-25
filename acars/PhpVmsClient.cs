@@ -65,6 +65,7 @@ public sealed class PhpVmsClient
                 System.Diagnostics.Trace.WriteLine($"ACARS API {path} returned {(int)response.StatusCode}: {responseBody}");
                 var serverMessage = SafeServerMessage(responseBody);
                 throw new InvalidOperationException(response.StatusCode switch {
+                    System.Net.HttpStatusCode.BadRequest => serverMessage ?? "Prométhée a rejeté la requête car son contenu est invalide (HTTP 400).",
                     System.Net.HttpStatusCode.Unauthorized => "Votre session a expiré. Connectez-vous à nouveau.",
                     System.Net.HttpStatusCode.Forbidden => serverMessage ?? "Votre compte ne permet pas cette opération.",
                     System.Net.HttpStatusCode.NotFound => serverMessage ?? "La réservation ou le vol demandé n’existe plus.",
@@ -101,12 +102,45 @@ public sealed class PhpVmsClient
         try {
             using var document = JsonDocument.Parse(responseBody);
             var root = document.RootElement;
-            string? message = root.TryGetProperty("message", out var direct) ? direct.GetString() : null;
-            if (message is null && root.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object
-                && error.TryGetProperty("message", out var nested)) message = nested.GetString();
+            string? message = root.TryGetProperty("message", out var direct) && direct.ValueKind == JsonValueKind.String
+                ? direct.GetString()
+                : null;
+
+            if (message is null && root.TryGetProperty("error", out var error)) {
+                if (error.ValueKind == JsonValueKind.String) message = error.GetString();
+                else if (error.ValueKind == JsonValueKind.Object
+                    && error.TryGetProperty("message", out var nested)
+                    && nested.ValueKind == JsonValueKind.String) message = nested.GetString();
+            }
+
+            // Laravel validation errors are usually returned as
+            // {"message":"...","errors":{"field":["detail"]}}. Some deployments
+            // omit the top-level message, so surface the first safe detail.
+            if (message is null && root.TryGetProperty("errors", out var errors)
+                && errors.ValueKind == JsonValueKind.Object) {
+                foreach (var property in errors.EnumerateObject()) {
+                    if (property.Value.ValueKind == JsonValueKind.Array) {
+                        foreach (var item in property.Value.EnumerateArray()) {
+                            if (item.ValueKind == JsonValueKind.String) {
+                                message = item.GetString();
+                                break;
+                            }
+                        }
+                    } else if (property.Value.ValueKind == JsonValueKind.String) {
+                        message = property.Value.GetString();
+                    }
+                    if (!string.IsNullOrWhiteSpace(message)) break;
+                }
+            }
+
             message = message?.Trim();
-            return string.IsNullOrWhiteSpace(message) || message.Length > 240 ? null : message;
+            return string.IsNullOrWhiteSpace(message) || message.Length > 300 ? null : message;
         } catch (JsonException) {
+            var plain = responseBody.Trim();
+            if (plain.Length is > 0 and <= 300
+                && !plain.StartsWith("<", StringComparison.Ordinal)
+                && !plain.Contains("<html", StringComparison.OrdinalIgnoreCase))
+                return plain;
             return null;
         }
     }
