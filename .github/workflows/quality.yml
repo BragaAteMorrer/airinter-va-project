@@ -42,6 +42,11 @@ jobs:
           node --check acars/wwwroot/i18n.js
           node --check acars/wwwroot/app.js
           node tools/check_hermes_i18n.cjs
+      - name: Validate Minitel M0 runtime
+        run: |
+          node --check shared/minitel/runtime.js
+          node --check shared/minitel/renderer.js
+          node shared/minitel/runtime.test.cjs
       - name: Validate upstream maintenance tooling
         run: |
           python -m py_compile tools/phpvms_upstream_audit.py
