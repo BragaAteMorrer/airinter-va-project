@@ -315,11 +315,28 @@ class AcarsSimBriefController extends Controller
      */
     private function validatePlanningRequest(Request $request): array
     {
+        $alternate = trim((string) $request->input('alternate', ''));
+        $route = trim((string) $request->input('route', ''));
+        $level = $request->input('level');
+
+        $request->merge([
+            'alternate' => $alternate === '' ? null : strtoupper($alternate),
+            'route' => $route === '' ? null : $route,
+            'level' => $level === '' || $level === null ? null : $level,
+        ]);
+
         return $request->validate([
             'aircraft_id' => ['required', 'string'],
-            'alternate' => ['nullable', 'string', 'max:8', 'regex:/^[A-Za-z0-9]{3,8}$/'],
+            'alternate' => ['nullable', 'string', 'max:8', 'regex:/^[A-Z0-9]{3,8}$/'],
             'route' => ['nullable', 'string', 'max:2000'],
             'level' => ['nullable', 'integer', 'between:10,600'],
+        ], [
+            'aircraft_id.required' => 'Sélectionnez un appareil avant de préparer SimBrief.',
+            'alternate.regex' => 'Le dégagement doit être un code aéroport valide ou rester vide pour AUTO.',
+            'alternate.max' => 'Le code de dégagement est trop long.',
+            'route.max' => 'La route SimBrief dépasse 2000 caractères.',
+            'level.integer' => 'Le niveau de vol doit être un entier, par exemple 350.',
+            'level.between' => 'Le niveau de vol doit être compris entre FL010 et FL600.',
         ]);
     }
 
