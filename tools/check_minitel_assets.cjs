@@ -9,12 +9,17 @@ let failures = 0;
 
 for (const name of names) {
   const canonical = fs.readFileSync(path.join(root, 'shared', 'minitel', name), 'utf8').replace(/\r\n/g, '\n');
-  const publicCopy = fs.readFileSync(path.join(root, 'prometheus', 'public', 'promethee-assets', 'minitel', name), 'utf8').replace(/\r\n/g, '\n');
-  if (canonical !== publicCopy) {
-    failures += 1;
-    console.error('Minitel asset drift:', name);
-  } else {
-    console.log('✓ synced', name);
+  for (const [label, target] of [
+    ['Prométhée', path.join(root, 'prometheus', 'public', 'promethee-assets', 'minitel', name)],
+    ['Hermès', path.join(root, 'acars', 'wwwroot', 'minitel', name)]
+  ]) {
+    const publicCopy = fs.readFileSync(target, 'utf8').replace(/\r\n/g, '\n');
+    if (canonical !== publicCopy) {
+      failures += 1;
+      console.error('Minitel asset drift:', label, name);
+    } else {
+      console.log('✓ synced', label, name);
+    }
   }
 }
 
@@ -48,5 +53,37 @@ if (!client.includes('endpoints.operation_search')) {
   console.error('M3 reservable flight search must use Operations V1 projection.');
 }
 
+const hermesClient = fs.readFileSync(path.join(root, 'acars', 'wwwroot', 'hermes-minitel.js'), 'utf8');
+const hermesApp = fs.readFileSync(path.join(root, 'acars', 'wwwroot', 'app.js'), 'utf8');
+const hermesIndex = fs.readFileSync(path.join(root, 'acars', 'wwwroot', 'index.html'), 'utf8');
+
+for (const contract of [
+  '/api/v1/operations',
+  '/api/v1/flights/',
+  '/aircraft-eligibility',
+  '/simbrief/readiness',
+  '/simbrief/redirect',
+  '/simbrief/account/import',
+  '/simbrief/session',
+  '/simbrief/import',
+  '/pirep',
+  '/dispatch',
+  '/api/start'
+]) {
+  if (!hermesClient.includes(contract)) {
+    failures += 1;
+    console.error('Missing Hermès M4 action:', contract);
+  }
+}
+
+if (!hermesApp.includes("['modern', '2000', 'minitel']")) {
+  failures += 1;
+  console.error('Hermès Minitel era is not enabled in app.js.');
+}
+if (!hermesIndex.includes('value="minitel"') || !hermesIndex.includes('/hermes-minitel.js')) {
+  failures += 1;
+  console.error('Hermès Minitel selector/assets are not mounted in index.html.');
+}
+
 if (failures) process.exitCode = 1;
-else console.log('\nMinitel M0-M3 shared/public and operational contracts are synchronized.');
+else console.log('\nMinitel M0-M4 shared/public and operational contracts are synchronized.');
