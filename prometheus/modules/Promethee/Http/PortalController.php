@@ -92,7 +92,20 @@ class PortalController extends Controller
                 $term = trim((string) $r->query('q'));
                 $query->where(fn ($airlines) => $airlines->where('name', 'like', "%{$term}%")->orWhere('icao', 'like', "%{$term}%")->orWhere('iata', 'like', "%{$term}%"));
             })->orderBy('name')->get();
-        $airlines->each(fn (Airline $airline) => $airline->setAttribute('promethee_logo', $this->airlineLogoUrl($airline)));
+        $accessCounts = [];
+        $userService = app(UserService::class);
+        User::where('state', UserState::ACTIVE)->get()->each(function (User $pilot) use (&$accessCounts, $userService) {
+            try {
+                $airlineIds = $userService->getAllowableSubfleets($pilot)->pluck('airline_id')->filter()->unique();
+            } catch (Throwable) {
+                $airlineIds = collect([$pilot->airline_id])->filter();
+            }
+            foreach ($airlineIds as $airlineId) $accessCounts[(int) $airlineId] = ($accessCounts[(int) $airlineId] ?? 0) + 1;
+        });
+        $airlines->each(function (Airline $airline) use ($accessCounts) {
+            $airline->setAttribute('promethee_logo', $this->airlineLogoUrl($airline));
+            $airline->setAttribute('eligible_users_count', $accessCounts[(int) $airline->id] ?? $airline->users_count);
+        });
         return $this->page('airlines', compact('airlines'));
     }
 
@@ -133,7 +146,15 @@ class PortalController extends Controller
                     ->select($aircraftTable.'.*')->orderBy('fleet_sort_subfleets.name', $direction);
             }, fn ($query) => $query->orderBy($sortColumns[$sort], $direction))
             ->paginate(40)->withQueryString();
-        $aircraft->getCollection()->each(function (Aircraft $plane) {
+        $maintenanceByAircraft = DB::table('disposable_maintenance')
+            ->whereIn('aircraft_id', $aircraft->getCollection()->pluck('id'))
+            ->get()->keyBy('aircraft_id');
+        $aircraft->getCollection()->each(function (Aircraft $plane) use ($maintenanceByAircraft) {
+            $maintenance = $maintenanceByAircraft->get($plane->id);
+            $hours = collect([$maintenance?->rem_ta, $maintenance?->rem_tb, $maintenance?->rem_tc])->filter(fn ($value) => is_numeric($value));
+            $cycles = collect([$maintenance?->rem_ca, $maintenance?->rem_cb, $maintenance?->rem_cc])->filter(fn ($value) => is_numeric($value));
+            $plane->setAttribute('maintenance_hours_remaining', $hours->isNotEmpty() ? $hours->min() : null);
+            $plane->setAttribute('maintenance_cycles_remaining', $cycles->isNotEmpty() ? $cycles->min() : null);
             $plane->setAttribute('state_label', AircraftState::$labels[$plane->state] ?? 'Inconnu');
             $plane->setAttribute('status_label', __(AircraftStatus::$labels[$plane->status] ?? 'aircraft.status.active'));
             $plane->subfleet?->airline?->setAttribute('promethee_logo', $this->airlineLogoUrl($plane->subfleet->airline));
@@ -153,7 +174,34 @@ class PortalController extends Controller
                 $allowedSubfleetIds = app(UserService::class)->getAllowableSubfleets($r->user())->pluck('id');
                 $query->whereIn('aircraft.subfleet_id', $allowedSubfleetIds);
             })->orderBy('maintenance.curr_state')->paginate(40);
-        return $this->page('maintenance', compact('maintenance'));
+
+        $warningHours = (int) config('maintenance-warning.hours', 100);
+        $warningCycles = (int) config('maintenance-warning.cycles', 2);
+        $upcomingMaintenance = DB::table('disposable_maintenance as maintenance')
+            ->join('aircraft as aircraft', 'aircraft.id', '=', 'maintenance.aircraft_id')
+            ->leftJoin('subfleets as subfleets', 'subfleets.id', '=', 'aircraft.subfleet_id')
+            ->leftJoin('airlines as airlines', 'airlines.id', '=', 'subfleets.airline_id')
+            ->select(['maintenance.*', 'aircraft.registration', 'aircraft.icao', 'airlines.name as airline_name', 'airlines.icao as airline_icao'])
+            ->whereNull('maintenance.act_note')
+            ->where(function ($query) use ($warningHours, $warningCycles) {
+                $query->whereBetween('maintenance.rem_ta', [0, $warningHours])
+                    ->orWhereBetween('maintenance.rem_tb', [0, $warningHours])
+                    ->orWhereBetween('maintenance.rem_tc', [0, $warningHours])
+                    ->orWhereBetween('maintenance.rem_ca', [0, $warningCycles])
+                    ->orWhereBetween('maintenance.rem_cb', [0, $warningCycles])
+                    ->orWhereBetween('maintenance.rem_cc', [0, $warningCycles]);
+            })
+            ->limit(12)->get()
+            ->sortBy(fn ($item) => min(array_filter([
+                is_numeric($item->rem_ta) ? (float) $item->rem_ta : INF,
+                is_numeric($item->rem_tb) ? (float) $item->rem_tb : INF,
+                is_numeric($item->rem_tc) ? (float) $item->rem_tc : INF,
+                is_numeric($item->rem_ca) ? (float) $item->rem_ca * 25 : INF,
+                is_numeric($item->rem_cb) ? (float) $item->rem_cb * 25 : INF,
+                is_numeric($item->rem_cc) ? (float) $item->rem_cc * 25 : INF,
+            ], fn ($value) => is_finite($value)) ?: [INF]))->values();
+
+        return $this->page('maintenance', compact('maintenance', 'upcomingMaintenance', 'warningHours', 'warningCycles'));
     }
 
     /** Operational record for one aircraft, including type-specific downloads. */
