@@ -46,7 +46,7 @@ jobs:
           touch database/database.sqlite
           DB_CONNECTION=sqlite DB_DATABASE=database/database.sqlite php artisan migrate --force
           php artisan passport:keys --force
-          php artisan airinter-id:configure-clients
+          DB_CONNECTION=sqlite DB_DATABASE=database/database.sqlite php artisan airinter-id:configure-clients
           php artisan about
           php artisan route:list
       - name: Run tests
