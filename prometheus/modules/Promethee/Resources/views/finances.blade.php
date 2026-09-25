@@ -240,9 +240,12 @@
     const max=Math.max(1,...data.map(x=>x.credits))*1.15, a=axes(ctx,w,h,max,0), n=data.length, step=a.pw/n, bw=Math.max(8,step*.52);
     data.forEach((p,i)=>{const x=a.l+i*step+(step-bw)/2;const bh=(p.credits/max)*a.ph;ctx.fillStyle=palette.blue;ctx.fillRect(x,a.t+a.ph-bh,bw,bh);ctx.fillStyle=palette.text;ctx.fillText(p.label,x,a.t+a.ph+18);});
     const margins=data.map(x=>Number(x.margin||0)), mMax=Math.max(20,...margins.map(Math.abs))*1.25;
+    const points=margins.map((m,i)=>({x:a.l+i*step+step/2,y:a.t+a.ph-(Math.max(0,m)/mMax)*a.ph}));
     ctx.strokeStyle=palette.gold;ctx.lineWidth=2;ctx.beginPath();
-    margins.forEach((m,i)=>{const x=a.l+i*step+step/2;const y=a.t+a.ph-(Math.max(0,m)/mMax)*a.ph;i?ctx.lineTo(x,y):ctx.moveTo(x,y);ctx.fillStyle=palette.gold;ctx.beginPath();ctx.arc(x,y,2.6,0,Math.PI*2);ctx.fill();});
-    ctx.strokeStyle=palette.gold;ctx.stroke();
+    points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));
+    ctx.stroke();
+    ctx.fillStyle=palette.gold;
+    points.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,2.8,0,Math.PI*2);ctx.fill();});
   }
   function costChart(canvas,data){
     const {ctx,w,h}=canvasSize(canvas);ctx.clearRect(0,0,w,h);
