@@ -186,12 +186,12 @@ test('start wires GUIDE and CONNEXION/FIN as global system commands', async () =
   assert.equal(keyboard.attachCalled, true);
   assert.ok(renderer.rendered.length >= 4);
 
-  const guide = keyboard.commandInterceptor({ action: runtime.ACTIONS.GUIDE });
+  const guide = await keyboard.commandInterceptor({ action: runtime.ACTIONS.GUIDE });
   assert.equal(session.currentPageId, SYSTEM_PAGES.GUIDE);
   assert.equal(guide.handled, true);
 
   session.summary();
-  const exit = keyboard.commandInterceptor({ action: runtime.ACTIONS.CONNECT_END });
+  const exit = await keyboard.commandInterceptor({ action: runtime.ACTIONS.CONNECT_END });
   assert.equal(session.currentPageId, SYSTEM_PAGES.EXIT);
   assert.equal(exit.handled, true);
 
