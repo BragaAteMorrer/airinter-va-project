@@ -46,7 +46,8 @@ let readiness = { operation: false, aircraft: false, ofp: false, pirep: false, s
 function setAuthenticated(value) {
   connected = Boolean(value);
   document.body.classList.toggle('auth-locked', !connected);
-  $$('.protected-tab').forEach(tab => { tab.disabled = !connected; });
+  $('.protected-tab').forEach(tab => { tab.disabled = !connected; });
+  window.dispatchEvent(new CustomEvent('hermes:auth-changed', { detail: { authenticated: connected } }));
 }
 setAuthenticated(false);
 
@@ -61,8 +62,7 @@ const appearance = $('#appearance');
 const language = $('#language');
 const hermesI18n = window.HermesI18n || { defaultLanguage: 'fr', supportedLanguages: ['fr'], normalize: () => 'fr', messages: { fr: {} } };
 const allowedLanguages = hermesI18n.supportedLanguages;
-const allowedEras = ['modern', '2000'];
-const reservedEras = ['minitel'];
+const allowedEras = ['modern', '2000', 'minitel'];
 const allowedAppearances = ['light', 'dark'];
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -112,8 +112,13 @@ function applyDisplay(eraValue, appearanceValue, persist = true) {
 
 const storedEra = localStorage.hermesEra || localStorage.prometheeEra || 'modern';
 const storedAppearance = localStorage.hermesAppearance || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-applyDisplay(reservedEras.includes(storedEra) ? 'modern' : storedEra, storedAppearance, false);
-era.onchange = () => applyDisplay(era.value, document.body.dataset.appearance);
+applyDisplay(storedEra, storedAppearance, false);
+era.onchange = () => {
+  const nextEra = era.value;
+  applyDisplay(nextEra, document.body.dataset.appearance);
+  if (nextEra === 'minitel') window.HermesMinitel?.start?.();
+  else window.HermesMinitel?.stop?.();
+};
 appearance.onchange = () => applyDisplay(document.body.dataset.era, appearance.value);
 const storedLanguage = localStorage.hermesLanguage || navigator.language || hermesI18n.defaultLanguage;
 applyLanguage(storedLanguage, false);
