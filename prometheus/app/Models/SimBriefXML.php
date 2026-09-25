@@ -15,13 +15,32 @@ class SimBriefXML extends SimpleXMLElement
      */
     public function getFlightLevel(): string
     {
-        if (empty($this->alternate->cruise_altitude)) {
-            return '0'; // unknown?
+        // Main-flight cruise level. SimBrief normally exposes this as
+        // general.initial_altitude in feet (e.g. 37000). Keep fallbacks for
+        // older/variant OFP payloads, but only use the alternate as a last resort.
+        $candidates = [
+            (string) ($this->general->initial_altitude ?? ''),
+            (string) ($this->general->cruise_altitude ?? ''),
+            (string) ($this->alternate->cruise_altitude ?? ''),
+        ];
+
+        foreach ($candidates as $candidate) {
+            $candidate = strtoupper(trim($candidate));
+            $candidate = preg_replace('/^FL\\s*/', '', $candidate);
+
+            if ($candidate === '' || !is_numeric($candidate)) {
+                continue;
+            }
+
+            $altitude = (float) $candidate;
+            $fl = $altitude > 600 ? (int) round($altitude / 100) : (int) round($altitude);
+
+            if ($fl >= 10 && $fl <= 600) {
+                return str_pad((string) $fl, 3, '0', STR_PAD_LEFT);
+            }
         }
 
-        $fl = (int) $this->alternate->cruise_altitude / 100;
-
-        return str_pad($fl, 3, '0', STR_PAD_LEFT);
+        return '0';
     }
 
     /**
