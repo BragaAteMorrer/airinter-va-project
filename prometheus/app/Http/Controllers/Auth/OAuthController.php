@@ -102,7 +102,7 @@ class OAuthController extends Controller
                 $this->userSvc->retrieveDiscordPrivateChannelId($user);
             }
 
-            flash()->success(ucfirst($provider).' account linked!');
+            flash()->success(strtoupper($provider).' est maintenant lié à votre dossier pilote Air Inter.');
 
             return redirect(route('frontend.profile.index'));
         }
@@ -161,7 +161,7 @@ class OAuthController extends Controller
             return redirect(route('frontend.dashboard.index'));
         }
 
-        flash()->error('No user linked to this account found. Please register first.');
+        flash()->error('Aucun pilote Air Inter n’est lié à ce compte. Créez d’abord votre dossier pilote.');
 
         return redirect(url('/login'));
     }
@@ -185,7 +185,7 @@ class OAuthController extends Controller
             ]);
         }
 
-        flash()->success(ucfirst($provider).' account unlinked!');
+        flash()->success(strtoupper($provider).' a été délié de votre dossier pilote Air Inter.');
 
         return redirect()->route('frontend.profile.index');
     }
