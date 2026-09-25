@@ -69,6 +69,14 @@ return new class extends Migration {
         }
 
         $now = now();
+
+        // Air Inter VA operates LFPO/Orly as its sole hub. Other operating
+        // stations are Prométhée regional platforms, not phpVMS hubs.
+        if (Schema::hasTable('airports') && Schema::hasColumn('airports', 'hub')) {
+            DB::table('airports')->where('id', '!=', 'LFPO')->update(['hub' => false]);
+            DB::table('airports')->where('id', 'LFPO')->update(['hub' => true]);
+        }
+
         foreach ([
             ['airport_id' => 'LFPO', 'kind' => 'hub', 'small_maintenance' => true, 'heavy_maintenance' => true],
             ['airport_id' => 'LFPG', 'kind' => 'regional', 'small_maintenance' => true, 'heavy_maintenance' => false],
