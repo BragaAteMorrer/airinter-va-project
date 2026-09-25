@@ -102,11 +102,17 @@ class PortalController extends Controller
             }
             foreach ($airlineIds as $airlineId) $accessCounts[(int) $airlineId] = ($accessCounts[(int) $airlineId] ?? 0) + 1;
         });
-        $airlines->each(function (Airline $airline) use ($accessCounts) {
+        $accessRules = DB::table('promethee_airline_access_rules')->pluck('min_flight_hours', 'airline_id');
+        $companyAccess = app(CompanyAccessService::class);
+        $pilotHours = $r->user() ? $companyAccess->flightHours($r->user()) : null;
+        $airlines->each(function (Airline $airline) use ($accessCounts, $accessRules, $r, $companyAccess) {
             $airline->setAttribute('promethee_logo', $this->airlineLogoUrl($airline));
             $airline->setAttribute('eligible_users_count', $accessCounts[(int) $airline->id] ?? $airline->users_count);
+            $airline->setAttribute('min_flight_hours', (int) ($accessRules[$airline->id] ?? 0));
+            $airline->setAttribute('pilot_has_access', $r->user() ? $companyAccess->canAccessAirline($r->user(), (int) $airline->id) : null);
+            $airline->setAttribute('remaining_hours', $r->user() ? $companyAccess->remainingHours($r->user(), (int) $airline->id) : null);
         });
-        return $this->page('airlines', compact('airlines'));
+        return $this->page('airlines', compact('airlines', 'pilotHours'));
     }
 
     public function finances(Request $r) {
@@ -233,8 +239,8 @@ class PortalController extends Controller
     public function maintenance(Request $r) {
         // Read the existing maintenance data directly: no disabled module or
         // legacy event listener is required for this dashboard.
-        $maintenance = DB::table('disposable_maintenance as maintenance')->join('aircraft as aircraft', 'aircraft.id', '=', 'maintenance.aircraft_id')->leftJoin('subfleets as subfleets', 'subfleets.id', '=', 'aircraft.subfleet_id')->leftJoin('airlines as airlines', 'airlines.id', '=', 'subfleets.airline_id')
-            ->select(['maintenance.*', 'aircraft.registration', 'aircraft.icao', 'airlines.name as airline_name', 'airlines.icao as airline_icao'])
+        $maintenance = DB::table('disposable_maintenance as maintenance')->join('aircraft as aircraft', 'aircraft.id', '=', 'maintenance.aircraft_id')->leftJoin('subfleets as subfleets', 'subfleets.id', '=', 'aircraft.subfleet_id')->leftJoin('airlines as airlines', 'airlines.id', '=', 'subfleets.airline_id')->leftJoin('promethee_operational_bases as ops_base', 'ops_base.airport_id', '=', 'aircraft.airport_id')
+            ->select(['maintenance.*', 'aircraft.registration', 'aircraft.icao', 'aircraft.airport_id', 'airlines.name as airline_name', 'airlines.icao as airline_icao', 'ops_base.kind as maintenance_base_kind', 'ops_base.small_maintenance', 'ops_base.heavy_maintenance'])
             ->where(function ($query) {
                 $query->whereNotNull('maintenance.act_note')->orWhere('maintenance.curr_state', '<', 80)->orWhere('maintenance.rem_ta', '<', 600)->orWhere('maintenance.rem_tb', '<', 600)->orWhere('maintenance.rem_tc', '<', 600)->orWhere('maintenance.rem_ca', '<', 3)->orWhere('maintenance.rem_cb', '<', 3)->orWhere('maintenance.rem_cc', '<', 3);
             })
@@ -249,7 +255,8 @@ class PortalController extends Controller
             ->join('aircraft as aircraft', 'aircraft.id', '=', 'maintenance.aircraft_id')
             ->leftJoin('subfleets as subfleets', 'subfleets.id', '=', 'aircraft.subfleet_id')
             ->leftJoin('airlines as airlines', 'airlines.id', '=', 'subfleets.airline_id')
-            ->select(['maintenance.*', 'aircraft.registration', 'aircraft.icao', 'airlines.name as airline_name', 'airlines.icao as airline_icao'])
+            ->leftJoin('promethee_operational_bases as ops_base', 'ops_base.airport_id', '=', 'aircraft.airport_id')
+            ->select(['maintenance.*', 'aircraft.registration', 'aircraft.icao', 'aircraft.airport_id', 'airlines.name as airline_name', 'airlines.icao as airline_icao', 'ops_base.kind as maintenance_base_kind', 'ops_base.small_maintenance', 'ops_base.heavy_maintenance'])
             ->whereNull('maintenance.act_note')
             ->where(function ($query) use ($warningHours, $warningCycles) {
                 $query->whereBetween('maintenance.rem_ta', [0, $warningHours])
@@ -1055,6 +1062,9 @@ class PortalController extends Controller
         $selectedArrival = $resolveAirport($filters['arrival'] ?? null);
 
         $q = Flight::where('active', true)->where('visible', true)->with(['airline', 'fares', 'dpt_airport', 'arr_airport', 'subfleets']);
+        if ($r->user() && !$r->user()->ability('admin', 'admin-access')) {
+            $q->whereIn('airline_id', app(CompanyAccessService::class)->allowedAirlineIds($r->user()));
+        }
         if ($r->filled('departure')) $selectedDeparture ? $q->where('dpt_airport_id', $selectedDeparture) : $q->whereRaw('1 = 0');
         if ($r->filled('arrival')) $selectedArrival ? $q->where('arr_airport_id', $selectedArrival) : $q->whereRaw('1 = 0');
         if ($r->filled('airline_id')) $q->where('airline_id', $filters['airline_id']);
