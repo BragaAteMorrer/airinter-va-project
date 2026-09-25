@@ -870,8 +870,8 @@ class PortalController extends Controller
     public function requestTransfer(Request $r, FinanceService $finance) { $data=$r->validate(['type'=>'required|in:airline,hub,jumpseat','target_airline_id'=>'nullable|required_if:type,airline|required_if:type,jumpseat|exists:airlines,id','target_airport_id'=>'nullable|required_if:type,hub|exists:airports,id','reason'=>'nullable|string|max:2000']); if($data['type']==='jumpseat') return DB::transaction(function() use($data,$r,$finance) { $user=$r->user()->fresh('journal'); $price=(int)(DB::table('promethee_settings')->where('key','jumpseat.price')->value('value') ?: 2500); if((int)$user->journal->getBalance()->getAmount()<$price)return back()->withErrors(['transfer'=>'Solde phpVMS insuffisant pour le jumpseat.']); $airline=Airline::findOrFail($data['target_airline_id']); $finance->debitFromJournal($user->journal,new Money($price),$user,'Jumpseat : '.$airline->name,'jumpseat','jumpseat'); DB::table('promethee_transfer_requests')->insert(['user_id'=>$user->id,'type'=>'jumpseat','target_airline_id'=>$airline->id,'reason'=>$data['reason']??null,'status'=>'approved','decision_note'=>'Accord automatique après paiement.','decided_at'=>now(),'created_at'=>now(),'updated_at'=>now()]); return back()->with('success','Jumpseat accordé et débité de votre journal phpVMS.'); }); DB::table('promethee_transfer_requests')->insert(['user_id'=>$r->user()->id,'type'=>$data['type'],'target_airline_id'=>$data['target_airline_id']??null,'target_airport_id'=>$data['target_airport_id']??null,'reason'=>$data['reason']??null,'status'=>'pending','created_at'=>now(),'updated_at'=>now()]); return back()->with('success','Demande de transfert transmise au staff.'); }
     public function flights(Request $r) {
         $filters = $r->validate([
-            'departure'   => 'nullable|string|max:8',
-            'arrival'     => 'nullable|string|max:8',
+            'departure'   => 'nullable|string|max:80',
+            'arrival'     => 'nullable|string|max:80',
             'airline_id'  => 'nullable|integer|exists:airlines,id',
             'subfleet_id' => 'nullable|integer|exists:subfleets,id',
             'flight_type' => 'nullable|string|size:1',
@@ -883,9 +883,27 @@ class PortalController extends Controller
             'sort'        => 'nullable|in:departure,ident,distance',
         ]);
 
+        $resolveAirport = function (?string $value): ?string {
+            $value = trim((string) $value);
+            if ($value === '') return null;
+            $upper = strtoupper($value);
+            return Airport::query()
+                ->where(function ($airports) use ($value, $upper) {
+                    $airports->where('id', $upper)
+                        ->orWhere('icao', $upper)
+                        ->orWhere('iata', $upper)
+                        ->orWhere('name', 'like', '%'.$value.'%')
+                        ->orWhere('location', 'like', '%'.$value.'%');
+                })
+                ->orderByRaw('CASE WHEN id = ? OR icao = ? OR iata = ? THEN 0 ELSE 1 END', [$upper, $upper, $upper])
+                ->value('id');
+        };
+        $selectedDeparture = $resolveAirport($filters['departure'] ?? null);
+        $selectedArrival = $resolveAirport($filters['arrival'] ?? null);
+
         $q = Flight::where('active', true)->where('visible', true)->with(['airline', 'fares', 'dpt_airport', 'arr_airport', 'subfleets']);
-        if ($r->filled('departure')) $q->where('dpt_airport_id', strtoupper($filters['departure']));
-        if ($r->filled('arrival')) $q->where('arr_airport_id', strtoupper($filters['arrival']));
+        if ($r->filled('departure')) $selectedDeparture ? $q->where('dpt_airport_id', $selectedDeparture) : $q->whereRaw('1 = 0');
+        if ($r->filled('arrival')) $selectedArrival ? $q->where('arr_airport_id', $selectedArrival) : $q->whereRaw('1 = 0');
         if ($r->filled('airline_id')) $q->where('airline_id', $filters['airline_id']);
         if ($r->filled('subfleet_id')) $q->whereHas('subfleets', fn ($subfleets) => $subfleets->where('subfleets.id', $filters['subfleet_id']));
         if ($r->filled('flight_type')) $q->where('flight_type', $filters['flight_type']);
@@ -933,7 +951,7 @@ class PortalController extends Controller
         ]);
         $mapByCode = $mapAirports->keyBy('code');
         $mapRoutes = collect();
-        if ($r->filled('departure') || $r->filled('arrival')) {
+        if ($selectedDeparture || $selectedArrival) {
             $mapRoutes = (clone $q)->reorder()->select('dpt_airport_id', 'arr_airport_id')->distinct()->limit(160)->get()
                 ->map(fn ($flight) => ['from' => $mapByCode->get($flight->dpt_airport_id), 'to' => $mapByCode->get($flight->arr_airport_id)])
                 ->filter(fn ($route) => $route['from'] && $route['to'])->values();
@@ -947,6 +965,8 @@ class PortalController extends Controller
                 ->mapWithKeys(fn ($type) => [$type => FlightType::label($type)]),
             'mapAirports' => $mapAirports,
             'mapRoutes' => $mapRoutes,
+            'selectedDeparture' => $selectedDeparture,
+            'selectedArrival' => $selectedArrival,
         ]);
     }
     public function flight(string $id) {
