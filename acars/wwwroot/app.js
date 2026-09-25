@@ -762,9 +762,10 @@ async function assertSimBriefReady(form, mode = 'company') {
   const registration = resolved?.aircraft?.registration || 'appareil';
   const type = resolved?.aircraft?.simbrief_type || resolved?.aircraft?.icao || 'type inconnu';
   const pax = resolved?.demand?.passengers;
+  const cabin = resolved?.demand?.cabin_profile?.label || resolved?.demand?.cabinProfile?.label || '';
   showMessage(
     '#simbriefState',
-    `Résolution BDD OK · ${flight} · ${origin} → ${destination} · ${registration} · ${type}${Number.isFinite(Number(pax)) ? ' · ' + pax + ' pax' : ''}.`
+    `Résolution BDD OK · ${flight} · ${origin} → ${destination} · ${registration} · ${type}${cabin ? ' · ' + cabin : ''}${Number.isFinite(Number(pax)) ? ' · ' + pax + ' pax' : ''}.`
   );
   return resolved;
 }
