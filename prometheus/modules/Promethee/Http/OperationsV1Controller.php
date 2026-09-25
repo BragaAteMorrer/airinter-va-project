@@ -56,7 +56,7 @@ class OperationsV1Controller extends Controller
             'contract_version' => '1.0',
             'simulator' => $simulator,
             'simulators' => self::SIMULATORS,
-            'operations' => $bids->map(fn (Bid $bid) => $this->operationDto($bid, $simulator))->values(),
+            'operations' => $bids->map(fn (Bid $bid) => $this->safeOperationDto($bid, $simulator))->values(),
         ]]);
     }
 
@@ -644,6 +644,64 @@ class OperationsV1Controller extends Controller
             ->when($bid->created_at, fn ($query) => $query->where('updated_at', '>=', $bid->created_at))
             ->latest('updated_at')
             ->first();
+    }
+
+    private function safeOperationDto(Bid $bid, string $simulator = 'msfs2020'): array
+    {
+        try {
+            return $this->operationDto($bid, $simulator);
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            $flight = $bid->flight;
+            $aircraft = $bid->aircraft;
+            $operationId = $this->operationIdentity->id($bid);
+
+            return [
+                'id' => $operationId,
+                'operation_id' => $operationId,
+                'bid_id' => $bid->id,
+                'status' => 'reserved',
+                'pirep_id' => null,
+                'created_at' => optional($bid->created_at)?->toIso8601String(),
+                'flight' => [
+                    'id' => $flight?->id,
+                    'ident' => $flight?->ident,
+                    'number' => $flight?->flight_number,
+                    'flight_number' => $flight?->flight_number,
+                    'departure' => $flight?->dpt_airport_id,
+                    'arrival' => $flight?->arr_airport_id,
+                    'alternate' => $flight?->alt_airport_id,
+                    'route' => $flight?->route,
+                    'level' => $flight?->level,
+                ],
+                'aircraft' => $aircraft ? [
+                    'id' => $aircraft->id,
+                    'registration' => $aircraft->registration,
+                    'name' => $aircraft->name,
+                    'icao' => $aircraft->icao,
+                    'subfleet' => $aircraft->subfleet?->name,
+                    'airport' => $aircraft->airport_id,
+                ] : null,
+                'simbrief' => [
+                    'type' => $aircraft?->simbrief_type ?: $aircraft?->icao,
+                    'addon' => null,
+                    'ofp_id' => null,
+                    'available' => false,
+                    'company_api_available' => false,
+                ],
+                'operating_rules' => [
+                    'passenger_weight_kg' => config('acars.passenger_weight_kg'),
+                    'checked_baggage_kg' => config('acars.checked_baggage_kg'),
+                    'load_factor_percent' => null,
+                    'passengers' => null,
+                    'capacity' => null,
+                    'pricing_band' => null,
+                    'fuel_policy' => 'trip + 5% + alternate + expected holding + 45 minutes reserve',
+                ],
+                'degraded' => true,
+            ];
+        }
     }
 
     private function operationDto(Bid $bid, string $simulator = 'msfs2020'): array
