@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Modules\Promethee\Services\OperationIdentityService;
 use Modules\Promethee\Services\PresenceService;
+use Modules\Promethee\Services\AirInterNetworkService;
 
 class PresenceController extends Controller
 {
@@ -16,6 +17,7 @@ class PresenceController extends Controller
 
     public function __construct(
         private readonly PresenceService $presence,
+        private readonly AirInterNetworkService $airInterNetwork,
         private readonly OperationIdentityService $operationIdentity
     ) {}
 
@@ -75,13 +77,24 @@ class PresenceController extends Controller
 
         return response()->json(['data' => [
             'presence' => $record,
-            'network' => $this->presence->network(),
+            'network' => $this->airInterNetwork->network(),
         ]]);
     }
 
     public function index()
     {
-        return response()->json(['data' => $this->presence->network()]);
+        return response()->json(['data' => $this->airInterNetwork->network()]);
+    }
+
+    public function me(Request $request)
+    {
+        return response()->json(['data' => [
+            'pilot' => [
+                'id' => (int) $request->user()->id,
+                'ident' => (string) $request->user()->ident,
+            ],
+            'networks' => $this->airInterNetwork->pilot($request->user()),
+        ]]);
     }
 
     private function pilotBid(string $reference, Request $request): Bid
