@@ -49,6 +49,8 @@ return new class extends Migration {
                 $table->unsignedInteger('user_id');
                 $table->string('status', 16)->default('reserved');
                 $table->unsignedInteger('jumpseat_amount')->default(0);
+                $table->unsignedInteger('bonus_amount')->default(0);
+                $table->timestamp('bonus_paid_at')->nullable();
                 $table->timestamp('reserved_at')->nullable();
                 $table->timestamp('completed_at')->nullable();
                 $table->timestamps();
