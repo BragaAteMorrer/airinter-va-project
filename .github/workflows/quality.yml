@@ -163,6 +163,7 @@ jobs:
           php -l modules/Promethee/routes.php
           php -l app/Http/Controllers/Auth/RegisterController.php
           php -l tests/RegistrationTest.php
+          php -l tests/MinitelProjectionTest.php
           php -l app/Notifications/Messages/AdminUserRegistered.php
           php -l app/Notifications/Messages/UserRejected.php
           php -l app/Notifications/Messages/UserRegistered.php
