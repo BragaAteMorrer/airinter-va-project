@@ -68,11 +68,22 @@ for (const contract of [
   '/simbrief/import',
   '/pirep',
   '/dispatch',
-  '/api/start'
+  '/api/start',
+  '/api/pause',
+  '/api/resume',
+  '/api/sync',
+  '/api/datalink?operation=',
+  '/api/datalink/read?operation=',
+  '/api/datalink/ack?operation=',
+  '/api/datalink/send?operation=',
+  '/api/network',
+  '/api/review',
+  '/api/file',
+  '/api/recovery/resume'
 ]) {
   if (!hermesClient.includes(contract)) {
     failures += 1;
-    console.error('Missing Hermès M4 action:', contract);
+    console.error('Missing Hermès M4/M5 action:', contract);
   }
 }
 
@@ -86,4 +97,12 @@ if (!hermesIndex.includes('value="minitel"') || !hermesIndex.includes('/hermes-m
 }
 
 if (failures) process.exitCode = 1;
-else console.log('\nMinitel M0-M4 shared/public and operational contracts are synchronized.');
+for (const page of ['flight-live', 'datalink', 'journal', 'network', 'review', 'review-list', 'recovery']) {
+  if (!hermesClient.includes("MinitelPage('" + page + "'")) {
+    failures += 1;
+    console.error('Missing Hermès M5 page:', page);
+  }
+}
+
+if (failures) process.exitCode = 1;
+else console.log('\nMinitel M0-M5 shared/public and operational contracts are synchronized.');
