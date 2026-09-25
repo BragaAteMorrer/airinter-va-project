@@ -31,6 +31,7 @@ const call = (path, body) => new Promise((resolve, reject) => {
 
 let selectedOperation = null;
 let selectedAircraft = null;
+let aircraftEligibility = null;
 let pirepId = null;
 let flightPlan = null;
 let linkedSimBrief = null;
@@ -180,7 +181,7 @@ function updateNextAction(state, ready) {
     setText(title, 'Affectez un appareil');
     setText(text, 'Hermès n’affiche que les appareils autorisés et disponibles pour cette opération.');
     setText(button, 'Choisir l’appareil');
-    action = () => { $('#aircraftId')?.focus(); $('#aircraftId')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+    action = () => { $('#aircraftTypeId')?.focus(); $('#aircraftTypeId')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
   } else if (!state.ofp) {
     const mode = localSettings.flightPlanMode || 'account';
     const hasSimBriefIdentity = Boolean($('#simbriefUsername')?.value.trim() || $('#simbriefPilotId')?.value.trim());
@@ -443,7 +444,7 @@ async function searchFlights() {
   if (aircraftType) params.set('icao_type', aircraftType);
   try {
     showMessage('#flightMessage', 'Recherche dans le programme…');
-    renderOperations(await call('/api/flights' + (params.size ? '?' + params.toString() : '')));
+    renderOperations(await call('/api/v1/flights' + (params.size ? '?' + params.toString() : '')));
     showMessage('#flightMessage', '');
   } catch (error) {
     showMessage('#flightMessage', error.message, true);
@@ -457,8 +458,11 @@ $('#flightSearchForm').onsubmit = event => {
 
 function addAircraftOption(select, aircraft) {
   const option = document.createElement('option');
-  option.value = aircraft.type_key || aircraft.id || '';
-  option.textContent = aircraft.type_label || aircraft.subfleet || aircraft.name || aircraft.icao || 'Appareil';
+  option.value = aircraft.id || '';
+  const registration = aircraft.registration || aircraft.name || aircraft.icao || 'Appareil';
+  const type = aircraft.type_label || aircraft.subfleet || aircraft.icao || '';
+  const airport = aircraft.airport ? ' · ' + aircraft.airport : '';
+  option.textContent = registration + (type ? ' · ' + type : '') + airport;
   option.dataset.aircraft = JSON.stringify(aircraft);
   select.append(option);
 }
@@ -466,9 +470,52 @@ function addAircraftOption(select, aircraft) {
 function addAircraftTypeOption(select, type) {
   const option = document.createElement('option');
   option.value = type.type_key || '';
-  option.textContent = (type.type_label || type.type_key) + ' · ' + (type.passengers ?? '—') + '/' + (type.capacity ?? '—') + ' pax · ' + (type.load_factor_percent ?? '—') + '% · ' + String(type.pricing_band || 'rouge').toUpperCase();
+  const count = Number(type.available_count || 0);
+  option.textContent = (type.type_label || type.type_key)
+    + (count ? ' · ' + count + ' appareil' + (count > 1 ? 's' : '') + ' disponible' + (count > 1 ? 's' : '') : '')
+    + ' · ' + (type.passengers ?? '—') + '/' + (type.capacity ?? '—') + ' pax'
+    + ' · ' + String(type.pricing_band || 'rouge').toUpperCase();
   option.dataset.aircraftType = JSON.stringify(type);
   select.append(option);
+}
+
+function populateAircraftInstances(typeKey, preferredAircraftId = null) {
+  const select = $('#aircraftId');
+  if (!select) return;
+
+  const available = Array.isArray(aircraftEligibility?.available) ? aircraftEligibility.available : [];
+  const filtered = available
+    .filter(aircraft => String(aircraft.type_key || '') === String(typeKey || ''))
+    .sort((a, b) => String(a.registration || '').localeCompare(String(b.registration || ''), 'fr'));
+
+  select.replaceChildren();
+  const choose = document.createElement('option');
+  choose.value = '';
+  choose.textContent = typeKey
+    ? (filtered.length ? 'Sélectionnez un appareil précis' : 'Aucun appareil disponible pour ce type')
+    : 'Choisissez d’abord un type';
+  select.append(choose);
+  filtered.forEach(aircraft => addAircraftOption(select, aircraft));
+  select.disabled = !typeKey || filtered.length === 0;
+
+  if (preferredAircraftId && filtered.some(aircraft => String(aircraft.id) === String(preferredAircraftId))) {
+    select.value = String(preferredAircraftId);
+  } else {
+    select.value = '';
+  }
+}
+
+function syncAircraftSelectors(aircraft = selectedAircraft) {
+  const typeSelect = $('#aircraftTypeId');
+  if (!typeSelect || !aircraftEligibility) return;
+
+  const typeKey = aircraft?.type_key || '';
+  if (typeKey && Array.from(typeSelect.options).some(option => option.value === String(typeKey))) {
+    typeSelect.value = String(typeKey);
+    populateAircraftInstances(typeKey, aircraft?.id || null);
+  } else if (!typeSelect.value) {
+    populateAircraftInstances('', null);
+  }
 }
 
 function renderOperationLoad(aircraft) {
@@ -486,6 +533,17 @@ function renderOperationLoad(aircraft) {
 }
 
 async function selectOperation(operation) {
+  if (!operation?.operation_id && !operation?.bid_id && operation?.id) {
+    try {
+      showMessage('#flightMessage', 'Réservation du vol dans Prométhée…');
+      operation = unwrap(await call('/api/v1/flights/' + encodeURIComponent(operation.id) + '/reserve', {}));
+      showMessage('#flightMessage', '');
+    } catch (error) {
+      showMessage('#flightMessage', 'Réservation impossible : ' + error.message, true);
+      return;
+    }
+  }
+
   selectedOperation = operation;
   selectedAircraft = operation.aircraft?.id ? operation.aircraft : null;
   renderOperationLoad(selectedAircraft);
@@ -526,40 +584,57 @@ async function selectOperation(operation) {
   showMessage('#pirepMessage', '');
   serverDispatch = null;
 
-  const select = $('#aircraftId');
-  select.replaceChildren();
-  const loading = document.createElement('option');
-  loading.value = '';
-  loading.textContent = 'Chargement des appareils autorisés…';
-  select.append(loading);
+  const typeSelect = $('#aircraftTypeId');
+  const aircraftSelect = $('#aircraftId');
+  aircraftEligibility = null;
 
-  if (selectedAircraft) {
-    select.replaceChildren();
-    addAircraftOption(select, selectedAircraft);
-    select.value = selectedAircraft.type_key || selectedAircraft.id;
-    try { await refreshDispatch(); }
-    catch (error) { showMessage('#pirepMessage', 'Dispatch indisponible : ' + error.message, true); }
-    return;
-  }
+  typeSelect.replaceChildren();
+  const loadingType = document.createElement('option');
+  loadingType.value = '';
+  loadingType.textContent = 'Chargement des types autorisés…';
+  typeSelect.append(loadingType);
+  typeSelect.disabled = true;
+
+  aircraftSelect.replaceChildren();
+  const loadingAircraft = document.createElement('option');
+  loadingAircraft.value = '';
+  loadingAircraft.textContent = 'Choisissez d’abord un type';
+  aircraftSelect.append(loadingAircraft);
+  aircraftSelect.disabled = true;
 
   try {
     const operationRef = operation.operation_id || operation.id || operation.bid_id;
     if (!operationRef) throw new Error('Cette réservation ne possède pas d’identifiant d’opération Prométhée.');
+
     const payload = unwrap(await call(`/api/v1/operations/${encodeURIComponent(operationRef)}/aircraft-eligibility`));
+    aircraftEligibility = payload || {};
     renderEligibility(payload);
-    const types = payload?.types || [];
-    select.replaceChildren();
-    const choose = document.createElement('option');
-    choose.value = '';
-    choose.textContent = types.length ? 'Sélectionnez un type d’appareil' : 'Aucun type disponible pour ce vol';
-    select.append(choose);
-    types.forEach(item => addAircraftTypeOption(select, item));
+
+    const types = Array.isArray(payload?.types) ? payload.types : [];
+    typeSelect.replaceChildren();
+    const chooseType = document.createElement('option');
+    chooseType.value = '';
+    chooseType.textContent = types.length ? 'Sélectionnez un type d’appareil' : 'Aucun type disponible pour ce vol';
+    typeSelect.append(chooseType);
+    types.forEach(item => addAircraftTypeOption(typeSelect, item));
+    typeSelect.disabled = types.length === 0;
+
+    if (selectedAircraft?.id) {
+      syncAircraftSelectors(selectedAircraft);
+    } else {
+      populateAircraftInstances('', null);
+    }
+
     if (!types.length) {
       showMessage('#pirepMessage', 'Aucun type d’appareil autorisé et disponible pour ce vol. Vérifiez la flotte, la position et les qualifications.', true);
     }
   } catch (error) {
-    select.replaceChildren(loading);
-    loading.textContent = 'Appareils indisponibles';
+    typeSelect.replaceChildren(loadingType);
+    loadingType.textContent = 'Types indisponibles';
+    typeSelect.disabled = true;
+    aircraftSelect.replaceChildren(loadingAircraft);
+    loadingAircraft.textContent = 'Appareils indisponibles';
+    aircraftSelect.disabled = true;
     showMessage('#pirepMessage', error.message, true);
   }
 
@@ -577,6 +652,7 @@ async function refreshDispatch() {
     const form = $('#prefileForm');
     if (form?.elements?.aircraft_id) form.elements.aircraft_id.value = selectedAircraft.id;
     renderOperationLoad(selectedAircraft);
+    syncAircraftSelectors(selectedAircraft);
   }
   const checks = serverDispatch?.server_checks || {};
   readiness.operation = Boolean(checks.operation);
@@ -737,18 +813,31 @@ $('#simbriefAccountImportBtn').onclick = async () => {
   }
 };
 
+$('#aircraftTypeId').onchange = event => {
+  const typeKey = event.target.value || '';
+  selectedAircraft = null;
+  const form = $('#prefileForm');
+  if (form?.elements?.aircraft_id) form.elements.aircraft_id.value = '';
+  if (selectedOperation) selectedOperation.aircraft = null;
+  renderOperationLoad(null);
+  populateAircraftInstances(typeKey, null);
+  updateWorkflow();
+  showMessage('#pirepMessage', typeKey
+    ? 'Type sélectionné. Choisissez maintenant l’immatriculation précise.'
+    : '');
+};
+
 $('#aircraftId').onchange = async event => {
   const select = event.target;
   const option = select.selectedOptions[0];
   let nextAircraft = null;
-  let nextType = null;
   try { nextAircraft = option?.dataset.aircraft ? JSON.parse(option.dataset.aircraft) : null; } catch {}
-  try { nextType = option?.dataset.aircraftType ? JSON.parse(option.dataset.aircraftType) : null; } catch {}
 
-  if (!nextAircraft?.id && !nextType?.type_key) {
+  if (!nextAircraft?.id) {
     selectedAircraft = null;
     const form = $('#prefileForm');
     if (form?.elements?.aircraft_id) form.elements.aircraft_id.value = '';
+    if (selectedOperation) selectedOperation.aircraft = null;
     renderOperationLoad(null);
     updateWorkflow();
     return;
@@ -756,32 +845,48 @@ $('#aircraftId').onchange = async event => {
 
   const operationRef = selectedOperation?.operation_id || selectedOperation?.id || selectedOperation?.bid_id;
   if (!operationRef) {
-    select.value = selectedAircraft?.type_key || selectedAircraft?.id || '';
+    select.value = selectedAircraft?.id || '';
     return showMessage('#pirepMessage', 'Impossible d’affecter l’appareil : opération Prométhée introuvable.', true);
   }
 
-  const requestedLabel = nextType?.type_label || nextAircraft?.type_label || nextAircraft?.subfleet || 'l’appareil';
+  const requestedLabel = nextAircraft.registration || nextAircraft.type_label || nextAircraft.subfleet || 'l’appareil';
+  const typeSelect = $('#aircraftTypeId');
   select.disabled = true;
+  if (typeSelect) typeSelect.disabled = true;
   showMessage('#pirepMessage', 'Affectation de ' + requestedLabel + ' à l’opération…');
-  try {
-    const body = { _method: 'PUT' };
-    if (nextType?.type_key) body.aircraft_type = nextType.type_key;
-    else body.aircraft_id = nextAircraft.id;
 
-    const assignment = unwrap(await call('/api/v1/operations/' + encodeURIComponent(operationRef) + '/aircraft', body));
+  try {
+    const assignment = unwrap(await call('/api/v1/operations/' + encodeURIComponent(operationRef) + '/aircraft', {
+      _method: 'PUT',
+      aircraft_id: nextAircraft.id
+    }));
+
     selectedAircraft = assignment?.aircraft || nextAircraft;
     if (!selectedAircraft?.id) throw new Error('Prométhée n’a pas retourné l’appareil affecté.');
     if (selectedOperation) selectedOperation.aircraft = selectedAircraft;
+
     const form = $('#prefileForm');
     if (form?.elements?.aircraft_id) form.elements.aircraft_id.value = selectedAircraft.id;
     renderOperationLoad(selectedAircraft);
-    select.value = selectedAircraft.type_key || nextType?.type_key || selectedAircraft.id;
+
+    if (typeSelect) typeSelect.value = selectedAircraft.type_key || nextAircraft.type_key || '';
+    populateAircraftInstances(typeSelect?.value || selectedAircraft.type_key || '', selectedAircraft.id);
+
     await refreshDispatch();
-    showMessage('#pirepMessage', (selectedAircraft.type_label || requestedLabel) + ' affecté · ' + (selectedAircraft.passengers ?? '—') + '/' + (selectedAircraft.capacity ?? '—') + ' passagers prévus.');
+    showMessage(
+      '#pirepMessage',
+      (selectedAircraft.registration || requestedLabel)
+        + ' affecté · '
+        + (selectedAircraft.type_label || selectedAircraft.subfleet || '')
+        + ' · '
+        + (selectedAircraft.passengers ?? '—') + '/' + (selectedAircraft.capacity ?? '—')
+        + ' passagers prévus.'
+    );
   } catch (error) {
-    select.value = selectedAircraft?.type_key || selectedAircraft?.id || '';
+    select.value = selectedAircraft?.id || '';
     showMessage('#pirepMessage', 'Affectation impossible : ' + error.message, true);
   } finally {
+    if (typeSelect) typeSelect.disabled = false;
     select.disabled = false;
     updateWorkflow();
   }

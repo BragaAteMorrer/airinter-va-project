@@ -11,6 +11,7 @@ use Modules\Promethee\Http\SimBriefCallbackController;
 use Modules\Promethee\Http\DatalinkController;
 use Modules\Promethee\Http\SopController;
 use Modules\Promethee\Http\PresenceController;
+use Modules\Promethee\Http\DispatchDeskController;
 use App\Http\Controllers\Api\AcarsSimBriefController;
 
 // Browsers request this conventional path even though the branded icon lives
@@ -93,6 +94,8 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::post('/identite', [PortalController::class, 'saveBranding'])->name('branding.save');
         Route::post('/identite/importer', [PortalController::class, 'importBranding'])->name('branding.import');
         Route::get('/simbrief', [PortalController::class, 'adminSimbrief'])->name('simbrief');
+        Route::post('/simbrief/api-key', [PortalController::class, 'saveSimbriefApiKey'])->name('simbrief.api-key.save');
+        Route::delete('/simbrief/api-key', [PortalController::class, 'deleteSimbriefApiKey'])->name('simbrief.api-key.delete');
         Route::post('/simbrief/settings', [PortalController::class, 'saveSimbriefSettings'])->name('simbrief.settings');
         Route::post('/simbrief/sync', [PortalController::class, 'syncSimbrief'])->name('simbrief.sync');
         Route::post('/calendar', [PortalController::class,'saveEvent'])->name('calendar.save');
@@ -123,6 +126,9 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::post('/seasons/import', [PortalController::class,'importSchedule'])->name('seasons.import');
         Route::post('/safety', [PortalController::class,'generate'])->name('safety.generate');
         Route::get('/network', [PortalController::class,'network'])->name('network');
+        Route::get('/dispatch', [DispatchDeskController::class, 'index'])->name('dispatch');
+        Route::get('/dispatch/feed', [DispatchDeskController::class, 'feed'])->name('dispatch.feed');
+        Route::get('/dispatch/operations/{operation}', [DispatchDeskController::class, 'operation'])->name('dispatch.operation');
         Route::get('/network/presence', [PresenceController::class,'index'])->name('network.presence');
         Route::get('/health', [PortalController::class,'health'])->name('health');
         Route::redirect('/catalogue', '/catalogue/flights')->name('catalogue');
@@ -189,6 +195,8 @@ Route::middleware('api')->get('/api/v1/hermes/releases/latest', [HermesReleaseCo
 
 Route::middleware(['api','api.auth'])->prefix('api/v1')->group(function () {
     Route::get('/me', [OperationsV1Controller::class, 'me']);
+    Route::get('/flights', [OperationsV1Controller::class, 'searchFlights']);
+    Route::post('/flights/{flightId}/reserve', [OperationsV1Controller::class, 'reserveFlight']);
     Route::get('/operations', [OperationsV1Controller::class, 'index']);
     Route::get('/operations/{bid}', [OperationsV1Controller::class, 'show']);
     Route::delete('/operations/{bid}', [OperationsV1Controller::class, 'destroy']);

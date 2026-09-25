@@ -42,7 +42,7 @@ class AcarsSimBriefController extends Controller
         [$flight, $aircraft] = $this->getEligibleOperation($flight_id, $attrs['aircraft_id']);
         $plan = $this->effectivePlanning($flight, $attrs);
 
-        $apiKey = setting('simbrief.api_key');
+        $apiKey = app(\Modules\Promethee\Services\SimBriefCompanyKeyService::class)->get();
         abort_if(empty($apiKey), 503, 'La clé API SimBrief de la compagnie n’est pas configurée.');
 
         $type = $aircraft->simbrief_type ?: ($aircraft->subfleet->simbrief_type ?: $aircraft->icao);

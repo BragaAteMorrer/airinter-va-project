@@ -11,9 +11,15 @@ class FlightOpsService
     {
         $lat = isset($sample['lat']) ? (float) $sample['lat'] : null;
         $lon = isset($sample['lon']) ? (float) $sample['lon'] : null;
-        $destination = Airport::find($flight['arrival']);
-        $remaining = ($destination && $lat !== null && $lon !== null)
-            ? $this->distanceNm($lat, $lon, (float) $destination->lat, (float) $destination->lon) : null;
+        $destinationLat = isset($flight['arrival_lat']) ? (float) $flight['arrival_lat'] : null;
+        $destinationLon = isset($flight['arrival_lon']) ? (float) $flight['arrival_lon'] : null;
+        if ($destinationLat === null || $destinationLon === null) {
+            $destination = Airport::find($flight['arrival']);
+            $destinationLat = $destination?->lat !== null ? (float) $destination->lat : null;
+            $destinationLon = $destination?->lon !== null ? (float) $destination->lon : null;
+        }
+        $remaining = ($destinationLat !== null && $destinationLon !== null && $lat !== null && $lon !== null)
+            ? $this->distanceNm($lat, $lon, $destinationLat, $destinationLon) : null;
         $groundSpeed = max(0, (float) ($sample['gs'] ?? 0));
         $eta = $remaining !== null && $groundSpeed >= 60
             ? now()->addMinutes((int) round($remaining / $groundSpeed * 60)) : null;

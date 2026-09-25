@@ -107,6 +107,12 @@ public sealed class PrometheeWindow : Window
             return await DatalinkRead(uri, body);
         if (route == "/api/datalink/ack")
             return await DatalinkAck(uri, body);
+        // Compatibility with pre-1.0.1 web assets which queried /api/flights.
+        // Keep this alias so a stale WebView2 cache cannot fall through to
+        // "Commande ACARS inconnue." after the backend gained /api/v1/flights.
+        if (route == "/api/flights")
+            return await client.Send("v1/flights" + uri.Query);
+
         if (route.StartsWith("/api/v1/", StringComparison.Ordinal)) {
             var remote = route["/api/".Length..];
             if (body.HasValue && body.Value.ValueKind != JsonValueKind.Null) {

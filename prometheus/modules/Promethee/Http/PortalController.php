@@ -1646,6 +1646,7 @@ class PortalController extends Controller
             'shopItems' => DB::table('promethee_shop_items')->where('active',true)->count(),
             'pendingTransfers' => DB::table('promethee_transfer_requests')->whereIn('type',['hub','airline'])->where('status','pending')->count(),
             'jumpseatCount' => DB::table('promethee_transfer_requests')->where('type','jumpseat')->count(),
+            'simbriefApiConfigured' => app(\Modules\Promethee\Services\SimBriefCompanyKeyService::class)->configured(),
         ]);
     }
     public function automation() {
@@ -1748,8 +1749,10 @@ class PortalController extends Controller
     }
     public function adminSimbrief()
     {
+        $companyKey = app(\Modules\Promethee\Services\SimBriefCompanyKeyService::class);
+
         return $this->page('admin.simbrief', [
-            'apiConfigured' => filled(setting('simbrief.api_key')),
+            'apiConfigured' => $companyKey->configured(),
             'aircraftCount' => \App\Models\SimBriefAircraft::count(),
             'airframeCount' => \App\Models\SimBriefAirframe::count(),
             'layoutCount' => \App\Models\SimBriefLayout::count(),

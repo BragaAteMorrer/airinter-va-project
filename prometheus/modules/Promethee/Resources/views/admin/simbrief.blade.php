@@ -97,7 +97,38 @@
           La synchronisation hebdomadaire phpVMS reste active indépendamment de ce bouton.
         </p>
 
-        <form method="post" action="{{ route('admin.promethee.simbrief.sync') }}" style="display:inline-block;margin-right:8px">
+        <hr>
+        <h5>Clé API compagnie</h5>
+        <p class="text-muted">La valeur est chiffrée côté serveur et n'est jamais réaffichée ni envoyée à Hermès.</p>
+
+        <form method="post" action="{{ route('admin.promethee.simbrief.api-key.save') }}" style="margin-bottom:12px">
+          @csrf
+          <div class="form-group">
+            <label for="simbrief-api-key">SimBrief Company API Key</label>
+            <input
+              id="simbrief-api-key"
+              class="form-control"
+              type="password"
+              name="api_key"
+              value=""
+              autocomplete="new-password"
+              spellcheck="false"
+              placeholder="{{ $apiConfigured ? 'Clé déjà configurée — saisir une nouvelle valeur pour la remplacer' : 'Collez la clé API compagnie SimBrief' }}"
+              required
+            >
+          </div>
+          <button class="btn btn-primary" type="submit">{{ $apiConfigured ? 'Remplacer la clé API' : 'Enregistrer la clé API' }}</button>
+        </form>
+
+        @if($apiConfigured)
+        <form method="post" action="{{ route('admin.promethee.simbrief.api-key.delete') }}" style="display:inline-block;margin-right:8px" onsubmit="return confirm('Supprimer la clé API SimBrief de Prométhée ?');">
+          @csrf
+          @method('DELETE')
+          <button class="btn btn-danger" type="submit">Supprimer la clé API</button>
+        </form>
+        @endif
+
+        <form method="post" action="{{ route('admin.promethee.simbrief.sync') }}" style="display:inline-block">
           @csrf
           <button class="btn btn-info" type="submit">Synchroniser maintenant</button>
         </form>
