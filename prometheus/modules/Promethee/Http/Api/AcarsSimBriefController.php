@@ -43,19 +43,30 @@ class AcarsSimBriefController extends Controller
         $timestamp = now()->timestamp;
         $operationId = $resolved['operation_id'];
         $staticId = $this->staticId($request, $user->ident, (string) $flight->id, (string) $aircraft->id);
+        $parameters = $resolved['parameters'];
+
+        // SimBrief API v1 computes the OFP identifier client-side before
+        // generation. Mirror the official phpVMS implementation so Hermès does
+        // not wait for a callback value SimBrief never sends.
+        $ofpHash = strtoupper(substr(md5(
+            $parameters['orig'].$parameters['dest'].$parameters['type']
+        ), 0, 10));
+        $expectedOfpId = $timestamp.'_'.$ofpHash;
+
         $apiSession = $this->apiSessions->create(
             (int) $user->id,
             $operationId,
             (string) $flight->id,
             (string) $aircraft->id,
-            $staticId
+            $staticId,
+            $expectedOfpId
         );
 
         $outputPage = route('promethee.simbrief.callback', ['state' => $apiSession['state']]);
-        $parameters = $resolved['parameters'];
-        $signatureInput = $parameters['orig'].$parameters['dest'].$parameters['type'].$timestamp.$outputPage;
+        $outputPageApi = preg_replace('#^https?://#i', '', $outputPage);
+        $signatureInput = $parameters['orig'].$parameters['dest'].$parameters['type'].$timestamp.$outputPageApi;
         $parameters['static_id'] = $staticId;
-        $parameters['outputpage'] = $outputPage;
+        $parameters['outputpage'] = $outputPageApi;
         $parameters['timestamp'] = $timestamp;
         $parameters['apicode'] = md5($apiKey.$signatureInput);
 
@@ -63,6 +74,7 @@ class AcarsSimBriefController extends Controller
             'operation_id' => $operationId,
             'worker_url' => 'https://www.simbrief.com/ofp/ofp.loader.api.php',
             'state' => $apiSession['state'],
+            'expected_ofp_id' => $expectedOfpId,
             'expires_in' => 1800,
             'flight_id' => $flight->id,
             'aircraft_id' => $aircraft->id,
