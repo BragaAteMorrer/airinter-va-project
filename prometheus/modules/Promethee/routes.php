@@ -190,6 +190,8 @@ Route::middleware('api')->get('/api/v1/hermes/releases/latest', [HermesReleaseCo
 
 Route::middleware(['api','api.auth'])->prefix('api/v1')->group(function () {
     Route::get('/me', [OperationsV1Controller::class, 'me']);
+    Route::get('/flights', [OperationsV1Controller::class, 'searchFlights']);
+    Route::post('/flights/{flight}/reserve', [OperationsV1Controller::class, 'reserveFlight']);
     Route::get('/operations', [OperationsV1Controller::class, 'index']);
     Route::get('/operations/{bid}', [OperationsV1Controller::class, 'show']);
     Route::delete('/operations/{bid}', [OperationsV1Controller::class, 'destroy']);
