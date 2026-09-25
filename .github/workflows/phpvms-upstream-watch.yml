@@ -1,0 +1,22 @@
+name: phpVMS Upstream Watch
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 6 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  upstream:
+    name: Check stable phpVMS release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate pinned upstream manifest
+        run: python tools/phpvms_upstream_audit.py --check-manifest
+      - name: Detect a newer stable release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python tools/phpvms_upstream_audit.py --latest --fail-if-newer

@@ -21,7 +21,7 @@
       <button class="tab protected-tab" data-tab="review" disabled><span data-i18n="nav.review">Flight Review</span></button>
       <button class="tab protected-tab" data-tab="settings" disabled><span data-i18n="nav.settings">Paramètres</span></button>
     </nav>
-    <div class="display-controls" aria-label="Affichage Hermès"><label class="theme"><span data-i18n="display.language">Langue</span><select id="language"><option value="fr">Français</option><option value="en">English</option></select></label><label class="theme"><span data-i18n="display.style">Style</span><select id="era"><option value="modern" data-i18n="display.modern">Moderne</option><option value="2000" data-i18n="display.2000">Années 2000</option></select></label><label class="theme"><span data-i18n="display.appearance">Apparence</span><select id="appearance"><option value="light" data-i18n="display.light">Clair</option><option value="dark" data-i18n="display.dark">Nuit</option></select></label></div>
+    <div class="display-controls" aria-label="Affichage Hermès"><label class="theme"><span data-i18n="display.language">Langue</span><select id="language"><option value="fr">Français</option><option value="en">English</option><option value="pt">Português</option><option value="es">Español</option><option value="it">Italiano</option><option value="ja">日本語</option><option value="tr">Türkçe</option><option value="de">Deutsch</option></select></label><label class="theme"><span data-i18n="display.style">Style</span><select id="era"><option value="modern" data-i18n="display.modern">Moderne</option><option value="2000" data-i18n="display.2000">Années 2000</option></select></label><label class="theme"><span data-i18n="display.appearance">Apparence</span><select id="appearance"><option value="light" data-i18n="display.light">Clair</option><option value="dark" data-i18n="display.dark">Nuit</option></select></label></div>
     <small id="build"></small>
   </aside>
   <main>
@@ -253,5 +253,5 @@ window.addEventListener('error', event => {
   message.textContent = 'Interface Hermès en erreur : ' + (event.message || 'erreur inconnue');
 });
 </script>
-<script src="/app.js"></script>
+<script src="/i18n.js"></script>\n<script src="/app.js"></script>
 </body></html>

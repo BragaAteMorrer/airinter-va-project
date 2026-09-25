@@ -44,6 +44,17 @@ $env:PROMETHEE_SIMCONNECT_DLL = 'C:\chemin\vers\SimConnect.dll'
 powershell -NoProfile -ExecutionPolicy Bypass -File .\start-acars.ps1
 ```
 
+## Maintenance et reprise
+
+Prométhée suit désormais explicitement une version upstream de phpVMS et documente ses rares écarts au core.
+
+- Passation développeur : [docs/maintenance/HANDOVER.md](docs/maintenance/HANDOVER.md)
+- Mise à jour phpVMS : [docs/maintenance/PHPVMS_UPGRADES.md](docs/maintenance/PHPVMS_UPGRADES.md)
+- Baseline upstream : [prometheus/.phpvms-upstream.json](prometheus/.phpvms-upstream.json)
+- Audit d'une future release : `python tools/phpvms_upstream_audit.py --latest`
+
+Ne jamais remplacer directement les fichiers de production avec une archive phpVMS : passer par une branche, l'audit upstream et la CI.
+
 ## Fonctionnalités ajoutées
 
 - Portail Prométhée avec thèmes moderne, Minitel et années 2000.

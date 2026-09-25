@@ -1840,17 +1840,33 @@ class PortalController extends Controller
         $pilots = User::where('state', UserState::ACTIVE)->get()->filter(fn ($user) => $progression->eligible($user, $rule))->take(100)->values();
         return back()->with('automation_preview', ['count'=>$pilots->count(), 'pilots'=>$pilots->map(fn($pilot)=>$pilot->pilot_id.' · '.$pilot->name)->all()]);
     }
-    public function saveBadgeRule(Request $r) {
-        $data = $r->validate(['award_id'=>'required|integer|exists:awards,id','rule_id'=>'nullable|integer|exists:promethee_badge_rules,id','active'=>'nullable|boolean']); [$operator,$criteria] = $this->automationCriteria($r);
+    public function saveBadgeRule(Request $r, \Modules\Promethee\Services\ProgressionService $progression) {
+        $data = $r->validate(['award_id'=>'required|integer|exists:awards,id','rule_id'=>'nullable|integer|exists:promethee_badge_rules,id','active'=>'nullable|boolean']);
+        [$operator,$criteria] = $this->automationCriteria($r);
         $payload=['award_id'=>$data['award_id'],'operator'=>$operator,'criteria'=>json_encode($criteria),'active'=>$r->boolean('active'),'updated_at'=>now()];
-        if (!empty($data['rule_id'])) DB::table('promethee_badge_rules')->where('id',$data['rule_id'])->update($payload); else DB::table('promethee_badge_rules')->insert($payload+['created_at'=>now()]);
-        return back()->with('success','Règle de badge enregistrée.');
+        if (!empty($data['rule_id'])) {
+            DB::table('promethee_badge_rules')->where('id',$data['rule_id'])->update($payload);
+        } else {
+            DB::table('promethee_badge_rules')->insert($payload+['created_at'=>now()]);
+        }
+
+        $result = $progression->recalculate(null, 'rule:badge_saved');
+
+        return back()->with('success','Règle de badge enregistrée · '.$result['awards'].' badge(s) attribué(s) automatiquement.');
     }
-    public function saveRankRule(Request $r) {
-        $data = $r->validate(['rank_id'=>'required|integer|exists:ranks,id','rule_id'=>'nullable|integer|exists:promethee_rank_rules,id','active'=>'nullable|boolean','allow_demotion'=>'nullable|boolean']); [$operator,$criteria] = $this->automationCriteria($r);
+    public function saveRankRule(Request $r, \Modules\Promethee\Services\ProgressionService $progression) {
+        $data = $r->validate(['rank_id'=>'required|integer|exists:ranks,id','rule_id'=>'nullable|integer|exists:promethee_rank_rules,id','active'=>'nullable|boolean','allow_demotion'=>'nullable|boolean']);
+        [$operator,$criteria] = $this->automationCriteria($r);
         $payload=['rank_id'=>$data['rank_id'],'operator'=>$operator,'criteria'=>json_encode($criteria),'active'=>$r->boolean('active'),'allow_demotion'=>$r->boolean('allow_demotion'),'updated_at'=>now()];
-        if (!empty($data['rule_id'])) DB::table('promethee_rank_rules')->where('id',$data['rule_id'])->update($payload); else DB::table('promethee_rank_rules')->insert($payload+['created_at'=>now()]);
-        return back()->with('success','Règle de grade enregistrée.');
+        if (!empty($data['rule_id'])) {
+            DB::table('promethee_rank_rules')->where('id',$data['rule_id'])->update($payload);
+        } else {
+            DB::table('promethee_rank_rules')->insert($payload+['created_at'=>now()]);
+        }
+
+        $result = $progression->recalculate(null, 'rule:rank_saved');
+
+        return back()->with('success','Règle de grade enregistrée · '.$result['promotions'].' promotion(s) appliquée(s) automatiquement.');
     }
     public function adminSimbrief()
     {

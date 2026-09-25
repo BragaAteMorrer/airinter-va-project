@@ -36,6 +36,7 @@
 <script>
 window.prometheeI18n = @json($prometheeI18n);
 </script>
+@stack('styles')
 </head>
 <body>
 <a class="skip" href="#main">{{ __('promethee.skip_to_content') }}</a>
@@ -99,6 +100,7 @@ window.prometheeI18n = @json($prometheeI18n);
         'navigation_operations' => [
             ['route' => 'promethee.flights', 'label' => 'flight_schedule', 'active' => 'promethee.flights*'],
             ['route' => 'promethee.operations', 'label' => 'operations', 'active' => 'promethee.operations'],
+            ['route' => 'admin.promethee.dispatch', 'label' => 'dispatch_desk', 'active' => 'admin.promethee.dispatch*'],
             ['route' => 'promethee.missions', 'label' => 'missions_circuits', 'active' => 'promethee.missions'],
             ['route' => 'promethee.live', 'label' => 'navigation_menu.live_flights', 'active' => 'promethee.live'],
             ['route' => 'promethee.safety', 'label' => 'flight_safety', 'active' => 'promethee.safety*'],
@@ -118,11 +120,13 @@ window.prometheeI18n = @json($prometheeI18n);
         </div>
     </details>
 @endforeach
-<details @class(['nav-group', 'selected' => request()->routeIs('admin.promethee.*')])>
+<details @class(['nav-group', 'selected' => !request()->routeIs('admin.promethee.dispatch*') && request()->routeIs('admin.promethee.*', 'admin.users.*', 'admin.ranks.*')])>
     <summary>{{ __('promethee.navigation_private') }}<b aria-hidden="true">⌄</b></summary>
     <div class="nav-menu">
         @ability('admin','admin-access')
-        <a @class(['selected' => request()->routeIs('admin.promethee.*')]) href="{{ route('admin.promethee.dashboard') }}">{{ __('promethee.administration') }}</a>
+        <a @class(['selected' => !request()->routeIs('admin.promethee.dispatch*') && request()->routeIs('admin.promethee.*')]) href="{{ route('admin.promethee.dashboard') }}">{{ __('promethee.administration') }}</a>
+        @if(\Illuminate\Support\Facades\Route::has('admin.users.index'))<a @class(['selected' => request()->routeIs('admin.users.*')]) href="{{ route('admin.users.index') }}">{{ __('promethee.admin_pilots') }}</a>@endif
+        @if(\Illuminate\Support\Facades\Route::has('admin.ranks.index'))<a @class(['selected' => request()->routeIs('admin.ranks.*')]) href="{{ route('admin.ranks.index') }}">{{ __('promethee.admin_ranks') }}</a>@endif
         @endability
         <a href="{{ url('/logout') }}">{{ __('promethee.logout') }}</a>
     </div>

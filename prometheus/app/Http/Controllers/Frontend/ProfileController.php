@@ -171,6 +171,18 @@ class ProfileController extends Controller
         }
 
         $req_data = $request->all();
+
+        // phpVMS 7.0.10: never trust profile fields injected by a modified form.
+        if (isset($req_data['rank_id']) || isset($req_data['flights']) || isset($req_data['flight_time']) || isset($req_data['transfer_time'])) {
+            Log::warning('FORM CHECK | '.$user->name_private.' trying to manipulate profile details...', ['id' => $id, 'ident' => $user->ident, 'name' => $user->name]);
+        }
+
+        unset($req_data['rank_id']);
+        unset($req_data['flights']);
+        unset($req_data['flight_time']);
+        unset($req_data['transfer_time']);
+        unset($req_data['status']);
+        unset($req_data['state']);
         if (!$request->filled('password')) {
             unset($req_data['password']);
         } else {

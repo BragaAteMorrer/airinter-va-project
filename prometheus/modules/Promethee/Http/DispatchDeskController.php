@@ -3,6 +3,7 @@
 namespace Modules\Promethee\Http;
 
 use App\Contracts\Controller;
+use Illuminate\Support\Facades\Auth;
 use Modules\Promethee\Services\BrandingService;
 use Modules\Promethee\Services\DispatchDeskService;
 
@@ -12,8 +13,15 @@ class DispatchDeskController extends Controller
 
     public function index()
     {
+        $user = Auth::user();
+        $canDispatchActions = $user && (
+            $user->hasRole('admin')
+            || (method_exists($user, 'isAbleTo') && $user->isAbleTo('admin-access'))
+        );
+
         return view('promethee::admin.dispatch', [
             'branding' => app(BrandingService::class)->active(),
+            'canDispatchActions' => (bool) $canDispatchActions,
         ]);
     }
 

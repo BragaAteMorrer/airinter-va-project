@@ -12,7 +12,8 @@ use Modules\Promethee\Http\DatalinkController;
 use Modules\Promethee\Http\SopController;
 use Modules\Promethee\Http\PresenceController;
 use Modules\Promethee\Http\DispatchDeskController;
-use App\Http\Controllers\Api\AcarsSimBriefController;
+use Modules\Promethee\Http\Api\AcarsSimBriefController;
+use Modules\Promethee\Http\Api\AcarsSessionController;
 
 // Browsers request this conventional path even though the branded icon lives
 // with the static Promethee assets.
@@ -88,6 +89,14 @@ Route::middleware(['web','auth'])->name('promethee.')->group(function () {
     Route::get('/replay/{id}', [PortalController::class,'replay'])->name('replay');
 });
 
+// Dispatch Desk is readable by every authenticated pilot. Mutating OPS/Datalink
+// endpoints remain in the administrator-only route tree below.
+Route::middleware(['web','auth'])->prefix('admin/promethee')->name('admin.promethee.')->group(function () {
+    Route::get('/dispatch', [DispatchDeskController::class, 'index'])->name('dispatch');
+    Route::get('/dispatch/feed', [DispatchDeskController::class, 'feed'])->name('dispatch.feed');
+    Route::get('/dispatch/operations/{operation}', [DispatchDeskController::class, 'operation'])->name('dispatch.operation');
+});
+
 /* Administration has a dedicated, server-protected route tree. */
 Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/promethee')->name('admin.promethee.')->group(function () {
         Route::get('/', [PortalController::class,'adminDashboard'])->name('dashboard');
@@ -127,9 +136,6 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::post('/seasons/import', [PortalController::class,'importSchedule'])->name('seasons.import');
         Route::post('/safety', [PortalController::class,'generate'])->name('safety.generate');
         Route::get('/network', [PortalController::class,'network'])->name('network');
-        Route::get('/dispatch', [DispatchDeskController::class, 'index'])->name('dispatch');
-        Route::get('/dispatch/feed', [DispatchDeskController::class, 'feed'])->name('dispatch.feed');
-        Route::get('/dispatch/operations/{operation}', [DispatchDeskController::class, 'operation'])->name('dispatch.operation');
         Route::get('/network/presence', [PresenceController::class,'index'])->name('network.presence');
         Route::get('/health', [PortalController::class,'health'])->name('health');
         Route::redirect('/catalogue', '/catalogue/flights')->name('catalogue');
@@ -190,6 +196,19 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
 Route::middleware('web')->get('/simbrief/callback/{state}', [SimBriefCallbackController::class, '__invoke'])
     ->where('state', '[A-Za-z0-9]{64}')
     ->name('promethee.simbrief.callback');
+
+// Hermès authentication is owned by Prométhée, not phpVMS core.
+Route::middleware('api')->post('/api/acars/session', [AcarsSessionController::class, 'store'])
+    ->middleware('throttle:5,1');
+Route::middleware(['api','api.auth'])->delete('/api/acars/session', [AcarsSessionController::class, 'destroy']);
+
+// Compatibility endpoints for older Hermès builds. New clients use /api/v1/operations/*.
+Route::middleware(['api','api.auth'])->prefix('api/acars')->group(function () {
+    Route::post('/flights/{flight_id}/simbrief/session', [AcarsSimBriefController::class, 'session']);
+    Route::post('/flights/{flight_id}/simbrief/redirect', [AcarsSimBriefController::class, 'redirect']);
+    Route::post('/flights/{flight_id}/simbrief/account/import', [AcarsSimBriefController::class, 'importAccount']);
+    Route::post('/flights/{flight_id}/simbrief/import', [AcarsSimBriefController::class, 'import']);
+});
 
 // Update discovery is intentionally public: Hermès checks before the pilot signs in.
 Route::middleware('api')->get('/api/v1/hermes/releases/latest', [HermesReleaseController::class, 'latest']);

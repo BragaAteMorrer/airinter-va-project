@@ -38,7 +38,14 @@ jobs:
             exit 1
           fi
       - name: Validate Hermes interface JavaScript
-        run: node --check acars/wwwroot/app.js
+        run: |
+          node --check acars/wwwroot/i18n.js
+          node --check acars/wwwroot/app.js
+          node tools/check_hermes_i18n.cjs
+      - name: Validate upstream maintenance tooling
+        run: |
+          python -m py_compile tools/phpvms_upstream_audit.py
+          python tools/phpvms_upstream_audit.py --check-manifest
       - name: Guard Air Inter-only Hermès authentication
         shell: bash
         run: |
@@ -141,6 +148,7 @@ jobs:
           php -l modules/Promethee/Database/migrations/2026_09_24_000013_repair_bbr_red_references.php
           php -l modules/Promethee/Database/migrations/2026_09_25_000014_repair_blank_bulk_bbr_references.php
           php -l modules/Promethee/Database/migrations/2026_09_25_000015_ensure_simbrief_api_key_setting.php
+          php -l modules/Promethee/Database/migrations/2026_09_11_000000_create_acars_access_tokens_table.php
           php -l tests/PrometheeDemandEconomyTest.php
           php -l modules/Promethee/routes.php
           php -l app/Http/Controllers/Auth/RegisterController.php
@@ -154,8 +162,13 @@ jobs:
           php -l app/Notifications/Messages/PirepAccepted.php
           php -l app/Notifications/Messages/NewsAdded.php
           php -l app/Notifications/Messages/InviteLink.php
-          php -l app/Http/Controllers/Api/AcarsSessionController.php
-          php -l app/Http/Controllers/Api/AcarsSimBriefController.php
+          php -l modules/Promethee/Providers/PrometheeServiceProvider.php
+          php -l modules/Promethee/Listeners/ProgressionEventListener.php
+          php -l modules/Promethee/Services/ProgressionService.php
+          php -l modules/Promethee/Console/RecalculateProgressionCommand.php
+          php -l modules/Promethee/Http/DispatchDeskController.php
+          php -l modules/Promethee/Http/Api/AcarsSessionController.php
+          php -l modules/Promethee/Http/Api/AcarsSimBriefController.php
           php -l app/Services/SimBriefService.php
           php -l modules/Promethee/Http/SimBriefCallbackController.php
           php -l modules/Promethee/Services/SimBriefApiSessionService.php
@@ -163,10 +176,13 @@ jobs:
           php -l tests/SimBriefApiSessionServiceTest.php
           php -l tests/SimBriefOperationResolverTest.php
           php -l tests/PrometheeSimBriefAdminTest.php
+          php -l tests/DatabaseActivatorTest.php
+          php -l tests/ModuleServiceCacheTest.php
           php -l tests/SimBriefTest.php
           php -l app/Http/Controllers/Admin/SettingsController.php
           php -l app/Models/Setting.php
           php -l app/Providers/RouteServiceProvider.php
           php -l modules/Promethee/Config/departure-board.php
-          php -l app/Console/Commands/CheckPrometheeTranslations.php
-          for file in resources/lang/*/promethee_briefing.php; do php -l "$file"; done
+          php -l modules/Promethee/Console/CheckPrometheeTranslations.php
+          php -l modules/Promethee/Console/CheckTranslations.php
+          for file in resources/lang/*/promethee.php resources/lang/*/promethee_briefing.php; do php -l "$file"; done
