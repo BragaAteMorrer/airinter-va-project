@@ -26,9 +26,6 @@ for (const contract of ['departures', 'flights', 'routes', 'fleet', 'pilots', 'c
   }
 }
 
-if (failures) process.exitCode = 1;
-else console.log('\nMinitel shared/public assets are synchronized.');
-
 const m3Contracts = [
   'reserve-flight',
   'select-aircraft',
@@ -50,3 +47,6 @@ if (!client.includes('endpoints.operation_search')) {
   failures += 1;
   console.error('M3 reservable flight search must use Operations V1 projection.');
 }
+
+if (failures) process.exitCode = 1;
+else console.log('\nMinitel M0-M3 shared/public and operational contracts are synchronized.');
