@@ -259,6 +259,46 @@ test('M6 shell applies renderer preferences and reports them to the client', () 
   assert.deepEqual(persisted, { speed: 'authentic', displayMode: 'monochrome' });
 });
 
+
+test('M6 GUIDE option 0 opens terminal settings without a mouse', () => {
+  const session = new runtime.MinitelSession({ homePageId: 'home' })
+    .register(new runtime.MinitelPage('home', { onRender: () => {} }));
+  registerSystemPages(session, { speed: 'fast', displayMode: 'color' });
+  session.go(SYSTEM_PAGES.GUIDE, { recordHistory: false });
+  session.dispatch('0');
+  session.dispatch('Enter');
+  assert.equal(session.currentPageId, SYSTEM_PAGES.SETTINGS);
+});
+
+test('M6 shell owns cursor placement on system pages', () => {
+  const positions = [];
+  const renderer = {
+    showCursor(row, column, visible) { positions.push([row, column, visible]); }
+  };
+  const session = new runtime.MinitelSession({ homePageId: 'home' })
+    .register(new runtime.MinitelPage('home', { onRender: () => {} }));
+  registerSystemPages(session);
+  const shell = new MinitelShell({
+    document: new FakeDocument(),
+    window: new FakeWindow(true),
+    host: new FakeElement('main'),
+    session,
+    renderer
+  });
+
+  session.go(SYSTEM_PAGES.SETTINGS, { recordHistory: false });
+  shell.syncSystemCursor();
+  assert.deepEqual(positions.at(-1), [20, 10, true]);
+
+  session.input.append('5');
+  shell.syncSystemCursor();
+  assert.deepEqual(positions.at(-1), [20, 11, true]);
+
+  session.go(SYSTEM_PAGES.EXIT, { recordHistory: false });
+  shell.syncSystemCursor();
+  assert.deepEqual(positions.at(-1), [15, 19, true]);
+});
+
 (async () => {
   let failures = 0;
   for (const [name, fn] of tests) {
