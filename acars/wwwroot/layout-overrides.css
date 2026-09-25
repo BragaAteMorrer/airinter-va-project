@@ -6,3 +6,23 @@
     display: flex;
   }
 }
+
+
+/* Beta feedback: the left rail must remain usable in a short/windowed WebView. */
+@media (min-width: 921px) {
+  .rail {
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+
+  .display-controls {
+    display: grid;
+    gap: 10px;
+    margin-top: auto;
+    padding-bottom: 4px;
+  }
+
+  .display-controls .theme { margin-top: 0; }
+}
