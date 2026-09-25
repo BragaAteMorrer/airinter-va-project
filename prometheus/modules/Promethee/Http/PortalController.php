@@ -109,6 +109,28 @@ class PortalController extends Controller
         return $this->page('airlines', compact('airlines'));
     }
 
+    public function finances(Request $r) {
+        $monthStart = now('Europe/Paris')->startOfMonth()->utc();
+        $airlines = Airline::where('active', 1)->with('journal')->orderBy('name')->get();
+
+        $financeRows = $airlines->map(function (Airline $airline) use ($monthStart) {
+            $journal = $airline->journal;
+            $credits = $journal ? (int) $journal->transactions()->where('post_date', '>=', $monthStart)->sum('credit') : 0;
+            $debits = $journal ? (int) $journal->transactions()->where('post_date', '>=', $monthStart)->sum('debit') : 0;
+
+            return [
+                'airline' => $airline,
+                'balance' => $journal ? $journal->getBalance() : new Money(0),
+                'credits' => new Money($credits),
+                'debits' => new Money($debits),
+                'net' => new Money($credits - $debits),
+                'transactions' => $journal ? $journal->transactions()->where('post_date', '>=', $monthStart)->count() : 0,
+            ];
+        });
+
+        return $this->page('finances', compact('financeRows'));
+    }
+
     public function fleet(Request $r) {
         $filters = $r->validate([
             'q' => 'nullable|string|max:32',
