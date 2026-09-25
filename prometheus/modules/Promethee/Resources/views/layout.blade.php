@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="{{ app()->getLocale() }}" data-era="modern" data-appearance="light">
+<html lang="{{ app()->getLocale() }}" data-era="modern" data-appearance="light" data-minitel-runtime="m2" @auth data-minitel-bootstrap="{{ route('promethee.minitel.bootstrap') }}" @endauth>
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -11,7 +11,13 @@
 <link rel="stylesheet" href="{{ asset('promethee-assets/promethee-community.css') }}">
 <link rel="stylesheet" href="{{ asset('promethee-assets/airinter-eras.css') }}">
 <link rel="stylesheet" href="{{ asset('promethee-assets/promethee-appearance.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-appearance.css')) }}">
+<link rel="stylesheet" href="{{ asset('promethee-assets/minitel/minitel-runtime.css') }}?v={{ filemtime(public_path('promethee-assets/minitel/minitel-runtime.css')) }}">
+<link rel="stylesheet" href="{{ asset('promethee-assets/minitel/minitel-shell.css') }}?v={{ filemtime(public_path('promethee-assets/minitel/minitel-shell.css')) }}">
+<script src="{{ asset('promethee-assets/minitel/runtime.js') }}?v={{ filemtime(public_path('promethee-assets/minitel/runtime.js')) }}" defer></script>
+<script src="{{ asset('promethee-assets/minitel/renderer.js') }}?v={{ filemtime(public_path('promethee-assets/minitel/renderer.js')) }}" defer></script>
+<script src="{{ asset('promethee-assets/minitel/shell.js') }}?v={{ filemtime(public_path('promethee-assets/minitel/shell.js')) }}" defer></script>
 <script src="{{ asset('promethee-assets/promethee.js') }}?v={{ filemtime(public_path('promethee-assets/promethee.js')) }}" defer></script>
+<script src="{{ asset('promethee-assets/promethee-minitel.js') }}?v={{ filemtime(public_path('promethee-assets/promethee-minitel.js')) }}" defer></script>
 <script src="{{ asset('promethee-assets/navigation-groups.js') }}" defer></script>
 @php
     // Keeping the array out of the @json directive is deliberate: Blade's
