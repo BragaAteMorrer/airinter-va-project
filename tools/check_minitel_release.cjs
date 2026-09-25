@@ -102,8 +102,13 @@ check('M7-007-accessibility-motion',
     && sources.runtimeCss.includes('@media(prefers-reduced-motion:reduce)'),
   'terminal keeps application/live-region semantics and reduced-motion handling');
 
+const prometheePageExists = page =>
+  sources.prometheeClient.includes("MinitelPage('" + page + "'")
+  || sources.prometheeClient.includes("['" + page + "',")
+  || sources.prometheeClient.includes('["' + page + '",');
+
 check('M7-008-promethee-pages',
-  manifest.promethee.pages.every(page => sources.prometheeClient.includes("MinitelPage('" + page + "'")),
+  manifest.promethee.pages.every(prometheePageExists),
   'all Prométhée M2/M3 terminal pages required by the acceptance manifest exist');
 
 check('M7-009-promethee-actions',
