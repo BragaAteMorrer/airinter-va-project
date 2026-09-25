@@ -87,6 +87,30 @@ for (const contract of [
   }
 }
 
+for (const [label, source] of [['Prométhée', client], ['Hermès', hermesClient]]) {
+  for (const preferenceKey of ['airinter-minitel-speed', 'airinter-minitel-display']) {
+    if (!source.includes(preferenceKey)) {
+      failures += 1;
+      console.error(label + ' does not persist shared M6 preference:', preferenceKey);
+    }
+  }
+}
+
+const sharedShell = fs.readFileSync(path.join(root, 'shared', 'minitel', 'shell.js'), 'utf8');
+const sharedRuntime = fs.readFileSync(path.join(root, 'shared', 'minitel', 'runtime.js'), 'utf8');
+for (const contract of ['__system_settings', 'AUTHENTIQUE  1200/75', 'MONOCHROME / LUMINANCE', 'writeAirInterMosaic']) {
+  if (!sharedShell.includes(contract)) {
+    failures += 1;
+    console.error('Missing M6 shell fidelity contract:', contract);
+  }
+}
+for (const contract of ['mosaicMask', 'separatedMosaic', 'DISPLAY_MODES', 'MAX_INPUT_LENGTH']) {
+  if (!sharedRuntime.includes(contract)) {
+    failures += 1;
+    console.error('Missing M6 runtime fidelity contract:', contract);
+  }
+}
+
 if (!hermesApp.includes("['modern', '2000', 'minitel']")) {
   failures += 1;
   console.error('Hermès Minitel era is not enabled in app.js.');
@@ -105,4 +129,4 @@ for (const page of ['flight-live', 'datalink', 'journal', 'network', 'review', '
 }
 
 if (failures) process.exitCode = 1;
-else console.log('\nMinitel M0-M5 shared/public and operational contracts are synchronized.');
+else console.log('\nMinitel M0-M6 shared/public, operational and fidelity contracts are synchronized.');
