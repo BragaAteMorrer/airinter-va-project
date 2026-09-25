@@ -52,6 +52,7 @@ jobs:
           node --check acars/wwwroot/hermes-minitel.js
           node shared/minitel/runtime.test.cjs
           node shared/minitel/shell.test.cjs
+          node tools/check_minitel_renderer.test.cjs
           node tools/check_hermes_minitel.test.cjs
           node tools/check_minitel_assets.cjs
       - name: Validate upstream maintenance tooling
