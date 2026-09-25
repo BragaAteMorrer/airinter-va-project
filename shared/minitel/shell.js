@@ -254,6 +254,25 @@
       if (!this.session) throw new Error('MinitelShell requires a session before start().');
 
       registerSystemPages(this.session, { service: this.service });
+
+      if (this.keyboard) {
+        this.keyboard.commandInterceptor = (command) => {
+          if (command.action === runtime.ACTIONS.GUIDE) {
+            return { handled: true, action: command.action, snapshot: this.openGuide() };
+          }
+          if (command.action === runtime.ACTIONS.CONNECT_END) {
+            return { handled: true, action: command.action, snapshot: this.openExit() };
+          }
+          return null;
+        };
+        this.keyboard.afterDispatch = () => {
+          if (this.session?.context?.__minitelExitRequested) {
+            this.session.context.__minitelExitRequested = false;
+            this.exit(EXIT_REASONS.CONNECT_END);
+          }
+        };
+      }
+
       const frames = createBootSequence({
         service: this.service,
         product: this.product,
