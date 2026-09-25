@@ -270,7 +270,8 @@ class Pirep extends Model
     {
         return Attribute::make(get: function ($value, $attrs) {
             $flight_id = optional($this->airline)->code;
-            $flight_id .= $this->flight_number;
+            $number = (string) $this->flight_number;
+            $flight_id .= ctype_digit($number) ? str_pad($number, 3, '0', STR_PAD_LEFT) : $number;
 
             if (filled($this->route_code)) {
                 $flight_id .= '/C.'.$this->route_code;
