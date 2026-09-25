@@ -48,8 +48,11 @@ jobs:
           node --check shared/minitel/renderer.js
           node --check shared/minitel/shell.js
           node --check prometheus/public/promethee-assets/promethee-minitel.js
+          node --check acars/wwwroot/hermes-minitel-core.js
+          node --check acars/wwwroot/hermes-minitel.js
           node shared/minitel/runtime.test.cjs
           node shared/minitel/shell.test.cjs
+          node tools/check_hermes_minitel.test.cjs
           node tools/check_minitel_assets.cjs
       - name: Validate upstream maintenance tooling
         run: |
