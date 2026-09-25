@@ -69,8 +69,19 @@
     return url.toString();
   };
 
+  const updateCursor = () => {
+    if (!renderer || !session) return;
+    const page = session.currentPageId;
+    if (page === 'home') return renderer.showCursor(18, Math.min(39, 16 + session.input.value.length), true);
+    if (['flight-search', 'fleet-search', 'pilot-search'].includes(page)) {
+      return renderer.showCursor(9, Math.min(39, 4 + session.input.value.length), true);
+    }
+    renderer.showCursor(0, 0, false);
+  };
+
   const showSnapshot = async (snapshot, replay = true) => {
     await renderer.render(snapshot, { replay });
+    updateCursor();
   };
 
   const registerPages = () => {
@@ -145,7 +156,7 @@
         screen.write(row + 1, 3, fit((item.departure_name || '') + ' > ' + (item.arrival_name || ''), 35), { foreground: 'cyan' });
       }),
       next: () => paginate('flights', 1),
-      previous: () => paginate('flights', -1)
+      previous: () => pageBack('flights', 'flight-search')
     }));
 
     session.register(new mt.MinitelPage('fleet', {
@@ -154,7 +165,7 @@
         screen.write(row + 1, 3, fit(item.subfleet || item.airline || '', 35), { foreground: 'cyan' });
       }),
       next: () => paginate('fleet', 1),
-      previous: () => paginate('fleet', -1)
+      previous: () => pageBack('fleet', 'fleet-search')
     }));
 
     session.register(new mt.MinitelPage('pilots', {
@@ -163,7 +174,7 @@
         screen.write(row + 1, 3, fit((item.rank || 'PILOTE') + (item.home_airport ? ' / ' + item.home_airport : ''), 35), { foreground: 'cyan' });
       }),
       next: () => paginate('pilots', 1),
-      previous: () => paginate('pilots', -1)
+      previous: () => pageBack('pilots', 'pilot-search')
     }));
 
     session.register(new mt.MinitelPage('profile', {
@@ -229,6 +240,12 @@
     if (next !== Number(pagination.page || 1)) action('search', { target, query: state.query, page: next });
   };
 
+  const pageBack = (target, searchPage) => {
+    const pagination = state.collection?.pagination || {};
+    if (Number(pagination.page || 1) > 1) return paginate(target, -1);
+    return searchPage;
+  };
+
   const loadTarget = async (target, options = {}) => {
     state.loading = true;
     state.error = null;
@@ -292,6 +309,7 @@
 
   const shouldStart = () => {
     if (document.documentElement.dataset.era !== 'minitel') return false;
+    if (!document.documentElement.dataset.minitelBootstrap) return false;
     try {
       if (sessionStorage.getItem(SESSION_DISABLE_KEY) === '1') return false;
     } catch (_) {}
@@ -340,7 +358,7 @@
       shell.keyboard = keyboard;
       shell.identity = state.bootstrap.pilot?.pilot_id || '';
       await shell.start();
-      renderer.showCursor(18, 16, true);
+      updateCursor();
     } catch (error) {
       shell.ensureEscapeVisible();
       shell.terminalNode.innerHTML = '<div class="ai-minitel-fatal">PROMETHEE / MINITEL<br>ERREUR DE CONNEXION<br><br>UTILISEZ « QUITTER LE MODE MINITEL »</div>';
