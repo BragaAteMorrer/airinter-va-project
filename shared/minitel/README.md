@@ -1,4 +1,4 @@
-# 3615 AIRINTER — Minitel Runtime (M0 + M1 + M2 + M3 + M4 + M5 + M6)
+# 3615 AIRINTER — Minitel Runtime (M0 + M1 + M2 + M3 + M4 + M5 + M6 + M7)
 
 This directory contains the shared, framework-free foundation for the Air Inter Videotex experience used by Prométhée and Hermès.
 
@@ -225,3 +225,40 @@ not need separate monochrome markup.
 
 The shell itself does not own persistent storage. Prométhée and Hermès persist
 the shared terminal preferences and inject them back into the shell on startup.
+
+
+## M7 — Release quality gate
+
+M7 turns the completed M0–M6 feature set into a releasable product contract.
+
+The machine-readable acceptance manifest is stored in
+`shared/minitel/acceptance-m7.json`. The release runner
+`tools/check_minitel_release.cjs` verifies the final cross-product invariants
+and can emit JSON/Markdown evidence for CI artifacts.
+
+The automated gate covers:
+
+- byte-identical shared assets in Prométhée and Hermès;
+- historical keyboard mappings;
+- no pointer/touch dependency in the Minitel business clients;
+- external emergency exit, mobile fallback and reduced-motion support;
+- complete Prométhée page/action chain and read-only M2 boundary;
+- qualified M3 reservation search through Operations V1;
+- complete Hermès M4/M5 page/action chain;
+- server + local simulator START gate;
+- local-first Datalink stress semantics and READ/ACK/SEND contracts;
+- recovery resume while destructive abandonment stays graphical-only;
+- final PIREP IN-phase gate;
+- long logical inputs, sparse authentic transmission and M6 alphamosaics;
+- monochrome/luminance and shared fidelity preferences;
+- Modern and Années 2000 theme regression guards;
+- absence of hardcoded remote API URLs inside terminal clients;
+- source-level end-to-end chain from reservation to final PIREP.
+
+The `Quality` workflow exposes a dedicated **Minitel M7 release gate** job after
+repository hygiene, Prométhée validation and Hermès .NET tests have succeeded.
+It uploads `minitel-m7-release.json` and `minitel-m7-release.md`.
+
+Real-simulator/network acceptance cannot be fully reproduced in GitHub Actions.
+The mandatory manual production scenarios are documented in
+`M7-RELEASE-CHECKLIST.md`.
