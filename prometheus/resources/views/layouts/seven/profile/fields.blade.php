@@ -21,16 +21,10 @@
         </div>
         <div class="row mb-3">
             <div class="col-md-6">
-                <label for="airline_id" class="form-label">{{ __('common.airline') }}</label>
-                <select id="airline_id" name="airline_id" placeholder="{{ __('common.airline') }}" autocomplete="off">
-                    @foreach ($airlines as $airline_id => $airline_label)
-                        <option value="{{ $airline_id }}" @if ($user->airline_id === $airline_id) selected @endif>
-                            {{ $airline_label }}</option>
-                    @endforeach
-                </select>
-                @if ($errors->has('airline_id'))
-                    <div id="airlineIdFeedback" class="invalid-feedback">{{ $errors->first('airline_id') }}</div>
-                @endif
+                <label class="form-label">Compagnie</label>
+                <input type="hidden" name="airline_id" value="{{ $user->airline_id }}">
+                <div class="form-control bg-light"><strong>Air Inter</strong> · ITF</div>
+                <div class="form-text">Compagnie d’exploitation verrouillée.</div>
             </div>
             <div class="col-md-6">
                 <label for="home_airport_id" class="form-label">{{ __('airports.home') }}</label>
@@ -107,26 +101,6 @@
                 </p>
                 @if ($errors->has('opt_in'))
                     <div id="opt_inFeedback" class="invalid-feedback">{{ $errors->first('opt_in') }}</div>
-                @endif
-            </div>
-        </div>
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <label for="vatsim_id" class="form-label">VATSIM ID</label>
-                <input type="text" name="vatsim_id" id="vatsim_id"
-                    class="form-control {{ $errors->has('vatsim_id') ? ' is-invalid' : ' ' }}"
-                    value="{{ $user->vatsim_id }}" />
-                @if ($errors->has('vatsim_id'))
-                    <div id="vatsim_idFeedback" class="invalid-feedback">{{ $errors->first('vatsim_id') }}</div>
-                @endif
-            </div>
-            <div class="col-md-6">
-                <label for="ivao_id" class="form-label">IVAO ID</label>
-                <input type="text" name="ivao_id" id="ivao_id"
-                    class="form-control {{ $errors->has('ivao_id') ? ' is-invalid' : ' ' }}"
-                    value="{{ $user->ivao_id }}" />
-                @if ($errors->has('ivao_id'))
-                    <div id="ivao_idFeedback" class="invalid-feedback">{{ $errors->first('ivao_id') }}</div>
                 @endif
             </div>
         </div>
