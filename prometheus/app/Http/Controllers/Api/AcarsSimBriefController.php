@@ -3,33 +3,19 @@
 namespace App\Http\Controllers\Api;
 
 use App\Contracts\Controller;
-use App\Models\Aircraft;
-use App\Models\Bid;
-use App\Models\Enums\AircraftState;
-use App\Models\Enums\AircraftStatus;
-use App\Repositories\FlightRepository;
-use App\Services\FareService;
 use App\Services\SimBriefService;
-use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
-use Modules\Promethee\Services\OperationIdentityService;
 use Modules\Promethee\Services\SimBriefApiSessionService;
-use Modules\Promethee\Services\DemandProfileService;
 use Modules\Promethee\Services\SimBriefOperationResolver;
 
 class AcarsSimBriefController extends Controller
 {
     public function __construct(
-        private readonly FlightRepository $flightRepo,
-        private readonly FareService $fareSvc,
         private readonly SimBriefService $simBriefSvc,
-        private readonly UserService $userSvc,
-        private readonly OperationIdentityService $operationIdentity,
         private readonly SimBriefApiSessionService $apiSessions,
-        private readonly DemandProfileService $demandProfile,
         private readonly SimBriefOperationResolver $resolver
     ) {}
 
@@ -282,10 +268,20 @@ class AcarsSimBriefController extends Controller
         ]);
     }
 
-    public function sessionOperation(Request $request, string $operation): JsonResponse    public function sessionOperation(Request $request, string $operation): JsonResponse
+    public function readinessOperation(Request $request, string $operation): JsonResponse
+    {
+        $resolved = $this->resolver->resolveOperation($operation, Auth::user());
+
+        return response()->json([
+            'data' => $this->resolver->publicView($resolved),
+        ]);
+    }
+
+    public function sessionOperation(Request $request, string $operation): JsonResponse
     {
         [$flightId, $aircraftId, $operationId] = $this->operationContext($operation);
         $request->merge(['aircraft_id' => $aircraftId, 'operation_id' => $operationId]);
+
         return $this->session($request, $flightId);
     }
 
@@ -293,6 +289,7 @@ class AcarsSimBriefController extends Controller
     {
         [$flightId, $aircraftId, $operationId] = $this->operationContext($operation);
         $request->merge(['aircraft_id' => $aircraftId, 'operation_id' => $operationId]);
+
         return $this->redirect($request, $flightId);
     }
 
@@ -300,6 +297,7 @@ class AcarsSimBriefController extends Controller
     {
         [$flightId, $aircraftId, $operationId] = $this->operationContext($operation);
         $request->merge(['aircraft_id' => $aircraftId, 'operation_id' => $operationId]);
+
         return $this->importAccount($request, $flightId);
     }
 
@@ -307,12 +305,13 @@ class AcarsSimBriefController extends Controller
     {
         [$flightId, $aircraftId, $operationId] = $this->operationContext($operation);
         $request->merge(['aircraft_id' => $aircraftId, 'operation_id' => $operationId]);
+
         return $this->import($request, $flightId);
     }
 
     /**
-     * Planning overrides are intentionally ephemeral: Hermès may personalize the
-     * dispatch sent to SimBrief without mutating the phpVMS schedule or fleet DB.
+     * Planning overrides are intentionally ephemeral. They are validated here,
+     * then resolved against the existing DB by SimBriefOperationResolver.
      */
     private function validatePlanningRequest(Request $request): array
     {
@@ -341,22 +340,15 @@ class AcarsSimBriefController extends Controller
         ]);
     }
 
-    private function effectivePlanning($flight, array $attrs): array
-    {
-        return [
-            'alternate' => strtoupper(trim((string) ($attrs['alternate'] ?? $flight->alt_airport_id ?: 'AUTO'))),
-            'route' => trim((string) ($attrs['route'] ?? $flight->route ?? '')),
-            'level' => $attrs['level'] ?? $flight->level,
-        ];
-    }
-
     private function operationContext(string $reference): array
     {
-        $bid = $this->operationIdentity->resolveBid($reference, (int) Auth::id());
-        abort_if(!$bid, 404, 'Opération introuvable.');
-        abort_if(!$bid->aircraft_id, 409, 'Sélectionnez un appareil avant de préparer SimBrief.');
+        $resolved = $this->resolver->resolveOperation($reference, Auth::user());
 
-        return [$bid->flight_id, (string) $bid->aircraft_id, $this->operationIdentity->id($bid)];
+        return [
+            (string) $resolved['flight']['id'],
+            (string) $resolved['aircraft']['id'],
+            (string) $resolved['operation_id'],
+        ];
     }
 
     private function staticId(Request $request, string $pilot, string $flightId, string $aircraftId): string
@@ -375,55 +367,5 @@ class AcarsSimBriefController extends Controller
         return 'AIRINTER_'.strtoupper(str_replace('-', '_', $pilot.'_'.$flightId.'_'.$aircraftId));
     }
 
-    private function getEligibleOperation(string $flightId, string $aircraftId): array
-    {
-        $flight = $this->flightRepo->with(['airline', 'fares', 'subfleets.fares'])->find($flightId);
-        $aircraft = Aircraft::with('subfleet')
-            ->withCount(['bid', 'simbriefs' => fn ($query) => $query->whereNull('pirep_id')])
-            ->findOrFail($aircraftId);
-        $user = Auth::user();
-        $allowedSubfleets = $this->userSvc->getAllowableSubfleets($user)->pluck('id');
-        $flightSubfleets = $flight->subfleets->pluck('id');
-        // A company-wide aircraft lock must not reject the aircraft already
-        // assigned to this pilot's own reservation for this exact flight.
-        $reservedForThisOperation = Bid::query()
-            ->where('user_id', $user->id)
-            ->where('flight_id', $flight->id)
-            ->where('aircraft_id', $aircraft->id)
-            ->exists();
 
-        $eligible = $allowedSubfleets->contains($aircraft->subfleet_id)
-            && ($flightSubfleets->isEmpty() || $flightSubfleets->contains($aircraft->subfleet_id))
-            && (!setting('pireps.only_aircraft_at_dpt_airport') || $aircraft->airport_id === $flight->dpt_airport_id)
-            && (!setting('simbrief.block_aircraft') || $aircraft->simbriefs_count === 0)
-            && (!setting('bids.block_aircraft') || $aircraft->bid_count === 0 || $reservedForThisOperation)
-            && $aircraft->state === AircraftState::PARKED
-            && $aircraft->status === AircraftStatus::ACTIVE;
-
-        abort_unless($eligible, 403, 'Cet appareil ne peut pas être utilisé pour ce vol.');
-
-        return [$flight, $aircraft];
-    }
-
-    /**
-     * Resolve the effective phpVMS fares for the selected aircraft.
-     * Flight overrides win over subfleet/base values, exactly like the native
-     * phpVMS SimBrief and PIREP flows.
-     */
-    private function operationFares($flight, Aircraft $aircraft): array
-    {
-        return $this->fareSvc
-            ->getFareWithOverrides($aircraft->subfleet->fares, $flight->fares)
-            ->filter(fn ($fare) => $fare->active && !empty($fare->capacity))
-            ->map(fn ($fare) => [
-                'id' => $fare->id,
-                'fare_id' => $fare->id,
-                'code' => $fare->code,
-                'name' => $fare->name,
-                'type' => $fare->type,
-                'capacity' => (int) $fare->capacity,
-                'price' => (float) $fare->price,
-                'cost' => (float) $fare->cost,
-            ])->values()->all();
-    }
 }
