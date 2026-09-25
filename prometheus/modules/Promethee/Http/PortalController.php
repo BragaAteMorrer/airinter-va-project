@@ -221,6 +221,9 @@ class PortalController extends Controller
 
             foreach ($monthly as &$point) {
                 $point['margin'] = $point['credits'] > 0 ? round(($point['net'] / $point['credits']) * 100, 1) : 0;
+                $point['credits_money'] = (string) new Money($point['credits']);
+                $point['debits_money'] = (string) new Money($point['debits']);
+                $point['net_money'] = (string) new Money($point['net']);
             }
             unset($point);
 
