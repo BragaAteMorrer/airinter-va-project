@@ -12,7 +12,8 @@
     constructor(host, options = {}) {
       if (!host || typeof host.appendChild !== 'function') throw new TypeError('A DOM host element is required.');
       this.host = host;
-      this.speed = options.speed || 'fast';
+      this.speed = runtime.SPEEDS[options.speed] ? options.speed : 'fast';
+      this.displayMode = runtime.DISPLAY_MODES[options.displayMode] ? options.displayMode : 'color';
       this.cursor = { row: 24, column: 0, visible: false };
       this.cells = [];
       this.lastSnapshot = null;
@@ -22,6 +23,7 @@
 
     build() {
       this.host.classList.add('ai-minitel-terminal');
+      this.host.dataset.displayMode = this.displayMode;
       this.host.setAttribute('role', 'application');
       this.host.setAttribute('aria-label', '3615 AIRINTER');
       this.host.innerHTML = '';
@@ -49,6 +51,25 @@
 
       this.host.appendChild(screen);
       this.screenNode = screen;
+      this.screenNode.dataset.displayMode = this.displayMode;
+    }
+
+    setSpeed(speed) {
+      if (!runtime.SPEEDS[speed]) return false;
+      this.speed = speed;
+      return true;
+    }
+
+    setDisplayMode(mode) {
+      if (!runtime.DISPLAY_MODES[mode]) return false;
+      this.displayMode = mode;
+      if (this.host?.dataset) this.host.dataset.displayMode = mode;
+      if (this.screenNode?.dataset) this.screenNode.dataset.displayMode = mode;
+      return true;
+    }
+
+    preferences() {
+      return Object.freeze({ speed: this.speed, displayMode: this.displayMode });
     }
 
     cellNode(row, column) {
@@ -58,10 +79,29 @@
     applyCell(row, column, cell) {
       const node = this.cellNode(row, column);
       if (!node) return;
-      node.textContent = cell.character === ' ' ? '\u00a0' : cell.character;
+
+      if (cell.attrs.mosaic) {
+        node.textContent = '';
+        const mosaic = document.createElement('span');
+        mosaic.className = 'ai-minitel-mosaic';
+        const bits = runtime.mosaicBits(cell.attrs.mosaicMask);
+        bits.forEach((on, index) => {
+          const bit = document.createElement('span');
+          bit.className = 'ai-minitel-mosaic-bit';
+          bit.dataset.bit = String(index);
+          bit.toggleAttribute('data-on', on);
+          mosaic.appendChild(bit);
+        });
+        node.appendChild(mosaic);
+        node.dataset.mosaicMask = String(cell.attrs.mosaicMask);
+      } else {
+        node.textContent = cell.character === ' ' ? '\u00a0' : cell.character;
+        delete node.dataset.mosaicMask;
+      }
+
       node.dataset.fg = cell.attrs.foreground;
       node.dataset.bg = cell.attrs.background;
-      for (const name of ['blink', 'inverse', 'underline', 'doubleWidth', 'doubleHeight', 'mosaic', 'concealed']) {
+      for (const name of ['blink', 'inverse', 'underline', 'doubleWidth', 'doubleHeight', 'mosaic', 'separatedMosaic', 'concealed']) {
         node.toggleAttribute(`data-${name.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase())}`, Boolean(cell.attrs[name]));
       }
     }
