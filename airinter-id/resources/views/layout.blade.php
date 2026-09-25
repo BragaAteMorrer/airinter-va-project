@@ -11,8 +11,8 @@
 <header class="topbar">
     <a class="brand" href="{{ route('home') }}"><span>AIR INTER</span><strong>ID</strong></a>
     <nav>
-        <a href="{{ env('AIRINTER_ID_PUBLIC_URL', 'https://www.airinter-va.org') }}">Air Inter VA</a>
-        <a href="{{ env('AIRINTER_ID_PROMETHEE_URL', 'https://promethee.airinter-va.org') }}">Prométhée</a>
+        <a href="{{ config('airinter-id.public_url') }}">Air Inter VA</a>
+        <a href="{{ config('airinter-id.promethee_url') }}">Prométhée</a>
         @auth<a href="{{ route('account') }}">Mon compte</a>@endauth
     </nav>
 </header>
