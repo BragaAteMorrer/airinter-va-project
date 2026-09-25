@@ -86,7 +86,9 @@ class PrometheeUserImporter
                             $stats['linked']++;
                         }
 
-                        $progress?.($legacy, $user);
+                        if ($progress) {
+                            $progress($legacy, $user);
+                        }
                     });
                 }
             });
