@@ -144,6 +144,16 @@ jobs:
           php -l tests/PrometheeDemandEconomyTest.php
           php -l modules/Promethee/routes.php
           php -l app/Http/Controllers/Auth/RegisterController.php
+          php -l tests/RegistrationTest.php
+          php -l app/Notifications/Messages/AdminUserRegistered.php
+          php -l app/Notifications/Messages/UserRejected.php
+          php -l app/Notifications/Messages/UserRegistered.php
+          php -l app/Notifications/Messages/UserPending.php
+          php -l app/Notifications/Messages/PirepRejected.php
+          php -l app/Notifications/Messages/PirepFiled.php
+          php -l app/Notifications/Messages/PirepAccepted.php
+          php -l app/Notifications/Messages/NewsAdded.php
+          php -l app/Notifications/Messages/InviteLink.php
           php -l app/Http/Controllers/Api/AcarsSessionController.php
           php -l app/Http/Controllers/Api/AcarsSimBriefController.php
           php -l app/Services/SimBriefService.php
