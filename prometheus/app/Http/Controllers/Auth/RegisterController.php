@@ -189,7 +189,7 @@ class RegisterController extends Controller
         $opts = $request->all();
         // Air Inter VA is the mandatory entry company. Ignore any client-supplied airline_id.
         $opts['airline_id'] = $this->airInterAirline()->id;
-        $opts['timezone'] = $opts['timezone'] ?: 'Europe/Paris';
+        $opts['timezone'] = $this->normalizeTimezone($opts['timezone'] ?? null);
         $opts['password'] = Hash::make($opts['password']);
 
         if (setting('general.record_user_ip', true)) {
@@ -211,7 +211,7 @@ class RegisterController extends Controller
             UserFieldValue::updateOrCreate([
                 'user_field_id' => $field->id,
                 'user_id'       => $user->id,
-            ], ['value' => $opts[$field_name]]);
+            ], ['value' => $opts[$field_name] ?? null]);
         }
 
         return $user;
@@ -225,9 +225,9 @@ class RegisterController extends Controller
      */
     public function register(Request $request): RedirectResponse|View
     {
-        if (!$request->filled('timezone')) {
-            $request->merge(['timezone' => 'Europe/Paris']);
-        }
+        $request->merge([
+            'timezone' => $this->normalizeTimezone($request->input('timezone')),
+        ]);
 
         $this->validator($request->all())->validate();
 
@@ -239,6 +239,23 @@ class RegisterController extends Controller
         $this->guard()->login($user);
 
         return redirect(config('phpvms.login_redirect'));
+    }
+
+    private function normalizeTimezone(mixed $timezone): string
+    {
+        $timezone = trim((string) $timezone);
+        if ($timezone === '') {
+            return 'Europe/Paris';
+        }
+
+        if (in_array($timezone, timezone_identifiers_list(), true)) {
+            return $timezone;
+        }
+
+        // Never persist browser aliases/garbage. Air Inter's operational
+        // fallback remains Paris time while the pilot can choose another
+        // valid IANA zone in the registration form.
+        return 'Europe/Paris';
     }
 
     private function airInterAirline(): Airline
