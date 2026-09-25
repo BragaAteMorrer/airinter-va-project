@@ -73,6 +73,7 @@ php artisan key:generate
 php artisan vendor:publish --tag=passport-migrations
 php artisan migrate --force
 php artisan passport:keys
+php artisan airinter-id:configure-clients --show-secrets
 php artisan optimize
 ```
 
@@ -129,13 +130,13 @@ profile email promethee:read
 
 Hermès must become a **public PKCE client**. Do not embed a client secret in the executable.
 
-Use the system browser for Air Inter ID login. Preferred callback architecture:
+Use the system browser for Air Inter ID login. V1 callback:
 
 ```text
-http://127.0.0.1:<ephemeral-port>/callback
+http://127.0.0.1:47821/callback
 ```
 
-Hermès starts a temporary loopback listener, generates `state`, `code_verifier` and `code_challenge`, launches the browser to Air Inter ID, receives the authorization code locally, then exchanges it for access/refresh tokens.
+Hermès starts a temporary loopback listener on that fixed local port, generates `state`, `code_verifier` and `code_challenge`, launches the browser to Air Inter ID, receives the authorization code locally, then exchanges it for access/refresh tokens. The port can later become configurable once the server/client redirect contract evolves together.
 
 Scopes:
 
@@ -147,7 +148,7 @@ Hermès should no longer collect the Air Inter password once this flow is produc
 
 ### Historical site
 
-Later confidential web client.
+A confidential client is provisioned now so the contract is reserved, but the historical site is connected only in a later phase.
 
 Redirect URI:
 
