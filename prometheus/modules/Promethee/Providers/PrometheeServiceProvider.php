@@ -15,6 +15,7 @@ class PrometheeServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../Config/departure-board.php', 'departure-board');
         $this->mergeConfigFrom(__DIR__.'/../Config/maintenance-warning.php', 'maintenance-warning');
         $this->mergeConfigFrom(__DIR__.'/../Config/acars.php', 'acars');
+        $this->mergeConfigFrom(__DIR__.'/../Config/cabin-profiles.php', 'promethee.cabin-profiles');
     }
 
     public function boot(): void
