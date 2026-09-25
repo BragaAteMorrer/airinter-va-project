@@ -1035,8 +1035,20 @@ class PortalController extends Controller
         $mapByCode = $mapAirports->keyBy('code');
         $mapRoutes = collect();
         if ($selectedDeparture || $selectedArrival) {
-            $mapRoutes = (clone $q)->reorder()->select('dpt_airport_id', 'arr_airport_id')->distinct()->limit(160)->get()
-                ->map(fn ($flight) => ['from' => $mapByCode->get($flight->dpt_airport_id), 'to' => $mapByCode->get($flight->arr_airport_id)])
+            $mapRoutes = (clone $q)->reorder()->select('dpt_airport_id', 'arr_airport_id', 'airline_id')->distinct()->limit(160)->get()
+                ->map(function ($flight) use ($mapByCode) {
+                    $airlineName = strtolower($flight->airline?->name ?? 'Air Inter');
+                    $airline = str_contains($airlineName, 'air charter')
+                        ? 'air-charter'
+                        : (str_contains($airlineName, 'inter cargo') ? 'ics' : 'air-inter');
+
+                    return [
+                        'from' => $mapByCode->get($flight->dpt_airport_id),
+                        'to' => $mapByCode->get($flight->arr_airport_id),
+                        'airline' => $airline,
+                        'airline_name' => $flight->airline?->name ?? 'Air Inter',
+                    ];
+                })
                 ->filter(fn ($route) => $route['from'] && $route['to'])->values();
         }
 
