@@ -76,6 +76,98 @@
     ];
   }
 
+  function telemetrySummary(status) {
+    const latest = status?.latest || status?.Latest || {};
+    const flight = status?.flight || status?.Flight || {};
+    const read = (camel, pascal) => snapshotValue(latest, camel, pascal);
+    const number = value => value == null || Number.isNaN(Number(value)) ? null : Number(value);
+
+    return Object.freeze({
+      phase: flight.phase || flight.Phase || 'STANDBY',
+      recording: Boolean(flight.recording ?? flight.Recording),
+      pirepId: flight.pirepId || flight.PirepId || null,
+      operationId: flight.operationId || flight.OperationId || null,
+      altitude: number(read('altitudeMslFeet', 'AltitudeMslFeet') ?? read('altitude', 'Altitude')),
+      agl: number(read('altitudeAglFeet', 'AltitudeAglFeet') ?? read('agl', 'Agl')),
+      ias: number(read('indicatedAirspeedKnots', 'IndicatedAirspeedKnots') ?? read('ias', 'Ias')),
+      gs: number(read('groundSpeedKnots', 'GroundSpeedKnots') ?? read('gs', 'Gs')),
+      mach: number(read('mach', 'Mach')),
+      heading: number(read('headingDegrees', 'HeadingDegrees') ?? read('heading', 'Heading')),
+      verticalSpeed: number(read('verticalSpeedFeetPerMinute', 'VerticalSpeedFeetPerMinute') ?? read('vs', 'Vs')),
+      fuel: number(read('fuelWeight', 'FuelWeight') ?? read('fuel', 'Fuel')),
+      distance: number(flight.distance ?? flight.Distance) ?? 0,
+      airborneMinutes: Math.round((number(flight.airborneSeconds ?? flight.AirborneSeconds) ?? 0) / 60),
+      landingRate: number(flight.landingRate ?? flight.LandingRate),
+      pending: Number(status?.pending ?? status?.Pending ?? 0),
+      syncState: String(status?.syncState ?? status?.SyncState ?? 'IDLE').toUpperCase(),
+      warning: status?.warning ?? status?.Warning ?? null,
+      onGround: read('onGround', 'OnGround'),
+      parkingBrake: read('parkingBrake', 'ParkingBrake'),
+      paused: read('paused', 'Paused'),
+      simRate: number(read('simulationRate', 'SimulationRate'))
+    });
+  }
+
+  function datalinkSnapshot(snapshot) {
+    const read = (object, camel, pascal = camel) => object?.[camel] ?? object?.[pascal] ?? null;
+    const messages = read(snapshot, 'messages', 'Messages') || [];
+    return Object.freeze({
+      operationId: read(snapshot, 'operationId', 'OperationId'),
+      messages: messages.map(message => ({
+        id: read(message, 'id', 'Id'),
+        direction: String(read(message, 'direction', 'Direction') || ''),
+        category: String(read(message, 'category', 'Category') || 'OPS'),
+        priority: String(read(message, 'priority', 'Priority') || 'ROUTINE'),
+        body: String(read(message, 'body', 'Body') || ''),
+        requiresAck: Boolean(read(message, 'requiresAck', 'RequiresAck')),
+        status: String(read(message, 'status', 'Status') || 'SENT'),
+        sender: read(message, 'senderLabel', 'SenderLabel') || '',
+        createdAt: read(message, 'createdAt', 'CreatedAt'),
+        readAt: read(message, 'readAt', 'ReadAt'),
+        acknowledgedAt: read(message, 'acknowledgedAt', 'AcknowledgedAt'),
+        localPending: Boolean(read(message, 'localPending', 'LocalPending'))
+      })),
+      pendingOutbound: Number(read(snapshot, 'pendingOutbound', 'PendingOutbound') || 0),
+      pendingReads: Number(read(snapshot, 'pendingReads', 'PendingReads') || 0),
+      pendingAcks: Number(read(snapshot, 'pendingAcks', 'PendingAcks') || 0),
+      unreadCount: Number(read(snapshot, 'unreadCount', 'UnreadCount') || 0),
+      pendingRequiredAcks: Number(read(snapshot, 'pendingRequiredAcks', 'PendingRequiredAcks') || 0),
+      syncState: String(read(snapshot, 'syncState', 'SyncState') || 'LOCAL').toUpperCase(),
+      error: read(snapshot, 'error', 'Error')
+    });
+  }
+
+  function reviewSummary(review) {
+    const read = (camel, pascal = camel) => review?.[camel] ?? review?.[pascal] ?? null;
+    return Object.freeze({
+      pirepId: read('pirepId', 'PirepId'),
+      phase: String(read('phase', 'Phase') || '—'),
+      readyToFile: Boolean(read('readyToFile', 'ReadyToFile')),
+      distance: Number(read('distance', 'Distance') || 0),
+      airborneMinutes: Number(read('airborneMinutes', 'AirborneMinutes') || 0),
+      blockMinutes: Number(read('blockMinutes', 'BlockMinutes') || 0),
+      fuelUsed: Number(read('fuelUsed', 'FuelUsed') || 0),
+      landingRate: read('landingRate', 'LandingRate'),
+      approach1000: read('approach1000Status', 'Approach1000Status') || 'NON OBSERVE',
+      approach500: read('approach500Status', 'Approach500Status') || 'NON OBSERVE',
+      bounceCount: Number(read('bounceCount', 'BounceCount') || 0),
+      goAroundCount: Number(read('goAroundCount', 'GoAroundCount') || 0),
+      maxBank: read('maxBankDegrees', 'MaxBankDegrees'),
+      fuelAdded: Number(read('fuelAdded', 'FuelAdded') || 0),
+      maxSimulationRate: read('maxSimulationRate', 'MaxSimulationRate'),
+      issues: read('issues', 'Issues') || [],
+      observations: read('observations', 'Observations') || [],
+      timeline: read('timeline', 'Timeline') || []
+    });
+  }
+
+  function timeLabel(value) {
+    if (!value) return '--:--';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '--:--';
+    return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', hour12: false });
+  }
+
   return Object.freeze({
     normalise,
     fit,
@@ -84,6 +176,10 @@
     preflightState,
     operationId,
     operationFlight,
-    operationChecks
+    operationChecks,
+    telemetrySummary,
+    datalinkSnapshot,
+    reviewSummary,
+    timeLabel
   });
 });
