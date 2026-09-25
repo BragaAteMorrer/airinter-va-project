@@ -83,7 +83,7 @@
         <td>{{ $assignment?->base_airport_id ?: 'LFPO' }}</td>
         <td>
           @if($assignment?->away_since)
-            Depuis {{ CarbonCarbon::parse($assignment->away_since)->locale('fr')->diffForHumans() }}
+            Depuis {{ \Carbon\Carbon::parse($assignment->away_since)->locale('fr')->diffForHumans() }}
           @else
             —
           @endif
