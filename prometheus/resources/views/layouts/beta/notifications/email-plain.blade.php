@@ -1,22 +1,26 @@
-<?php
+AIR INTER · PROMÉTHÉE
+======================
 
-if(!empty($greeting)) {
-  echo $greeting, "\n\n";
-} else {
-  echo $level == 'error' ? __('common.whoops').'!' : __('common.hello').',', "\n\n";
-}
+@if(!empty($greeting))
+{{ $greeting }}
+@elseif($level === 'error')
+Information importante,
+@else
+Bonjour,
+@endif
 
-if(!empty($introLines)) {
-  echo implode("\n", $introLines), "\n\n";
-}
+@foreach($introLines as $line)
+{{ $line }}
+@endforeach
 
-if(isset($actionText)) {
-  echo "{$actionText}: {$actionUrl}", "\n\n";
-}
+@if(isset($actionText))
+{{ $actionText }} : {{ $actionUrl }}
+@endif
 
-if(!empty($outroLines)) {
-  echo implode("\n", $outroLines), "\n\n";
-}
+@foreach($outroLines as $line)
+{{ $line }}
+@endforeach
 
-echo __('common.regards').', ', "\n";
-echo config('app.name'), "\n";
+Direction de l’Exploitation Aérienne
+Air Inter Virtual Airlines
+Pourquoi vivre sans ailes !
