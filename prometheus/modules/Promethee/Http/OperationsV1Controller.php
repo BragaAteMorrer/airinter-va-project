@@ -5,6 +5,7 @@ namespace Modules\Promethee\Http;
 use App\Contracts\Controller;
 use App\Models\Aircraft;
 use App\Models\Bid;
+use App\Models\Flight;
 use App\Models\Enums\AircraftState;
 use App\Models\Enums\AircraftStatus;
 use App\Models\SimBrief;
@@ -13,6 +14,7 @@ use App\Models\Enums\PirepSource;
 use App\Models\Enums\PirepState;
 use App\Models\Enums\PirepStatus;
 use App\Services\PirepService;
+use App\Services\BidService;
 use App\Services\UserService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -56,6 +58,103 @@ class OperationsV1Controller extends Controller
             'simulators' => self::SIMULATORS,
             'operations' => $bids->map(fn (Bid $bid) => $this->operationDto($bid, $simulator))->values(),
         ]]);
+    }
+
+
+    public function searchFlights(Request $request)
+    {
+        $data = $request->validate([
+            'flight_number' => 'nullable|string|max:12',
+            'dep_icao' => 'nullable|string|max:8',
+            'arr_icao' => 'nullable|string|max:8',
+            'icao_type' => 'nullable|string|max:16',
+        ]);
+
+        $flightNumber = strtoupper(trim((string) ($data['flight_number'] ?? '')));
+        $flightNumber = preg_replace('/^ITF[ -]?/', '', $flightNumber);
+        $departure = strtoupper(trim((string) ($data['dep_icao'] ?? '')));
+        $arrival = strtoupper(trim((string) ($data['arr_icao'] ?? '')));
+        $typeFilter = strtoupper(preg_replace('/[^A-Z0-9]+/', '', (string) ($data['icao_type'] ?? '')));
+
+        $allowedSubfleets = $this->userSvc->getAllowableSubfleets($request->user())->values();
+        $allowedIds = $allowedSubfleets->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        $query = Flight::query()
+            ->with(['airline:id,icao,iata,name', 'subfleets:id,name,type'])
+            ->where('active', true)
+            ->where('visible', true)
+            ->when($flightNumber !== '', fn ($q) => $q->where('flight_number', $flightNumber))
+            ->when($departure !== '', fn ($q) => $q->where('dpt_airport_id', $departure))
+            ->when($arrival !== '', fn ($q) => $q->where('arr_airport_id', $arrival))
+            ->orderBy('dpt_airport_id')
+            ->orderBy('arr_airport_id')
+            ->orderBy('flight_number')
+            ->limit(100);
+
+        $flights = $query->get()
+            ->filter(function (Flight $flight) use ($allowedSubfleets, $allowedIds, $typeFilter) {
+                $flightSubfleetIds = $flight->subfleets->pluck('id')->map(fn ($id) => (int) $id);
+                $compatible = $flightSubfleetIds->isEmpty()
+                    ? $allowedSubfleets
+                    : $allowedSubfleets->filter(fn ($subfleet) => in_array((int) $subfleet->id, $allowedIds, true)
+                        && $flightSubfleetIds->contains((int) $subfleet->id));
+
+                if ($compatible->isEmpty()) return false;
+                if ($typeFilter === '') return true;
+
+                return $compatible->contains(function ($subfleet) use ($typeFilter) {
+                    $type = strtoupper(preg_replace('/[^A-Z0-9]+/', '', (string) ($subfleet->type ?? '')));
+                    $name = strtoupper(preg_replace('/[^A-Z0-9]+/', '', (string) ($subfleet->name ?? '')));
+                    return $type === $typeFilter || str_contains($name, $typeFilter);
+                });
+            })
+            ->map(function (Flight $flight) {
+                return [
+                    'id' => $flight->id,
+                    'program' => true,
+                    'ident' => $flight->ident,
+                    'airline_id' => $flight->airline_id,
+                    'airline' => $flight->airline ? [
+                        'id' => $flight->airline->id,
+                        'icao' => $flight->airline->icao,
+                        'iata' => $flight->airline->iata,
+                        'name' => $flight->airline->name,
+                    ] : null,
+                    'flight_number' => $flight->flight_number,
+                    'departure' => $flight->dpt_airport_id,
+                    'arrival' => $flight->arr_airport_id,
+                    'alternate' => $flight->alt_airport_id,
+                    'route' => $flight->route,
+                    'level' => $flight->level,
+                ];
+            })
+            ->values();
+
+        return response()->json(['data' => $flights]);
+    }
+
+    public function reserveFlight(string $flightId, Request $request, BidService $bids)
+    {
+        $flight = Flight::query()
+            ->where('id', $flightId)
+            ->where('active', true)
+            ->where('visible', true)
+            ->firstOrFail();
+
+        try {
+            $bid = $bids->addBid($flight, $request->user());
+        } catch (\Throwable $exception) {
+            abort(409, $exception->getMessage() ?: 'Cette réservation ne peut pas être créée.');
+        }
+
+        $bid = Bid::with(['flight.airline', 'flight.subfleets', 'aircraft.subfleet'])
+            ->where('id', $bid->id)
+            ->where('user_id', $request->user()->id)
+            ->firstOrFail();
+
+        return response()->json([
+            'data' => $this->operationDto($bid, 'msfs2020'),
+        ], 201);
     }
 
     public function me(Request $request)
