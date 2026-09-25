@@ -2,8 +2,8 @@
 
 const assert = require('node:assert/strict');
 const {
-  WIDTH, HEIGHT, ACTIONS, MinitelScreenBuffer, MinitelInputBuffer,
-  MinitelPage, MinitelSession, mapKeyboardEvent,
+  WIDTH, HEIGHT, ACTIONS, DISPLAY_MODES, MinitelScreenBuffer, MinitelInputBuffer,
+  MinitelPage, MinitelSession, mapKeyboardEvent, normalizeMosaicMask, mosaicBits,
   transmissionOperations, transmissionDelay, minitelCapability
 } = require('./runtime.js');
 
@@ -141,6 +141,36 @@ test('mobile/coarse environments are rejected without changing preferences', () 
   const result = minitelCapability(mobile);
   assert.equal(result.allowed, false);
   assert.equal(result.reason, 'screen');
+});
+
+
+test('M6 alphamosaic cells expose six deterministic 2x3 subcells', () => {
+  const screen = new MinitelScreenBuffer();
+  screen.mosaic(3, 4, 63, { foreground: 'blue' });
+  const cell = screen.snapshot().cells[3][4];
+  assert.equal(cell.attrs.mosaic, true);
+  assert.equal(cell.attrs.mosaicMask, 63);
+  assert.deepEqual(mosaicBits(cell.attrs.mosaicMask), [true, true, true, true, true, true]);
+  assert.equal(normalizeMosaicMask(99), 63);
+  assert.equal(normalizeMosaicMask(-5), 0);
+});
+
+test('M6 writeMosaic preserves masks and transmission detects pattern changes', () => {
+  const before = new MinitelScreenBuffer();
+  before.writeMosaic(5, 2, [1, 3, 7], { foreground: 'cyan' });
+  const after = before.clone();
+  after.mosaic(5, 3, 63, { foreground: 'cyan' });
+  const ops = transmissionOperations(after.snapshot(), before.snapshot());
+  assert.equal(ops.length, 1);
+  assert.deepEqual([ops[0].row, ops[0].column, ops[0].cell.attrs.mosaicMask], [5, 3, 63]);
+});
+
+test('M6 exposes color and monochrome display modes without altering logical colors', () => {
+  assert.equal(DISPLAY_MODES.color, 'color');
+  assert.equal(DISPLAY_MODES.monochrome, 'monochrome');
+  const screen = new MinitelScreenBuffer();
+  screen.write(1, 1, 'A', { foreground: 'yellow' });
+  assert.equal(screen.snapshot().cells[1][1].attrs.foreground, 'yellow');
 });
 
 (async () => {
