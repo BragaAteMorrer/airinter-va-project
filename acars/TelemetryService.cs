@@ -122,6 +122,7 @@ public sealed class TelemetryService(ISimulatorConnector sim, FlightRecorder rec
                             heading=raw?.HeadingDegrees ?? x.Sample.Heading,
                             fuel=raw?.FuelWeight ?? x.Sample.Fuel,
                             bank=raw?.BankDegrees,
+                            pitch=raw?.PitchDegrees,
                             on_ground=raw?.OnGround ?? x.Sample.OnGround,
                             gear_down=raw?.GearDown,
                             landing_flaps=raw?.FlapsPercent is { } flaps ? flaps > 0 : (bool?)null,
