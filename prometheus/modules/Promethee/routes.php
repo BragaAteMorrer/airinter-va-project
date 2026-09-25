@@ -76,6 +76,7 @@ Route::middleware(['web','auth'])->name('promethee.')->group(function () {
     Route::get('/downloads/categories/{category}', [PortalController::class,'downloadCategoryPage'])->where('category','acars|fleet|airports|documents')->name('downloads.category');
     Route::get('/downloads/{file}', [PortalController::class,'download'])->name('downloads.download');
     Route::get('/missions', [PortalController::class,'missions'])->name('missions');
+    Route::post('/missions/{id}/reserve', [PortalController::class,'reserveMission'])->name('missions.reserve');
     Route::get('/assignments', [PortalController::class,'assignments'])->name('assignments');
     Route::get('/shop', [PortalController::class,'shop'])->name('shop');
     Route::post('/shop/{id}/buy', [PortalController::class,'buyShopItem'])->name('shop.buy');
@@ -200,6 +201,10 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::delete('/assignments', [PortalController::class,'deleteAssignments'])->name('assignments.bulk-delete');
         Route::get('/airlines', [PortalController::class,'adminAirlines'])->name('airlines');
         Route::post('/airlines', [PortalController::class,'saveAdminAirline'])->name('airlines.save');
+        Route::get('/regional-operations', [PortalController::class,'regionalOperations'])->name('regional');
+        Route::post('/regional-operations/settings', [PortalController::class,'saveRegionalOperations'])->name('regional.settings');
+        Route::post('/regional-operations/bases', [PortalController::class,'saveRegionalBase'])->name('regional.bases.save');
+        Route::post('/regional-operations/aircraft', [PortalController::class,'assignAircraftBase'])->name('regional.aircraft.assign');
         Route::get('/passport', [PortalController::class,'adminPassport'])->name('passport');
         Route::post('/passport', [PortalController::class,'savePassportSettings'])->name('passport.save');
         Route::get('/shop', [PortalController::class,'adminShop'])->name('shop');
