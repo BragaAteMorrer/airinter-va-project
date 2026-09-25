@@ -26,18 +26,10 @@
       </tr>
 
       <tr>
-        <td>{{ __('common.airline') }}</td>
+        <td>Compagnie</td>
         <td>
-          <div class="input-group form-group-no-border{{ $errors->has('airline') ? ' has-danger' : '' }}">
-            <select name="airline_id" id="airline_id" class="form-control select2">
-              @foreach($airlines as $airline_id => $airline_label)
-                <option value="{{ $airline_id }}" @if($user->airline_id === $airline_id) selected @endif>{{ $airline_label }}</option>
-              @endforeach
-            </select>
-          </div>
-          @if ($errors->has('airline_id'))
-            <p class="text-danger">{{ $errors->first('airline_id') }}</p>
-          @endif
+          <input type="hidden" name="airline_id" value="{{ $user->airline_id }}">
+          <strong>Air Inter · ITF</strong><br><small>Compagnie d’exploitation verrouillée.</small>
         </td>
       </tr>
 
