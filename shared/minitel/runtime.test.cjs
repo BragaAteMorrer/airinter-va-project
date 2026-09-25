@@ -53,6 +53,8 @@ test('keyboard maps historical commands', () => {
   assert.equal(mapKeyboardEvent('PageUp').action, ACTIONS.BACK);
   assert.equal(mapKeyboardEvent('PageDown').action, ACTIONS.NEXT);
   assert.equal(mapKeyboardEvent('F10').action, ACTIONS.CONNECT_END);
+  assert.equal(mapKeyboardEvent('End').action, ACTIONS.CONNECT_END);
+  assert.equal(mapKeyboardEvent({ key: 'Enter', code: 'NumpadEnter' }).action, ACTIONS.SEND);
   assert.deepEqual(mapKeyboardEvent({ key: 'F2', shiftKey: true }), { action: ACTIONS.REPEAT, key: 'F2', refresh: true });
 });
 

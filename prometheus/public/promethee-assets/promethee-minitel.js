@@ -58,17 +58,52 @@
   const fit = (value, width) => normalise(value).slice(0, width).padEnd(width, ' ');
   const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
 
+  const fillRow = (screen, row, background = 'black', foreground = 'white') => {
+    screen.fill(row, 0, 39, ' ', { background, foreground });
+  };
+
+  const writeBand = (screen, row, text, background = 'blue', foreground = 'white') => {
+    fillRow(screen, row, background, foreground);
+    screen.write(row, 1, fit(text, 38), { background, foreground });
+  };
+
+  const titleBand = (screen, title, subtitle = '') => {
+    writeBand(screen, 2, title, 'blue', 'white');
+    writeBand(screen, 3, subtitle || 'AIR INTER', 'blue', subtitle ? 'cyan' : 'yellow');
+    fillRow(screen, 4, 'blue', 'white');
+  };
+
+  const noticeBand = (screen, row, text, background = 'red', foreground = 'white') => {
+    writeBand(screen, row, text, background, foreground);
+  };
+
+  const menuLine = (screen, row, number, label, accent = false) => {
+    screen.write(row, 1, String(number), { foreground: accent ? 'yellow' : 'cyan' });
+    screen.write(row, 3, fit(label, 35), { foreground: accent ? 'yellow' : 'cyan' });
+  };
+
   const writeStatus = (screen, identity, service = '3615 AIRINTER') => {
     screen.write(0, 0, mt.buildServiceLine({
       service,
       identity: identity || state.bootstrap?.pilot?.pilot_id || '',
       state: 'C'
-    }), { foreground: 'cyan' });
+    }), { foreground: 'cyan', background: 'black' });
   };
 
   const writeFooter = (screen, pagination = false) => {
-    if (pagination) screen.write(22, 1, 'RETOUR/↑ PAGE-    SUITE/↓ PAGE+', { foreground: 'cyan' });
-    screen.write(23, 0, 'GUIDE SOMMAIRE RETOUR SUITE      ENVOI', { foreground: 'cyan' });
+    writeBand(screen, 22, pagination ? 'RETOUR PAGE -     SUITE PAGE +' : 'F1 GUIDE     HOME SOMMAIRE', 'blue', 'white');
+    fillRow(screen, 23, 'green', 'black');
+    screen.write(23, 1, 'Guide', { background: 'green', foreground: 'black' });
+    screen.write(23, 9, 'Sommaire', { background: 'green', foreground: 'black' });
+    screen.write(23, 20, 'Retour', { background: 'green', foreground: 'black' });
+    screen.write(23, 29, 'Suite', { background: 'green', foreground: 'black' });
+    screen.write(23, 35, 'Envoi', { background: 'green', foreground: 'black' });
+    fillRow(screen, 24, 'green', 'black');
+    screen.write(24, 1, 'F1', { background: 'green', foreground: 'black' });
+    screen.write(24, 9, 'HOME', { background: 'green', foreground: 'black' });
+    screen.write(24, 20, 'PgUp', { background: 'green', foreground: 'black' });
+    screen.write(24, 29, 'PgDn', { background: 'green', foreground: 'black' });
+    screen.write(24, 35, 'ENT', { background: 'green', foreground: 'black' });
   };
 
   const action = (type, payload = {}) => {
@@ -152,9 +187,9 @@
   };
 
   const renderError = (screen) => {
-    screen.write(7, 10, '*** ERREUR ***', { foreground: 'red', blink: true });
-    screen.write(10, 2, fit(state.error || 'SERVICE INDISPONIBLE', 36));
-    screen.write(13, 2, 'RETOUR : PAGE PRECEDENTE');
+    noticeBand(screen, 6, '*** ERREUR SERVICE ***', 'red', 'white');
+    screen.write(9, 2, fit(state.error || 'SERVICE INDISPONIBLE', 36), { foreground: 'yellow' });
+    screen.write(13, 2, 'RETOUR : PAGE PRECEDENTE', { foreground: 'cyan' });
     writeFooter(screen);
   };
 
@@ -167,20 +202,19 @@
     session.register(new mt.MinitelPage('home', {
       onRender: (_context, screen, current) => {
         writeStatus(screen);
-        screen.write(2, 11, 'AIR INTER', { foreground: 'yellow' });
-        screen.write(4, 7, 'CENTRE DES OPERATIONS');
-        screen.write(6, 2, '1 DEPARTS / MOUVEMENTS', { foreground: 'cyan' });
-        screen.write(7, 2, '2 RECHERCHER / RESERVER VOL', { foreground: 'cyan' });
-        screen.write(8, 2, '3 MES OPERATIONS', { foreground: 'yellow' });
-        screen.write(9, 2, '4 ROUTES', { foreground: 'cyan' });
-        screen.write(10, 2, '5 FLOTTE', { foreground: 'cyan' });
-        screen.write(11, 2, '6 PILOTES', { foreground: 'cyan' });
-        screen.write(12, 2, '7 CALENDRIER', { foreground: 'cyan' });
-        screen.write(13, 2, '8 MON DOSSIER', { foreground: 'cyan' });
-        screen.write(15, 2, 'VOLS   ' + fit(state.bootstrap?.stats?.flights, 6));
-        screen.write(16, 2, 'PILOTES' + fit(state.bootstrap?.stats?.pilots, 6));
-        screen.write(17, 2, 'EN VOL ' + fit(state.bootstrap?.stats?.active, 6));
-        screen.write(18, 2, 'AUJ.   ' + fit(state.bootstrap?.stats?.today, 6));
+        titleBand(screen, 'AIR INTER', 'CENTRE DES OPERATIONS');
+        menuLine(screen, 6, 1, 'DEPARTS / MOUVEMENTS');
+        menuLine(screen, 7, 2, 'RECHERCHER / RESERVER VOL');
+        menuLine(screen, 8, 3, 'MES OPERATIONS', true);
+        menuLine(screen, 9, 4, 'ROUTES');
+        menuLine(screen, 10, 5, 'FLOTTE');
+        menuLine(screen, 11, 6, 'PILOTES');
+        menuLine(screen, 12, 7, 'CALENDRIER');
+        menuLine(screen, 13, 8, 'MON DOSSIER');
+        screen.write(15, 2, 'VOLS    ' + fit(state.bootstrap?.stats?.flights, 5), { foreground: 'white' });
+        screen.write(16, 2, 'PILOTES ' + fit(state.bootstrap?.stats?.pilots, 5), { foreground: 'white' });
+        screen.write(17, 2, 'EN VOL  ' + fit(state.bootstrap?.stats?.active, 5), { foreground: 'white' });
+        noticeBand(screen, 19, 'POSEZ VOTRE CHOIX : 1 A 8', 'red', 'white');
         screen.write(20, 2, 'VOTRE CHOIX : ' + current.input.value, { foreground: 'yellow' });
         writeFooter(screen);
       },
@@ -203,11 +237,11 @@
       session.register(new mt.MinitelPage(id, {
         onRender: (_context, screen, current) => {
           writeStatus(screen);
-          screen.write(3, 2, title, { foreground: 'yellow' });
-          screen.write(6, 2, hint);
+          titleBand(screen, title, hint);
+          noticeBand(screen, 6, 'SAISISSEZ VOTRE RECHERCHE', 'red', 'white');
           screen.write(9, 2, '> ' + current.input.value, { foreground: 'cyan' });
-          screen.write(13, 2, 'ENVOI : RECHERCHER');
-          screen.write(14, 2, 'ANNULATION : EFFACER');
+          screen.write(13, 2, 'ENVOI : RECHERCHER', { foreground: 'yellow' });
+          screen.write(14, 2, 'ANNULATION : EFFACER', { foreground: 'cyan' });
           writeFooter(screen);
         },
         acceptInput: (key) => /^[A-Za-z0-9 ._/-]$/.test(key),

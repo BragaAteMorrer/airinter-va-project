@@ -70,14 +70,49 @@
   const unwrapHm = value => value?.data ?? value;
   const fit = core.fit;
 
+  const fillRow = (screen, row, background = 'black', foreground = 'white') => {
+    screen.fill(row, 0, 39, ' ', { background, foreground });
+  };
+
+  const writeBand = (screen, row, text, background = 'blue', foreground = 'white') => {
+    fillRow(screen, row, background, foreground);
+    screen.write(row, 1, fit(text, 38), { background, foreground });
+  };
+
+  const titleBand = (screen, title, subtitle = '') => {
+    writeBand(screen, 2, title, 'blue', 'white');
+    writeBand(screen, 3, subtitle || 'AIR INTER', 'blue', subtitle ? 'cyan' : 'yellow');
+    fillRow(screen, 4, 'blue', 'white');
+  };
+
+  const noticeBand = (screen, row, text, background = 'red', foreground = 'white') => {
+    writeBand(screen, row, text, background, foreground);
+  };
+
+  const menuLine = (screen, row, number, label, accent = false) => {
+    screen.write(row, 1, String(number), { foreground: accent ? 'yellow' : 'cyan' });
+    screen.write(row, 3, fit(label, 35), { foreground: accent ? 'yellow' : 'cyan' });
+  };
+
   const serviceLine = screen => {
     const identity = hm.pilot?.ident || hm.pilot?.pilot_id || hm.pilot?.pilotId || 'CREW';
-    screen.write(0, 0, mt.buildServiceLine({ service: '3615 HERMES', identity, state: 'C' }), { foreground: 'cyan' });
+    screen.write(0, 0, mt.buildServiceLine({ service: '3615 HERMES', identity, state: 'C' }), { foreground: 'cyan', background: 'black' });
   };
 
   const footer = (screen, paging = false) => {
-    if (paging) screen.write(22, 1, 'RETOUR/↑ PAGE-    SUITE/↓ PAGE+', { foreground: 'cyan' });
-    screen.write(23, 0, 'GUIDE SOMMAIRE RETOUR SUITE      ENVOI', { foreground: 'cyan' });
+    writeBand(screen, 22, paging ? 'RETOUR PAGE -     SUITE PAGE +' : 'F1 GUIDE     HOME SOMMAIRE', 'blue', 'white');
+    fillRow(screen, 23, 'green', 'black');
+    screen.write(23, 1, 'Guide', { background: 'green', foreground: 'black' });
+    screen.write(23, 9, 'Sommaire', { background: 'green', foreground: 'black' });
+    screen.write(23, 20, 'Retour', { background: 'green', foreground: 'black' });
+    screen.write(23, 29, 'Suite', { background: 'green', foreground: 'black' });
+    screen.write(23, 35, 'Envoi', { background: 'green', foreground: 'black' });
+    fillRow(screen, 24, 'green', 'black');
+    screen.write(24, 1, 'F1', { background: 'green', foreground: 'black' });
+    screen.write(24, 9, 'HOME', { background: 'green', foreground: 'black' });
+    screen.write(24, 20, 'PgUp', { background: 'green', foreground: 'black' });
+    screen.write(24, 29, 'PgDn', { background: 'green', foreground: 'black' });
+    screen.write(24, 35, 'ENT', { background: 'green', foreground: 'black' });
   };
 
   const setAction = (type, payload = {}) => {
@@ -146,9 +181,9 @@
   };
 
   const showError = screen => {
-    screen.write(7, 10, '*** ERREUR ***', { foreground: 'red', blink: true });
-    screen.write(10, 2, fit(hm.error || 'SERVICE INDISPONIBLE', 36));
-    screen.write(13, 2, 'RETOUR : PAGE PRECEDENTE');
+    noticeBand(screen, 6, '*** ERREUR HERMES ***', 'red', 'white');
+    screen.write(9, 2, fit(hm.error || 'SERVICE INDISPONIBLE', 36), { foreground: 'yellow' });
+    screen.write(13, 2, 'RETOUR : PAGE PRECEDENTE', { foreground: 'cyan' });
     footer(screen);
   };
 
@@ -181,12 +216,12 @@
     terminalSession.register(new mt.MinitelPage('login-user', {
       onRender: (_ctx, screen, current) => {
         serviceLine(screen);
-        screen.write(3, 9, 'H E R M E S', { foreground: 'yellow' });
-        screen.write(5, 5, 'SYSTEME ACARS AIR INTER');
-        screen.write(8, 2, 'IDENTIFIANT PILOTE');
+        titleBand(screen, 'HERMES', 'SYSTEME ACARS AIR INTER');
+        noticeBand(screen, 6, 'CONNEXION PILOTE AIR INTER', 'red', 'white');
+        screen.write(8, 2, 'IDENTIFIANT PILOTE', { foreground: 'yellow' });
         screen.write(10, 2, '> ' + current.input.value, { foreground: 'cyan' });
-        screen.write(14, 2, 'ENVOI : CONTINUER');
-        screen.write(18, 2, 'CONNEXION SECURISEE PROMETHEE');
+        screen.write(14, 2, 'ENVOI : CONTINUER', { foreground: 'yellow' });
+        screen.write(18, 2, 'CONNEXION SECURISEE PROMETHEE', { foreground: 'cyan' });
         footer(screen);
       },
       acceptInput: key => /^[A-Za-z0-9@._+\-]$/.test(key),
@@ -200,12 +235,12 @@
     terminalSession.register(new mt.MinitelPage('login-password', {
       onRender: (_ctx, screen, current) => {
         serviceLine(screen);
-        screen.write(3, 9, 'H E R M E S', { foreground: 'yellow' });
-        screen.write(7, 2, 'PILOTE : ' + fit(hm.login, 26));
-        screen.write(9, 2, 'MOT DE PASSE');
+        titleBand(screen, 'HERMES', 'IDENTIFICATION PILOTE');
+        noticeBand(screen, 6, 'PILOTE : ' + fit(hm.login, 27), 'red', 'white');
+        screen.write(9, 2, 'MOT DE PASSE', { foreground: 'yellow' });
         screen.write(10, 2, '> ' + '*'.repeat(current.input.value.length), { foreground: 'cyan' });
-        screen.write(14, 2, 'ENVOI : SE CONNECTER');
-        screen.write(18, 2, 'MOT DE PASSE NON CONSERVE');
+        screen.write(14, 2, 'ENVOI : SE CONNECTER', { foreground: 'yellow' });
+        screen.write(18, 2, 'MOT DE PASSE NON CONSERVE', { foreground: 'cyan' });
         footer(screen);
       },
       acceptInput: key => key.length === 1,
@@ -218,18 +253,17 @@
     terminalSession.register(new mt.MinitelPage('home', {
       onRender: (_ctx, screen, current) => {
         serviceLine(screen);
-        screen.write(2, 10, 'H E R M E S', { foreground: 'yellow' });
-        screen.write(4, 5, 'SYSTEME ACARS AIR INTER');
-        screen.write(7, 2, '1 MES OPERATIONS', { foreground: 'cyan' });
-        screen.write(8, 2, '2 RECHERCHER / RESERVER VOL', { foreground: 'cyan' });
-        screen.write(9, 2, '3 PREPARATION OPERATIONNELLE', { foreground: 'cyan' });
-        screen.write(10, 2, '4 ETAT SIMULATEUR', { foreground: 'cyan' });
-        screen.write(11, 2, '5 VOL EN COURS / ACARS', { foreground: 'cyan' });
-        if (hm.status?.recoveryAvailable) screen.write(12, 2, '6 RECOVERY CENTER', { foreground: 'yellow' });
+        titleBand(screen, 'HERMES', 'ACARS AIR INTER');
+        menuLine(screen, 6, 1, 'MES OPERATIONS');
+        menuLine(screen, 7, 2, 'RECHERCHER / RESERVER VOL');
+        menuLine(screen, 8, 3, 'PREPARATION OPERATIONNELLE', true);
+        menuLine(screen, 9, 4, 'ETAT SIMULATEUR');
+        menuLine(screen, 10, 5, 'VOL EN COURS / ACARS');
+        if (hm.status?.recoveryAvailable) menuLine(screen, 11, 6, 'RECOVERY CENTER', true);
         screen.write(14, 2, 'PROMETHEE...... ' + (hm.status?.connected ? 'CONNECTE' : 'HORS LIGNE'), { foreground: hm.status?.connected ? 'green' : 'red' });
         screen.write(15, 2, 'SIMULATEUR..... ' + (hm.status?.latest ? 'CONNECTE' : 'EN ATTENTE'), { foreground: hm.status?.latest ? 'green' : 'yellow' });
         screen.write(16, 2, 'OPERATION...... ' + fit(opRef() || hm.status?.flight?.operationId || hm.status?.flight?.OperationId || 'AUCUNE', 18));
-        screen.write(18, 2, 'TRACKING....... ' + ((hm.status?.flight?.recording ?? hm.status?.flight?.Recording) ? 'ACTIF' : 'ARRETE'), { foreground: (hm.status?.flight?.recording ?? hm.status?.flight?.Recording) ? 'green' : 'yellow' });
+        noticeBand(screen, 19, 'POSEZ VOTRE CHOIX : 1 A 6', 'red', 'white');
         screen.write(20, 2, 'VOTRE CHOIX : ' + current.input.value, { foreground: 'yellow' });
         footer(screen);
       },
@@ -281,11 +315,11 @@
     terminalSession.register(new mt.MinitelPage('search', {
       onRender: (_ctx, screen, current) => {
         serviceLine(screen);
-        screen.write(3, 2, 'RECHERCHER UN VOL', { foreground: 'yellow' });
-        screen.write(6, 2, 'ITF749 OU LFPO>LIRF');
+        titleBand(screen, 'RECHERCHER UN VOL', 'ITF749 OU LFPO>LIRF');
+        noticeBand(screen, 6, 'RECHERCHE QUALIFIEE AIR INTER', 'red', 'white');
         screen.write(9, 2, '> ' + current.input.value, { foreground: 'cyan' });
-        screen.write(13, 2, 'ENVOI : RECHERCHER');
-        screen.write(14, 2, 'RESULTATS RESPECTENT QUALIFICATIONS');
+        screen.write(13, 2, 'ENVOI : RECHERCHER', { foreground: 'yellow' });
+        screen.write(14, 2, 'RESULTATS RESPECTENT QUALIFICATIONS', { foreground: 'cyan' });
         footer(screen);
       },
       acceptInput: key => /^[A-Za-z0-9 >\-]$/.test(key),

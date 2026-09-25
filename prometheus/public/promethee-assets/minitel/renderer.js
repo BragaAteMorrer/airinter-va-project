@@ -26,6 +26,7 @@
       this.host.dataset.displayMode = this.displayMode;
       this.host.setAttribute('role', 'application');
       this.host.setAttribute('aria-label', '3615 AIRINTER');
+      this.host.setAttribute('tabindex', '0');
       this.host.innerHTML = '';
 
       const screen = document.createElement('div');
@@ -52,6 +53,9 @@
       this.host.appendChild(screen);
       this.screenNode = screen;
       this.screenNode.dataset.displayMode = this.displayMode;
+      this.host.addEventListener('pointerdown', () => this.host.focus(), { passive: true });
+      this.host.focus?.();
+      queueMicrotask(() => this.host.focus?.());
     }
 
     setSpeed(speed) {
@@ -190,12 +194,12 @@
     }
 
     attach() {
-      this.target.addEventListener('keydown', this.onKeyDown);
+      this.target.addEventListener('keydown', this.onKeyDown, true);
       return this;
     }
 
     detach() {
-      this.target.removeEventListener('keydown', this.onKeyDown);
+      this.target.removeEventListener('keydown', this.onKeyDown, true);
       return this;
     }
 

@@ -209,6 +209,7 @@
 
   function mapKeyboardEvent(eventOrKey) {
     const key = typeof eventOrKey === 'string' ? eventOrKey : eventOrKey?.key;
+    const code = typeof eventOrKey === 'object' ? eventOrKey?.code : null;
     const shiftKey = typeof eventOrKey === 'object' && Boolean(eventOrKey?.shiftKey);
 
     const map = {
@@ -225,6 +226,8 @@
       F10: ACTIONS.CONNECT_END
     };
 
+    if (code === 'NumpadEnter') return { action: ACTIONS.SEND, key: 'Enter', code };
+    if (key === 'End') return { action: ACTIONS.CONNECT_END, key };
     if (map[key]) return { action: map[key], key, refresh: key === 'F2' && shiftKey };
     if (typeof key === 'string' && key.length === 1 && !/^[\u0000-\u001f\u007f]$/.test(key)) {
       return { action: ACTIONS.INPUT, key };
