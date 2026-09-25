@@ -24,6 +24,8 @@
     <article><span>En vol</span><strong id="dispatch-airborne">—</strong><small>télémétrie Hermès active</small></article>
     <article><span>Attention</span><strong id="dispatch-attention">—</strong><small>signal, message ou alerte</small></article>
     <article><span>ACK OPS</span><strong id="dispatch-ack">—</strong><small>messages cockpit à traiter</small></article>
+    <article><span>VATSIM</span><strong id="dispatch-vatsim">—</strong><small>pilotes Air Inter détectés</small></article>
+    <article><span>IVAO</span><strong id="dispatch-ivao">—</strong><small>pilotes Air Inter détectés</small></article>
 </section>
 
 <div class="dispatch-overview-grid">
@@ -176,6 +178,7 @@
         const haystack = [
             op.operation_id, op.flight?.ident, op.flight?.departure, op.flight?.arrival,
             op.pilot?.ident, op.pilot?.name, op.aircraft?.registration, op.aircraft?.icao,
+            ...(op.pilot?.networks?.online_connections || []).map(connection => [connection.network, connection.callsign].join(' ')),
             op.phase, op.status
         ].join(' ').toLowerCase();
         return haystack.includes(query.toLowerCase());
@@ -188,13 +191,17 @@
         rows.innerHTML = operations.length ? operations.map(op => {
             const alertCount = (op.alerts || []).length;
             const ack = op.datalink?.pending_ops_ack || 0;
+            const networks = op.pilot?.networks?.online_connections || [];
+            const networkLine = networks.length
+                ? networks.map(connection => (connection.network || '') + (connection.callsign ? ' ' + connection.callsign : '')).join(' · ')
+                : (op.pilot?.networks?.linked ? 'réseaux liés · offline' : 'réseaux non liés');
             const selected = state.selected === op.operation_id ? ' selected' : '';
             return '<tr class="dispatch-row' + selected + '" data-operation="' + esc(op.operation_id) + '">' +
                 '<td><strong>' + esc(op.flight?.ident) + '</strong><br><span class="muted">' +
                     esc(op.flight?.departure) + ' → ' + esc(op.flight?.arrival) + '</span></td>' +
                 '<td>' + badge(op.phase || op.status, statusKind(op.status)) + '</td>' +
                 '<td><strong>' + esc(op.aircraft?.registration || 'À affecter') + '</strong><br><span class="muted">' + esc(op.aircraft?.icao || '') + '</span></td>' +
-                '<td><strong>' + esc(op.pilot?.ident) + '</strong><br><span class="muted">' + esc(op.pilot?.name) + '</span></td>' +
+                '<td><strong>' + esc(op.pilot?.ident) + '</strong><br><span class="muted">' + esc(op.pilot?.name) + '</span><br><span class="muted">' + esc(networkLine) + '</span></td>' +
                 '<td>' + badge(op.signal?.state || 'WAITING', signalKind(op.signal?.state)) + '<br><span class="muted">' +
                     (op.signal?.age_seconds === null || op.signal?.age_seconds === undefined ? '—' : esc(op.signal.age_seconds + ' s')) + '</span></td>' +
                 '<td>' + (alertCount ? badge(alertCount + ' alerte' + (alertCount > 1 ? 's' : ''), 'danger') : badge('RAS', 'ok')) +
@@ -220,6 +227,8 @@
             document.querySelector('#dispatch-airborne').textContent = data.summary?.airborne ?? 0;
             document.querySelector('#dispatch-attention').textContent = data.summary?.attention ?? 0;
             document.querySelector('#dispatch-ack').textContent = data.summary?.pending_ops_ack ?? 0;
+            document.querySelector('#dispatch-vatsim').textContent = data.summary?.vatsim_online ?? 0;
+            document.querySelector('#dispatch-ivao').textContent = data.summary?.ivao_online ?? 0;
             updated.textContent = 'MAJ ' + time(data.updated_at);
             renderBoard();
 
@@ -266,8 +275,10 @@
         document.querySelector('#dispatch-operation-id').textContent = op.operation_id || 'OPÉRATION';
         document.querySelector('#dispatch-operation-title').textContent =
             (op.flight?.ident || '—') + ' · ' + (op.flight?.departure || '—') + ' → ' + (op.flight?.arrival || '—');
+        const primaryNetwork = op.pilot?.networks?.primary;
         document.querySelector('#dispatch-operation-meta').textContent =
-            (op.pilot?.ident || '—') + ' · ' + (op.pilot?.name || '—') + ' · ' + (op.aircraft?.registration || 'appareil non affecté');
+            (op.pilot?.ident || '—') + ' · ' + (op.pilot?.name || '—') + ' · ' + (op.aircraft?.registration || 'appareil non affecté')
+            + (primaryNetwork ? ' · ' + primaryNetwork.network + ' ' + (primaryNetwork.callsign || '') : '');
         const status = document.querySelector('#dispatch-operation-status');
         status.textContent = op.phase || op.status || '—';
         status.className = 'dispatch-state ' + statusKind(op.status);
@@ -290,6 +301,7 @@
             '<article class="dispatch-card"><span>Altitude</span><strong>' + number(op.live?.altitude, ' ft') + '</strong><small>GS ' + number(op.live?.gs, ' kt') + '</small></article>' +
             '<article class="dispatch-card"><span>Carburant transmis</span><strong>' + number(op.live?.fuel) + '</strong><small>unité simulateur</small></article>' +
             '<article class="dispatch-card"><span>Destination</span><strong>' + esc(op.flight?.arrival) + '</strong><small>ETA ' + time(op.live?.eta) + ' · ' + number(op.live?.remaining_nm, ' NM') + '</small></article>' +
+            '<article class="dispatch-card"><span>Réseau</span><strong>' + esc(op.pilot?.networks?.primary?.network || 'OFFLINE') + '</strong><small>' + esc(op.pilot?.networks?.primary?.callsign || (op.pilot?.networks?.linked ? 'comptes liés' : 'aucun compte lié')) + '</small></article>' +
         '</div>' +
         '<div class="dispatch-two-columns">' +
             '<section><h3>Alertes opérationnelles</h3>' +
