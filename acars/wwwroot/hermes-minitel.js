@@ -26,6 +26,7 @@
     datalink: null,
     datalinkPage: 1,
     selectedMessage: null,
+    messagePage: 1,
     replyTo: null,
     journalPage: 1,
     network: null,
@@ -109,7 +110,11 @@
     if (page === 'flight-live') return renderer.showCursor(20, Math.min(39, 9 + value), true);
     if (page === 'datalink') return renderer.showCursor(20, Math.min(39, 9 + value), true);
     if (page === 'datalink-message') return renderer.showCursor(20, Math.min(39, 9 + value), true);
-    if (page === 'datalink-compose') return renderer.showCursor(15, Math.min(39, 4 + value), true);
+    if (page === 'datalink-compose') {
+      const row = 12 + Math.min(3, Math.floor(value / 36));
+      const column = 2 + (value % 36);
+      return renderer.showCursor(row, Math.min(39, column), true);
+    }
     if (page === 'journal') return renderer.showCursor(20, Math.min(39, 9 + value), true);
     if (page === 'network') return renderer.showCursor(20, Math.min(39, 9 + value), true);
     if (page === 'review') return renderer.showCursor(20, Math.min(39, 9 + value), true);
@@ -201,7 +206,7 @@
         if (hm.status?.recoveryAvailable) screen.write(12, 2, '6 RECOVERY CENTER', { foreground: 'yellow' });
         screen.write(14, 2, 'PROMETHEE...... ' + (hm.status?.connected ? 'CONNECTE' : 'HORS LIGNE'), { foreground: hm.status?.connected ? 'green' : 'red' });
         screen.write(15, 2, 'SIMULATEUR..... ' + (hm.status?.latest ? 'CONNECTE' : 'EN ATTENTE'), { foreground: hm.status?.latest ? 'green' : 'yellow' });
-        screen.write(16, 2, 'OPERATION...... ' + fit(opRef() || hm.status?.flight?.operationId || 'AUCUNE', 18));
+        screen.write(16, 2, 'OPERATION...... ' + fit(opRef() || hm.status?.flight?.operationId || hm.status?.flight?.OperationId || 'AUCUNE', 18));
         screen.write(18, 2, 'TRACKING....... ' + ((hm.status?.flight?.recording ?? hm.status?.flight?.Recording) ? 'ACTIF' : 'ARRETE'), { foreground: (hm.status?.flight?.recording ?? hm.status?.flight?.Recording) ? 'green' : 'yellow' });
         screen.write(20, 2, 'VOTRE CHOIX : ' + current.input.value, { foreground: 'yellow' });
         footer(screen);
@@ -500,6 +505,7 @@
         const index = ((hm.datalinkPage - 1) * 5) + Number(value) - 1;
         if (dl.messages[index]) {
           hm.selectedMessage = dl.messages[index];
+          hm.messagePage = 1;
           return 'datalink-message';
         }
       },
@@ -524,12 +530,17 @@
         screen.write(5, 2, 'TYPE ' + fit(m.category, 8) + ' PRIORITE ' + fit(m.priority, 10));
         screen.write(6, 2, 'HEURE ' + core.timeLabel(m.createdAt) + '  ETAT ' + fit(m.status, 12));
         const body = core.normalise(m.body || '');
-        for (let i = 0; i < 5; i += 1) screen.write(9 + i, 2, fit(body.slice(i * 36, (i + 1) * 36), 36));
+        const chunkSize = 180;
+        const pages = Math.max(1, Math.ceil(body.length / chunkSize));
+        hm.messagePage = Math.max(1, Math.min(pages, hm.messagePage));
+        const chunk = body.slice((hm.messagePage - 1) * chunkSize, hm.messagePage * chunkSize);
+        for (let i = 0; i < 5; i += 1) screen.write(9 + i, 2, fit(chunk.slice(i * 36, (i + 1) * 36), 36));
+        screen.write(15, 2, 'PAGE MESSAGE ' + hm.messagePage + '/' + pages, { foreground: 'cyan' });
         if (incoming && !m.readAt && !m.acknowledgedAt) screen.write(16, 2, '1 MARQUER LU', { foreground: 'cyan' });
         if (incoming && m.requiresAck && !m.acknowledgedAt) screen.write(17, 2, '2 ACK', { foreground: 'cyan' });
         if (incoming && !m.localPending) screen.write(18, 2, '3 REPONDRE', { foreground: 'cyan' });
         screen.write(20, 2, 'CHOIX : ' + current.input.value, { foreground: 'yellow' });
-        footer(screen);
+        footer(screen, pages > 1);
       },
       acceptInput: key => /^[1-3]$/.test(key),
       send: value => {
@@ -539,7 +550,14 @@
         if (value === '2') setAction('datalink-ack', { message: m });
         if (value === '3') { hm.replyTo = m.id; return 'datalink-compose'; }
       },
-      previous: () => 'datalink'
+      next: () => {
+        const body = core.normalise(hm.selectedMessage?.body || '');
+        hm.messagePage = Math.min(Math.max(1, Math.ceil(body.length / 180)), hm.messagePage + 1);
+      },
+      previous: () => {
+        if (hm.messagePage > 1) { hm.messagePage -= 1; return null; }
+        return 'datalink';
+      }
     }));
 
     terminalSession.register(new mt.MinitelPage('datalink-compose', {
@@ -792,7 +810,7 @@
         const loginTarget = hm.status?.recoveryAvailable
           ? 'recovery'
           : ((hm.status?.flight?.recording ?? hm.status?.flight?.Recording) ? 'flight-live' : 'home');
-        terminalSession.homePageId = loginTarget === 'home' ? 'home' : loginTarget;
+        terminalSession.homePageId = 'home';
         return show(terminalSession.go(loginTarget), true);
       }
 
@@ -1134,8 +1152,9 @@
           : ((hm.status?.flight?.recording ?? hm.status?.flight?.Recording) ? 'flight-live' : 'home'));
 
     terminalSession = new mt.MinitelSession({
-      homePageId: initialPage,
+      homePageId: hm.authenticated ? 'home' : 'login-user',
       speed: 'fast',
+      inputLength: 160,
       context: {}
     });
     registerPages();
@@ -1148,6 +1167,9 @@
     shell.keyboard = keyboard;
     shell.identity = hm.pilot?.ident || '';
     await shell.start();
+    if (hm.authenticated && initialPage !== 'home') {
+      await show(terminalSession.go(initialPage, { recordHistory: false }), true);
+    }
     hm.timer = window.setInterval(tick, 2000);
     updateCursor();
   }
