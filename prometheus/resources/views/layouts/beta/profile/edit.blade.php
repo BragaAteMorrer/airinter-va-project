@@ -11,6 +11,7 @@
         @method('PATCH')
         @include("profile.fields")
       </form>
+      @include('profile.network_links')
     </div>
   </div>
 @endsection
