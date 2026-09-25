@@ -143,7 +143,7 @@
   function createSettingsPage(options = {}) {
     const service = options.service || '3615 AIRINTER';
     return new runtime.MinitelPage(SYSTEM_PAGES.SETTINGS, {
-      onRender: (context, screen) => {
+      onRender: (context, screen, session) => {
         const preferences = context.__minitelPreferences || {
           speed: options.speed || 'fast',
           displayMode: options.displayMode || 'color'
@@ -159,7 +159,7 @@
         screen.write(13, 4, '5 MONOCHROME / LUMINANCE');
         screen.write(16, 2, 'VITESSE : ' + String(preferences.speed || 'fast').toUpperCase(), { foreground: 'green' });
         screen.write(17, 2, 'ECRAN   : ' + (preferences.displayMode === 'monochrome' ? 'MONOCHROME' : 'COULEUR'), { foreground: 'green' });
-        screen.write(20, 2, 'CHOIX : ', { foreground: 'yellow' });
+        screen.write(20, 2, 'CHOIX : ' + session.input.value, { foreground: 'yellow' });
         screen.write(23, 0, 'SOMMAIRE  RETOUR                ENVOI', { foreground: 'cyan' });
       },
       acceptInput: (key) => /^[1-5]$/.test(key),
