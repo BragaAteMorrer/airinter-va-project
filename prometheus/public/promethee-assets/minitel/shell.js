@@ -10,6 +10,7 @@
 
   const SYSTEM_PAGES = Object.freeze({
     GUIDE: '__system_guide',
+    SETTINGS: '__system_settings',
     EXIT: '__system_exit'
   });
 
@@ -51,6 +52,22 @@
     return left + right;
   }
 
+  const AIR_INTER_MOSAIC_MARK = Object.freeze([
+    Object.freeze([1, 3, 15, 63, 62, 60, 56, 48, 32]),
+    Object.freeze([3, 15, 63, 62, 60, 56, 48, 32, 0]),
+    Object.freeze([15, 63, 62, 60, 56, 48, 32, 0, 0])
+  ]);
+
+  function writeAirInterMosaic(screen, row, column, attrs = {}) {
+    AIR_INTER_MOSAIC_MARK.forEach((masks, offset) => {
+      screen.writeMosaic(row + offset, column, masks, {
+        foreground: 'blue',
+        ...attrs
+      });
+    });
+    return screen;
+  }
+
   function writeCentered(screen, row, text, attrs = {}) {
     const value = String(text ?? '').slice(0, runtime.WIDTH);
     const column = Math.max(0, Math.floor((runtime.WIDTH - Array.from(value).length) / 2));
@@ -72,19 +89,22 @@
     };
 
     frame((screen) => {
-      writeCentered(screen, 8, 'VIDEOTEX', { foreground: 'cyan' });
-      writeCentered(screen, 12, 'CONNEXION EN COURS...', { foreground: 'yellow' });
+      writeCentered(screen, 7, 'VIDEOTEX', { foreground: 'cyan' });
+      writeCentered(screen, 9, '1200/75 BAUD', { foreground: 'blue' });
+      writeCentered(screen, 13, 'CONNEXION EN COURS...', { foreground: 'yellow' });
     });
 
     frame((screen) => {
-      writeCentered(screen, 6, service, { foreground: 'cyan', doubleWidth: true });
-      writeCentered(screen, 11, 'SERVEUR AIR INTER');
+      writeAirInterMosaic(screen, 5, 6, { foreground: 'blue' });
+      screen.write(6, 17, 'AIR INTER', { foreground: 'yellow', doubleWidth: true });
+      writeCentered(screen, 11, service, { foreground: 'cyan' });
       writeCentered(screen, 14, 'CONNEXION ETABLIE', { foreground: 'green' });
     });
 
     frame((screen) => {
-      writeCentered(screen, 5, 'AIR INTER', { foreground: 'yellow' });
-      writeCentered(screen, 8, product, { foreground: 'cyan' });
+      writeAirInterMosaic(screen, 4, 6, { foreground: 'blue', separatedMosaic: true });
+      screen.write(5, 17, 'AIR INTER', { foreground: 'yellow' });
+      writeCentered(screen, 9, product, { foreground: 'cyan' });
       writeCentered(screen, 13, identity ? 'IDENTIFICATION ' + identity : 'IDENTIFICATION PILOTE');
       writeCentered(screen, 16, 'SESSION OUVERTE', { foreground: 'green' });
     });
@@ -107,9 +127,58 @@
         screen.write(10, 2, 'PAGE UP    RETOUR');
         screen.write(11, 2, 'PAGE DOWN  SUITE');
         screen.write(12, 2, 'F10        CONNEXION/FIN');
+        screen.write(15, 2, '0          REGLAGES VIDEOTEX', { foreground: 'cyan' });
         screen.write(21, 2, 'CTRL+ALT+M SORTIE URGENCE', { foreground: 'red' });
         screen.write(23, 0, 'SOMMAIRE  RETOUR                ENVOI', { foreground: 'cyan' });
+      },
+      acceptInput: (key) => key === '0',
+      send: (value, context) => {
+        if (value !== '0') return null;
+        context.__minitelSettingsReturnPage = SYSTEM_PAGES.GUIDE;
+        return SYSTEM_PAGES.SETTINGS;
       }
+    });
+  }
+
+  function createSettingsPage(options = {}) {
+    const service = options.service || '3615 AIRINTER';
+    return new runtime.MinitelPage(SYSTEM_PAGES.SETTINGS, {
+      onRender: (context, screen, session) => {
+        const preferences = context.__minitelPreferences || {
+          speed: options.speed || 'fast',
+          displayMode: options.displayMode || 'color'
+        };
+        screen.write(0, 0, buildServiceLine({ service, state: 'C' }), { foreground: 'cyan' });
+        screen.write(2, 2, 'REGLAGES VIDEOTEX', { foreground: 'yellow' });
+        screen.write(4, 2, 'VITESSE DE TRANSMISSION', { foreground: 'cyan' });
+        screen.write(6, 4, '1 AUTHENTIQUE  1200/75');
+        screen.write(7, 4, '2 RAPIDE');
+        screen.write(8, 4, '3 INSTANTANEE');
+        screen.write(10, 2, 'AFFICHAGE', { foreground: 'cyan' });
+        screen.write(12, 4, '4 COULEUR');
+        screen.write(13, 4, '5 MONOCHROME / LUMINANCE');
+        screen.write(16, 2, 'VITESSE : ' + String(preferences.speed || 'fast').toUpperCase(), { foreground: 'green' });
+        screen.write(17, 2, 'ECRAN   : ' + (preferences.displayMode === 'monochrome' ? 'MONOCHROME' : 'COULEUR'), { foreground: 'green' });
+        screen.write(20, 2, 'CHOIX : ' + session.input.value, { foreground: 'yellow' });
+        screen.write(23, 0, 'SOMMAIRE  RETOUR                ENVOI', { foreground: 'cyan' });
+      },
+      acceptInput: (key) => /^[1-5]$/.test(key),
+      send: (value, context) => {
+        const current = context.__minitelPreferences || {
+          speed: options.speed || 'fast',
+          displayMode: options.displayMode || 'color'
+        };
+        const next = { ...current };
+        if (value === '1') next.speed = 'authentic';
+        if (value === '2') next.speed = 'fast';
+        if (value === '3') next.speed = 'instant';
+        if (value === '4') next.displayMode = 'color';
+        if (value === '5') next.displayMode = 'monochrome';
+        context.__minitelPreferences = next;
+        context.__minitelPreferenceChange = { ...next };
+        return SYSTEM_PAGES.SETTINGS;
+      },
+      previous: (context) => context.__minitelSettingsReturnPage || SYSTEM_PAGES.GUIDE
     });
   }
 
@@ -121,14 +190,19 @@
         screen.write(4, 6, 'FIN DE COMMUNICATION', { foreground: 'yellow' });
         screen.write(8, 4, '1 QUITTER LE MODE MINITEL');
         screen.write(10, 4, '2 ANNULER');
+        screen.write(12, 4, '3 REGLAGES VIDEOTEX');
         screen.write(15, 4, 'VOTRE CHOIX : ' + session.input.value, { foreground: 'cyan' });
         screen.write(23, 0, 'SOMMAIRE  RETOUR                ENVOI', { foreground: 'cyan' });
       },
-      acceptInput: (key) => /^[12]$/.test(key),
+      acceptInput: (key) => /^[123]$/.test(key),
       send: (value, context) => {
         if (value === '1') {
           context.__minitelExitRequested = true;
           return null;
+        }
+        if (value === '3') {
+          context.__minitelSettingsReturnPage = SYSTEM_PAGES.EXIT;
+          return SYSTEM_PAGES.SETTINGS;
         }
         return value === '2' ? context.__minitelExitReturnPage || null : null;
       }
@@ -136,7 +210,13 @@
   }
 
   function registerSystemPages(session, options = {}) {
+    session.context.__minitelPreferences = {
+      speed: options.speed || session.speed || 'fast',
+      displayMode: options.displayMode || 'color',
+      ...(session.context.__minitelPreferences || {})
+    };
     if (!session.pages.has(SYSTEM_PAGES.GUIDE)) session.register(createGuidePage(options));
+    if (!session.pages.has(SYSTEM_PAGES.SETTINGS)) session.register(createSettingsPage(options));
     if (!session.pages.has(SYSTEM_PAGES.EXIT)) session.register(createExitPage(options));
     return session;
   }
@@ -154,6 +234,9 @@
       this.identity = options.identity || '';
       this.labels = { ...DEFAULT_LABELS, ...(options.labels || {}) };
       this.onExit = typeof options.onExit === 'function' ? options.onExit : () => {};
+      this.onPreferencesChange = typeof options.onPreferencesChange === 'function' ? options.onPreferencesChange : () => {};
+      this.speed = runtime.SPEEDS[options.speed] ? options.speed : 'fast';
+      this.displayMode = runtime.DISPLAY_MODES[options.displayMode] ? options.displayMode : 'color';
       this.bootFrameDelay = Number.isFinite(options.bootFrameDelay) ? Math.max(0, options.bootFrameDelay) : 320;
       this.shellNode = null;
       this.terminalNode = null;
@@ -253,7 +336,13 @@
       if (!this.renderer) throw new Error('MinitelShell requires a renderer before start().');
       if (!this.session) throw new Error('MinitelShell requires a session before start().');
 
-      registerSystemPages(this.session, { service: this.service });
+      registerSystemPages(this.session, {
+        service: this.service,
+        speed: this.speed,
+        displayMode: this.displayMode
+      });
+      this.renderer.setSpeed?.(this.speed);
+      this.renderer.setDisplayMode?.(this.displayMode);
 
       if (this.keyboard) {
         const downstreamInterceptor = this.keyboard.commandInterceptor;
@@ -271,6 +360,11 @@
 
         this.keyboard.afterDispatch = (outcome, command, event) => {
           downstreamAfterDispatch?.(outcome, command, event);
+          const preferenceChange = this.session?.context?.__minitelPreferenceChange;
+          if (preferenceChange) {
+            this.session.context.__minitelPreferenceChange = null;
+            this.applyPreferences(preferenceChange);
+          }
           if (this.session?.context?.__minitelExitRequested) {
             this.session.context.__minitelExitRequested = false;
             this.exit(EXIT_REASONS.CONNECT_END);
@@ -298,6 +392,28 @@
     openGuide() {
       if (!this.session) return null;
       return this.session.go(SYSTEM_PAGES.GUIDE);
+    }
+
+    openSettings(returnPage = null) {
+      if (!this.session) return null;
+      if (returnPage) this.session.context.__minitelSettingsReturnPage = returnPage;
+      return this.session.go(SYSTEM_PAGES.SETTINGS);
+    }
+
+    applyPreferences(preferences = {}) {
+      if (runtime.SPEEDS[preferences.speed]) {
+        this.speed = preferences.speed;
+        if (this.session) this.session.speed = preferences.speed;
+        this.renderer?.setSpeed?.(preferences.speed);
+      }
+      if (runtime.DISPLAY_MODES[preferences.displayMode]) {
+        this.displayMode = preferences.displayMode;
+        this.renderer?.setDisplayMode?.(preferences.displayMode);
+      }
+      const current = Object.freeze({ speed: this.speed, displayMode: this.displayMode });
+      if (this.session) this.session.context.__minitelPreferences = { ...current };
+      this.onPreferencesChange(current);
+      return current;
     }
 
     openExit() {
@@ -352,7 +468,9 @@
     buildServiceLine,
     createBootSequence,
     createGuidePage,
+    createSettingsPage,
     createExitPage,
+    writeAirInterMosaic,
     registerSystemPages,
     MinitelShell
   });
