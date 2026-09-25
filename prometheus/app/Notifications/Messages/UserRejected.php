@@ -19,7 +19,7 @@ class UserRejected extends Notification implements ShouldQueue
         parent::__construct();
 
         $this->setMailable(
-            'Your registration has been denied',
+            'Air Inter · Mise à jour de votre candidature',
             'notifications.mail.user.rejected',
             ['user' => $this->user]
         );
