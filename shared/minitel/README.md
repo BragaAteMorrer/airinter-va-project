@@ -1,8 +1,8 @@
-# 3615 AIRINTER — Minitel Runtime (M0)
+# 3615 AIRINTER — Minitel Runtime (M0 + M1)
 
 This directory contains the shared, framework-free foundation for the Air Inter Videotex experience used by Prométhée and Hermès.
 
-M0 deliberately contains no business logic and does not replace either application UI yet. It defines the terminal contract both products will follow.
+M0 defines the framework-free terminal contract. M1 adds the shared 3615 AIRINTER shell, boot sequence, system pages and safety escape. Neither lot duplicates Prométhée/Hermès business logic.
 
 ## Invariants
 
@@ -36,7 +36,10 @@ Shift+F2 is an Air Inter extension: it requests a data refresh before a RÉPÉTI
 - renderer.js: dependency-free DOM renderer (1,000 cells) and keyboard controller.
 - minitel-runtime.css: neutral Videotex rendering layer.
 - runtime.test.cjs: Node smoke/contract tests.
-- demo.html: standalone manual acceptance demo.
+- shell.js: 3615 AIRINTER shell, service row, boot sequence, GUIDE/FIN system pages, desktop/mobile safety layer and emergency escape.
+- minitel-shell.css: CRT-style outer shell and modern fallback surface.
+- shell.test.cjs: M1 safety/system-command tests.
+- demo.html: standalone M1 manual acceptance demo.
 
 ## Running M0 tests
 
@@ -44,7 +47,9 @@ From the repository root:
 
     node --check shared/minitel/runtime.js
     node --check shared/minitel/renderer.js
+    node --check shared/minitel/shell.js
     node shared/minitel/runtime.test.cjs
+    node shared/minitel/shell.test.cjs
 
 These commands are also executed by the repository Quality workflow.
 
@@ -62,4 +67,17 @@ These commands are also executed by the repository Quality workflow.
 10. Mobile/coarse-pointer environments are rejected by the capability guard.
 11. All runtime tests pass in CI.
 
-M1 will add the actual 3615 AIRINTER shell, boot sequence, emergency exit and shared visual identity. Prométhée/Hermès business pages remain out of scope for M0.
+## M1 acceptance criteria
+
+1. A real 3615 AIRINTER shell exists outside the 40×25 runtime surface.
+2. Boot frames display VIDEOTEX, connection establishment and the selected product identity.
+3. Row 0 always fits exactly 40 characters and exposes service/session state.
+4. F1 opens the shared GUIDE page regardless of the current business page.
+5. F10 opens a CONNEXION/FIN page instead of immediately destroying the session.
+6. Ctrl+Alt+M is an emergency exit independent from terminal navigation.
+7. A visible external exit button remains outside the renderer and is forced visible on runtime errors.
+8. Mobile/coarse-pointer devices receive a modern touch-safe fallback rather than the terminal.
+9. The shell never mutates the saved Minitel preference itself; Prométhée/Hermès decide how to persist device/session fallback.
+10. Shell/runtime tests run in repository CI.
+
+Prométhée/Hermès business pages remain outside M0/M1. M2 can now integrate the shell into Prométhée consultation screens.
