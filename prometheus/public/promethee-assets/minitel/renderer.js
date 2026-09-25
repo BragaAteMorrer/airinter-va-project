@@ -54,7 +54,8 @@
       this.screenNode = screen;
       this.screenNode.dataset.displayMode = this.displayMode;
       this.host.addEventListener('pointerdown', () => this.host.focus(), { passive: true });
-      queueMicrotask(() => this.host.focus());
+      this.host.focus?.();
+      queueMicrotask(() => this.host.focus?.());
     }
 
     setSpeed(speed) {
