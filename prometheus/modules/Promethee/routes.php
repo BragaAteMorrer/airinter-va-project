@@ -81,7 +81,6 @@ Route::middleware(['web','auth'])->name('promethee.')->group(function () {
     Route::get('/shop', [PortalController::class,'shop'])->name('shop');
     Route::post('/shop/{id}/buy', [PortalController::class,'buyShopItem'])->name('shop.buy');
     Route::get('/transfers', [PortalController::class,'transfers'])->name('transfers');
-    Route::post('/transfers', [PortalController::class,'requestTransfer'])->name('transfers.request');
     Route::get('/jumpseat', [PortalController::class,'jumpseat'])->name('jumpseat');
     Route::post('/jumpseat', [PortalController::class,'requestJumpseat'])->name('jumpseat.buy');
     Route::get('/operations', [PortalController::class,'operations'])->name('operations');
@@ -210,8 +209,6 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::get('/shop', [PortalController::class,'adminShop'])->name('shop');
         Route::post('/shop/items', [PortalController::class,'saveShopItem'])->name('shop.items.save');
         Route::post('/shop/wallets', [PortalController::class,'creditWallet'])->name('shop.wallets.credit');
-        Route::get('/transfers', [PortalController::class,'adminTransfers'])->name('transfers');
-        Route::post('/transfers/{id}', [PortalController::class,'decideTransfer'])->name('transfers.decide');
         Route::get('/jumpseats', [PortalController::class,'adminJumpseats'])->name('jumpseats');
         Route::post('/jumpseats/settings', [PortalController::class,'saveJumpseatSettings'])->name('jumpseats.settings');
         Route::get('/downloads', [PortalController::class,'adminDownloads'])->name('downloads');
