@@ -116,31 +116,94 @@ class PortalController extends Controller
     }
 
     public function finances(Request $r) {
-        $period = $r->validate(['period' => 'nullable|in:month,6months,year'])['period'] ?? 'month';
+        $filters = $r->validate([
+            'period' => 'nullable|in:month,6months,year',
+            'airline' => 'nullable|integer',
+        ]);
+        $period = $filters['period'] ?? 'year';
+        $selectedAirlineId = isset($filters['airline']) ? (int) $filters['airline'] : null;
         $parisNow = now('Europe/Paris');
-        $start = match ($period) {
-            '6months' => $parisNow->copy()->subMonths(5)->startOfMonth(),
-            'year' => $parisNow->copy()->startOfYear(),
-            default => $parisNow->copy()->startOfMonth(),
-        };
-        $startUtc = $start->copy()->utc();
-        $airlines = Airline::where('active', 1)->with('journal')->orderBy('name')->get();
 
-        $financeRows = $airlines->map(function (Airline $airline) use ($startUtc, $start, $parisNow) {
+        $periodDefinitions = [
+            'month' => [
+                'label' => 'Mois',
+                'start' => $parisNow->copy()->startOfMonth(),
+            ],
+            '6months' => [
+                'label' => '6 mois',
+                'start' => $parisNow->copy()->subMonths(5)->startOfMonth(),
+            ],
+            'year' => [
+                'label' => 'Année',
+                'start' => $parisNow->copy()->startOfYear(),
+            ],
+        ];
+
+        $chartStart = $parisNow->copy()->subMonths(11)->startOfMonth();
+        $queryStart = collect($periodDefinitions)->pluck('start')->push($chartStart)->sort()->first()->copy()->utc();
+
+        $airlines = Airline::where('active', 1)
+            ->with('journal')
+            ->when($selectedAirlineId, fn ($query) => $query->where('id', $selectedAirlineId))
+            ->orderBy('name')
+            ->get();
+
+        $financeRows = $airlines->map(function (Airline $airline) use ($queryStart, $periodDefinitions, $chartStart, $parisNow, $period) {
             $journal = $airline->journal;
             $transactions = $journal
-                ? $journal->transactions()->where('post_date', '>=', $startUtc)->orderBy('post_date')->get()
+                ? $journal->transactions()->where('post_date', '>=', $queryStart)->orderBy('post_date')->get()
                 : collect();
 
+            $periods = [];
+            foreach ($periodDefinitions as $key => $definition) {
+                $startUtc = $definition['start']->copy()->utc();
+                $slice = $transactions->filter(fn ($transaction) => \Carbon\Carbon::parse($transaction->post_date)->gte($startUtc));
+                $credits = (int) $slice->sum('credit');
+                $debits = (int) $slice->sum('debit');
+                $net = $credits - $debits;
+                $margin = $credits > 0 ? round(($net / $credits) * 100, 1) : 0.0;
+
+                $durationSeconds = max(1, $parisNow->copy()->utc()->diffInSeconds($startUtc));
+                $previousStart = $startUtc->copy()->subSeconds($durationSeconds);
+                $previous = $journal
+                    ? $journal->transactions()
+                        ->where('post_date', '>=', $previousStart)
+                        ->where('post_date', '<', $startUtc)
+                        ->get()
+                    : collect();
+                $previousCredits = (int) $previous->sum('credit');
+                $previousNet = (int) $previous->sum('credit') - (int) $previous->sum('debit');
+
+                $periods[$key] = [
+                    'label' => $definition['label'],
+                    'credits_raw' => $credits,
+                    'debits_raw' => $debits,
+                    'net_raw' => $net,
+                    'credits' => new Money($credits),
+                    'debits' => new Money($debits),
+                    'net' => new Money($net),
+                    'margin' => $margin,
+                    'transactions' => $slice->count(),
+                    'credit_change' => $previousCredits > 0 ? round((($credits - $previousCredits) / $previousCredits) * 100, 1) : null,
+                    'net_change' => $previousNet != 0 ? round((($net - $previousNet) / abs($previousNet)) * 100, 1) : null,
+                ];
+            }
+
             $monthly = [];
-            $cursor = $start->copy()->startOfMonth();
+            $cursor = $chartStart->copy();
+            $runningBalance = $journal ? (int) $journal->getBalance()->getAmount() : 0;
             while ($cursor->lte($parisNow)) {
                 $key = $cursor->format('Y-m');
                 $monthly[$key] = [
-                    'label' => $cursor->translatedFormat('M Y'),
+                    'key' => $key,
+                    'label' => $cursor->translatedFormat('M'),
+                    'full_label' => $cursor->translatedFormat('M Y'),
                     'credits' => 0,
                     'debits' => 0,
                     'net' => 0,
+                    'margin' => 0,
+                    'balance' => 0,
+                    'transactions' => 0,
                 ];
                 $cursor->addMonth();
             }
@@ -153,23 +216,67 @@ class PortalController extends Controller
                 $monthly[$key]['credits'] += $credit;
                 $monthly[$key]['debits'] += $debit;
                 $monthly[$key]['net'] += $credit - $debit;
+                $monthly[$key]['transactions']++;
             }
 
-            $credits = (int) $transactions->sum('credit');
-            $debits = (int) $transactions->sum('debit');
+            foreach ($monthly as &$point) {
+                $point['margin'] = $point['credits'] > 0 ? round(($point['net'] / $point['credits']) * 100, 1) : 0;
+            }
+            unset($point);
+
+            $months = array_values($monthly);
+            $selectedStats = $periods[$period];
+            $risk = 'faible';
+            if ($selectedStats['net_raw'] < 0 || $selectedStats['margin'] < 0) {
+                $risk = 'élevé';
+            } elseif ($selectedStats['margin'] < 10 || ($selectedStats['credit_change'] !== null && $selectedStats['credit_change'] < -5)) {
+                $risk = 'modéré';
+            }
+
+            $observations = [];
+            if ($selectedStats['credit_change'] !== null) {
+                $observations[] = ($selectedStats['credit_change'] >= 0 ? 'Progression' : 'Repli').' des recettes de '.abs($selectedStats['credit_change']).' % par rapport à la période précédente.';
+            }
+            $observations[] = $selectedStats['margin'] >= 15
+                ? 'Marge comptable robuste sur la période analysée.'
+                : ($selectedStats['margin'] >= 0 ? 'Marge positive mais à surveiller.' : 'Résultat déficitaire sur la période.');
+            $observations[] = $selectedStats['transactions'].' écritures comptables intégrées à l’analyse.';
+            if ($selectedStats['debits_raw'] > $selectedStats['credits_raw'] * 0.85 && $selectedStats['credits_raw'] > 0) {
+                $observations[] = 'Le niveau de charges absorbe plus de 85 % des recettes.';
+            }
 
             return [
                 'airline' => $airline,
                 'balance' => $journal ? $journal->getBalance() : new Money(0),
-                'credits' => new Money($credits),
-                'debits' => new Money($debits),
-                'net' => new Money($credits - $debits),
-                'transactions' => $transactions->count(),
-                'monthly' => array_values($monthly),
+                'balance_raw' => $journal ? (int) $journal->getBalance()->getAmount() : 0,
+                'periods' => $periods,
+                'selected' => $selectedStats,
+                'monthly' => $months,
+                'risk' => $risk,
+                'observations' => $observations,
             ];
         });
 
-        return $this->page('finances', compact('financeRows', 'period', 'start'));
+        $consolidated = [
+            'credits' => new Money((int) $financeRows->sum(fn ($row) => $row['selected']['credits_raw'])),
+            'debits' => new Money((int) $financeRows->sum(fn ($row) => $row['selected']['debits_raw'])),
+            'net' => new Money((int) $financeRows->sum(fn ($row) => $row['selected']['net_raw'])),
+            'balance' => new Money((int) $financeRows->sum('balance_raw')),
+        ];
+        $consolidatedCreditsRaw = (int) $financeRows->sum(fn ($row) => $row['selected']['credits_raw']);
+        $consolidatedNetRaw = (int) $financeRows->sum(fn ($row) => $row['selected']['net_raw']);
+        $consolidated['margin'] = $consolidatedCreditsRaw > 0 ? round(($consolidatedNetRaw / $consolidatedCreditsRaw) * 100, 1) : 0;
+
+        $allAirlines = Airline::where('active', 1)->orderBy('name')->get(['id', 'name', 'icao']);
+
+        return $this->page('finances', compact(
+            'financeRows',
+            'period',
+            'selectedAirlineId',
+            'consolidated',
+            'allAirlines',
+            'parisNow'
+        ));
     }
 
     public function fleet(Request $r) {
