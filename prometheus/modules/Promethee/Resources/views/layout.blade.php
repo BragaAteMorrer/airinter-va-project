@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="{{ asset('promethee-assets/promethee-appearance.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-appearance.css')) }}">
 <link rel="stylesheet" href="{{ asset('promethee-assets/minitel/minitel-runtime.css') }}?v={{ filemtime(public_path('promethee-assets/minitel/minitel-runtime.css')) }}">
 <link rel="stylesheet" href="{{ asset('promethee-assets/minitel/minitel-shell.css') }}?v={{ filemtime(public_path('promethee-assets/minitel/minitel-shell.css')) }}">
+<link rel="stylesheet" href="{{ asset('promethee-assets/promethee-minitel.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-minitel.css')) }}">
 <script src="{{ asset('promethee-assets/minitel/runtime.js') }}?v={{ filemtime(public_path('promethee-assets/minitel/runtime.js')) }}" defer></script>
 <script src="{{ asset('promethee-assets/minitel/renderer.js') }}?v={{ filemtime(public_path('promethee-assets/minitel/renderer.js')) }}" defer></script>
 <script src="{{ asset('promethee-assets/minitel/shell.js') }}?v={{ filemtime(public_path('promethee-assets/minitel/shell.js')) }}" defer></script>
