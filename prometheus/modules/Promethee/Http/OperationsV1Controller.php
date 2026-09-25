@@ -6,6 +6,7 @@ use App\Contracts\Controller;
 use App\Models\Aircraft;
 use App\Models\Bid;
 use App\Models\Flight;
+use App\Models\Subfleet;
 use App\Models\Enums\AircraftState;
 use App\Models\Enums\AircraftStatus;
 use App\Models\SimBrief;
@@ -76,7 +77,37 @@ class OperationsV1Controller extends Controller
         $arrival = strtoupper(trim((string) ($data['arr_icao'] ?? '')));
         $typeFilter = strtoupper(preg_replace('/[^A-Z0-9]+/', '', (string) ($data['icao_type'] ?? '')));
 
-        $allowedSubfleets = $this->userSvc->getAllowableSubfleets($request->user())->values();
+        $user = $request->user();
+        $restrictRank = (bool) setting('pireps.restrict_aircraft_to_rank', true);
+        $restrictType = (bool) setting('pireps.restrict_aircraft_to_typerating', false);
+
+        $allowedIds = null;
+
+        if ($restrictRank) {
+            $rankIds = $user->rank
+                ? $user->rank->subfleets()->pluck('subfleets.id')->map(fn ($id) => (int) $id)->all()
+                : [];
+
+            $allowedIds = $rankIds;
+        }
+
+        if ($restrictType) {
+            $typeIds = $user->rated_subfleets()
+                ->pluck('subfleets.id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+
+            $allowedIds = $allowedIds === null
+                ? $typeIds
+                : array_values(array_intersect($allowedIds, $typeIds));
+        }
+
+        $allowedSubfleets = Subfleet::query()
+            ->select(['id', 'name', 'type'])
+            ->when($allowedIds !== null, fn ($query) => $query->whereIn('id', $allowedIds))
+            ->get()
+            ->values();
+
         $allowedIds = $allowedSubfleets->pluck('id')->map(fn ($id) => (int) $id)->all();
 
         $allowedAirlineIds = app(\Modules\Promethee\Services\CompanyAccessService::class)
