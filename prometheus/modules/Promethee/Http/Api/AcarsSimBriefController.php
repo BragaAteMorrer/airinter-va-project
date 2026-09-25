@@ -63,10 +63,9 @@ class AcarsSimBriefController extends Controller
         );
 
         $outputPage = route('promethee.simbrief.callback', ['state' => $apiSession['state']]);
-        $outputPageApi = preg_replace('#^https?://#i', '', $outputPage);
-        $signatureInput = $parameters['orig'].$parameters['dest'].$parameters['type'].$timestamp.$outputPageApi;
+        $signatureInput = $parameters['orig'].$parameters['dest'].$parameters['type'].$timestamp.$outputPage;
         $parameters['static_id'] = $staticId;
-        $parameters['outputpage'] = $outputPageApi;
+        $parameters['outputpage'] = $outputPage;
         $parameters['timestamp'] = $timestamp;
         $parameters['apicode'] = md5($apiKey.$signatureInput);
 
