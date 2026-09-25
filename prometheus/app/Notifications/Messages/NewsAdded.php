@@ -19,7 +19,7 @@ class NewsAdded extends Notification implements ShouldQueue
         parent::__construct();
 
         $this->setMailable(
-            $news->subject,
+            'Air Inter · '.$news->subject,
             'notifications.mail.news.news',
             ['news' => $news]
         );
