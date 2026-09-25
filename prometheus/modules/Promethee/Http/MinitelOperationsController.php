@@ -19,6 +19,11 @@ class MinitelOperationsController extends Controller
         return $this->operations->index($request);
     }
 
+    public function searchFlights(Request $request)
+    {
+        return $this->operations->searchFlights($request);
+    }
+
     public function reserve(string $flight, Request $request, BidService $bids)
     {
         return $this->operations->reserveFlight($flight, $request, $bids);
