@@ -723,6 +723,15 @@ function simbriefPath(suffix) {
   return `/api/v1/operations/${encodeURIComponent(operationRef)}/simbrief/${suffix}`;
 }
 
+function normalizeFlightLevel(value) {
+  if (value === undefined || value === null || value === '') return undefined;
+  const raw = String(value).trim().toUpperCase().replace(/^FL\s*/, '');
+  const altitude = Number(raw);
+  if (!Number.isFinite(altitude) || altitude <= 0) return undefined;
+  const level = altitude > 600 ? Math.round(altitude / 100) : Math.round(altitude);
+  return level >= 10 && level <= 600 ? level : undefined;
+}
+
 function simBriefPlanningPayload(form) {
   const payload = {};
   const aircraftId = form.elements.aircraft_id.value;
@@ -736,10 +745,11 @@ function simBriefPlanningPayload(form) {
 
   const rawLevel = form.elements.level.value.trim();
   if (rawLevel) {
-    const level = Number(rawLevel);
-    if (!Number.isFinite(level) || level < 10 || level > 600)
+    const level = normalizeFlightLevel(rawLevel);
+    if (!level)
       throw new Error('Le niveau de vol doit être compris entre FL010 et FL600.');
-    payload.level = Math.round(level);
+    payload.level = level;
+    form.elements.level.value = String(level);
   }
 
   return payload;
@@ -771,14 +781,6 @@ async function assertSimBriefReady(form, mode = 'company') {
     `Résolution BDD OK · ${flight} · ${origin} → ${destination} · ${registration} · ${type}${cabin ? ' · ' + cabin : ''}${Number.isFinite(Number(pax)) ? ' · ' + pax + ' pax' : ''}.`
   );
   return resolved;
-}
-
-function normalizeFlightLevel(value) {
-  const altitude = Number(value);
-  if (!Number.isFinite(altitude) || altitude <= 0) return undefined;
-  // SimBrief returns general.initial_altitude in feet (e.g. 37000),
-  // while phpVMS/Hermès stores the flight level (e.g. 370).
-  return altitude > 600 ? Math.round(altitude / 100) : Math.round(altitude);
 }
 
 function applyBriefing(briefing, sourceLabel) {
@@ -1070,14 +1072,18 @@ $('#prefileForm').onsubmit = async event => {
   const body = Object.fromEntries([...new FormData(event.currentTarget)].filter(([, value]) => value !== ''));
   if (!body.aircraft_id) return showMessage('#pirepMessage', 'Sélectionnez un appareil.', true);
   if (body.block_fuel) body.block_fuel = Number(body.block_fuel);
-  if (body.level) body.level = Number(body.level);
+  if (body.level) {
+    const normalizedLevel = normalizeFlightLevel(body.level);
+    if (!normalizedLevel) return showMessage('#pirepMessage', 'Le niveau de vol doit être compris entre FL010 et FL600.', true);
+    body.level = normalizedLevel;
+  }
   if (body.alt_airport_id) body.alt_airport_id = body.alt_airport_id.toUpperCase();
   Object.assign(body, flightPlan || {}, { source_name: 'Hermes ACARS' });
   try {
     const operationRef = selectedOperation?.operation_id || selectedOperation?.id;
     const operationPirepBody = operationRef ? {
       route: body.route || flightPlan?.route || undefined,
-      level: body.level ? Number(body.level) : (flightPlan?.level || undefined),
+      level: normalizeFlightLevel(body.level || flightPlan?.level),
       block_fuel: body.block_fuel || flightPlan?.block_fuel || undefined,
       simbrief_source: flightPlan?.source === 'simbrief_account' ? 'simbrief_account' : (String(flightPlan?.source || '').toLowerCase().includes('simbrief') ? 'simbrief' : undefined)
     } : body;
