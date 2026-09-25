@@ -20,3 +20,7 @@ html[data-era="minitel"]{--navy:#030906;--blue:#7debb0;--red:#ffbb57;--ink:#99ed
 .pilot-directory-avatar{display:block;width:58px;height:58px;border-radius:50%;object-fit:cover;margin:0 auto 10px;box-shadow:0 0 0 3px #e5eef8}
 .rank-block{display:grid;justify-items:start;gap:7px;margin-top:8px}
 .rank-block .rank-image{width:52px;height:52px;margin:0}
+
+.jumpseat-quote{display:grid;gap:4px;align-self:stretch;padding:12px 14px;border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:6px;background:#f8fafc}
+.jumpseat-quote span,.jumpseat-quote small{color:var(--muted);font-size:9px;letter-spacing:.8px}
+.jumpseat-quote strong{font-size:16px;color:var(--ink)}
