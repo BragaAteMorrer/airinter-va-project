@@ -48,7 +48,7 @@ window.prometheeI18n = @json($prometheeI18n);
 <body>
 <a class="skip" href="#main">{{ __('promethee.skip_to_content') }}</a>
 <aside class="sidebar">
-<a class="brand promethee-brand" href="{{ route('promethee.dashboard') }}"><span class="brand-logo-shell"><img class="brand-logo" src="{{ asset('promethee-assets/logos/promethee-mark.svg') }}" alt="Prométhée · Air Inter"><img class="brand-logo-minitel" src="{{ asset('promethee-assets/logos/air-inter-minitel.png') }}" alt="Air Inter"></span></a>
+<a class="brand" href="{{ route('promethee.dashboard') }}"><span class="brand-logo-shell"><img class="brand-logo" src="{{ $branding['url'] }}" alt="Air Inter"><img class="brand-logo-minitel" src="{{ asset('promethee-assets/logos/air-inter-minitel.png') }}" alt="Air Inter"></span><span class="brand-caption">{{ __('promethee.virtual_airline') }}<br>{{ __('promethee.french_domestic_network') }}</span></a>
 <div class="system-name"><span class="eyebrow">{{ __('promethee.operations_centre') }}</span><strong>Prométhée<span class="cursor">_</span></strong><small>{{ __('promethee.airline_slogan') }}</small></div>
 @auth
 @php
