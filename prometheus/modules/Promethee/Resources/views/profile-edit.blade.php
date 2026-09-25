@@ -11,7 +11,8 @@
 <label>Compagnie<select name="airline_id" required>@foreach($airlines as $airline)<option value="{{ $airline->id }}" @selected((string)old('airline_id', $pilot->airline_id) === (string)$airline->id)>{{ $airline->icao }} · {{ $airline->name }}</option>@endforeach</select></label>
 <label>Base d'attache<select name="home_airport_id"><option value="">Aucune base</option>@foreach($airports as $airport)<option value="{{ $airport->id }}" @selected(old('home_airport_id', $pilot->home_airport_id) === $airport->id)>{{ $airport->icao ?: $airport->id }} · {{ $airport->name }}@if($airport->location) ({{ $airport->location }})@endif</option>@endforeach</select></label>
 <label>Pays<select name="country"><option value="">Non renseigné</option>@foreach($countries as $code => $name)<option value="{{ $code }}" @selected(old('country', $pilot->country) === $code)>{{ $name }}</option>@endforeach</select></label>
-<label>Fuseau horaire<input name="timezone" value="{{ old('timezone', $pilot->timezone) }}" required placeholder="Europe/Paris" autocomplete="timezone"></label>
+@php($selectedTimezone = in_array(old('timezone', $pilot->timezone), $timezones, true) ? old('timezone', $pilot->timezone) : 'Europe/Paris')
+<label>Fuseau horaire<select name="timezone" required>@foreach($timezones as $timezone)<option value="{{ $timezone }}" @selected($selectedTimezone === $timezone)>{{ $timezone }}</option>@endforeach</select><small>Format IANA, par exemple Europe/Paris.</small></label>
 <label>Identifiant VATSIM<input name="vatsim_id" value="{{ old('vatsim_id', $pilot->vatsim_id) }}"></label>
 <label>Identifiant IVAO<input name="ivao_id" value="{{ old('ivao_id', $pilot->ivao_id) }}"></label>
 <label class="full">Photo de profil<input type="file" name="avatar" accept="image/jpeg,image/png,image/webp"><small>JPEG, PNG ou WebP, 2 Mo maximum.</small></label>
