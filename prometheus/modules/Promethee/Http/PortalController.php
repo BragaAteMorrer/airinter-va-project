@@ -862,7 +862,7 @@ class PortalController extends Controller
             if (!$originId) return back()->withErrors(['jumpseat'=>'Votre aéroport actuel est introuvable.']);
             if ($originId === $airport->id) return back()->withErrors(['jumpseat'=>'Vous êtes déjà positionné à cet aéroport.']);
             $quote=$this->jumpseatQuote($user,$airport);
-            if ($r->boolean('preview')) return back()->with('success','Tarif du jumpseat : '.$quote['origin']->icao.' → '.$airport->icao.' · '.$quote['distance'].' NM · '.$quote['amount'].'.');
+            if ($r->boolean('preview')) return back()->withInput()->with('jumpseat_quote', $quote['origin']->icao.' → '.$airport->icao.' · '.$quote['distance'].' NM · '.$quote['amount']);
             if((int)$journal->getBalance()->getAmount() < (int)$quote['amount']->getAmount()) return back()->withErrors(['jumpseat'=>'Solde phpVMS insuffisant pour ce jumpseat ('.$quote['amount'].').']);
             $finance->debitFromJournal($journal,$quote['amount'],$user,'Jumpseat '.$quote['origin']->icao.' > '.$airport->icao,'jumpseat','jumpseat');
             if ($user->airline?->journal) $finance->creditToJournal($user->airline->journal,$quote['amount'],$user,'Jumpseat de '.$user->name.' ('.$quote['origin']->icao.' > '.$airport->icao.')','jumpseat','jumpseat');
