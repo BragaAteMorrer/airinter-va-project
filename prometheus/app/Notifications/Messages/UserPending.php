@@ -17,7 +17,7 @@ class UserPending extends Notification implements ShouldQueue
         parent::__construct();
 
         $this->setMailable(
-            'Your registration is pending',
+            'Air Inter · Candidature pilote reçue',
             'notifications.mail.user.pending',
             ['user' => $this->user]
         );
