@@ -138,10 +138,12 @@
   }
 
   class MinitelKeyboardController {
-    constructor(session, renderer, target = document) {
+    constructor(session, renderer, target = document, options = {}) {
       this.session = session;
       this.renderer = renderer;
       this.target = target;
+      this.commandInterceptor = typeof options.commandInterceptor === 'function' ? options.commandInterceptor : null;
+      this.afterDispatch = typeof options.afterDispatch === 'function' ? options.afterDispatch : null;
       this.onKeyDown = this.onKeyDown.bind(this);
     }
 
@@ -160,8 +162,21 @@
       if (!command) return;
       event.preventDefault();
       event.stopPropagation();
+
+      if (this.commandInterceptor) {
+        const intercepted = await this.commandInterceptor(command, event, this.session);
+        if (intercepted) {
+          if (intercepted.snapshot) {
+            await this.renderer.render(intercepted.snapshot, { replay: Boolean(intercepted.replay) });
+          }
+          this.afterDispatch?.(intercepted, command, event);
+          return;
+        }
+      }
+
       const outcome = this.session.dispatch(event);
       await this.renderer.render(outcome.snapshot, { replay: Boolean(outcome.replay) });
+      this.afterDispatch?.(outcome, command, event);
     }
   }
 
