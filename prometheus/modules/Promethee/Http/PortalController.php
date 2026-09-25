@@ -528,25 +528,12 @@ class PortalController extends Controller
      * Pilot passport. A country is stamped after an accepted flight touching
      * one of its airports; no editable or duplicate passport data is stored.
      */
-   public function passport(Request $r) {
-        $pilot = $r->user();
-        // Raw aggregates are not handled by Laravel's table-prefix grammar.
-        // Build the actual configured airport table name explicitly instead.
-        $airportCountry = DB::getTablePrefix().'airports.country';
-        $countries = DB::query()->fromSub(
-            Pirep::query()->selectRaw('dpt_airport_id as airport_id, submitted_at as stamped_at')
-                ->where('user_id', $pilot->id)->where('state', PirepState::ACCEPTED)
-                ->unionAll(Pirep::query()->selectRaw('arr_airport_id as airport_id, submitted_at as stamped_at')
-                    ->where('user_id', $pilot->id)->where('state', PirepState::ACCEPTED)),
-            'stamps'
-        )->join('airports', 'airports.id', '=', 'stamps.airport_id')
-            ->whereNotNull('airports.country')->where('airports.country', '!=', '')
-            // Do not qualify stamped_at here: phpVMS prefixes derived-table
-            // aliases (for example phpvms7_stamps), while raw SQL is not
-            // rewritten by Laravel's table-prefix grammar.
-            ->select('airports.country', DB::raw('MIN(stamped_at) as first_visit'), DB::raw('MAX(stamped_at) as last_visit'), DB::raw('COUNT(*) as legs'))
-            ->groupBy('airports.country')->orderBy('airports.country')->get();
 
+   public function passport(Request $r) {
+        $viewer = $r->user();
+
+        // Raw aggregates are not handled by Laravel's table-prefix grammar.
+        $airportCountry = DB::getTablePrefix().'airports.country';
         $ranking = DB::query()->fromSub(
             Pirep::query()->select('user_id', 'dpt_airport_id as airport_id')->where('state', PirepState::ACCEPTED)
                 ->unionAll(Pirep::query()->select('user_id', 'arr_airport_id as airport_id')->where('state', PirepState::ACCEPTED)),
@@ -557,8 +544,24 @@ class PortalController extends Controller
             ->select('users.id', 'users.name', 'users.pilot_id', DB::raw('COUNT(DISTINCT '.$airportCountry.') as countries'))
             ->groupBy('users.id', 'users.name', 'users.pilot_id')->orderByDesc('countries')->orderBy('users.pilot_id')->limit(20)->get();
 
+        $allowedPilotIds = $ranking->pluck('id')->map(fn ($id) => (int) $id)->push((int) $viewer->id)->unique();
+        $requestedPilotId = (int) $r->query('pilot', $viewer->id);
+        if (!$allowedPilotIds->contains($requestedPilotId)) $requestedPilotId = (int) $viewer->id;
+        $pilot = User::find($requestedPilotId) ?: $viewer;
+
+        $countries = DB::query()->fromSub(
+            Pirep::query()->selectRaw('dpt_airport_id as airport_id, submitted_at as stamped_at')
+                ->where('user_id', $pilot->id)->where('state', PirepState::ACCEPTED)
+                ->unionAll(Pirep::query()->selectRaw('arr_airport_id as airport_id, submitted_at as stamped_at')
+                    ->where('user_id', $pilot->id)->where('state', PirepState::ACCEPTED)),
+            'stamps'
+        )->join('airports', 'airports.id', '=', 'stamps.airport_id')
+            ->whereNotNull('airports.country')->where('airports.country', '!=', '')
+            ->select('airports.country', DB::raw('MIN(stamped_at) as first_visit'), DB::raw('MAX(stamped_at) as last_visit'), DB::raw('COUNT(*) as legs'))
+            ->groupBy('airports.country')->orderBy('airports.country')->get();
+
         abort_unless(DB::table('promethee_settings')->where('key','passport.enabled')->value('value') !== '0', 404);
-        return $this->page('passport', compact('pilot', 'countries', 'ranking'));
+        return $this->page('passport', compact('pilot', 'viewer', 'countries', 'ranking'));
    }
    /** The pilot's phpVMS bids projected as operational states. */
    public function bookings(Request $r) {
