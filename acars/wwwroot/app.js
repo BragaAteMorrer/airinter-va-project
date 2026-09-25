@@ -528,7 +528,11 @@ function renderOperationLoad(aircraft) {
   }
   const label = aircraft.type_label || aircraft.subfleet || aircraft.name || 'Appareil';
   const band = String(aircraft.band || aircraft.pricing_band || 'rouge').toUpperCase();
-  node.textContent = label + ' · ' + (aircraft.passengers ?? '—') + ' / ' + (aircraft.capacity ?? '—') + ' passagers · ' + (aircraft.load_factor_percent ?? '—') + ' % · vol ' + band;
+  const cabin = aircraft.cabin_profile?.label || aircraft.cabinProfile?.label || '';
+  node.textContent = label
+    + (cabin ? ' · ' + cabin : '')
+    + ' · ' + (aircraft.passengers ?? '—') + ' / ' + (aircraft.capacity ?? '—')
+    + ' passagers · ' + (aircraft.load_factor_percent ?? '—') + ' % · vol ' + band;
   node.hidden = false;
 }
 
