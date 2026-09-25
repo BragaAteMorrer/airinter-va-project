@@ -6,6 +6,7 @@ use App\Models\Aircraft;
 use App\Models\Enums\FareType;
 use App\Models\Flight;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class DemandProfileService
@@ -26,7 +27,8 @@ class DemandProfileService
             return $this->settingsCache;
         }
 
-        $values = DB::table('promethee_settings')
+        $values = Schema::hasTable('promethee_settings')
+            ? DB::table('promethee_settings')
             ->whereIn('key', [
                 'pricing.bands.enabled',
                 'pricing.bands.blue',
@@ -38,7 +40,8 @@ class DemandProfileService
                 'pricing.demand.red_min',
                 'pricing.demand.red_max',
             ])
-            ->pluck('value', 'key');
+            ->pluck('value', 'key')
+            : collect();
 
         return $this->settingsCache = [
             'enabled' => ($values['pricing.bands.enabled'] ?? '1') !== '0',
@@ -69,6 +72,10 @@ class DemandProfileService
         $key = (string) $flight->id;
         if (isset($this->bandCache[$key])) {
             return $this->bandCache[$key];
+        }
+
+        if (!Schema::hasTable('promethee_pricing')) {
+            return $this->bandCache[$key] = 'rouge';
         }
 
         $band = DB::table('promethee_pricing as pricing')
