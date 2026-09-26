@@ -475,7 +475,8 @@ async function searchFlights() {
   const departure = normalizedSearchValue('#departureSearch');
   const arrival = normalizedSearchValue('#arrivalSearch');
   const aircraftType = normalizedSearchValue('#aircraftTypeSearch');
-  number = number.replace(/^ITF[ -]?/, '');
+  // Keep the airline prefix (ITF, ACF, etc.) so Prométhée can scope the
+  // search to the matching company. The API also accepts a bare number.
   if (number) params.set('flight_number', number);
   if (departure) params.set('dep_icao', departure);
   if (arrival) params.set('arr_icao', arrival);
