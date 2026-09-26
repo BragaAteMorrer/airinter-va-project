@@ -901,6 +901,29 @@ function simBriefPlanningPayload(form) {
     }
   }
 
+  // Advanced controls remain ephemeral. Empty fields mean "use Prométhée /
+  // SimBrief defaults"; only explicit pilot choices cross the API boundary.
+  const advanced = [
+    'simbrief_type', 'callsign', 'units', 'planformat', 'maps', 'navlog',
+    'tlr', 'notams', 'firnot', 'stepclimbs', 'etops', 'find_sidstar',
+    'cruise', 'civalue', 'contpct', 'resvrule', 'selcal', 'deprwy',
+    'arrrwy', 'taxiout', 'taxiin', 'pax', 'manualrmk'
+  ];
+  advanced.forEach(name => {
+    const field = form.elements[name];
+    if (!field) return;
+    const raw = String(field.value ?? '').trim();
+    if (raw === '') return;
+
+    if (['taxiout', 'taxiin', 'pax'].includes(name)) {
+      const number = Number(raw);
+      if (Number.isFinite(number)) payload[name] = Math.round(number);
+      return;
+    }
+
+    payload[name] = raw;
+  });
+
   return payload;
 }
 
@@ -1238,6 +1261,14 @@ $('#resetDraftBtn').onclick = () => {
   try { draft = JSON.parse(form.dataset.programDraft || '{}'); } catch {}
   ['alt_airport_id', 'route', 'level'].forEach(name => {
     if (form.elements[name]) form.elements[name].value = draft[name] || '';
+  });
+  [
+    'simbrief_type', 'callsign', 'units', 'planformat', 'maps', 'navlog',
+    'tlr', 'notams', 'firnot', 'stepclimbs', 'etops', 'find_sidstar',
+    'cruise', 'civalue', 'contpct', 'resvrule', 'selcal', 'deprwy',
+    'arrrwy', 'taxiout', 'taxiin', 'pax', 'manualrmk'
+  ].forEach(name => {
+    if (form.elements[name]) form.elements[name].value = '';
   });
   form.elements.block_fuel.value = '';
   form.elements.notes.value = '';
