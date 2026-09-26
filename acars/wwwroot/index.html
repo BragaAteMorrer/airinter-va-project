@@ -142,6 +142,7 @@
         <input id="selectedAircraftId" name="aircraft_id" type="hidden">
         <label>Type d’appareil<select id="aircraftTypeId" required><option value="">Sélectionnez d'abord un vol</option></select></label>
         <label>Appareil précis<select id="aircraftId" required disabled><option value="">Choisissez d’abord un type</option></select></label>
+        <label>Variante / add-on<select id="aircraftVariantId" disabled><option value="">Choisissez d’abord un appareil</option></select></label>
         <label>Départ<input name="dpt_airport_id" required readonly></label>
         <label>Arrivée<input name="arr_airport_id" required readonly></label>
         <label>Aéroport de dégagement<input name="alt_airport_id" placeholder="AUTO ou LIRN" maxlength="8"></label>
@@ -242,6 +243,7 @@
     <section id="settings" class="panel"><h2>Paramètres ACARS</h2><p class="hint">Les règles compagnie et la cadence live sont reçues de Prométhée ; ces réglages restent locaux et n’exécutent aucun code distant.</p>
       <form id="settingsForm" class="login-form">
         <label><span>Détection automatique</span><select name="autoDetection"><option value="true">Activée</option><option value="false">Désactivée</option></select></label>
+        <label><span>Simulateur principal</span><select name="preferredSimulator"><option value="msfs2024">MSFS 2024</option><option value="msfs2020">MSFS 2020</option><option value="fsx">FSX / Steam</option><option value="p3d">Prepar3D</option><option value="fs2004">FS2004</option><option value="xplane">X-Plane 11 / 12</option></select></label>
         <label><span>Forcer le simulateur (diagnostic)</span><select name="forcedSimulator"><option value="">Aucun — automatique</option><option value="msfs">MSFS 2020 / 2024 — SimConnect</option><option value="fs2004">FS2004 — FSUIPC3</option><option value="fsx">FSX / Steam — FSUIPC4</option><option value="p3d">Prepar3D — FSUIPC4/6</option><option value="xplane">X-Plane 11 / 12 — UDP expérimental</option></select></label>
         <label><span>Heure du journal</span><select name="timeFormat"><option value="local">Locale</option><option value="utc">UTC</option></select></label>
         <label><span>Notifications locales</span><select name="notifications"><option value="true">Activées</option><option value="false">Désactivées</option></select></label>
@@ -254,6 +256,7 @@
       </form>
       <div class="settings-sections">
         <article><span class="kicker">COMPAGNIE</span><h3>Politique Prométhée</h3><p class="hint">Cadence live, règles de vol, versions minimales et dépôt PIREP sont imposés par Air Inter et affichés en lecture seule.</p></article>
+        <article><span class="kicker">MES ADD-ONS</span><h3>Variantes d’appareils</h3><p class="hint">Cochez les add-ons que vous possédez. Hermès les proposera en priorité pour les types compatibles.</p><div id="aircraftVariantLibrary" class="observation-list"><p class="empty">Connectez-vous pour charger votre bibliothèque.</p></div><button type="button" id="saveAircraftVariantsBtn">Enregistrer mes add-ons</button><p id="aircraftVariantLibraryMessage" class="hint"></p></article>
         <article><span class="kicker">INSTALLATION</span><h3>Compatibilité & version</h3><p class="hint">MSFS 2020/2024 via SimConnect · FS2004/FSX/P3D via FSUIPC · X-Plane 11/12 via UDP expérimental.</p><button type="button" id="checkUpdateBtn">Rechercher une mise à jour</button><p id="updateMessage" class="hint"></p></article>
         <article><span class="kicker">IDENTITÉ</span><h3>Air Inter ID</h3><p class="hint">Le flux OAuth2 Authorization Code + PKCE remplacera la saisie du mot de passe dans une prochaine étape. Aucun secret client ne sera embarqué.</p></article>
       </div>
