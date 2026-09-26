@@ -584,45 +584,56 @@ class PortalController extends Controller
         $monthStart = now('Europe/Paris')->startOfMonth()->utc();
         $monthEnd = now('Europe/Paris')->addMonthNoOverflow()->startOfMonth()->utc();
 
-        $base = fn () => DB::table('pireps')
-            ->join('users', 'users.id', '=', 'pireps.user_id')
-            ->where('pireps.state', PirepState::ACCEPTED)
-            ->where('pireps.submitted_at', '>=', $monthStart)
-            ->where('pireps.submitted_at', '<', $monthEnd)
-            ->whereNotNull('pireps.user_id');
+        $base = fn () => DB::table('pireps as p')
+            ->join('users as u', 'u.id', '=', 'p.user_id')
+            ->where('p.state', PirepState::ACCEPTED)
+            ->where('p.submitted_at', '>=', $monthStart)
+            ->where('p.submitted_at', '<', $monthEnd)
+            ->whereNotNull('p.user_id');
 
-        $selectPilot = 'pireps.user_id, users.name, users.pilot_id';
+        $groupPilot = function ($query) {
+            return $query
+                ->groupBy('p.user_id', 'u.name', 'u.pilot_id');
+        };
 
-        $flights = $base()
-            ->selectRaw($selectPilot.', COUNT(*) as value')
-            ->groupBy('pireps.user_id', 'users.name', 'users.pilot_id')
-            ->orderByDesc('value')
-            ->limit(5)
-            ->get();
+        $flights = $groupPilot(
+            $base()->select([
+                'p.user_id as user_id',
+                'u.name as name',
+                'u.pilot_id as pilot_id',
+            ])->selectRaw('COUNT(*) as value')
+        )->orderByDesc('value')->limit(5)->get();
 
-        $block = $base()
-            ->selectRaw($selectPilot.', SUM(COALESCE(NULLIF(pireps.block_time, 0), pireps.flight_time, 0)) as value')
-            ->groupBy('pireps.user_id', 'users.name', 'users.pilot_id')
-            ->orderByDesc('value')
-            ->limit(5)
-            ->get();
+        $block = $groupPilot(
+            $base()->select([
+                'p.user_id as user_id',
+                'u.name as name',
+                'u.pilot_id as pilot_id',
+            ])->selectRaw('SUM(COALESCE(NULLIF(p.block_time, 0), p.flight_time, 0)) as value')
+        )->orderByDesc('value')->limit(5)->get();
 
-        $softest = $base()
-            ->whereNotNull('pireps.landing_rate')
-            ->where('pireps.landing_rate', '<', 0)
-            ->selectRaw($selectPilot.', MAX(pireps.landing_rate) as value')
-            ->groupBy('pireps.user_id', 'users.name', 'users.pilot_id')
-            ->orderByDesc('value')
-            ->limit(5)
-            ->get();
+        $softest = $groupPilot(
+            $base()
+                ->whereNotNull('p.landing_rate')
+                ->where('p.landing_rate', '<', 0)
+                ->select([
+                    'p.user_id as user_id',
+                    'u.name as name',
+                    'u.pilot_id as pilot_id',
+                ])
+                ->selectRaw('MAX(p.landing_rate) as value')
+        )->orderByDesc('value')->limit(5)->get();
 
-        $distance = $base()
-            ->whereNotNull('pireps.distance')
-            ->selectRaw($selectPilot.', SUM(pireps.distance) as raw_value')
-            ->groupBy('pireps.user_id', 'users.name', 'users.pilot_id')
-            ->orderByDesc('raw_value')
-            ->limit(5)
-            ->get()
+        $distance = $groupPilot(
+            $base()
+                ->whereNotNull('p.distance')
+                ->select([
+                    'p.user_id as user_id',
+                    'u.name as name',
+                    'u.pilot_id as pilot_id',
+                ])
+                ->selectRaw('SUM(p.distance) as raw_value')
+        )->orderByDesc('raw_value')->limit(5)->get()
             ->map(function ($row) {
                 $row->value = \App\Support\Units\Distance::make(
                     (float) $row->raw_value,
@@ -632,22 +643,28 @@ class PortalController extends Controller
                 return $row;
             });
 
-        $score = $base()
-            ->whereNotNull('pireps.score')
-            ->selectRaw($selectPilot.', ROUND(AVG(pireps.score)) as value')
-            ->groupBy('pireps.user_id', 'users.name', 'users.pilot_id')
-            ->orderByDesc('value')
-            ->limit(5)
-            ->get();
+        $score = $groupPilot(
+            $base()
+                ->whereNotNull('p.score')
+                ->select([
+                    'p.user_id as user_id',
+                    'u.name as name',
+                    'u.pilot_id as pilot_id',
+                ])
+                ->selectRaw('ROUND(AVG(p.score)) as value')
+        )->orderByDesc('value')->limit(5)->get();
 
-        $hardest = $base()
-            ->whereNotNull('pireps.landing_rate')
-            ->where('pireps.landing_rate', '<', 0)
-            ->selectRaw($selectPilot.', MIN(pireps.landing_rate) as value')
-            ->groupBy('pireps.user_id', 'users.name', 'users.pilot_id')
-            ->orderBy('value')
-            ->limit(5)
-            ->get();
+        $hardest = $groupPilot(
+            $base()
+                ->whereNotNull('p.landing_rate')
+                ->where('p.landing_rate', '<', 0)
+                ->select([
+                    'p.user_id as user_id',
+                    'u.name as name',
+                    'u.pilot_id as pilot_id',
+                ])
+                ->selectRaw('MIN(p.landing_rate) as value')
+        )->orderBy('value')->limit(5)->get();
 
         return [
             'monthLabel' => now('Europe/Paris')->locale('fr')->isoFormat('MMMM'),
