@@ -113,7 +113,7 @@ for (const contract of [
   }
 }
 for (const contract of [
-  '--mt-chassis-size:min(94vw,calc(100dvh - 92px),1040px)',
+  '--mt-chassis-size:min(94vw,calc(100dvh - 54px),900px)',
   'aspect-ratio:1/1',
   'max-width:100%',
   'max-height:100%'

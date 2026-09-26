@@ -243,6 +243,7 @@
       this.terminalNode = null;
       this.escapeButton = null;
       this.fallbackNode = null;
+      this.controlDeck = null;
       this.active = false;
       this.onGlobalKeyDown = this.onGlobalKeyDown.bind(this);
       this.onRuntimeError = this.onRuntimeError.bind(this);
@@ -344,6 +345,7 @@
       });
       this.renderer.setSpeed?.(this.speed);
       this.renderer.setDisplayMode?.(this.displayMode);
+      this.mountControls();
 
       if (this.keyboard) {
         const downstreamInterceptor = this.keyboard.commandInterceptor;
@@ -389,6 +391,101 @@
       await this.renderer.render(snapshot, { replay: true });
       this.keyboard?.attach?.();
       return { started: true, capability, snapshot };
+    }
+
+    mountControls() {
+      if (!this.document || !this.terminalNode) return null;
+      this.controlDeck?.remove?.();
+
+      const deck = this.document.createElement('div');
+      deck.className = 'ai-minitel-control-deck';
+      deck.setAttribute('aria-label', 'Clavier Minitel virtuel');
+
+      const brand = this.document.createElement('div');
+      brand.className = 'ai-minitel-deck-brand';
+      deck.appendChild(brand);
+
+      const rows = [
+        {
+          className: 'ai-minitel-control-row is-system',
+          keys: [
+            ['Début enr.', 'Home', 'is-function is-orange'],
+            ['Sommaire', 'Home', 'is-function'],
+            ['Annulation', 'Escape', 'is-function'],
+            ['Retour', 'PageUp', 'is-function'],
+            ['Répétition', 'F2', 'is-function'],
+            ['Envoi', 'Enter', 'is-function is-send']
+          ]
+        },
+        {
+          className: 'ai-minitel-control-row is-system',
+          keys: [
+            ['Fnct', 'F1', 'is-function'],
+            ['Cnx/fin', 'F10', 'is-function'],
+            ['Guide', 'F1', 'is-function'],
+            ['Correction', 'Backspace', 'is-function'],
+            ['Suite', 'PageDown', 'is-function'],
+            ['Envoi', 'Enter', 'is-function is-send']
+          ]
+        },
+        {
+          className: 'ai-minitel-control-row is-alpha',
+          keys: 'AZERTYUIOP'.split('').map((key) => [key, key.toLowerCase(), ''])
+        },
+        {
+          className: 'ai-minitel-control-row is-alpha',
+          keys: 'QSDFGHJKLM'.split('').map((key) => [key, key.toLowerCase(), ''])
+        },
+        {
+          className: 'ai-minitel-control-row is-alpha-short',
+          keys: [
+            ['Ctrl', 'Control', ''], ['W', 'w', ''], ['X', 'x', ''], ['C', 'c', ''], ['V', 'v', ''],
+            ['B', 'b', ''], ['N', 'n', ''], ['Maj', 'Shift', ''], ['.', '.', ''], ['?', '?', '']
+          ]
+        },
+        {
+          className: 'ai-minitel-control-row is-space',
+          keys: [['↑', 'ArrowUp', ''], ['↓', 'ArrowDown', ''], ['Espace', ' ', ''], ['←', 'ArrowLeft', ''], ['→', 'ArrowRight', '']]
+        }
+      ];
+
+      const dispatchKey = (key) => {
+        if (!this.active || !this.document) return;
+        if (key === 'Control' || key === 'Shift' || /^Arrow/.test(key)) {
+          this.terminalNode?.focus?.();
+          return;
+        }
+        const printable = key.length === 1 && key !== ' ';
+        const event = new KeyboardEvent('keydown', {
+          key,
+          code: printable && /[a-z]/i.test(key) ? 'Key' + key.toUpperCase() : '',
+          bubbles: true,
+          cancelable: true
+        });
+        this.document.dispatchEvent(event);
+        this.terminalNode?.focus?.();
+      };
+
+      rows.forEach((rowSpec) => {
+        const row = this.document.createElement('div');
+        row.className = rowSpec.className;
+        rowSpec.keys.forEach(([label, key, extraClass]) => {
+          const button = this.document.createElement('button');
+          button.type = 'button';
+          button.className = ('ai-minitel-key ' + (extraClass || '')).trim();
+          button.setAttribute('aria-label', label);
+          const kbd = this.document.createElement('kbd');
+          kbd.textContent = label;
+          button.appendChild(kbd);
+          button.addEventListener('click', () => dispatchKey(key));
+          row.appendChild(button);
+        });
+        deck.appendChild(row);
+      });
+
+      this.terminalNode.appendChild(deck);
+      this.controlDeck = deck;
+      return deck;
     }
 
     syncSystemCursor() {
@@ -481,6 +578,7 @@
       this.window?.removeEventListener?.('keydown', this.onGlobalKeyDown, true);
       this.window?.removeEventListener?.('error', this.onRuntimeError);
       this.window?.removeEventListener?.('unhandledrejection', this.onRuntimeError);
+      this.controlDeck = null;
       if (this.host) this.host.innerHTML = '';
       this.active = false;
     }
