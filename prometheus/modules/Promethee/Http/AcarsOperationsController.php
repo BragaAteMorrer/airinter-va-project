@@ -61,7 +61,7 @@ class AcarsOperationsController extends Controller
         $flightSubfleets = $flight->subfleets->pluck('id')->all();
         $subfleetIds = $flightSubfleets ? array_values(array_intersect($allowedSubfleets, $flightSubfleets)) : $allowedSubfleets;
 
-        $aircraft = Aircraft::query()->with(['subfleet:id,name'])
+        $aircraft = Aircraft::query()->with(['subfleet:id,name,airline_id'])
             ->withCount(['bid', 'simbriefs' => fn ($query) => $query->whereNull('pirep_id')])
             ->where('state', AircraftState::PARKED)
             ->where('status', AircraftStatus::ACTIVE)
@@ -69,6 +69,7 @@ class AcarsOperationsController extends Controller
             ->when(setting('simbrief.block_aircraft'), fn ($query) => $query->having('simbriefs_count', 0))
             ->when(setting('bids.block_aircraft'), fn ($query) => $query->having('bid_count', 0))
             ->whereIn('subfleet_id', $subfleetIds)
+            ->whereHas('subfleet', fn ($query) => $query->where('airline_id', $flight->airline_id))
             ->orderBy('icao')->orderBy('registration')->get()
             ->map(fn (Aircraft $plane) => [
                 'id' => $plane->id,
