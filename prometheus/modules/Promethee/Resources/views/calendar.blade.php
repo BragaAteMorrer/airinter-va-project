@@ -57,11 +57,14 @@
                 <p class="muted">{{ $event->rsvp_count }} pilote(s) inscrit(s){{ $event->my_rsvp ? ' · votre réponse : '.($event->my_rsvp === 'going' ? 'présent' : 'peut-être') : '' }}</p>
                 <form method="post" action="{{ route('promethee.calendar.rsvp',$event->id) }}" class="toolbar">@csrf<button name="status" value="going" class="outline">Je participe</button><button name="status" value="maybe" class="text-button">Peut-être</button></form>
                 @if($canManage)
-                    <form method="post" action="{{ route('admin.promethee.calendar.delete',$event->id) }}">
-                        @csrf
-                        @method('DELETE')
-                        <button class="text-button">Supprimer cet événement</button>
-                    </form>
+                    <div class="toolbar">
+                        <a class="button outline" href="{{ route('promethee.calendar',['month'=>$month,'edit_event'=>$event->id]).'#calendar-editor' }}">Modifier</a>
+                        <form method="post" action="{{ route('admin.promethee.calendar.delete',$event->id) }}" onsubmit="return confirm('Supprimer définitivement cet événement du calendrier ?');">
+                            @csrf
+                            @method('DELETE')
+                            <button class="text-button" type="submit">Supprimer</button>
+                        </form>
+                    </div>
                 @endif
             </article>
         @empty
@@ -70,16 +73,29 @@
     </section>
 
     @if($canManage)
-        <form class="panel form-grid" method="post" action="{{ route('admin.promethee.calendar.save') }}">
+        @php
+            $editStart = $editingEvent ? \Carbon\Carbon::parse($editingEvent->starts_at,'UTC')->setTimezone('Europe/Paris')->format('Y-m-d\\TH:i') : '';
+            $editEnd = $editingEvent ? \Carbon\Carbon::parse($editingEvent->ends_at,'UTC')->setTimezone('Europe/Paris')->format('Y-m-d\\TH:i') : '';
+        @endphp
+        <form id="calendar-editor" class="panel form-grid" method="post" action="{{ route('admin.promethee.calendar.save') }}">
             @csrf
-            <h2 class="full">Ajouter un rendez-vous</h2>
-            <label class="full">Titre<input name="title" required maxlength="191" value="{{ old('title') }}"></label>
-            <label>Début (Paris)<input type="datetime-local" name="starts_at" required value="{{ old('starts_at') }}"></label>
-            <label>Fin (Paris)<input type="datetime-local" name="ends_at" required value="{{ old('ends_at') }}"></label>
-            <label>Départ ICAO<input name="departure" maxlength="8" value="{{ old('departure') }}"></label>
-            <label>Arrivée ICAO<input name="arrival" maxlength="8" value="{{ old('arrival') }}"></label>
-            <label class="full">Description<textarea name="description" rows="4">{{ old('description') }}</textarea></label>
-            <button class="full">Ajouter au calendrier</button>
+            @if($editingEvent)<input type="hidden" name="event_id" value="{{ $editingEvent->id }}">@endif
+            <div class="full panel-heading">
+                <div>
+                    <span class="eyebrow">{{ $editingEvent ? 'MODIFICATION' : 'NOUVEL ÉVÉNEMENT' }}</span>
+                    <h2>{{ $editingEvent ? 'Modifier le rendez-vous' : 'Ajouter un rendez-vous' }}</h2>
+                </div>
+                @if($editingEvent)
+                    <a class="button outline" href="{{ route('promethee.calendar',['month'=>$month]) }}#calendar-editor">Annuler</a>
+                @endif
+            </div>
+            <label class="full">Titre<input name="title" required maxlength="191" value="{{ old('title',$editingEvent->title ?? '') }}"></label>
+            <label>Début (Paris)<input type="datetime-local" name="starts_at" required value="{{ old('starts_at',$editStart) }}"></label>
+            <label>Fin (Paris)<input type="datetime-local" name="ends_at" required value="{{ old('ends_at',$editEnd) }}"></label>
+            <label>Départ ICAO<input name="departure" maxlength="8" value="{{ old('departure',$editingEvent->departure ?? '') }}"></label>
+            <label>Arrivée ICAO<input name="arrival" maxlength="8" value="{{ old('arrival',$editingEvent->arrival ?? '') }}"></label>
+            <label class="full">Description<textarea name="description" rows="5">{{ old('description',$editingEvent->description ?? '') }}</textarea></label>
+            <button class="full">{{ $editingEvent ? 'Enregistrer les modifications' : 'Ajouter au calendrier' }}</button>
         </form>
     @endif
 </div>
