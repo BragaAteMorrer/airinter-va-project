@@ -1075,6 +1075,28 @@ class PortalController extends Controller
         return back()->with('success', 'Mission de rapatriement réservée. Votre position pilote a été ajustée si un jumpseat était nécessaire.');
     }
 
+    public function cancelMissionReservation(int $id, Request $r) {
+        $booking = DB::table('promethee_mission_bookings')
+            ->where('mission_id', $id)
+            ->where('user_id', $r->user()->id)
+            ->where('status', 'reserved')
+            ->first();
+
+        abort_unless($booking, 404, 'Aucune réservation active pour cette mission.');
+
+        DB::table('promethee_mission_bookings')
+            ->where('id', $booking->id)
+            ->update([
+                'status' => 'cancelled',
+                'updated_at' => now(),
+            ]);
+
+        return back()->with(
+            'success',
+            'Mission abandonnée et de nouveau disponible. Un éventuel jumpseat déjà effectué n’est pas annulé.'
+        );
+    }
+
     public function assignments(Request $r) {
         $month=$r->query('month',now('Europe/Paris')->format('Y-m'));
         abort_unless((bool)preg_match('/^\\d{4}-(0[1-9]|1[0-2])$/',$month),422,'Mois invalide.');
@@ -1440,7 +1462,42 @@ class PortalController extends Controller
         // A profile remains read-only in that case and reports a zero balance.
         $wallet = $pilot->journal?->getBalance() ?? new Money(0);
 
-        return $this->page('profile',['pilot'=>$pilot,'wallet'=>$wallet,'pireps'=>$pireps,'routes'=>$routes,'monthFlights'=>$monthFlights,'badges'=>$badges]);
+        $myMissions = collect();
+        if (auth()->check() && (int) auth()->id() === (int) $pilot->id) {
+            $myMissions = DB::table('promethee_mission_bookings as booking')
+                ->join('promethee_missions as mission', 'mission.id', '=', 'booking.mission_id')
+                ->leftJoin('aircraft', 'aircraft.id', '=', 'mission.aircraft_id')
+                ->where('booking.user_id', $pilot->id)
+                ->where('booking.status', 'reserved')
+                ->select([
+                    'booking.id as booking_id',
+                    'booking.reserved_at',
+                    'booking.jumpseat_amount',
+                    'mission.id',
+                    'mission.title',
+                    'mission.description',
+                    'mission.mission_type',
+                    'mission.dpt_airport_id',
+                    'mission.arr_airport_id',
+                    'mission.ends_on',
+                    'mission.active',
+                    'aircraft.registration as aircraft_registration',
+                ])
+                ->orderByRaw('mission.ends_on IS NULL')
+                ->orderBy('mission.ends_on')
+                ->orderByDesc('booking.reserved_at')
+                ->get();
+        }
+
+        return $this->page('profile',[
+            'pilot'=>$pilot,
+            'wallet'=>$wallet,
+            'pireps'=>$pireps,
+            'routes'=>$routes,
+            'monthFlights'=>$monthFlights,
+            'badges'=>$badges,
+            'myMissions'=>$myMissions,
+        ]);
     }
     public function saveMember(int $id,Request $r) {
         User::findOrFail($id);
