@@ -191,6 +191,7 @@ class AcarsSimBriefController extends Controller
             'estimated_time_enroute' => (int) $ofp->times->est_time_enroute,
             'generated_at' => (string) $ofp->params->time_generated,
             'aircraft_type' => (string) $ofp->aircraft->icaocode,
+            'network_prefiles' => $this->networkPrefiles($ofp),
             'resolved' => $this->resolver->publicView($resolved),
         ]);
     }
@@ -273,6 +274,7 @@ class AcarsSimBriefController extends Controller
             'block_fuel' => (float) $xml->fuel->plan_ramp,
             'estimated_time_enroute' => (int) $xml->times->est_time_enroute,
             'briefing_url' => route('api.flights.briefing', ['id' => $simbrief->id]),
+            'network_prefiles' => $this->networkPrefiles($xml),
             'resolved' => $this->resolver->publicView($resolved),
         ]);
     }
@@ -319,6 +321,75 @@ class AcarsSimBriefController extends Controller
         $request->merge(['aircraft_id' => $aircraftId, 'operation_id' => $operationId]);
 
         return $this->import($request, $flightId);
+    }
+
+    private function networkPrefiles(\SimpleXMLElement $xml): array
+    {
+        $atc = $xml->atc;
+        $aircraft = $xml->aircraft;
+        $equipmentRaw = trim((string) $aircraft->equip);
+        $wake = '';
+        $equipment = '';
+        $transponder = '';
+
+        if (preg_match('/^([^\-]+)-([^\/]+)\/(.+)$/', $equipmentRaw, $matches)) {
+            $wake = trim($matches[1]);
+            $equipment = trim($matches[2]);
+            $transponder = trim($matches[3]);
+        }
+
+        $secondsToHhmm = static function ($seconds): string {
+            $seconds = max(0, (int) $seconds);
+            $hours = intdiv($seconds, 3600);
+            $minutes = intdiv($seconds % 3600, 60);
+            return sprintf('%02d%02d', $hours, $minutes);
+        };
+
+        $raw = trim((string) $atc->flightplan_text);
+        $vatsimUrl = $raw !== ''
+            ? 'https://my.vatsim.net/pilots/flightplan?raw='.rawurlencode($raw)
+            : 'https://my.vatsim.net/pilots/flightplan';
+
+        $offTimestamp = (int) ($xml->times->est_off ?: $xml->times->sched_off);
+        $departureTime = $offTimestamp > 0
+            ? gmdate('Hi', $offTimestamp)
+            : gmdate('Hi');
+
+        return [
+            'icao_flightplan' => $raw,
+            'vatsim' => [
+                'method' => 'GET',
+                'url' => $vatsimUrl,
+            ],
+            'ivao' => [
+                'method' => 'POST',
+                'url' => 'https://fpl.ivao.aero/api/fp/load',
+                'fields' => [
+                    'CALLSIGN' => trim((string) $atc->callsign),
+                    'RULES' => 'I',
+                    'FLIGHTTYPE' => 'S',
+                    'NUMBER' => '1',
+                    'ACTYPE' => trim((string) $aircraft->icaocode),
+                    'WAKECAT' => $wake,
+                    'EQUIPMENT' => $equipment,
+                    'TRANSPONDER' => $transponder,
+                    'DEPICAO' => trim((string) $xml->origin->icao_code),
+                    'DEPTIME' => $departureTime,
+                    'SPEEDTYPE' => trim((string) $atc->initial_spd_unit) ?: 'N',
+                    'SPEED' => str_pad(trim((string) $atc->initial_spd), 4, '0', STR_PAD_LEFT),
+                    'LEVELTYPE' => trim((string) $atc->initial_alt_unit) ?: 'F',
+                    'LEVEL' => trim((string) $atc->initial_alt),
+                    'ROUTE' => trim((string) $xml->general->route),
+                    'DESTICAO' => trim((string) $xml->destination->icao_code),
+                    'EET' => $secondsToHhmm($xml->times->est_time_enroute),
+                    'ALTICAO' => trim((string) $xml->alternate->icao_code),
+                    'ALTICAO2' => '',
+                    'OTHER' => trim((string) $atc->section18),
+                    'ENDURANCE' => $secondsToHhmm($xml->times->endurance),
+                    'POB' => trim((string) $xml->weights->pax_count),
+                ],
+            ],
+        ];
     }
 
     /**
