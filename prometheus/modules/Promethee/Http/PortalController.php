@@ -594,7 +594,8 @@ class PortalController extends Controller
                 'id',
                 'user_id',
                 'flight_time',
-                'block_time',
+                'block_off_time',
+                'block_on_time',
                 'distance',
                 'landing_rate',
                 'score',
@@ -623,9 +624,13 @@ class PortalController extends Controller
                     'name' => $user?->name ?: 'Pilote',
                     'pilot_id' => $user?->pilot_id,
                     'flights' => $pireps->count(),
-                    'block_minutes' => (int) $pireps->sum(
-                        fn (Pirep $pirep) => (int) ($pirep->block_time ?: $pirep->flight_time ?: 0)
-                    ),
+                    'block_minutes' => (int) $pireps->sum(function (Pirep $pirep) {
+                        if ($pirep->block_off_time && $pirep->block_on_time) {
+                            return max(0, $pirep->block_off_time->diffInMinutes($pirep->block_on_time));
+                        }
+
+                        return (int) ($pirep->flight_time ?: 0);
+                    }),
                     'soft_landing' => $landingRates->isNotEmpty() ? $landingRates->max() : null,
                     'hard_landing' => $landingRates->isNotEmpty() ? $landingRates->min() : null,
                     'distance_nmi' => $distanceNmi,
