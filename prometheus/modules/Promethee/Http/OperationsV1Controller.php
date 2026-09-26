@@ -71,8 +71,13 @@ class OperationsV1Controller extends Controller
             'icao_type' => 'nullable|string|max:16',
         ]);
 
-        $flightNumber = strtoupper(trim((string) ($data['flight_number'] ?? '')));
-        $flightNumber = preg_replace('/^ITF[ -]?/', '', $flightNumber);
+        $flightNumberRaw = strtoupper(trim((string) ($data['flight_number'] ?? '')));
+        $flightPrefix = null;
+        $flightNumber = $flightNumberRaw;
+        if (preg_match('/^([A-Z]{2,3})[ -]?([A-Z0-9]+)$/', $flightNumberRaw, $matches)) {
+            $flightPrefix = $matches[1];
+            $flightNumber = $matches[2];
+        }
         $departure = strtoupper(trim((string) ($data['dep_icao'] ?? '')));
         $arrival = strtoupper(trim((string) ($data['arr_icao'] ?? '')));
         $typeFilter = strtoupper(preg_replace('/[^A-Z0-9]+/', '', (string) ($data['icao_type'] ?? '')));
@@ -117,7 +122,17 @@ class OperationsV1Controller extends Controller
             ->whereIn('airline_id', $allowedAirlineIds)
             ->where('active', true)
             ->where('visible', true)
-            ->when($flightNumber !== '', fn ($q) => $q->where('flight_number', $flightNumber))
+            ->when($flightNumber !== '', function ($q) use ($flightNumber, $flightPrefix, $flightNumberRaw) {
+                $q->where(function ($flights) use ($flightNumber, $flightNumberRaw) {
+                    $flights->where('flight_number', $flightNumber)
+                        ->orWhere('flight_number', $flightNumberRaw);
+                });
+                if ($flightPrefix) {
+                    $q->whereHas('airline', function ($airline) use ($flightPrefix) {
+                        $airline->where('icao', $flightPrefix)->orWhere('iata', $flightPrefix);
+                    });
+                }
+            })
             ->when($departure !== '', fn ($q) => $q->where('dpt_airport_id', $departure))
             ->when($arrival !== '', fn ($q) => $q->where('arr_airport_id', $arrival))
             ->orderBy('dpt_airport_id')
