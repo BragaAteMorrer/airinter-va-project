@@ -31,6 +31,8 @@ const call = (path, body) => new Promise((resolve, reject) => {
 
 let selectedOperation = null;
 let selectedAircraft = null;
+let selectedVariant = null;
+let aircraftVariantState = null;
 let aircraftEligibility = null;
 let pirepId = null;
 let flightPlan = null;
@@ -52,7 +54,7 @@ function setAuthenticated(value) {
 setAuthenticated(false);
 
 const settingsForm = $('#settingsForm');
-const defaultSettings = { autoDetection: 'true', forcedSimulator: '', timeFormat: 'local', notifications: 'true', simbriefUsername: '', simbriefPilotId: '', vatsimCid: '', ivaoVid: '', preferredNetwork: '', flightPlanMode: 'account' };
+const defaultSettings = { autoDetection: 'true', forcedSimulator: '', preferredSimulator: 'msfs2024', timeFormat: 'local', notifications: 'true', simbriefUsername: '', simbriefPilotId: '', vatsimCid: '', ivaoVid: '', preferredNetwork: '', flightPlanMode: 'account' };
 let savedSettings = {};
 try { savedSettings = JSON.parse(localStorage.prometheeAcarsSettings || '{}'); } catch {}
 let localSettings = { ...defaultSettings, ...savedSettings };
@@ -126,11 +128,16 @@ if (language) language.onchange = () => applyLanguage(language.value);
 Object.entries(localSettings).forEach(([key, value]) => {
   if (settingsForm.elements[key]) settingsForm.elements[key].value = value;
 });
-settingsForm.onsubmit = event => {
+settingsForm.onsubmit = async event => {
   event.preventDefault();
   localSettings = { ...defaultSettings, ...localSettings, ...Object.fromEntries(new FormData(settingsForm)) };
   localStorage.prometheeAcarsSettings = JSON.stringify(localSettings);
   showMessage('#settingsMessage', 'Réglages locaux enregistrés.');
+  if (connected) {
+    await refreshAircraftVariantLibrary();
+    await refreshOperations();
+    if (selectedAircraft?.id) await refreshAircraftVariants();
+  }
 };
 
 $$('.tab').forEach(button => {
@@ -161,6 +168,7 @@ async function login(form) {
     setAuthenticated(true);
     showMessage('#loginMessage', 'Connexion réussie. Chargement de vos opérations…');
     await refreshOperations();
+    await refreshAircraftVariantLibrary();
     await refreshNetwork();
     if (lastStatus?.recoveryAvailable) document.querySelector('[data-tab="record"]').click();
     else document.querySelector('[data-tab="flight"]').click();
@@ -271,12 +279,18 @@ function updatePreflight(status, state, ready) {
   const active = status?.activeConnector;
   const connectorName = active?.name || active?.Name || status?.sim || 'Simulateur';
 
+  const capabilityReport = status?.aircraftCapabilities || status?.AircraftCapabilities || {};
+  const detectedAdapter = capabilityReport.adapterId || capabilityReport.AdapterId || null;
+  const acceptedAdapters = Array.isArray(selectedVariant?.adapter_ids) ? selectedVariant.adapter_ids : [];
+  const variantMatch = acceptedAdapters.length === 0 ? null : (detectedAdapter ? acceptedAdapters.includes(detectedAdapter) : null);
+
   const checks = [
     ['VOL', state.operation, state.operation ? 'opération sélectionnée' : 'à sélectionner'],
     ['APPAREIL', state.aircraft, state.aircraft ? 'appareil affecté' : 'à sélectionner'],
     ['OFP', state.ofp, state.ofp ? 'briefing disponible' : 'à préparer'],
     ['PIREP', state.pirep, state.pirep ? 'pré-déposé' : 'à préparer'],
     ['SIMULATEUR', readiness.simulator, readiness.simulator ? connectorName : 'télémétrie en attente'],
+    ['VARIANTE', variantMatch, !selectedVariant ? 'non sélectionnée' : (variantMatch === true ? (selectedVariant.label + ' détecté') : variantMatch === false ? ('attendu ' + selectedVariant.label + ' · détecté ' + (capabilityReport.adapterName || capabilityReport.AdapterName || detectedAdapter || 'inconnu')) : (selectedVariant.label + ' · vérification en attente'))],
     ['AU SOL', onGround === null ? null : onGround === true, onGround === null ? 'information indisponible' : (onGround ? 'confirmé' : 'avion en vol')],
     ['FREIN DE PARC', parkingBrake === null ? null : parkingBrake === true, parkingBrake === null ? 'information indisponible' : (parkingBrake ? 'serré' : 'desserré')],
     ['MOTEURS', enginesStopped, enginesStopped === null ? 'information indisponible' : (enginesStopped ? 'arrêtés' : 'en fonctionnement')]
@@ -321,8 +335,12 @@ function updateWorkflow() {
   const engines = snapshotValue(latest, 'enginesRunning', 'EnginesRunning');
   const enginesStoppedOrUnknown = !Array.isArray(engines) || engines.length === 0 || !engines.some(Boolean);
   const preflightSafe = onGround === true && parkingBrake !== false && enginesStoppedOrUnknown;
+  const acceptedAdapters = Array.isArray(selectedVariant?.adapter_ids) ? selectedVariant.adapter_ids : [];
+  const capabilityReport = lastStatus?.aircraftCapabilities || lastStatus?.AircraftCapabilities || {};
+  const detectedAdapter = capabilityReport.adapterId || capabilityReport.AdapterId || null;
+  const variantCompatible = acceptedAdapters.length === 0 || !detectedAdapter || acceptedAdapters.includes(detectedAdapter);
   const ready = (serverDispatch ? serverDispatch.status === 'READY' : (state.operation && state.aircraft && state.ofp && state.pirep))
-    && readiness.simulator && preflightSafe;
+    && readiness.simulator && preflightSafe && variantCompatible;
   const node = $('#readyState');
   if (node) {
     node.textContent = ready ? 'READY FOR DEPARTURE' : 'NOT READY';
@@ -386,7 +404,9 @@ function renderEligibility(payload) {
 
 function simulatorCode() {
   const forced = localSettings.forcedSimulator;
-  return ({ xplane: 'xplane', fs2004: 'fs2004', fsx: 'fsx', p3d: 'p3d', msfs: 'msfs2024' })[forced] || '';
+  return ({ xplane: 'xplane', fs2004: 'fs2004', fsx: 'fsx', p3d: 'p3d', msfs: 'msfs2024' })[forced]
+    || localSettings.preferredSimulator
+    || 'msfs2024';
 }
 
 function normalizeFlight(raw) {
@@ -544,6 +564,112 @@ function populateAircraftInstances(typeKey, preferredAircraftId = null) {
   }
 }
 
+
+function renderAircraftVariants(payload) {
+  aircraftVariantState = payload || { variants: [] };
+  const select = $('#aircraftVariantId');
+  if (!select) return;
+  const variants = Array.isArray(aircraftVariantState.variants) ? aircraftVariantState.variants : [];
+  select.replaceChildren();
+
+  if (!selectedAircraft?.id || !variants.length) {
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = selectedAircraft?.id ? 'Aucune variante configurée pour ce type' : 'Choisissez d’abord un appareil';
+    select.append(option);
+    select.disabled = true;
+    selectedVariant = null;
+    return;
+  }
+
+  const owned = variants.filter(item => item.owned);
+  const visible = owned.length
+    ? [...owned, ...variants.filter(item => !item.owned)]
+    : variants;
+
+  visible.forEach(variant => {
+    const option = document.createElement('option');
+    option.value = variant.id;
+    option.textContent = (variant.owned ? '★ ' : '')
+      + (variant.label || variant.id)
+      + (variant.vendor ? ' · ' + variant.vendor : '')
+      + (variant.simbrief_type ? ' · SimBrief ' + variant.simbrief_type : '');
+    option.dataset.variant = JSON.stringify(variant);
+    select.append(option);
+  });
+
+  const selectedId = aircraftVariantState.selected_variant_id
+    || selectedOperation?.simbrief?.selected_variant_id
+    || visible[0]?.id;
+  if (selectedId && visible.some(item => item.id === selectedId)) select.value = selectedId;
+  selectedVariant = visible.find(item => item.id === select.value) || null;
+  select.disabled = false;
+}
+
+async function refreshAircraftVariants() {
+  const operationRef = selectedOperation?.operation_id || selectedOperation?.id || selectedOperation?.bid_id;
+  if (!operationRef || !selectedAircraft?.id) {
+    renderAircraftVariants({ variants: [] });
+    return;
+  }
+  try {
+    const simulator = simulatorCode();
+    const payload = unwrap(await call('/api/v1/operations/' + encodeURIComponent(operationRef)
+      + '/aircraft-variants?simulator=' + encodeURIComponent(simulator)));
+    renderAircraftVariants(payload);
+  } catch (error) {
+    renderAircraftVariants({ variants: [] });
+    showMessage('#pirepMessage', 'Variantes indisponibles : ' + error.message, true);
+  }
+}
+
+async function refreshAircraftVariantLibrary() {
+  const container = $('#aircraftVariantLibrary');
+  if (!container) return;
+  if (!connected) {
+    container.innerHTML = '<p class="empty">Connectez-vous pour charger votre bibliothèque.</p>';
+    return;
+  }
+
+  try {
+    const simulator = simulatorCode();
+    const payload = unwrap(await call('/api/v1/me/aircraft-variants?simulator=' + encodeURIComponent(simulator)));
+    const variants = (payload?.variants || []).filter(item => item.vendor !== 'Generic');
+    container.replaceChildren();
+
+    if (!variants.length) {
+      const empty = document.createElement('p');
+      empty.className = 'empty';
+      empty.textContent = 'Aucun add-on configuré pour ce simulateur.';
+      container.append(empty);
+      return;
+    }
+
+    variants.forEach(variant => {
+      const row = document.createElement('label');
+      row.className = 'variant-library-item';
+      const owned = document.createElement('input');
+      owned.type = 'checkbox';
+      owned.dataset.variantId = variant.id;
+      owned.checked = Boolean(variant.owned);
+      const label = document.createElement('span');
+      label.textContent = (variant.label || variant.id) + ' · ' + (variant.type_key || '') + ' · ' + (variant.vendor || '');
+      const preferred = document.createElement('input');
+      preferred.type = 'radio';
+      preferred.name = 'preferredAircraftVariant';
+      preferred.value = variant.id;
+      preferred.checked = Boolean(variant.preferred);
+      preferred.title = 'Variante préférée';
+      row.append(owned, label, preferred);
+      container.append(row);
+    });
+  } catch (error) {
+    container.innerHTML = '<p class="empty">Bibliothèque indisponible.</p>';
+    setText($('#aircraftVariantLibraryMessage'), error.message);
+  }
+}
+
+
 function syncAircraftSelectors(aircraft = selectedAircraft) {
   const typeSelect = $('#aircraftTypeId');
   if (!typeSelect || !aircraftEligibility) return;
@@ -589,6 +715,7 @@ async function selectOperation(operation) {
 
   selectedOperation = operation;
   selectedAircraft = operation.aircraft?.id ? operation.aircraft : null;
+  selectedVariant = operation.simbrief?.variant || null;
   renderOperationLoad(selectedAircraft);
   lastDatalinkSnapshot = null;
   setTimeout(refreshDatalink, 0);
@@ -665,7 +792,9 @@ async function selectOperation(operation) {
 
     if (selectedAircraft?.id) {
       syncAircraftSelectors(selectedAircraft);
+      await refreshAircraftVariants();
     } else {
+      renderAircraftVariants({ variants: [] });
       populateAircraftInstances('', null);
     }
 
@@ -697,6 +826,8 @@ async function refreshDispatch() {
     if (form?.elements?.aircraft_id) form.elements.aircraft_id.value = selectedAircraft.id;
     renderOperationLoad(selectedAircraft);
     syncAircraftSelectors(selectedAircraft);
+    selectedVariant = serverDispatch.operation?.simbrief?.variant || selectedVariant;
+    renderAircraftVariants(serverDispatch.operation?.simbrief || aircraftVariantState || { variants: [] });
   }
   const checks = serverDispatch?.server_checks || {};
   readiness.operation = Boolean(checks.operation);
@@ -1003,6 +1134,8 @@ $('#aircraftId').onchange = async event => {
     const form = $('#prefileForm');
     if (form?.elements?.aircraft_id) form.elements.aircraft_id.value = '';
     if (selectedOperation) selectedOperation.aircraft = null;
+    selectedVariant = null;
+    renderAircraftVariants({ variants: [] });
     renderOperationLoad(null);
     updateWorkflow();
     return;
@@ -1054,6 +1187,48 @@ $('#aircraftId').onchange = async event => {
     if (typeSelect) typeSelect.disabled = false;
     select.disabled = false;
     updateWorkflow();
+  }
+};
+
+
+$('#aircraftVariantId').onchange = async event => {
+  const select = event.target;
+  const option = select.selectedOptions[0];
+  let variant = null;
+  try { variant = option?.dataset.variant ? JSON.parse(option.dataset.variant) : null; } catch {}
+  if (!variant?.id) return;
+
+  const operationRef = selectedOperation?.operation_id || selectedOperation?.id || selectedOperation?.bid_id;
+  if (!operationRef) return showMessage('#pirepMessage', 'Opération Prométhée introuvable.', true);
+
+  select.disabled = true;
+  try {
+    const result = unwrap(await call('/api/v1/operations/' + encodeURIComponent(operationRef) + '/aircraft-variant', {
+      _method: 'PUT',
+      variant_id: variant.id,
+      simulator: simulatorCode()
+    }));
+    aircraftVariantState = result;
+    selectedVariant = result.selected_variant || variant;
+    if (selectedOperation) {
+      selectedOperation.simbrief = {
+        ...(selectedOperation.simbrief || {}),
+        variant: selectedVariant,
+        selected_variant_id: selectedVariant.id,
+        type: selectedVariant.simbrief_type || selectedOperation.simbrief?.type,
+        addon: selectedVariant.label
+      };
+    }
+    setText($('#operationBrief'), 'Variante ' + (selectedVariant.label || selectedVariant.id)
+      + ' · profil SimBrief ' + (selectedVariant.simbrief_type || 'auto'));
+    await refreshDispatch();
+    updateWorkflow();
+    showMessage('#pirepMessage', (selectedVariant.label || selectedVariant.id) + ' sélectionné pour cette opération.');
+  } catch (error) {
+    showMessage('#pirepMessage', 'Variante impossible : ' + error.message, true);
+    await refreshAircraftVariants();
+  } finally {
+    select.disabled = false;
   }
 };
 
@@ -1828,6 +2003,28 @@ call('/api/about').then(info => {
   setText($('#build'), 'Version ' + info.version);
 }).catch(() => setText($('#build'), 'Version inconnue'));
 
+
+
+const saveAircraftVariantsBtn = $('#saveAircraftVariantsBtn');
+if (saveAircraftVariantsBtn) saveAircraftVariantsBtn.onclick = async () => {
+  if (!connected) return setText($('#aircraftVariantLibraryMessage'), 'Connectez-vous d’abord.');
+  const checked = Array.from(document.querySelectorAll('#aircraftVariantLibrary input[type="checkbox"][data-variant-id]:checked'))
+    .map(node => node.dataset.variantId);
+  const preferredNode = document.querySelector('#aircraftVariantLibrary input[name="preferredAircraftVariant"]:checked');
+  const preferred = preferredNode && checked.includes(preferredNode.value) ? preferredNode.value : null;
+  try {
+    await call('/api/v1/me/aircraft-variants', {
+      _method: 'PUT',
+      variant_ids: checked,
+      preferred_variant_id: preferred
+    });
+    setText($('#aircraftVariantLibraryMessage'), 'Bibliothèque enregistrée sur votre compte Air Inter.');
+    await refreshAircraftVariantLibrary();
+    if (selectedAircraft?.id) await refreshAircraftVariants();
+  } catch (error) {
+    setText($('#aircraftVariantLibraryMessage'), error.message);
+  }
+};
 
 const checkUpdateBtn = $('#checkUpdateBtn');
 if (checkUpdateBtn) checkUpdateBtn.onclick = async () => {
