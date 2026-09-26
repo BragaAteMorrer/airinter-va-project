@@ -77,6 +77,7 @@ Route::middleware(['web','auth'])->name('promethee.')->group(function () {
     Route::get('/downloads/{file}', [PortalController::class,'download'])->name('downloads.download');
     Route::get('/missions', [PortalController::class,'missions'])->name('missions');
     Route::post('/missions/{id}/reserve', [PortalController::class,'reserveMission'])->name('missions.reserve');
+    Route::delete('/missions/{id}/reservation', [PortalController::class,'cancelMissionReservation'])->name('missions.cancel');
     Route::get('/assignments', [PortalController::class,'assignments'])->name('assignments');
     Route::get('/shop', [PortalController::class,'shop'])->name('shop');
     Route::post('/shop/{id}/buy', [PortalController::class,'buyShopItem'])->name('shop.buy');
