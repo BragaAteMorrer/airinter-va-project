@@ -95,11 +95,12 @@ class SimBriefOperationResolver
             ? trim((string) ($overrides['route'] ?? ''))
             : trim((string) ($flight->route ?? ''));
 
-        $level = array_key_exists('level', $overrides) && $overrides['level'] !== null && $overrides['level'] !== ''
-            ? (int) $overrides['level']
-            : ($flight->level ? (int) $flight->level : null);
-        abort_if($level !== null && ($level < 10 || $level > 600), 422,
-            'Le niveau de vol résolu doit être compris entre FL010 et FL600.');
+        $rawLevel = array_key_exists('level', $overrides) && $overrides['level'] !== null && $overrides['level'] !== ''
+            ? $overrides['level']
+            : $flight->level;
+        $level = $this->normalizeFlightLevel($rawLevel);
+        abort_if($rawLevel !== null && trim((string) $rawLevel) !== '' && $level === null, 422,
+            'Le niveau de vol résolu doit être compris entre FL010 et FL600 (ex. 350, FL350 ou 35000 ft).');
 
         $profile = $this->demand->profile($aircraft, $flight, $operationId);
         $effectiveFares = $this->effectiveFares($flight, $aircraft, (int) $profile['capacity']);
@@ -210,6 +211,29 @@ class SimBriefOperationResolver
             'sources' => $resolved['sources'],
             'checks' => $resolved['checks'],
         ];
+    }
+
+    private function normalizeFlightLevel(mixed $value): ?int
+    {
+        if ($value === null) return null;
+
+        $raw = strtoupper(trim((string) $value));
+        if ($raw === '') return null;
+
+        $raw = preg_replace('/^FL\s*/', '', $raw);
+        $raw = preg_replace('/\s*(?:FT|FEET|PIEDS?)$/', '', $raw);
+        $raw = str_replace([' ', ','], ['', '.'], $raw);
+
+        if (!is_numeric($raw)) return null;
+
+        $numeric = (float) $raw;
+        if ($numeric <= 0) return null;
+
+        $level = $numeric > 600
+            ? (int) round($numeric / 100)
+            : (int) round($numeric);
+
+        return $level >= 10 && $level <= 600 ? $level : null;
     }
 
     private function assertEligible(Flight $flight, Aircraft $aircraft, User $user, ?Bid $bid): void
