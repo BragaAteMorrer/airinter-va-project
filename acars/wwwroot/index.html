@@ -142,7 +142,10 @@
         <input id="selectedAircraftId" name="aircraft_id" type="hidden">
         <label>Type d’appareil<select id="aircraftTypeId" required><option value="">Sélectionnez d'abord un vol</option></select></label>
         <label>Appareil précis<select id="aircraftId" required disabled><option value="">Choisissez d’abord un type</option></select></label>
-        <label>Variante / add-on<select id="aircraftVariantId" disabled><option value="">Choisissez d’abord un appareil</option></select></label>
+        <label>Variante / add-on
+          <select id="aircraftVariantId" disabled><option value="">Choisissez d’abord un appareil</option></select>
+          <span id="aircraftVariantPreview" class="variant-preview" hidden></span>
+        </label>
         <label>Départ<input name="dpt_airport_id" required readonly></label>
         <label>Arrivée<input name="arr_airport_id" required readonly></label>
         <label>Aéroport de dégagement<input name="alt_airport_id" placeholder="AUTO ou LIRN" maxlength="8"></label>
