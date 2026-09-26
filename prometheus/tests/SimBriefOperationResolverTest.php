@@ -81,6 +81,46 @@ final class SimBriefOperationResolverTest extends TestCase
         $this->assertSame('aircraft', $public['sources']['aircraft']);
         $this->assertSame('airports', $public['sources']['origin']);
         $this->assertTrue($public['ready_account']);
+
+        $advanced = $resolver->resolveOperation('op_'.$bid->id, $user, [
+            'simbrief_type' => '80_1709125568637',
+            'callsign' => 'ITF143',
+            'units' => 'LBS',
+            'planformat' => 'AFR2017',
+            'maps' => 'SIMPLE',
+            'navlog' => '0',
+            'tlr' => '1',
+            'notams' => '1',
+            'firnot' => '0',
+            'stepclimbs' => '1',
+            'etops' => '0',
+            'find_sidstar' => 'R',
+            'cruise' => 'CI',
+            'civalue' => '15',
+            'contpct' => '0.05',
+            'resvrule' => '30',
+            'selcal' => 'AB-CD',
+            'deprwy' => '25',
+            'arrrwy' => '33',
+            'taxiout' => 20,
+            'taxiin' => 8,
+            'pax' => 138,
+            'manualrmk' => 'Hermes dispatch test',
+        ]);
+
+        $this->assertSame('80_1709125568637', $advanced['parameters']['type']);
+        $this->assertSame('planning_override', $advanced['aircraft']['simbrief_type_source']);
+        $this->assertSame('ITF143', $advanced['parameters']['callsign']);
+        $this->assertSame('LBS', $advanced['parameters']['units']);
+        $this->assertSame('afr2017', $advanced['parameters']['planformat']);
+        $this->assertSame('simple', $advanced['parameters']['maps']);
+        $this->assertSame('0', $advanced['parameters']['navlog']);
+        $this->assertSame('1', $advanced['parameters']['stepclimbs']);
+        $this->assertSame('15', $advanced['parameters']['civalue']);
+        $this->assertSame(20, $advanced['parameters']['taxiout']);
+        $this->assertSame(8, $advanced['parameters']['taxiin']);
+        $this->assertSame(138, $advanced['parameters']['pax']);
+        $this->assertSame('Hermes dispatch test', $advanced['parameters']['manualrmk']);
     }
 
     public function test_aircraft_type_falls_back_to_subfleet_without_database_change(): void
