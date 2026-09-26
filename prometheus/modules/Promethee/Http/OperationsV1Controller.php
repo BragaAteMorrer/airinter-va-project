@@ -78,40 +78,39 @@ class OperationsV1Controller extends Controller
         $typeFilter = strtoupper(preg_replace('/[^A-Z0-9]+/', '', (string) ($data['icao_type'] ?? '')));
 
         $user = $request->user();
-        $restrictRank = (bool) setting('pireps.restrict_aircraft_to_rank', true);
-        $restrictType = (bool) setting('pireps.restrict_aircraft_to_typerating', false);
 
-        $allowedIds = null;
-
-        if ($restrictRank) {
-            $rankIds = $user->rank
-                ? $user->rank->subfleets()->pluck('subfleets.id')->map(fn ($id) => (int) $id)->all()
-                : [];
-
-            $allowedIds = $rankIds;
+        // Use phpVMS' canonical eligibility resolver instead of reimplementing
+        // rank/type-rating logic here. The manual relation queries used by the
+        // previous implementation could throw on partially migrated pilot/rank
+        // data and surface as an HTTP 503 in Hermès.
+        try {
+            $allowedSubfleets = $this->userSvc->getAllowableSubfleets($user)
+                ->map(fn ($subfleet) => (object) [
+                    'id' => (int) $subfleet->id,
+                    'name' => $subfleet->name,
+                    'type' => $subfleet->type,
+                ])
+                ->values();
+        } catch (\Throwable $exception) {
+            report($exception);
+            $allowedSubfleets = Subfleet::query()
+                ->select(['id', 'name', 'type'])
+                ->get()
+                ->values();
         }
-
-        if ($restrictType) {
-            $typeIds = $user->rated_subfleets()
-                ->pluck('subfleets.id')
-                ->map(fn ($id) => (int) $id)
-                ->all();
-
-            $allowedIds = $allowedIds === null
-                ? $typeIds
-                : array_values(array_intersect($allowedIds, $typeIds));
-        }
-
-        $allowedSubfleets = Subfleet::query()
-            ->select(['id', 'name', 'type'])
-            ->when($allowedIds !== null, fn ($query) => $query->whereIn('id', $allowedIds))
-            ->get()
-            ->values();
 
         $allowedIds = $allowedSubfleets->pluck('id')->map(fn ($id) => (int) $id)->all();
 
-        $allowedAirlineIds = app(\Modules\Promethee\Services\CompanyAccessService::class)
-            ->allowedAirlineIds($request->user());
+        try {
+            $allowedAirlineIds = app(\Modules\Promethee\Services\CompanyAccessService::class)
+                ->allowedAirlineIds($user);
+        } catch (\Throwable $exception) {
+            report($exception);
+            $allowedAirlineIds = DB::table('airlines')
+                ->where('active', true)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id);
+        }
 
         $query = Flight::query()
             ->with(['airline:id,icao,iata,name', 'subfleets:id,name,type'])
