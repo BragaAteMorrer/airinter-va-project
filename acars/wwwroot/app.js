@@ -727,10 +727,20 @@ function simbriefPath(suffix) {
 
 function normalizeFlightLevel(value) {
   if (value === undefined || value === null || value === '') return undefined;
-  const raw = String(value).trim().toUpperCase().replace(/^FL\s*/, '');
+  let raw = String(value).trim().toUpperCase();
+  raw = raw.replace(/^FL\s*/, '').replace(/^F(?=\d)/, '');
+  raw = raw.replace(/\s*(?:FT|FEET|PIEDS?)$/, '').replace(/\s+/g, '').replace(',', '.');
   const altitude = Number(raw);
   if (!Number.isFinite(altitude) || altitude <= 0) return undefined;
-  const level = altitude > 600 ? Math.round(altitude / 100) : Math.round(altitude);
+
+  // Accept both flight levels (350) and altitudes in feet (35000).
+  // A few imported schedules use hundreds of feet with an extra zero;
+  // repeatedly collapse only while the value is clearly outside FL range.
+  let level = altitude;
+  while (level > 6000) level /= 10;
+  if (level > 600) level /= 100;
+  level = Math.round(level);
+
   return level >= 10 && level <= 600 ? level : undefined;
 }
 
@@ -748,10 +758,16 @@ function simBriefPlanningPayload(form) {
   const rawLevel = form.elements.level.value.trim();
   if (rawLevel) {
     const level = normalizeFlightLevel(rawLevel);
-    if (!level)
-      throw new Error('Le niveau de vol doit être compris entre FL010 et FL600.');
-    payload.level = level;
-    form.elements.level.value = String(level);
+    if (level) {
+      payload.level = level;
+      form.elements.level.value = String(level);
+    } else {
+      // Never block OFP generation because of a malformed level copied from
+      // schedule data. Omitting the override lets Prométhée resolve and
+      // normalize the canonical flight level server-side.
+      form.elements.level.value = '';
+      console.warn('Hermès ignored an invalid flight-level override:', rawLevel);
+    }
   }
 
   return payload;
@@ -1133,8 +1149,8 @@ $('#prefileForm').onsubmit = async event => {
   if (body.block_fuel) body.block_fuel = Number(body.block_fuel);
   if (body.level) {
     const normalizedLevel = normalizeFlightLevel(body.level);
-    if (!normalizedLevel) return showMessage('#pirepMessage', 'Le niveau de vol doit être compris entre FL010 et FL600.', true);
-    body.level = normalizedLevel;
+    if (normalizedLevel) body.level = normalizedLevel;
+    else delete body.level;
   }
   if (body.alt_airport_id) body.alt_airport_id = body.alt_airport_id.toUpperCase();
   Object.assign(body, flightPlan || {}, { source_name: 'Hermes ACARS' });
