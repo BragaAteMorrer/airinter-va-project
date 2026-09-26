@@ -197,15 +197,22 @@ class RegionalOperationsService
                 $freshUser->update(['curr_airport_id' => $destination->id]);
             }
 
-            DB::table('promethee_mission_bookings')->insert([
-                'mission_id' => $mission->id,
-                'user_id' => $freshUser->id,
-                'status' => 'reserved',
-                'jumpseat_amount' => (int) $jumpseatAmount->getAmount(),
-                'reserved_at' => now(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            DB::table('promethee_mission_bookings')->updateOrInsert(
+                [
+                    'mission_id' => $mission->id,
+                    'user_id' => $freshUser->id,
+                ],
+                [
+                    'status' => 'reserved',
+                    'jumpseat_amount' => (int) $jumpseatAmount->getAmount(),
+                    'bonus_amount' => 0,
+                    'bonus_paid_at' => null,
+                    'reserved_at' => now(),
+                    'completed_at' => null,
+                    'updated_at' => now(),
+                    'created_at' => now(),
+                ]
+            );
         });
     }
 }
