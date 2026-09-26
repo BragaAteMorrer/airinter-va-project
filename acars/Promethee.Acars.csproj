@@ -15,6 +15,7 @@
   <Company>Air Inter Virtual Airlines</Company>
   <Authors>Air Inter Virtual Airlines</Authors>
   <Copyright>Air Inter Virtual Airlines</Copyright>
+  <Version>1.0.7</Version>
   <ApplicationIcon Condition="'$(TargetFramework)' == 'net8.0-windows'">assets\hermes.ico</ApplicationIcon>
 </PropertyGroup>
 <ItemGroup>
