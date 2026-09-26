@@ -797,9 +797,15 @@ class PortalController extends Controller
         ] + $this->operationsData($r) + $this->monthlyPilotRankings());
     }
     public function departureBoardData(Request $r) {
+        $flights=$this->departureBoardPayload($r->user()->home_airport_id);
+        $now=now();
         return response()->json([
-            'updated_at' => now()->toIso8601String(),
-            'flights' => $this->departureBoardPayload($r->user()->home_airport_id),
+            'updated_at' => $now->toIso8601String(),
+            'revision' => sha1(json_encode($flights, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES)),
+            // Align checks to the next minute boundary because timetable
+            // statuses are minute-based. The client also refreshes on focus.
+            'refresh_after_seconds' => max(10, 61-(int) $now->format('s')),
+            'flights' => $flights,
         ]);
     }
     public function operations(Request $r) {
