@@ -109,17 +109,6 @@
         <span class="tag">PIREP acceptés</span>
     </div>
 
-    @php
-        $leaderboards = [
-            ['title' => 'Vols', 'rows' => $topPilotsByFlights, 'format' => fn ($value) => number_format((int) $value, 0, ',', ' ')],
-            ['title' => 'Temps de vol (block)', 'rows' => $topPilotsByBlockTime, 'format' => fn ($value) => floor(((int) $value) / 60).'h '.str_pad(((int) $value) % 60, 2, '0', STR_PAD_LEFT).'m'],
-            ['title' => 'Touché le plus doux', 'rows' => $topPilotsBySoftLanding, 'format' => fn ($value) => number_format((int) round($value), 0, ',', ' ').' ft/min'],
-            ['title' => 'Distance', 'rows' => $topPilotsByDistance, 'format' => fn ($value) => number_format((int) round($value), 0, ',', ' ').' nmi'],
-            ['title' => 'Score moyen', 'rows' => $topPilotsByScore, 'format' => fn ($value) => number_format((int) round($value), 0, ',', ' ')],
-            ['title' => 'Touché le plus dur', 'rows' => $topPilotsByHardLanding, 'format' => fn ($value) => number_format((int) round($value), 0, ',', ' ').' ft/min'],
-        ];
-    @endphp
-
     <div class="three-columns">
         @foreach($leaderboards as $board)
             <article class="panel">
@@ -132,7 +121,7 @@
                             <tr>
                                 <td><strong>{{ $loop->iteration }}</strong></td>
                                 <td><a href="{{ route('promethee.pilots.show', $row->user_id) }}">{{ $row->name }}</a>@if($row->pilot_id)<small style="display:block">{{ $row->pilot_id }}</small>@endif</td>
-                                <td><strong>{{ $board['format']($row->value) }}</strong></td>
+                                <td><strong>{{ $row->display_value }}</strong></td>
                             </tr>
                         @empty
                             <tr><td colspan="3">Aucune donnée ce mois-ci.</td></tr>
