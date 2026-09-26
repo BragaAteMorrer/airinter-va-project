@@ -52,7 +52,7 @@ function setAuthenticated(value) {
 setAuthenticated(false);
 
 const settingsForm = $('#settingsForm');
-const defaultSettings = { autoDetection: 'true', forcedSimulator: '', timeFormat: 'local', notifications: 'true', simbriefUsername: '', simbriefPilotId: '', flightPlanMode: 'account' };
+const defaultSettings = { autoDetection: 'true', forcedSimulator: '', timeFormat: 'local', notifications: 'true', simbriefUsername: '', simbriefPilotId: '', vatsimCid: '', ivaoVid: '', preferredNetwork: '', flightPlanMode: 'account' };
 let savedSettings = {};
 try { savedSettings = JSON.parse(localStorage.prometheeAcarsSettings || '{}'); } catch {}
 let localSettings = { ...defaultSettings, ...savedSettings };
@@ -596,6 +596,7 @@ async function selectOperation(operation) {
   $$('.operation').forEach(node => node.classList.remove('selected'));
   if (document.activeElement?.classList?.contains('operation')) document.activeElement.classList.add('selected');
   flightPlan = null;
+  renderNetworkPrefiles(null);
   const flight = normalizeFlight(operation.flight || operation);
   const form = $('#prefileForm');
   const assign = (name, value) => { if (form.elements[name]) form.elements[name].value = value ?? ''; };
@@ -783,6 +784,25 @@ async function assertSimBriefReady(form, mode = 'company') {
   return resolved;
 }
 
+function renderNetworkPrefiles(prefiles) {
+  const panel = $('#networkPrefilePanel');
+  const preview = $('#icaoFlightPlanPreview');
+  if (!panel) return;
+  const available = Boolean(prefiles?.vatsim?.url || prefiles?.ivao?.url);
+  panel.hidden = !available;
+  if (preview) {
+    preview.hidden = !prefiles?.icao_flightplan;
+    preview.textContent = prefiles?.icao_flightplan || '';
+  }
+  const vatsimButton = $('#vatsimPrefileBtn');
+  const ivaoButton = $('#ivaoPrefileBtn');
+  if (vatsimButton) vatsimButton.disabled = !prefiles?.vatsim?.url;
+  if (ivaoButton) ivaoButton.disabled = !prefiles?.ivao?.url;
+  showMessage('#networkPrefileMessage', available
+    ? 'Plan ICAO prêt. Vérifiez-le avant l’envoi sur le réseau.'
+    : '');
+}
+
 function applyBriefing(briefing, sourceLabel) {
   const form = $('#prefileForm');
   const flightLevel = normalizeFlightLevel(briefing.initial_altitude);
@@ -791,13 +811,15 @@ function applyBriefing(briefing, sourceLabel) {
     simbrief_id: briefing.id,
     route: briefing.route,
     level: flightLevel,
-    block_fuel: briefing.block_fuel || undefined
+    block_fuel: briefing.block_fuel || undefined,
+    network_prefiles: briefing.network_prefiles || null
   };
   if (briefing.block_fuel) form.elements.block_fuel.value = Math.round(briefing.block_fuel);
   if (briefing.route) form.elements.route.value = briefing.route;
   if (flightLevel) form.elements.level.value = flightLevel;
   if (briefing.alternate) form.elements.alt_airport_id.value = briefing.alternate;
   $('#planBox').textContent = JSON.stringify(briefing, null, 2);
+  renderNetworkPrefiles(flightPlan.network_prefiles);
   showMessage('#simbriefState', 'OFP importé depuis ' + sourceLabel + ' et prêt pour le pré-PIREP.');
   updateWorkflow();
 }
@@ -844,6 +866,40 @@ $('#simbriefPilotId').value = localSettings.simbriefPilotId || '';
   };
 });
 setPlanMode(localSettings.flightPlanMode || 'account');
+
+$('#vatsimPrefileBtn').onclick = async () => {
+  const prefile = flightPlan?.network_prefiles?.vatsim;
+  if (!prefile?.url) return showMessage('#networkPrefileMessage', 'Importez d’abord un OFP SimBrief.', true);
+  try {
+    await call('/api/open-external', { url: prefile.url });
+    showMessage('#networkPrefileMessage', 'VATSIM ouvert avec le plan ICAO prérempli. Validez le dépôt sur myVATSIM ; vPilot le récupérera ensuite depuis le réseau.');
+  } catch (error) {
+    showMessage('#networkPrefileMessage', error.message, true);
+  }
+};
+
+$('#ivaoPrefileBtn').onclick = () => {
+  const prefile = flightPlan?.network_prefiles?.ivao;
+  if (!prefile?.url || !prefile?.fields) return showMessage('#networkPrefileMessage', 'Importez d’abord un OFP SimBrief.', true);
+  const popup = window.open('about:blank', 'HermesIvaoPrefile', 'width=980,height=760');
+  if (!popup) return showMessage('#networkPrefileMessage', 'Autorisez les fenêtres contextuelles pour ouvrir IVAO.', true);
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = prefile.url;
+  form.target = 'HermesIvaoPrefile';
+  Object.entries(prefile.fields).forEach(([name, value]) => {
+    if (value === null || value === undefined) return;
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = name;
+    input.value = String(value);
+    form.append(input);
+  });
+  document.body.append(form);
+  form.submit();
+  form.remove();
+  showMessage('#networkPrefileMessage', 'Plan envoyé au système de pré-dépôt IVAO. Vérifiez puis validez ; Altitude récupérera le plan depuis IVAO.');
+};
 
 $('#simbriefAccountOpenBtn').onclick = async () => {
   const form = $('#prefileForm');
@@ -993,6 +1049,7 @@ $('#resetDraftBtn').onclick = () => {
   form.elements.block_fuel.value = '';
   form.elements.notes.value = '';
   flightPlan = null;
+  renderNetworkPrefiles(null);
   $('#planFile').value = '';
   $('#planBox').textContent = 'Aucun plan chargé.';
   showMessage('#simbriefState', 'Brouillon réinitialisé aux données du programme.');
@@ -1058,6 +1115,7 @@ $('#planFile').onchange = async event => {
   // The local plan is displayed for the pilot only. phpVMS receives the
   // normalized route/OFP fields, never an arbitrary local file payload.
   flightPlan = {};
+  renderNetworkPrefiles(null);
   $('#planBox').textContent = `${file.name} chargé localement (${Math.round(file.size / 1024)} Ko).`;
 };
 $('#clearPlanBtn').onclick = () => {
