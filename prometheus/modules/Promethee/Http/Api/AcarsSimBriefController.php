@@ -387,6 +387,17 @@ class AcarsSimBriefController extends Controller
                 'Le niveau de vol doit être compris entre FL010 et FL600 (ex. 350, FL350 ou 35000 ft).');
         }
 
+        $uppercase = [
+            'alternate', 'simbrief_type', 'callsign', 'units', 'planformat',
+            'maps', 'cruise', 'civalue', 'find_sidstar', 'selcal',
+            'deprwy', 'arrrwy',
+        ];
+        foreach ($uppercase as $key) {
+            if ($request->has($key) && is_string($request->input($key))) {
+                $request->merge([$key => strtoupper(trim((string) $request->input($key)))]);
+            }
+        }
+
         $request->merge([
             'alternate' => $alternate === '' ? null : strtoupper($alternate),
             'route' => $route === '' ? null : $route,
@@ -398,6 +409,33 @@ class AcarsSimBriefController extends Controller
             'alternate' => ['nullable', 'string', 'max:8', 'regex:/^[A-Z0-9]{3,8}$/'],
             'route' => ['nullable', 'string', 'max:2000'],
             'level' => ['nullable', 'integer', 'between:10,600'],
+
+            // Ephemeral SimBrief dispatch overrides. These are deliberately not
+            // persisted to phpVMS: Hermès may tailor one OFP without mutating
+            // the scheduled flight, aircraft or database schema.
+            'simbrief_type' => ['nullable', 'string', 'max:64', 'regex:/^[A-Z0-9_-]+$/'],
+            'callsign' => ['nullable', 'string', 'max:16', 'regex:/^[A-Z0-9_-]+$/'],
+            'units' => ['nullable', 'in:KGS,LBS'],
+            'planformat' => ['nullable', 'string', 'max:32', 'regex:/^[A-Z0-9_-]+$/'],
+            'maps' => ['nullable', 'in:DETAIL,SIMPLE,NONE'],
+            'navlog' => ['nullable', 'in:0,1'],
+            'tlr' => ['nullable', 'in:0,1'],
+            'notams' => ['nullable', 'in:0,1'],
+            'firnot' => ['nullable', 'in:0,1'],
+            'stepclimbs' => ['nullable', 'in:0,1'],
+            'etops' => ['nullable', 'in:0,1'],
+            'find_sidstar' => ['nullable', 'in:C,R'],
+            'cruise' => ['nullable', 'string', 'max:16', 'regex:/^[A-Z0-9.\/-]+$/'],
+            'civalue' => ['nullable', 'string', 'max:16', 'regex:/^(AUTO|[0-9]{1,3})$/'],
+            'contpct' => ['nullable', 'string', 'max:16', 'regex:/^[A-Za-z0-9.\/-]+$/'],
+            'resvrule' => ['nullable', 'string', 'max:16', 'regex:/^[A-Za-z0-9.\/-]+$/'],
+            'selcal' => ['nullable', 'string', 'max:16', 'regex:/^[A-Z0-9-]+$/'],
+            'deprwy' => ['nullable', 'string', 'max:4', 'regex:/^[0-9]{1,2}[LCR]?$/'],
+            'arrrwy' => ['nullable', 'string', 'max:4', 'regex:/^[0-9]{1,2}[LCR]?$/'],
+            'taxiout' => ['nullable', 'integer', 'between:0,180'],
+            'taxiin' => ['nullable', 'integer', 'between:0,180'],
+            'pax' => ['nullable', 'integer', 'between:0,999'],
+            'manualrmk' => ['nullable', 'string', 'max:2000'],
         ], [
             'aircraft_id.required' => 'Sélectionnez un appareil avant de préparer SimBrief.',
             'alternate.regex' => 'Le dégagement doit être un code aéroport valide ou rester vide pour AUTO.',
@@ -405,6 +443,9 @@ class AcarsSimBriefController extends Controller
             'route.max' => 'La route SimBrief dépasse 2000 caractères.',
             'level.integer' => 'Le niveau de vol doit être un entier, par exemple 350.',
             'level.between' => 'Le niveau de vol doit être compris entre FL010 et FL600.',
+            'simbrief_type.regex' => 'Le profil SimBrief doit être un type ICAO ou un Internal ID SimBrief valide.',
+            'deprwy.regex' => 'La piste de départ doit être du type 25, 25L, 08R, etc.',
+            'arrrwy.regex' => 'La piste d’arrivée doit être du type 33, 33R, 02L, etc.',
         ]);
     }
 
