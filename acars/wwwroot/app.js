@@ -565,6 +565,82 @@ function populateAircraftInstances(typeKey, preferredAircraftId = null) {
 }
 
 
+function renderVariantPreview(variant = selectedVariant) {
+  const preview = $('#aircraftVariantPreview');
+  if (!preview) return;
+  preview.replaceChildren();
+  if (!variant) { preview.hidden = true; return; }
+
+  if (variant.image_url) {
+    const image = document.createElement('img');
+    image.src = variant.image_url;
+    image.alt = variant.label || 'Airframe SimBrief';
+    image.loading = 'lazy';
+    preview.append(image);
+  }
+  const text = document.createElement('small');
+  const sourceLabels = {
+    phpvms_admin_airframe: 'Airframe phpVMS / Prométhée',
+    simbrief_airframe: 'Catalogue SimBrief',
+    hermes_catalog: 'Catalogue Hermès'
+  };
+  text.textContent = (sourceLabels[variant.source] || variant.vendor || 'Profil appareil')
+    + ' · ' + (variant.simbrief_type || 'AUTO')
+    + (variant.icao ? ' · ' + variant.icao : '');
+  preview.append(text);
+  preview.hidden = false;
+}
+
+function renderRouteSuggestions(payload, initialRoute = '') {
+  const select = $('#routeSuggestion');
+  const input = $('#prefileForm')?.elements?.route;
+  if (!select || !input) return;
+  const options = Array.isArray(payload?.route_options) ? payload.route_options : [];
+  select.replaceChildren();
+
+  const auto = document.createElement('option');
+  auto.value = '';
+  auto.textContent = 'AUTO — laisser SimBrief calculer';
+  select.append(auto);
+
+  const seen = new Set();
+  options.forEach(item => {
+    const route = String(item?.route || '').trim();
+    if (!route || seen.has(route.toUpperCase())) return;
+    seen.add(route.toUpperCase());
+    const option = document.createElement('option');
+    option.value = route;
+    option.textContent = (item.route_code ? item.route_code + ' — ' : '')
+      + route
+      + (item.source === 'scheduled_flight' ? ' · programme' : ' · variante compagnie');
+    select.append(option);
+  });
+
+  const current = String(initialRoute || input.value || '').trim();
+  if (current && !seen.has(current.toUpperCase())) {
+    const option = document.createElement('option');
+    option.value = current;
+    option.textContent = 'PROGRAMME — ' + current;
+    select.append(option);
+  }
+  select.value = Array.from(select.options).some(option => option.value === current) ? current : '';
+  select.disabled = false;
+}
+
+async function loadRouteSuggestions(operationRef, initialRoute = '') {
+  const select = $('#routeSuggestion');
+  if (select) {
+    select.disabled = true;
+    select.replaceChildren(new Option('Chargement des routes…', ''));
+  }
+  try {
+    const briefing = unwrap(await call('/api/v1/operations/' + encodeURIComponent(operationRef) + '/briefing'));
+    renderRouteSuggestions(briefing, initialRoute);
+  } catch {
+    renderRouteSuggestions({ route_options: [] }, initialRoute);
+  }
+}
+
 function renderAircraftVariants(payload) {
   aircraftVariantState = payload || { variants: [] };
   const select = $('#aircraftVariantId');
@@ -579,6 +655,7 @@ function renderAircraftVariants(payload) {
     select.append(option);
     select.disabled = true;
     selectedVariant = null;
+    renderVariantPreview(null);
     return;
   }
 
@@ -603,6 +680,7 @@ function renderAircraftVariants(payload) {
     || visible[0]?.id;
   if (selectedId && visible.some(item => item.id === selectedId)) select.value = selectedId;
   selectedVariant = visible.find(item => item.id === select.value) || null;
+  renderVariantPreview(selectedVariant);
   select.disabled = false;
 }
 
@@ -777,6 +855,7 @@ async function selectOperation(operation) {
     const operationRef = operation.operation_id || operation.id || operation.bid_id;
     if (!operationRef) throw new Error('Cette réservation ne possède pas d’identifiant d’opération Prométhée.');
 
+    await loadRouteSuggestions(operationRef, flight.route || '');
     const payload = unwrap(await call(`/api/v1/operations/${encodeURIComponent(operationRef)}/aircraft-eligibility`));
     aircraftEligibility = payload || {};
     renderEligibility(payload);
@@ -1233,6 +1312,7 @@ $('#aircraftVariantId').onchange = async event => {
     }));
     aircraftVariantState = result;
     selectedVariant = result.selected_variant || variant;
+    renderVariantPreview(selectedVariant);
     if (selectedOperation) {
       selectedOperation.simbrief = {
         ...(selectedOperation.simbrief || {}),
@@ -1253,6 +1333,16 @@ $('#aircraftVariantId').onchange = async event => {
   } finally {
     select.disabled = false;
   }
+};
+
+const routeSuggestion = $('#routeSuggestion');
+if (routeSuggestion) routeSuggestion.onchange = event => {
+  const form = $('#prefileForm');
+  if (!form?.elements?.route) return;
+  form.elements.route.value = event.target.value || '';
+  showMessage('#simbriefState', event.target.value
+    ? 'Route compagnie sélectionnée. Vous pouvez encore la modifier manuellement.'
+    : 'Route AUTO : SimBrief calculera la proposition lors de la génération.');
 };
 
 $('#resetDraftBtn').onclick = () => {

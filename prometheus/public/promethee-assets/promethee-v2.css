@@ -1418,3 +1418,51 @@ html[data-era="minitel"] .departure-board .split-flap-grid{
 .map-legend .route-legend.air-inter { background: #0b5cad; }
 .map-legend .route-legend.air-charter { background: #d92732; }
 .map-legend .route-legend.ics { background: #e0ad16; }
+
+
+/* 2026-09 OPS board density/responsiveness.
+ * Keep the whole physical board readable in ordinary desktop windows; below
+ * tablet width we deliberately keep horizontal scrolling rather than shrinking
+ * glyphs to illegibility. */
+html:not([data-era="minitel"]) .departure-board .split-flap-grid {
+  grid-template-columns: 58px 104px 246px 76px 246px 76px 158px;
+  column-gap: 5px;
+}
+html:not([data-era="minitel"]) .departure-board .flight-stack {
+  width: 100%;
+  min-width: 0;
+}
+html:not([data-era="minitel"]) .departure-board-scroll {
+  overflow-x: hidden;
+}
+html:not([data-era="minitel"]) .departure-board .flight-stack::after {
+  opacity: 0;
+  animation: none;
+}
+html:not([data-era="minitel"]) .departure-board .flight-stack.board-updated::after {
+  opacity: 1;
+  animation: airport-board-scan 900ms ease-out 1;
+}
+
+@media (max-width: 1180px) {
+  html:not([data-era="minitel"]) .departure-board .split-flap-grid {
+    grid-template-columns: 48px 82px minmax(160px, 1fr) 62px minmax(160px, 1fr) 62px 126px;
+    column-gap: 3px;
+  }
+  html:not([data-era="minitel"]) .departure-board .split-flap-char {
+    flex-basis: 10px;
+    width: 10px;
+    min-width: 10px;
+    height: 32px;
+    font-size: 10px;
+    line-height: 32px;
+  }
+  html:not([data-era="minitel"]) .departure-board .flap-face { height: 32px; }
+  html:not([data-era="minitel"]) .departure-board .flap-bottom .flap-face { transform: translateY(-16px); }
+  html:not([data-era="minitel"]) .departure-board .dispatch-flight { min-height: 33px; }
+}
+
+@media (max-width: 820px) {
+  html:not([data-era="minitel"]) .departure-board-scroll { overflow-x: auto; }
+  html:not([data-era="minitel"]) .departure-board .flight-stack { width: max-content; min-width: 760px; }
+}

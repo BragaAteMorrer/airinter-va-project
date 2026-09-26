@@ -4,10 +4,10 @@
 <div class="ops-header compact">
   <div>
     <span class="eyebrow">AIR INTER · EXPLOITATION</span>
-    <h1>Bases régionales & flotte.</h1>
-    <p>Orly est le hub principal. Les autres plateformes régionales assurent l'exploitation courante et la petite maintenance.</p>
+    <h1>Bases, plateformes & escales techniques.</h1>
+    <p>Un même aéroport peut cumuler plusieurs rôles. Orly reste le hub principal ; Orly et CDG disposent des checks A, B et C. Une escale technique apporte uniquement la capacité A CHECK.</p>
   </div>
-  <span class="tag">{{ $bases->where('active', true)->count() }} base(s) active(s)</span>
+  <span class="tag">{{ $bases->where('active', true)->count() }} site(s) actif(s)</span>
 </div>
 
 <div class="two-columns">
@@ -32,37 +32,46 @@
   </section>
 
   <section class="panel">
-    <div class="panel-heading"><div><span class="eyebrow">PLATEFORME</span><h2>Ajouter / modifier</h2></div></div>
+    <div class="panel-heading"><div><span class="eyebrow">SITE OPÉRATIONNEL</span><h2>Ajouter / modifier</h2></div></div>
     <form method="post" action="{{ route('admin.promethee.regional.bases.save') }}" class="form-grid">
       @csrf
       <label>ICAO / ID aéroport<input name="airport_id" maxlength="8" required placeholder="LFPO"></label>
-      <label>Type
-        <select name="kind">
-          <option value="regional">Plateforme régionale</option>
-          <option value="hub">Hub principal — LFPO uniquement</option>
-        </select>
-        <small>Orly (LFPO) est le seul hub autorisé.</small>
-      </label>
-      <label><input type="checkbox" name="small_maintenance" value="1" checked> Petite maintenance</label>
-      <label><input type="checkbox" name="heavy_maintenance" value="1"> Grosse maintenance</label>
-      <label><input type="checkbox" name="active" value="1" checked> Active</label>
-      <button>Enregistrer la plateforme</button>
+      <fieldset>
+        <legend>Rôles — cumulables</legend>
+        <label><input type="checkbox" name="is_hub" value="1"> Hub principal <small>LFPO uniquement</small></label>
+        <label><input type="checkbox" name="is_regional_platform" value="1" checked> Plateforme régionale</label>
+        <label><input type="checkbox" name="is_technical_stop" value="1"> Escale technique</label>
+      </fieldset>
+      <div class="hint">
+        <strong>Maintenance calculée automatiquement :</strong>
+        A CHECK sur les sites opérationnels ; A/B/C à LFPO et LFPG. Une escale technique seule ne donne jamais accès aux checks B ou C.
+      </div>
+      <label><input type="checkbox" name="active" value="1" checked> Site actif</label>
+      <button>Enregistrer le site</button>
     </form>
   </section>
 </div>
 
 <section class="panel table-wrap">
-  <div class="panel-heading"><div><span class="eyebrow">RÉSEAU TECHNIQUE</span><h2>Plateformes</h2></div></div>
+  <div class="panel-heading"><div><span class="eyebrow">RÉSEAU TECHNIQUE</span><h2>Sites opérationnels</h2></div></div>
   <table>
-    <thead><tr><th>Aéroport</th><th>Rôle</th><th>Petite maintenance</th><th>Grosse maintenance</th><th>État</th></tr></thead>
+    <thead><tr><th>Aéroport</th><th>Rôles</th><th>A CHECK</th><th>B CHECK</th><th>C CHECK</th><th>État</th></tr></thead>
     <tbody>
     @foreach($bases as $base)
+      @php($roles = collect([
+        !empty($base->is_hub) ? 'HUB PRINCIPAL' : null,
+        !empty($base->is_regional_platform) ? 'PLATEFORME RÉGIONALE' : null,
+        !empty($base->is_technical_stop) ? 'ESCALE TECHNIQUE' : null,
+      ])->filter())
       <tr>
         <td><strong>{{ $base->airport_id }}</strong> · {{ $base->airport_name ?: '—' }}</td>
-        <td><span class="tag">{{ $base->kind === 'hub' ? 'HUB' : 'RÉGIONALE' }}</span></td>
-        <td>{{ $base->small_maintenance ? 'Oui' : 'Non' }}</td>
-        <td>{{ $base->heavy_maintenance ? 'Oui' : 'Non' }}</td>
-        <td>{{ $base->active ? 'Active' : 'Inactive' }}</td>
+        <td>
+          @forelse($roles as $role)<span class="tag">{{ $role }}</span> @empty — @endforelse
+        </td>
+        <td>{{ !empty($base->check_a) ? 'Oui' : 'Non' }}</td>
+        <td>{{ !empty($base->check_b) ? 'Oui' : 'Non' }}</td>
+        <td>{{ !empty($base->check_c) ? 'Oui' : 'Non' }}</td>
+        <td>{{ $base->active ? 'Actif' : 'Inactif' }}</td>
       </tr>
     @endforeach
     </tbody>
@@ -94,8 +103,13 @@
             <input type="hidden" name="aircraft_id" value="{{ $plane->id }}">
             <select name="base_airport_id">
               @foreach($bases->where('active', true) as $base)
+                @php($baseRoles = collect([
+                  !empty($base->is_hub) ? 'Hub' : null,
+                  !empty($base->is_regional_platform) ? 'Régionale' : null,
+                  !empty($base->is_technical_stop) ? 'Technique' : null,
+                ])->filter()->implode(' + '))
                 <option value="{{ $base->airport_id }}" @selected(($assignment?->base_airport_id ?: 'LFPO') === $base->airport_id)>
-                  {{ $base->airport_id }} · {{ $base->kind === 'hub' ? 'Hub' : 'Régionale' }}
+                  {{ $base->airport_id }} · {{ $baseRoles ?: 'Site' }}
                 </option>
               @endforeach
             </select>

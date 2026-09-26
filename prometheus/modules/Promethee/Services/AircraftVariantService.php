@@ -5,6 +5,7 @@ namespace Modules\Promethee\Services;
 use App\Models\Aircraft;
 use App\Models\Bid;
 use App\Models\User;
+use App\Models\SimBriefAirframe;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -88,15 +89,34 @@ class AircraftVariantService
             ->get()
             ->keyBy('variant_id');
 
-        $variants = collect(config('acars.variants.'.$typeKey, []))
+        $configured = collect(config('acars.variants.'.$typeKey, []))
             ->filter(fn (array $variant) => in_array($simulator, $variant['simulators'] ?? [], true))
             ->map(function (array $variant) use ($saved) {
                 $state = $saved->get($variant['id']);
                 return array_merge($variant, [
                     'owned' => $state !== null,
                     'preferred' => $state ? (bool) $state->preferred : false,
+                    'source' => $variant['source'] ?? 'hermes_catalog',
                 ]);
-            })
+            });
+
+        // phpVMS already maintains the SimBrief airframe catalogue used by
+        // /admin/airframes. Surface those same profiles in Hermès so the
+        // desktop client and web flight planner cannot disagree.
+        $database = collect($this->databaseAirframesForAircraft($bid->aircraft))
+            ->map(function (array $variant) use ($saved) {
+                $state = $saved->get($variant['id']);
+                return array_merge($variant, [
+                    // Server-managed airframes are usable without requiring a
+                    // duplicate "owned add-on" toggle in the pilot library.
+                    'owned' => true,
+                    'preferred' => $state ? (bool) $state->preferred : false,
+                ]);
+            });
+
+        $variants = $configured
+            ->concat($database)
+            ->unique(fn (array $variant) => strtoupper((string) ($variant['simbrief_type'] ?? $variant['id'])))
             ->values();
 
         $selection = DB::table('promethee_operation_aircraft_variants')->where('bid_id', $bid->id)->first();
@@ -157,6 +177,62 @@ class AircraftVariantService
         return collect($options['variants'])->first(
             fn ($variant) => $variant['id'] === $options['selected_variant_id']
         );
+    }
+
+    private function databaseAirframesForAircraft(Aircraft $aircraft): array
+    {
+        $icaos = collect([
+            $aircraft->icao,
+            $aircraft->subfleet?->type,
+            $aircraft->subfleet?->simbrief_type,
+        ])->filter()
+          ->map(fn ($value) => strtoupper(preg_replace('/[^A-Z0-9]/', '', (string) $value)))
+          ->filter(fn ($value) => strlen($value) >= 3 && strlen($value) <= 4)
+          ->unique()
+          ->values();
+
+        if ($icaos->isEmpty()) return [];
+
+        return SimBriefAirframe::query()
+            ->whereIn('icao', $icaos)
+            ->orderBy('source')
+            ->orderBy('name')
+            ->get()
+            ->map(function (SimBriefAirframe $airframe) {
+                $details=json_decode((string) $airframe->details,true) ?: [];
+                $options=json_decode((string) $airframe->options,true) ?: [];
+                $image=$this->airframeImage($details);
+
+                return [
+                    'id' => 'sbaf:'.$airframe->id,
+                    'label' => trim((string) $airframe->name) ?: strtoupper((string) $airframe->icao),
+                    'simbrief_type' => filled($airframe->airframe_id)
+                        ? (string) $airframe->airframe_id
+                        : strtoupper((string) $airframe->icao),
+                    'simulators' => ['fs2004','fsx','p3d','msfs2020','msfs2024','xplane'],
+                    'adapter_ids' => [],
+                    'default' => false,
+                    'source' => ((int) $airframe->source === 0) ? 'phpvms_admin_airframe' : 'simbrief_airframe',
+                    'airframe_db_id' => $airframe->id,
+                    'icao' => strtoupper((string) $airframe->icao),
+                    'image_url' => $image,
+                    'options' => $options,
+                ];
+            })
+            ->all();
+    }
+
+    private function airframeImage(array $details): ?string
+    {
+        foreach (['image_url','airframe_image','aircraft_image','image','thumbnail'] as $key) {
+            $value=$details[$key] ?? null;
+            if (is_string($value) && filter_var($value,FILTER_VALIDATE_URL)
+                && str_starts_with(strtolower($value),'https://')) {
+                return $value;
+            }
+        }
+
+        return null;
     }
 
     public function matchesDetectedAdapter(?array $variant, ?string $adapterId): ?bool

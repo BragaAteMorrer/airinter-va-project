@@ -142,12 +142,21 @@
         <input id="selectedAircraftId" name="aircraft_id" type="hidden">
         <label>Type d’appareil<select id="aircraftTypeId" required><option value="">Sélectionnez d'abord un vol</option></select></label>
         <label>Appareil précis<select id="aircraftId" required disabled><option value="">Choisissez d’abord un type</option></select></label>
-        <label>Variante / add-on<select id="aircraftVariantId" disabled><option value="">Choisissez d’abord un appareil</option></select></label>
+        <label>Variante / add-on
+          <select id="aircraftVariantId" disabled><option value="">Choisissez d’abord un appareil</option></select>
+          <span id="aircraftVariantPreview" class="variant-preview" hidden></span>
+        </label>
         <label>Départ<input name="dpt_airport_id" required readonly></label>
         <label>Arrivée<input name="arr_airport_id" required readonly></label>
         <label>Aéroport de dégagement<input name="alt_airport_id" placeholder="AUTO ou LIRN" maxlength="8"></label>
         <label>Niveau de vol<input name="level" type="number" min="10" max="600" step="10" placeholder="350"></label>
-        <label class="route-field">Route<input name="route" maxlength="2000" placeholder="DCT…"></label>
+        <label class="route-field">Route<input name="route" maxlength="2000" placeholder="AUTO SimBrief ou DCT…"></label>
+        <label>Routes proposées
+          <select id="routeSuggestion" disabled>
+            <option value="">Sélectionnez d’abord un vol</option>
+          </select>
+          <small>Routes compagnie disponibles sur la même liaison. AUTO laisse SimBrief calculer la route.</small>
+        </label>
         <label>Block fuel lbs<input name="block_fuel" type="number" min="0" step="1"></label>
         <label class="notes-field">Notes opérationnelles<textarea name="notes" maxlength="1000" rows="3" placeholder="Informations utiles au dispatch"></textarea></label>
 

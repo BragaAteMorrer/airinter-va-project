@@ -245,3 +245,28 @@ body.auth-locked .recovery-center{width:min(760px,100%)}
 .network-crew-heading span{font:800 10px/1.2 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--muted)}
 .network-crew p{margin:0;color:var(--muted);font-size:11px}
 @media(max-width:700px){.network-crew-heading{align-items:flex-start;flex-direction:column;gap:3px}}
+
+
+.variant-preview {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  margin-top: 7px;
+  min-height: 34px;
+  color: var(--muted);
+}
+.variant-preview[hidden] { display: none; }
+.variant-preview img {
+  width: 54px;
+  height: 34px;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #fff;
+}
+.variant-preview small {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
