@@ -150,6 +150,72 @@
         <label class="route-field">Route<input name="route" maxlength="2000" placeholder="DCT…"></label>
         <label>Block fuel lbs<input name="block_fuel" type="number" min="0" step="1"></label>
         <label class="notes-field">Notes opérationnelles<textarea name="notes" maxlength="1000" rows="3" placeholder="Informations utiles au dispatch"></textarea></label>
+
+        <details id="simbriefAdvanced" class="dispatch-advanced">
+          <summary><strong>Options SimBrief avancées</strong><span>Airframe · performances · carburant · OFP · pistes</span></summary>
+          <div class="grid simbrief-advanced-grid">
+            <label>Profil / Internal ID
+              <input name="simbrief_type" maxlength="64" placeholder="AUTO · A319 · 80_1709125568637">
+              <small>Un Internal ID force un airframe SimBrief précis (Fenix, PMDG, profil personnel…).</small>
+            </label>
+            <label>ATC Callsign<input name="callsign" maxlength="16" placeholder="AUTO · ITF143"></label>
+            <label>SELCAL<input name="selcal" maxlength="16" placeholder="AUTO · AB-CD"></label>
+            <label>Passagers<input name="pax" type="number" min="0" max="999" step="1" placeholder="AUTO"></label>
+
+            <label>Unités
+              <select name="units"><option value="">AUTO (kg)</option><option value="KGS">Kilogrammes</option><option value="LBS">Livres</option></select>
+            </label>
+            <label>Format OFP
+              <select name="planformat">
+                <option value="">AUTO (LIDO)</option><option value="LIDO">LIDO</option><option value="AFR">Air France</option>
+                <option value="AFR2017">Air France 2017</option><option value="BAW">British Airways</option>
+                <option value="DLH">Lufthansa</option><option value="KLM">KLM</option><option value="UAL">United</option>
+              </select>
+            </label>
+            <label>Cartes
+              <select name="maps"><option value="">AUTO (détaillées)</option><option value="DETAIL">Détaillées</option><option value="SIMPLE">Simples</option><option value="NONE">Aucune</option></select>
+            </label>
+            <label>Navlog détaillé
+              <select name="navlog"><option value="">AUTO (oui)</option><option value="1">Oui</option><option value="0">Non</option></select>
+            </label>
+
+            <label>Cost Index<input name="civalue" maxlength="16" placeholder="AUTO · 15"></label>
+            <label>Mode croisière<input name="cruise" maxlength="16" placeholder="AUTO · CI"></label>
+            <label>SID / STAR
+              <select name="find_sidstar"><option value="">AUTO</option><option value="R">RNAV</option><option value="C">Conventionnel</option></select>
+            </label>
+            <label>Step climbs
+              <select name="stepclimbs"><option value="">AUTO</option><option value="1">Activés</option><option value="0">Désactivés</option></select>
+            </label>
+
+            <label>Contingency fuel
+              <select name="contpct"><option value="">AUTO</option><option value="auto">SimBrief AUTO</option><option value="easa">EASA</option><option value="0.03">3 %</option><option value="0.05">5 %</option><option value="0.1">10 %</option><option value="5">5 min</option><option value="10">10 min</option><option value="15">15 min</option></select>
+            </label>
+            <label>Reserve fuel
+              <select name="resvrule"><option value="">AUTO</option><option value="auto">SimBrief AUTO</option><option value="15">15 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">60 min</option><option value="90">90 min</option></select>
+            </label>
+            <label>Taxi out (min)<input name="taxiout" type="number" min="0" max="180" step="1" placeholder="AUTO"></label>
+            <label>Taxi in (min)<input name="taxiin" type="number" min="0" max="180" step="1" placeholder="AUTO"></label>
+
+            <label>Piste départ<input name="deprwy" maxlength="4" placeholder="AUTO · 25"></label>
+            <label>Piste arrivée<input name="arrrwy" maxlength="4" placeholder="AUTO · 33"></label>
+            <label>Runway analysis
+              <select name="tlr"><option value="">AUTO</option><option value="1">Activée</option><option value="0">Désactivée</option></select>
+            </label>
+            <label>ETOPS
+              <select name="etops"><option value="">AUTO</option><option value="1">Activé</option><option value="0">Désactivé</option></select>
+            </label>
+
+            <label>NOTAM
+              <select name="notams"><option value="">AUTO</option><option value="1">Inclus</option><option value="0">Exclus</option></select>
+            </label>
+            <label>FIR NOTAM
+              <select name="firnot"><option value="">AUTO</option><option value="1">Inclus</option><option value="0">Exclus</option></select>
+            </label>
+            <label class="notes-field">Remarks dispatch<textarea name="manualrmk" maxlength="2000" rows="3" placeholder="Remarques envoyées à SimBrief uniquement"></textarea></label>
+          </div>
+        </details>
+
         <div class="draft-actions">
           <button id="resetDraftBtn" type="button">Réinitialiser</button>
           <button class="primary">Pré-déposer le PIREP</button>
