@@ -579,6 +579,87 @@ class PortalController extends Controller
         $r->validate(['month'=>'nullable|date_format:Y-m']);
         return $r->query('month',now('Europe/Paris')->format('Y-m'));
     }
+    private function monthlyPilotRankings(): array
+    {
+        $monthStart = now('Europe/Paris')->startOfMonth()->utc();
+        $monthEnd = now('Europe/Paris')->addMonthNoOverflow()->startOfMonth()->utc();
+
+        $base = fn () => DB::table('pireps')
+            ->join('users', 'users.id', '=', 'pireps.user_id')
+            ->where('pireps.state', PirepState::ACCEPTED)
+            ->where('pireps.submitted_at', '>=', $monthStart)
+            ->where('pireps.submitted_at', '<', $monthEnd)
+            ->whereNotNull('pireps.user_id');
+
+        $selectPilot = 'pireps.user_id, users.name, users.pilot_id';
+
+        $flights = $base()
+            ->selectRaw($selectPilot.', COUNT(*) as value')
+            ->groupBy('pireps.user_id', 'users.name', 'users.pilot_id')
+            ->orderByDesc('value')
+            ->limit(5)
+            ->get();
+
+        $block = $base()
+            ->selectRaw($selectPilot.', SUM(COALESCE(NULLIF(pireps.block_time, 0), pireps.flight_time, 0)) as value')
+            ->groupBy('pireps.user_id', 'users.name', 'users.pilot_id')
+            ->orderByDesc('value')
+            ->limit(5)
+            ->get();
+
+        $softest = $base()
+            ->whereNotNull('pireps.landing_rate')
+            ->where('pireps.landing_rate', '<', 0)
+            ->selectRaw($selectPilot.', MAX(pireps.landing_rate) as value')
+            ->groupBy('pireps.user_id', 'users.name', 'users.pilot_id')
+            ->orderByDesc('value')
+            ->limit(5)
+            ->get();
+
+        $distance = $base()
+            ->whereNotNull('pireps.distance')
+            ->selectRaw($selectPilot.', SUM(pireps.distance) as raw_value')
+            ->groupBy('pireps.user_id', 'users.name', 'users.pilot_id')
+            ->orderByDesc('raw_value')
+            ->limit(5)
+            ->get()
+            ->map(function ($row) {
+                $row->value = \App\Support\Units\Distance::make(
+                    (float) $row->raw_value,
+                    config('phpvms.internal_units.distance')
+                )->toUnit('nmi', 0);
+
+                return $row;
+            });
+
+        $score = $base()
+            ->whereNotNull('pireps.score')
+            ->selectRaw($selectPilot.', ROUND(AVG(pireps.score)) as value')
+            ->groupBy('pireps.user_id', 'users.name', 'users.pilot_id')
+            ->orderByDesc('value')
+            ->limit(5)
+            ->get();
+
+        $hardest = $base()
+            ->whereNotNull('pireps.landing_rate')
+            ->where('pireps.landing_rate', '<', 0)
+            ->selectRaw($selectPilot.', MIN(pireps.landing_rate) as value')
+            ->groupBy('pireps.user_id', 'users.name', 'users.pilot_id')
+            ->orderBy('value')
+            ->limit(5)
+            ->get();
+
+        return [
+            'monthLabel' => now('Europe/Paris')->locale('fr')->isoFormat('MMMM'),
+            'topPilotsByFlights' => $flights,
+            'topPilotsByBlockTime' => $block,
+            'topPilotsBySoftLanding' => $softest,
+            'topPilotsByDistance' => $distance,
+            'topPilotsByScore' => $score,
+            'topPilotsByHardLanding' => $hardest,
+        ];
+    }
+
     private function operationsData(Request $r): array {
         $dayStart = now('Europe/Paris')->startOfDay()->utc();
         $dayEnd = now('Europe/Paris')->endOfDay()->utc();
@@ -624,7 +705,7 @@ class PortalController extends Controller
             'flights'=>Flight::where('active',true)->with('airline')->orderBy('dpt_time')->limit(7)->get(),
             'events'=>DB::table('promethee_events')->where('ends_at','>=',now())->orderBy('starts_at')->limit(3)->get(),
             'personal'=>Pirep::where('user_id',$r->user()->id)->where('state',PirepState::ACCEPTED)->count(),
-        ] + $this->operationsData($r));
+        ] + $this->operationsData($r) + $this->monthlyPilotRankings());
     }
     public function departureBoardData(Request $r) {
         return response()->json([
