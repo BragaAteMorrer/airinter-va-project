@@ -737,7 +737,7 @@ function normalizeFlightLevel(value) {
   // A few imported schedules use hundreds of feet with an extra zero;
   // repeatedly collapse only while the value is clearly outside FL range.
   let level = altitude;
-  while (level > 6000) level /= 10;
+  while (level > 60000) level /= 10;
   if (level > 600) level /= 100;
   level = Math.round(level);
 
