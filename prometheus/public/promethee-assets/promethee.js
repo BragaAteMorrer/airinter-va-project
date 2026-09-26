@@ -223,8 +223,8 @@
       row.style.setProperty('--board-row', index);
       const logo = document.createElement('span');
       logo.className = 'board-cell split-flap-logo airline-logo-cell'; setLogo(logo, flight);
-      const ident = makeCell('a', 'flight-cell flight-ident', flight.flight, 9); ident.href = flight.url;
-      row.append(logo, ident, makeCell('span', 'departure-cell', flight.departure, 4), makeCell('time', 'departure-time-cell', flight.departure_time, 5), makeCell('span', 'destination-cell destination', flight.destination, 28), makeCell('time', 'arrival-time-cell', flight.arrival_time, 5), makeCell('span', 'status-cell status', flight.status_label, 16));
+      const ident = makeCell('a', 'flight-cell flight-ident', flight.flight, 7); ident.href = flight.url;
+      row.append(logo, ident, makeCell('span', 'departure-cell', flight.departure, 18), makeCell('time', 'departure-time-cell', flight.departure_time, 5), makeCell('span', 'destination-cell destination', flight.destination, 18), makeCell('time', 'arrival-time-cell', flight.arrival_time, 5), makeCell('span', 'status-cell status', flight.status_label, 11));
       row.querySelectorAll('.board-cell:not(.split-flap-logo)').forEach((field) => renderFlapField(field, true));
       return row;
     };
@@ -247,13 +247,56 @@
         message.textContent = board.dataset.emptyText || '—'; board.append(message);
       }
     };
-    const refresh = async () => {
-      try {
-        const response = await fetch(board.dataset.boardUrl, {headers: {Accept: 'application/json'}});
-        if (response.ok) updateRows((await response.json()).flights || []);
-      } catch { /* Leave the last valid mechanical display in place. */ }
+    let refreshTimer = null;
+    let refreshing = false;
+    let lastRevision = null;
+    const scheduleRefresh = (seconds) => {
+      window.clearTimeout(refreshTimer);
+      const delay = Math.max(10, Number(seconds) || Number(board.dataset.boardRefresh) || 30);
+      refreshTimer = window.setTimeout(refresh, delay * 1000);
     };
-    window.setInterval(refresh, Math.max(5, Number(board.dataset.boardRefresh) || 30) * 1000);
+    const flashBoardUpdate = () => {
+      board.classList.remove('board-updated');
+      void board.offsetWidth;
+      board.classList.add('board-updated');
+      window.setTimeout(() => board.classList.remove('board-updated'), 1200);
+    };
+    const refresh = async () => {
+      if (refreshing) return;
+      if (document.hidden) { scheduleRefresh(60); return; }
+      refreshing = true;
+      let next = Number(board.dataset.boardRefresh) || 30;
+      try {
+        const response = await fetch(board.dataset.boardUrl, {
+          headers: {Accept: 'application/json'},
+          cache: 'no-store'
+        });
+        if (response.ok) {
+          const payload = await response.json();
+          next = Number(payload.refresh_after_seconds) || next;
+          const revision = payload.revision || JSON.stringify(payload.flights || []);
+          if (revision !== lastRevision) {
+            // No continuous mechanical redraw: palettes move only when data,
+            // time-derived status or ordering really changed.
+            updateRows(payload.flights || []);
+            if (lastRevision !== null) flashBoardUpdate();
+            lastRevision = revision;
+          }
+        }
+      } catch { /* Leave the last valid mechanical display in place. */ }
+      finally {
+        refreshing = false;
+        scheduleRefresh(next);
+      }
+    };
+    const onVisibility = () => {
+      if (!document.hidden) refresh();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('focus', refresh);
+    // Server-rendered rows are already current. First conditional check is
+    // deferred instead of starting an immediate polling loop.
+    scheduleRefresh(Number(board.dataset.boardRefresh) || 30);
   });
   bootSplitFlapBoards();
 })();
