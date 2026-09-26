@@ -87,7 +87,7 @@ window.prometheeI18n = @json($prometheeI18n);
         ],
         'navigation_pilot' => [
             ['route' => 'promethee.profile', 'label' => 'open_profile', 'active' => 'promethee.profile'],
-            ['route' => 'promethee.profile', 'label' => 'my_missions', 'active' => 'promethee.profile', 'fragment' => 'my-missions'],
+            ['route' => 'promethee.profile', 'text' => 'Mes missions', 'active' => 'promethee.profile', 'fragment' => 'my-missions'],
             ['route' => 'promethee.passport', 'label' => 'passport', 'active' => 'promethee.passport'],
             ['route' => 'promethee.assignments', 'label' => 'assignments', 'active' => 'promethee.assignments'],
             ['route' => 'promethee.bookings', 'label' => 'navigation_menu.bookings', 'active' => 'promethee.bookings'],
@@ -121,7 +121,7 @@ window.prometheeI18n = @json($prometheeI18n);
         <div class="nav-menu">
             @foreach($links as $link)
                 @if(\Illuminate\Support\Facades\Route::has($link['route']))
-                <a @class(['selected' => request()->routeIs(...explode('|', $link['active'])), 'nav-emphasis' => ($link['emphasis'] ?? false)]) href="{{ route($link['route']).(isset($link['fragment']) ? '#'.$link['fragment'] : '') }}">{{ __('promethee.'.$link['label']) }}</a>
+                <a @class(['selected' => request()->routeIs(...explode('|', $link['active'])), 'nav-emphasis' => ($link['emphasis'] ?? false)]) href="{{ route($link['route']).(isset($link['fragment']) ? '#'.$link['fragment'] : '') }}">{{ $link['text'] ?? __('promethee.'.$link['label']) }}</a>
                 @endif
             @endforeach
         </div>
