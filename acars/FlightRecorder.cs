@@ -139,7 +139,8 @@ public sealed class FlightRecorder
     }
 
     public void Resume(string server) { lock (Gate) {
-        if (Flight is null || Flight.Server != server) throw new InvalidOperationException("Le serveur ne correspond pas au vol enregistré.");
+        if (Flight is null || !SameServer(Flight.Server, server))
+            throw new InvalidOperationException("Ce vol de récupération appartient à un autre serveur Prométhée. Archivez l’ancien vol depuis le Recovery Center avant de démarrer une nouvelle opération.");
         tracking.Restore(
             FlightTrackingEngine.ParsePhase(Flight.Phase),
             Flight.Journal.Any(x => x.Name == "ON"));
@@ -150,6 +151,18 @@ public sealed class FlightRecorder
         previousSnapshot = null;
         Save();
     }}
+    private static bool SameServer(string left, string right)
+    {
+        if (!Uri.TryCreate(left?.TrimEnd('/'), UriKind.Absolute, out var a)
+            || !Uri.TryCreate(right?.TrimEnd('/'), UriKind.Absolute, out var b))
+            return string.Equals(left?.TrimEnd('/'), right?.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
+
+        return string.Equals(a.Scheme, b.Scheme, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(a.Host, b.Host, StringComparison.OrdinalIgnoreCase)
+            && a.Port == b.Port
+            && string.Equals(a.AbsolutePath.TrimEnd('/'), b.AbsolutePath.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
+    }
+
     public void Pause() { lock (Gate) {
         if (Flight is not null) Flight = Flight with { Recording = false };
         previous = null;
