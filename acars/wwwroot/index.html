@@ -106,9 +106,7 @@
           <button type="button" data-plan-mode="file">Plan local</button>
         </div>
         <div class="source-panel active" data-plan-panel="account">
-          <label>Alias Navigraph / SimBrief<input id="simbriefUsername" autocomplete="off" placeholder="Votre alias Navigraph"></label>
-          <label>Pilot ID <input id="simbriefPilotId" inputmode="numeric" maxlength="7" placeholder="Alternative à l’alias"></label>
-          <p class="hint">Ajoutez votre alias une seule fois. Hermès envoie ensuite à SimBrief le vol, l’appareil et vos ajustements de dispatch ; aucun mot de passe Navigraph n’est demandé ou stocké.</p>
+          <p class="hint">Le compte Navigraph / SimBrief utilisé par Hermès se configure désormais dans Paramètres. Aucun mot de passe Navigraph n’est demandé ou stocké.</p>
           <div class="tools"><button id="simbriefAccountOpenBtn" type="button" class="primary">Envoyer le vol vers SimBrief</button><button id="simbriefAccountEditBtn" type="button" hidden>Modifier dans SimBrief</button><button id="simbriefAccountImportBtn" type="button">Importer l’OFP généré</button></div>
         </div>
         <div class="source-panel" data-plan-panel="api" hidden>
@@ -121,6 +119,18 @@
         <span id="simbriefState">Sélectionnez un vol et un appareil.</span>
       </section>
       <pre id="planBox" hidden>Aucun plan chargé.</pre>
+      <section id="networkPrefilePanel" class="flightplan-source" hidden>
+        <div class="draft-heading">
+          <div><span class="kicker">RÉSEAUX ATC</span><h3>Pré-déposer le plan de vol</h3></div>
+          <p>Hermès utilise le plan ICAO généré par SimBrief. vPilot et Altitude récupéreront ensuite le plan depuis leur réseau respectif.</p>
+        </div>
+        <div class="tools">
+          <button id="vatsimPrefileBtn" type="button">Pré-déposer sur VATSIM</button>
+          <button id="ivaoPrefileBtn" type="button">Pré-déposer sur IVAO</button>
+        </div>
+        <pre id="icaoFlightPlanPreview" class="network-fpl-preview" hidden></pre>
+        <p id="networkPrefileMessage" class="message" hidden role="status"></p>
+      </section>
       <form id="prefileForm" class="grid flight-draft" hidden>
         <div class="draft-heading">
           <div><span class="kicker">BROUILLON OPÉRATIONNEL</span><h3>Personnaliser le vol</h3></div>
@@ -235,6 +245,11 @@
         <label><span>Forcer le simulateur (diagnostic)</span><select name="forcedSimulator"><option value="">Aucun — automatique</option><option value="msfs">MSFS 2020 / 2024 — SimConnect</option><option value="fs2004">FS2004 — FSUIPC3</option><option value="fsx">FSX / Steam — FSUIPC4</option><option value="p3d">Prepar3D — FSUIPC4/6</option><option value="xplane">X-Plane 11 / 12 — UDP expérimental</option></select></label>
         <label><span>Heure du journal</span><select name="timeFormat"><option value="local">Locale</option><option value="utc">UTC</option></select></label>
         <label><span>Notifications locales</span><select name="notifications"><option value="true">Activées</option><option value="false">Désactivées</option></select></label>
+        <label><span>Alias Navigraph / SimBrief</span><input id="simbriefUsername" name="simbriefUsername" autocomplete="off" placeholder="Alias Navigraph"></label>
+        <label><span>Pilot ID SimBrief</span><input id="simbriefPilotId" name="simbriefPilotId" inputmode="numeric" maxlength="7" placeholder="ID numérique"></label>
+        <label><span>VATSIM CID</span><input id="vatsimCid" name="vatsimCid" inputmode="numeric" maxlength="10" placeholder="Votre CID VATSIM"></label>
+        <label><span>IVAO VID</span><input id="ivaoVid" name="ivaoVid" inputmode="numeric" maxlength="12" placeholder="Votre VID IVAO"></label>
+        <label><span>Réseau préféré</span><select name="preferredNetwork"><option value="">Aucun</option><option value="vatsim">VATSIM</option><option value="ivao">IVAO</option></select></label>
         <button class="primary">Enregistrer les réglages</button>
       </form>
       <div class="settings-sections">
@@ -258,6 +273,6 @@ window.addEventListener('error', event => {
 <script src="/minitel/renderer.js"></script>
 <script src="/minitel/shell.js"></script>
 <script src="/hermes-minitel-core.js"></script>
-<script src="/app.js?rev=7a845981-authfix"></script>
+<script src="/app.js?rev=20260926-network-audit"></script>
 <script src="/hermes-minitel.js"></script>
 </body></html>
