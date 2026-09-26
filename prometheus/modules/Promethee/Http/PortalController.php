@@ -653,14 +653,43 @@ class PortalController extends Controller
             })
             ->values();
 
+        $formatRows = static function ($rows, string $kind) {
+            return $rows->map(function ($row) use ($kind) {
+                $row->display_value = match ($kind) {
+                    'flights' => number_format((int) $row->value, 0, ',', ' '),
+                    'block' => floor(((int) $row->value) / 60).'h '.str_pad(((int) $row->value) % 60, 2, '0', STR_PAD_LEFT).'m',
+                    'landing' => number_format((int) round($row->value), 0, ',', ' ').' ft/min',
+                    'distance' => number_format((int) round($row->value), 0, ',', ' ').' nmi',
+                    'score' => number_format((int) round($row->value), 0, ',', ' '),
+                    default => (string) $row->value,
+                };
+                return $row;
+            });
+        };
+
+        $topPilotsByFlights = $rank('flights');
+        $topPilotsByBlockTime = $rank('block_minutes');
+        $topPilotsBySoftLanding = $rank('soft_landing');
+        $topPilotsByDistance = $rank('distance_nmi');
+        $topPilotsByScore = $rank('score');
+        $topPilotsByHardLanding = $rank('hard_landing', false);
+
         return [
             'monthLabel' => now('Europe/Paris')->locale('fr')->isoFormat('MMMM'),
-            'topPilotsByFlights' => $rank('flights'),
-            'topPilotsByBlockTime' => $rank('block_minutes'),
-            'topPilotsBySoftLanding' => $rank('soft_landing'),
-            'topPilotsByDistance' => $rank('distance_nmi'),
-            'topPilotsByScore' => $rank('score'),
-            'topPilotsByHardLanding' => $rank('hard_landing', false),
+            'topPilotsByFlights' => $topPilotsByFlights,
+            'topPilotsByBlockTime' => $topPilotsByBlockTime,
+            'topPilotsBySoftLanding' => $topPilotsBySoftLanding,
+            'topPilotsByDistance' => $topPilotsByDistance,
+            'topPilotsByScore' => $topPilotsByScore,
+            'topPilotsByHardLanding' => $topPilotsByHardLanding,
+            'leaderboards' => [
+                ['title' => 'Vols', 'rows' => $formatRows($topPilotsByFlights, 'flights')],
+                ['title' => 'Temps de vol (block)', 'rows' => $formatRows($topPilotsByBlockTime, 'block')],
+                ['title' => 'Touché le plus doux', 'rows' => $formatRows($topPilotsBySoftLanding, 'landing')],
+                ['title' => 'Distance', 'rows' => $formatRows($topPilotsByDistance, 'distance')],
+                ['title' => 'Score moyen', 'rows' => $formatRows($topPilotsByScore, 'score')],
+                ['title' => 'Touché le plus dur', 'rows' => $formatRows($topPilotsByHardLanding, 'landing')],
+            ],
         ];
     }
 
