@@ -895,27 +895,28 @@ $('#vatsimPrefileBtn').onclick = async () => {
   }
 };
 
-$('#ivaoPrefileBtn').onclick = () => {
+$('#ivaoPrefileBtn').onclick = async () => {
   const prefile = flightPlan?.network_prefiles?.ivao;
-  if (!prefile?.url || !prefile?.fields) return showMessage('#networkPrefileMessage', 'Importez d’abord un OFP SimBrief.', true);
-  const popup = window.open('about:blank', 'HermesIvaoPrefile', 'width=980,height=760');
-  if (!popup) return showMessage('#networkPrefileMessage', 'Autorisez les fenêtres contextuelles pour ouvrir IVAO.', true);
-  const form = document.createElement('form');
-  form.method = 'POST';
-  form.action = prefile.url;
-  form.target = 'HermesIvaoPrefile';
-  Object.entries(prefile.fields).forEach(([name, value]) => {
-    if (value === null || value === undefined) return;
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = name;
-    input.value = String(value);
-    form.append(input);
-  });
-  document.body.append(form);
-  form.submit();
-  form.remove();
-  showMessage('#networkPrefileMessage', 'Plan envoyé au système de pré-dépôt IVAO. Vérifiez puis validez ; Altitude récupérera le plan depuis IVAO.');
+  const icaoPlan = flightPlan?.network_prefiles?.icao_flightplan || '';
+  if (!prefile?.url) return showMessage('#networkPrefileMessage', 'Importez d’abord un OFP SimBrief.', true);
+  try {
+    let copied = false;
+    if (icaoPlan && navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(icaoPlan);
+        copied = true;
+      } catch {}
+    }
+    await call('/api/open-external', { url: prefile.url });
+    showMessage(
+      '#networkPrefileMessage',
+      copied
+        ? 'IVAO Flight Plan System ouvert. Le plan ICAO a été copié dans le presse-papiers : collez-le dans le formulaire puis validez.'
+        : 'IVAO Flight Plan System ouvert. Reprenez le plan ICAO affiché ci-dessus puis validez-le sur IVAO.'
+    );
+  } catch (error) {
+    showMessage('#networkPrefileMessage', error.message, true);
+  }
 };
 
 $('#simbriefAccountOpenBtn').onclick = async () => {
