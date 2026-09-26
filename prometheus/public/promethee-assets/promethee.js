@@ -274,11 +274,13 @@
         if (response.ok) {
           const payload = await response.json();
           next = Number(payload.refresh_after_seconds) || next;
-          const revision = payload.revision || JSON.stringify(payload.flights || []);
+          const kind = board.dataset.boardKind === 'arrivals' ? 'arrivals' : 'departures';
+          const flights = Array.isArray(payload[kind]) ? payload[kind] : (payload.flights || []);
+          const revision = (payload.revision || '') + ':' + kind + ':' + JSON.stringify(flights);
           if (revision !== lastRevision) {
             // No continuous mechanical redraw: palettes move only when data,
             // time-derived status or ordering really changed.
-            updateRows(payload.flights || []);
+            updateRows(flights);
             if (lastRevision !== null) flashBoardUpdate();
             lastRevision = revision;
           }
