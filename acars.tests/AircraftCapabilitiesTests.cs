@@ -77,6 +77,27 @@ public sealed class AircraftCapabilitiesTests
         Assert.Equal(CapabilityAvailability.Unknown, report.Get(AircraftDataCapability.Gear));
     }
 
+
+    [Fact]
+    public void Fenix_a319_title_selects_a319_variant_adapter()
+    {
+        var monitor = new AircraftCapabilityMonitor();
+        var descriptor = XPlaneLike with {
+            Kind = SimulatorKind.MicrosoftFlightSimulator,
+            DisplayName = "MSFS test",
+            ConnectorId = "simconnect-test",
+            Capabilities = XPlaneLike.Capabilities | SimulatorCapabilities.Engines | SimulatorCapabilities.Lights
+        };
+
+        var report = monitor.Observe(descriptor, Snapshot(
+            title: "Fenix Simulations A319 CFM",
+            bank: 2,
+            gear: true));
+
+        Assert.Equal("fenix-a319", report.AdapterId);
+        Assert.Equal("Fenix A319", report.AdapterName);
+    }
+
     [Fact]
     public void Adapter_normalization_is_in_the_data_path()
     {
