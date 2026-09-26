@@ -1,0 +1,60 @@
+name: One-shot release Hermès 1.0.2
+
+on:
+  push:
+    branches:
+      - 'release/hermes-1.0.2'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout release source
+        uses: actions/checkout@v4
+        with:
+          ref: '39472057d6834830b9fdebf0db7888c4d4a193e9'
+
+      - name: Install .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Validate web client
+        shell: pwsh
+        run: node --check acars/wwwroot/app.js
+
+      - name: Restore and build
+        shell: pwsh
+        run: |
+          dotnet restore acars/Promethee.Acars.csproj
+          dotnet build acars/Promethee.Acars.csproj -f net8.0-windows -c Release --no-restore
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --yes --no-progress
+
+      - name: Build installer
+        shell: pwsh
+        run: ./acars/build-installer.ps1 -Version '1.0.2'
+
+      - name: Create tag and release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete hermes-v1.0.2 --repo "$env:GITHUB_REPOSITORY" --yes --cleanup-tag 2>$null
+          git tag hermes-v1.0.2 39472057d6834830b9fdebf0db7888c4d4a193e9
+          git push origin refs/tags/hermes-v1.0.2
+          gh release create hermes-v1.0.2 `
+            "dist/Hermes-ACARS-Setup-1.0.2.exe" `
+            "dist/Hermes-ACARS-Setup-1.0.2.exe.sha256" `
+            "dist/Promethee-ACARS-win-x64-1.0.2.zip" `
+            "dist/Promethee-ACARS-win-x64-1.0.2.zip.sha256" `
+            --repo "$env:GITHUB_REPOSITORY" `
+            --title "Hermès 1.0.2" `
+            --verify-tag `
+            --generate-notes
