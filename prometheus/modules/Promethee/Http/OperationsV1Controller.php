@@ -517,14 +517,39 @@ class OperationsV1Controller extends Controller
         $flight = $bid->flight;
         $ofp = $this->operationOfp($bid);
 
+        // phpVMS may contain several timetable rows for the same city pair
+        // with different company routes. Expose them as non-destructive
+        // suggestions: Hermès can still keep AUTO (empty route) and let
+        // SimBrief calculate its own route.
+        $routeOptions = Flight::query()
+            ->where('active', true)
+            ->where('dpt_airport_id', $flight->dpt_airport_id)
+            ->where('arr_airport_id', $flight->arr_airport_id)
+            ->whereNotNull('route')
+            ->where('route', '!=', '')
+            ->orderBy('flight_number')
+            ->get(['id','route','route_code','flight_number'])
+            ->unique(fn ($candidate) => strtoupper(trim((string) $candidate->route)))
+            ->take(12)
+            ->map(fn ($candidate) => [
+                'route' => trim((string) $candidate->route),
+                'route_code' => $candidate->route_code,
+                'flight_number' => $candidate->flight_number,
+                'source' => (string) $candidate->id === (string) $flight->id ? 'scheduled_flight' : 'company_schedule',
+            ])
+            ->values();
+
         return response()->json(['data' => [
             'operation' => $this->operationDto($bid),
             'route' => $flight->route,
+            'route_options' => $routeOptions,
+            'route_auto_available' => true,
             'level' => $flight->level,
             'alternate' => $flight->alt_airport_id,
             'ofp' => $this->ofpDto($ofp),
             'provenance' => [
                 'schedule' => 'phpvms',
+                'route_options' => 'phpvms_company_schedule',
                 'dispatch' => 'promethee',
                 'ofp' => $ofp ? 'simbrief' : null,
             ],
