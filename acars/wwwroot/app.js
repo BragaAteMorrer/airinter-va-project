@@ -199,16 +199,42 @@ function snapshotValue(snapshot, camel, pascal = camel) {
 function buildWorkflowState() {
   const server = serverDispatch?.server_checks;
   return server ? {
-    operation: Boolean(server.operation),
-    aircraft: Boolean(server.aircraft),
-    ofp: Boolean(server.ofp),
-    pirep: Boolean(server.pirep)
+    operation: Boolean(server.operation || selectedOperation),
+    aircraft: Boolean(server.aircraft || selectedAircraft?.id),
+    // The desktop already owns the imported briefing before Prométhée's next
+    // dispatch refresh. Do not visually regress to step 03 during that window.
+    ofp: Boolean(server.ofp || flightPlan || selectedOperation?.simbrief?.available),
+    pirep: Boolean(server.pirep || pirepId)
   } : {
     operation: Boolean(selectedOperation),
     aircraft: Boolean(selectedAircraft?.id),
     ofp: Boolean(flightPlan || selectedOperation?.simbrief?.available),
     pirep: Boolean(pirepId)
   };
+}
+
+function updateAircraftSelectionStatus() {
+  const node = $('#aircraftSelectionStatus');
+  if (!node) return;
+  const typeSelected = Boolean($('#aircraftTypeId')?.value);
+  const registration = selectedAircraft?.registration || selectedAircraft?.name || '';
+  const label = selectedAircraft?.type_label || selectedAircraft?.subfleet || selectedAircraft?.icao || '';
+
+  node.classList.toggle('ready', Boolean(selectedAircraft?.id));
+  node.classList.toggle('pending', !selectedAircraft?.id);
+  const strong = node.querySelector('strong');
+  const detail = node.querySelector('span');
+
+  if (selectedAircraft?.id) {
+    setText(strong, 'APPAREIL PRÊT');
+    setText(detail, [registration, label].filter(Boolean).join(' · ') + ' — SimBrief peut maintenant être préparé.');
+  } else if (typeSelected) {
+    setText(strong, 'IMMATRICULATION REQUISE');
+    setText(detail, 'Type sélectionné. Choisissez maintenant l’appareil précis / l’immatriculation.');
+  } else {
+    setText(strong, 'APPAREIL REQUIS');
+    setText(detail, 'Choisissez un type d’appareil puis une immatriculation avant de préparer SimBrief.');
+  }
 }
 
 function updateNextAction(state, ready) {
@@ -339,8 +365,13 @@ function updateWorkflow() {
   const capabilityReport = lastStatus?.aircraftCapabilities || lastStatus?.AircraftCapabilities || {};
   const detectedAdapter = capabilityReport.adapterId || capabilityReport.AdapterId || null;
   const variantCompatible = acceptedAdapters.length === 0 || !detectedAdapter || acceptedAdapters.includes(detectedAdapter);
-  const ready = (serverDispatch ? serverDispatch.status === 'READY' : (state.operation && state.aircraft && state.ofp && state.pirep))
-    && readiness.simulator && preflightSafe && variantCompatible;
+  const dispatchReady = serverDispatch
+    ? (serverDispatch.can_start === true || (
+        serverDispatch.can_start !== false
+        && state.operation && state.aircraft && state.ofp && state.pirep
+      ))
+    : (state.operation && state.aircraft && state.ofp && state.pirep);
+  const ready = dispatchReady && readiness.simulator && preflightSafe && variantCompatible;
   const node = $('#readyState');
   if (node) {
     node.textContent = ready ? 'READY FOR DEPARTURE' : 'NOT READY';
@@ -348,6 +379,7 @@ function updateWorkflow() {
   }
   const startButton = $('#startBtn');
   if (startButton) startButton.disabled = !ready;
+  updateAircraftSelectionStatus();
   updateNextAction(state, ready);
   updatePreflight(lastStatus, state, ready);
 }
@@ -761,7 +793,7 @@ function syncAircraftSelectors(aircraft = selectedAircraft) {
   }
 }
 
-function renderOperationLoad(aircraft) {
+function renderOperationLoad(aircraft, briefing = flightPlan) {
   const node = $('#operationLoad');
   if (!node) return;
   if (!aircraft?.id) {
@@ -772,10 +804,15 @@ function renderOperationLoad(aircraft) {
   const label = aircraft.type_label || aircraft.subfleet || aircraft.name || 'Appareil';
   const band = String(aircraft.band || aircraft.pricing_band || 'rouge').toUpperCase();
   const cabin = aircraft.cabin_profile?.label || aircraft.cabinProfile?.label || '';
+  const simbriefPax = briefing?.passengers ?? briefing?.pax ?? null;
+  const plannedPax = aircraft.passengers ?? null;
+  const paxText = Number.isFinite(Number(simbriefPax))
+    ? Number(simbriefPax) + ' pax OFP SimBrief'
+    : ((plannedPax ?? '—') + ' pax prévus');
   node.textContent = label
     + (cabin ? ' · ' + cabin : '')
-    + ' · ' + (aircraft.passengers ?? '—') + ' / ' + (aircraft.capacity ?? '—')
-    + ' passagers · ' + (aircraft.load_factor_percent ?? '—') + ' % · vol ' + band;
+    + ' · ' + paxText + ' / ' + (aircraft.capacity ?? '—') + ' sièges'
+    + ' · ' + (aircraft.load_factor_percent ?? '—') + ' % prévision commerciale · vol ' + band;
   node.hidden = false;
 }
 
@@ -795,6 +832,7 @@ async function selectOperation(operation) {
   selectedAircraft = operation.aircraft?.id ? operation.aircraft : null;
   selectedVariant = operation.simbrief?.variant || null;
   renderOperationLoad(selectedAircraft);
+  updateAircraftSelectionStatus();
   lastDatalinkSnapshot = null;
   setTimeout(refreshDatalink, 0);
   setTimeout(refreshNetwork, 0);
@@ -1053,15 +1091,21 @@ function renderNetworkPrefiles(prefiles) {
     : '');
 }
 
-function applyBriefing(briefing, sourceLabel) {
+async function applyBriefing(briefing, sourceLabel) {
   const form = $('#prefileForm');
   const flightLevel = normalizeFlightLevel(briefing.initial_altitude);
+  const importedPax = briefing.passengers
+    ?? briefing.pax
+    ?? briefing.weights?.passengers
+    ?? briefing.general?.passengers
+    ?? undefined;
   flightPlan = {
     source: briefing.source || sourceLabel,
     simbrief_id: briefing.id,
     route: briefing.route,
     level: flightLevel,
     block_fuel: briefing.block_fuel || undefined,
+    passengers: Number.isFinite(Number(importedPax)) ? Number(importedPax) : undefined,
     network_prefiles: briefing.network_prefiles || null
   };
   if (briefing.block_fuel) form.elements.block_fuel.value = Math.round(briefing.block_fuel);
@@ -1070,8 +1114,15 @@ function applyBriefing(briefing, sourceLabel) {
   if (briefing.alternate) form.elements.alt_airport_id.value = briefing.alternate;
   $('#planBox').textContent = JSON.stringify(briefing, null, 2);
   renderNetworkPrefiles(flightPlan.network_prefiles);
-  showMessage('#simbriefState', 'OFP importé depuis ' + sourceLabel + ' et prêt pour le pré-PIREP.');
+  renderOperationLoad(selectedAircraft, flightPlan);
+
+  // The imported OFP is authoritative for the client immediately. Refresh the
+  // dispatch so step 03 cannot remain stuck on a stale server snapshot.
+  try { await refreshDispatch(); } catch {}
   updateWorkflow();
+
+  showMessage('#simbriefState', 'OFP importé depuis ' + sourceLabel + '. Pré-dépôt du PIREP en cours…');
+  if (!pirepId) await prefilePreparedOperation({ navigate: true, automatic: true });
 }
 
 function updateSimBriefAvailability(simbrief = selectedOperation?.simbrief || {}) {
@@ -1205,7 +1256,7 @@ $('#simbriefAccountImportBtn').onclick = async () => {
     linkedSimBrief = { ...(linkedSimBrief || {}), static_id: briefing.static_id, edit_url: briefing.edit_url };
     const editButton = $('#simbriefAccountEditBtn');
     if (editButton) editButton.hidden = !briefing.edit_url;
-    applyBriefing(briefing, 'le vol SimBrief lié à cette opération');
+    await applyBriefing(briefing, 'le vol SimBrief lié à cette opération');
   } catch (error) {
     showMessage('#simbriefState', error.message, true);
   }
@@ -1220,6 +1271,7 @@ $('#aircraftTypeId').onchange = event => {
   renderOperationLoad(null);
   populateAircraftInstances(typeKey, null);
   updateWorkflow();
+  updateAircraftSelectionStatus();
   showMessage('#pirepMessage', typeKey
     ? 'Type sélectionné. Choisissez maintenant l’immatriculation précise.'
     : '');
@@ -1239,6 +1291,7 @@ $('#aircraftId').onchange = async event => {
     selectedVariant = null;
     renderAircraftVariants({ variants: [] });
     renderOperationLoad(null);
+    updateAircraftSelectionStatus();
     updateWorkflow();
     return;
   }
@@ -1268,6 +1321,7 @@ $('#aircraftId').onchange = async event => {
     const form = $('#prefileForm');
     if (form?.elements?.aircraft_id) form.elements.aircraft_id.value = selectedAircraft.id;
     renderOperationLoad(selectedAircraft);
+    updateAircraftSelectionStatus();
 
     if (typeSelect) typeSelect.value = selectedAircraft.type_key || nextAircraft.type_key || '';
     populateAircraftInstances(typeSelect?.value || selectedAircraft.type_key || '', selectedAircraft.id);
@@ -1409,7 +1463,7 @@ $('#simbriefBtn').onclick = async () => {
             aircraft_id: aircraftId,
             state: session.state
           }));
-          applyBriefing(briefing, 'l’API SimBrief');
+          await applyBriefing(briefing, 'l’API SimBrief');
           return;
         } catch (error) {
           if (attempt === 5) return showMessage('#simbriefState', error.message, true);
@@ -1439,10 +1493,13 @@ $('#clearPlanBtn').onclick = () => {
   showMessage('#simbriefState', 'Sélectionnez un vol et un appareil.');
 };
 
-$('#prefileForm').onsubmit = async event => {
-  event.preventDefault();
-  const body = Object.fromEntries([...new FormData(event.currentTarget)].filter(([, value]) => value !== ''));
-  if (!body.aircraft_id) return showMessage('#pirepMessage', 'Sélectionnez un appareil.', true);
+async function prefilePreparedOperation({ navigate = true, automatic = false } = {}) {
+  const form = $('#prefileForm');
+  const body = Object.fromEntries([...new FormData(form)].filter(([, value]) => value !== ''));
+  if (!body.aircraft_id) {
+    showMessage('#pirepMessage', 'Sélectionnez un appareil.', true);
+    return false;
+  }
   if (body.block_fuel) body.block_fuel = Number(body.block_fuel);
   if (body.level) {
     const normalizedLevel = normalizeFlightLevel(body.level);
@@ -1451,25 +1508,46 @@ $('#prefileForm').onsubmit = async event => {
   }
   if (body.alt_airport_id) body.alt_airport_id = body.alt_airport_id.toUpperCase();
   Object.assign(body, flightPlan || {}, { source_name: 'Hermes ACARS' });
+
   try {
     const operationRef = selectedOperation?.operation_id || selectedOperation?.id;
     const operationPirepBody = operationRef ? {
       route: body.route || flightPlan?.route || undefined,
       level: normalizeFlightLevel(body.level || flightPlan?.level),
       block_fuel: body.block_fuel || flightPlan?.block_fuel || undefined,
-      simbrief_source: flightPlan?.source === 'simbrief_account' ? 'simbrief_account' : (String(flightPlan?.source || '').toLowerCase().includes('simbrief') ? 'simbrief' : undefined)
+      simbrief_source: flightPlan?.source === 'simbrief_account'
+        ? 'simbrief_account'
+        : (String(flightPlan?.source || '').toLowerCase().includes('simbrief') ? 'simbrief' : undefined)
     } : body;
     if (!operationRef) throw new Error('Impossible de pré-déposer le PIREP sans operation_id.');
+
     const result = unwrap(await call(`/api/v1/operations/${encodeURIComponent(operationRef)}/pirep`, operationPirepBody));
     pirepId = result.id || result.pirep_id || result.pirep?.id;
     if (!pirepId) throw new Error('Prométhée n’a pas retourné l’identifiant du PIREP.');
-    showMessage('#pirepMessage', `PIREP ${pirepId} prêt. Vérification finale du Dispatch Prométhée…`);
+
     await refreshDispatch();
     updateWorkflow();
-    document.querySelector('[data-tab="record"]').click();
+    showMessage(
+      '#pirepMessage',
+      automatic
+        ? `OFP importé · PIREP ${pirepId} pré-déposé automatiquement. Hermès est prêt pour les contrôles départ.`
+        : `PIREP ${pirepId} prêt. Vérification finale du Dispatch Prométhée terminée.`
+    );
+    showMessage('#simbriefState', automatic
+      ? 'OFP importé et PIREP pré-déposé automatiquement.'
+      : 'OFP prêt.');
+    if (navigate) document.querySelector('[data-tab="record"]')?.click();
+    return true;
   } catch (error) {
     showMessage('#pirepMessage', error.message, true);
+    if (automatic) showMessage('#simbriefState', 'OFP importé. Pré-dépôt automatique impossible : ' + error.message, true);
+    return false;
   }
+}
+
+$('#prefileForm').onsubmit = async event => {
+  event.preventDefault();
+  await prefilePreparedOperation({ navigate: true, automatic: false });
 };
 
 async function action(path, success) {
