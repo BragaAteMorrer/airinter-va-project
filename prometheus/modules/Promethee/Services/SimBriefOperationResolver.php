@@ -95,12 +95,22 @@ class SimBriefOperationResolver
             ? trim((string) ($overrides['route'] ?? ''))
             : trim((string) ($flight->route ?? ''));
 
-        $rawLevel = array_key_exists('level', $overrides) && $overrides['level'] !== null && $overrides['level'] !== ''
-            ? $overrides['level']
-            : $flight->level;
+        $hasLevelOverride = array_key_exists('level', $overrides)
+            && $overrides['level'] !== null
+            && $overrides['level'] !== '';
+        $rawLevel = $hasLevelOverride ? $overrides['level'] : $flight->level;
         $level = $this->normalizeFlightLevel($rawLevel);
-        abort_if($rawLevel !== null && trim((string) $rawLevel) !== '' && $level === null, 422,
-            'Le niveau de vol résolu doit être compris entre FL010 et FL600 (ex. 350, FL350 ou 35000 ft).');
+
+        // A malformed schedule level must never make the whole SimBrief
+        // workflow unusable. If phpVMS contains a legacy/odd value, omit the
+        // "fl" parameter and let SimBrief choose the optimum level.
+        if ($rawLevel !== null && trim((string) $rawLevel) !== '' && $level === null) {
+            report(new \UnexpectedValueException(
+                'Promethee SimBrief ignored invalid flight level "'.(string) $rawLevel
+                .'" for flight '.(string) $flight->id
+            ));
+            $level = null;
+        }
 
         $profile = $this->demand->profile($aircraft, $flight, $operationId);
         $effectiveFares = $this->effectiveFares($flight, $aircraft, (int) $profile['capacity']);
