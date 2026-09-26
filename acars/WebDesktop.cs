@@ -42,7 +42,7 @@ public sealed class PrometheeWindow : Window
         var assets = Path.Combine(AppContext.BaseDirectory,"wwwroot");
         if (!System.IO.File.Exists(Path.Combine(assets, "index.html"))) throw new InvalidOperationException("Ressources ACARS introuvables dans la publication.");
         core.SetVirtualHostNameToFolderMapping("promethee.local", assets, CoreWebView2HostResourceAccessKind.DenyCors);
-        core.Navigate("https://promethee.local/index.html?rev=0fbe2775-cachefix");
+        core.Navigate("https://promethee.local/index.html?rev=20260926-network-audit");
     }
     private async Task CheckForUpdatesAsync()
     {
@@ -243,7 +243,10 @@ public sealed class PrometheeWindow : Window
     {
         var raw = body?.GetProperty("url").GetString() ?? throw new InvalidOperationException("URL externe manquante.");
         if (!Uri.TryCreate(raw, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps
-            || (uri.Host != "www.simbrief.com" && uri.Host != "dispatch.simbrief.com"))
+            || (uri.Host != "www.simbrief.com"
+                && uri.Host != "dispatch.simbrief.com"
+                && uri.Host != "my.vatsim.net"
+                && uri.Host != "fpl.ivao.aero"))
             throw new InvalidOperationException("Hermès refuse d’ouvrir cette URL externe.");
         Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
         return new { ok = true };
