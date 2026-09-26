@@ -41,19 +41,19 @@ return [
     'variants' => [
         'A319' => [
             ['id' => 'generic-a319', 'label' => 'Airbus A319 (générique)', 'vendor' => 'Generic', 'simbrief_type' => 'A319', 'simulators' => ['msfs2020','msfs2024','fsx','p3d','xplane'], 'adapter_ids' => [], 'default' => true],
-            ['id' => 'fenix-a319-cfm', 'label' => 'Fenix A319 CFM', 'vendor' => 'Fenix Simulations', 'simbrief_type' => '80_1722530034323', 'simulators' => ['msfs2020','msfs2024'], 'adapter_ids' => ['fenix-a319']],
+            ['id' => 'fenix-a319', 'label' => 'Fenix A319 CFM', 'vendor' => 'Fenix Simulations', 'simbrief_type' => '80_1722530034323', 'simulators' => ['msfs2020','msfs2024'], 'adapter_ids' => ['fenix-a319']],
             ['id' => 'fenix-a319-iae', 'label' => 'Fenix A319 IAE', 'vendor' => 'Fenix Simulations', 'simbrief_type' => '80_1722530055241', 'simulators' => ['msfs2020','msfs2024'], 'adapter_ids' => ['fenix-a319']],
         ],
         'A320' => [
             ['id' => 'generic-a320', 'label' => 'Airbus A320 (générique)', 'vendor' => 'Generic', 'simbrief_type' => 'A320', 'simulators' => ['msfs2020','msfs2024','fsx','p3d','xplane'], 'adapter_ids' => [], 'default' => true],
-            ['id' => 'fenix-a320-cfm', 'label' => 'Fenix A320 CFM', 'vendor' => 'Fenix Simulations', 'simbrief_type' => '80_1709125568637', 'simulators' => ['msfs2020','msfs2024'], 'adapter_ids' => ['fenix-a320']],
+            ['id' => 'fenix-a320', 'label' => 'Fenix A320 CFM', 'vendor' => 'Fenix Simulations', 'simbrief_type' => '80_1709125568637', 'simulators' => ['msfs2020','msfs2024'], 'adapter_ids' => ['fenix-a320']],
             ['id' => 'fenix-a320-iae', 'label' => 'Fenix A320 IAE', 'vendor' => 'Fenix Simulations', 'simbrief_type' => '80_1707996202186', 'simulators' => ['msfs2020','msfs2024'], 'adapter_ids' => ['fenix-a320']],
             ['id' => 'fbw-a32nx', 'label' => 'FlyByWire A32NX', 'vendor' => 'FlyByWire', 'simbrief_type' => 'A20N', 'simulators' => ['msfs2020','msfs2024'], 'adapter_ids' => ['fbw-a32nx']],
             ['id' => 'inibuilds-a320neo', 'label' => 'iniBuilds A320neo', 'vendor' => 'iniBuilds', 'simbrief_type' => 'A20N', 'simulators' => ['msfs2024'], 'adapter_ids' => ['inibuilds-a320']],
         ],
         'A321' => [
             ['id' => 'generic-a321', 'label' => 'Airbus A321 (générique)', 'vendor' => 'Generic', 'simbrief_type' => 'A321', 'simulators' => ['msfs2020','msfs2024','fsx','p3d','xplane'], 'adapter_ids' => [], 'default' => true],
-            ['id' => 'fenix-a321-cfm', 'label' => 'Fenix A321 CFM', 'vendor' => 'Fenix Simulations', 'simbrief_type' => '80_1722529640343', 'simulators' => ['msfs2020','msfs2024'], 'adapter_ids' => ['fenix-a321']],
+            ['id' => 'fenix-a321', 'label' => 'Fenix A321 CFM', 'vendor' => 'Fenix Simulations', 'simbrief_type' => '80_1722529640343', 'simulators' => ['msfs2020','msfs2024'], 'adapter_ids' => ['fenix-a321']],
             ['id' => 'fenix-a321-iae', 'label' => 'Fenix A321 IAE', 'vendor' => 'Fenix Simulations', 'simbrief_type' => '80_1722529734976', 'simulators' => ['msfs2020','msfs2024'], 'adapter_ids' => ['fenix-a321']],
         ],
         'A310' => [
