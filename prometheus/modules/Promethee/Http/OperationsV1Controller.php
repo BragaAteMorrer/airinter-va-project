@@ -259,7 +259,7 @@ class OperationsV1Controller extends Controller
         $operationId = $this->operationIdentity->id($bid);
 
         $candidates = Aircraft::query()
-            ->with(['subfleet:id,name,type'])
+            ->with(['subfleet:id,name,type,airline_id'])
             ->withCount(['bid', 'simbriefs' => fn ($query) => $query->whereNull('pirep_id')])
             ->orderBy('icao')->orderBy('registration')->get();
 
@@ -273,6 +273,15 @@ class OperationsV1Controller extends Controller
             $pilotAllowed = in_array($plane->subfleet_id, $allowed, true);
             $checks[] = $this->check('pilot_qualification', $pilotAllowed, 'Qualification pilote');
             if (!$pilotAllowed) $reasons[] = $this->reason('RANK_NOT_ALLOWED', 'Votre qualification ne permet pas cette sous-flotte.');
+
+            $companyAllowed = (int) ($plane->subfleet?->airline_id ?? 0) === (int) $flight->airline_id;
+            $checks[] = $this->check('company_fleet', $companyAllowed, 'Flotte de la compagnie');
+            if (!$companyAllowed) {
+                $reasons[] = $this->reason(
+                    'WRONG_AIRLINE_FLEET',
+                    'Cet appareil appartient à une autre compagnie et ne peut pas être affecté à ce vol.'
+                );
+            }
 
             $lineAllowed = !$flightAllowed || in_array($plane->subfleet_id, $flightAllowed, true);
             $checks[] = $this->check('flight_subfleet', $lineAllowed, 'Compatible avec la ligne');
@@ -370,7 +379,7 @@ class OperationsV1Controller extends Controller
             'available' => $available,
             'unavailable' => $unavailable,
             'reason_codes' => [
-                'RANK_NOT_ALLOWED', 'FLIGHT_SUBFLEET_NOT_ALLOWED', 'WRONG_AIRPORT',
+                'RANK_NOT_ALLOWED', 'WRONG_AIRLINE_FLEET', 'FLIGHT_SUBFLEET_NOT_ALLOWED', 'WRONG_AIRPORT',
                 'NOT_PARKED', 'INACTIVE', 'ALREADY_BID', 'ACTIVE_OFP',
             ],
         ]]);
