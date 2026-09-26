@@ -584,96 +584,78 @@ class PortalController extends Controller
         $monthStart = now('Europe/Paris')->startOfMonth()->utc();
         $monthEnd = now('Europe/Paris')->addMonthNoOverflow()->startOfMonth()->utc();
 
-        $base = fn () => DB::table('pireps as p')
-            ->join('users as u', 'u.id', '=', 'p.user_id')
-            ->where('p.state', PirepState::ACCEPTED)
-            ->where('p.submitted_at', '>=', $monthStart)
-            ->where('p.submitted_at', '<', $monthEnd)
-            ->whereNotNull('p.user_id');
+        $reports = Pirep::query()
+            ->with('user:id,name,pilot_id')
+            ->where('state', PirepState::ACCEPTED)
+            ->where('submitted_at', '>=', $monthStart)
+            ->where('submitted_at', '<', $monthEnd)
+            ->whereNotNull('user_id')
+            ->get([
+                'id',
+                'user_id',
+                'flight_time',
+                'block_time',
+                'distance',
+                'landing_rate',
+                'score',
+                'submitted_at',
+            ]);
 
-        $groupPilot = function ($query) {
-            return $query
-                ->groupBy('p.user_id', 'u.name', 'u.pilot_id');
-        };
+        $pilots = $reports
+            ->groupBy('user_id')
+            ->map(function ($pireps, $userId) {
+                $user = $pireps->first()?->user;
+                $landingRates = $pireps->pluck('landing_rate')
+                    ->filter(fn ($value) => $value !== null && (float) $value < 0)
+                    ->map(fn ($value) => (float) $value);
+                $scores = $pireps->pluck('score')
+                    ->filter(fn ($value) => $value !== null)
+                    ->map(fn ($value) => (float) $value);
 
-        $flights = $groupPilot(
-            $base()->select([
-                'p.user_id as user_id',
-                'u.name as name',
-                'u.pilot_id as pilot_id',
-            ])->selectRaw('COUNT(*) as value')
-        )->orderByDesc('value')->limit(5)->get();
+                $distanceNmi = $pireps->sum(function (Pirep $pirep) {
+                    return $pirep->distance
+                        ? (float) $pirep->distance->toUnit('nmi')
+                        : 0.0;
+                });
 
-        $block = $groupPilot(
-            $base()->select([
-                'p.user_id as user_id',
-                'u.name as name',
-                'u.pilot_id as pilot_id',
-            ])->selectRaw('SUM(COALESCE(NULLIF(p.block_time, 0), p.flight_time, 0)) as value')
-        )->orderByDesc('value')->limit(5)->get();
+                return (object) [
+                    'user_id' => (int) $userId,
+                    'name' => $user?->name ?: 'Pilote',
+                    'pilot_id' => $user?->pilot_id,
+                    'flights' => $pireps->count(),
+                    'block_minutes' => (int) $pireps->sum(
+                        fn (Pirep $pirep) => (int) ($pirep->block_time ?: $pirep->flight_time ?: 0)
+                    ),
+                    'soft_landing' => $landingRates->isNotEmpty() ? $landingRates->max() : null,
+                    'hard_landing' => $landingRates->isNotEmpty() ? $landingRates->min() : null,
+                    'distance_nmi' => $distanceNmi,
+                    'score' => $scores->isNotEmpty() ? round($scores->avg()) : null,
+                ];
+            })
+            ->values();
 
-        $softest = $groupPilot(
-            $base()
-                ->whereNotNull('p.landing_rate')
-                ->where('p.landing_rate', '<', 0)
-                ->select([
-                    'p.user_id as user_id',
-                    'u.name as name',
-                    'u.pilot_id as pilot_id',
-                ])
-                ->selectRaw('MAX(p.landing_rate) as value')
-        )->orderByDesc('value')->limit(5)->get();
-
-        $distance = $groupPilot(
-            $base()
-                ->whereNotNull('p.distance')
-                ->select([
-                    'p.user_id as user_id',
-                    'u.name as name',
-                    'u.pilot_id as pilot_id',
-                ])
-                ->selectRaw('SUM(p.distance) as raw_value')
-        )->orderByDesc('raw_value')->limit(5)->get()
-            ->map(function ($row) {
-                $row->value = \App\Support\Units\Distance::make(
-                    (float) $row->raw_value,
-                    config('phpvms.internal_units.distance')
-                )->toUnit('nmi', 0);
-
-                return $row;
-            });
-
-        $score = $groupPilot(
-            $base()
-                ->whereNotNull('p.score')
-                ->select([
-                    'p.user_id as user_id',
-                    'u.name as name',
-                    'u.pilot_id as pilot_id',
-                ])
-                ->selectRaw('ROUND(AVG(p.score)) as value')
-        )->orderByDesc('value')->limit(5)->get();
-
-        $hardest = $groupPilot(
-            $base()
-                ->whereNotNull('p.landing_rate')
-                ->where('p.landing_rate', '<', 0)
-                ->select([
-                    'p.user_id as user_id',
-                    'u.name as name',
-                    'u.pilot_id as pilot_id',
-                ])
-                ->selectRaw('MIN(p.landing_rate) as value')
-        )->orderBy('value')->limit(5)->get();
+        $rank = fn (string $field, bool $descending = true) => $pilots
+            ->filter(fn ($pilot) => $pilot->{$field} !== null)
+            ->sortBy($field, SORT_REGULAR, $descending)
+            ->take(5)
+            ->map(function ($pilot) use ($field) {
+                return (object) [
+                    'user_id' => $pilot->user_id,
+                    'name' => $pilot->name,
+                    'pilot_id' => $pilot->pilot_id,
+                    'value' => $pilot->{$field},
+                ];
+            })
+            ->values();
 
         return [
             'monthLabel' => now('Europe/Paris')->locale('fr')->isoFormat('MMMM'),
-            'topPilotsByFlights' => $flights,
-            'topPilotsByBlockTime' => $block,
-            'topPilotsBySoftLanding' => $softest,
-            'topPilotsByDistance' => $distance,
-            'topPilotsByScore' => $score,
-            'topPilotsByHardLanding' => $hardest,
+            'topPilotsByFlights' => $rank('flights'),
+            'topPilotsByBlockTime' => $rank('block_minutes'),
+            'topPilotsBySoftLanding' => $rank('soft_landing'),
+            'topPilotsByDistance' => $rank('distance_nmi'),
+            'topPilotsByScore' => $rank('score'),
+            'topPilotsByHardLanding' => $rank('hard_landing', false),
         ];
     }
 
