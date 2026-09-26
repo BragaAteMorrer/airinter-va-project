@@ -337,8 +337,33 @@ public sealed class PrometheeWindow : Window
             throw new InvalidOperationException("START FLIGHT refusé : arrêtez les moteurs avant de commencer la préparation ACARS.");
         var value = body!.Value;
         var operationId = value.TryGetProperty("operationId", out var operation) ? operation.GetString() : null;
-        recorder.Start(client.Server, value.GetProperty("pirepId").GetString() ?? "", snapshot, operationId);
-        return new { ok=true, operationId };
+        var pirepId = value.GetProperty("pirepId").GetString() ?? "";
+        var existing = recorder.Flight;
+
+        if (existing is not null) {
+            var samePirep = string.Equals(existing.PirepId, pirepId, StringComparison.Ordinal);
+            var sameOperation = string.IsNullOrWhiteSpace(operationId)
+                || string.Equals(existing.OperationId, operationId, StringComparison.Ordinal);
+
+            if (samePirep && sameOperation) {
+                try {
+                    recorder.Resume(client.Server);
+                    return new { ok=true, operationId, resumed=true };
+                } catch (InvalidOperationException) when (recorder.RecoveryAvailable) {
+                    // A stale local recovery can survive a server migration or
+                    // development build. Archive it, then reattach below to the
+                    // authoritative PIREP returned by Prométhée.
+                    recorder.AbandonRecovery();
+                }
+            } else if (recorder.RecoveryAvailable) {
+                recorder.AbandonRecovery();
+            } else {
+                throw new InvalidOperationException("Un autre vol Hermès est déjà en cours. Terminez-le avant d’en démarrer un nouveau.");
+            }
+        }
+
+        recorder.Start(client.Server, pirepId, snapshot, operationId);
+        return new { ok=true, operationId, resumed=false };
     }
     private object Pause() { recorder.Pause(); return new {ok=true}; }
     private object Resume()
