@@ -31,7 +31,7 @@ return [
         'a300-b2' => ['msfs2020' => ['addon' => 'iniBuilds A300-600R', 'simbrief_type' => 'A306'], 'msfs2024' => ['addon' => 'iniBuilds A300-600R', 'simbrief_type' => 'A306']],
         'a300-b4' => ['msfs2020' => ['addon' => 'iniBuilds A300-600R', 'simbrief_type' => 'A306'], 'msfs2024' => ['addon' => 'iniBuilds A300-600R', 'simbrief_type' => 'A306']],
         'dc-8-63pf' => ['msfs2020' => ['addon' => 'Aeroplane Heaven 707-320', 'simbrief_type' => 'B703'], 'msfs2024' => ['addon' => 'Aeroplane Heaven 707-320', 'simbrief_type' => 'B703']],
-    ],,
+    ],
     /*
      * Simulator variants are separate from the physical phpVMS fleet.
      * A pilot may fly the assigned Air Inter aircraft with any compatible
