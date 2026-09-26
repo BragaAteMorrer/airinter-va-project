@@ -52,12 +52,12 @@
                     <span class="board-cell split-flap-logo airline-logo-cell" aria-label="{{ $flight['airline_code'] }}">
                         @if($flight['logo_url'])<img src="{{ $flight['logo_url'] }}" alt="{{ $flight['airline_code'] }}">@else<span class="airline-logo-fallback" data-flap-width="4">{{ $flight['airline_code'] }}</span>@endif
                     </span>
-                    <a class="board-cell flight-cell flight-ident" href="{{ $flight['url'] }}" data-flap-width="9">{{ $flight['flight'] }}</a>
-                    <span class="board-cell departure-cell" data-flap-width="24">{{ $flight['departure'] }}</span>
+                    <a class="board-cell flight-cell flight-ident" href="{{ $flight['url'] }}" data-flap-width="7">{{ $flight['flight'] }}</a>
+                    <span class="board-cell departure-cell" data-flap-width="18">{{ $flight['departure'] }}</span>
                     <time class="board-cell departure-time-cell" data-flap-width="5">{{ $flight['departure_time'] }}</time>
-                    <span class="board-cell destination-cell destination" data-flap-width="28">{{ $flight['destination'] }}</span>
+                    <span class="board-cell destination-cell destination" data-flap-width="18">{{ $flight['destination'] }}</span>
                     <time class="board-cell arrival-time-cell" data-flap-width="5">{{ $flight['arrival_time'] }}</time>
-                    <span class="board-cell status-cell status" data-flap-width="16">{{ $flight['status_label'] }}</span>
+                    <span class="board-cell status-cell status" data-flap-width="11">{{ $flight['status_label'] }}</span>
                 </article>
             @empty
                 <p class="empty" data-board-empty>{{ __('promethee_board.no_movements') }}</p>
