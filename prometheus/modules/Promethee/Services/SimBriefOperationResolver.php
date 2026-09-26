@@ -84,6 +84,11 @@ class SimBriefOperationResolver
         if ($variant && filled($variant['simbrief_type'] ?? null)) {
             $type = ['value' => strtoupper((string) $variant['simbrief_type']), 'source' => 'operation_aircraft_variant'];
         }
+        if (filled($overrides['simbrief_type'] ?? null)) {
+            // SimBrief accepts either an ICAO type or an airframe Internal ID
+            // in the "type" parameter (e.g. a curated Fenix profile).
+            $type = ['value' => strtoupper((string) $overrides['simbrief_type']), 'source' => 'planning_override'];
+        }
         abort_if($type['value'] === null, 422,
             'Aucun type SimBrief n’est défini pour '.$aircraft->registration
             .' (aircraft.simbrief_type, subfleet.simbrief_type et aircraft.icao sont vides).');
@@ -120,9 +125,17 @@ class SimBriefOperationResolver
         $profile = $this->demand->profile($aircraft, $flight, $operationId);
         $effectiveFares = $this->effectiveFares($flight, $aircraft, (int) $profile['capacity']);
 
-        $callsign = setting('simbrief.callsign', true)
+        $defaultCallsign = setting('simbrief.callsign', true)
             ? trim((string) $user->ident)
             : strtoupper((string) $airline->icao).$flight->flight_number;
+        $callsign = filled($overrides['callsign'] ?? null)
+            ? strtoupper((string) $overrides['callsign'])
+            : $defaultCallsign;
+
+        $value = static fn (string $key, mixed $default = null) =>
+            array_key_exists($key, $overrides) && $overrides[$key] !== null && $overrides[$key] !== ''
+                ? $overrides[$key]
+                : $default;
 
         $parameters = array_filter([
             'airline' => strtoupper((string) $airline->icao),
@@ -134,12 +147,31 @@ class SimBriefOperationResolver
             'route' => $route !== '' ? $route : null,
             'fl' => $level,
             'reg' => strtoupper((string) $aircraft->registration),
-            'pax' => $profile['capacity'] > 0 ? $profile['passengers'] : null,
+            'pax' => $value('pax', $profile['capacity'] > 0 ? $profile['passengers'] : null),
             'callsign' => $callsign !== '' ? $callsign : strtoupper((string) $airline->icao).$flight->flight_number,
-            'units' => 'KGS',
-            'planformat' => 'LIDO',
-            'navlog' => '1',
-            'maps' => 'detail',
+
+            // SimBrief dispatch options exposed by Hermès. Values are request
+            // scoped only; defaults preserve the previous Prométhée behaviour.
+            'units' => strtoupper((string) $value('units', 'KGS')),
+            'planformat' => strtolower((string) $value('planformat', 'LIDO')),
+            'navlog' => (string) $value('navlog', '1'),
+            'maps' => strtolower((string) $value('maps', 'DETAIL')),
+            'tlr' => (string) $value('tlr'),
+            'notams' => (string) $value('notams'),
+            'firnot' => (string) $value('firnot'),
+            'stepclimbs' => (string) $value('stepclimbs'),
+            'etops' => (string) $value('etops'),
+            'find_sidstar' => $value('find_sidstar'),
+            'cruise' => $value('cruise'),
+            'civalue' => $value('civalue'),
+            'contpct' => $value('contpct'),
+            'resvrule' => $value('resvrule'),
+            'selcal' => $value('selcal', $aircraft->selcal ?? null),
+            'deprwy' => $value('deprwy'),
+            'arrrwy' => $value('arrrwy'),
+            'taxiout' => $value('taxiout'),
+            'taxiin' => $value('taxiin'),
+            'manualrmk' => $value('manualrmk'),
         ], fn ($value) => $value !== null && $value !== '');
 
         return [
