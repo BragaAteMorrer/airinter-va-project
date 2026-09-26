@@ -9,7 +9,7 @@
   </div>
 </div>
 
-<section class="panel">
+<section class="panel" id="missions">
   <div class="panel-heading"><div><span class="eyebrow">MISSIONS</span><h2>À accomplir</h2></div></div>
   <div class="flight-cards">
     @forelse($missions as $mission)
@@ -44,8 +44,13 @@
             </article>
           </div>
 
-          @if($mission->booking)
+          @if($mission->booking && $mission->booking->status === 'reserved')
             <span class="tag">MISSION RÉSERVÉE</span>
+            <form method="post" action="{{ route('promethee.missions.cancel', $mission->id) }}" onsubmit="return confirm('Abandonner cette mission ? Elle redeviendra disponible pour les autres pilotes.');">
+              @csrf
+              @method('DELETE')
+              <button class="button outline" type="submit">Abandonner la mission</button>
+            </form>
           @elseif($mission->reserved_by_other)
             <span class="tag">DÉJÀ PRISE</span>
           @else
@@ -65,7 +70,7 @@
   </div>
 </section>
 
-<section class="panel">
+<section class="panel" id="circuits">
   <div class="panel-heading"><div><span class="eyebrow">CIRCUITS</span><h2>Tours en plusieurs étapes</h2></div></div>
   @forelse($circuits as $circuit)
     <article class="panel">
