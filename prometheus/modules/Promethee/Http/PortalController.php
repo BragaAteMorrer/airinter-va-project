@@ -1483,7 +1483,6 @@ class PortalController extends Controller
                     'mission.active',
                     'aircraft.registration as aircraft_registration',
                 ])
-                ->orderByRaw('mission.ends_on IS NULL')
                 ->orderBy('mission.ends_on')
                 ->orderByDesc('booking.reserved_at')
                 ->get();
