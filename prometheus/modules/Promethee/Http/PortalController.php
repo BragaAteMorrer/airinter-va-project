@@ -535,7 +535,7 @@ class PortalController extends Controller
     }
 
     /** Build dated occurrences of recurring phpVMS timetable rows in the configured window. */
-    private function departureBoardFlights(?string $homeAirportId): \Illuminate\Support\Collection
+    private function departureBoardFlights(?string $homeAirportId, string $board='departures'): \Illuminate\Support\Collection
     {
         $now = CarbonImmutable::now('Europe/Paris');
         $from = $now->subMinutes(config('departure-board.past_minutes'));
@@ -547,7 +547,10 @@ class PortalController extends Controller
             ->latest('updated_at')->get()->unique('flight_id')->keyBy('flight_id');
 
         $occurrences = Flight::query()->where('active', true)->where('visible', true)
-            ->when($homeAirportId, fn ($flights) => $flights->where('dpt_airport_id', $homeAirportId))
+            ->when($homeAirportId, function ($flights) use ($homeAirportId, $board) {
+                $column=$board === 'arrivals' ? 'arr_airport_id' : 'dpt_airport_id';
+                $flights->where($column, $homeAirportId);
+            }, fn ($flights) => $flights->whereRaw('1 = 0'))
             ->with(['airline', 'dpt_airport', 'arr_airport'])->get()
             ->flatMap(function (Flight $flight) use ($now, $activePireps) {
                 $rows = collect();
@@ -578,31 +581,55 @@ class PortalController extends Controller
                 return $rows;
             })->sortBy('board_departure_at')->values();
 
-        $inWindow = $occurrences->filter(fn (Flight $flight) => $flight->board_departure_at->betweenIncluded($from, $until));
+        if ($board === 'arrivals') {
+            $arrivalFrom=$now->subMinutes((int) config('departure-board.arrivals_past_minutes',45));
+            $arrivalUntil=$now->addMinutes((int) config('departure-board.arrivals_future_minutes',120));
+            $inWindow=$occurrences
+                ->filter(fn (Flight $flight) => $flight->board_arrival_at
+                    && $flight->board_arrival_at->betweenIncluded($arrivalFrom,$arrivalUntil))
+                // Arrival board is useful before the aircraft is airborne too,
+                // but once a flight has reached ARRIVED it only remains for the
+                // short post-arrival window configured by boardStatus().
+                ->sortBy('board_arrival_at')->values();
+
+            return $this->balancedDepartureBoardRows($inWindow, 'board_arrival_at');
+        }
+
+        // Departure board: once the flight becomes EN ROUTE it belongs on the
+        // arrivals board, not among departures. This prevents airborne flights
+        // from crowding out boarding / gate-closed / imminent departures.
+        $departureStatuses=['on_time','boarding','gate_closed','departed'];
+        $inWindow=$occurrences
+            ->filter(fn (Flight $flight) => $flight->board_departure_at->betweenIncluded($from,$until))
+            ->filter(fn (Flight $flight) => in_array($flight->board_status,$departureStatuses,true));
+
         if ($inWindow->isNotEmpty() || !config('departure-board.future_fallback')) {
-            return $this->balancedDepartureBoardRows($inWindow);
+            return $this->balancedDepartureBoardRows($inWindow, 'board_departure_at');
         }
 
         return $this->balancedDepartureBoardRows(
-            $occurrences->filter(fn (Flight $flight) => $flight->board_departure_at->gt($until))
+            $occurrences
+                ->filter(fn (Flight $flight) => $flight->board_departure_at->gt($until))
+                ->filter(fn (Flight $flight) => in_array($flight->board_status,$departureStatuses,true)),
+            'board_departure_at'
         );
     }
 
-    private function balancedDepartureBoardRows(\Illuminate\Support\Collection $rows): \Illuminate\Support\Collection
+    private function balancedDepartureBoardRows(\Illuminate\Support\Collection $rows, string $sortKey='board_departure_at'): \Illuminate\Support\Collection
     {
         $limit=max(1,(int) config('departure-board.max_rows',20));
-        if ($rows->count() <= $limit) return $rows->values();
+        if ($rows->count() <= $limit) return $rows->sortBy($sortKey)->values();
 
         $selected=collect();
         // Seed the board with one row from each status represented in the
         // window, then fill remaining slots chronologically.
         foreach ($rows->groupBy('board_status') as $statusRows) {
             if ($selected->count() >= $limit) break;
-            $selected->push($statusRows->sortBy('board_departure_at')->first());
+            $selected->push($statusRows->sortBy($sortKey)->first());
         }
 
         $selectedIds=$selected->map(fn (Flight $flight) => $flight->id.'-'.$flight->board_departure_at->format('YmdHi'))->all();
-        foreach ($rows as $flight) {
+        foreach ($rows->sortBy($sortKey) as $flight) {
             if ($selected->count() >= $limit) break;
             $key=$flight->id.'-'.$flight->board_departure_at->format('YmdHi');
             if (!in_array($key,$selectedIds,true)) {
@@ -611,12 +638,12 @@ class PortalController extends Controller
             }
         }
 
-        return $selected->sortBy('board_departure_at')->values();
+        return $selected->sortBy($sortKey)->values();
     }
 
-    private function departureBoardPayload(?string $homeAirportId): array
+    private function departureBoardPayload(?string $homeAirportId, string $board='departures'): array
     {
-        return $this->departureBoardFlights($homeAirportId)->map(fn (Flight $flight) => [
+        return $this->departureBoardFlights($homeAirportId, $board)->map(fn (Flight $flight) => [
             'id' => $flight->id.'-'.$flight->board_departure_at->format('YmdHi'),
             'url' => route('promethee.flights.show', $flight->id),
             'airline_code' => $flight->board_airline_code,
@@ -764,7 +791,8 @@ class PortalController extends Controller
             'lastBulletin'=>DB::table('promethee_bulletins')->orderByDesc('month')->first(),
             // Keep the pilot's departure-base scope, while allowing every
             // airline actually scheduled at that airport to appear.
-            'departureBoard'=>$this->departureBoardPayload($homeAirportId),
+            'departureBoard'=>$this->departureBoardPayload($homeAirportId, 'departures'),
+            'arrivalBoard'=>$this->departureBoardPayload($homeAirportId, 'arrivals'),
             // The operations page still uses its compact "next available"
             // list; it is intentionally separate from the time-window board.
             'upcoming'=>Flight::where('active',true)->where('visible',true)->where('has_bid',false)
@@ -797,15 +825,20 @@ class PortalController extends Controller
         ] + $this->operationsData($r) + $this->monthlyPilotRankings());
     }
     public function departureBoardData(Request $r) {
-        $flights=$this->departureBoardPayload($r->user()->home_airport_id);
+        $homeAirportId=$r->user()->home_airport_id;
+        $departures=$this->departureBoardPayload($homeAirportId, 'departures');
+        $arrivals=$this->departureBoardPayload($homeAirportId, 'arrivals');
         $now=now();
         return response()->json([
             'updated_at' => $now->toIso8601String(),
-            'revision' => sha1(json_encode($flights, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES)),
+            'revision' => sha1(json_encode([$departures,$arrivals], JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES)),
             // Align checks to the next minute boundary because timetable
             // statuses are minute-based. The client also refreshes on focus.
             'refresh_after_seconds' => max(10, 61-(int) $now->format('s')),
-            'flights' => $flights,
+            'departures' => $departures,
+            'arrivals' => $arrivals,
+            // Compatibility for older clients that still expect "flights".
+            'flights' => $departures,
         ]);
     }
     public function operations(Request $r) {
