@@ -365,11 +365,11 @@ function updateWorkflow() {
   const capabilityReport = lastStatus?.aircraftCapabilities || lastStatus?.AircraftCapabilities || {};
   const detectedAdapter = capabilityReport.adapterId || capabilityReport.AdapterId || null;
   const variantCompatible = acceptedAdapters.length === 0 || !detectedAdapter || acceptedAdapters.includes(detectedAdapter);
+  const serverChecksReady = serverDispatch
+    ? ['operation', 'aircraft', 'ofp', 'pirep'].every(key => serverDispatch?.server_checks?.[key] === true)
+    : false;
   const dispatchReady = serverDispatch
-    ? (serverDispatch.can_start === true || (
-        serverDispatch.can_start !== false
-        && state.operation && state.aircraft && state.ofp && state.pirep
-      ))
+    ? (serverDispatch.can_start === true || (serverDispatch.status === 'IN_PROGRESS' && serverChecksReady))
     : (state.operation && state.aircraft && state.ofp && state.pirep);
   const ready = dispatchReady && readiness.simulator && preflightSafe && variantCompatible;
   const node = $('#readyState');
@@ -378,7 +378,12 @@ function updateWorkflow() {
     node.classList.toggle('ready', ready);
   }
   const startButton = $('#startBtn');
-  if (startButton) startButton.disabled = !ready;
+  if (startButton) {
+    startButton.disabled = !ready;
+    startButton.textContent = serverDispatch?.status === 'IN_PROGRESS'
+      ? 'Reprendre l’enregistrement'
+      : 'Démarrer l’enregistrement';
+  }
   updateAircraftSelectionStatus();
   updateNextAction(state, ready);
   updatePreflight(lastStatus, state, ready);
@@ -960,11 +965,21 @@ async function refreshDispatch() {
 
 async function assertDispatchCanStart() {
   const dispatch = await refreshDispatch();
-  if (!dispatch?.can_start) {
+  const checks = dispatch?.server_checks || {};
+  const checksReady = ['operation', 'aircraft', 'ofp', 'pirep'].every(key => checks[key] === true);
+  const serverPirepId = dispatch?.pirep?.id || dispatch?.pirep?.pirep_id || null;
+  const resumable = dispatch?.status === 'IN_PROGRESS' && checksReady && Boolean(serverPirepId);
+
+  if (!dispatch?.can_start && !resumable) {
     const actions = Array.isArray(dispatch?.actions) ? dispatch.actions.filter(Boolean).join(' ') : '';
     throw new Error(actions || `Prométhée refuse le démarrage : ${dispatch?.status || 'opération non prête'}.`);
   }
-  return dispatch;
+
+  // An operation can already be IN_PROGRESS on Prométhée while the desktop
+  // recorder was restarted/reinstalled. Reattach to the authoritative PIREP
+  // instead of trapping the pilot behind a disabled START button.
+  if (resumable) pirepId = serverPirepId;
+  return { ...dispatch, resumable };
 }
 
 function simbriefPath(suffix) {
@@ -1560,10 +1575,15 @@ async function action(path, success) {
 }
 $('#startBtn').onclick = async () => {
   try {
-    await assertDispatchCanStart();
-    await action('/api/start', 'Enregistrement démarré.');
+    const dispatch = await assertDispatchCanStart();
+    await action(
+      '/api/start',
+      dispatch?.resumable
+        ? 'Vol Prométhée repris et Hermès rattaché au PIREP existant.'
+        : 'Enregistrement démarré.'
+    );
   } catch (error) {
-    showMessage('#pirepMessage', error.message, true);
+    showMessage('#recordMessage', error.message, true);
   }
 };
 $('#pauseBtn').onclick = () => action('/api/pause', 'Enregistrement en pause.');
