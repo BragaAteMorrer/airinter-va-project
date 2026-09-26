@@ -270,3 +270,11 @@ body.auth-locked .recovery-center{width:min(760px,100%)}
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
+.aircraft-selection-status{display:flex;align-items:center;gap:12px;margin:0 0 16px;padding:11px 13px;border:1px solid #e3b7b7;border-left:4px solid #c33b45;border-radius:10px;background:#fff5f5;color:#8f2931;transition:border-color .18s ease,background .18s ease,color .18s ease}
+.aircraft-selection-status strong{font-size:10px;letter-spacing:.8px;white-space:nowrap}
+.aircraft-selection-status span{font-size:12px;font-weight:700}
+.aircraft-selection-status.ready{border-color:#9ed1b3;border-left-color:#18824e;background:#effaf4;color:#17683f}
+.aircraft-selection-status.ready strong::before{content:"✓ "}
+body[data-appearance="dark"] .aircraft-selection-status{background:color-mix(in srgb,#c33b45 12%,var(--panel));border-color:color-mix(in srgb,#c33b45 48%,var(--line));color:#ffb8bd}
+body[data-appearance="dark"] .aircraft-selection-status.ready{background:color-mix(in srgb,#18824e 14%,var(--panel));border-color:color-mix(in srgb,#42b883 50%,var(--line));color:#9fe0ba}

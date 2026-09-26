@@ -105,6 +105,10 @@
           <button type="button" data-plan-mode="api">API SimBrief</button>
           <button type="button" data-plan-mode="file">Plan local</button>
         </div>
+        <div id="aircraftSelectionStatus" class="aircraft-selection-status pending" role="status" aria-live="polite">
+          <strong>APPAREIL REQUIS</strong>
+          <span>Choisissez un type d’appareil puis une immatriculation avant de préparer SimBrief.</span>
+        </div>
         <div class="source-panel active" data-plan-panel="account">
           <p class="hint">Le compte Navigraph / SimBrief utilisé par Hermès se configure désormais dans Paramètres. Aucun mot de passe Navigraph n’est demandé ou stocké.</p>
           <div class="tools"><button id="simbriefAccountOpenBtn" type="button" class="primary">Envoyer le vol vers SimBrief</button><button id="simbriefAccountEditBtn" type="button" hidden>Modifier dans SimBrief</button><button id="simbriefAccountImportBtn" type="button">Importer l’OFP généré</button></div>
