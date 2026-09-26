@@ -27,7 +27,8 @@ class SimBriefOperationResolver
         private readonly UserService $users,
         private readonly FareService $fares,
         private readonly DemandProfileService $demand,
-        private readonly SimBriefCompanyKeyService $companyKey
+        private readonly SimBriefCompanyKeyService $companyKey,
+        private readonly AircraftVariantService $aircraftVariants
     ) {}
 
     public function resolveOperation(string $reference, User $user, array $overrides = []): array
@@ -79,6 +80,10 @@ class SimBriefOperationResolver
         $this->assertEligible($flight, $aircraft, $user, $bid);
 
         $type = $this->simbriefType($aircraft);
+        $variant = $bid ? $this->aircraftVariants->selectedForBid($bid, $user) : null;
+        if ($variant && filled($variant['simbrief_type'] ?? null)) {
+            $type = ['value' => strtoupper((string) $variant['simbrief_type']), 'source' => 'operation_aircraft_variant'];
+        }
         abort_if($type['value'] === null, 422,
             'Aucun type SimBrief n’est défini pour '.$aircraft->registration
             .' (aircraft.simbrief_type, subfleet.simbrief_type et aircraft.icao sont vides).');
@@ -170,6 +175,7 @@ class SimBriefOperationResolver
                 'simbrief_type_source' => $type['source'],
                 'type_key' => $this->demand->typeKey($aircraft),
                 'type_label' => $this->demand->typeLabel($aircraft),
+                'variant' => $variant,
             ],
             'demand' => $profile,
             'fares' => $effectiveFares,
@@ -184,6 +190,7 @@ class SimBriefOperationResolver
                 'aircraft' => 'aircraft',
                 'subfleet' => 'subfleets',
                 'simbrief_type' => $type['source'],
+                'aircraft_variant' => $variant ? 'promethee_operation_aircraft_variants' : null,
                 'passengers' => 'DemandProfileService',
                 'fares' => 'FareService',
             ],
