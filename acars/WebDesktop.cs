@@ -42,7 +42,7 @@ public sealed class PrometheeWindow : Window
         var assets = Path.Combine(AppContext.BaseDirectory,"wwwroot");
         if (!System.IO.File.Exists(Path.Combine(assets, "index.html"))) throw new InvalidOperationException("Ressources ACARS introuvables dans la publication.");
         core.SetVirtualHostNameToFolderMapping("promethee.local", assets, CoreWebView2HostResourceAccessKind.DenyCors);
-        core.Navigate("https://promethee.local/index.html?rev=20260926-network-audit");
+        core.Navigate("https://promethee.local/index.html?rev=20260926-flnormfix");
     }
     private async Task CheckForUpdatesAsync()
     {
