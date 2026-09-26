@@ -1494,9 +1494,16 @@ class PortalController extends Controller
         $rsvps=DB::table('promethee_event_rsvps')->whereIn('event_id',$events->pluck('id'))->select('event_id',DB::raw('COUNT(*) as total'))->groupBy('event_id')->pluck('total','event_id');
         $mine=DB::table('promethee_event_rsvps')->where('user_id',$r->user()->id)->whereIn('event_id',$events->pluck('id'))->pluck('status','event_id');
         $events=$events->map(function ($event) use ($rsvps,$mine) { $event->rsvp_count=$rsvps[$event->id]??0; $event->my_rsvp=$mine[$event->id]??null; return $event; });
+
+        $editingEvent = null;
+        if (($r->user()?->ability('admin','admin-access') ?? false) && $r->filled('edit_event')) {
+            $editingEvent = DB::table('promethee_events')->find((int) $r->query('edit_event'));
+        }
+
         return $this->page('calendar',[
             'month'=>$month,'start'=>$start,
             'events'=>$events,
+            'editingEvent'=>$editingEvent,
         ]);
     }
     public function rsvpEvent(int $id, Request $r) {
@@ -1506,15 +1513,25 @@ class PortalController extends Controller
         return back()->with('success','Participation enregistrée.');
     }
     public function saveEvent(Request $r) {
-        $d=$r->validate(['title'=>'required|string|max:191','description'=>'nullable|string|max:4000',
+        $d=$r->validate(['event_id'=>'nullable|integer|exists:promethee_events,id','title'=>'required|string|max:191','description'=>'nullable|string|max:4000',
             'starts_at'=>'required|date','ends_at'=>'required|date|after:starts_at',
             'departure'=>'nullable|exists:airports,id','arrival'=>'nullable|exists:airports,id']);
         foreach (['starts_at','ends_at'] as $key) $d[$key]=CarbonImmutable::parse($d[$key],'Europe/Paris')->utc();
-        DB::table('promethee_events')->insert($d+['created_by'=>$r->user()->id,'created_at'=>now(),'updated_at'=>now()]);
-        return redirect()->route('promethee.calendar',['month'=>$d['starts_at']->setTimezone('Europe/Paris')->format('Y-m')])->with('success','Événement ajouté au calendrier.');
+
+        $id=$d['event_id'] ?? null;
+        unset($d['event_id']);
+
+        if ($id) DB::table('promethee_events')->where('id',$id)->update($d+['updated_at'=>now()]);
+        else DB::table('promethee_events')->insert($d+['created_by'=>$r->user()->id,'created_at'=>now(),'updated_at'=>now()]);
+
+        return redirect()->route('promethee.calendar',['month'=>$d['starts_at']->setTimezone('Europe/Paris')->format('Y-m')])
+            ->with('success',$id ? 'Événement modifié.' : 'Événement ajouté au calendrier.');
     }
     public function deleteEvent(int $id) {
-        DB::table('promethee_events')->where('id',$id)->delete();
+        DB::transaction(function () use ($id) {
+            DB::table('promethee_event_rsvps')->where('event_id',$id)->delete();
+            DB::table('promethee_events')->where('id',$id)->delete();
+        });
         return back()->with('success','Événement supprimé.');
     }
     public function adminEvents() {
