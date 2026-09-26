@@ -101,6 +101,51 @@
 </div>
 
 <section class="panel">
+    <div class="panel-heading">
+        <div>
+            <span class="eyebrow">CLASSEMENTS · {{ mb_strtoupper($monthLabel) }}</span>
+            <h2>Meilleurs pilotes du mois</h2>
+        </div>
+        <span class="tag">PIREP acceptés</span>
+    </div>
+
+    @php
+        $leaderboards = [
+            ['title' => 'Vols', 'rows' => $topPilotsByFlights, 'format' => fn ($value) => number_format((int) $value, 0, ',', ' ')],
+            ['title' => 'Temps de vol (block)', 'rows' => $topPilotsByBlockTime, 'format' => fn ($value) => floor(((int) $value) / 60).'h '.str_pad(((int) $value) % 60, 2, '0', STR_PAD_LEFT).'m'],
+            ['title' => 'Touché le plus doux', 'rows' => $topPilotsBySoftLanding, 'format' => fn ($value) => number_format((int) round($value), 0, ',', ' ').' ft/min'],
+            ['title' => 'Distance', 'rows' => $topPilotsByDistance, 'format' => fn ($value) => number_format((int) round($value), 0, ',', ' ').' nmi'],
+            ['title' => 'Score moyen', 'rows' => $topPilotsByScore, 'format' => fn ($value) => number_format((int) round($value), 0, ',', ' ')],
+            ['title' => 'Touché le plus dur', 'rows' => $topPilotsByHardLanding, 'format' => fn ($value) => number_format((int) round($value), 0, ',', ' ').' ft/min'],
+        ];
+    @endphp
+
+    <div class="three-columns">
+        @foreach($leaderboards as $board)
+            <article class="panel">
+                <div class="panel-heading"><div><span class="eyebrow">MEILLEURS PILOTES · {{ mb_strtoupper($monthLabel) }}</span><h3>{{ $board['title'] }}</h3></div></div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>#</th><th>Pilote</th><th>Valeur</th></tr></thead>
+                        <tbody>
+                        @forelse($board['rows'] as $row)
+                            <tr>
+                                <td><strong>{{ $loop->iteration }}</strong></td>
+                                <td><a href="{{ route('promethee.pilots.show', $row->user_id) }}">{{ $row->name }}</a>@if($row->pilot_id)<small style="display:block">{{ $row->pilot_id }}</small>@endif</td>
+                                <td><strong>{{ $board['format']($row->value) }}</strong></td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="3">Aucune donnée ce mois-ci.</td></tr>
+                        @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+        @endforeach
+    </div>
+</section>
+
+<section class="panel">
     <div class="panel-heading"><div><span class="eyebrow">{{ __('promethee.dashboard_page.latest_accepted_pireps') }}</span><h2>{{ __('promethee.dashboard_page.recent_activity') }}</h2></div><a href="{{ route('promethee.operations') }}">{{ __('promethee.dashboard_page.view_operations_room') }} ↗</a></div>
     <div class="table-wrap">
         <table>
