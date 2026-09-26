@@ -461,21 +461,42 @@ class PortalController extends Controller
             ->startOfDay()->setTime((int) $parts[1], (int) $parts[2]);
     }
 
-    private function boardStatus(?Pirep $pirep): string
+    private function boardStatus(?Pirep $pirep, CarbonImmutable $departure, ?CarbonImmutable $arrival, CarbonImmutable $now): string
     {
-        if (!$pirep) return 'scheduled';
-        if ($pirep->state === PirepState::CANCELLED || $pirep->status === PirepStatus::CANCELLED) return 'cancelled';
+        if ($pirep) {
+            if ($pirep->state === PirepState::CANCELLED || $pirep->status === PirepStatus::CANCELLED) return 'cancelled';
 
-        return match ($pirep->status) {
-            PirepStatus::BOARDING => 'boarding',
-            PirepStatus::DEPARTED, PirepStatus::PUSHBACK_TOW, PirepStatus::TAXI => 'departed',
-            PirepStatus::TAKEOFF, PirepStatus::INIT_CLIM, PirepStatus::AIRBORNE,
-            PirepStatus::ENROUTE, PirepStatus::DIVERTED, PirepStatus::APPROACH,
-            PirepStatus::APPROACH_ICAO, PirepStatus::ON_FINAL => 'en_route',
-            PirepStatus::LANDING, PirepStatus::LANDED, PirepStatus::ON_BLOCK,
-            PirepStatus::ARRIVED => 'landed',
-            default => 'scheduled',
-        };
+            return match ($pirep->status) {
+                PirepStatus::BOARDING => 'boarding',
+                PirepStatus::DEPARTED, PirepStatus::PUSHBACK_TOW, PirepStatus::TAXI => 'departed',
+                PirepStatus::TAKEOFF, PirepStatus::INIT_CLIM, PirepStatus::AIRBORNE,
+                PirepStatus::ENROUTE, PirepStatus::DIVERTED => 'en_route',
+                PirepStatus::APPROACH, PirepStatus::APPROACH_ICAO, PirepStatus::ON_FINAL => 'on_approach',
+                PirepStatus::LANDING, PirepStatus::LANDED => 'landed',
+                PirepStatus::ON_BLOCK, PirepStatus::ARRIVED => 'arrived',
+                default => 'on_time',
+            };
+        }
+
+        // Timetable-only rows use configurable operational windows. These are
+        // presentation statuses, not PIREP state mutations.
+        $boardingAt=$departure->subMinutes((int) config('departure-board.status.boarding_before_minutes',30));
+        $gateClosedAt=$departure->subMinutes((int) config('departure-board.status.gate_closed_before_minutes',10));
+        if ($now->lt($boardingAt)) return 'on_time';
+        if ($now->lt($gateClosedAt)) return 'boarding';
+        if ($now->lt($departure)) return 'gate_closed';
+
+        if (!$arrival) return 'departed';
+        $enRouteAt=$departure->addMinutes((int) config('departure-board.status.en_route_after_minutes',15));
+        $approachAt=$arrival->subMinutes((int) config('departure-board.status.approach_before_minutes',25));
+        $arrivedAt=$arrival->addMinutes((int) config('departure-board.status.arrived_after_minutes',10));
+
+        if ($now->lt($enRouteAt)) return 'departed';
+        if ($now->lt($approachAt)) return 'en_route';
+        if ($now->lt($arrival)) return 'on_approach';
+        if ($now->lt($arrivedAt)) return 'landed';
+
+        return 'arrived';
     }
 
     private function airportCode(?Airport $airport, string $fallback): string
@@ -485,7 +506,12 @@ class PortalController extends Controller
 
     private function airportDestination(?Airport $airport, string $fallback): string
     {
-        return strtoupper((string) ($airport?->location ?: $airport?->name ?: $airport?->iata ?: $airport?->icao ?: $fallback));
+        $label = strtoupper(trim((string) ($airport?->location ?: $airport?->name ?: $airport?->iata ?: $airport?->icao ?: $fallback)));
+        // The physical split-flap board has a finite number of palettes.
+        // Keep the database name untouched and only shorten its display value.
+        $aliases = config('departure-board.airport_labels', []);
+
+        return strtoupper((string) ($aliases[$airport?->id ?? $fallback] ?? \Illuminate\Support\Str::limit($label, 18, '')));
     }
 
     private function airlineLogoUrl(?Airline $airline): ?string
@@ -536,12 +562,15 @@ class PortalController extends Controller
                     if ($arrival && $arrival->lte($departure)) $arrival = $arrival->addDay();
                     $pirep = $activePireps->get($flight->id);
                     $row = clone $flight;
-                    $row->setAttribute('board_departure_at', $departure->setTimezone('Europe/Paris'));
-                    $row->setAttribute('board_departure_time', $departure->setTimezone('Europe/Paris')->format('H:i'));
-                    $row->setAttribute('board_arrival_time', $arrival?->setTimezone('Europe/Paris')->format('H:i') ?? '----');
+                    $parisDeparture=$departure->setTimezone('Europe/Paris');
+                    $parisArrival=$arrival?->setTimezone('Europe/Paris');
+                    $row->setAttribute('board_departure_at', $parisDeparture);
+                    $row->setAttribute('board_arrival_at', $parisArrival);
+                    $row->setAttribute('board_departure_time', $parisDeparture->format('H:i'));
+                    $row->setAttribute('board_arrival_time', $parisArrival?->format('H:i') ?? '----');
                     $row->setAttribute('board_departure_airport', $this->airportDestination($flight->dpt_airport, $flight->dpt_airport_id));
                     $row->setAttribute('board_destination', $this->airportDestination($flight->arr_airport, $flight->arr_airport_id));
-                    $row->setAttribute('board_status', $this->boardStatus($pirep));
+                    $row->setAttribute('board_status', $this->boardStatus($pirep, $parisDeparture, $parisArrival, $now));
                     $row->setAttribute('board_logo_url', $this->airlineLogoUrl($flight->airline));
                     $row->setAttribute('board_airline_code', strtoupper((string) ($flight->airline?->code ?: $flight->airline?->callsign ?: '---')));
                     $rows->push($row);
@@ -551,11 +580,38 @@ class PortalController extends Controller
 
         $inWindow = $occurrences->filter(fn (Flight $flight) => $flight->board_departure_at->betweenIncluded($from, $until));
         if ($inWindow->isNotEmpty() || !config('departure-board.future_fallback')) {
-            return $inWindow->take(config('departure-board.max_rows'))->values();
+            return $this->balancedDepartureBoardRows($inWindow);
         }
 
-        return $occurrences->filter(fn (Flight $flight) => $flight->board_departure_at->gt($until))
-            ->take(config('departure-board.max_rows'))->values();
+        return $this->balancedDepartureBoardRows(
+            $occurrences->filter(fn (Flight $flight) => $flight->board_departure_at->gt($until))
+        );
+    }
+
+    private function balancedDepartureBoardRows(\Illuminate\Support\Collection $rows): \Illuminate\Support\Collection
+    {
+        $limit=max(1,(int) config('departure-board.max_rows',20));
+        if ($rows->count() <= $limit) return $rows->values();
+
+        $selected=collect();
+        // Seed the board with one row from each status represented in the
+        // window, then fill remaining slots chronologically.
+        foreach ($rows->groupBy('board_status') as $statusRows) {
+            if ($selected->count() >= $limit) break;
+            $selected->push($statusRows->sortBy('board_departure_at')->first());
+        }
+
+        $selectedIds=$selected->map(fn (Flight $flight) => $flight->id.'-'.$flight->board_departure_at->format('YmdHi'))->all();
+        foreach ($rows as $flight) {
+            if ($selected->count() >= $limit) break;
+            $key=$flight->id.'-'.$flight->board_departure_at->format('YmdHi');
+            if (!in_array($key,$selectedIds,true)) {
+                $selected->push($flight);
+                $selectedIds[]=$key;
+            }
+        }
+
+        return $selected->sortBy('board_departure_at')->values();
     }
 
     private function departureBoardPayload(?string $homeAirportId): array
@@ -2463,30 +2519,59 @@ class PortalController extends Controller
     public function saveRegionalBase(Request $r) {
         $data=$r->validate([
             'airport_id'=>'required|string|max:8|exists:airports,id',
-            'kind'=>'required|in:hub,regional',
-            'small_maintenance'=>'nullable|boolean',
-            'heavy_maintenance'=>'nullable|boolean',
+            'is_hub'=>'nullable|boolean',
+            'is_regional_platform'=>'nullable|boolean',
+            'is_technical_stop'=>'nullable|boolean',
             'active'=>'nullable|boolean',
         ]);
+
         $airportId=strtoupper($data['airport_id']);
-        if ($data['kind'] === 'hub' && $airportId !== 'LFPO') {
-            return back()->withErrors(['airport_id'=>'Orly (LFPO) est le seul hub Air Inter VA. Les autres bases doivent être des plateformes régionales.'])->withInput();
+        $isHub=$r->boolean('is_hub');
+        $isRegional=$r->boolean('is_regional_platform');
+        $isTechnical=$r->boolean('is_technical_stop');
+
+        if (!$isHub && !$isRegional && !$isTechnical) {
+            return back()->withErrors(['airport_id'=>'Sélectionnez au moins un rôle : hub, plateforme régionale ou escale technique.'])->withInput();
         }
-        $kind = $airportId === 'LFPO' ? 'hub' : 'regional';
+        if ($isHub && $airportId !== 'LFPO') {
+            return back()->withErrors(['airport_id'=>'Orly (LFPO) reste le seul hub principal Air Inter VA. CDG dispose des checks A/B/C sans être déclaré hub.'])->withInput();
+        }
+
+        // Maintenance policy requested by Flight Operations:
+        // - every operating/technical station may perform an A CHECK;
+        // - Orly (hub) and Paris-CDG may perform A/B/C;
+        // - a technical stop never gains B/C merely because of that role.
+        $fullChecks=in_array($airportId,['LFPO','LFPG'],true);
+        $checkA=true;
+        $checkB=$fullChecks;
+        $checkC=$fullChecks;
+
         if ($airportId === 'LFPO') {
-            DB::table('promethee_operational_bases')->where('kind','hub')->where('airport_id','!=','LFPO')->update(['kind'=>'regional','heavy_maintenance'=>false,'updated_at'=>now()]);
+            $isHub=true;
+            DB::table('promethee_operational_bases')
+                ->where('airport_id','!=','LFPO')
+                ->update(['is_hub'=>false,'updated_at'=>now()]);
         }
+
         DB::table('promethee_operational_bases')->updateOrInsert(
             ['airport_id'=>$airportId],
             [
-                'kind'=>$kind,
-                'small_maintenance'=>$r->boolean('small_maintenance'),
-                'heavy_maintenance'=>$airportId === 'LFPO' && $r->boolean('heavy_maintenance'),
+                // Keep the legacy column for older code while multi-role flags
+                // are the new source of truth.
+                'kind'=>$isHub ? 'hub' : 'regional',
+                'is_hub'=>$isHub,
+                'is_regional_platform'=>$isRegional,
+                'is_technical_stop'=>$isTechnical,
+                'check_a'=>$checkA,
+                'check_b'=>$checkB,
+                'check_c'=>$checkC,
+                'small_maintenance'=>$checkA,
+                'heavy_maintenance'=>$checkB || $checkC,
                 'active'=>$r->boolean('active'),
                 'created_at'=>now(),'updated_at'=>now(),
             ]
         );
-        return back()->with('success','Base opérationnelle enregistrée.');
+        return back()->with('success','Rôles et capacités de maintenance enregistrés.');
     }
 
     public function assignAircraftBase(Request $r) {
