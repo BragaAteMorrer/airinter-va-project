@@ -24,6 +24,7 @@ use Modules\Promethee\Services\OperationIdentityService;
 use Modules\Promethee\Services\SafetyAnalyzer;
 use Modules\Promethee\Services\AircraftOperationalStateService;
 use Modules\Promethee\Services\DemandProfileService;
+use Modules\Promethee\Services\AircraftVariantService;
 
 /**
  * Stable Air Inter operations facade.
@@ -41,7 +42,8 @@ class OperationsV1Controller extends Controller
         private readonly OperationIdentityService $operationIdentity,
         private readonly SafetyAnalyzer $safetyAnalyzer,
         private readonly AircraftOperationalStateService $aircraftState,
-        private readonly DemandProfileService $demandProfile
+        private readonly DemandProfileService $demandProfile,
+        private readonly AircraftVariantService $aircraftVariants
     ) {}
 
     public function index(Request $request)
@@ -225,6 +227,35 @@ class OperationsV1Controller extends Controller
         ]]);
     }
 
+    public function myAircraftVariants(Request $request)
+    {
+        $data = $request->validate([
+            'simulator' => 'nullable|in:'.implode(',', self::SIMULATORS),
+        ]);
+
+        return response()->json(['data' => [
+            'variants' => $this->aircraftVariants->accountLibrary($request->user(), $data['simulator'] ?? null),
+        ]]);
+    }
+
+    public function saveMyAircraftVariants(Request $request)
+    {
+        $data = $request->validate([
+            'variant_ids' => 'present|array',
+            'variant_ids.*' => 'string|max:80',
+            'preferred_variant_id' => 'nullable|string|max:80',
+        ]);
+
+        return response()->json(['data' => [
+            'variants' => $this->aircraftVariants->replaceAccountLibrary(
+                $request->user(),
+                $data['variant_ids'],
+                $data['preferred_variant_id'] ?? null
+            ),
+        ]]);
+    }
+
+
     public function show(string $bidId, Request $request)
     {
         $bid = $this->bid($bidId, $request);
@@ -385,6 +416,51 @@ class OperationsV1Controller extends Controller
         ]]);
     }
 
+    public function aircraftVariants(string $bidId, Request $request)
+    {
+        $bid = $this->bid($bidId, $request);
+        $data = $request->validate([
+            'simulator' => 'nullable|in:'.implode(',', self::SIMULATORS),
+        ]);
+        $simulator = $data['simulator'] ?? 'msfs2020';
+
+        return response()->json(['data' => array_merge(
+            [
+                'operation_id' => $this->operationIdentity->id($bid),
+                'bid_id' => $bid->id,
+                'simulator' => $simulator,
+            ],
+            $this->aircraftVariants->optionsForBid($bid, $request->user(), $simulator)
+        )]);
+    }
+
+    public function selectAircraftVariant(string $bidId, Request $request)
+    {
+        $bid = $this->bid($bidId, $request);
+        abort_if($this->operationPirep($bid), 409, 'La variante ne peut plus être modifiée après le pré-dépôt du PIREP.');
+
+        $data = $request->validate([
+            'variant_id' => 'required|string|max:80',
+            'simulator' => 'required|in:'.implode(',', self::SIMULATORS),
+        ]);
+
+        $existingOfp = $this->operationOfp($bid);
+        abort_if($existingOfp, 409, 'Un OFP existe déjà pour cette opération. Supprimez-le avant de changer de variante.');
+
+        $result = $this->aircraftVariants->selectForBid(
+            $bid,
+            $request->user(),
+            $data['variant_id'],
+            $data['simulator']
+        );
+
+        return response()->json(['data' => array_merge([
+            'operation_id' => $this->operationIdentity->id($bid),
+            'bid_id' => $bid->id,
+            'simulator' => $data['simulator'],
+        ], $result)]);
+    }
+
     public function selectAircraft(string $bidId, Request $request)
     {
         $bid = $this->bid($bidId, $request);
@@ -412,8 +488,12 @@ class OperationsV1Controller extends Controller
         $existingOfp = $this->operationOfp($bid);
         abort_if($existingOfp && (string) $bid->aircraft_id !== (string) $data['aircraft_id'], 409, 'Un OFP existe déjà pour cette opération. Supprimez-le avant de changer d’appareil.');
 
+        $aircraftChanged = (string) $bid->aircraft_id !== (string) $data['aircraft_id'];
         $bid->aircraft_id = (int) $data['aircraft_id'];
         $bid->save();
+        if ($aircraftChanged) {
+            DB::table('promethee_operation_aircraft_variants')->where('bid_id', $bid->id)->delete();
+        }
 
         $bid = $this->bid($bidId, $request);
         $ofp = $this->operationOfp($bid);
@@ -777,7 +857,15 @@ class OperationsV1Controller extends Controller
         $name = (string) ($subfleet?->name ?? $aircraft?->name ?? '');
         $key = Str::of($name)->lower()->replace(['_', '-'], ' ')->squish()->toString();
         $fallback = config('acars.substitutions.'.$key.'.'.$simulator, []);
-        $simbriefType = $fallback['simbrief_type'] ?? ($aircraft?->simbrief_type ?: ($subfleet?->simbrief_type ?: $aircraft?->icao));
+        $variantState = $aircraft
+            ? $this->aircraftVariants->optionsForBid($bid, $bid->user, $simulator)
+            : ['selected_variant_id' => null, 'variants' => []];
+        $selectedVariant = collect($variantState['variants'] ?? [])->first(
+            fn ($variant) => ($variant['id'] ?? null) === ($variantState['selected_variant_id'] ?? null)
+        );
+        $simbriefType = $selectedVariant['simbrief_type']
+            ?? $fallback['simbrief_type']
+            ?? ($aircraft?->simbrief_type ?: ($subfleet?->simbrief_type ?: $aircraft?->icao));
         $airline = Str::lower((string) ($flight?->airline?->name ?? ''));
         $loadFactor = str_contains($airline, 'charter') ? config('acars.load_factors.air_charter_international')
             : (str_contains($airline, 'cargo') ? config('acars.load_factors.inter_cargo_service') : config('acars.load_factors.air_inter'));
@@ -815,7 +903,10 @@ class OperationsV1Controller extends Controller
             ], $flight ? $this->demandProfile->profile($aircraft, $flight, $this->operationIdentity->id($bid)) : []) : null,
             'simbrief' => [
                 'type' => $simbriefType,
-                'addon' => $fallback['addon'] ?? null,
+                'addon' => $selectedVariant['label'] ?? ($fallback['addon'] ?? null),
+                'variant' => $selectedVariant,
+                'variants' => $variantState['variants'] ?? [],
+                'selected_variant_id' => $variantState['selected_variant_id'] ?? null,
                 'ofp_id' => $ofp?->id,
                 'available' => $ofpAvailable,
                 // Hermès only needs to know whether company generation can be

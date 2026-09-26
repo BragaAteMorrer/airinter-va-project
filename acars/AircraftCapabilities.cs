@@ -141,7 +141,12 @@ public sealed class AircraftAdapterRegistry
     {
         // Identification only for now. Capabilities are still based on observed
         // telemetry and connector contracts, never on the product name.
-        yield return new NamedAircraftAdapter("fenix-a320", "Fenix A320", 100, "Fenix", "A320");
+        yield return new NamedAircraftAdapter("fenix-a319", "Fenix A319", 120, "Fenix", "A319");
+        yield return new NamedAircraftAdapter("fenix-a321", "Fenix A321", 120, "Fenix", "A321");
+        yield return new NamedAircraftAdapter("fenix-a320", "Fenix A320", 110, "Fenix", "A320");
+        yield return new NamedAircraftAdapter("fbw-a32nx", "FlyByWire A32NX", 105, "FlyByWire");
+        yield return new NamedAircraftAdapter("inibuilds-a320", "iniBuilds A320neo", 100, "iniBuilds", "A320");
+        yield return new NamedAircraftAdapter("inibuilds-a310", "iniBuilds A310", 100, "iniBuilds", "A310");
         yield return new NamedAircraftAdapter("pmdg", "PMDG aircraft", 90, "PMDG");
         yield return new NamedAircraftAdapter("fslabs", "Flight Sim Labs aircraft", 90, "FSLabs");
         yield return new NamedAircraftAdapter("tfdi-md11", "TFDi MD-11", 90, "TFDi", "MD-11");
