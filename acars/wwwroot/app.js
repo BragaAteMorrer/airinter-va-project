@@ -128,7 +128,7 @@ Object.entries(localSettings).forEach(([key, value]) => {
 });
 settingsForm.onsubmit = event => {
   event.preventDefault();
-  localSettings = { ...defaultSettings, ...Object.fromEntries(new FormData(settingsForm)) };
+  localSettings = { ...defaultSettings, ...localSettings, ...Object.fromEntries(new FormData(settingsForm)) };
   localStorage.prometheeAcarsSettings = JSON.stringify(localSettings);
   showMessage('#settingsMessage', 'Réglages locaux enregistrés.');
 };
