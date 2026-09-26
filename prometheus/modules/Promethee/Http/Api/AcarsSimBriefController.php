@@ -400,12 +400,19 @@ class AcarsSimBriefController extends Controller
     {
         $alternate = trim((string) $request->input('alternate', ''));
         $route = trim((string) $request->input('route', ''));
-        $level = $request->input('level');
+        $rawLevel = $request->input('level');
+        $level = null;
+
+        if ($rawLevel !== null && trim((string) $rawLevel) !== '') {
+            $level = $this->normalizeFlightLevel($rawLevel);
+            abort_if($level === null, 422,
+                'Le niveau de vol doit être compris entre FL010 et FL600 (ex. 350, FL350 ou 35000 ft).');
+        }
 
         $request->merge([
             'alternate' => $alternate === '' ? null : strtoupper($alternate),
             'route' => $route === '' ? null : $route,
-            'level' => $level === '' || $level === null ? null : $level,
+            'level' => $level,
         ]);
 
         return $request->validate([
@@ -421,6 +428,29 @@ class AcarsSimBriefController extends Controller
             'level.integer' => 'Le niveau de vol doit être un entier, par exemple 350.',
             'level.between' => 'Le niveau de vol doit être compris entre FL010 et FL600.',
         ]);
+    }
+
+    private function normalizeFlightLevel(mixed $value): ?int
+    {
+        if ($value === null) return null;
+
+        $raw = strtoupper(trim((string) $value));
+        if ($raw === '') return null;
+
+        $raw = preg_replace('/^FL\s*/', '', $raw);
+        $raw = preg_replace('/\s*(?:FT|FEET|PIEDS?)$/', '', $raw);
+        $raw = str_replace([' ', ','], ['', '.'], $raw);
+
+        if (!is_numeric($raw)) return null;
+
+        $numeric = (float) $raw;
+        if ($numeric <= 0) return null;
+
+        $level = $numeric > 600
+            ? (int) round($numeric / 100)
+            : (int) round($numeric);
+
+        return $level >= 10 && $level <= 600 ? $level : null;
     }
 
     private function operationContext(string $reference): array
