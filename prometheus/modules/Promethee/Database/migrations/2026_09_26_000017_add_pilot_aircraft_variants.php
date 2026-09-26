@@ -1,8 +1,8 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\QueryException;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
@@ -18,13 +18,11 @@ return new class extends Migration {
                 $table->primary(['user_id', 'variant_id'], 'prom_pilot_variant_pk');
                 $table->index(['user_id', 'preferred'], 'prom_pilot_pref_idx');
             });
-        } elseif (!$this->indexExists('promethee_pilot_aircraft_variants', 'prom_pilot_pref_idx')) {
-            // MySQL DDL is not transactional. A previous run may have created
-            // the table and then failed while Laravel was adding its generated,
-            // >64-character index name. Repair that partial migration in place.
-            Schema::table('promethee_pilot_aircraft_variants', function (Blueprint $table) {
-                $table->index(['user_id', 'preferred'], 'prom_pilot_pref_idx');
-            });
+        } else {
+            $this->ensureIndex(
+                'promethee_pilot_aircraft_variants',
+                fn (Blueprint $table) => $table->index(['user_id', 'preferred'], 'prom_pilot_pref_idx')
+            );
         }
 
         if (!Schema::hasTable('promethee_operation_aircraft_variants')) {
@@ -37,10 +35,11 @@ return new class extends Migration {
                 $table->primary('bid_id', 'prom_op_variant_pk');
                 $table->index(['user_id', 'variant_id'], 'prom_op_user_variant_idx');
             });
-        } elseif (!$this->indexExists('promethee_operation_aircraft_variants', 'prom_op_user_variant_idx')) {
-            Schema::table('promethee_operation_aircraft_variants', function (Blueprint $table) {
-                $table->index(['user_id', 'variant_id'], 'prom_op_user_variant_idx');
-            });
+        } else {
+            $this->ensureIndex(
+                'promethee_operation_aircraft_variants',
+                fn (Blueprint $table) => $table->index(['user_id', 'variant_id'], 'prom_op_user_variant_idx')
+            );
         }
     }
 
@@ -50,14 +49,22 @@ return new class extends Migration {
         Schema::dropIfExists('promethee_pilot_aircraft_variants');
     }
 
-    private function indexExists(string $table, string $index): bool
+    /**
+     * Shared hosting often denies SELECT on information_schema. MySQL DDL also
+     * isn't transactional, so a failed migration may leave the table behind.
+     * Re-attempt the short-named index and ignore only MySQL's duplicate-index
+     * error (1061); every other SQL error is still surfaced.
+     */
+    private function ensureIndex(string $table, callable $definition): void
     {
-        $physicalTable = DB::getTablePrefix().$table;
+        try {
+            Schema::table($table, $definition);
+        } catch (QueryException $exception) {
+            $mysqlCode = (int) ($exception->errorInfo[1] ?? 0);
 
-        return DB::table('information_schema.statistics')
-            ->whereRaw('table_schema = DATABASE()')
-            ->where('table_name', $physicalTable)
-            ->where('index_name', $index)
-            ->exists();
+            if ($mysqlCode !== 1061) {
+                throw $exception;
+            }
+        }
     }
 };
