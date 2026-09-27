@@ -325,13 +325,15 @@ function updatePreflight(status, state, ready) {
     ['OFP', state.ofp, state.ofp ? 'briefing disponible' : 'à préparer'],
     ['PIREP', state.pirep, state.pirep ? 'pré-déposé' : 'à préparer'],
     ['SIMULATEUR', readiness.simulator, readiness.simulator ? connectorName : 'télémétrie en attente'],
-    ['VARIANTE', variantMatch === true ? true : null, !selectedVariant
+    ['VARIANTE', selectedVariant ? true : null, !selectedVariant
       ? 'non sélectionnée · contrôle informatif'
       : (variantMatch === true
-          ? (selectedVariant.label + ' détecté')
+          ? (selectedVariant.label + ' · profil Prométhée · détecté')
           : variantMatch === false
-            ? ('profil ' + selectedVariant.label + ' · détecté ' + (capabilityReport.adapterName || capabilityReport.AdapterName || detectedAdapter || 'inconnu') + ' · informatif')
-            : (selectedVariant.label + ' · identité simulateur non confirmée · informatif'))],
+            ? (selectedVariant.label + ' · profil Prométhée · simulateur détecté '
+                + (capabilityReport.adapterName || capabilityReport.AdapterName || detectedAdapter || 'inconnu')
+                + ' · comparaison informative')
+            : (selectedVariant.label + ' · profil Prométhée sélectionné · identité simulateur informative'))],
     ['AU SOL', onGround === null ? null : onGround === true, onGround === null ? 'information indisponible' : (onGround ? 'confirmé' : 'avion en vol')],
     ['FREIN DE PARC', parkingBrake === null ? null : parkingBrake === true, parkingBrake === null ? 'information indisponible' : (parkingBrake ? 'serré' : 'desserré')],
     ['MOTEURS', enginesStopped, enginesStopped === null ? 'information indisponible' : (enginesStopped ? 'arrêtés' : 'en fonctionnement')]
