@@ -243,8 +243,17 @@ function updateNextAction(state, ready) {
   const button = $('#nextActionBtn');
   if (!title || !text || !button) return;
 
+  const dispatchStatus = String(serverDispatch?.status || '').toUpperCase();
+  const terminal = ['COMPLETED', 'CANCELLED'].includes(dispatchStatus);
   let action = () => {};
-  if (!state.operation) {
+  if (terminal) {
+    setText(title, dispatchStatus === 'COMPLETED' ? 'Vol déjà terminé' : 'Opération annulée');
+    setText(text, dispatchStatus === 'COMPLETED'
+      ? 'Ce PIREP a déjà été déposé. Sélectionnez une autre réservation ou un nouveau vol du programme.'
+      : 'Cette opération ne peut plus être démarrée. Sélectionnez une autre réservation.');
+    setText(button, 'Choisir un autre vol');
+    action = () => document.querySelector('[data-tab="flight"]')?.click();
+  } else if (!state.operation) {
     setText(title, 'Choisissez votre vol');
     setText(text, 'Sélectionnez une réservation ou recherchez une ligne du programme Air Inter.');
     setText(button, 'Choisir un vol');
@@ -385,7 +394,12 @@ function updateWorkflow() {
   const canAttemptStart = dispatchReady && readiness.simulator && !terminal;
   const node = $('#readyState');
   if (node) {
-    node.textContent = ready ? 'READY FOR DEPARTURE' : 'NOT READY';
+    const status = String(serverDispatch?.status || '').toUpperCase();
+    node.textContent = status === 'COMPLETED'
+      ? 'FLIGHT COMPLETED'
+      : status === 'CANCELLED'
+        ? 'CANCELLED'
+        : (ready ? 'READY FOR DEPARTURE' : 'NOT READY');
     node.classList.toggle('ready', ready);
   }
   const startButton = $('#startBtn');
