@@ -23,7 +23,13 @@
                 {{ $mission->completion ? 'VALIDÉE' : 'EN COURS' }}
               @endif
             </span>
-            <h2>{{ $mission->title }}</h2>
+            <h2>
+              @if($mission->mission_type === 'repatriation' && $mission->aircraft_registration)
+                Rapatriement <span class="aircraft-registration">{{ $mission->aircraft_registration }}</span> vers {{ $mission->arr_airport_id }}
+              @else
+                {{ $mission->title }}
+              @endif
+            </h2>
           </div>
           <span class="tag">{{ $mission->dpt_airport_id ?: 'Libre' }} → {{ $mission->arr_airport_id ?: 'Libre' }}</span>
         </div>
@@ -34,7 +40,7 @@
           <div class="control-strip">
             <article>
               <span>Appareil imposé</span>
-              <strong>{{ $mission->aircraft_registration ?: '—' }}</strong>
+              <strong class="aircraft-registration">{{ $mission->aircraft_registration ?: '—' }}</strong>
               <small>Retour vers sa base attitrée</small>
             </article>
             <article>
