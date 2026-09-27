@@ -413,6 +413,7 @@ public sealed class PrometheeWindow : Window
         // filed, leaving the server completed but the local recorder unable to
         // close. Drain every bounded telemetry batch, not just the first one.
         recorder.Pause();
+        var serverFiled = false;
         try {
             for (var batch = 0; batch < 200; batch++) {
                 var sent = await TelemetryService.SendPending(client, recorder);
@@ -439,12 +440,13 @@ public sealed class PrometheeWindow : Window
                 created_at=f.BlockOn,
                 landing_rate=f.LandingRate
             });
+            serverFiled = true;
             recorder.Complete();
             return new { ok=true, review };
         } catch {
             // If the server filing itself failed, resume local recording so the
             // pilot is never stranded in a hidden paused state and may retry.
-            if (recorder.Flight is not null && recorder.Flight.Recording == false) {
+            if (!serverFiled && recorder.Flight is not null && recorder.Flight.Recording == false) {
                 try { recorder.Resume(client.Server); } catch { }
             }
             throw;
