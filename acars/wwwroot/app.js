@@ -2216,7 +2216,12 @@ async function refreshStatus() {
     lastStatus = status;
     const flight = status.flight;
     const latest = status.latest || {};
-    const value = (camel, pascal) => latest[camel] ?? latest[pascal];
+    const value = (...names) => {
+      for (const name of names) {
+        if (latest[name] !== undefined && latest[name] !== null) return latest[name];
+      }
+      return null;
+    };
     if (status.connected && !connected) setAuthenticated(true);
     readiness.simulator = Boolean(status.latest);
     const recording = Boolean(flight?.recording ?? flight?.Recording);
@@ -2247,9 +2252,12 @@ async function refreshStatus() {
       ? `Prométhée indisponible — le vol continue d’être enregistré localement. ${pendingCount} message${pendingCount > 1 ? 's' : ''} en attente ; votre vol reste sauvegardé.`
       : '';
     setText($('#warning'), simulatorWarning || networkWarning || status.warning || '');
-    setText($('#altitude'), value('altitude', 'Altitude') == null ? '—' : `${Math.round(value('altitude', 'Altitude'))} ft`);
-    setText($('#groundSpeed'), value('gs', 'Gs') == null ? '—' : `${Math.round(value('gs', 'Gs'))} kt`);
-    setText($('#fuel'), value('fuel', 'Fuel') == null ? '—' : `${Math.round(value('fuel', 'Fuel'))} lb`);
+    const altitude = value('altitude', 'Altitude', 'altitudeMslFeet', 'AltitudeMslFeet');
+    const groundSpeed = value('gs', 'Gs', 'groundSpeedKnots', 'GroundSpeedKnots');
+    const fuel = value('fuel', 'Fuel', 'fuelWeight', 'FuelWeight');
+    setText($('#altitude'), altitude == null ? '—' : `${Math.round(altitude)} ft`);
+    setText($('#groundSpeed'), groundSpeed == null ? '—' : `${Math.round(groundSpeed)} kt`);
+    setText($('#fuel'), fuel == null ? '—' : `${Math.round(fuel)} lb`);
     updateRemotePolicy(status.remoteConfiguration || status.RemoteConfiguration);
     if (flight?.pirepId || flight?.PirepId) pirepId = flight.pirepId || flight.PirepId;
     drawMap(status.track || []);
