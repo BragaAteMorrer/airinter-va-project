@@ -3,6 +3,8 @@
 return [
     'past_minutes' => 45,
     'future_minutes' => 90,
+    'arrivals_past_minutes' => 45,
+    'arrivals_future_minutes' => 120,
     'max_rows' => 20,
     'future_fallback' => true,
 
