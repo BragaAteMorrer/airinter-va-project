@@ -205,6 +205,7 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::post('/regional-operations/settings', [PortalController::class,'saveRegionalOperations'])->name('regional.settings');
         Route::post('/regional-operations/bases', [PortalController::class,'saveRegionalBase'])->name('regional.bases.save');
         Route::post('/regional-operations/aircraft', [PortalController::class,'assignAircraftBase'])->name('regional.aircraft.assign');
+        Route::post('/regional-operations/repatriation/sync', [PortalController::class,'syncRegionalRepatriations'])->name('regional.repatriation.sync');
         Route::get('/passport', [PortalController::class,'adminPassport'])->name('passport');
         Route::post('/passport', [PortalController::class,'savePassportSettings'])->name('passport.save');
         Route::get('/shop', [PortalController::class,'adminShop'])->name('shop');
