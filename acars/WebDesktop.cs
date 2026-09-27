@@ -338,6 +338,8 @@ public sealed class PrometheeWindow : Window
         var value = body!.Value;
         var operationId = value.TryGetProperty("operationId", out var operation) ? operation.GetString() : null;
         var pirepId = value.GetProperty("pirepId").GetString() ?? "";
+        if (string.IsNullOrWhiteSpace(pirepId))
+            throw new InvalidOperationException("START FLIGHT refusé : le PIREP Prométhée n’est pas résolu. Revenez dans Mes opérations et actualisez le Dispatch.");
         var existing = recorder.Flight;
 
         if (existing is not null) {
@@ -403,22 +405,50 @@ public sealed class PrometheeWindow : Window
     private object Report() => recorder.GetReview() ?? throw new InvalidOperationException("Aucun vol en cours.");
     private async Task<object> File()
     {
-        await TelemetryService.SendPending(client, recorder);
-        var f = recorder.Flight ?? throw new InvalidOperationException("Aucun vol en cours.");
-        if (f.Phase != "IN") throw new InvalidOperationException("Attendez l’arrivée au parking avant de déposer le PIREP.");
-        var review = recorder.GetReview() ?? throw new InvalidOperationException("Flight Review indisponible.");
-        await client.Send($"pireps/{Uri.EscapeDataString(f.PirepId)}/file", new {
-            distance=Math.Round(f.Distance,2),
-            flight_time=Math.Max(1,(int)Math.Round(f.AirborneSeconds/60)),
-            fuel_used=Math.Round(f.FuelUsed),
-            block_time=Math.Max(1,(int)Math.Round(((f.BlockOn ?? DateTimeOffset.UtcNow)-f.BlockOff!.Value).TotalMinutes)),
-            block_off_time=f.BlockOff,
-            block_on_time=f.BlockOn,
-            created_at=f.BlockOn,
-            landing_rate=f.LandingRate
-        });
-        recorder.Complete();
-        return new { ok=true, review };
+        var current = recorder.Flight ?? throw new InvalidOperationException("Aucun vol en cours.");
+        if (current.Phase != "IN") throw new InvalidOperationException("Attendez l’arrivée au parking avant de déposer le PIREP.");
+
+        // Freeze capture before the final drain. Otherwise the one-second
+        // simulator loop can enqueue a new position while the PIREP is being
+        // filed, leaving the server completed but the local recorder unable to
+        // close. Drain every bounded telemetry batch, not just the first one.
+        recorder.Pause();
+        try {
+            for (var batch = 0; batch < 200; batch++) {
+                var sent = await TelemetryService.SendPending(client, recorder);
+                if (sent == 0) break;
+            }
+
+            lock (recorder.Gate) {
+                if (recorder.Pending.Count > 0 || recorder.PendingEvents.Count > 0 || recorder.PendingFacts.Count > 0)
+                    throw new InvalidOperationException("La synchronisation finale ACARS n’est pas terminée. Réessayez lorsque Prométhée est disponible.");
+            }
+
+            var f = recorder.Flight ?? throw new InvalidOperationException("Aucun vol en cours.");
+            if (f.BlockOff is null || f.BlockOn is null)
+                throw new InvalidOperationException("Le temps bloc est incomplet. Vérifiez les événements OUT et IN avant de déposer le PIREP.");
+
+            var review = recorder.GetReview() ?? throw new InvalidOperationException("Flight Review indisponible.");
+            await client.Send($"pireps/{Uri.EscapeDataString(f.PirepId)}/file", new {
+                distance=Math.Round(f.Distance,2),
+                flight_time=Math.Max(1,(int)Math.Round(f.AirborneSeconds/60)),
+                fuel_used=Math.Round(f.FuelUsed),
+                block_time=Math.Max(1,(int)Math.Round((f.BlockOn.Value-f.BlockOff.Value).TotalMinutes)),
+                block_off_time=f.BlockOff,
+                block_on_time=f.BlockOn,
+                created_at=f.BlockOn,
+                landing_rate=f.LandingRate
+            });
+            recorder.Complete();
+            return new { ok=true, review };
+        } catch {
+            // If the server filing itself failed, resume local recording so the
+            // pilot is never stranded in a hidden paused state and may retry.
+            if (recorder.Flight is not null && recorder.Flight.Recording == false) {
+                try { recorder.Resume(client.Server); } catch { }
+            }
+            throw;
+        }
     }
     private static string UserMessage(Exception e) => e is InvalidOperationException ? e.Message : "Une erreur inattendue est survenue. Réessayez plus tard.";
 }
