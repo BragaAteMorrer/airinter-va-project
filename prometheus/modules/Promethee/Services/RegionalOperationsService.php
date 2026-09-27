@@ -28,7 +28,7 @@ class RegionalOperationsService
         ];
     }
 
-    public function sync(): array
+    public function sync(bool $forceMissions = false): array
     {
         $settings = $this->settings();
         $created = 0;
@@ -73,16 +73,17 @@ class RegionalOperationsService
 
             $awaySince = $assignment->away_since ? \Carbon\Carbon::parse($assignment->away_since) : null;
             if (!$awaySince) {
+                $awaySince = $plane->landing_time ? \Carbon\Carbon::parse($plane->landing_time) : now();
                 DB::table('promethee_aircraft_bases')->where('aircraft_id', $plane->id)->update([
-                    'away_since' => $plane->landing_time ?: now(),
+                    'away_since' => $awaySince,
                     'updated_at' => now(),
                 ]);
-                continue;
+                $assignment->away_since = $awaySince;
             }
 
             $daysAway = $awaySince->diffInDays(now());
 
-            if ($daysAway >= $settings['mission_after_days'] && !$assignment->repatriation_mission_id && $current !== '') {
+            if (($forceMissions || $daysAway >= $settings['mission_after_days']) && !$assignment->repatriation_mission_id && $current !== '') {
                 $missionId = DB::table('promethee_missions')->insertGetId([
                     'created_by' => null,
                     'title' => 'Rapatriement '.$plane->registration.' vers '.$base,
