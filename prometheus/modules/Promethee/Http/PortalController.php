@@ -1680,6 +1680,8 @@ class PortalController extends Controller
         // Older/imported pilot accounts may not yet have a phpVMS journal.
         // A profile remains read-only in that case and reports a zero balance.
         $wallet = $pilot->journal?->getBalance() ?? new Money(0);
+        $memberProfile = DB::table('promethee_members')->where('user_id', $pilot->id)->first();
+        $pilot->setAttribute('admin_portrait_url', $memberProfile->memorial_portrait_url ?? null);
 
         $myMissions = collect();
         if (auth()->check() && (int) auth()->id() === (int) $pilot->id) {
@@ -1723,7 +1725,8 @@ class PortalController extends Controller
         $current=DB::table('promethee_members')->where('user_id',$id)->first();
         $portrait=$r->hasFile('memorial_portrait') || $r->filled('memorial_portrait_url') ? $this->memorialPortrait($r) : ($current->memorial_portrait_url ?? null);
         if ($d['status'] !== 'heaven') {
-            $portrait=null;
+            // The portrait also acts as an administrator-defined avatar for
+            // active/former pilots. Only the memorial tribute is Heaven-only.
             $d['memorial_tribute']=null;
         }
         unset($d['memorial_portrait'], $d['memorial_portrait_url']);
@@ -2614,6 +2617,15 @@ class PortalController extends Controller
         );
         Aircraft::where('id',$data['aircraft_id'])->update(['hub_id'=>strtoupper($data['base_airport_id'])]);
         return back()->with('success','Base de l’appareil mise à jour.');
+    }
+    public function syncRegionalRepatriations(RegionalOperationsService $operations) {
+        $result = $operations->sync(true);
+        return back()->with(
+            'success',
+            $result['created'].' mission(s) de rapatriement créée(s), '
+            .$result['cleared'].' situation(s) régularisée(s), '
+            .$result['returned'].' retour(s) automatique(s).'
+        );
     }
     public function adminPassport() { return $this->page('admin-passport',['enabled'=>DB::table('promethee_settings')->where('key','passport.enabled')->value('value') !== '0','showMap'=>DB::table('promethee_settings')->where('key','passport.map_enabled')->value('value') !== '0']); }
     public function savePassportSettings(Request $r) { $r->validate(['enabled'=>'nullable|boolean','map_enabled'=>'nullable|boolean']); foreach(['passport.enabled'=>$r->boolean('enabled'),'passport.map_enabled'=>$r->boolean('map_enabled')] as $key=>$value) DB::table('promethee_settings')->updateOrInsert(['key'=>$key],['value'=>$value?'1':'0','created_at'=>now(),'updated_at'=>now()]); return back()->with('success','Paramètres du passeport enregistrés.'); }
