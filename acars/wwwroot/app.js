@@ -316,7 +316,13 @@ function updatePreflight(status, state, ready) {
     ['OFP', state.ofp, state.ofp ? 'briefing disponible' : 'à préparer'],
     ['PIREP', state.pirep, state.pirep ? 'pré-déposé' : 'à préparer'],
     ['SIMULATEUR', readiness.simulator, readiness.simulator ? connectorName : 'télémétrie en attente'],
-    ['VARIANTE', variantMatch, !selectedVariant ? 'non sélectionnée' : (variantMatch === true ? (selectedVariant.label + ' détecté') : variantMatch === false ? ('attendu ' + selectedVariant.label + ' · détecté ' + (capabilityReport.adapterName || capabilityReport.AdapterName || detectedAdapter || 'inconnu')) : (selectedVariant.label + ' · vérification en attente'))],
+    ['VARIANTE', variantMatch === true ? true : null, !selectedVariant
+      ? 'non sélectionnée · contrôle informatif'
+      : (variantMatch === true
+          ? (selectedVariant.label + ' détecté')
+          : variantMatch === false
+            ? ('profil ' + selectedVariant.label + ' · détecté ' + (capabilityReport.adapterName || capabilityReport.AdapterName || detectedAdapter || 'inconnu') + ' · informatif')
+            : (selectedVariant.label + ' · identité simulateur non confirmée · informatif'))],
     ['AU SOL', onGround === null ? null : onGround === true, onGround === null ? 'information indisponible' : (onGround ? 'confirmé' : 'avion en vol')],
     ['FREIN DE PARC', parkingBrake === null ? null : parkingBrake === true, parkingBrake === null ? 'information indisponible' : (parkingBrake ? 'serré' : 'desserré')],
     ['MOTEURS', enginesStopped, enginesStopped === null ? 'information indisponible' : (enginesStopped ? 'arrêtés' : 'en fonctionnement')]
@@ -364,14 +370,19 @@ function updateWorkflow() {
   const acceptedAdapters = Array.isArray(selectedVariant?.adapter_ids) ? selectedVariant.adapter_ids : [];
   const capabilityReport = lastStatus?.aircraftCapabilities || lastStatus?.AircraftCapabilities || {};
   const detectedAdapter = capabilityReport.adapterId || capabilityReport.AdapterId || null;
-  const variantCompatible = acceptedAdapters.length === 0 || !detectedAdapter || acceptedAdapters.includes(detectedAdapter);
   const serverChecksReady = serverDispatch
     ? ['operation', 'aircraft', 'ofp', 'pirep'].every(key => serverDispatch?.server_checks?.[key] === true)
     : false;
   const dispatchReady = serverDispatch
     ? (serverDispatch.can_start === true || (serverDispatch.status === 'IN_PROGRESS' && serverChecksReady))
     : (state.operation && state.aircraft && state.ofp && state.pirep);
-  const ready = dispatchReady && readiness.simulator && preflightSafe && variantCompatible;
+  // Adapter/variant detection is useful diagnostics, but add-on title strings
+  // are not reliable enough to hard-block an otherwise valid flight. Keep the
+  // READY badge strict on real simulator safety data and let /api/start remain
+  // the final authority for refusal reasons.
+  const ready = dispatchReady && readiness.simulator && preflightSafe;
+  const terminal = ['COMPLETED', 'CANCELLED'].includes(String(serverDispatch?.status || '').toUpperCase());
+  const canAttemptStart = dispatchReady && readiness.simulator && !terminal;
   const node = $('#readyState');
   if (node) {
     node.textContent = ready ? 'READY FOR DEPARTURE' : 'NOT READY';
@@ -379,10 +390,13 @@ function updateWorkflow() {
   }
   const startButton = $('#startBtn');
   if (startButton) {
-    startButton.disabled = !ready;
+    startButton.disabled = !canAttemptStart;
     startButton.textContent = serverDispatch?.status === 'IN_PROGRESS'
       ? 'Reprendre l’enregistrement'
-      : 'Démarrer l’enregistrement';
+      : (ready ? 'Démarrer l’enregistrement' : 'Vérifier et démarrer');
+    startButton.title = canAttemptStart && !ready
+      ? 'Hermès vérifiera les contrôles au clic et affichera précisément ce qui bloque.'
+      : '';
   }
   updateAircraftSelectionStatus();
   updateNextAction(state, ready);
@@ -398,7 +412,7 @@ function renderEligibility(payload) {
 
   const heading = document.createElement('div');
   heading.className = 'eligibility-heading';
-  heading.innerHTML = '<div><span class="kicker">DISPATCH</span><h3>Types d’appareil disponibles</h3><p class="hint">Prométhée affectera automatiquement un appareil physique disponible du type choisi.</p></div>';
+  heading.innerHTML = '<div><span class="kicker">DISPATCH</span><h3>Types d’appareil disponibles</h3><p class="hint">Choisissez un type puis une immatriculation disponible. Hermès n’affiche que les appareils autorisés pour ce vol.</p></div>';
   const count = document.createElement('strong');
   count.textContent = types.length + ' type' + (types.length > 1 ? 's' : '');
   heading.append(count);
@@ -834,6 +848,9 @@ async function selectOperation(operation) {
   }
 
   selectedOperation = operation;
+  // Rehydrate an already-prefiled operation after a restart/reselection. The
+  // server is authoritative; never keep a stale PIREP id from another flight.
+  pirepId = operation.pirep_id || operation.pirep?.id || null;
   selectedAircraft = operation.aircraft?.id ? operation.aircraft : null;
   selectedVariant = operation.simbrief?.variant || null;
   renderOperationLoad(selectedAircraft);
@@ -942,6 +959,18 @@ async function refreshDispatch() {
   if (!operationRef) { serverDispatch = null; return null; }
 
   serverDispatch = unwrap(await call(`/api/v1/operations/${encodeURIComponent(operationRef)}/dispatch`));
+
+  // A dispatch refresh is the canonical recovery path for Hermès. Hydrate all
+  // identifiers that may have been lost when the desktop app was restarted.
+  if (serverDispatch?.operation) {
+    selectedOperation = { ...(selectedOperation || {}), ...serverDispatch.operation };
+  }
+  const dispatchPirepId = serverDispatch?.pirep?.id
+    || serverDispatch?.pirep?.pirep_id
+    || serverDispatch?.operation?.pirep_id
+    || null;
+  if (dispatchPirepId) pirepId = dispatchPirepId;
+
   if (serverDispatch?.operation?.aircraft?.id) {
     selectedAircraft = serverDispatch.operation.aircraft;
     const form = $('#prefileForm');
@@ -967,7 +996,8 @@ async function assertDispatchCanStart() {
   const dispatch = await refreshDispatch();
   const checks = dispatch?.server_checks || {};
   const checksReady = ['operation', 'aircraft', 'ofp', 'pirep'].every(key => checks[key] === true);
-  const serverPirepId = dispatch?.pirep?.id || dispatch?.pirep?.pirep_id || null;
+  const serverPirepId = dispatch?.pirep?.id || dispatch?.pirep?.pirep_id || dispatch?.operation?.pirep_id || null;
+  if (serverPirepId) pirepId = serverPirepId;
   const resumable = dispatch?.status === 'IN_PROGRESS' && checksReady && Boolean(serverPirepId);
 
   if (!dispatch?.can_start && !resumable) {
@@ -1342,6 +1372,9 @@ $('#aircraftId').onchange = async event => {
     populateAircraftInstances(typeSelect?.value || selectedAircraft.type_key || '', selectedAircraft.id);
 
     await refreshDispatch();
+    // The aircraft assignment changes the applicable add-on/SimBrief profile.
+    // Refresh immediately instead of leaving a stale or empty variant selector.
+    await refreshAircraftVariants();
     showMessage(
       '#pirepMessage',
       (selectedAircraft.registration || requestedLabel)
