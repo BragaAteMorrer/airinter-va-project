@@ -63,3 +63,44 @@ body[data-appearance="dark"] .crm-sender-card,
 body[data-appearance="dark"] .crm-audience-builder,
 body[data-appearance="dark"] .crm-message-preview,
 body[data-appearance="dark"] .crm-json-preview{background:var(--panel)}
+
+
+/* Promethee CRM checkbox targeting */
+.crm-audience-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.crm-audience-head h3{margin:2px 0 0}
+.crm-reset-filters{padding:7px 10px;font-size:11px}
+.crm-all-active{display:flex!important;align-items:flex-start!important;gap:10px!important;padding:12px 13px;border:1px solid var(--line);border-radius:9px;background:color-mix(in srgb,var(--panel) 94%,var(--blue) 6%)}
+.crm-all-active input{margin-top:3px!important;flex:0 0 auto}
+.crm-all-active span{display:grid;gap:2px}
+.crm-all-active small{color:var(--muted);font-weight:500}
+.crm-filter-block{border:1px solid var(--line);border-radius:9px;background:color-mix(in srgb,var(--panel) 97%,#fff 3%);overflow:hidden}
+.crm-filter-block>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 12px;cursor:pointer;font-weight:800;list-style:none}
+.crm-filter-block>summary::-webkit-details-marker{display:none}
+.crm-filter-block>summary::after{content:'⌄';margin-left:auto;color:var(--muted)}
+.crm-filter-block[open]>summary::after{transform:rotate(180deg)}
+.crm-filter-count{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 7px;border-radius:999px;background:var(--line);font-size:11px;color:var(--ink);margin-left:auto}
+.crm-filter-content{display:grid;gap:10px;padding:0 12px 12px}
+.crm-filter-actions{display:flex;gap:10px;flex-wrap:wrap}
+.crm-link-button{border:0;background:none;padding:0;color:var(--blue);font:inherit;font-size:11px;font-weight:800;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.crm-chip-grid{display:flex;flex-wrap:wrap;gap:8px}
+.crm-chip{display:inline-flex!important;align-items:center!important;grid-template-columns:auto 1fr!important;gap:7px!important;padding:8px 11px;border:1px solid var(--line);border-radius:999px;background:var(--panel);cursor:pointer;user-select:none;transition:border-color .15s ease,background .15s ease,transform .15s ease}
+.crm-chip input{width:auto!important;margin:0!important}
+.crm-chip:hover{border-color:var(--blue);transform:translateY(-1px)}
+.crm-chip:has(input:checked){border-color:var(--blue);background:color-mix(in srgb,var(--blue) 14%,var(--panel));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--blue) 35%,transparent)}
+.crm-hours-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.crm-hours-grid label{display:grid;gap:5px}
+.crm-pilot-search{width:100%}
+.crm-pilot-picker{display:grid;gap:7px;max-height:290px;overflow:auto;padding:4px}
+.crm-pilot-option{display:flex!important;align-items:flex-start!important;grid-template-columns:auto 1fr!important;gap:10px!important;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);cursor:pointer}
+.crm-pilot-option:hover{border-color:var(--blue)}
+.crm-pilot-option:has(input:checked){border-color:var(--blue);background:color-mix(in srgb,var(--blue) 12%,var(--panel))}
+.crm-pilot-option input{width:auto!important;margin:3px 0 0!important;flex:0 0 auto}
+.crm-pilot-option-main{display:grid;gap:2px;min-width:0}
+.crm-pilot-option-main strong{overflow:hidden;text-overflow:ellipsis}
+.crm-pilot-option-main small{color:var(--muted)}
+.crm-pilot-actions{justify-content:space-between}
+.crm-audience-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.crm-audience-summary span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;font-weight:800}
+.crm-audience-summary strong{font-size:14px}
+.crm-send-button{width:100%}
+@media(max-width:700px){.crm-hours-grid{grid-template-columns:1fr}.crm-audience-head{align-items:flex-start}.crm-audience-summary{align-items:flex-start;flex-direction:column}}

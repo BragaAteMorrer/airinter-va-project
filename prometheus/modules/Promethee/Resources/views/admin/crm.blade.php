@@ -104,52 +104,132 @@
       </div>
 
       <aside class="crm-audience-builder">
-        <h3>Ciblage</h3>
-        <label class="crm-check"><input type="checkbox" name="all_active" value="1" data-crm-filter> Tous les pilotes actifs + en congé</label>
+        <div class="crm-audience-head">
+          <div>
+            <span class="eyebrow">CIBLAGE</span>
+            <h3>Destinataires</h3>
+          </div>
+          <button type="button" class="button outline crm-reset-filters" id="crmResetFilters">Réinitialiser</button>
+        </div>
 
-        <label>Statut
-          <select name="states[]" multiple size="5" data-crm-filter>
-            <option value="1">Actif</option>
-            <option value="3">En congé</option>
-            <option value="0">En attente</option>
-            <option value="2">Refusé</option>
-            <option value="4">Suspendu</option>
-          </select>
+        <label class="crm-check crm-all-active">
+          <input type="checkbox" name="all_active" value="1" data-crm-filter>
+          <span><strong>Tous les pilotes actifs + en congé</strong><small>Sélection rapide de l'équipage actuellement inscrit.</small></span>
         </label>
 
-        <label>Grade
-          <select name="rank_ids[]" multiple size="6" data-crm-filter>
-            @foreach($ranks as $rank)<option value="{{ $rank->id }}">{{ $rank->name }}</option>@endforeach
-          </select>
-        </label>
+        <details class="crm-filter-block" open>
+          <summary><span>Statut</span><b class="crm-filter-count" data-count-for="states">0</b></summary>
+          <div class="crm-filter-content">
+            <div class="crm-filter-actions">
+              <button type="button" class="crm-link-button" data-check-all="states">Tout cocher</button>
+              <button type="button" class="crm-link-button" data-uncheck-all="states">Tout décocher</button>
+            </div>
+            <div class="crm-chip-grid" data-checkbox-group="states">
+              <label class="crm-chip"><input type="checkbox" name="states[]" value="1" data-crm-filter><span>Actif</span></label>
+              <label class="crm-chip"><input type="checkbox" name="states[]" value="3" data-crm-filter><span>En congé</span></label>
+              <label class="crm-chip"><input type="checkbox" name="states[]" value="0" data-crm-filter><span>En attente</span></label>
+              <label class="crm-chip"><input type="checkbox" name="states[]" value="2" data-crm-filter><span>Refusé</span></label>
+              <label class="crm-chip"><input type="checkbox" name="states[]" value="4" data-crm-filter><span>Suspendu</span></label>
+            </div>
+          </div>
+        </details>
 
-        <label>Compagnie
-          <select name="airline_ids[]" multiple size="5" data-crm-filter>
-            @foreach($airlines as $airline)<option value="{{ $airline->id }}">{{ $airline->icao }} · {{ $airline->name }}</option>@endforeach
-          </select>
-        </label>
+        <details class="crm-filter-block" open>
+          <summary><span>Grade</span><b class="crm-filter-count" data-count-for="ranks">0</b></summary>
+          <div class="crm-filter-content">
+            <div class="crm-filter-actions">
+              <button type="button" class="crm-link-button" data-check-all="ranks">Tout cocher</button>
+              <button type="button" class="crm-link-button" data-uncheck-all="ranks">Tout décocher</button>
+            </div>
+            <div class="crm-chip-grid" data-checkbox-group="ranks">
+              @foreach($ranks as $rank)
+                <label class="crm-chip">
+                  <input type="checkbox" name="rank_ids[]" value="{{ $rank->id }}" data-crm-filter>
+                  <span>{{ $rank->name }}</span>
+                </label>
+              @endforeach
+            </div>
+          </div>
+        </details>
 
-        <label>Base
-          <select name="bases[]" multiple size="5" data-crm-filter>
-            @foreach($bases as $base)<option value="{{ $base }}">{{ $base }}</option>@endforeach
-          </select>
-        </label>
+        <details class="crm-filter-block" open>
+          <summary><span>Compagnie</span><b class="crm-filter-count" data-count-for="airlines">0</b></summary>
+          <div class="crm-filter-content">
+            <div class="crm-filter-actions">
+              <button type="button" class="crm-link-button" data-check-all="airlines">Tout cocher</button>
+              <button type="button" class="crm-link-button" data-uncheck-all="airlines">Tout décocher</button>
+            </div>
+            <div class="crm-chip-grid" data-checkbox-group="airlines">
+              @foreach($airlines as $airline)
+                <label class="crm-chip">
+                  <input type="checkbox" name="airline_ids[]" value="{{ $airline->id }}" data-crm-filter>
+                  <span>{{ $airline->icao }} · {{ $airline->name }}</span>
+                </label>
+              @endforeach
+            </div>
+          </div>
+        </details>
 
-        <div class="two-columns compact">
+        <details class="crm-filter-block" open>
+          <summary><span>Base</span><b class="crm-filter-count" data-count-for="bases">0</b></summary>
+          <div class="crm-filter-content">
+            <div class="crm-filter-actions">
+              <button type="button" class="crm-link-button" data-check-all="bases">Tout cocher</button>
+              <button type="button" class="crm-link-button" data-uncheck-all="bases">Tout décocher</button>
+            </div>
+            <div class="crm-chip-grid" data-checkbox-group="bases">
+              @foreach($bases as $base)
+                <label class="crm-chip">
+                  <input type="checkbox" name="bases[]" value="{{ $base }}" data-crm-filter>
+                  <span>{{ $base }}</span>
+                </label>
+              @endforeach
+            </div>
+          </div>
+        </details>
+
+        <div class="crm-hours-grid">
           <label>Heures min.<input name="min_hours" type="number" min="0" step="1" data-crm-filter></label>
           <label>Heures max.<input name="max_hours" type="number" min="0" step="1" data-crm-filter></label>
         </div>
 
-        <label>Pilotes précis
-          <select name="pilot_ids[]" multiple size="10" data-crm-filter>
-            @foreach($pilots as $pilot)
-            <option value="{{ $pilot->id }}">{{ $pilot->pilot_id }} · {{ $pilot->name }} · {{ $pilot->rank?->name ?? 'Sans grade' }}</option>
-            @endforeach
-          </select>
-          <small>Ces pilotes sont ajoutés à la sélection, même s’ils ne correspondent pas aux autres filtres.</small>
-        </label>
+        <details class="crm-filter-block crm-pilot-block" open>
+          <summary><span>Pilotes précis</span><b class="crm-filter-count" data-count-for="pilots">0</b></summary>
+          <div class="crm-filter-content">
+            <div class="crm-filter-actions crm-pilot-actions">
+              <button type="button" class="crm-link-button" data-check-visible-pilots>Cocher les visibles</button>
+              <button type="button" class="crm-link-button" data-uncheck-all="pilots">Tout décocher</button>
+            </div>
 
-        <button type="submit" class="primary" @disabled($senders->where('active',true)->isEmpty()) onclick="return confirm('Envoyer cette campagne aux destinataires sélectionnés ?');">Envoyer la campagne</button>
+            <input type="search" id="crmPilotSearch" class="crm-pilot-search" placeholder="Matricule, nom, grade, compagnie, base…">
+
+            <div class="crm-pilot-picker" data-checkbox-group="pilots">
+              @foreach($pilots as $pilot)
+                @php($pilotSearchLabel = strtolower(trim(($pilot->pilot_id ?? '').' '.($pilot->name ?? '').' '.($pilot->rank?->name ?? '').' '.($pilot->airline?->icao ?? '').' '.($pilot->home_airport_id ?? ''))))
+                <label class="crm-pilot-option" data-pilot-label="{{ $pilotSearchLabel }}">
+                  <input type="checkbox" name="pilot_ids[]" value="{{ $pilot->id }}" data-crm-filter>
+                  <span class="crm-pilot-option-main">
+                    <strong>{{ $pilot->pilot_id ?: 'ITF---' }} · {{ $pilot->name }}</strong>
+                    <small>
+                      {{ $pilot->rank?->name ?? 'Sans grade' }}
+                      @if($pilot->airline?->icao) · {{ $pilot->airline->icao }}@endif
+                      @if($pilot->home_airport_id) · {{ $pilot->home_airport_id }}@endif
+                    </small>
+                  </span>
+                </label>
+              @endforeach
+            </div>
+
+            <small>Les pilotes cochés manuellement sont ajoutés au ciblage même s'ils ne correspondent pas aux autres filtres.</small>
+          </div>
+        </details>
+
+        <div class="crm-audience-summary">
+          <span>Sélection actuelle</span>
+          <strong id="crmAudienceCountInline">0 destinataire</strong>
+        </div>
+
+        <button type="submit" class="primary crm-send-button" @disabled($senders->where('active',true)->isEmpty()) onclick="return confirm('Envoyer cette campagne aux destinataires sélectionnés ?');">Envoyer la campagne</button>
       </aside>
     </div>
   </form>
@@ -198,18 +278,39 @@
   const pilots = @json($crmPilotData);
   const form = document.getElementById('crmCampaignForm');
   const count = document.getElementById('crmAudienceCount');
+  const inlineCount = document.getElementById('crmAudienceCountInline');
+  const search = document.getElementById('crmPilotSearch');
+  const reset = document.getElementById('crmResetFilters');
+
   if (!form || !count) return;
 
-  const vals = name => [...form.querySelectorAll(`[name="${name}"] option:checked`)].map(o => o.value);
+  const checkedValues = name =>
+    [...form.querySelectorAll(`[name="${name}"]:checked`)].map(input => input.value);
+
+  const updateGroupCounts = () => {
+    const groups = {
+      states: 'states[]',
+      ranks: 'rank_ids[]',
+      airlines: 'airline_ids[]',
+      bases: 'bases[]',
+      pilots: 'pilot_ids[]',
+    };
+
+    Object.entries(groups).forEach(([key, name]) => {
+      const badge = document.querySelector(`[data-count-for="${key}"]`);
+      if (badge) badge.textContent = checkedValues(name).length;
+    });
+  };
+
   const refresh = () => {
-    const allActive = form.querySelector('[name="all_active"]').checked;
-    const states = vals('states[]').map(Number);
-    const ranks = vals('rank_ids[]').map(Number);
-    const airlines = vals('airline_ids[]').map(Number);
-    const bases = vals('bases[]');
-    const manual = new Set(vals('pilot_ids[]').map(Number));
-    const minHours = form.querySelector('[name="min_hours"]').value;
-    const maxHours = form.querySelector('[name="max_hours"]').value;
+    const allActive = !!form.querySelector('[name="all_active"]')?.checked;
+    const states = checkedValues('states[]').map(Number);
+    const ranks = checkedValues('rank_ids[]').map(Number);
+    const airlines = checkedValues('airline_ids[]').map(Number);
+    const bases = checkedValues('bases[]');
+    const manual = new Set(checkedValues('pilot_ids[]').map(Number));
+    const minHoursRaw = form.querySelector('[name="min_hours"]')?.value ?? '';
+    const maxHoursRaw = form.querySelector('[name="max_hours"]')?.value ?? '';
 
     const selected = pilots.filter(p => {
       if (!p.email) return false;
@@ -219,19 +320,76 @@
       if (ranks.length && !ranks.includes(p.rank_id)) return false;
       if (airlines.length && !airlines.includes(p.airline_id)) return false;
       if (bases.length && !bases.includes(p.base)) return false;
-      if (minHours !== '' && p.hours < Number(minHours)) return false;
-      if (maxHours !== '' && p.hours > Number(maxHours)) return false;
+      if (minHoursRaw !== '' && p.hours < Number(minHoursRaw)) return false;
+      if (maxHoursRaw !== '' && p.hours > Number(maxHoursRaw)) return false;
 
-      const hasCriteria = allActive || states.length || ranks.length || airlines.length || bases.length || minHours !== '' || maxHours !== '';
+      const hasCriteria =
+        allActive ||
+        states.length ||
+        ranks.length ||
+        airlines.length ||
+        bases.length ||
+        minHoursRaw !== '' ||
+        maxHoursRaw !== '';
+
       return hasCriteria;
     });
 
-    count.textContent = selected.length + ' destinataire' + (selected.length > 1 ? 's' : '');
+    const text = selected.length + ' destinataire' + (selected.length > 1 ? 's' : '');
+    count.textContent = text;
+    if (inlineCount) inlineCount.textContent = text;
+    updateGroupCounts();
   };
 
   form.querySelectorAll('[data-crm-filter]').forEach(node => {
-    node.addEventListener(node.tagName === 'INPUT' && node.type === 'number' ? 'input' : 'change', refresh);
+    node.addEventListener(node.type === 'number' ? 'input' : 'change', refresh);
   });
+
+  document.querySelectorAll('[data-check-all]').forEach(button => {
+    button.addEventListener('click', () => {
+      const group = document.querySelector(`[data-checkbox-group="${button.dataset.checkAll}"]`);
+      if (!group) return;
+      group.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        if (!cb.closest('[hidden]')) cb.checked = true;
+      });
+      refresh();
+    });
+  });
+
+  document.querySelectorAll('[data-uncheck-all]').forEach(button => {
+    button.addEventListener('click', () => {
+      const group = document.querySelector(`[data-checkbox-group="${button.dataset.uncheckAll}"]`);
+      if (!group) return;
+      group.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+      refresh();
+    });
+  });
+
+  document.querySelector('[data-check-visible-pilots]')?.addEventListener('click', () => {
+    document.querySelectorAll('.crm-pilot-option:not([hidden]) input[type="checkbox"]').forEach(cb => cb.checked = true);
+    refresh();
+  });
+
+  search?.addEventListener('input', () => {
+    const term = search.value.trim().toLocaleLowerCase('fr-FR');
+    document.querySelectorAll('.crm-pilot-option').forEach(row => {
+      const label = (row.dataset.pilotLabel || '').toLocaleLowerCase('fr-FR');
+      row.hidden = term !== '' && !label.includes(term);
+    });
+  });
+
+  reset?.addEventListener('click', () => {
+    form.querySelectorAll('[data-crm-filter]').forEach(node => {
+      if (node.type === 'checkbox') node.checked = false;
+      if (node.type === 'number') node.value = '';
+    });
+    if (search) {
+      search.value = '';
+      document.querySelectorAll('.crm-pilot-option').forEach(row => row.hidden = false);
+    }
+    refresh();
+  });
+
   refresh();
 })();
 </script>
