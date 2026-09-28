@@ -14,17 +14,41 @@ return [
         'promethee' => [
             'name' => 'Prométhée',
             'redirect_uri' => env('AIRINTER_ID_PROMETHEE_CALLBACK', 'https://promethee.airinter-va.org/auth/airinter-id/callback'),
+            'redirect_uris' => [env('AIRINTER_ID_PROMETHEE_CALLBACK', 'https://promethee.airinter-va.org/auth/airinter-id/callback')],
             'confidential' => true,
+            'grant_types' => ['authorization_code', 'refresh_token'],
+            'scopes' => ['profile', 'email', 'promethee:read'],
+            'security' => [
+                'require_pkce' => true,
+                'require_state' => true,
+                'pkce_method' => 'S256',
+            ],
         ],
         'hermes' => [
             'name' => 'Hermès',
             'redirect_uri' => env('AIRINTER_ID_HERMES_CALLBACK', 'http://127.0.0.1:47821/callback'),
+            'redirect_uris' => [env('AIRINTER_ID_HERMES_CALLBACK', 'http://127.0.0.1:47821/callback')],
             'confidential' => false,
+            'grant_types' => ['authorization_code', 'refresh_token'],
+            'scopes' => ['profile', 'email', 'hermes:operate'],
+            'security' => [
+                'require_pkce' => true,
+                'require_state' => true,
+                'pkce_method' => 'S256',
+            ],
         ],
         'website' => [
             'name' => 'Air Inter VA',
             'redirect_uri' => env('AIRINTER_ID_PUBLIC_CALLBACK', 'https://www.airinter-va.org/auth/airinter-id/callback'),
+            'redirect_uris' => [env('AIRINTER_ID_PUBLIC_CALLBACK', 'https://www.airinter-va.org/auth/airinter-id/callback')],
             'confidential' => true,
+            'grant_types' => ['authorization_code', 'refresh_token'],
+            'scopes' => ['profile', 'email'],
+            'security' => [
+                'require_pkce' => true,
+                'require_state' => true,
+                'pkce_method' => 'S256',
+            ],
         ],
     ],
 ];
