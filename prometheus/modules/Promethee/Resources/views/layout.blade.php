@@ -132,6 +132,7 @@ window.prometheeI18n = @json($prometheeI18n);
     <div class="nav-menu">
         @ability('admin','admin-access')
         <a @class(['selected' => !request()->routeIs('admin.promethee.dispatch*') && request()->routeIs('admin.promethee.*')]) href="{{ route('admin.promethee.dashboard') }}">{{ __('promethee.administration') }}</a>
+        @if(\Illuminate\Support\Facades\Route::has('admin.promethee.crm'))<a @class(['selected' => request()->routeIs('admin.promethee.crm*')]) href="{{ route('admin.promethee.crm') }}">CRM & communications</a>@endif
         @if(\Illuminate\Support\Facades\Route::has('admin.users.index'))<a @class(['selected' => request()->routeIs('admin.users.*')]) href="{{ route('admin.users.index') }}">{{ __('promethee.admin_pilots') }}</a>@endif
         @if(\Illuminate\Support\Facades\Route::has('admin.ranks.index'))<a @class(['selected' => request()->routeIs('admin.ranks.*')]) href="{{ route('admin.ranks.index') }}">{{ __('promethee.admin_ranks') }}</a>@endif
         @endability
