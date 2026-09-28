@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\LegacyIdentity;
 use App\Models\SecurityEvent;
 use App\Models\User;
+use App\Services\AdaptiveRiskService;
+use App\Services\TrustedDeviceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,7 +22,7 @@ class AuthenticatedSessionController extends Controller
         return view('auth.login');
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, AdaptiveRiskService $risk, TrustedDeviceService $trustedDevices): RedirectResponse
     {
         $credentials = $request->validate([
             'login' => ['required', 'string', 'max:255'],
@@ -37,6 +39,18 @@ class AuthenticatedSessionController extends Controller
                 ->first()?->user;
 
         if (!$user || !$user->password || !Hash::check($credentials['password'], $user->password)) {
+            if ($user) {
+                SecurityEvent::create([
+                    'user_id' => $user->id,
+                    'type' => 'login.failed',
+                    'risk_score' => 20,
+                    'severity' => 'medium',
+                    'ip_address' => $request->ip(),
+                    'user_agent' => mb_substr((string) $request->userAgent(), 0, 1000),
+                    'created_at' => now(),
+                ]);
+            }
+
             throw ValidationException::withMessages([
                 'login' => 'Identifiant Air Inter ou mot de passe incorrect.',
             ]);
@@ -52,11 +66,23 @@ class AuthenticatedSessionController extends Controller
             $user->forceFill(['password' => Hash::make($credentials['password'])])->save();
         }
 
-        if ($user->two_factor_confirmed_at && $user->two_factor_secret) {
-            $request->session()->put('auth.two_factor_user_id', $user->id);
-            $request->session()->put('auth.two_factor_remember', $request->boolean('remember'));
+        $trustedDevice = $trustedDevices->resolve($request, $user);
+        $assessment = $risk->assess($request, $user, $trustedDevice);
 
-            return redirect()->route('two-factor.login');
+        $request->session()->put('auth.risk_score', $assessment['score']);
+        $request->session()->put('auth.risk_level', $assessment['level']);
+        $request->session()->put('auth.risk_reasons', $assessment['reasons']);
+
+        if ($user->two_factor_confirmed_at && $user->two_factor_secret) {
+            $canBypassMfa = $trustedDevice && $assessment['allow_trusted_device_bypass'];
+
+            if (!$canBypassMfa) {
+                $request->session()->put('auth.two_factor_user_id', $user->id);
+                $request->session()->put('auth.two_factor_remember', $request->boolean('remember'));
+                $request->session()->put('auth.trusted_device_candidate', $trustedDevice?->id);
+
+                return redirect()->route('two-factor.login');
+            }
         }
 
         $knownContext = SecurityEvent::query()
@@ -84,9 +110,16 @@ class AuthenticatedSessionController extends Controller
         SecurityEvent::create([
             'user_id' => $user->id,
             'type' => 'login.succeeded',
+            'risk_score' => $assessment['score'],
+            'severity' => $risk->severityForScore($assessment['score']),
             'ip_address' => $request->ip(),
             'user_agent' => mb_substr((string) $request->userAgent(), 0, 1000),
-            'metadata' => ['login' => str_contains($login, '@') ? 'email' : 'pilot_ident'],
+            'metadata' => [
+                'login' => str_contains($login, '@') ? 'email' : 'pilot_ident',
+                'risk_level' => $assessment['level'],
+                'risk_reasons' => $assessment['reasons'],
+                'trusted_device' => (bool) $trustedDevice,
+            ],
             'created_at' => now(),
         ]);
 
