@@ -54,7 +54,7 @@
             <div class="identity">
                 <strong>{{ $session->id === $currentSessionId ? 'Session actuelle' : 'Session web' }}</strong>
                 <span>{{ $session->ip_address ?: 'IP inconnue' }}</span>
-                <small>{{ IlluminateSupportStr::limit($session->user_agent ?: 'Navigateur inconnu', 90) }}</small>
+                <small>{{ \Illuminate\Support\Str::limit($session->user_agent ?: 'Navigateur inconnu', 90) }}</small>
                 @if($session->id !== $currentSessionId)
                     <form method="post" action="{{ route('account.sessions.revoke', $session->id) }}">
                         @csrf @method('DELETE')
