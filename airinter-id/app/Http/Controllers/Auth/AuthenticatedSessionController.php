@@ -101,6 +101,8 @@ class AuthenticatedSessionController extends Controller
             SecurityEvent::create([
                 'user_id' => $user->id,
                 'type' => 'login.new_context',
+                'risk_score' => $assessment['score'],
+                'severity' => $risk->severityForScore($assessment['score']),
                 'ip_address' => $request->ip(),
                 'user_agent' => mb_substr((string) $request->userAgent(), 0, 1000),
                 'created_at' => now(),
