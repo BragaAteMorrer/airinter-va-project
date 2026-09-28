@@ -29,6 +29,7 @@ class ArgosDoctor extends Command
             $this->checkOAuthPolicy(),
             $this->checkOidcConfiguration(),
             $this->checkTokenSecurity(),
+            $this->checkAccountSecurity(),
             $this->checkCallbacks(),
             $this->checkPrometheeBridge(),
             $this->checkWritableDirectories(),
@@ -316,6 +317,35 @@ class ArgosDoctor extends Command
         return $this->ok(
             'Token security',
             'Refresh token families, reuse detection, revocation and key rotation are available.'
+        );
+    }
+
+    private function checkAccountSecurity(): array
+    {
+        $issues = [];
+
+        foreach ([
+            'two_factor_secret',
+            'two_factor_recovery_codes',
+            'two_factor_confirmed_at',
+            'password_changed_at',
+        ] as $column) {
+            if (!Schema::hasColumn('users', $column)) {
+                $issues[] = 'users.'.$column.' missing';
+            }
+        }
+
+        if ((int) config('auth.password_timeout', 900) > 900) {
+            $issues[] = 'password confirmation window exceeds 15 minutes';
+        }
+
+        if ($issues !== []) {
+            return $this->failedCheck('Account security', implode('; ', $issues));
+        }
+
+        return $this->ok(
+            'Account security',
+            'Password reset/change, e-mail verification, TOTP MFA, recovery codes and reauthentication are available.'
         );
     }
 
