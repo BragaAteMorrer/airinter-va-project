@@ -259,7 +259,7 @@ class ArgosDoctor extends Command
         }
 
         if ($issues !== []) {
-            return $this->error('OAuth policy', implode('; ', $issues));
+            return $this->failedCheck('OAuth policy', implode('; ', $issues));
         }
 
         return $this->ok('OAuth policy', 'First-party clients require explicit scopes, state and PKCE S256.');
