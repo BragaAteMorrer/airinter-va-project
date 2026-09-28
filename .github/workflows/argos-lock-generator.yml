@@ -1,0 +1,37 @@
+name: Argos Lock Generator
+
+on:
+  push:
+    branches:
+      - feature/argos-lot-5-passkeys-risk
+
+permissions:
+  contents: read
+
+jobs:
+  generate-lock:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: airinter-id
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+
+      - name: Update passkeys dependency
+        run: composer update laravel/passkeys --with-all-dependencies --no-scripts --no-interaction
+
+      - name: Validate generated lock
+        run: composer validate --strict --no-check-publish
+
+      - name: Upload composer lock
+        uses: actions/upload-artifact@v4
+        with:
+          name: argos-composer-lock
+          path: airinter-id/composer.lock
+          if-no-files-found: error
