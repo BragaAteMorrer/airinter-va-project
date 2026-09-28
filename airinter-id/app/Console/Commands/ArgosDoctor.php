@@ -28,6 +28,7 @@ class ArgosDoctor extends Command
             $this->checkOauthClients(),
             $this->checkOAuthPolicy(),
             $this->checkOidcConfiguration(),
+            $this->checkTokenSecurity(),
             $this->checkCallbacks(),
             $this->checkPrometheeBridge(),
             $this->checkWritableDirectories(),
@@ -295,6 +296,26 @@ class ArgosDoctor extends Command
         return $this->ok(
             'OpenID Connect',
             $issuer.' · discovery, UserInfo, JWKS and RS256 ID Tokens enabled.'
+        );
+    }
+
+    private function checkTokenSecurity(): array
+    {
+        $required = ['oauth_token_families', 'oauth_refresh_token_lineage'];
+        $missing = array_values(array_filter($required, fn (string $table) => !Schema::hasTable($table)));
+
+        if ($missing !== []) {
+            return $this->error('Token security', 'Missing: '.implode(', ', $missing));
+        }
+
+        $archive = storage_path('argos-jwks');
+        if (is_dir($archive) && !is_readable($archive)) {
+            return $this->error('Token security', 'JWKS archive directory is not readable.');
+        }
+
+        return $this->ok(
+            'Token security',
+            'Refresh token families, reuse detection, revocation and key rotation are available.'
         );
     }
 
