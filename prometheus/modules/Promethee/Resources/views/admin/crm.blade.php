@@ -180,17 +180,22 @@
 </section>
 
 @push('scripts')
+@php
+  $crmPilotData = $pilots->map(function ($pilot) {
+    return [
+      'id' => (int) $pilot->id,
+      'state' => (int) $pilot->state,
+      'rank_id' => $pilot->rank_id ? (int) $pilot->rank_id : null,
+      'airline_id' => $pilot->airline_id ? (int) $pilot->airline_id : null,
+      'base' => $pilot->home_airport_id,
+      'hours' => round(($pilot->flight_time ?? 0) / 60, 1),
+      'email' => $pilot->email,
+    ];
+  })->values();
+@endphp
 <script>
 (() => {
-  const pilots = @json($pilots->map(fn($pilot) => [
-    'id' => (int)$pilot->id,
-    'state' => (int)$pilot->state,
-    'rank_id' => $pilot->rank_id ? (int)$pilot->rank_id : null,
-    'airline_id' => $pilot->airline_id ? (int)$pilot->airline_id : null,
-    'base' => $pilot->home_airport_id,
-    'hours' => round(($pilot->flight_time ?? 0) / 60, 1),
-    'email' => $pilot->email,
-  ])->values());
+  const pilots = @json($crmPilotData);
   const form = document.getElementById('crmCampaignForm');
   const count = document.getElementById('crmAudienceCount');
   if (!form || !count) return;
