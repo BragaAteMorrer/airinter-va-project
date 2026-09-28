@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\AccountSecurityService;
 use App\Services\TotpService;
+use App\Services\TrustedDeviceService;
+use App\Services\AdaptiveRiskService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -27,9 +29,12 @@ class TwoFactorChallengeController extends Controller
         Request $request,
         TotpService $totp,
         AccountSecurityService $security,
+        TrustedDeviceService $trustedDevices,
+        AdaptiveRiskService $risk,
     ): RedirectResponse {
         $request->validate([
             'code' => ['required', 'string', 'max:32'],
+            'trust_device' => ['nullable', 'boolean'],
         ]);
 
         $user = User::query()->find($request->session()->get('auth.two_factor_user_id'));
@@ -66,8 +71,33 @@ class TwoFactorChallengeController extends Controller
         $request->session()->put('auth.password_confirmed_at', time());
 
         $user->forceFill(['last_login_at' => now()])->save();
-        $security->record($request, $user, $usedRecovery ? 'mfa.recovery_code.used' : 'mfa.challenge.succeeded');
+        $score = (int) $request->session()->pull('auth.risk_score', 0);
+        $level = (string) $request->session()->pull('auth.risk_level', 'low');
+        $reasons = (array) $request->session()->pull('auth.risk_reasons', []);
 
-        return redirect()->intended(route('account'));
+        $security->record(
+            $request,
+            $user,
+            $usedRecovery ? 'mfa.recovery_code.used' : 'mfa.challenge.succeeded',
+            ['risk_score' => $score, 'risk_level' => $level, 'risk_reasons' => $reasons],
+        );
+
+        $response = redirect()->intended(route('account'));
+
+        if ($request->boolean('trust_device') && $level === 'low') {
+            $cookie = $trustedDevices->trust(
+                $request,
+                $user,
+                (int) config('argos-security.trusted_device_days', 30)
+            );
+
+            $security->record($request, $user, 'trusted_device.created', [
+                'risk_score' => $score,
+            ]);
+
+            $response->withCookie($cookie);
+        }
+
+        return $response;
     }
 }
