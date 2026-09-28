@@ -9,6 +9,7 @@ use App\Models\Invite;
 use App\Models\User;
 use App\Notifications\Messages\AdminUserRegistered;
 use App\Services\UserService;
+use App\Support\Timezonelist;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -112,6 +113,15 @@ final class RegistrationTest extends TestCase
         $user = User::query()->where('email', 'airinter-only@example.test')->firstOrFail();
         $this->assertSame($this->airInter->id, $user->airline_id);
         $this->assertSame('Europe/Paris', $user->timezone);
+    }
+
+    public function test_timezone_labels_are_plain_text_for_registration_selects(): void
+    {
+        $timezones = Timezonelist::toArray();
+
+        $this->assertArrayHasKey('Europe/Paris', $timezones['Europe']);
+        $this->assertStringNotContainsString('&nbsp;', $timezones['Europe']['Europe/Paris']);
+        $this->assertStringContainsString('Paris', $timezones['Europe']['Europe/Paris']);
     }
 
     public function test_registration_preserves_valid_iana_timezone(): void
