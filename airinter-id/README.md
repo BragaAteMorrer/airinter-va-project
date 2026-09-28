@@ -210,3 +210,27 @@ php artisan argos:doctor --strict
 ```
 
 Warnings then become a non-zero exit code, which makes the command suitable for CI/deployment scripts.
+
+
+## Lot 1 — OAuth hardening
+
+Argos first-party clients use Authorization Code with PKCE S256.
+
+Security policy:
+- exact redirect URI matching;
+- `state` required on authorization requests;
+- PKCE required for confidential and public clients;
+- only `S256` code challenges are accepted;
+- only `authorization_code` and `refresh_token` grants are accepted;
+- every first-party client has an explicit scope allowlist;
+- no default OAuth scopes are silently granted.
+
+Client scope allowlists:
+
+```text
+Prométhée: profile email promethee:read
+Hermès:    profile email hermes:operate
+Website:   profile email
+```
+
+The middleware rejects malformed or over-privileged authorization requests before Passport processes them.
