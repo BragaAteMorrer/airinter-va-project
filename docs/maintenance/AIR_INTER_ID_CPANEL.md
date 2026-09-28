@@ -239,3 +239,29 @@ Tant qu'aucun client n'utilise encore Argos :
 3. ne rien modifier dans Prométhée.
 
 Aucune donnée opérationnelle n'a été déplacée, donc Prométhée et Hermès continuent normalement.
+
+
+## OpenID Connect / Argos
+
+After the Lot 2 deployment, verify the public metadata endpoints:
+
+```text
+https://id.airinter-va.org/.well-known/openid-configuration
+https://id.airinter-va.org/.well-known/oauth-authorization-server
+https://id.airinter-va.org/.well-known/jwks.json
+```
+
+Then run:
+
+```bash
+php artisan migrate --force
+php artisan argos:doctor --strict
+```
+
+A first-party client requesting `openid` must also send:
+- `state`;
+- `nonce`;
+- `code_challenge`;
+- `code_challenge_method=S256`.
+
+The token exchange must provide the matching `code_verifier`. A successful OpenID authorization-code exchange returns the normal Passport token response plus `id_token`.
