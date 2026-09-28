@@ -7,7 +7,7 @@
         <h1>{{ $user->display_name }}</h1>
         <p class="subject">SUB · {{ $user->subject }}</p>
         <dl>
-            <div><dt>E-mail</dt><dd>{{ $user->email }}</dd></div>
+            <div><dt>E-mail</dt><dd>{{ $user->email }} · {{ $user->hasVerifiedEmail() ? 'vérifié' : 'non vérifié' }}</dd></div>
             <div><dt>État</dt><dd>{{ strtoupper($user->state) }}</dd></div>
             <div><dt>Langue</dt><dd>{{ $user->preferred_locale }}</dd></div>
             <div><dt>Fuseau</dt><dd>{{ $user->timezone }}</dd></div>
@@ -69,6 +69,38 @@
         <form method="post" action="{{ route('account.sessions.revoke-others') }}">
             @csrf @method('DELETE')
             <button class="button">Déconnecter toutes les autres sessions</button>
+        </form>
+    </article>
+    <article class="card">
+        <span class="kicker">SÉCURITÉ DU COMPTE</span>
+        <h2>Mot de passe & MFA</h2>
+
+        @unless($user->hasVerifiedEmail())
+            <p>Votre adresse e-mail n’est pas encore vérifiée.</p>
+            <form method="post" action="{{ route('verification.send') }}">
+                @csrf
+                <button class="button">Envoyer le lien de vérification</button>
+            </form>
+        @endunless
+
+        <p>
+            Double authentification :
+            <strong>{{ $user->two_factor_confirmed_at ? 'activée' : 'désactivée' }}</strong>
+        </p>
+        <a class="button" href="{{ route('account.mfa') }}">
+            {{ $user->two_factor_confirmed_at ? 'Gérer le MFA' : 'Activer le MFA' }}
+        </a>
+
+        <form method="post" action="{{ route('account.password.update') }}" style="margin-top:20px">
+            @csrf @method('PUT')
+            <label>Nouveau mot de passe
+                <input type="password" name="password" autocomplete="new-password" required>
+            </label>
+            <label>Confirmation
+                <input type="password" name="password_confirmation" autocomplete="new-password" required>
+            </label>
+            @error('password')<p class="error">{{ $message }}</p>@enderror
+            <button class="button">Changer le mot de passe</button>
         </form>
     </article>
 </section>
