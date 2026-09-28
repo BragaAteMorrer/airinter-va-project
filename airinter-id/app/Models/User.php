@@ -8,11 +8,14 @@ use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\Contracts\OAuthenticatable;
+use Laravel\Passkeys\Contracts\PasskeyUser;
+use Laravel\Passkeys\PasskeyAuthenticatable;
 use Laravel\Passport\HasApiTokens;
 
-class User extends Authenticatable implements OAuthenticatable, MustVerifyEmailContract
+class User extends Authenticatable implements OAuthenticatable, MustVerifyEmailContract, PasskeyUser
 {
     use HasApiTokens;
+    use PasskeyAuthenticatable;
     use MustVerifyEmailTrait;
     use Notifiable;
 
@@ -64,6 +67,16 @@ class User extends Authenticatable implements OAuthenticatable, MustVerifyEmailC
     public function securityEvents(): HasMany
     {
         return $this->hasMany(SecurityEvent::class);
+    }
+
+    public function getPasskeyDisplayName(): string
+    {
+        return $this->display_name;
+    }
+
+    public function getPasskeyUsername(): string
+    {
+        return $this->email;
     }
 
     public function canUseSso(): bool
