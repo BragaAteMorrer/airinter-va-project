@@ -14,7 +14,7 @@
   <article><span>Destinataires</span><strong>{{ $campaign->recipient_count }}</strong><small>sélectionnés</small></article>
   <article><span>Envoyés</span><strong>{{ $campaign->sent_count }}</strong><small>succès SMTP</small></article>
   <article><span>Échecs</span><strong>{{ $campaign->failed_count }}</strong><small>à contrôler</small></article>
-  <article><span>Créée par</span><strong>{{ $campaign->creator_name ?: '—' }}</strong><small>{{ CarbonCarbon::parse($campaign->created_at)->setTimezone('Europe/Paris')->format('d/m/Y H:i') }}</small></article>
+  <article><span>Créée par</span><strong>{{ $campaign->creator_name ?: '—' }}</strong><small>{{ \Carbon\Carbon::parse($campaign->created_at)->setTimezone('Europe/Paris')->format('d/m/Y H:i') }}</small></article>
 </section>
 
 <div class="two-columns">
@@ -38,7 +38,7 @@
         <td>{{ $recipient->name ?: '—' }}</td>
         <td>{{ $recipient->email }}</td>
         <td><span class="tag">{{ strtoupper($recipient->status) }}</span></td>
-        <td>{{ $recipient->sent_at ? CarbonCarbon::parse($recipient->sent_at)->setTimezone('Europe/Paris')->format('d/m/Y H:i:s') : '—' }}</td>
+        <td>{{ $recipient->sent_at ? \Carbon\Carbon::parse($recipient->sent_at)->setTimezone('Europe/Paris')->format('d/m/Y H:i:s') : '—' }}</td>
         <td>{{ $recipient->error ?: '—' }}</td>
       </tr>
       @endforeach
