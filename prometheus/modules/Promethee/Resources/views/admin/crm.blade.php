@@ -278,18 +278,39 @@
   const pilots = @json($crmPilotData);
   const form = document.getElementById('crmCampaignForm');
   const count = document.getElementById('crmAudienceCount');
+  const inlineCount = document.getElementById('crmAudienceCountInline');
+  const search = document.getElementById('crmPilotSearch');
+  const reset = document.getElementById('crmResetFilters');
+
   if (!form || !count) return;
 
-  const vals = name => [...form.querySelectorAll(`[name="${name}"] option:checked`)].map(o => o.value);
+  const checkedValues = name =>
+    [...form.querySelectorAll(`[name="${name}"]:checked`)].map(input => input.value);
+
+  const updateGroupCounts = () => {
+    const groups = {
+      states: 'states[]',
+      ranks: 'rank_ids[]',
+      airlines: 'airline_ids[]',
+      bases: 'bases[]',
+      pilots: 'pilot_ids[]',
+    };
+
+    Object.entries(groups).forEach(([key, name]) => {
+      const badge = document.querySelector(`[data-count-for="${key}"]`);
+      if (badge) badge.textContent = checkedValues(name).length;
+    });
+  };
+
   const refresh = () => {
-    const allActive = form.querySelector('[name="all_active"]').checked;
-    const states = vals('states[]').map(Number);
-    const ranks = vals('rank_ids[]').map(Number);
-    const airlines = vals('airline_ids[]').map(Number);
-    const bases = vals('bases[]');
-    const manual = new Set(vals('pilot_ids[]').map(Number));
-    const minHours = form.querySelector('[name="min_hours"]').value;
-    const maxHours = form.querySelector('[name="max_hours"]').value;
+    const allActive = !!form.querySelector('[name="all_active"]')?.checked;
+    const states = checkedValues('states[]').map(Number);
+    const ranks = checkedValues('rank_ids[]').map(Number);
+    const airlines = checkedValues('airline_ids[]').map(Number);
+    const bases = checkedValues('bases[]');
+    const manual = new Set(checkedValues('pilot_ids[]').map(Number));
+    const minHoursRaw = form.querySelector('[name="min_hours"]')?.value ?? '';
+    const maxHoursRaw = form.querySelector('[name="max_hours"]')?.value ?? '';
 
     const selected = pilots.filter(p => {
       if (!p.email) return false;
@@ -299,19 +320,76 @@
       if (ranks.length && !ranks.includes(p.rank_id)) return false;
       if (airlines.length && !airlines.includes(p.airline_id)) return false;
       if (bases.length && !bases.includes(p.base)) return false;
-      if (minHours !== '' && p.hours < Number(minHours)) return false;
-      if (maxHours !== '' && p.hours > Number(maxHours)) return false;
+      if (minHoursRaw !== '' && p.hours < Number(minHoursRaw)) return false;
+      if (maxHoursRaw !== '' && p.hours > Number(maxHoursRaw)) return false;
 
-      const hasCriteria = allActive || states.length || ranks.length || airlines.length || bases.length || minHours !== '' || maxHours !== '';
+      const hasCriteria =
+        allActive ||
+        states.length ||
+        ranks.length ||
+        airlines.length ||
+        bases.length ||
+        minHoursRaw !== '' ||
+        maxHoursRaw !== '';
+
       return hasCriteria;
     });
 
-    count.textContent = selected.length + ' destinataire' + (selected.length > 1 ? 's' : '');
+    const text = selected.length + ' destinataire' + (selected.length > 1 ? 's' : '');
+    count.textContent = text;
+    if (inlineCount) inlineCount.textContent = text;
+    updateGroupCounts();
   };
 
   form.querySelectorAll('[data-crm-filter]').forEach(node => {
-    node.addEventListener(node.tagName === 'INPUT' && node.type === 'number' ? 'input' : 'change', refresh);
+    node.addEventListener(node.type === 'number' ? 'input' : 'change', refresh);
   });
+
+  document.querySelectorAll('[data-check-all]').forEach(button => {
+    button.addEventListener('click', () => {
+      const group = document.querySelector(`[data-checkbox-group="${button.dataset.checkAll}"]`);
+      if (!group) return;
+      group.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        if (!cb.closest('[hidden]')) cb.checked = true;
+      });
+      refresh();
+    });
+  });
+
+  document.querySelectorAll('[data-uncheck-all]').forEach(button => {
+    button.addEventListener('click', () => {
+      const group = document.querySelector(`[data-checkbox-group="${button.dataset.uncheckAll}"]`);
+      if (!group) return;
+      group.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+      refresh();
+    });
+  });
+
+  document.querySelector('[data-check-visible-pilots]')?.addEventListener('click', () => {
+    document.querySelectorAll('.crm-pilot-option:not([hidden]) input[type="checkbox"]').forEach(cb => cb.checked = true);
+    refresh();
+  });
+
+  search?.addEventListener('input', () => {
+    const term = search.value.trim().toLocaleLowerCase('fr-FR');
+    document.querySelectorAll('.crm-pilot-option').forEach(row => {
+      const label = (row.dataset.pilotLabel || '').toLocaleLowerCase('fr-FR');
+      row.hidden = term !== '' && !label.includes(term);
+    });
+  });
+
+  reset?.addEventListener('click', () => {
+    form.querySelectorAll('[data-crm-filter]').forEach(node => {
+      if (node.type === 'checkbox') node.checked = false;
+      if (node.type === 'number') node.value = '';
+    });
+    if (search) {
+      search.value = '';
+      document.querySelectorAll('.crm-pilot-option').forEach(row => row.hidden = false);
+    }
+    refresh();
+  });
+
   refresh();
 })();
 </script>
