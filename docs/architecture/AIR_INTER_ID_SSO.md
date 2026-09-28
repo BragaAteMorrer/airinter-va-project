@@ -1,62 +1,74 @@
-# Air Inter ID — Prométhée SSO phase 1
+# Argos — Prométhée SSO OIDC
 
-This increment connects Prométhée to the standalone Air Inter ID OAuth2 service while preserving the existing phpVMS login as a rollback path.
+Prométhée utilise désormais Argos comme fournisseur d'identité OpenID Connect tout en conservant le login phpVMS historique comme solution de repli pendant la migration.
 
-## Product name
+## Flux d'authentification
 
-Public product name: **Air Inter ID**.
+1. Prométhée génère un `state`, un `nonce` et un couple PKCE `code_verifier` / `code_challenge`.
+2. Le navigateur est redirigé vers `https://argos.airinter-va.org/oauth/authorize`.
+3. Argos authentifie le membre (mot de passe, MFA, passkey selon la politique active).
+4. Argos redirige vers `https://promethee.airinter-va.org/auth/airinter-id/callback` avec un authorization code.
+5. Prométhée échange le code côté serveur en envoyant aussi le `code_verifier`.
+6. Argos renvoie un `access_token`, un `refresh_token` et un `id_token`.
+7. Prométhée valide localement la signature RS256 de l'ID Token avec le JWKS Argos ainsi que `iss`, `aud`, `exp`, `iat` et `nonce`.
+8. Prométhée appelle `/api/v1/me` avec l'access token.
+9. Le `sub` de `/api/v1/me` doit correspondre exactement au `sub` vérifié dans l'ID Token.
+10. L'identité legacy `provider=promethee` fournit l'immuable `users.id` phpVMS.
+11. Prométhée ouvre sa session Laravel locale pour cet utilisateur.
 
-Use `airinter-id` for folders, services and configuration prefixes. Use `AII` only as an internal shorthand when a compact identifier is useful.
+L'e-mail n'est jamais utilisé comme clé inter-systèmes.
 
-## Authentication flow
+## Scopes
 
-1. Prométhée redirects the browser to `https://id.airinter-va.org/oauth/authorize`.
-2. Air Inter ID authenticates the member.
-3. Air Inter ID redirects to `https://promethee.airinter-va.org/auth/airinter-id/callback` with an authorization code.
-4. Prométhée exchanges the code server-to-server for an access token.
-5. Prométhée calls `/api/v1/me`.
-6. The returned legacy identity whose provider is `promethee` supplies the immutable phpVMS `users.id`.
-7. Prométhée opens its normal Laravel session for that local user.
+Prométhée demande :
 
-E-mail is never used as the cross-system primary key.
+```text
+openid profile email promethee:read
+```
 
-## Required Prométhée environment
+## Environnement Prométhée
 
 ```dotenv
 AIRINTER_ID_ENABLED=true
-AIRINTER_ID_URL=https://id.airinter-va.org
+AIRINTER_ID_URL=https://argos.airinter-va.org
+AIRINTER_ID_ISSUER=https://argos.airinter-va.org
 AIRINTER_ID_CLIENT_ID=<passport-client-id>
 AIRINTER_ID_CLIENT_SECRET=<passport-client-secret>
 AIRINTER_ID_REDIRECT_URI=https://promethee.airinter-va.org/auth/airinter-id/callback
 ```
 
-Keep `AIRINTER_ID_ENABLED=false` until the Air Inter ID database, Passport keys and first-party clients are provisioned.
+Les préfixes techniques `AIRINTER_ID_*` sont conservés pour éviter une migration de configuration cassante ; le produit public s'appelle **Argos**.
 
-## Air Inter ID provisioning
+## Provisioning Argos
 
-From the Air Inter ID application:
+Depuis l'application Argos :
 
 ```bash
 php artisan migrate --force
 php artisan passport:keys
 php artisan airinter-id:import-promethee --force
 php artisan airinter-id:configure-clients --show-secrets
+php artisan argos:doctor
 ```
 
-Store the generated Prométhée client ID and secret in Prométhée's production `.env`. Never commit the secret.
+Stocker le Client ID et le secret Prométhée uniquement dans le `.env` de Prométhée.
 
-## Transition rules
+## Règles de transition
 
-- Existing phpVMS authentication remains enabled during phase 1.
-- Password changes are not moved to Air Inter ID yet.
-- A failed/missing Air Inter ID link does not create a new phpVMS user automatically.
-- Suspended/pending/rejected local users cannot bypass phpVMS state through SSO.
-- No PIREP, rank, fleet, dispatch or finance data is copied into Air Inter ID.
+- le login phpVMS historique reste disponible pendant la migration ;
+- aucun utilisateur phpVMS n'est créé automatiquement si le lien Argos manque ;
+- les comptes locaux suspendus / rejetés restent refusés ;
+- aucune donnée opérationnelle (PIREP, rang, flotte, finances) n'est copiée dans Argos ;
+- le `sub` Argos est l'identité OIDC stable ;
+- l'ID phpVMS legacy est uniquement utilisé pour retrouver le compte opérationnel local.
 
-## Next increments
+## Sécurité
 
-1. Add the “Se connecter avec Air Inter ID” entry point to the active Prométhée theme/login screen.
-2. Add Hermès Authorization Code + PKCE using the loopback callback.
-3. Add the public `airinter-va.org` member client.
-4. Once all accounts are linked and rollback has been tested, make Air Inter ID authoritative for password/e-mail/MFA.
-5. Add OIDC discovery/JWKS/ID Tokens only after the OAuth2 migration is stable.
+- Authorization Code uniquement ;
+- PKCE S256 obligatoire ;
+- `state` obligatoire ;
+- `nonce` obligatoire ;
+- validation RS256 via `/.well-known/jwks.json` ;
+- validation de l'issuer et de l'audience ;
+- comparaison du `sub` de l'ID Token avec le profil Argos ;
+- aucune liaison par e-mail.
