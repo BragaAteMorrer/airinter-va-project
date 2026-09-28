@@ -70,7 +70,7 @@ public sealed class PhpVmsClient
 
             if (!response.IsSuccessStatusCode) {
                 var serverMessage = SafeServerMessage(responseBody);
-                Trace.WriteLine($"Argos ACARS bridge returned {(int)response.StatusCode}: {responseBody}");
+                System.Diagnostics.Trace.WriteLine($"Argos ACARS bridge returned {(int)response.StatusCode}: {responseBody}");
                 throw new InvalidOperationException(serverMessage ?? response.StatusCode switch {
                     System.Net.HttpStatusCode.Unauthorized => "La session Argos n’est plus valide.",
                     System.Net.HttpStatusCode.Forbidden => "Votre compte Argos n’est pas autorisé à utiliser Hermès.",
@@ -91,7 +91,7 @@ public sealed class PhpVmsClient
             credential = token.GetString()!;
             return await Send("v1/me");
         } catch (HttpRequestException ex) {
-            Trace.WriteLine($"Argos ACARS bridge transport failure: {ex}");
+            System.Diagnostics.Trace.WriteLine($"Argos ACARS bridge transport failure: {ex}");
             throw new InvalidOperationException("Impossible de joindre Prométhée pour finaliser la connexion Argos.");
         } catch (TaskCanceledException) {
             throw new InvalidOperationException("Délai dépassé pendant la finalisation de la connexion Argos.");
