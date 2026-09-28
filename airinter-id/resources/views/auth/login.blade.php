@@ -8,7 +8,7 @@
     <form method="post" action="{{ route('login') }}">
         @csrf
         <label>Identifiant pilote ou e-mail
-            <input name="login" value="{{ old('login') }}" autocomplete="username" required autofocus>
+            <input name="login" value="{{ old('login') }}" autocomplete="username webauthn" required autofocus>
         </label>
         @error('login')<p class="error">{{ $message }}</p>@enderror
         <label>Mot de passe
@@ -17,6 +17,10 @@
         <label class="check"><input type="checkbox" name="remember" value="1"> Rester connecté</label>
         <button class="button primary">Se connecter avec Argos</button>
     </form>
+    <div class="actions">
+        <button type="button" class="button" data-passkey-login>Se connecter avec une passkey</button>
+    </div>
+    <p class="error" data-passkey-error></p>
     <p><a href="{{ route('password.request') }}">Mot de passe oublié ?</a></p>
 </section>
 @endsection
