@@ -325,3 +325,35 @@ Security rules:
 - new passwords require at least 12 characters, mixed case and numbers.
 
 Recommended production mail configuration is required for reset and verification notifications.
+
+
+## Lot 5 — passkeys and security center
+
+Argos supports passwordless WebAuthn/passkey authentication using the official `laravel/passkeys` server package.
+
+Capabilities:
+- passkey login from the Argos login screen;
+- registration of Windows Hello, Touch ID / Face ID, phone and compatible hardware security keys;
+- account-state authorization still enforced before a passkey login is accepted;
+- passkey registration/deletion protected by recent password confirmation;
+- passkey lifecycle events written to `security_events`;
+- local browser WebAuthn client in `public/passkeys.js` — no CDN and no Node/Vite runtime dependency;
+- recent security history displayed in the account;
+- queued e-mail alerts for sensitive security changes and refresh-token reuse detection;
+- previously unseen login IP + user-agent combinations create a `login.new_context` security event.
+
+First install of this lot requires the new Composer dependency:
+
+```bash
+composer update laravel/passkeys --with-all-dependencies
+php artisan migrate --force
+php artisan argos:doctor --strict
+```
+
+After `composer.lock` has been regenerated and committed by the deployment environment, normal releases can return to `composer install --no-dev --optimize-autoloader`.
+
+Recommended production requirements:
+- HTTPS only;
+- `APP_URL=https://id.airinter-va.org`;
+- queue worker/cron active so security alert notifications are delivered;
+- set a stable `PASSKEYS_USER_HANDLE_SECRET` and never rotate it casually.

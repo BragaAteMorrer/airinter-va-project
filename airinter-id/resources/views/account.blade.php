@@ -103,5 +103,52 @@
             <button class="button">Changer le mot de passe</button>
         </form>
     </article>
+    <article class="card">
+        <span class="kicker">PASSKEYS</span>
+        <h2>Clés d’accès</h2>
+        <p>Utilisez Windows Hello, Touch ID, Face ID, votre téléphone ou une clé de sécurité compatible WebAuthn.</p>
+        <button type="button" class="button primary" data-passkey-register>Ajouter une passkey</button>
+        <p class="error" data-passkey-error></p>
+
+        @forelse($passkeys as $passkey)
+            <div class="identity">
+                <strong>{{ $passkey->name }}</strong>
+                <span>{{ $passkey->last_used_at ? 'utilisée '.$passkey->last_used_at->diffForHumans() : 'jamais utilisée' }}</span>
+                <small>Ajoutée {{ $passkey->created_at->format('d/m/Y H:i') }}</small>
+                <form method="post" action="/user/passkeys/{{ $passkey->id }}">
+                    @csrf @method('DELETE')
+                    <button class="button">Supprimer</button>
+                </form>
+            </div>
+        @empty
+            <p>Aucune passkey enregistrée.</p>
+        @endforelse
+    </article>
+
+    <article class="card">
+        <span class="kicker">HISTORIQUE DE SÉCURITÉ</span>
+        <h2>Activité récente</h2>
+        @forelse($securityEvents as $event)
+            @php
+                $highRisk = in_array($event->type, [
+                    'password.changed',
+                    'mfa.disabled',
+                    'passkey.deleted',
+                    'oauth.refresh.reuse_detected',
+                    'login.new_context',
+                ], true);
+            @endphp
+            <div class="identity">
+                <strong>{{ $event->type }}</strong>
+                <span>{{ $highRisk ? 'Sensible' : 'Information' }}</span>
+                <small>
+                    {{ $event->created_at->format('d/m/Y H:i') }}
+                    @if($event->ip_address) · {{ $event->ip_address }} @endif
+                </small>
+            </div>
+        @empty
+            <p>Aucun événement de sécurité récent.</p>
+        @endforelse
+    </article>
 </section>
 @endsection

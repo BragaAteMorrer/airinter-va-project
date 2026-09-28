@@ -7,6 +7,12 @@ use App\Console\Commands\ConfigureFirstPartyClients;
 use App\Console\Commands\ImportPrometheeUsers;
 use App\Console\Commands\RotateArgosKeys;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Validation\ValidationException;
+use Laravel\Passkeys\Events\PasskeyDeleted;
+use Laravel\Passkeys\Events\PasskeyRegistered;
+use Laravel\Passkeys\Events\PasskeyVerified;
+use Laravel\Passkeys\Passkeys;
 use Laravel\Passport\Passport;
 
 class AppServiceProvider extends ServiceProvider
@@ -29,6 +35,45 @@ class AppServiceProvider extends ServiceProvider
             'hermes:operate' => 'Utiliser Hermès pour vos opérations de vol',
         ]);
         Passport::defaultScopes([]);
+
+        Passkeys::authorizeLoginUsing(function ($request, $user): bool {
+            if (!method_exists($user, 'canUseSso') || !$user->canUseSso()) {
+                throw ValidationException::withMessages([
+                    'credential' => ['Ce compte ne peut pas actuellement utiliser Argos.'],
+                ]);
+            }
+
+            return true;
+        });
+
+        Event::listen(PasskeyRegistered::class, function (PasskeyRegistered $event): void {
+            \App\Models\SecurityEvent::create([
+                'user_id' => $event->user->id,
+                'type' => 'passkey.registered',
+                'ip_address' => request()->ip(),
+                'user_agent' => mb_substr((string) request()->userAgent(), 0, 1000),
+                'metadata' => ['name' => $event->passkey->name],
+                'created_at' => now(),
+            ]);
+        });
+
+        Event::listen(PasskeyVerified::class, function (PasskeyVerified $event): void {
+            \App\Models\SecurityEvent::create([
+                'user_id' => $event->user->id,
+                'type' => 'passkey.verified',
+                'metadata' => ['name' => $event->passkey->name],
+                'created_at' => now(),
+            ]);
+        });
+
+        Event::listen(PasskeyDeleted::class, function (PasskeyDeleted $event): void {
+            \App\Models\SecurityEvent::create([
+                'user_id' => $event->user->id,
+                'type' => 'passkey.deleted',
+                'metadata' => ['name' => $event->passkey->name],
+                'created_at' => now(),
+            ]);
+        });
 
         if ($this->app->runningInConsole()) {
             $this->commands([
