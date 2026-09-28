@@ -170,6 +170,16 @@ class RouteServiceProvider extends ServiceProvider
             });
 
             Route::get('/logout', 'Auth\LoginController@logout')->name('auth.logout');
+            Route::group([
+                'namespace'  => 'Auth',
+                'prefix'     => 'auth/airinter-id',
+                'as'         => 'airinter-id.',
+                'middleware' => ['guest'],
+            ], function () {
+                Route::get('redirect', 'AirInterIdController@redirect')->name('redirect');
+                Route::get('callback', 'AirInterIdController@callback')->name('callback');
+            });
+
             Auth::routes(['verify' => true]);
         });
     }

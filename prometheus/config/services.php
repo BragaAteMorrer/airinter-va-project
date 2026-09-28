@@ -29,6 +29,14 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'airinter_id' => [
+        'enabled'       => (bool) env('AIRINTER_ID_ENABLED', false),
+        'base_url'      => env('AIRINTER_ID_URL', 'https://id.airinter-va.org'),
+        'client_id'     => env('AIRINTER_ID_CLIENT_ID'),
+        'client_secret' => env('AIRINTER_ID_CLIENT_SECRET'),
+        'redirect'      => env('AIRINTER_ID_REDIRECT_URI', rtrim(env('APP_URL', ''), '/').'/auth/airinter-id/callback'),
+    ],
+
     'discord' => [
         'enabled'       => env('DISCORD_OAUTH_ENABLED', false),
         'client_id'     => env('DISCORD_CLIENT_ID'),
