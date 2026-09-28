@@ -269,7 +269,17 @@ class CrmController extends Controller
         if ($audience['min_hours'] !== null) $query->where('flight_time', '>=', (int) round($audience['min_hours'] * 60));
         if ($audience['max_hours'] !== null) $query->where('flight_time', '<=', (int) round($audience['max_hours'] * 60));
 
-        $filtered = $query->get(['id','name','email','pilot_id','rank_id','airline_id','home_airport_id','flight_time','state']);
+        $hasSegmentCriteria = $audience['all_active']
+            || count($audience['states'])
+            || count($audience['rank_ids'])
+            || count($audience['airline_ids'])
+            || count($audience['bases'])
+            || $audience['min_hours'] !== null
+            || $audience['max_hours'] !== null;
+
+        $filtered = $hasSegmentCriteria
+            ? $query->get(['id','name','email','pilot_id','rank_id','airline_id','home_airport_id','flight_time','state'])
+            : collect();
 
         if (!count($audience['pilot_ids'])) return $filtered->unique('email')->values();
 
