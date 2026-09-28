@@ -289,7 +289,7 @@ class ArgosDoctor extends Command
         }
 
         if ($issues !== []) {
-            return $this->error('OpenID Connect', implode('; ', $issues));
+            return $this->failedCheck('OpenID Connect', implode('; ', $issues));
         }
 
         return $this->ok(
