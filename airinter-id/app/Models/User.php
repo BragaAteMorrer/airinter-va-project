@@ -64,6 +64,11 @@ class User extends Authenticatable implements OAuthenticatable, MustVerifyEmailC
         return $this->hasMany(OauthTokenFamily::class);
     }
 
+    public function trustedDevices(): HasMany
+    {
+        return $this->hasMany(TrustedDevice::class);
+    }
+
     public function securityEvents(): HasMany
     {
         return $this->hasMany(SecurityEvent::class);

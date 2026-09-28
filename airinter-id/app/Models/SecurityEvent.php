@@ -33,6 +33,8 @@ class SecurityEvent extends Model
     protected $fillable = [
         'user_id',
         'type',
+        'risk_score',
+        'severity',
         'ip_address',
         'user_agent',
         'metadata',

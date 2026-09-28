@@ -113,6 +113,8 @@ class TokenSecurityService
         SecurityEvent::create([
             'user_id' => $token->family->user_id,
             'type' => 'oauth.refresh.reuse_detected',
+            'risk_score' => 100,
+            'severity' => 'high',
             'metadata' => [
                 'client_id' => $token->family->client_id,
                 'family_id' => $token->family->id,

@@ -11,6 +11,10 @@
             <input name="code" autocomplete="one-time-code" inputmode="numeric" required autofocus>
         </label>
         @error('code')<p class="error">{{ $message }}</p>@enderror
+        <label class="check">
+            <input type="checkbox" name="trust_device" value="1">
+            Faire confiance à cet appareil pendant {{ config('argos-security.trusted_device_days', 30) }} jours
+        </label>
         <button class="button primary">Continuer</button>
     </form>
 </section>

@@ -36,6 +36,12 @@ class AccountController extends Controller
             ->limit(30)
             ->get();
 
+        $trustedDevices = $user->trustedDevices()
+            ->whereNull('revoked_at')
+            ->where('expires_at', '>', now())
+            ->latest('last_used_at')
+            ->get();
+
         $sessions = DB::table('sessions')
             ->where('user_id', $user->id)
             ->orderByDesc('last_activity')
@@ -47,6 +53,7 @@ class AccountController extends Controller
             'sessions' => $sessions,
             'passkeys' => $passkeys,
             'securityEvents' => $securityEvents,
+            'trustedDevices' => $trustedDevices,
             'currentSessionId' => $request->session()->getId(),
         ]);
     }

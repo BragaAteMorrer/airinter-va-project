@@ -31,6 +31,7 @@ class ArgosDoctor extends Command
             $this->checkTokenSecurity(),
             $this->checkAccountSecurity(),
             $this->checkPasskeys(),
+            $this->checkAdaptiveSecurity(),
             $this->checkCallbacks(),
             $this->checkPrometheeBridge(),
             $this->checkWritableDirectories(),
@@ -372,6 +373,41 @@ class ArgosDoctor extends Command
         }
 
         return $this->ok('Passkeys', 'WebAuthn/passkeys are enabled with password-confirm protected management.');
+    }
+
+    private function checkAdaptiveSecurity(): array
+    {
+        $issues = [];
+
+        if (!Schema::hasTable('trusted_devices')) {
+            $issues[] = 'trusted_devices table is missing';
+        }
+
+        foreach (['risk_score', 'severity'] as $column) {
+            if (!Schema::hasColumn('security_events', $column)) {
+                $issues[] = 'security_events.'.$column.' missing';
+            }
+        }
+
+        if ((int) config('argos-security.trusted_device_days', 30) > 90) {
+            $issues[] = 'trusted device lifetime exceeds 90 days';
+        }
+
+        if ($issues !== []) {
+            return $this->failedCheck('Adaptive security', implode('; ', $issues));
+        }
+
+        if ((array) config('argos-security.admin_subjects', []) === []) {
+            return $this->warning(
+                'Adaptive security',
+                'Risk engine is enabled but ARGOS_SECURITY_ADMIN_SUBJECTS is empty; the security admin dashboard has no authorized user.'
+            );
+        }
+
+        return $this->ok(
+            'Adaptive security',
+            'Deterministic risk scoring, trusted devices, step-up MFA and security administration are enabled.'
+        );
     }
 
     private function checkCallbacks(): array
