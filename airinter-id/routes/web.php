@@ -35,6 +35,7 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/account', AccountController::class)->name('account');
+    Route::put('/account/preferences', [AccountController::class, 'updatePreferences'])->name('account.preferences.update');
 
     Route::get('/confirm-password', [ConfirmPasswordController::class, 'show'])->name('password.confirm');
     Route::post('/confirm-password', [ConfirmPasswordController::class, 'store'])->name('password.confirm.store');

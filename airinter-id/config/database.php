@@ -40,7 +40,7 @@ return [
             'password' => env('PROMETHEE_DB_PASSWORD'),
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
-            'prefix' => '',
+            'prefix' => env('PROMETHEE_DB_PREFIX', ''),
             'strict' => true,
         ],
     ],
