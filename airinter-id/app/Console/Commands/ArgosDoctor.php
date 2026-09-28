@@ -26,6 +26,7 @@ class ArgosDoctor extends Command
             $this->checkPassportTables(),
             $this->checkPassportKeys(),
             $this->checkOauthClients(),
+            $this->checkOAuthPolicy(),
             $this->checkCallbacks(),
             $this->checkPrometheeBridge(),
             $this->checkWritableDirectories(),
@@ -226,6 +227,42 @@ class ArgosDoctor extends Command
         } catch (Throwable $e) {
             return $this->failedCheck('OAuth clients', $this->exceptionSummary($e));
         }
+    }
+
+    private function checkOAuthPolicy(): array
+    {
+        $issues = [];
+
+        foreach ((array) config('airinter-id.clients', []) as $key => $definition) {
+            $name = (string) ($definition['name'] ?? $key);
+            $scopes = array_values((array) ($definition['scopes'] ?? []));
+            $grants = array_values((array) ($definition['grant_types'] ?? []));
+            $requirePkce = (bool) data_get($definition, 'security.require_pkce', false);
+            $pkceMethod = (string) data_get($definition, 'security.pkce_method', '');
+            $requireState = (bool) data_get($definition, 'security.require_state', false);
+
+            if ($scopes === []) {
+                $issues[] = $name.': no explicit scopes';
+            }
+
+            if ($grants !== ['authorization_code', 'refresh_token']) {
+                $issues[] = $name.': unexpected grant types';
+            }
+
+            if (!$requirePkce || $pkceMethod !== 'S256') {
+                $issues[] = $name.': PKCE S256 is not mandatory';
+            }
+
+            if (!$requireState) {
+                $issues[] = $name.': state is not mandatory';
+            }
+        }
+
+        if ($issues !== []) {
+            return $this->error('OAuth policy', implode('; ', $issues));
+        }
+
+        return $this->ok('OAuth policy', 'First-party clients require explicit scopes, state and PKCE S256.');
     }
 
     private function checkCallbacks(): array
