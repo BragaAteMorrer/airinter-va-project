@@ -17,5 +17,6 @@
         <label class="check"><input type="checkbox" name="remember" value="1"> Rester connecté</label>
         <button class="button primary">Se connecter avec Argos</button>
     </form>
+    <p><a href="{{ route('password.request') }}">Mot de passe oublié ?</a></p>
 </section>
 @endsection
