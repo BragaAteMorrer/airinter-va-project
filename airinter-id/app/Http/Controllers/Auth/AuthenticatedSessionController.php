@@ -59,11 +59,28 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('two-factor.login');
         }
 
+        $knownContext = SecurityEvent::query()
+            ->where('user_id', $user->id)
+            ->where('type', 'login.succeeded')
+            ->where('ip_address', $request->ip())
+            ->where('user_agent', mb_substr((string) $request->userAgent(), 0, 1000))
+            ->exists();
+
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
         $request->session()->put('auth.password_confirmed_at', time());
 
         $user->forceFill(['last_login_at' => now()])->save();
+        if (!$knownContext) {
+            SecurityEvent::create([
+                'user_id' => $user->id,
+                'type' => 'login.new_context',
+                'ip_address' => $request->ip(),
+                'user_agent' => mb_substr((string) $request->userAgent(), 0, 1000),
+                'created_at' => now(),
+            ]);
+        }
+
         SecurityEvent::create([
             'user_id' => $user->id,
             'type' => 'login.succeeded',
