@@ -305,12 +305,12 @@ class ArgosDoctor extends Command
         $missing = array_values(array_filter($required, fn (string $table) => !Schema::hasTable($table)));
 
         if ($missing !== []) {
-            return $this->error('Token security', 'Missing: '.implode(', ', $missing));
+            return $this->failedCheck('Token security', 'Missing: '.implode(', ', $missing));
         }
 
         $archive = storage_path('argos-jwks');
         if (is_dir($archive) && !is_readable($archive)) {
-            return $this->error('Token security', 'JWKS archive directory is not readable.');
+            return $this->failedCheck('Token security', 'JWKS archive directory is not readable.');
         }
 
         return $this->ok(
