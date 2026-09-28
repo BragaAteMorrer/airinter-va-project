@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\AccountSecurityController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Oidc\ProviderController;
 use Illuminate\Support\Facades\Route;
@@ -19,5 +20,8 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/account', AccountController::class)->name('account');
+    Route::delete('/account/applications/{clientId}', [AccountSecurityController::class, 'revokeApplication'])->name('account.applications.revoke');
+    Route::delete('/account/sessions/{sessionId}', [AccountSecurityController::class, 'revokeSession'])->name('account.sessions.revoke');
+    Route::delete('/account/sessions', [AccountSecurityController::class, 'revokeOtherSessions'])->name('account.sessions.revoke-others');
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });
