@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Console\Commands\ArgosDoctor;
 use App\Console\Commands\ConfigureFirstPartyClients;
 use App\Console\Commands\ImportPrometheeUsers;
+use App\Console\Commands\RotateArgosKeys;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
 
@@ -34,6 +35,7 @@ class AppServiceProvider extends ServiceProvider
                 ArgosDoctor::class,
                 ConfigureFirstPartyClients::class,
                 ImportPrometheeUsers::class,
+                RotateArgosKeys::class,
             ]);
         }
     }
