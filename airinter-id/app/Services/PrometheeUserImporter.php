@@ -11,6 +11,8 @@ class PrometheeUserImporter
 {
     public function import(bool $syncPasswords = false, ?callable $progress = null): array
     {
+        $this->assertDatabaseIsolation();
+
         $stats = ['created' => 0, 'updated' => 0, 'linked' => 0, 'skipped' => 0];
 
         DB::connection('promethee')
@@ -97,6 +99,32 @@ class PrometheeUserImporter
             });
 
         return $stats;
+    }
+
+    private function assertDatabaseIsolation(): void
+    {
+        $default = (string) config('database.default', 'mysql');
+        $destination = (array) config('database.connections.'.$default, []);
+        $source = (array) config('database.connections.promethee', []);
+
+        $destinationDatabase = (string) ($destination['database'] ?? '');
+        $sourceDatabase = (string) ($source['database'] ?? '');
+        $destinationPrefix = (string) ($destination['prefix'] ?? '');
+        $sourcePrefix = (string) ($source['prefix'] ?? '');
+
+        if ($sourceDatabase === '' || (string) ($source['username'] ?? '') === '') {
+            throw new \RuntimeException(
+                'La connexion Prométhée n’est pas configurée. Renseignez PROMETHEE_DB_DATABASE, PROMETHEE_DB_USERNAME et PROMETHEE_DB_PASSWORD.'
+            );
+        }
+
+        if ($destinationDatabase !== ''
+            && $destinationDatabase === $sourceDatabase
+            && $destinationPrefix.'users' === $sourcePrefix.'users') {
+            throw new \RuntimeException(
+                'Import refusé : Argos et Prométhée pointent vers la même table users. Argos doit utiliser ses propres tables sans le préfixe phpVMS.'
+            );
+        }
     }
 
     private function legacyIdent(object $legacy): string
