@@ -27,6 +27,7 @@ class ArgosDoctor extends Command
             $this->checkPassportKeys(),
             $this->checkOauthClients(),
             $this->checkOAuthPolicy(),
+            $this->checkOidcConfiguration(),
             $this->checkCallbacks(),
             $this->checkPrometheeBridge(),
             $this->checkWritableDirectories(),
@@ -263,6 +264,38 @@ class ArgosDoctor extends Command
         }
 
         return $this->ok('OAuth policy', 'First-party clients require explicit scopes, state and PKCE S256.');
+    }
+
+    private function checkOidcConfiguration(): array
+    {
+        $issues = [];
+
+        if (!extension_loaded('openssl')) {
+            $issues[] = 'OpenSSL PHP extension is missing';
+        }
+
+        if (!Schema::hasTable('oidc_authorization_requests')) {
+            $issues[] = 'oidc_authorization_requests table is missing';
+        }
+
+        $scopes = Passport::scopes()->pluck('id')->all();
+        if (!in_array('openid', $scopes, true)) {
+            $issues[] = 'openid scope is not registered';
+        }
+
+        $issuer = rtrim((string) config('app.url'), '/');
+        if (!str_starts_with($issuer, 'https://')) {
+            $issues[] = 'OIDC issuer must use HTTPS';
+        }
+
+        if ($issues !== []) {
+            return $this->error('OpenID Connect', implode('; ', $issues));
+        }
+
+        return $this->ok(
+            'OpenID Connect',
+            $issuer.' · discovery, UserInfo, JWKS and RS256 ID Tokens enabled.'
+        );
     }
 
     private function checkCallbacks(): array
