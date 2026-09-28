@@ -21,5 +21,6 @@
     @yield('content')
 </main>
 <footer><span>Air Inter Virtual Airlines · Argos Identity Services</span><span>id.airinter-va.org</span></footer>
+    <script src="/passkeys.js" defer></script>
 </body>
 </html>
