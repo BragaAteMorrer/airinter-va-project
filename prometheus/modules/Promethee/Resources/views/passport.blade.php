@@ -7,5 +7,52 @@
 @push('scripts')<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script>window.addEventListener('load',async()=>{const el=document.getElementById('passport-map');if(!el||!window.L)return;const visited=new Set(@json($countries->pluck('country')->map(fn($country)=>strtoupper(trim($country)))->values()));const countryCodes=@json(\App\Support\Countries::getSelectList());const codeByName=Object.fromEntries(Object.entries(countryCodes).map(([code,name])=>[name.toUpperCase(),code.toUpperCase()]));const map=L.map(el,{scrollWheelZoom:false,zoomControl:true}).setView([20,0],2);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);try{const response=await fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson');if(!response.ok)throw new Error('source indisponible');const geo=await response.json();const name=f=>f.properties.name||f.properties.ADMIN||'Pays';const code=f=>{const raw=String(f.properties['ISO3166-1-Alpha-2']||f.properties.ISO3166_1_Alpha_2||f.properties.ISO_A2||'').toUpperCase();return /^[A-Z]{2}$/.test(raw)?raw:(codeByName[name(f).toUpperCase()]||'')};L.geoJSON(geo,{style:f=>{const valid=visited.has(code(f));return {color:'#ffffff',weight:1,fillColor:valid?'#0b5cad':'#b8c1c9',fillOpacity:valid?.8:.35}},onEachFeature:(f,l)=>{const valid=visited.has(code(f));l.bindTooltip(name(f)+' · '+(valid?'Validé':'Non validé'));}}).addTo(map)}catch(e){el.textContent='Carte indisponible : vérifiez la connexion Internet.'}});</script>@endpush
 @endif
 <section class="control-strip"><article><span>Pays visités</span><strong>{{ $countries->count() }}</strong><small>Cachets distincts</small></article><article><span>Étapes internationales</span><strong>{{ $countries->sum('legs') }}</strong><small>Départs et arrivées</small></article><article><span>Premier cachet</span><strong>{{ optional($countries->sortBy('first_visit')->first())->first_visit ? \Carbon\Carbon::parse($countries->sortBy('first_visit')->first()->first_visit)->format('d/m/Y') : '—' }}</strong><small>PIREP accepté</small></article></section>
+@php
+    $countryNames = \App\Support\Countries::getSelectList();
+    $visitedCountryCodes = $countries->pluck('country')
+        ->map(fn ($country) => strtoupper(trim((string) $country)))
+        ->filter()
+        ->unique()
+        ->values();
+    $passportCatalogue = collect($passportCountries ?? [])
+        ->map(fn ($country) => strtoupper(trim((string) $country)))
+        ->filter()
+        ->unique()
+        ->values();
+    if ($passportCatalogue->isEmpty()) {
+        $passportCatalogue = $visitedCountryCodes;
+    }
+    $passportVisitedCount = $passportCatalogue->filter(fn ($country) => $visitedCountryCodes->contains($country))->count();
+    $passportTotalCount = $passportCatalogue->count();
+    $passportProgress = $passportTotalCount > 0 ? min(100, ($passportVisitedCount / $passportTotalCount) * 100) : 0;
+@endphp
+<section class="panel passport-stamps-panel" aria-labelledby="passport-stamps-title">
+    <div class="passport-stamps-heading">
+        <div>
+            <span class="eyebrow">PAYS VISITÉS</span>
+            <h2 id="passport-stamps-title">Collection de cachets</h2>
+            <p>Les drapeaux en couleur correspondent aux pays déjà validés par un PIREP accepté.</p>
+        </div>
+        <strong class="passport-stamps-count">{{ $passportVisitedCount }} / {{ $passportTotalCount }}</strong>
+    </div>
+    <div class="passport-stamps-progress" role="progressbar" aria-valuemin="0" aria-valuemax="{{ $passportTotalCount }}" aria-valuenow="{{ $passportVisitedCount }}" aria-label="Progression des pays visités">
+        <span style="width: {{ number_format($passportProgress, 2, '.', '') }}%"></span>
+    </div>
+    <div class="passport-stamps-grid">
+        @forelse($passportCatalogue as $countryCode)
+            @php
+                $visited = $visitedCountryCodes->contains($countryCode);
+                $countryName = $countryNames[$countryCode] ?? $countryCode;
+                $flagPath = 'sppassport/flags/'.strtolower($countryCode).'.svg';
+            @endphp
+            <div @class(['passport-stamp', 'is-visited' => $visited]) title="{{ $countryName }}" aria-label="{{ $countryName }} · {{ $visited ? 'visité' : 'non visité' }}">
+                <img src="{{ asset($flagPath) }}" alt="{{ $countryName }}">
+                <span>{{ $countryCode }}</span>
+            </div>
+        @empty
+            <p class="passport-stamps-empty">Aucun pays n’est encore disponible dans le réseau.</p>
+        @endforelse
+    </div>
+</section>
 <div class="two-columns"><section class="panel table-wrap"><div class="panel-heading"><div><span class="eyebrow">TAMPONS</span><h2>Pays parcourus</h2></div></div><table><thead><tr><th>Pays</th><th>1er passage</th><th>Dernier passage</th><th>Étapes</th></tr></thead><tbody>@forelse($countries as $country)<tr><td><strong>{{ $country->country }}</strong></td><td>{{ \Carbon\Carbon::parse($country->first_visit)->setTimezone('Europe/Paris')->format('d/m/Y') }}</td><td>{{ \Carbon\Carbon::parse($country->last_visit)->setTimezone('Europe/Paris')->format('d/m/Y') }}</td><td>{{ $country->legs }}</td></tr>@empty<tr><td colspan="4">Aucun pays encore validé. Réalisez un vol accepté pour obtenir votre premier cachet.</td></tr>@endforelse</tbody></table></section><section class="panel table-wrap"><div class="panel-heading"><div><span class="eyebrow">CLASSEMENT</span><h2>Passeports les plus remplis</h2></div></div><table><thead><tr><th>#</th><th>Pilote</th><th>Pays</th></tr></thead><tbody>@foreach($ranking as $position=>$entry)<tr @if((int)$entry->id === (int)$pilot->id) class="selected" @endif><td>{{ $position + 1 }}</td><td>{{ $entry->pilot_id }} · {{ $entry->name }}</td><td>{{ $entry->countries }}</td></tr>@endforeach</tbody></table></section></div>
 @endsection
