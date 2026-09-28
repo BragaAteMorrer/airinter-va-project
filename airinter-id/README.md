@@ -357,3 +357,55 @@ Recommended production requirements:
 - `APP_URL=https://id.airinter-va.org`;
 - queue worker/cron active so security alert notifications are delivered;
 - set a stable `PASSKEYS_USER_HANDLE_SECRET` and never rotate it casually.
+
+
+## Lot 6 — adaptive security
+
+Argos uses an explicit, deterministic risk engine. It does not use opaque machine-learning decisions and it does not automatically suspend accounts.
+
+Risk inputs include:
+- previously unseen IP + browser context;
+- previously unseen IP only;
+- previously unseen browser only;
+- recent failed password attempts;
+- e-mail verification status;
+- possession of a valid trusted-device token.
+
+Default bands:
+
+```text
+0–29   low
+30–59  medium
+60+    high
+```
+
+Trusted devices:
+- are created only after a successful MFA challenge;
+- are stored using a random browser token whose SHA-256 fingerprint is kept server-side;
+- are bound to the browser user-agent;
+- default to 30 days;
+- bypass TOTP only when the current risk remains low;
+- never bypass medium/high-risk MFA;
+- can be revoked individually by the user;
+- can be revoked globally by a security administrator.
+
+Security administration:
+- access is granted only to explicit Argos `subject` UUIDs in `ARGOS_SECURITY_ADMIN_SUBJECTS`;
+- no Prométhée business role is copied into Argos;
+- the dashboard shows recent sensitive events, high-risk events, trusted-device count and MFA/passkey coverage;
+- administrators can revoke a user's sessions, OAuth contexts and trusted devices without changing the user's password.
+
+Configuration:
+
+```dotenv
+ARGOS_TRUSTED_DEVICE_DAYS=30
+ARGOS_SECURITY_ADMIN_SUBJECTS=uuid-1,uuid-2
+```
+
+The security dashboard is available at:
+
+```text
+/admin/security
+```
+
+and requires both an authorized security-admin subject and recent password confirmation.
