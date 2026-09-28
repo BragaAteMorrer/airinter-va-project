@@ -999,8 +999,21 @@ class PortalController extends Controller
             ->select('airports.country', DB::raw('MIN(stamped_at) as first_visit'), DB::raw('MAX(stamped_at) as last_visit'), DB::raw('COUNT(*) as legs'))
             ->groupBy('airports.country')->orderBy('airports.country')->get();
 
+        $passportCountries = DB::query()->fromSub(
+            DB::table('flights')->select('dpt_airport_id as airport_id')
+                ->whereNotNull('dpt_airport_id')->where('dpt_airport_id', '!=', '')
+                ->union(DB::table('flights')->select('arr_airport_id as airport_id')
+                    ->whereNotNull('arr_airport_id')->where('arr_airport_id', '!=', '')),
+            'passport_network_airports'
+        )->join('airports', 'airports.id', '=', 'passport_network_airports.airport_id')
+            ->whereNotNull('airports.country')->where('airports.country', '!=', '')
+            ->select('airports.country')->distinct()->orderBy('airports.country')->pluck('country')
+            ->map(fn ($country) => strtoupper(trim((string) $country)))
+            ->filter(fn ($country) => preg_match('/^[A-Z]{2}$/', $country) === 1)
+            ->values();
+
         abort_unless(DB::table('promethee_settings')->where('key','passport.enabled')->value('value') !== '0', 404);
-        return $this->page('passport', compact('pilot', 'viewer', 'countries', 'ranking'));
+        return $this->page('passport', compact('pilot', 'viewer', 'countries', 'ranking', 'passportCountries'));
    }
    /** The pilot's phpVMS bids projected as operational states. */
    public function bookings(Request $r) {
