@@ -50,6 +50,8 @@ class AppServiceProvider extends ServiceProvider
             \App\Models\SecurityEvent::create([
                 'user_id' => $event->user->id,
                 'type' => 'passkey.registered',
+                'ip_address' => request()->ip(),
+                'user_agent' => mb_substr((string) request()->userAgent(), 0, 1000),
                 'metadata' => ['name' => $event->passkey->name],
                 'created_at' => now(),
             ]);
