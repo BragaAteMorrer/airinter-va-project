@@ -20,7 +20,7 @@ use Modules\Promethee\Http\Api\AcarsSessionController;
 
 // Browsers request this conventional path even though the branded icon lives
 // with the static Promethee assets.
-Route::redirect('/favicon.ico', '/promethee-assets/favicon.svg');
+Route::redirect('/favicon.ico', '/promethee-assets/favicon.png');
 // Retain the Promethee URL, but use phpVMS' one canonical implementation.
 Route::get('/language/{lang}', [LanguageController::class, 'switchLang'])
     ->middleware('web')->name('promethee.language');

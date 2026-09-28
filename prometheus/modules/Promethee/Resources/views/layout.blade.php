@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <title>@yield('title', __('promethee.operations_centre')) · Prométhée · Air Inter</title>
-<link rel="icon" type="image/svg+xml" href="{{ asset('promethee-assets/favicon.svg') }}">
+<link rel="icon" type="image/png" href="{{ asset('promethee-assets/favicon.png') }}">
 <script>(() => { try { const era=localStorage.getItem('promethee-era'), appearance=localStorage.getItem('promethee-appearance'), minitelSessionDisabled=sessionStorage.getItem('promethee-minitel-session-disabled')==='1'; const selectedEra=['modern','2000','minitel'].includes(era)?era:'modern'; document.documentElement.dataset.era=(selectedEra==='minitel'&&minitelSessionDisabled)?'modern':selectedEra; document.documentElement.dataset.appearance=['light','dark'].includes(appearance)?appearance:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'); } catch (_) {} })();</script>
 <link rel="stylesheet" href="{{ asset('promethee-assets/promethee.css') }}">
 <link rel="stylesheet" href="{{ asset('promethee-assets/promethee-v2.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-v2.css')) }}">

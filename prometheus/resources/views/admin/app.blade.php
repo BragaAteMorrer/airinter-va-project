@@ -16,7 +16,7 @@
 
   <script src="{{ public_asset('/assets/global/js/jquery.js') }}"></script>
 
-  <link rel="icon" type="image/svg+xml" href="{{ public_asset('/promethee-assets/favicon.svg') }}"/>
+  <link rel="icon" type="image/png" href="{{ public_asset('/promethee-assets/favicon.png') }}"/>
 
   <link href='https://fonts.googleapis.com/css?family=Muli:400,300' rel='stylesheet' type='text/css'/>
   <link href="https://fonts.googleapis.com/css?family=Roboto:400,700,300" rel="stylesheet" type="text/css"/>
