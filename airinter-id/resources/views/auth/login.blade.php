@@ -1,8 +1,8 @@
 @extends('layout')
-@section('title', 'Connexion · Air Inter ID')
+@section('title', 'Connexion · Argos')
 @section('content')
 <section class="card auth-card">
-    <span class="kicker">AIR INTER ID</span>
+    <span class="kicker">ARGOS</span>
     <h1>Connexion équipage</h1>
     <p>Utilisez votre adresse e-mail ou votre identifiant pilote Air Inter existant.</p>
     <form method="post" action="{{ route('login') }}">
@@ -15,7 +15,7 @@
             <input name="password" type="password" autocomplete="current-password" required>
         </label>
         <label class="check"><input type="checkbox" name="remember" value="1"> Rester connecté</label>
-        <button class="button primary">Se connecter avec Air Inter ID</button>
+        <button class="button primary">Se connecter avec Argos</button>
     </form>
 </section>
 @endsection

@@ -1,9 +1,9 @@
 @extends('layout')
-@section('title', 'Mon compte · Air Inter ID')
+@section('title', 'Mon compte · Argos')
 @section('content')
 <section class="account-grid">
     <article class="card">
-        <span class="kicker">AIR INTER ID</span>
+        <span class="kicker">ARGOS</span>
         <h1>{{ $user->display_name }}</h1>
         <p class="subject">SUB · {{ $user->subject }}</p>
         <dl>

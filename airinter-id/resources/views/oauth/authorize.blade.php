@@ -1,9 +1,9 @@
 @extends('layout')
-@section('title', 'Autorisation · Air Inter ID')
+@section('title', 'Autorisation · Argos')
 @section('content')
 <section class="card auth-card">
     <span class="kicker">AUTORISATION</span>
-    <h1>{{ $client->name }} souhaite accéder à Air Inter ID</h1>
+    <h1>{{ $client->name }} souhaite accéder à Argos</h1>
     <p>Connecté en tant que <strong>{{ $user->display_name }}</strong>.</p>
 
     @if(count($scopes))

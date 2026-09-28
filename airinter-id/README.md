@@ -1,4 +1,4 @@
-# Air Inter ID
+# Argos
 
 Standalone identity and SSO service for the Air Inter VA ecosystem.
 
@@ -6,11 +6,11 @@ Standalone identity and SSO service for the Air Inter VA ecosystem.
 
 Runbook cPanel : [`docs/maintenance/AIR_INTER_ID_CPANEL.md`](../docs/maintenance/AIR_INTER_ID_CPANEL.md)
 
-Air Inter ID is deliberately separate from phpVMS/Prométhée. It owns authentication and security identity; Prométhée remains the source of truth for operational pilot data.
+Argos is deliberately separate from phpVMS/Prométhée. It owns authentication and security identity; Prométhée remains the source of truth for operational pilot data.
 
 ## Responsibilities
 
-Air Inter ID owns:
+Argos owns:
 - login credentials;
 - stable public subject (`sub`);
 - e-mail / verification state;
@@ -96,13 +96,13 @@ php artisan airinter-id:import-promethee --force
 ```
 
 The command:
-- creates an Air Inter ID account for each phpVMS user;
+- creates an Argos account for each phpVMS user;
 - copies the existing Laravel password hash for newly imported users;
 - creates a stable UUID subject;
 - records the immutable phpVMS `user_id` link;
 - does not move or delete operational data.
 
-Existing Air Inter ID passwords are not overwritten on later syncs unless:
+Existing Argos passwords are not overwritten on later syncs unless:
 
 ```bash
 php artisan airinter-id:import-promethee --sync-passwords --force
@@ -132,13 +132,13 @@ profile email promethee:read
 
 Hermès must become a **public PKCE client**. Do not embed a client secret in the executable.
 
-Use the system browser for Air Inter ID login. V1 callback:
+Use the system browser for Argos login. V1 callback:
 
 ```text
 http://127.0.0.1:47821/callback
 ```
 
-Hermès starts a temporary loopback listener on that fixed local port, generates `state`, `code_verifier` and `code_challenge`, launches the browser to Air Inter ID, receives the authorization code locally, then exchanges it for access/refresh tokens. The port can later become configurable once the server/client redirect contract evolves together.
+Hermès starts a temporary loopback listener on that fixed local port, generates `state`, `code_verifier` and `code_challenge`, launches the browser to Argos, receives the authorization code locally, then exchanges it for access/refresh tokens. The port can later become configurable once the server/client redirect contract evolves together.
 
 Scopes:
 
@@ -158,7 +158,7 @@ Redirect URI:
 https://www.airinter-va.org/auth/airinter-id/callback
 ```
 
-It should use Air Inter ID only for member identity. Historical/editorial data stays on the site.
+It should use Argos only for member identity. Historical/editorial data stays on the site.
 
 ## Transition strategy
 
@@ -166,7 +166,7 @@ It should use Air Inter ID only for member identity. Historical/editorial data s
 Import users and links. Existing logins keep working everywhere.
 
 ### Phase 1 — Prométhée SSO
-Add “Se connecter avec Air Inter ID”. Link by immutable phpVMS user id, never only by e-mail.
+Add “Se connecter avec Argos”. Link by immutable phpVMS user id, never only by e-mail.
 
 ### Phase 2 — Hermès PKCE
 Move Hermès from password submission to browser-based Authorization Code + PKCE.
@@ -175,7 +175,7 @@ Move Hermès from password submission to browser-based Authorization Code + PKCE
 Add member SSO without migrating the museum/editorial database.
 
 ### Phase 4 — authority switch
-Air Inter ID becomes the only place to change password, e-mail, MFA and security settings. Prométhée consumes identity claims but keeps operational fields.
+Argos becomes the only place to change password, e-mail, MFA and security settings. Prométhée consumes identity claims but keeps operational fields.
 
 ### Phase 5 — OIDC
 Add a vetted OIDC provider implementation with signed ID Tokens, JWKS, discovery, nonce validation and standard UserInfo. Keep the existing UUID subject.
@@ -183,8 +183,54 @@ Add a vetted OIDC provider implementation with signed ID Tokens, JWKS, discovery
 ## Non-negotiable rules
 
 - Never use e-mail as the permanent cross-system primary key.
-- Never copy PIREPs/ranks/badges into Air Inter ID.
+- Never copy PIREPs/ranks/badges into Argos.
 - Never embed a confidential OAuth secret in Hermès.
 - Never let the historical website write directly into Prométhée's operational tables.
-- Never remove legacy authentication before every existing pilot has an Air Inter ID link.
+- Never remove legacy authentication before every existing pilot has an Argos link.
 - Keep rollback possible throughout the migration.
+
+
+## Lot 0 — production readiness
+
+Before enabling SSO clients in production:
+
+```bash
+php artisan migrate --force
+php artisan argos:doctor
+```
+
+Use `ARGOS_RELEASE` in production to record the exact deployed Git commit SHA.
+
+The repair migration `2026_09_28_190000_repair_runtime_infrastructure_tables.php` is deliberately non-destructive. It creates missing Laravel runtime tables (`sessions`, `cache`, queue tables, etc.) on installations where the original initial migration was already marked as executed without having created all of them.
+
+For deployment gates, use:
+
+```bash
+php artisan argos:doctor --strict
+```
+
+Warnings then become a non-zero exit code, which makes the command suitable for CI/deployment scripts.
+
+
+## Lot 1 — OAuth hardening
+
+Argos first-party clients use Authorization Code with PKCE S256.
+
+Security policy:
+- exact redirect URI matching;
+- `state` required on authorization requests;
+- PKCE required for confidential and public clients;
+- only `S256` code challenges are accepted;
+- only `authorization_code` and `refresh_token` grants are accepted;
+- every first-party client has an explicit scope allowlist;
+- no default OAuth scopes are silently granted.
+
+Client scope allowlists:
+
+```text
+Prométhée: profile email promethee:read
+Hermès:    profile email hermes:operate
+Website:   profile email
+```
+
+The middleware rejects malformed or over-privileged authorization requests before Passport processes them.

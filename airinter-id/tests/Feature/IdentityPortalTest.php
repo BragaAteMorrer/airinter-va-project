@@ -8,7 +8,7 @@ class IdentityPortalTest extends TestCase
 {
     public function test_public_identity_home_is_available(): void
     {
-        $this->get('/')->assertOk()->assertSee('Air Inter ID');
+        $this->get('/')->assertOk()->assertSee('Argos');
     }
 
     public function test_account_requires_login(): void

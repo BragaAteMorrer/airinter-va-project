@@ -30,6 +30,8 @@ class ConfigureFirstPartyClients extends Command
             $name = (string) ($definition['name'] ?? $key);
             $redirectUri = trim((string) ($definition['redirect_uri'] ?? ''));
             $confidential = (bool) ($definition['confidential'] ?? true);
+            $scopes = array_values((array) ($definition['scopes'] ?? []));
+            $pkce = (bool) data_get($definition, 'security.require_pkce', true);
 
             if ($redirectUri === '') {
                 $this->error("Missing redirect URI for {$name}.");
@@ -80,11 +82,13 @@ class ConfigureFirstPartyClients extends Command
                 $redirectUri,
                 $created ? 'created' : 'ready',
                 $secret ?: ($confidential ? 'hidden' : 'n/a'),
+                implode(' ', $scopes),
+                $pkce ? 'S256 required' : 'optional',
             ];
         }
 
         $this->table(
-            ['Client', 'Client ID', 'Type', 'Redirect URI', 'State', 'Secret'],
+            ['Client', 'Client ID', 'Type', 'Redirect URI', 'State', 'Secret', 'Scopes', 'PKCE'],
             $rows,
         );
 

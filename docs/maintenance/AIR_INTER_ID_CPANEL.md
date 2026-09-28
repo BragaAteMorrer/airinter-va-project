@@ -1,4 +1,6 @@
-# Air Inter ID — déploiement cPanel
+# Argos — déploiement cPanel
+
+> Le dossier technique reste `airinter-id/` pendant la transition afin de ne pas casser les déploiements existants.
 
 Cible : `https://id.airinter-va.org`
 
@@ -36,7 +38,7 @@ Extensions minimales :
 - json
 - fileinfo
 
-## 3. Base Air Inter ID
+## 3. Base Argos
 
 Créer une base et un utilisateur dédiés, par exemple :
 
@@ -45,7 +47,7 @@ Créer une base et un utilisateur dédiés, par exemple :
 <cpanel>_airinter_id
 ```
 
-Attribuer tous les droits à cet utilisateur **uniquement sur la base Air Inter ID**.
+Attribuer tous les droits à cet utilisateur **uniquement sur la base Argos**.
 
 ## 4. Compte de lecture Prométhée
 
@@ -59,7 +61,7 @@ Le besoin fonctionnel est uniquement :
 GRANT SELECT ON <promethee_database>.users TO '<readonly_user>'@'localhost';
 ```
 
-Adapter la syntaxe à l'interface cPanel disponible. Ne pas réutiliser les identifiants MySQL complets de Prométhée dans Air Inter ID si un compte lecture seule peut être créé.
+Adapter la syntaxe à l'interface cPanel disponible. Ne pas réutiliser les identifiants MySQL complets de Prométhée dans Argos si un compte lecture seule peut être créé.
 
 ## 5. Déployer les fichiers
 
@@ -92,6 +94,8 @@ Renseigner au minimum :
 APP_ENV=production
 APP_DEBUG=false
 APP_URL=https://id.airinter-va.org
+ARGOS_NAME="Argos"
+ARGOS_RELEASE=<git-commit-sha-deployed>
 
 DB_DATABASE=<airinter_id_database>
 DB_USERNAME=<airinter_id_user>
@@ -112,7 +116,7 @@ SESSION_SAME_SITE=lax
 
 Ne jamais recopier le `.env` dans Git.
 
-## 7. Installer Air Inter ID
+## 7. Installer Argos
 
 ```bash
 composer install --no-dev --optimize-autoloader
@@ -148,6 +152,8 @@ Hermès est un client public et n'a donc **aucun secret** embarqué.
 php artisan about
 php artisan route:list
 php artisan migrate:status
+php artisan argos:doctor
+php artisan argos:doctor --strict
 php artisan airinter-id:configure-clients
 ```
 
@@ -164,7 +170,7 @@ https://id.airinter-va.org/up
 ## 9. Importer les comptes phpVMS
 
 Avant l'import :
-- sauvegarder la nouvelle base Air Inter ID ;
+- sauvegarder la nouvelle base Argos ;
 - vérifier que l'utilisateur Prométhée est bien en lecture seule ;
 - ne pas utiliser `--sync-passwords` lors du premier essai.
 
@@ -198,7 +204,15 @@ Un compte supprimé/suspendu ne doit pas obtenir de session SSO.
 
 ## 11. Optimiser
 
-Une fois les tests terminés :
+Une fois les tests terminés, le contrôle de santé doit être sans erreur :
+
+```bash
+php artisan argos:doctor
+```
+
+`ARGOS_RELEASE` doit contenir le SHA Git réellement déployé. Cela permet de comparer immédiatement la production au dépôt lors d'un incident.
+
+Ensuite :
 
 ```bash
 php artisan optimize
@@ -209,19 +223,19 @@ chmod -R u+rwX storage bootstrap/cache
 
 **Ne pas encore désactiver les logins Prométhée/Hermès.**
 
-La phase suivante introduira d'abord un bouton de connexion Air Inter ID dans Prométhée, puis le flux PKCE dans Hermès.
+La phase suivante introduira d'abord un bouton de connexion Argos dans Prométhée, puis le flux PKCE dans Hermès.
 
 Pendant cette phase de transition :
-- Air Inter ID est additif ;
+- Argos est additif ;
 - phpVMS reste opérationnel ;
 - les mots de passe historiques restent valides ;
 - le retour arrière reste possible.
 
 ## 13. Rollback
 
-Tant qu'aucun client n'utilise encore Air Inter ID :
+Tant qu'aucun client n'utilise encore Argos :
 1. mettre le sous-domaine hors ligne ;
-2. restaurer/supprimer uniquement la base Air Inter ID ;
+2. restaurer/supprimer uniquement la base Argos ;
 3. ne rien modifier dans Prométhée.
 
 Aucune donnée opérationnelle n'a été déplacée, donc Prométhée et Hermès continuent normalement.
