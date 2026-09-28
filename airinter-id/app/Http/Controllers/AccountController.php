@@ -25,6 +25,9 @@ class AccountController extends Controller
                     'name' => $client?->name ?: 'Application OAuth',
                     'active' => $items->where('status', 'active')->count(),
                     'last_used_at' => $items->max('last_used_at'),
+                    'last_used_human' => $items->max('last_used_at')
+                        ? \Illuminate\Support\Carbon::parse($items->max('last_used_at'))->diffForHumans()
+                        : null,
                 ];
             })
             ->values();
@@ -48,7 +51,12 @@ class AccountController extends Controller
         $sessions = DB::table('sessions')
             ->where('user_id', $user->id)
             ->orderByDesc('last_activity')
-            ->get();
+            ->get()
+            ->map(function ($session) {
+                $session->last_activity_human = \Illuminate\Support\Carbon::createFromTimestamp((int) $session->last_activity)->diffForHumans();
+
+                return $session;
+            });
 
         $securityScore = 25
             + ($user->hasVerifiedEmail() ? 20 : 0)

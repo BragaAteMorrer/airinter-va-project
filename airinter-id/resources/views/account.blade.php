@@ -73,7 +73,7 @@
                 @if($application['active'] > 0)
                     <form method="post" action="{{ route('account.applications.revoke', $application['client_id']) }}">@csrf @method('DELETE')<button class="button danger small">Révoquer</button></form>
                 @endif
-                <small>Client {{ $application['client_id'] }} @if($application['last_used_at']) · utilisé {{ IlluminateSupportCarbon::parse($application['last_used_at'])->diffForHumans() }} @endif</small>
+                <small>Client {{ $application['client_id'] }} @if($application['last_used_human']) · utilisé {{ $application['last_used_human'] }} @endif</small>
             </div>
         @empty
             <div class="empty-state">Aucune autorisation OAuth active.</div>
@@ -140,7 +140,7 @@
                 <div class="identity">
                     <div><strong>{{ $session->id === $currentSessionId ? 'Cet appareil' : $os.' · '.$browser }}</strong><span>{{ $session->ip_address ?: 'IP inconnue' }}</span></div>
                     @if($session->id !== $currentSessionId)<form method="post" action="{{ route('account.sessions.revoke', $session->id) }}">@csrf @method('DELETE')<button class="button danger small">Déconnecter</button></form>@else<span class="badge ok">ACTUELLE</span>@endif
-                    <small>Dernière activité {{ IlluminateSupportCarbon::createFromTimestamp($session->last_activity)->diffForHumans() }}</small>
+                    <small>Dernière activité {{ $session->last_activity_human }}</small>
                 </div>
             @empty<div class="empty-state">Aucune session active.</div>@endforelse
             <form method="post" action="{{ route('account.sessions.revoke-others') }}">@csrf @method('DELETE')<button class="button secondary">Déconnecter les autres sessions</button></form>
