@@ -299,3 +299,29 @@ php artisan argos:keys:rotate
 The command archives the previous public key for JWKS verification, generates a fresh 4096-bit RSA pair, revokes active OAuth tokens, and forces clients to authenticate again. Private retired keys are never archived.
 
 Because Passport validates access tokens against its current signing key, Argos intentionally treats signing-key rotation as a security boundary rather than trying to keep old access tokens alive.
+
+
+## Lot 4 — account security
+
+Argos owns end-user account security.
+
+Available flows:
+- forgotten-password e-mail and password reset;
+- authenticated password change;
+- e-mail verification;
+- TOTP MFA compatible with standard authenticator applications;
+- one-time recovery codes;
+- MFA login challenge before the Argos web session is created;
+- recent password confirmation for sensitive account actions.
+
+Security rules:
+- TOTP secrets are encrypted at rest with Laravel's application encryption key;
+- recovery codes are never stored in plaintext, only password hashes;
+- recovery codes are displayed once after generation;
+- changing/resetting a password revokes other sessions and OAuth security contexts;
+- enabling/disabling MFA revokes other sessions and OAuth contexts;
+- sensitive operations require password confirmation within 15 minutes;
+- password reset responses do not reveal whether an e-mail address exists;
+- new passwords require at least 12 characters, mixed case and numbers.
+
+Recommended production mail configuration is required for reset and verification notifications.
