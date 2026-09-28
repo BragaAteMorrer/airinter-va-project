@@ -340,7 +340,7 @@ class ArgosDoctor extends Command
         }
 
         if ($issues !== []) {
-            return $this->error('Account security', implode('; ', $issues));
+            return $this->failedCheck('Account security', implode('; ', $issues));
         }
 
         return $this->ok(
