@@ -147,6 +147,8 @@ class EnforceOAuthSecurityPolicy
             return;
         }
 
+        OidcAuthorizationRequest::query()->where('expires_at', '<=', now())->delete();
+
         OidcAuthorizationRequest::query()->updateOrCreate(
             [
                 'client_id' => (string) $request->query('client_id'),
