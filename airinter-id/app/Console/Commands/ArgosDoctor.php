@@ -30,6 +30,7 @@ class ArgosDoctor extends Command
             $this->checkOidcConfiguration(),
             $this->checkTokenSecurity(),
             $this->checkAccountSecurity(),
+            $this->checkPasskeys(),
             $this->checkCallbacks(),
             $this->checkPrometheeBridge(),
             $this->checkWritableDirectories(),
@@ -347,6 +348,30 @@ class ArgosDoctor extends Command
             'Account security',
             'Password reset/change, e-mail verification, TOTP MFA, recovery codes and reauthentication are available.'
         );
+    }
+
+    private function checkPasskeys(): array
+    {
+        $issues = [];
+
+        if (!class_exists(\Laravel\Passkeys\Passkeys::class)) {
+            $issues[] = 'laravel/passkeys is not installed';
+        }
+
+        if (!Schema::hasTable('passkeys')) {
+            $issues[] = 'passkeys table is missing';
+        }
+
+        $origin = (array) config('passkeys.allowed_origins', []);
+        if (!in_array((string) config('app.url'), $origin, true)) {
+            $issues[] = 'APP_URL is not in allowed passkey origins';
+        }
+
+        if ($issues !== []) {
+            return $this->error('Passkeys', implode('; ', $issues));
+        }
+
+        return $this->ok('Passkeys', 'WebAuthn/passkeys are enabled with password-confirm protected management.');
     }
 
     private function checkCallbacks(): array
