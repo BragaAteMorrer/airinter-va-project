@@ -109,7 +109,7 @@ return new class extends Migration {
             $missionId = DB::table('promethee_missions')->insertGetId([
                 'created_by' => null,
                 'title' => 'Rapatriement '.$registration.' vers '.$base,
-                'description' => 'Mission de rapatriement flotte demandée par l’exploitation. Appareil '.$registration.' actuellement à '.$current.', 
+                'description' => 'Mission de rapatriement flotte demandée par l’exploitation. Appareil '.$registration.' actuellement à '.$current.'.',
                 'mission_type' => 'repatriation',
                 'dpt_airport_id' => $current,
                 'arr_airport_id' => $base,
