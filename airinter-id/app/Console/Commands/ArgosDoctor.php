@@ -18,6 +18,7 @@ class ArgosDoctor extends Command
     {
         $checks = [
             $this->checkEnvironment(),
+            $this->checkRelease(),
             $this->checkHttps(),
             $this->checkApplicationKey(),
             $this->checkDatabase(),
@@ -78,6 +79,20 @@ class ArgosDoctor extends Command
         }
 
         return $this->ok('Environment', 'Production mode with debug disabled.');
+    }
+
+    private function checkRelease(): array
+    {
+        $release = trim((string) config('airinter-id.release'));
+
+        if ($release === '') {
+            return $this->warning(
+                'Release marker',
+                'ARGOS_RELEASE is empty. Set it to the deployed Git commit SHA to make production/repository parity auditable.'
+            );
+        }
+
+        return $this->ok('Release marker', $release);
     }
 
     private function checkHttps(): array
@@ -178,11 +193,11 @@ class ArgosDoctor extends Command
 
     private function checkOauthClients(): array
     {
-        if (!Schema::hasTable('oauth_clients')) {
-            return $this->error('OAuth clients', 'oauth_clients table is missing.');
-        }
-
         try {
+            if (!Schema::hasTable('oauth_clients')) {
+                return $this->error('OAuth clients', 'oauth_clients table is missing.');
+            }
+
             $definitions = (array) config('airinter-id.clients', []);
             $missing = [];
 
