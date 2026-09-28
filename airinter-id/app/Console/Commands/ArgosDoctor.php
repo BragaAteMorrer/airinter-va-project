@@ -368,7 +368,7 @@ class ArgosDoctor extends Command
         }
 
         if ($issues !== []) {
-            return $this->error('Passkeys', implode('; ', $issues));
+            return $this->failedCheck('Passkeys', implode('; ', $issues));
         }
 
         return $this->ok('Passkeys', 'WebAuthn/passkeys are enabled with password-confirm protected management.');
