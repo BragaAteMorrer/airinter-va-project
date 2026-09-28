@@ -17,12 +17,19 @@
     $passportCatalogue = collect($passportCountries ?? [])
         ->map(fn ($country) => strtoupper(trim((string) $country)))
         ->filter()
+        ->merge($visitedCountryCodes)
         ->unique()
+        ->sort()
         ->values();
     if ($passportCatalogue->isEmpty()) {
         $passportCatalogue = $visitedCountryCodes;
     }
-    $passportVisitedCount = $passportCatalogue->filter(fn ($country) => $visitedCountryCodes->contains($country))->count();
+
+    // The ranking and the passport counter must share the same source of truth:
+    // distinct countries touched by accepted PIREPs. A country already stamped
+    // must never disappear merely because it is no longer present in the current
+    // flight catalogue.
+    $passportVisitedCount = $visitedCountryCodes->count();
     $passportTotalCount = $passportCatalogue->count();
     $passportProgress = $passportTotalCount > 0 ? min(100, ($passportVisitedCount / $passportTotalCount) * 100) : 0;
 @endphp
