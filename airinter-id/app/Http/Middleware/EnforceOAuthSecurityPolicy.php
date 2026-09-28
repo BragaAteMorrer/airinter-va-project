@@ -224,7 +224,13 @@ class EnforceOAuthSecurityPolicy
             return [];
         }
 
-        $decoded = base64_decode(strtr($segments[1], '-_', '+/'), true);
+        $encoded = strtr($segments[1], '-_', '+/');
+        $padding = strlen($encoded) % 4;
+        if ($padding !== 0) {
+            $encoded .= str_repeat('=', 4 - $padding);
+        }
+
+        $decoded = base64_decode($encoded, true);
         if ($decoded === false) {
             return [];
         }
