@@ -43,6 +43,11 @@ class User extends Authenticatable implements OAuthenticatable
         return $this->hasMany(LegacyIdentity::class);
     }
 
+    public function oauthTokenFamilies(): HasMany
+    {
+        return $this->hasMany(OauthTokenFamily::class);
+    }
+
     public function securityEvents(): HasMany
     {
         return $this->hasMany(SecurityEvent::class);
