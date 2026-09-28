@@ -6,6 +6,7 @@ use App\Models\OidcAuthorizationRequest;
 use App\Models\User;
 use App\Services\ArgosOAuthPolicy;
 use App\Services\OidcTokenService;
+use App\Services\TokenSecurityService;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,6 +18,7 @@ class EnforceOAuthSecurityPolicy
     public function __construct(
         private readonly ArgosOAuthPolicy $policy,
         private readonly OidcTokenService $oidcTokens,
+        private readonly TokenSecurityService $tokenSecurity,
     ) {
     }
 
@@ -39,7 +41,25 @@ class EnforceOAuthSecurityPolicy
                 return $failure;
             }
 
+            $refreshLineage = null;
+            if ((string) $request->input('grant_type') === 'refresh_token') {
+                $presented = (string) $request->input('refresh_token');
+                if ($presented !== '') {
+                    $refreshLineage = $this->tokenSecurity->inspectRefreshToken($presented);
+
+                    if ($refreshLineage && $refreshLineage->status !== 'active') {
+                        $this->tokenSecurity->handleReuse($refreshLineage);
+
+                        return $this->oauthError(
+                            'invalid_grant',
+                            'Refresh token reuse detected. The complete token family has been revoked.'
+                        );
+                    }
+                }
+            }
+
             $response = $next($request);
+            $response = $this->trackTokenSecurity($request, $response, $refreshLineage);
 
             return $this->appendIdTokenWhenRequired($request, $response);
         }
@@ -160,6 +180,55 @@ class EnforceOAuthSecurityPolicy
                 'expires_at' => now()->addMinutes(10),
             ],
         );
+    }
+
+
+    private function trackTokenSecurity(Request $request, Response $response, mixed $refreshLineage): Response
+    {
+        if ($response->getStatusCode() >= 400) {
+            return $response;
+        }
+
+        $payload = json_decode($response->getContent() ?: '{}', true);
+        if (!is_array($payload) || empty($payload['access_token']) || empty($payload['refresh_token'])) {
+            return $response;
+        }
+
+        $claims = $this->decodeJwtPayload((string) $payload['access_token']);
+        $userId = $claims['sub'] ?? null;
+        $accessTokenId = isset($claims['jti']) ? (string) $claims['jti'] : null;
+        $user = $userId !== null ? User::query()->find($userId) : null;
+        $clientId = (string) ($request->input('client_id') ?: $request->getUser());
+
+        if (!$user || $clientId === '') {
+            return $response;
+        }
+
+        if ((string) $request->input('grant_type') === 'authorization_code') {
+            $this->tokenSecurity->beginFamily(
+                $user,
+                $clientId,
+                (string) $payload['refresh_token'],
+                $accessTokenId,
+            );
+        } elseif ((string) $request->input('grant_type') === 'refresh_token') {
+            if ($refreshLineage) {
+                $this->tokenSecurity->rotate(
+                    $refreshLineage,
+                    (string) $payload['refresh_token'],
+                    $accessTokenId,
+                );
+            } else {
+                $this->tokenSecurity->beginFamily(
+                    $user,
+                    $clientId,
+                    (string) $payload['refresh_token'],
+                    $accessTokenId,
+                );
+            }
+        }
+
+        return $response;
     }
 
     private function appendIdTokenWhenRequired(Request $request, Response $response): Response
