@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Oidc\ProviderController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
