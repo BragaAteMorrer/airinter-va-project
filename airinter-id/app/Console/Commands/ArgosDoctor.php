@@ -394,7 +394,7 @@ class ArgosDoctor extends Command
         }
 
         if ($issues !== []) {
-            return $this->error('Adaptive security', implode('; ', $issues));
+            return $this->failedCheck('Adaptive security', implode('; ', $issues));
         }
 
         if ((array) config('argos-security.admin_subjects', []) === []) {
