@@ -52,14 +52,34 @@ class OidcTokenService
             throw new RuntimeException('Passport public key is not a readable RSA key.');
         }
 
-        return ['keys' => [[
+        $keys = [[
             'kty' => 'RSA',
             'use' => 'sig',
             'kid' => $this->keyId($pem),
             'alg' => 'RS256',
             'n' => $this->base64Url($details['rsa']['n']),
             'e' => $this->base64Url($details['rsa']['e']),
-        ]]];
+        ]];
+
+        $archive = storage_path('argos-jwks');
+        foreach (glob($archive.'/*.pem') ?: [] as $file) {
+            $archivedPem = @file_get_contents($file);
+            $archivedKey = $archivedPem ? openssl_pkey_get_public($archivedPem) : false;
+            $archivedDetails = $archivedKey ? openssl_pkey_get_details($archivedKey) : false;
+            if (!$archivedDetails || !isset($archivedDetails['rsa']['n'], $archivedDetails['rsa']['e'])) {
+                continue;
+            }
+            $keys[] = [
+                'kty' => 'RSA',
+                'use' => 'sig',
+                'kid' => $this->keyId($archivedPem),
+                'alg' => 'RS256',
+                'n' => $this->base64Url($archivedDetails['rsa']['n']),
+                'e' => $this->base64Url($archivedDetails['rsa']['e']),
+            ];
+        }
+
+        return ['keys' => $keys];
     }
 
     private function sign(array $claims): string
