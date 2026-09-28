@@ -205,7 +205,15 @@
 
             <div class="crm-pilot-picker" data-checkbox-group="pilots">
               @foreach($pilots as $pilot)
-                @php($pilotSearchLabel = strtolower(trim(($pilot->pilot_id ?? '').' '.($pilot->name ?? '').' '.($pilot->rank?->name ?? '').' '.($pilot->airline?->icao ?? '').' '.($pilot->home_airport_id ?? ''))))
+                @php
+                  $pilotSearchLabel = strtolower(trim(
+                    ($pilot->pilot_id ?? '').' '.
+                    ($pilot->name ?? '').' '.
+                    ($pilot->rank?->name ?? '').' '.
+                    ($pilot->airline?->icao ?? '').' '.
+                    ($pilot->home_airport_id ?? '')
+                  ));
+                @endphp
                 <label class="crm-pilot-option" data-pilot-label="{{ $pilotSearchLabel }}">
                   <input type="checkbox" name="pilot_ids[]" value="{{ $pilot->id }}" data-crm-filter>
                   <span class="crm-pilot-option-main">
@@ -242,7 +250,7 @@
     <tbody>
     @forelse($campaigns as $campaign)
       <tr>
-        <td>{{ CarbonCarbon::parse($campaign->created_at)->setTimezone('Europe/Paris')->format('d/m/Y H:i') }}</td>
+        <td>{{ \Carbon\Carbon::parse($campaign->created_at)->setTimezone('Europe/Paris')->format('d/m/Y H:i') }}</td>
         <td><strong>{{ $campaign->subject }}</strong></td>
         <td>{{ $campaign->sender_email ?: '—' }}</td>
         <td>{{ $campaign->creator_name ?: '—' }}</td>
@@ -275,7 +283,7 @@
 @endphp
 <script>
 (() => {
-  const pilots = @json($crmPilotData);
+  const pilots = {{ \Illuminate\Support\Js::from($crmPilotData) }};
   const form = document.getElementById('crmCampaignForm');
   const count = document.getElementById('crmAudienceCount');
   const inlineCount = document.getElementById('crmAudienceCountInline');
