@@ -234,3 +234,43 @@ Website:   profile email
 ```
 
 The middleware rejects malformed or over-privileged authorization requests before Passport processes them.
+
+
+## Lot 2 — OpenID Connect
+
+Argos now exposes an OpenID Connect provider layer on top of Laravel Passport.
+
+Standard endpoints:
+
+```text
+/.well-known/openid-configuration
+/.well-known/oauth-authorization-server
+/.well-known/jwks.json
+/oauth/authorize
+/oauth/token
+/oauth/userinfo
+```
+
+OIDC rules:
+- clients request the `openid` scope;
+- Argos requires a `nonce` whenever `openid` is requested;
+- Authorization Code + PKCE S256 remains mandatory;
+- successful authorization-code exchanges receive an RS256-signed `id_token`;
+- the OIDC `sub` is the immutable Argos UUID (`users.subject`), never the Laravel numeric user id;
+- ID Tokens are audience-bound to the OAuth client id and short-lived (5 minutes);
+- profile/email claims are only included when the matching scopes were granted;
+- UserInfo is protected by Passport access tokens;
+- JWKS publishes only the RSA public key and a deterministic `kid`.
+
+The current implementation deliberately reuses Passport's RSA signing key pair so OAuth access-token signing and OIDC ID-token verification share one managed key lifecycle.
+
+Before enabling OIDC in production:
+
+```bash
+php artisan migrate --force
+php artisan passport:keys
+php artisan optimize:clear
+php artisan argos:doctor --strict
+```
+
+The next lot should focus on key rotation, refresh-token rotation/reuse detection, revocation and session/application management.
