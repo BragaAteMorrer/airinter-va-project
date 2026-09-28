@@ -113,6 +113,10 @@ class AirInterIdController extends Controller
     {
         $config = (array) config('services.airinter_id', []);
 
+        if (!($config['enabled'] ?? false)) {
+            throw new RuntimeException('Air Inter ID SSO is disabled.');
+        }
+
         foreach (['base_url', 'client_id', 'client_secret', 'redirect'] as $key) {
             if (empty($config[$key])) {
                 throw new RuntimeException('Air Inter ID is not configured: missing '.$key);
