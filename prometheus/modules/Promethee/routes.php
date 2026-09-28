@@ -246,6 +246,8 @@ Route::middleware(['api','api.auth'])->prefix('api/acars')->group(function () {
     Route::post('/flights/{flight_id}/simbrief/import', [AcarsSimBriefController::class, 'import']);
 });
 
+// Public Hermès bootstrap endpoints: the OAuth client ID is public by design.
+Route::middleware('api')->get('/api/v1/hermes/identity-configuration', [AcarsSessionController::class, 'identityConfiguration']);
 // Update discovery is intentionally public: Hermès checks before the pilot signs in.
 Route::middleware('api')->get('/api/v1/hermes/releases/latest', [HermesReleaseController::class, 'latest']);
 
