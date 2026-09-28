@@ -234,6 +234,8 @@ Route::middleware('web')->get('/simbrief/callback/{state}', [SimBriefCallbackCon
 // Hermès authentication is owned by Prométhée, not phpVMS core.
 Route::middleware('api')->post('/api/acars/session', [AcarsSessionController::class, 'store'])
     ->middleware('throttle:5,1');
+Route::middleware('api')->post('/api/acars/argos-session', [AcarsSessionController::class, 'argos'])
+    ->middleware('throttle:10,1');
 Route::middleware(['api','api.auth'])->delete('/api/acars/session', [AcarsSessionController::class, 'destroy']);
 
 // Compatibility endpoints for older Hermès builds. New clients use /api/v1/operations/*.
