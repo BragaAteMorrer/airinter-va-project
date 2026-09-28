@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AccountSecurityController;
+use App\Http\Controllers\Admin\SecurityAdminController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmPasswordController;
 use App\Http\Controllers\Auth\EmailVerificationController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\Auth\PasswordSecurityController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\Auth\TwoFactorSettingsController;
 use App\Http\Controllers\Oidc\ProviderController;
+use App\Http\Middleware\EnsureSecurityAdministrator;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
@@ -51,7 +53,13 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/account/mfa/recovery-codes', [TwoFactorSettingsController::class, 'recoveryCodes'])->name('account.mfa.recovery-codes');
     Route::delete('/account/applications/{clientId}', [AccountSecurityController::class, 'revokeApplication'])->name('account.applications.revoke');
+    Route::delete('/account/trusted-devices/{device}', [AccountSecurityController::class, 'revokeTrustedDevice'])->name('account.trusted-devices.revoke');
     Route::delete('/account/sessions/{sessionId}', [AccountSecurityController::class, 'revokeSession'])->name('account.sessions.revoke');
     Route::delete('/account/sessions', [AccountSecurityController::class, 'revokeOtherSessions'])->name('account.sessions.revoke-others');
+    Route::middleware([EnsureSecurityAdministrator::class, 'password.confirm'])->group(function () {
+        Route::get('/admin/security', [SecurityAdminController::class, 'index'])->name('admin.security');
+        Route::post('/admin/security/users/{user}/revoke', [SecurityAdminController::class, 'revokeUser'])->name('admin.security.users.revoke');
+    });
+
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 });
