@@ -75,7 +75,7 @@ class ArgosDoctor extends Command
         }
 
         if ((bool) config('app.debug')) {
-            return $this->error('Environment', 'APP_DEBUG must be false in production.');
+            return $this->failedCheck('Environment', 'APP_DEBUG must be false in production.');
         }
 
         return $this->ok('Environment', 'Production mode with debug disabled.');
@@ -99,7 +99,7 @@ class ArgosDoctor extends Command
     {
         $url = (string) config('app.url');
         if (!str_starts_with($url, 'https://')) {
-            return $this->error('HTTPS', 'APP_URL must use https:// in production.');
+            return $this->failedCheck('HTTPS', 'APP_URL must use https:// in production.');
         }
 
         return $this->ok('HTTPS', $url);
@@ -109,7 +109,7 @@ class ArgosDoctor extends Command
     {
         $key = (string) config('app.key');
         if ($key === '') {
-            return $this->error('Application key', 'APP_KEY is missing.');
+            return $this->failedCheck('Application key', 'APP_KEY is missing.');
         }
 
         return $this->ok('Application key', 'APP_KEY is configured.');
@@ -121,7 +121,7 @@ class ArgosDoctor extends Command
             DB::connection()->select('select 1');
             return $this->ok('Database', 'Primary database connection is reachable.');
         } catch (Throwable $e) {
-            return $this->error('Database', $this->exceptionSummary($e));
+            return $this->failedCheck('Database', $this->exceptionSummary($e));
         }
     }
 
@@ -161,11 +161,11 @@ class ArgosDoctor extends Command
         try {
             $missing = array_values(array_filter($required, fn (string $table) => !Schema::hasTable($table)));
         } catch (Throwable $e) {
-            return $this->error($name, $this->exceptionSummary($e));
+            return $this->failedCheck($name, $this->exceptionSummary($e));
         }
 
         if ($missing !== []) {
-            return $this->error($name, 'Missing: '.implode(', ', $missing));
+            return $this->failedCheck($name, 'Missing: '.implode(', ', $missing));
         }
 
         return $this->ok($name, 'All required tables are present.');
@@ -185,7 +185,7 @@ class ArgosDoctor extends Command
         }
 
         if ($missing !== []) {
-            return $this->error('Passport keys', 'Missing or unreadable: '.implode(', ', $missing).'. Run php artisan passport:keys.');
+            return $this->failedCheck('Passport keys', 'Missing or unreadable: '.implode(', ', $missing).'. Run php artisan passport:keys.');
         }
 
         return $this->ok('Passport keys', 'Signing keys are present and readable.');
@@ -195,7 +195,7 @@ class ArgosDoctor extends Command
     {
         try {
             if (!Schema::hasTable('oauth_clients')) {
-                return $this->error('OAuth clients', 'oauth_clients table is missing.');
+                return $this->failedCheck('OAuth clients', 'oauth_clients table is missing.');
             }
 
             $definitions = (array) config('airinter-id.clients', []);
@@ -224,7 +224,7 @@ class ArgosDoctor extends Command
 
             return $this->ok('OAuth clients', 'Configured first-party clients are provisioned.');
         } catch (Throwable $e) {
-            return $this->error('OAuth clients', $this->exceptionSummary($e));
+            return $this->failedCheck('OAuth clients', $this->exceptionSummary($e));
         }
     }
 
@@ -250,7 +250,7 @@ class ArgosDoctor extends Command
         }
 
         if ($issues !== []) {
-            return $this->error('OAuth callbacks', implode('; ', $issues));
+            return $this->failedCheck('OAuth callbacks', implode('; ', $issues));
         }
 
         return $this->ok('OAuth callbacks', 'HTTPS enforced; HTTP accepted only for loopback/native callback.');
@@ -272,7 +272,7 @@ class ArgosDoctor extends Command
                 'Connection is reachable. Verify at the MySQL level that this account has SELECT-only grants.'
             );
         } catch (Throwable $e) {
-            return $this->error('Prométhée bridge', $this->exceptionSummary($e));
+            return $this->failedCheck('Prométhée bridge', $this->exceptionSummary($e));
         }
     }
 
@@ -286,7 +286,7 @@ class ArgosDoctor extends Command
         $bad = array_values(array_filter($paths, fn (string $path) => !is_dir($path) || !is_writable($path)));
 
         if ($bad !== []) {
-            return $this->error('Filesystem', 'Not writable: '.implode(', ', $bad));
+            return $this->failedCheck('Filesystem', 'Not writable: '.implode(', ', $bad));
         }
 
         return $this->ok('Filesystem', 'storage and bootstrap/cache are writable.');
@@ -302,7 +302,7 @@ class ArgosDoctor extends Command
         return ['name' => $name, 'status' => 'warning', 'message' => $message];
     }
 
-    private function error(string $name, string $message): array
+    private function failedCheck(string $name, string $message): array
     {
         return ['name' => $name, 'status' => 'error', 'message' => $message];
     }
