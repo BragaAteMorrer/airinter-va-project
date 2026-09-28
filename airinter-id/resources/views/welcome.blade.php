@@ -1,11 +1,11 @@
 @extends('layout')
-@section('title', 'Air Inter ID')
+@section('title', 'Argos')
 @section('content')
 <section class="hero">
     <div>
         <span class="kicker">IDENTITÉ AIR INTER</span>
         <h1>Un compte.<br>Toute la compagnie.</h1>
-        <p>Air Inter ID unifie progressivement le site Air Inter VA, Prométhée et Hermès sans déplacer votre historique de pilote.</p>
+        <p>Argos unifie progressivement le site Air Inter VA, Prométhée et Hermès sans déplacer votre historique de pilote.</p>
         @auth
             <a class="button primary" href="{{ route('account') }}">Ouvrir mon compte</a>
         @else
