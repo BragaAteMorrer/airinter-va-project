@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Console\Commands\ArgosDoctor;
 use App\Console\Commands\ConfigureFirstPartyClients;
 use App\Console\Commands\ImportPrometheeUsers;
 use Illuminate\Support\ServiceProvider;
