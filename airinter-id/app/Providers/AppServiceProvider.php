@@ -26,7 +26,7 @@ class AppServiceProvider extends ServiceProvider
             'promethee:read' => 'Accéder à votre espace pilote Prométhée',
             'hermes:operate' => 'Utiliser Hermès pour vos opérations de vol',
         ]);
-        Passport::defaultScopes(['profile']);
+        Passport::defaultScopes([]);
 
         if ($this->app->runningInConsole()) {
             $this->commands([
