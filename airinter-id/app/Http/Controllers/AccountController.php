@@ -26,6 +26,16 @@ class AccountController extends Controller
             })
             ->values();
 
+        $passkeys = $user->passkeys()
+            ->orderByDesc('last_used_at')
+            ->orderByDesc('created_at')
+            ->get();
+
+        $securityEvents = $user->securityEvents()
+            ->latest('created_at')
+            ->limit(30)
+            ->get();
+
         $sessions = DB::table('sessions')
             ->where('user_id', $user->id)
             ->orderByDesc('last_activity')
@@ -35,6 +45,8 @@ class AccountController extends Controller
             'user' => $user,
             'applications' => $families,
             'sessions' => $sessions,
+            'passkeys' => $passkeys,
+            'securityEvents' => $securityEvents,
             'currentSessionId' => $request->session()->getId(),
         ]);
     }
