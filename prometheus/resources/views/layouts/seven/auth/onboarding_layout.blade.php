@@ -6,7 +6,7 @@
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <meta name="base-url" content="{{ url('') }}">
   <title>@yield('title') · Air Inter VA</title>
-  <link rel="shortcut icon" type="image/png" href="{{ public_asset('/assets/img/favicon.png') }}">
+  <link rel="icon" type="image/svg+xml" href="{{ public_asset('/promethee-assets/favicon.svg') }}">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <link href="{{ public_asset('/assets/vendor/tomselect/tom-select.bootstrap5.css') }}" rel="stylesheet">
   <link rel="stylesheet" href="{{ public_asset('/promethee-assets/onboarding.css') }}">
