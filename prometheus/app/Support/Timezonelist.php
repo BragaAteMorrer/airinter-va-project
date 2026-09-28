@@ -92,7 +92,9 @@ class Timezonelist
         $timezone = substr($timezone, \strlen($continent) + 1);
         $timezone = str_replace(['St_', '_'], ['St. ', ' '], $timezone);
 
-        return '(GMT/UTC'.$offset.')'.self::WHITESPACE_SEP.$timezone;
+        $separator = $htmlencode ? self::WHITESPACE_SEP : '    ';
+
+        return '(GMT/UTC'.$offset.')'.$separator.$timezone;
     }
 
     /**
