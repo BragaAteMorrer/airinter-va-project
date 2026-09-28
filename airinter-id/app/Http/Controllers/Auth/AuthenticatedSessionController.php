@@ -44,7 +44,7 @@ class AuthenticatedSessionController extends Controller
 
         if (!$user->canUseSso()) {
             throw ValidationException::withMessages([
-                'login' => 'Ce compte ne peut pas actuellement utiliser Air Inter ID.',
+                'login' => 'Ce compte ne peut pas actuellement utiliser Argos.',
             ]);
         }
 
@@ -52,8 +52,16 @@ class AuthenticatedSessionController extends Controller
             $user->forceFill(['password' => Hash::make($credentials['password'])])->save();
         }
 
+        if ($user->two_factor_confirmed_at && $user->two_factor_secret) {
+            $request->session()->put('auth.two_factor_user_id', $user->id);
+            $request->session()->put('auth.two_factor_remember', $request->boolean('remember'));
+
+            return redirect()->route('two-factor.login');
+        }
+
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
+        $request->session()->put('auth.password_confirmed_at', time());
 
         $user->forceFill(['last_login_at' => now()])->save();
         SecurityEvent::create([
