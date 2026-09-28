@@ -21,6 +21,7 @@ class AppServiceProvider extends ServiceProvider
         Passport::tokensExpireIn(now()->addHour());
         Passport::refreshTokensExpireIn(now()->addDays(30));
         Passport::tokensCan([
+            'openid' => 'Vous authentifier avec Argos',
             'profile' => 'Lire votre profil Argos',
             'email' => 'Lire votre adresse e-mail',
             'promethee:read' => 'Accéder à votre espace pilote Prométhée',
