@@ -126,6 +126,27 @@
     </article>
 
     <article class="card">
+        <span class="kicker">APPAREILS DE CONFIANCE</span>
+        <h2>MFA mémorisé</h2>
+        @forelse($trustedDevices as $device)
+            <div class="identity">
+                <strong>{{ $device->name ?: 'Appareil' }}</strong>
+                <span>expire {{ $device->expires_at->diffForHumans() }}</span>
+                <small>
+                    Dernière utilisation {{ $device->last_used_at?->diffForHumans() ?: 'jamais' }}
+                    @if($device->last_ip_address) · {{ $device->last_ip_address }} @endif
+                </small>
+                <form method="post" action="{{ route('account.trusted-devices.revoke', $device) }}">
+                    @csrf @method('DELETE')
+                    <button class="button">Ne plus faire confiance</button>
+                </form>
+            </div>
+        @empty
+            <p>Aucun appareil de confiance actif.</p>
+        @endforelse
+    </article>
+
+    <article class="card">
         <span class="kicker">HISTORIQUE DE SÉCURITÉ</span>
         <h2>Activité récente</h2>
         @forelse($securityEvents as $event)
@@ -140,7 +161,7 @@
             @endphp
             <div class="identity">
                 <strong>{{ $event->type }}</strong>
-                <span>{{ $highRisk ? 'Sensible' : 'Information' }}</span>
+                <span>{{ strtoupper($event->severity ?? ($highRisk ? 'high' : 'info')) }} · risque {{ $event->risk_score ?? 0 }}</span>
                 <small>
                     {{ $event->created_at->format('d/m/Y H:i') }}
                     @if($event->ip_address) · {{ $event->ip_address }} @endif
