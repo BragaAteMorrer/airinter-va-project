@@ -6,7 +6,7 @@ on:
       - feature/argos-lot-5-passkeys-risk
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   generate-lock:
@@ -16,6 +16,8 @@ jobs:
         working-directory: airinter-id
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: feature/argos-lot-5-passkeys-risk
 
       - name: Install PHP
         uses: shivammathur/setup-php@v2
@@ -29,9 +31,15 @@ jobs:
       - name: Validate generated lock
         run: composer validate --strict --no-check-publish
 
-      - name: Upload composer lock
-        uses: actions/upload-artifact@v4
-        with:
-          name: argos-composer-lock
-          path: airinter-id/composer.lock
-          if-no-files-found: error
+      - name: Commit generated lock
+        working-directory: .
+        run: |
+          if git diff --quiet -- airinter-id/composer.lock; then
+            echo "composer.lock already up to date"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add airinter-id/composer.lock
+          git commit -m "chore(argos): lock passkeys dependencies"
+          git push origin HEAD:feature/argos-lot-5-passkeys-risk
