@@ -274,3 +274,28 @@ php artisan argos:doctor --strict
 ```
 
 The next lot should focus on key rotation, refresh-token rotation/reuse detection, revocation and session/application management.
+
+
+## Lot 3 — token security
+
+Argos tracks refresh-token rotation using token families while Laravel Passport remains the cryptographic OAuth authority.
+
+Security behaviour:
+- only SHA-256 fingerprints of refresh tokens are stored by Argos;
+- every authorization-code login starts a token family;
+- every successful refresh marks the previous refresh token as used and records the replacement;
+- reuse of a used/revoked refresh token revokes the complete family;
+- associated Passport access and refresh tokens are revoked;
+- pre-Lot-3 refresh tokens are accepted once and migrated into a tracked family after Passport validates them;
+- users can revoke an application's active families from the Argos account page;
+- users can terminate individual web sessions or all other sessions.
+
+Signing key rotation:
+
+```bash
+php artisan argos:keys:rotate
+```
+
+The command archives the previous public key for JWKS verification, generates a fresh 4096-bit RSA pair, revokes active OAuth tokens, and forces clients to authenticate again. Private retired keys are never archived.
+
+Because Passport validates access tokens against its current signing key, Argos intentionally treats signing-key rotation as a security boundary rather than trying to keep old access tokens alive.
