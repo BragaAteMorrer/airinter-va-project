@@ -161,3 +161,268 @@ html[data-era="2000"][data-appearance="dark"] .button.outline{background:linear-
 }
 html[data-appearance-transition] body,html[data-appearance-transition] .topbar,html[data-appearance-transition] .sidebar,html[data-appearance-transition] .panel,html[data-appearance-transition] .stat,html[data-appearance-transition] input,html[data-appearance-transition] select,html[data-appearance-transition] textarea{transition:background-color 190ms ease,color 190ms ease,border-color 190ms ease,box-shadow 190ms ease}
 @media(prefers-reduced-motion:reduce){html[data-appearance-transition] *{transition:none!important}}
+
+
+/* Dark-mode completeness pass 2026-09-30
+   Keep every non-Minitel Prométhée surface inside the selected night palette.
+   This layer intentionally loads last so page-specific light fills cannot leak
+   through in Modern or 1999–2005 mode. */
+html[data-appearance="dark"]:not([data-era="minitel"]){
+  --dark-map-water:#102739;
+  --dark-map-land:#18364b;
+  --dark-map-line:#42657d;
+  --dark-overlay:#09131dcc;
+  --dark-code:#07111b;
+  --dark-soft:#13283a;
+  --dark-soft-2:#1a3348;
+}
+
+/* Generic content surfaces, including legacy/page-specific helpers. */
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(
+  .card,.box,.widget,.well,.content-box,.summary-card,.metric-card,.info-card,
+  .airport-card,.report-summary,.report-route,.report-tabs span,.route-board article,
+  .signal,.map-selection,.line-meta div,.fare-chips span,.hermes-public-points span,
+  .dispatch-card,.dispatch-compose,.dispatch-message,.passport-stamp
+){
+  background:var(--color-surface)!important;
+  color:var(--color-text)!important;
+  border-color:var(--color-border)!important;
+}
+
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(
+  .card-header,.card-footer,.box-header,.widget-header,.section-header,
+  .table-toolbar,.toolbar,.filters,.filter-bar,.subnav,.tabs
+){
+  background:var(--color-surface-secondary)!important;
+  color:var(--color-text)!important;
+  border-color:var(--color-border)!important;
+}
+
+/* Typography: prevent inherited light-theme ink from becoming unreadable. */
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(
+  main,.panel,.card,.box,.widget,.modal,.dropdown-menu,.popover,.tooltip-inner
+){color:var(--color-text)}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(
+  p,small,.help,.hint,.description,.meta,.text-muted,.muted,dt,.caption,.table-caption
+){color:var(--color-text-secondary)!important}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(
+  h1,h2,h3,h4,h5,h6,strong,label,legend,dd
+){color:var(--color-text)}
+html[data-appearance="dark"]:not([data-era="minitel"]) a:not(.button):not(.btn){color:var(--color-primary-hover)}
+html[data-appearance="dark"]:not([data-era="minitel"]) a:not(.button):not(.btn):hover{color:#b9ddf0}
+
+/* Forms and browser/native affordances. */
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(
+  input,select,textarea,.form-control,.input-group-text,.form-select
+){
+  background-color:var(--color-surface-elevated)!important;
+  color:var(--color-text)!important;
+  border-color:var(--color-border-strong)!important;
+}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(input,textarea,.form-control)::placeholder{
+  color:var(--color-text-muted)!important;
+  opacity:1;
+}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(input,select,textarea,.form-control,.form-select):disabled{
+  background:var(--color-surface-secondary)!important;
+  color:var(--color-text-muted)!important;
+  opacity:.82;
+}
+html[data-appearance="dark"]:not([data-era="minitel"]) option{
+  background:var(--color-surface-elevated);
+  color:var(--color-text);
+}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(
+  .select2-container--default .select2-selection--single,
+  .select2-container--default .select2-selection--multiple,
+  .select2-dropdown,.ts-control,.ts-dropdown
+){
+  background:var(--color-surface-elevated)!important;
+  color:var(--color-text)!important;
+  border-color:var(--color-border-strong)!important;
+}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(
+  .select2-container--default .select2-selection--single .select2-selection__rendered,
+  .select2-results__option,.ts-dropdown .option
+){color:var(--color-text)!important}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(
+  .select2-results__option--highlighted[aria-selected],
+  .select2-results__option[aria-selected="true"],.ts-dropdown .active
+){background:var(--color-surface-secondary)!important;color:var(--color-text)!important}
+
+/* Tables: headers, footers, empty states and DataTables controls. */
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(table,.table){
+  color:var(--color-text)!important;
+  border-color:var(--color-border)!important;
+}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(thead th,.table thead th,tfoot td,tfoot th){
+  background:var(--color-surface-secondary)!important;
+  color:var(--color-text-secondary)!important;
+  border-color:var(--color-border)!important;
+}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(
+  .table-striped>tbody>tr:nth-of-type(odd)>*,.table-striped>tbody>tr:nth-of-type(even)>*
+){
+  --bs-table-accent-bg:transparent!important;
+  color:var(--color-text)!important;
+}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(
+  .dataTables_wrapper,.dataTables_info,.dataTables_length,.dataTables_filter,
+  .dataTables_paginate,.table-empty,.empty-state
+){color:var(--color-text-secondary)!important}
+
+/* Menus, overlays, dialogs and pagination. */
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(
+  .modal-content,.dropdown-menu,.popover,.context-menu,.menu-popover
+){
+  background:var(--color-surface-elevated)!important;
+  color:var(--color-text)!important;
+  border-color:var(--color-border-strong)!important;
+  box-shadow:var(--shadow-medium)!important;
+}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(.modal-header,.modal-footer){
+  border-color:var(--color-border)!important;
+}
+html[data-appearance="dark"]:not([data-era="minitel"]) .modal-backdrop{background:#02070d!important}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(.dropdown-item,.dropdown-menu a){
+  color:var(--color-text-secondary)!important;
+}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(.dropdown-item:hover,.dropdown-item:focus,.dropdown-menu a:hover){
+  background:var(--color-surface-secondary)!important;
+  color:var(--color-text)!important;
+}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(.page-link,.pagination a,.pagination span){
+  background:var(--color-surface)!important;
+  color:var(--color-text-secondary)!important;
+  border-color:var(--color-border)!important;
+}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(.page-item.active .page-link,.pagination .active span){
+  background:var(--color-primary)!important;
+  color:#06121c!important;
+  border-color:var(--color-primary)!important;
+}
+
+/* Alerts, badges and chips retain semantic meaning without light backgrounds. */
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(.alert,.notice,.callout){
+  color:var(--color-text)!important;
+  border-color:var(--color-border-strong)!important;
+}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(.alert-info,.info,.notice.info){background:#102d43!important}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(.alert-success,.success,.notice.success){background:#123326!important}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(.alert-warning,.warning,.notice.warning){background:#392f18!important}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(.alert-danger,.danger,.notice.error){background:#3a2025!important}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(.badge,.tag,.chip,.pill){
+  border-color:var(--color-border-strong);
+}
+
+/* Code, logs and preformatted operational data. */
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(pre,code,kbd,samp,.flight-log,.log-view,.raw-data){
+  background:var(--dark-code);
+  color:#d9e9f5;
+  border-color:var(--color-border);
+}
+html[data-appearance="dark"]:not([data-era="minitel"]) pre{
+  border:1px solid var(--color-border);
+}
+
+/* Calendars and timeline/list blocks. */
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(
+  .calendar,.calendar-grid,.calendar-day,.fc,.fc-view-harness,.fc-scrollgrid,
+  .timeline,.activity-list,.list-group-item
+){
+  background:var(--color-surface)!important;
+  color:var(--color-text)!important;
+  border-color:var(--color-border)!important;
+}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(
+  .calendar-day:hover,.calendar-day.today,.fc-day-today,.list-group-item:hover
+){
+  background:var(--color-surface-secondary)!important;
+}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(.fc-col-header-cell,.fc-scrollgrid-section-header>*) {
+  background:var(--color-surface-secondary)!important;
+}
+
+/* Maps. Leaflet's default controls/popups are bright even when the surrounding
+   Prométhée panel is dark, so explicitly skin them too. */
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(
+  .network-map.leaflet-container,.ops-leaflet-map,.dispatch-map,.live-map,.replay-map
+){
+  background:var(--dark-map-water)!important;
+}
+html[data-appearance="dark"]:not([data-era="minitel"]) .map-background{fill:var(--dark-map-land)!important}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(.map-country,.map-region){fill:#25465d!important;stroke:var(--dark-map-line)!important}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(
+  .leaflet-control-zoom a,.leaflet-control-layers,.leaflet-bar a,
+  .leaflet-popup-content-wrapper,.leaflet-popup-tip
+){
+  background:var(--color-surface-elevated)!important;
+  color:var(--color-text)!important;
+  border-color:var(--color-border-strong)!important;
+}
+html[data-appearance="dark"]:not([data-era="minitel"]) .leaflet-container a{color:var(--color-primary-hover)}
+html[data-appearance="dark"]:not([data-era="minitel"]) .live-aircraft{ text-shadow:0 1px 1px #000 }
+html[data-appearance="dark"]:not([data-era="minitel"]) .replay-dot{border-color:var(--color-surface-elevated)}
+html[data-appearance="dark"]:not([data-era="minitel"]) .aircraft-marker{text-shadow:0 1px 2px #000}
+
+/* Page-specific leftovers from promethee-v2.css. */
+html[data-appearance="dark"]:not([data-era="minitel"]) .dispatch-flight .load{
+  background:var(--color-surface-elevated);
+  border-color:var(--color-border);
+}
+html[data-appearance="dark"]:not([data-era="minitel"]) .airport-pair i{
+  background:linear-gradient(90deg,var(--color-primary),#8ba1b3,var(--color-accent));
+}
+html[data-appearance="dark"]:not([data-era="minitel"]) .passport-stamps-progress{
+  background:var(--color-surface-secondary)!important;
+}
+html[data-appearance="dark"]:not([data-era="minitel"]) .passport-stamp{
+  box-shadow:inset 0 1px 0 #ffffff12!important;
+}
+html[data-appearance="dark"]:not([data-era="minitel"]) .passport-stamp.is-visited{
+  background:var(--color-surface-elevated)!important;
+  border-color:var(--color-border-strong)!important;
+  box-shadow:0 2px 8px #02080e55!important;
+}
+
+/* Modern night: cleaner glassless surfaces and stronger hierarchy. */
+html[data-era="modern"][data-appearance="dark"] .workspace{background:var(--color-background)}
+html[data-era="modern"][data-appearance="dark"] main{background:transparent}
+html[data-era="modern"][data-appearance="dark"] .panel-heading{
+  border-color:var(--color-border);
+}
+html[data-era="modern"][data-appearance="dark"] .panel-heading h2{color:var(--color-text)}
+html[data-era="modern"][data-appearance="dark"] :where(.button,button,.btn){
+  box-shadow:none;
+}
+html[data-era="modern"][data-appearance="dark"] :where(.button.secondary,.btn-secondary){
+  background:var(--color-surface-elevated)!important;
+  color:var(--color-text)!important;
+  border-color:var(--color-border-strong)!important;
+}
+
+/* 1999–2005 night: deliberately denser and more bevelled than Modern. */
+html[data-era="2000"][data-appearance="dark"] :where(
+  .card,.box,.widget,.well,.airport-card,.report-route,.dispatch-card,.dispatch-compose,.dispatch-message
+){
+  border-radius:0!important;
+  box-shadow:1px 1px 0 #09111b!important;
+}
+html[data-era="2000"][data-appearance="dark"] :where(
+  input,select,textarea,.form-control,.form-select
+){
+  border-radius:0!important;
+  box-shadow:inset 1px 1px 0 #09111b;
+}
+html[data-era="2000"][data-appearance="dark"] :where(.page-link,.pagination a,.pagination span){
+  border-radius:0!important;
+}
+html[data-era="2000"][data-appearance="dark"] .departure-board{
+  border-color:#536d82;
+}
+
+/* Accessible focus remains obvious in both dark eras. */
+html[data-appearance="dark"]:not([data-era="minitel"]) :focus-visible{
+  outline:2px solid var(--color-primary-hover)!important;
+  outline-offset:2px;
+}
