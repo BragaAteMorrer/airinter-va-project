@@ -58,7 +58,8 @@
     reviewListMode: 'observations',
     reviewListPage: 1,
     lastDatalinkRefreshAt: 0,
-    lastNetworkRefreshAt: 0
+    lastNetworkRefreshAt: 0,
+    localPlan: null
   };
 
   let host;
@@ -85,13 +86,29 @@
     fillRow(screen, 4, 'blue', 'white');
   };
 
+  const videotexHeader = (screen, title, subtitle = 'SERVICE PILOTES') => {
+    mt.writeAirInterMosaic(screen, 2, 1, { foreground: 'blue', separatedMosaic: true });
+    screen.write(2, 12, fit('AIR INTER', 27), { foreground: 'yellow' });
+    screen.write(3, 12, fit(title, 27), { foreground: 'cyan' });
+    screen.write(4, 12, fit(subtitle, 27), { foreground: 'white' });
+  };
+
   const noticeBand = (screen, row, text, background = 'red', foreground = 'white') => {
+    writeBand(screen, row, text, background, foreground);
+  };
+
+  const sectionBand = (screen, row, text, background = 'blue', foreground = 'white') => {
     writeBand(screen, row, text, background, foreground);
   };
 
   const menuLine = (screen, row, number, label, accent = false) => {
     screen.write(row, 1, String(number), { foreground: accent ? 'yellow' : 'cyan' });
-    screen.write(row, 3, fit(label, 35), { foreground: accent ? 'yellow' : 'cyan' });
+    screen.write(row, 3, fit(label, 35), { foreground: accent ? 'yellow' : 'white' });
+  };
+
+  const statusLine = (screen, row, label, value, tone = 'cyan') => {
+    screen.write(row, 2, fit(label, 13), { foreground: 'cyan' });
+    screen.write(row, 15, fit(value, 23), { foreground: tone });
   };
 
   const serviceLine = screen => {
@@ -100,19 +117,11 @@
   };
 
   const footer = (screen, paging = false) => {
-    writeBand(screen, 22, paging ? 'RETOUR PAGE -     SUITE PAGE +' : 'F1 GUIDE     HOME SOMMAIRE', 'blue', 'white');
+    writeBand(screen, 22, paging ? 'PAGE : RETOUR - / SUITE +' : 'COMMANDES VIDEOTEX', 'blue', 'white');
     fillRow(screen, 23, 'green', 'black');
-    screen.write(23, 1, 'Guide', { background: 'green', foreground: 'black' });
-    screen.write(23, 9, 'Sommaire', { background: 'green', foreground: 'black' });
-    screen.write(23, 20, 'Retour', { background: 'green', foreground: 'black' });
-    screen.write(23, 29, 'Suite', { background: 'green', foreground: 'black' });
-    screen.write(23, 35, 'Envoi', { background: 'green', foreground: 'black' });
+    screen.write(23, 1, fit('ESC ANNUL  BKSP CORR  F2 REPETITION', 38), { background: 'green', foreground: 'black' });
     fillRow(screen, 24, 'green', 'black');
-    screen.write(24, 1, 'F1', { background: 'green', foreground: 'black' });
-    screen.write(24, 9, 'HOME', { background: 'green', foreground: 'black' });
-    screen.write(24, 20, 'PgUp', { background: 'green', foreground: 'black' });
-    screen.write(24, 29, 'PgDn', { background: 'green', foreground: 'black' });
-    screen.write(24, 35, 'ENT', { background: 'green', foreground: 'black' });
+    screen.write(24, 1, fit('HOME SOMM PGUP RET PGDN SUI ENT ENVOI', 38), { background: 'green', foreground: 'black' });
   };
 
   const setAction = (type, payload = {}) => {
