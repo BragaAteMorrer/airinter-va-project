@@ -249,6 +249,16 @@ test('Recovery is fully operable from Minitel including abandon/archive', () => 
   assert.ok(source.includes("runCall('/api/recovery/abandon'"));
 });
 
+test('Hermès Minitel caps progressive screen transmission around 2-3 seconds', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'acars', 'wwwroot', 'hermes-minitel.js'), 'utf8');
+  const renderer = fs.readFileSync(path.join(__dirname, '..', 'shared', 'minitel', 'renderer.js'), 'utf8');
+  assert.ok(source.includes('maxProgressiveDurationMs: 2600'));
+  assert.ok(source.includes('bootFrameDelay: 120'));
+  assert.ok(renderer.includes('maxProgressiveDurationMs'));
+  assert.ok(renderer.includes('batchSize'));
+  assert.ok(renderer.includes('actualFrames'));
+});
+
 test('Hermès Minitel shell scales uniformly and respects accessibility preferences', () => {
   const css = fs.readFileSync(path.join(__dirname, '..', 'acars', 'wwwroot', 'hermes-minitel.css'), 'utf8').replace(/\s+/g, ' ');
   assert.ok(css.includes('--mt-chassis-size:min(calc(100dvh - 44px),calc(100vw - 16px),980px)'));
