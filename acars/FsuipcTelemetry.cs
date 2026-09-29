@@ -30,7 +30,17 @@ public sealed record FsuipcTelemetryFrame(
     bool LandingLight,
     bool TaxiLight,
     bool SpoilersArmed,
-    string? AircraftTitle);
+    string? AircraftTitle,
+    double? GrossWeightPounds = null,
+    bool? SeatBeltSign = null,
+    bool? DoorsOpen = null,
+    int? TransponderCode = null,
+    bool? AutopilotEnabled = null,
+    bool? Paused = null,
+    double? SimulationRate = null,
+    bool? ThrustStable = null,
+    string? AircraftIcao = null,
+    string? AircraftModel = null);
 
 /// <summary>
 /// Small seam around the Windows-only FSUIPC client. It keeps the simulator
@@ -71,8 +81,18 @@ public static class FsuipcTelemetryMapper
         LandingLight: frame.LandingLight,
         TaxiLight: frame.TaxiLight,
         SlewActive: frame.SlewActive,
+        Paused: frame.Paused,
+        SimulationRate: frame.SimulationRate,
         AircraftTitle: frame.AircraftTitle,
+        AircraftIcao: frame.AircraftIcao,
+        AircraftModel: frame.AircraftModel,
         PitchDegrees: frame.PitchDegrees,
         BankDegrees: frame.BankDegrees,
+        GrossWeight: frame.GrossWeightPounds,
+        SeatBeltSign: frame.SeatBeltSign,
+        DoorsOpen: frame.DoorsOpen,
+        TransponderCode: frame.TransponderCode,
+        AutopilotEnabled: frame.AutopilotEnabled,
+        ThrustStable: frame.ThrustStable,
         TouchdownVerticalSpeedFeetPerMinute: frame.VerticalSpeedFeetPerMinute);
 }
