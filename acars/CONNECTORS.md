@@ -21,14 +21,14 @@ Prométhée.
 | Connecteur | Implémenté | Validé en vol réel |
 | --- | --- | --- |
 | SimConnectReader | oui, MSFS 2020/2024 | non |
-| FSUIPC | oui, télémétrie FS2004/FSX/P3D | non |
+| FSUIPC | oui, fallback FSUIPC7 pour MSFS + télémétrie FS2004/FSX/P3D | non |
 | X-Plane UDP DataRef localhost | expérimental | non |
 
 ## Matrice
 
 | Simulateur | Connecteur Hermès | Runtime côté simulateur | État |
 | --- | --- | --- | --- |
-| MSFS 2020/2024 | SimConnectReader | SimConnect | implémenté, non validé en vol réel |
+| MSFS 2020/2024 | SimConnectReader (prioritaire) + FsuipcConnector (fallback) | SimConnect ou FSUIPC7 | implémenté, non validé en vol réel |
 | FS2004 | FsuipcConnector | FSUIPC3 3.999z9 | implémenté, non validé en vol réel |
 | FSX / FSX Steam | FsuipcConnector | FSUIPC4 4.977 | implémenté, non validé en vol réel |
 | Prepar3D 1–3 | FsuipcConnector | FSUIPC4 4.977 | implémenté, non validé en vol réel |
@@ -56,8 +56,12 @@ Le connecteur lit notamment :
 Les offsets et leurs encodages sont confinés à
 `FsuipcNativeSession.Windows.cs`. Ils ne doivent jamais remonter dans le cœur
 ACARS. Une trame FSUIPC n'active le connecteur qu'après lecture et validation :
-la simple présence du processus FS9/FSX/P3D n'est pas considérée comme une
+la simple présence du processus MSFS/FS9/FSX/P3D n'est pas considérée comme une
 connexion.
+
+Sous MSFS 2020/2024, Hermès essaie d'abord SimConnect. Si SimConnect ne produit
+pas de télémétrie mais que FSUIPC7 est lancé et fournit une trame valide, le hub
+bascule automatiquement sur le connecteur FSUIPC7 sans redémarrer Hermès.
 
 Une perte FSUIPC ferme la session locale et laisse le connecteur en état
 réessayable. `SimulatorConnectorHub` conserve la sémantique de reconnexion :
