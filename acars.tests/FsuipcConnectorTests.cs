@@ -53,6 +53,30 @@ public sealed class FsuipcConnectorTests
     }
 
     [Fact]
+    public void Msfs_2020_can_use_fsuipc7_as_a_fallback()
+    {
+        var session = new FakeSession(Frame(Now));
+        using var connector = new FsuipcConnector(
+            SimulatorKind.MicrosoftFlightSimulator,
+            "Microsoft Flight Simulator 2020/2024 (FSUIPC7)",
+            () => session,
+            () => [new DetectedSimulator(
+                SimulatorKind.MicrosoftFlightSimulator,
+                "Microsoft Flight Simulator 2020",
+                true,
+                true)],
+            () => Now);
+
+        connector.Poll();
+
+        Assert.True(session.IsOpen);
+        Assert.Equal(SimulatorConnectionState.Connected, connector.ConnectionState);
+        Assert.NotNull(connector.LatestSnapshot);
+        Assert.Contains("FSUIPC", connector.Status);
+        Assert.Equal(SimulatorKind.MicrosoftFlightSimulator, connector.Descriptor.Kind);
+    }
+
+    [Fact]
     public void Missing_simulator_process_never_opens_fsuipc()
     {
         var session = new FakeSession(Frame(Now));
