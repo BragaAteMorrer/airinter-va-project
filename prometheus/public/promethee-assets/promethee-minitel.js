@@ -202,28 +202,28 @@
     session.register(new mt.MinitelPage('home', {
       onRender: (_context, screen, current) => {
         writeStatus(screen);
-        titleBand(screen, 'AIR INTER', 'CENTRE DES OPERATIONS');
-        menuLine(screen, 6, 1, 'DEPARTS / MOUVEMENTS');
-        menuLine(screen, 7, 2, 'RECHERCHER / RESERVER VOL');
-        menuLine(screen, 8, 3, 'MES OPERATIONS', true);
-        menuLine(screen, 9, 4, 'ROUTES');
-        menuLine(screen, 10, 5, 'FLOTTE');
-        menuLine(screen, 11, 6, 'PILOTES');
-        menuLine(screen, 12, 7, 'CALENDRIER');
-        menuLine(screen, 13, 8, 'MON DOSSIER');
-        screen.write(15, 2, 'VOLS    ' + fit(state.bootstrap?.stats?.flights, 5), { foreground: 'white' });
-        screen.write(16, 2, 'PILOTES ' + fit(state.bootstrap?.stats?.pilots, 5), { foreground: 'white' });
-        screen.write(17, 2, 'EN VOL  ' + fit(state.bootstrap?.stats?.active, 5), { foreground: 'white' });
-        noticeBand(screen, 19, 'POSEZ VOTRE CHOIX : 1 A 8', 'red', 'white');
-        screen.write(20, 2, 'VOTRE CHOIX : ' + current.input.value, { foreground: 'yellow' });
+        titleBand(screen, 'AIR INTER - PROMETHEE', 'CENTRE DES OPERATIONS');
+        menuLine(screen, 6, 1, 'TABLEAU DE BORD');
+        menuLine(screen, 7, 2, 'DEPARTS');
+        menuLine(screen, 8, 3, 'ARRIVEES');
+        menuLine(screen, 9, 4, 'MES OPERATIONS', true);
+        menuLine(screen, 10, 5, 'RAPPORTS DE VOL');
+        menuLine(screen, 11, 6, 'MISSIONS');
+        menuLine(screen, 12, 7, 'FLOTTE');
+        menuLine(screen, 13, 8, 'PASSPORT');
+        menuLine(screen, 14, 9, 'FINANCES');
+        menuLine(screen, 15, 0, 'AUTRES SERVICES');
+        noticeBand(screen, 18, 'SERVICE TELEMATIQUE AIR INTER', 'red', 'white');
+        screen.write(20, 2, 'CHOIX : ' + current.input.value, { foreground: 'yellow' });
         writeFooter(screen);
       },
-      acceptInput: (key) => /^[1-8]$/.test(key),
+      acceptInput: (key) => /^[0-9]$/.test(key),
       send: (value) => {
         const targets = {
-          '1': 'departures', '2': 'flight-search', '3': 'operations',
-          '4': 'routes', '5': 'fleet-search', '6': 'pilot-search',
-          '7': 'calendar', '8': 'profile'
+          '1': 'dashboard', '2': 'departures', '3': 'arrivals',
+          '4': 'operations', '5': 'pireps', '6': 'missions',
+          '7': 'fleet-search', '8': 'passport', '9': 'finances',
+          '0': 'services'
         };
         if (targets[value]) action('open', { target: targets[value], page: 1 });
       }
@@ -544,6 +544,156 @@
     }));
   };
 
+
+    session.register(new mt.MinitelPage('services', {
+      onRender: (_context, screen, current) => {
+        writeStatus(screen);
+        titleBand(screen, 'AUTRES SERVICES', 'PROMETHEE');
+        menuLine(screen, 6, 1, 'PROGRAMME DES VOLS');
+        menuLine(screen, 7, 2, 'ROUTES');
+        menuLine(screen, 8, 3, 'PILOTES');
+        menuLine(screen, 9, 4, 'CALENDRIER');
+        menuLine(screen, 10, 5, 'MON DOSSIER');
+        menuLine(screen, 11, 6, 'ADMINISTRATION');
+        screen.write(18, 2, 'CHOIX : ' + current.input.value, { foreground: 'yellow' });
+        writeFooter(screen);
+      },
+      acceptInput: (key) => /^[1-6]$/.test(key),
+      send: (value) => {
+        const targets = { '1':'flight-search','2':'routes','3':'pilot-search','4':'calendar','5':'profile','6':'admin' };
+        if (targets[value]) action('open', { target: targets[value], page: 1 });
+      }
+    }));
+
+    session.register(new mt.MinitelPage('dashboard', {
+      onRender: (_context, screen) => {
+        writeStatus(screen);
+        titleBand(screen, 'TABLEAU DE BORD', 'EXPLOITATION AIR INTER');
+        if (renderLoadingOrError(screen)) return;
+        const s = state.collection?.stats || {};
+        screen.write(6, 2, 'VOLS EN COURS..... ' + fit(s.active_flights, 8), { foreground:'green' });
+        screen.write(8, 2, 'ARRIVEES JOUR..... ' + fit(s.today_arrivals, 8));
+        screen.write(10,2, 'MES PIREP......... ' + fit(s.my_reports, 8));
+        screen.write(12,2, 'MISSIONS ACTIVES.. ' + fit(s.missions, 8), { foreground:'cyan' });
+        screen.write(14,2, 'FLOTTE DISP....... ' + fit(s.fleet_available, 8), { foreground:'green' });
+        screen.write(16,2, 'EVENEMENTS........ ' + fit(s.events, 8));
+        writeFooter(screen);
+      },
+      previous: () => 'home'
+    }));
+
+    session.register(new mt.MinitelPage('arrivals', {
+      onRender: (_context, screen) => {
+        writeStatus(screen);
+        screen.write(2, 1, 'ARRIVEES', { foreground: 'yellow' });
+        if (renderLoadingOrError(screen)) return;
+        screen.write(4, 1, 'VOL      ORIG  H.    ARR   H.   ETAT', { foreground: 'cyan' });
+        (state.collection?.items || []).slice(0, 7).forEach((flight, index) => {
+          const row = 6 + index * 2;
+          screen.write(row, 1, fit(flight.flight, 8) + ' ' + fit(flight.departure, 4) + ' ' + fit(flight.departure_time, 5) + ' ' + fit(flight.destination || flight.arrival, 5) + ' ' + fit(flight.arrival_time, 5));
+          screen.write(row + 1, 10, fit(flight.status_label, 28), { foreground: statusColour(flight.status) });
+        });
+        if (!(state.collection?.items || []).length) screen.write(8, 5, 'AUCUNE ARRIVEE PREVUE');
+        screen.write(21, 1, 'SHIFT+F2 : RAFRAICHIR DONNEES');
+        writeFooter(screen);
+      },
+      repeat: (_context, refresh) => { if (refresh) action('refresh', { target:'arrivals' }); },
+      previous: () => 'home'
+    }));
+
+    session.register(new mt.MinitelPage('pireps', {
+      onRender: (_context, screen) => renderListHeader(screen, 'MES RAPPORTS DE VOL', 'DATE  VOL     DEP ARR  ETAT', (item, row) => {
+        screen.write(row, 1, fit(item.date,5)+' '+fit(item.flight,8)+' '+fit(item.departure,3)+' '+fit(item.arrival,3)+'  '+fit(item.status,5),
+          { foreground: item.status === 'OK' ? 'green' : 'yellow' });
+        screen.write(row + 1, 3, fit((item.aircraft || '---') + '  ' + Math.floor((Number(item.block_minutes)||0)/60) + 'H' + String((Number(item.block_minutes)||0)%60).padStart(2,'0'), 35), { foreground:'cyan' });
+      }),
+      next: () => paginate('pireps', 1),
+      previous: () => pageBack('pireps', 'home')
+    }));
+
+    session.register(new mt.MinitelPage('missions', {
+      onRender: (_context, screen) => renderListHeader(screen, 'MISSIONS DISPONIBLES', 'TYPE / TRAJET / APPAREIL', (item, row) => {
+        const kind = normalise(item.type || 'MISSION').slice(0,12);
+        screen.write(row, 1, fit(kind,12)+' '+fit((item.departure||'---')+'>'+ (item.arrival||'---'),11)+' '+fit(item.aircraft||'',10),
+          { foreground:item.reserved?'green':'white' });
+        screen.write(row + 1, 3, fit(item.title,35), { foreground:'cyan' });
+      }),
+      next: () => paginate('missions', 1),
+      previous: () => pageBack('missions', 'home')
+    }));
+
+    session.register(new mt.MinitelPage('passport', {
+      onRender: (_context, screen) => {
+        writeStatus(screen);
+        titleBand(screen, 'AIR INTER PASSPORT', 'SERVICE PILOTES');
+        if (renderLoadingOrError(screen)) return;
+        const p=state.collection?.pilot||{};
+        const h=Math.floor((Number(p.flight_time)||0)/60), m=String((Number(p.flight_time)||0)%60).padStart(2,'0');
+        screen.write(6,2,'PILOTE : '+fit(p.pilot_id,12),{foreground:'yellow'});
+        screen.write(8,2,'VOLS......... '+fit(p.flights,8));
+        screen.write(9,2,'HEURES....... '+fit(h+'H'+m,8));
+        screen.write(10,2,'PAYS......... '+fit(p.countries,8));
+        screen.write(11,2,'AEROPORTS.... '+fit(p.airports,8));
+        screen.write(14,2,'DERNIERES DESTINATIONS',{foreground:'cyan'});
+        screen.write(16,2,fit((p.destinations||[]).join('  '),36));
+        writeFooter(screen);
+      },
+      previous: () => 'home'
+    }));
+
+    session.register(new mt.MinitelPage('finances', {
+      onRender: (_context, screen) => {
+        writeStatus(screen);
+        titleBand(screen, 'AIR INTER - FINANCES', 'PERIODE : MOIS EN COURS');
+        if (renderLoadingOrError(screen)) return;
+        const rows=state.collection?.items||[];
+        let credits=0,debits=0,balance=0;
+        rows.forEach(x=>{credits+=Number(x.credits)||0; debits+=Number(x.debits)||0; balance+=Number(x.balance)||0;});
+        screen.write(7,2,'RECETTES..... '+fit(credits,16),{foreground:'green'});
+        screen.write(9,2,'DEPENSES..... '+fit(debits,16),{foreground:'red'});
+        screen.write(11,2,'RESULTAT..... '+fit(credits-debits,16),{foreground:(credits-debits)>=0?'green':'red'});
+        screen.write(13,2,'SOLDE........ '+fit(balance,16),{foreground:'yellow'});
+        screen.write(17,2,fit(rows.map(x=>x.code).join(' / '),36),{foreground:'cyan'});
+        writeFooter(screen);
+      },
+      previous: () => 'home'
+    }));
+
+    session.register(new mt.MinitelPage('admin', {
+      onRender: (_context, screen) => {
+        writeStatus(screen);
+        titleBand(screen, 'ADMINISTRATION', 'PROMETHEE');
+        if (renderLoadingOrError(screen)) return;
+        const s=state.collection?.stats||{};
+        screen.write(6,2,'1 OPERATIONS / DISPATCH');
+        screen.write(7,2,'2 FLOTTE / MAINTENANCE');
+        screen.write(8,2,'3 MISSIONS');
+        screen.write(9,2,'4 ECONOMIE');
+        screen.write(10,2,'5 CRM........... '+fit(s.crm_campaigns,5));
+        screen.write(11,2,'6 CALENDRIER.... '+fit(s.events,5));
+        screen.write(12,2,'7 RESEAU REGIONAL');
+        screen.write(13,2,'8 AUTOMATISATION');
+        screen.write(15,2,'BASES ACTIVES... '+fit(s.bases,5),{foreground:'cyan'});
+        screen.write(16,2,'APPAREILS....... '+fit(s.aircraft,5),{foreground:'cyan'});
+        screen.write(19,2,'ENVOI 7 : RESEAU REGIONAL',{foreground:'yellow'});
+        writeFooter(screen);
+      },
+      acceptInput: (key) => /^[7]$/.test(key),
+      send: (value) => { if(value==='7') action('open',{target:'regional',page:1}); },
+      previous: () => 'services'
+    }));
+
+    session.register(new mt.MinitelPage('regional', {
+      onRender: (_context, screen) => renderListHeader(screen, 'RESEAU REGIONAL', 'BASE   ROLE       FLOTTE CHECKS', (item, row) => {
+        const role=item.is_hub?'HUB':(item.is_regional_platform?'REGIONAL':'TECH');
+        const checks=(item.check_a?'A':'')+(item.check_b?'B':'')+(item.check_c?'C':'');
+        screen.write(row,1,fit(item.airport_id,6)+' '+fit(role,10)+' '+fit(item.aircraft_count,6)+' '+fit(checks,5),
+          {foreground:item.is_hub?'yellow':'white'});
+        screen.write(row+1,3,fit(item.name||'',35),{foreground:'cyan'});
+      }),
+      previous: () => 'admin'
+    }));
+
   const renderListHeader = (screen, title, columns, renderItem) => {
     writeStatus(screen);
     screen.write(2, 1, title, { foreground: 'yellow' });
@@ -593,9 +743,9 @@
     await showSnapshot(session.go(target), false);
 
     try {
-      if (target === 'departures') {
+      if (target === 'departures' || target === 'arrivals') {
         const data = await requestJson(state.bootstrap.endpoints.departures);
-        state.collection = { items: data.flights || [] };
+        state.collection = { items: target === 'arrivals' ? (data.arrivals || []) : (data.departures || data.flights || []) };
       } else if (target === 'profile') {
         state.collection = await requestJson(state.bootstrap.endpoints.profile);
       } else if (target === 'operations') {
@@ -623,6 +773,20 @@
           q: state.query,
           page: state.page
         }));
+      } else if (target === 'dashboard') {
+        state.collection = await requestJson(state.bootstrap.endpoints.dashboard);
+      } else if (target === 'pireps') {
+        state.collection = await requestJson(pageUrl(state.bootstrap.endpoints.pireps, { mine: 1, page: state.page }));
+      } else if (target === 'missions') {
+        state.collection = await requestJson(pageUrl(state.bootstrap.endpoints.missions, { page: state.page }));
+      } else if (target === 'passport') {
+        state.collection = await requestJson(state.bootstrap.endpoints.passport);
+      } else if (target === 'finances') {
+        state.collection = await requestJson(pageUrl(state.bootstrap.endpoints.finances, { period: 'month' }));
+      } else if (target === 'regional') {
+        state.collection = await requestJson(state.bootstrap.endpoints.regional);
+      } else if (target === 'admin') {
+        state.collection = await requestJson(state.bootstrap.endpoints.admin);
       } else {
         throw new Error('PAGE INCONNUE');
       }
@@ -846,7 +1010,8 @@
       speed: terminalPreferences.speed,
       displayMode: terminalPreferences.displayMode,
       onPreferencesChange: persistMinitelPreferences,
-      onExit: exitMinitel
+      onExit: exitMinitel,
+      bootFrameDelay: terminalPreferences.speed === 'authentic' ? 260 : 70
     });
 
     const capability = shell.capability();
@@ -858,7 +1023,9 @@
     shell.mount();
     renderer = new mt.MinitelDomRenderer(shell.terminalNode, {
       speed: terminalPreferences.speed,
-      displayMode: terminalPreferences.displayMode
+      displayMode: terminalPreferences.displayMode,
+      maxProgressiveDurationMs: terminalPreferences.speed === 'authentic' ? 0 : 2200,
+      transmissionTickMs: 16
     });
 
     try {
