@@ -624,8 +624,9 @@
         statusLine(screen, 11, 'TEMPS', t.airborneMinutes + ' MIN');
         statusLine(screen, 12, 'DISTANCE', t.distance.toFixed(1) + ' NM');
         sectionBand(screen, 14, 'ETAT DES LIAISONS', 'magenta', 'white');
-        screen.write(15, 1, 'PROM ' + (hm.status?.connected ? 'OK ' : 'HS ') + ' SIM ' + (hm.status?.latest ? 'OK ' : '-- ') + ' TRACK ' + (t.recording ? 'OK ' : '-- ') + ' SYNC ' + fit(t.syncState, 8), { foreground: t.pending ? 'yellow' : 'green' });
-        if (t.warning) screen.write(16, 1, fit(t.warning, 38), { foreground: 'red' });
+        screen.write(15, 1, 'PROMETHEE ' + (hm.status?.connected ? 'OK' : 'HS') + '   SIM ' + (hm.status?.latest ? 'OK' : '--'), { foreground: hm.status?.connected && hm.status?.latest ? 'green' : 'yellow' });
+        screen.write(16, 1, 'TRACKING  ' + (t.recording ? 'OK' : '--') + '   SYNC ' + fit(t.syncState, 10), { foreground: t.pending ? 'yellow' : 'green' });
+        if (t.warning) screen.write(17, 1, fit(t.warning, 38), { foreground: 'red' });
         screen.write(18, 1, '1 ' + (t.recording ? 'PAUSE' : 'REPRENDRE') + '  2 SYNC  3 DATALINK', { foreground: 'cyan' });
         screen.write(19, 1, '4 JOURNAL  5 NETWORK  6 REVIEW', { foreground: 'cyan' });
         screen.write(20, 1, 'CHOIX : ' + current.input.value, { foreground: 'yellow' });
