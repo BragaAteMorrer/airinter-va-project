@@ -23,11 +23,12 @@ final class MinitelProjectionTest extends TestCase
                 'endpoints' => [
                     'departures', 'flights', 'routes', 'fleet', 'pilots', 'calendar', 'profile',
                     'operations', 'operation_search', 'reserve_base', 'operation_base',
+                    'dashboard', 'pireps', 'missions', 'passport', 'finances', 'regional', 'admin',
                 ],
                 'updated_at',
             ]);
 
-        foreach (['departures', 'flights', 'routes', 'fleet', 'pilots', 'calendar', 'profile'] as $key) {
+        foreach (['departures', 'flights', 'routes', 'fleet', 'pilots', 'calendar', 'profile', 'dashboard', 'pireps', 'missions', 'passport', 'finances', 'regional', 'admin'] as $key) {
             $url = $response->json('endpoints.'.$key);
             $this->assertIsString($url);
             $this->assertStringNotContainsString('/reserve', $url);
@@ -46,6 +47,13 @@ final class MinitelProjectionTest extends TestCase
             'promethee.minitel.pilots',
             'promethee.minitel.calendar',
             'promethee.minitel.profile',
+            'promethee.minitel.portal.dashboard',
+            'promethee.minitel.portal.pireps',
+            'promethee.minitel.portal.missions',
+            'promethee.minitel.portal.passport',
+            'promethee.minitel.portal.finances',
+            'promethee.minitel.portal.regional',
+            'promethee.minitel.portal.admin',
         ] as $name) {
             $route = Route::getRoutes()->getByName($name);
             $this->assertNotNull($route, $name.' route missing');
