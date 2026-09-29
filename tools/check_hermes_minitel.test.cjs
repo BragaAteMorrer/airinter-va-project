@@ -1,6 +1,8 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const {
   normalise,
   fit,
@@ -202,6 +204,58 @@ test('flight review adapter exposes filing gate and FDM details', () => {
 test('time label is safe for terminal rendering', () => {
   assert.match(timeLabel('2026-09-25T13:42:00Z'), /^\d{2}:\d{2}$/);
   assert.equal(timeLabel(null), '--:--');
+});
+
+test('Hermès Minitel exposes the renovated 40x25 Videotex screen hierarchy', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'acars', 'wwwroot', 'hermes-minitel.js'), 'utf8');
+  for (const page of [
+    'login-user',
+    'login-password',
+    'home',
+    'operations',
+    'preparation',
+    'simbrief',
+    'simbrief-account',
+    'simbrief-api',
+    'simbrief-local',
+    'flight-live',
+    'recovery',
+    'parameters'
+  ]) {
+    assert.ok(source.includes("MinitelPage('" + page + "'"), 'missing page ' + page);
+  }
+  assert.ok(source.includes('writeAirInterMosaic'), 'Air Inter identity must use Videotex mosaic');
+  assert.ok(!source.includes('air-inter-va-hermes.png'), 'logical Minitel screen must not embed the PNG logo');
+  for (const command of ['ANNUL', 'CORR', 'REPETITION', 'SOMM', 'RET', 'SUI', 'ENVOI']) {
+    assert.ok(source.includes(command), 'missing visible Minitel command ' + command);
+  }
+});
+
+test('SimBrief sources are split into exclusive Minitel workflows', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'acars', 'wwwroot', 'hermes-minitel.js'), 'utf8');
+  assert.ok(source.includes("'simbrief-account'"));
+  assert.ok(source.includes("'simbrief-api'"));
+  assert.ok(source.includes("'simbrief-local'"));
+  assert.ok(source.includes('ENVOYER VOL VERS SIMBRIEF'));
+  assert.ok(source.includes('RECUPERER OFP GENERE'));
+  assert.ok(source.includes('GENERER OFP SUR SIMBRIEF'));
+  assert.ok(source.includes('IMPORTER FICHIER'));
+});
+
+test('Recovery is fully operable from Minitel including abandon/archive', () => {
+  const source = fs.readFileSync(path.join(__dirname, '..', 'acars', 'wwwroot', 'hermes-minitel.js'), 'utf8');
+  assert.ok(source.includes('ABANDONNER ET ARCHIVER'));
+  assert.ok(source.includes("pending.type === 'abandon-recovery'"));
+  assert.ok(source.includes("runCall('/api/recovery/abandon'"));
+});
+
+test('Hermès Minitel shell scales uniformly and respects accessibility preferences', () => {
+  const css = fs.readFileSync(path.join(__dirname, '..', 'acars', 'wwwroot', 'hermes-minitel.css'), 'utf8').replace(/\s+/g, ' ');
+  assert.ok(css.includes('--mt-chassis-size:min(calc(100dvh - 44px),calc(100vw - 16px),980px)'));
+  assert.ok(css.includes('aspect-ratio:1/1'));
+  assert.ok(css.includes('@media(prefers-reduced-motion:reduce)'));
+  assert.ok(css.includes('@media(forced-colors:active)'));
+  assert.ok(css.includes('overflow:hidden'));
 });
 
 (async () => {
