@@ -117,3 +117,427 @@ body.auth-locked .rail .display-controls{display:none}
 
 :focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 @media(max-width:920px){body[data-era="2000"]{grid-template-columns:1fr}body[data-era="2000"] main{max-width:none;border-right:0}}
+
+
+/* --------------------------------------------------------------------------
+   Night accessibility pass — Modern + Années 2000
+   Targets WCAG AA contrast where practical:
+   - normal text >= 4.5:1
+   - large text / UI boundaries >= 3:1
+   - visible keyboard focus independent from color alone
+   -------------------------------------------------------------------------- */
+
+/* Modern night palette */
+body[data-era="modern"][data-appearance="dark"]{
+  color-scheme:dark;
+  --bg:#07131f;
+  --paper:#0e1f2f;
+  --ink:#f4f8fb;
+  --muted:#b7c9d8;
+  --line:#52718a;
+  --navy:#f4f8fb;
+  --navy-2:#dceaf4;
+  --blue:#75c0f2;
+  --blue-2:#9bd4fa;
+  --red:#ff727a;
+  --ok:#7bd9ac;
+  --warning:#ffd27a;
+  --danger:#ff8d91;
+  --shadow:0 12px 34px rgb(0 0 0 / 34%);
+  background:#07131f;
+  color:var(--ink);
+}
+
+body[data-era="modern"][data-appearance="dark"] .rail{
+  background:linear-gradient(180deg,#0a2032 0%,#071a29 72%,#061520 100%);
+  color:var(--ink);
+  border-color:#52718a;
+  box-shadow:8px 0 28px rgb(0 0 0 / 28%);
+}
+body[data-era="modern"][data-appearance="dark"] .brand{border-color:#52718a}
+body[data-era="modern"][data-appearance="dark"] .brand span{color:#9bd4fa}
+body[data-era="modern"][data-appearance="dark"] #build,
+body[data-era="modern"][data-appearance="dark"] .theme{color:#b7c9d8}
+body[data-era="modern"][data-appearance="dark"] .tab{color:#d3e0e9}
+body[data-era="modern"][data-appearance="dark"] .tab:hover,
+body[data-era="modern"][data-appearance="dark"] .tab.active{
+  background:#193b55;
+  color:#fff;
+  border-color:#62839c;
+}
+body[data-era="modern"][data-appearance="dark"] .tab.active:before{background:#75c0f2}
+
+body[data-era="modern"][data-appearance="dark"] .panel,
+body[data-era="modern"][data-appearance="dark"] .status span,
+body[data-era="modern"][data-appearance="dark"] .flightplan-source,
+body[data-era="modern"][data-appearance="dark"] .operations-browser,
+body[data-era="modern"][data-appearance="dark"] .operations-current,
+body[data-era="modern"][data-appearance="dark"] .settings-sections article,
+body[data-era="modern"][data-appearance="dark"] .capability-panel{
+  background:#0e1f2f;
+  color:#f4f8fb;
+  border-color:#52718a;
+}
+
+body[data-era="modern"][data-appearance="dark"] .cards div,
+body[data-era="modern"][data-appearance="dark"] .operation,
+body[data-era="modern"][data-appearance="dark"] .prefile,
+body[data-era="modern"][data-appearance="dark"] .flight-search,
+body[data-era="modern"][data-appearance="dark"] .flight-draft,
+body[data-era="modern"][data-appearance="dark"] .eligibility,
+body[data-era="modern"][data-appearance="dark"] .aircraft-card,
+body[data-era="modern"][data-appearance="dark"] .source-panel,
+body[data-era="modern"][data-appearance="dark"] .plan-mode-card,
+body[data-era="modern"][data-appearance="dark"] .workflow,
+body[data-era="modern"][data-appearance="dark"] .timeline span,
+body[data-era="modern"][data-appearance="dark"] .review-gates article,
+body[data-era="modern"][data-appearance="dark"] .observation,
+body[data-era="modern"][data-appearance="dark"] .datalink-toolbar>div,
+body[data-era="modern"][data-appearance="dark"] .datalink-message,
+body[data-era="modern"][data-appearance="dark"] .network-crew,
+body[data-era="modern"][data-appearance="dark"] .variant-library-item,
+body[data-era="modern"][data-appearance="dark"] .plan-mode-steps span,
+body[data-era="modern"][data-appearance="dark"] .plan-state{
+  background:#142b3d;
+  color:#f4f8fb;
+  border-color:#52718a;
+}
+body[data-era="modern"][data-appearance="dark"] .operation.selected,
+body[data-era="modern"][data-appearance="dark"] .workflow .current{
+  background:#173a52;
+}
+body[data-era="modern"][data-appearance="dark"] .workflow .done{
+  background:#15392d;
+}
+body[data-era="modern"][data-appearance="dark"] .variant-library-item.owned,
+body[data-era="modern"][data-appearance="dark"] .network-crew{
+  background:#15362c;
+}
+
+body[data-era="modern"][data-appearance="dark"] h1,
+body[data-era="modern"][data-appearance="dark"] h2,
+body[data-era="modern"][data-appearance="dark"] h3,
+body[data-era="modern"][data-appearance="dark"] h4,
+body[data-era="modern"][data-appearance="dark"] label,
+body[data-era="modern"][data-appearance="dark"] .operation strong,
+body[data-era="modern"][data-appearance="dark"] .operation span,
+body[data-era="modern"][data-appearance="dark"] .variant-library-identity strong{
+  color:#f4f8fb;
+}
+body[data-era="modern"][data-appearance="dark"] .hint,
+body[data-era="modern"][data-appearance="dark"] .header-subtitle,
+body[data-era="modern"][data-appearance="dark"] .operation small,
+body[data-era="modern"][data-appearance="dark"] .tools>span,
+body[data-era="modern"][data-appearance="dark"] .plan-mode-footnote,
+body[data-era="modern"][data-appearance="dark"] .variant-library-identity small,
+body[data-era="modern"][data-appearance="dark"] .workflow small{
+  color:#b7c9d8;
+}
+body[data-era="modern"][data-appearance="dark"] .kicker{color:#ff727a}
+
+body[data-era="modern"][data-appearance="dark"] input,
+body[data-era="modern"][data-appearance="dark"] select,
+body[data-era="modern"][data-appearance="dark"] textarea,
+body[data-era="modern"][data-appearance="dark"] .theme select{
+  background:#132c3f;
+  color:#f4f8fb;
+  border-color:#6c8da6;
+}
+body[data-era="modern"][data-appearance="dark"] input::placeholder,
+body[data-era="modern"][data-appearance="dark"] textarea::placeholder{
+  color:#a8bdcc;
+  opacity:1;
+}
+body[data-era="modern"][data-appearance="dark"] input[readonly],
+body[data-era="modern"][data-appearance="dark"] input:disabled,
+body[data-era="modern"][data-appearance="dark"] select:disabled,
+body[data-era="modern"][data-appearance="dark"] textarea:disabled{
+  background:#102435;
+  color:#c2d1dc;
+  border-color:#52718a;
+}
+
+body[data-era="modern"][data-appearance="dark"] button{
+  background:#17354c;
+  color:#f4f8fb;
+  border-color:#6c8da6;
+  box-shadow:none;
+}
+body[data-era="modern"][data-appearance="dark"] button:hover:not(:disabled){
+  background:#214760;
+  border-color:#8eb4ce;
+}
+body[data-era="modern"][data-appearance="dark"] button.primary,
+body[data-era="modern"][data-appearance="dark"] .primary{
+  background:#0b5f97;
+  color:#fff;
+  border-color:#8bcdf5;
+  box-shadow:none;
+}
+body[data-era="modern"][data-appearance="dark"] button.primary:hover:not(:disabled){
+  background:#075487;
+}
+body[data-era="modern"][data-appearance="dark"] button.danger{
+  background:#4b2229;
+  color:#ffd7d9;
+  border-color:#ff8d91;
+}
+body[data-era="modern"][data-appearance="dark"] button:disabled{
+  opacity:.68;
+  color:#c5d3dd;
+}
+
+body[data-era="modern"][data-appearance="dark"] .message{
+  background:#15392d;
+  color:#eafff5;
+  border-color:#62b58f;
+}
+body[data-era="modern"][data-appearance="dark"] .message.error{
+  background:#45242a;
+  color:#ffe9ea;
+  border-color:#ff8d91;
+}
+body[data-era="modern"][data-appearance="dark"] .ready-state{
+  background:#422329;
+  color:#ffdfe1;
+  border-color:#ff8d91;
+}
+body[data-era="modern"][data-appearance="dark"] .ready-state.ready{
+  background:#15392d;
+  color:#eafff5;
+  border-color:#7bd9ac;
+}
+body[data-era="modern"][data-appearance="dark"] .capability-counts span,
+body[data-era="modern"][data-appearance="dark"] .capability-item,
+body[data-era="modern"][data-appearance="dark"] .variant-preferred span,
+body[data-era="modern"][data-appearance="dark"] .operations-mode-switch,
+body[data-era="modern"][data-appearance="dark"] .plan-mode-badge{
+  background:#162f43;
+  color:#f4f8fb;
+  border-color:#52718a;
+}
+body[data-era="modern"][data-appearance="dark"] .capability-item.unknown{
+  background:#3b321d;
+}
+body[data-era="modern"][data-appearance="dark"] .capability-item.unsupported{
+  background:#202c36;
+  opacity:1;
+}
+
+/* Années 2000 night palette. Keeps the period styling without sacrificing legibility. */
+body[data-era="2000"][data-appearance="dark"],
+body[data-era="web2000"][data-appearance="dark"]{
+  color-scheme:dark;
+  --bg:#0d1724;
+  --paper:#18283a;
+  --ink:#f7fbff;
+  --muted:#c0d1df;
+  --line:#7895ad;
+  --navy:#f7fbff;
+  --blue:#8ed0ff;
+  --blue-2:#b0dfff;
+  --red:#ff7f86;
+  --ok:#84ddb4;
+  --warning:#ffda87;
+  --danger:#ff9a9e;
+  --radius:0;
+  --shadow:none;
+  background:#0d1724;
+  color:#f7fbff;
+}
+body[data-era="2000"][data-appearance="dark"] .rail,
+body[data-era="web2000"][data-appearance="dark"] .rail{
+  background:linear-gradient(180deg,#173c5d 0%,#112d47 60%,#0c2338 100%);
+  color:#f7fbff;
+  border-right:3px ridge #7895ad;
+  box-shadow:none;
+}
+body[data-era="2000"][data-appearance="dark"] main,
+body[data-era="web2000"][data-appearance="dark"] main{
+  background:#0d1724;
+}
+body[data-era="2000"][data-appearance="dark"] .brand span,
+body[data-era="web2000"][data-appearance="dark"] .brand span{color:#b0dfff}
+body[data-era="2000"][data-appearance="dark"] .theme,
+body[data-era="web2000"][data-appearance="dark"] .theme,
+body[data-era="2000"][data-appearance="dark"] #build,
+body[data-era="web2000"][data-appearance="dark"] #build{color:#c0d1df}
+
+body[data-era="2000"][data-appearance="dark"] .tab,
+body[data-era="web2000"][data-appearance="dark"] .tab{
+  background:linear-gradient(#245f8d,#173e61);
+  color:#fff;
+  border:2px outset #8cabc2;
+  text-shadow:none;
+}
+body[data-era="2000"][data-appearance="dark"] .tab:hover,
+body[data-era="2000"][data-appearance="dark"] .tab.active,
+body[data-era="web2000"][data-appearance="dark"] .tab:hover,
+body[data-era="web2000"][data-appearance="dark"] .tab.active{
+  background:#8d3542;
+  color:#fff;
+  border-color:#d58a92;
+}
+
+body[data-era="2000"][data-appearance="dark"] .panel,
+body[data-era="2000"][data-appearance="dark"] .status span,
+body[data-era="2000"][data-appearance="dark"] .cards div,
+body[data-era="2000"][data-appearance="dark"] .operation,
+body[data-era="2000"][data-appearance="dark"] .prefile,
+body[data-era="2000"][data-appearance="dark"] .flight-search,
+body[data-era="2000"][data-appearance="dark"] .flight-draft,
+body[data-era="2000"][data-appearance="dark"] .eligibility,
+body[data-era="2000"][data-appearance="dark"] .aircraft-card,
+body[data-era="2000"][data-appearance="dark"] .flightplan-source,
+body[data-era="2000"][data-appearance="dark"] .source-panel,
+body[data-era="2000"][data-appearance="dark"] .settings-sections article,
+body[data-era="2000"][data-appearance="dark"] .operations-browser,
+body[data-era="2000"][data-appearance="dark"] .operations-current,
+body[data-era="2000"][data-appearance="dark"] .capability-panel,
+body[data-era="web2000"][data-appearance="dark"] .panel,
+body[data-era="web2000"][data-appearance="dark"] .status span,
+body[data-era="web2000"][data-appearance="dark"] .cards div,
+body[data-era="web2000"][data-appearance="dark"] .operation,
+body[data-era="web2000"][data-appearance="dark"] .prefile,
+body[data-era="web2000"][data-appearance="dark"] .flight-search,
+body[data-era="web2000"][data-appearance="dark"] .flight-draft,
+body[data-era="web2000"][data-appearance="dark"] .eligibility,
+body[data-era="web2000"][data-appearance="dark"] .aircraft-card,
+body[data-era="web2000"][data-appearance="dark"] .flightplan-source,
+body[data-era="web2000"][data-appearance="dark"] .source-panel,
+body[data-era="web2000"][data-appearance="dark"] .settings-sections article,
+body[data-era="web2000"][data-appearance="dark"] .operations-browser,
+body[data-era="web2000"][data-appearance="dark"] .operations-current,
+body[data-era="web2000"][data-appearance="dark"] .capability-panel{
+  background:#18283a;
+  color:#f7fbff;
+  border-color:#7895ad;
+  box-shadow:none;
+}
+body[data-era="2000"][data-appearance="dark"] .workflow,
+body[data-era="2000"][data-appearance="dark"] .timeline span,
+body[data-era="2000"][data-appearance="dark"] .review-gates article,
+body[data-era="2000"][data-appearance="dark"] .observation,
+body[data-era="2000"][data-appearance="dark"] .plan-mode-card,
+body[data-era="2000"][data-appearance="dark"] .plan-mode-steps span,
+body[data-era="2000"][data-appearance="dark"] .plan-state,
+body[data-era="web2000"][data-appearance="dark"] .workflow,
+body[data-era="web2000"][data-appearance="dark"] .timeline span,
+body[data-era="web2000"][data-appearance="dark"] .review-gates article,
+body[data-era="web2000"][data-appearance="dark"] .observation,
+body[data-era="web2000"][data-appearance="dark"] .plan-mode-card,
+body[data-era="web2000"][data-appearance="dark"] .plan-mode-steps span,
+body[data-era="web2000"][data-appearance="dark"] .plan-state{
+  background:#223a50;
+  color:#f7fbff;
+  border-color:#7895ad;
+}
+
+body[data-era="2000"][data-appearance="dark"] h1,
+body[data-era="2000"][data-appearance="dark"] h2,
+body[data-era="2000"][data-appearance="dark"] h3,
+body[data-era="2000"][data-appearance="dark"] h4,
+body[data-era="2000"][data-appearance="dark"] label,
+body[data-era="web2000"][data-appearance="dark"] h1,
+body[data-era="web2000"][data-appearance="dark"] h2,
+body[data-era="web2000"][data-appearance="dark"] h3,
+body[data-era="web2000"][data-appearance="dark"] h4,
+body[data-era="web2000"][data-appearance="dark"] label{
+  color:#f7fbff;
+  text-shadow:none;
+}
+body[data-era="2000"][data-appearance="dark"] .hint,
+body[data-era="2000"][data-appearance="dark"] .header-subtitle,
+body[data-era="2000"][data-appearance="dark"] .workflow small,
+body[data-era="2000"][data-appearance="dark"] .operation small,
+body[data-era="web2000"][data-appearance="dark"] .hint,
+body[data-era="web2000"][data-appearance="dark"] .header-subtitle,
+body[data-era="web2000"][data-appearance="dark"] .workflow small,
+body[data-era="web2000"][data-appearance="dark"] .operation small{
+  color:#c0d1df;
+}
+body[data-era="2000"][data-appearance="dark"] .kicker,
+body[data-era="web2000"][data-appearance="dark"] .kicker{color:#ff7f86}
+
+body[data-era="2000"][data-appearance="dark"] input,
+body[data-era="2000"][data-appearance="dark"] select,
+body[data-era="2000"][data-appearance="dark"] textarea,
+body[data-era="2000"][data-appearance="dark"] .theme select,
+body[data-era="web2000"][data-appearance="dark"] input,
+body[data-era="web2000"][data-appearance="dark"] select,
+body[data-era="web2000"][data-appearance="dark"] textarea,
+body[data-era="web2000"][data-appearance="dark"] .theme select{
+  background:#21394e;
+  color:#f7fbff;
+  border-color:#8ba7bd;
+  text-shadow:none;
+}
+body[data-era="2000"][data-appearance="dark"] input::placeholder,
+body[data-era="2000"][data-appearance="dark"] textarea::placeholder,
+body[data-era="web2000"][data-appearance="dark"] input::placeholder,
+body[data-era="web2000"][data-appearance="dark"] textarea::placeholder{
+  color:#b8cad8;
+  opacity:1;
+}
+
+body[data-era="2000"][data-appearance="dark"] button,
+body[data-era="web2000"][data-appearance="dark"] button{
+  background:linear-gradient(#385b75,#27465f);
+  color:#fff;
+  border:2px outset #91aec4;
+  box-shadow:none;
+  text-shadow:none;
+}
+body[data-era="2000"][data-appearance="dark"] button:hover:not(:disabled),
+body[data-era="web2000"][data-appearance="dark"] button:hover:not(:disabled){
+  background:#315875;
+  border-color:#b0c7d8;
+}
+body[data-era="2000"][data-appearance="dark"] button.primary,
+body[data-era="web2000"][data-appearance="dark"] button.primary{
+  background:#8d3542;
+  color:#fff;
+  border-color:#d58a92;
+  text-shadow:none;
+}
+body[data-era="2000"][data-appearance="dark"] button:disabled,
+body[data-era="web2000"][data-appearance="dark"] button:disabled{
+  opacity:.68;
+  color:#d6e1e9;
+}
+
+/* Shared keyboard focus / non-text contrast in night mode. */
+body[data-appearance="dark"] :where(
+  button,
+  input,
+  select,
+  textarea,
+  .tab,
+  [role="button"],
+  [role="tab"],
+  a[href]
+):focus-visible{
+  outline:3px solid #ffd27a !important;
+  outline-offset:2px;
+  box-shadow:0 0 0 1px #07131f !important;
+}
+body[data-appearance="dark"] :where(
+  input,
+  select,
+  textarea,
+  button,
+  .tab,
+  .operation,
+  .capability-item,
+  .variant-library-item
+){
+  forced-color-adjust:auto;
+}
+@media (forced-colors:active){
+  body[data-appearance="dark"] :where(button,input,select,textarea,.tab,.operation){
+    border:1px solid ButtonText;
+  }
+  body[data-appearance="dark"] :where(button,input,select,textarea,.tab,[role="tab"]):focus-visible{
+    outline:3px solid Highlight !important;
+  }
+}
