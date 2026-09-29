@@ -59,9 +59,12 @@ ACARS. Une trame FSUIPC n'active le connecteur qu'après lecture et validation :
 la simple présence du processus MSFS/FS9/FSX/P3D n'est pas considérée comme une
 connexion.
 
-Sous MSFS 2020/2024, Hermès essaie d'abord SimConnect. Si SimConnect ne produit
-pas de télémétrie mais que FSUIPC7 est lancé et fournit une trame valide, le hub
-bascule automatiquement sur le connecteur FSUIPC7 sans redémarrer Hermès.
+Sous MSFS 2020 comme sous MSFS 2024, Hermès essaie d'abord SimConnect. Si
+SimConnect ne produit pas de télémétrie mais que FSUIPC7 est lancé et fournit
+une trame valide, le hub bascule automatiquement sur le connecteur FSUIPC7 sans
+redémarrer Hermès. Les variantes de processus Microsoft Store/Xbox et Steam
+connues sont couvertes par la détection, mais la connexion n'est considérée
+active qu'après réception de télémétrie réelle.
 
 Une perte FSUIPC ferme la session locale et laisse le connecteur en état
 réessayable. `SimulatorConnectorHub` conserve la sémantique de reconnexion :
