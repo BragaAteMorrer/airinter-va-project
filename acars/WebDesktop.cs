@@ -21,6 +21,10 @@ public sealed class PrometheeWindow : Window
 {
     private readonly PhpVmsClient client = new(); private readonly SimulatorConnectorHub sim = new(
         new SimConnectReader(),
+        // Prefer native SimConnect for MSFS, but keep FSUIPC7 as a real
+        // telemetry fallback. The hub only activates a connector after it has
+        // produced a fresh validated snapshot.
+        new FsuipcConnector(SimulatorKind.MicrosoftFlightSimulator, "Microsoft Flight Simulator 2020/2024 (FSUIPC7)"),
         new XPlaneUdpConnector(),
         new FsuipcConnector(SimulatorKind.FlightSimulator2004, "Microsoft Flight Simulator 2004"),
         new FsuipcConnector(SimulatorKind.FlightSimulatorX, "Microsoft Flight Simulator X"),

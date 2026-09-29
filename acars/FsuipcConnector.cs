@@ -1,8 +1,10 @@
 namespace Promethee;
 
 /// <summary>
-/// FSUIPC connector for the classic Microsoft simulator families. Process
-/// detection is only a hint: the connector becomes Connected exclusively after
+/// FSUIPC connector for Microsoft simulator families. It is used directly by
+/// the classic simulators and as a fallback for MSFS 2020/2024 when FSUIPC7 is
+/// installed. Process detection is only a hint: the connector becomes Connected
+/// exclusively after
 /// a real FSUIPC frame has been read and validated.
 /// </summary>
 public sealed class FsuipcConnector : ISimulatorConnector
@@ -29,7 +31,7 @@ public sealed class FsuipcConnector : ISimulatorConnector
         Func<IReadOnlyList<DetectedSimulator>> detector,
         Func<DateTimeOffset>? clock = null)
     {
-        if (kind is not (SimulatorKind.FlightSimulator2004 or SimulatorKind.FlightSimulatorX or SimulatorKind.Prepar3D))
+        if (kind is not (SimulatorKind.MicrosoftFlightSimulator or SimulatorKind.FlightSimulator2004 or SimulatorKind.FlightSimulatorX or SimulatorKind.Prepar3D))
             throw new ArgumentOutOfRangeException(nameof(kind));
 
         this.kind = kind;
