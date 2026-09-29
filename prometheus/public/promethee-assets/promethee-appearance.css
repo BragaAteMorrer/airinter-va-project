@@ -307,10 +307,10 @@ html[data-appearance="dark"]:not([data-era="minitel"]) :where(.alert,.notice,.ca
   color:var(--color-text)!important;
   border-color:var(--color-border-strong)!important;
 }
-html[data-appearance="dark"]:not([data-era="minitel"]) :where(.alert-info,.info,.notice.info){background:#102d43!important}
-html[data-appearance="dark"]:not([data-era="minitel"]) :where(.alert-success,.success,.notice.success){background:#123326!important}
-html[data-appearance="dark"]:not([data-era="minitel"]) :where(.alert-warning,.warning,.notice.warning){background:#392f18!important}
-html[data-appearance="dark"]:not([data-era="minitel"]) :where(.alert-danger,.danger,.notice.error){background:#3a2025!important}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(.alert-info,.notice.info,.callout.info){background:#102d43!important}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(.alert-success,.notice.success,.callout.success){background:#123326!important}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(.alert-warning,.notice.warning,.callout.warning){background:#392f18!important}
+html[data-appearance="dark"]:not([data-era="minitel"]) :where(.alert-danger,.notice.error,.callout.error){background:#3a2025!important}
 html[data-appearance="dark"]:not([data-era="minitel"]) :where(.badge,.tag,.chip,.pill){
   border-color:var(--color-border-strong);
 }
