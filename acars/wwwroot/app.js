@@ -1275,17 +1275,34 @@ function updateSimBriefAvailability(simbrief = selectedOperation?.simbrief || {}
 }
 
 function setPlanMode(mode) {
+  if (!['account', 'api', 'file'].includes(mode)) mode = 'account';
   if (mode === 'api' && selectedOperation?.simbrief?.company_api_available === false) {
     mode = 'account';
   }
+
   localSettings.flightPlanMode = mode;
   localStorage.prometheeAcarsSettings = JSON.stringify(localSettings);
-  $$('[data-plan-mode]').forEach(button => button.classList.toggle('active', button.dataset.planMode === mode));
-  $$('[data-plan-panel]').forEach(panel => {
+
+  $('[data-plan-mode]').forEach(button => {
+    const active = button.dataset.planMode === mode;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-selected', String(active));
+    button.tabIndex = active ? 0 : -1;
+  });
+
+  $('[data-plan-panel]').forEach(panel => {
     const active = panel.dataset.planPanel === mode;
     panel.classList.toggle('active', active);
     panel.hidden = !active;
+    panel.setAttribute('aria-hidden', String(!active));
   });
+
+  const labels = {
+    account: 'Compte SimBrief : envoyez la préparation, générez l’OFP sur SimBrief puis récupérez-le dans Hermès.',
+    api: 'API SimBrief : Prométhée prépare la génération et Hermès récupère automatiquement l’OFP terminé.',
+    file: 'Plan local : importez un fichier PLN/XML depuis votre ordinateur.'
+  };
+  if (!flightPlan) showMessage('#simbriefState', labels[mode] || '');
 }
 $$('[data-plan-mode]').forEach(button => button.onclick = () => setPlanMode(button.dataset.planMode));
 $('#simbriefUsername').value = localSettings.simbriefUsername || '';
