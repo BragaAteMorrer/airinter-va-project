@@ -9,6 +9,7 @@ use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class MinitelController extends Controller
 {
@@ -24,13 +25,13 @@ class MinitelController extends Controller
             'service' => '3615 AIRINTER',
             'product' => 'PROMETHEE',
             'pilot' => $this->pilotPayload($user),
-            'stats' => [
+            'stats' => Cache::remember('promethee:minitel:bootstrap:v2:'.(int) $user->id, 45, fn () => [
                 'flights' => Flight::where('active', true)->where('visible', true)->count(),
                 'pilots' => User::where('state', UserState::ACTIVE)->count(),
                 'active' => Pirep::whereIn('state', [PirepState::IN_PROGRESS, PirepState::PAUSED])->count(),
                 'today' => Pirep::where('state', PirepState::ACCEPTED)->whereBetween('submitted_at', [$dayStart, $dayEnd])->count(),
                 'personal' => Pirep::where('state', PirepState::ACCEPTED)->where('user_id', $user->id)->count(),
-            ],
+            ]),
             'endpoints' => [
                 'departures' => route('promethee.departure-board.data'),
                 'flights' => route('promethee.minitel.flights'),
@@ -43,6 +44,13 @@ class MinitelController extends Controller
                 'operation_search' => route('promethee.minitel.operations.search-flights'),
                 'reserve_base' => url('/minitel/flights'),
                 'operation_base' => url('/minitel/operations'),
+                'dashboard' => route('promethee.minitel.portal.dashboard'),
+                'pireps' => route('promethee.minitel.portal.pireps'),
+                'missions' => route('promethee.minitel.portal.missions'),
+                'passport' => route('promethee.minitel.portal.passport'),
+                'finances' => route('promethee.minitel.portal.finances'),
+                'regional' => route('promethee.minitel.portal.regional'),
+                'admin' => route('promethee.minitel.portal.admin'),
             ],
             'updated_at' => now()->toIso8601String(),
         ]);
