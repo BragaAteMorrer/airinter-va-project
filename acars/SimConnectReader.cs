@@ -19,6 +19,8 @@ public sealed class SimConnectReader : ISimulatorConnector
     private const uint TitleRequestId = 2;
     private const uint ModelDefinitionId = 3;
     private const uint ModelRequestId = 3;
+    private const uint TypeDefinitionId = 4;
+    private const uint TypeRequestId = 4;
     private const uint SimConnectDataTypeString128 = 8;
     private const uint SimConnectDataTypeString256 = 9;
     private const uint SimConnectPeriodSecond = 4;
@@ -26,6 +28,9 @@ public sealed class SimConnectReader : ISimulatorConnector
     private IntPtr handle; private readonly Dispatch callback;
     private string? aircraftTitle;
     private string? aircraftModel;
+    private string? aircraftType;
+    private double? previousThrottle1;
+    private double? previousThrottle2;
     public Sample? Latest { get; private set; }
     public string Status { get; private set; } = "Simulateur non détecté";
     public event Action<Sample>? Received;
@@ -41,7 +46,8 @@ public sealed class SimConnectReader : ISimulatorConnector
         SimulatorCapabilities.SimulatorControls);
     private readonly (string Name,string Unit)[] definitions = [
         ("PLANE LATITUDE","degrees"),("PLANE LONGITUDE","degrees"),("PLANE ALTITUDE","feet"),("PLANE ALT ABOVE GROUND","feet"),("AIRSPEED INDICATED","knots"),("GROUND VELOCITY","knots"),("VERTICAL SPEED","feet per minute"),("PLANE HEADING DEGREES TRUE","degrees"),("FUEL TOTAL QUANTITY WEIGHT","pounds"),("SIM ON GROUND","bool"),("PLANE BANK DEGREES","degrees"),("GEAR TOTAL PCT EXTENDED","percent"),("PLANE TOUCHDOWN NORMAL VELOCITY","feet per second"),("FLAPS HANDLE PERCENT","percent"),("AUTOPILOT THROTTLE ARM","bool"),("NAV CDI:1","number"),("NAV GSI:1","number"),("BRAKE PARKING POSITION","bool"),
-        ("LIGHT BEACON","bool"),("LIGHT LANDING","bool"),("GENERAL ENG COMBUSTION:1","bool"),("GENERAL ENG COMBUSTION:2","bool"),("GENERAL ENG COMBUSTION:3","bool"),("GENERAL ENG COMBUSTION:4","bool"),("IS SLEW ACTIVE","bool"),("SIMULATION RATE","number"),("PLANE PITCH DEGREES","degrees")];
+        ("LIGHT BEACON","bool"),("LIGHT LANDING","bool"),("GENERAL ENG COMBUSTION:1","bool"),("GENERAL ENG COMBUSTION:2","bool"),("GENERAL ENG COMBUSTION:3","bool"),("GENERAL ENG COMBUSTION:4","bool"),("IS SLEW ACTIVE","bool"),("SIMULATION RATE","number"),("PLANE PITCH DEGREES","degrees"),
+        ("TOTAL WEIGHT","pounds"),("CABIN SEATBELTS ALERT SWITCH","bool"),("EXIT OPEN:0","percent"),("EXIT OPEN:1","percent"),("EXIT OPEN:2","percent"),("EXIT OPEN:3","percent"),("TRANSPONDER CODE:1","number"),("AUTOPILOT MASTER","bool"),("IS PAUSED","bool"),("GENERAL ENG THROTTLE LEVER POSITION:1","percent"),("GENERAL ENG THROTTLE LEVER POSITION:2","percent")];
     public SimConnectReader()
     {
         callback=Receive; var dll=Environment.GetEnvironmentVariable("PROMETHEE_SIMCONNECT_DLL");
@@ -59,9 +65,11 @@ public sealed class SimConnectReader : ISimulatorConnector
                     Marshal.ThrowExceptionForHR(SimConnect_AddToDataDefinition(handle,MainDefinitionId,d.Name,d.Unit,4,0,uint.MaxValue));
                 Marshal.ThrowExceptionForHR(SimConnect_AddToDataDefinition(handle,TitleDefinitionId,"TITLE","NULL",SimConnectDataTypeString256,0,uint.MaxValue));
                 Marshal.ThrowExceptionForHR(SimConnect_AddToDataDefinition(handle,ModelDefinitionId,"ATC MODEL","NULL",SimConnectDataTypeString128,0,uint.MaxValue));
+                Marshal.ThrowExceptionForHR(SimConnect_AddToDataDefinition(handle,TypeDefinitionId,"ATC TYPE","NULL",SimConnectDataTypeString128,0,uint.MaxValue));
                 Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,MainRequestId,MainDefinitionId,0,SimConnectPeriodSecond,0,0,0,0));
                 Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,TitleRequestId,TitleDefinitionId,0,SimConnectPeriodSecond,0,0,0,0));
                 Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,ModelRequestId,ModelDefinitionId,0,SimConnectPeriodSecond,0,0,0,0));
+                Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,TypeRequestId,TypeDefinitionId,0,SimConnectPeriodSecond,0,0,0,0));
                 Status="MSFS détecté";
             }
             Marshal.ThrowExceptionForHR(SimConnect_CallDispatch(handle,callback,IntPtr.Zero));
@@ -83,12 +91,44 @@ public sealed class SimConnectReader : ISimulatorConnector
             aircraftModel=ReadFixedString(data,length,128);
             return;
         }
+        if(requestId==TypeRequestId){
+            aircraftType=ReadFixedString(data,length,128);
+            return;
+        }
         if(requestId!=MainRequestId||length<40+definitions.Length*8)return;
         var v=new double[definitions.Length];Marshal.Copy(IntPtr.Add(data,40),v,0,v.Length);if(v.Any(x=>!double.IsFinite(x))||Math.Abs(v[0])>90||Math.Abs(v[1])>180)return;
-        Latest=new Sample(Guid.NewGuid(),DateTimeOffset.UtcNow,v[0],v[1],v[2],v[3],v[4],v[5],v[6],v[7],v[8],v[9]!=0,v[10],v[11]>=99,v[12],v[13],v[14]!=0,v[15],v[16],v[17]!=0,
+        bool? thrustStable = previousThrottle1.HasValue && previousThrottle2.HasValue
+            ? Math.Abs(v[36] - previousThrottle1.Value) <= 1.5
+              && Math.Abs(v[37] - previousThrottle2.Value) <= 1.5
+            : null;
+        previousThrottle1 = v[36];
+        previousThrottle2 = v[37];
+
+        Latest=new Sample(Guid.NewGuid(),DateTimeOffset.UtcNow,v[0],v[1],v[2],v[3],v[4],v[5],v[6],v[7],v[8],v[9]!=0,v[10],v[11]>=99,v[12],v[13],false,v[15],v[16],v[17]!=0,
             v[18]!=0,v[19]!=0,v[20]!=0,v[21]!=0,v[22]!=0,v[23]!=0,v[24]!=0,v[25],v[26]);
-        LatestSnapshot=Latest.ToSnapshot() with { AircraftTitle=aircraftTitle, AircraftModel=aircraftModel };
+        LatestSnapshot=Latest.ToSnapshot() with {
+            GrossWeight=v[27] > 0 ? v[27] : null,
+            SeatBeltSign=v[28] != 0,
+            DoorsOpen=v[29] > 0.5 || v[30] > 0.5 || v[31] > 0.5 || v[32] > 0.5,
+            TransponderCode=NormalizeTransponder(v[33]),
+            AutopilotEnabled=v[34] != 0,
+            Paused=v[35] != 0,
+            ThrustStable=thrustStable,
+            AircraftTitle=aircraftTitle,
+            AircraftIcao=LooksLikeIcao(aircraftModel) ? aircraftModel : null,
+            AircraftModel=aircraftType ?? aircraftModel
+        };
         Status="Connecté à MSFS";Received?.Invoke(Latest); SnapshotReceived?.Invoke(LatestSnapshot);
+    }
+    private static int? NormalizeTransponder(double value){
+        if(!double.IsFinite(value) || value < 0) return null;
+        var code=(int)Math.Round(value);
+        return code is >=0 and <=7777 ? code : null;
+    }
+    private static bool LooksLikeIcao(string? value){
+        if(string.IsNullOrWhiteSpace(value)) return false;
+        var normalized=value.Trim().ToUpperInvariant();
+        return normalized.Length is >=2 and <=4 && normalized.All(char.IsLetterOrDigit);
     }
     private static string? ReadFixedString(IntPtr data,uint length,int size){
         if(length<40+size)return null;
@@ -97,7 +137,8 @@ public sealed class SimConnectReader : ISimulatorConnector
     }
     private void Close(){
         if(handle!=IntPtr.Zero){SimConnect_Close(handle);handle=IntPtr.Zero;}
-        Latest=null;LatestSnapshot=null;aircraftTitle=null;aircraftModel=null;
+        Latest=null;LatestSnapshot=null;aircraftTitle=null;aircraftModel=null;aircraftType=null;
+        previousThrottle1=null;previousThrottle2=null;
     } public void Dispose()=>Close();
     [UnmanagedFunctionPointer(CallingConvention.StdCall)] private delegate void Dispatch(IntPtr data,uint length,IntPtr context);
     [DllImport("SimConnect.dll",CharSet=CharSet.Ansi)] private static extern int SimConnect_Open(out IntPtr handle,string name,IntPtr window,uint message,IntPtr signal,uint index);

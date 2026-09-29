@@ -39,6 +39,20 @@ internal sealed class FsuipcNativeSession : IFsuipcSession
     private readonly Offset<ushort> engine4 = new(0x0A5C);
     private readonly Offset<short> slew = new(0x05DC);
     private readonly Offset<string> aircraftTitle = new(0x3D00, 256);
+    private readonly Offset<double> grossWeight = new(0x30C0);
+    private readonly Offset<byte> seatBeltSign = new(0x341D);
+    private readonly Offset<ushort> transponderCode = new(0x0354);
+    private readonly Offset<int> autopilotMaster = new(0x07BC);
+    private readonly Offset<ushort> pauseIndicator = new(0x0264);
+    private readonly Offset<ushort> simulationRate = new(0x0C1A);
+    private readonly Offset<string> aircraftIcao = new(0x0B26, 32);
+    private readonly Offset<string> atcModel = new(0x3500, 23);
+    private readonly Offset<string> atcType = new(0x3160, 23);
+    private readonly Offset<double> throttle1 = new(0x3AE8);
+    private readonly Offset<double> throttle2 = new(0x3A28);
+
+    private double? previousThrottle1;
+    private double? previousThrottle2;
 
     public bool IsOpen { get; private set; }
 
@@ -75,6 +89,18 @@ internal sealed class FsuipcNativeSession : IFsuipcSession
 
         var lightBits = lights.Value;
         var title = aircraftTitle.Value?.Trim('\0', ' ');
+        var icao = FirstNonBlank(aircraftIcao.Value, atcModel.Value);
+        var model = FirstNonBlank(atcType.Value, atcModel.Value);
+        var simRate = simulationRate.Value > 0 ? simulationRate.Value / 256d : (double?)null;
+        var paused = (pauseIndicator.Value & 0x7) != 0;
+        var throttleOne = throttle1.Value;
+        var throttleTwo = throttle2.Value;
+        bool? thrustStable = previousThrottle1.HasValue && previousThrottle2.HasValue
+            ? Math.Abs(throttleOne - previousThrottle1.Value) <= 1.5
+              && Math.Abs(throttleTwo - previousThrottle2.Value) <= 1.5
+            : null;
+        previousThrottle1 = throttleOne;
+        previousThrottle2 = throttleTwo;
 
         return new(
             DateTimeOffset.UtcNow,
@@ -101,17 +127,50 @@ internal sealed class FsuipcNativeSession : IFsuipcSession
             (lightBits & (1 << 2)) != 0,
             (lightBits & (1 << 3)) != 0,
             spoilersArmed.Value != 0,
-            string.IsNullOrWhiteSpace(title) ? null : title);
+            string.IsNullOrWhiteSpace(title) ? null : title,
+            GrossWeightPounds: double.IsFinite(grossWeight.Value) && grossWeight.Value > 0 ? grossWeight.Value : null,
+            SeatBeltSign: seatBeltSign.Value != 0,
+            DoorsOpen: null,
+            TransponderCode: DecodeBcd4(transponderCode.Value),
+            AutopilotEnabled: autopilotMaster.Value != 0,
+            Paused: paused,
+            SimulationRate: simRate,
+            ThrustStable: thrustStable,
+            AircraftIcao: icao,
+            AircraftModel: model);
     }
 
     public void Close()
     {
         if (!IsOpen) return;
         try { FSUIPCConnection.Close(); }
-        finally { IsOpen = false; }
+        finally {
+            IsOpen = false;
+            previousThrottle1 = null;
+            previousThrottle2 = null;
+        }
     }
 
     public void Dispose() => Close();
+
+    private static string? FirstNonBlank(params string?[] values)
+    {
+        foreach (var value in values) {
+            var normalized = value?.Trim('\0', ' ');
+            if (!string.IsNullOrWhiteSpace(normalized)) return normalized;
+        }
+        return null;
+    }
+
+    private static int DecodeBcd4(ushort value)
+    {
+        var d1 = (value >> 12) & 0xF;
+        var d2 = (value >> 8) & 0xF;
+        var d3 = (value >> 4) & 0xF;
+        var d4 = value & 0xF;
+        if (d1 > 9 || d2 > 9 || d3 > 9 || d4 > 9) return value;
+        return d1 * 1000 + d2 * 100 + d3 * 10 + d4;
+    }
 
     private static double Normalize360(double value)
     {
