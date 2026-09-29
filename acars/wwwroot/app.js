@@ -257,7 +257,7 @@ function updateNextAction(state, ready) {
     setText(title, 'Choisissez votre vol');
     setText(text, 'Sélectionnez une réservation ou recherchez une ligne du programme Air Inter.');
     setText(button, 'Choisir un vol');
-    action = () => { $('#flightNumberSearch')?.focus(); $('#flightSearchForm')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+    action = () => { setOperationsMode('bids'); document.querySelector('.operations-browser')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
   } else if (!state.aircraft) {
     setText(title, 'Affectez un appareil');
     setText(text, 'Hermès n’affiche que les appareils autorisés et disponibles pour cette opération.');
@@ -520,15 +520,41 @@ function operationCard(operation) {
   return button;
 }
 
-function renderOperations(value) {
+function setOperationsMode(mode) {
+  const searchMode = mode === 'search';
+  const searchPanel = $('#operationsSearchPanel');
+  const bidsButton = $('#showBidsBtn');
+  const searchButton = $('#showSearchBtn');
+  if (searchPanel) searchPanel.hidden = !searchMode;
+  if (bidsButton) {
+    bidsButton.classList.toggle('active', !searchMode);
+    bidsButton.setAttribute('aria-selected', String(!searchMode));
+  }
+  if (searchButton) {
+    searchButton.classList.toggle('active', searchMode);
+    searchButton.setAttribute('aria-selected', String(searchMode));
+  }
+  setText($('#operationsListTitle'), searchMode ? 'Résultats du programme' : 'Mes réservations');
+  if (searchMode) {
+    setText($('#operationsListMeta'), 'Renseignez un ou plusieurs critères puis lancez la recherche.');
+    setTimeout(() => $('#flightNumberSearch')?.focus(), 0);
+  }
+}
+
+function renderOperations(value, source = 'reservations') {
   const payload = unwrap(value);
   const operations = Array.isArray(payload) ? payload : (payload?.operations || payload?.data || []);
   const list = $('#flightList');
   list.replaceChildren();
+  setText($('#operationsListMeta'), operations.length
+    ? operations.length + ' opération' + (operations.length > 1 ? 's' : '') + (source === 'search' ? ' trouvée' + (operations.length > 1 ? 's' : '') : ' réservée' + (operations.length > 1 ? 's' : ''))
+    : (source === 'search' ? 'Aucun vol ne correspond à cette recherche.' : 'Aucune réservation active.'));
   if (!operations.length) {
     const empty = document.createElement('p');
     empty.className = 'empty';
-    setText(empty, 'Aucune opération trouvée.');
+    setText(empty, source === 'search'
+      ? 'Aucun vol trouvé. Modifiez les critères de recherche.'
+      : 'Aucune réservation active. Utilisez « Rechercher un vol » pour parcourir le programme.');
     list.append(empty);
     return;
   }
@@ -536,15 +562,16 @@ function renderOperations(value) {
 }
 
 async function refreshOperations() {
+  setOperationsMode('bids');
   if (!connected) {
-    renderOperations([]);
+    renderOperations([], 'reservations');
     showMessage('#flightMessage', 'Connectez-vous d’abord à votre compte pilote.', true);
     return;
   }
   try {
     showMessage('#flightMessage', 'Chargement de vos réservations…');
     const simulator = simulatorCode();
-    renderOperations(await call('/api/v1/operations' + (simulator ? '?simulator=' + encodeURIComponent(simulator) : '')));
+    renderOperations(await call('/api/v1/operations' + (simulator ? '?simulator=' + encodeURIComponent(simulator) : '')), 'reservations');
     showMessage('#flightMessage', '');
   } catch (error) {
     showMessage('#flightMessage', error.message, true);
@@ -570,13 +597,23 @@ async function searchFlights() {
   if (aircraftType) params.set('icao_type', aircraftType);
   try {
     showMessage('#flightMessage', 'Recherche dans le programme…');
-    renderOperations(await call('/api/v1/flights' + (params.size ? '?' + params.toString() : '')));
+    setOperationsMode('search');
+    renderOperations(await call('/api/v1/flights' + (params.size ? '?' + params.toString() : '')), 'search');
     showMessage('#flightMessage', '');
   } catch (error) {
     showMessage('#flightMessage', error.message, true);
   }
 }
-$('#bidsBtn').onclick = refreshOperations;
+const showBidsBtn = $('#showBidsBtn');
+if (showBidsBtn) showBidsBtn.onclick = async () => {
+  await refreshOperations();
+  document.querySelector('.operations-browser')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+const showSearchBtn = $('#showSearchBtn');
+if (showSearchBtn) showSearchBtn.onclick = () => {
+  setOperationsMode('search');
+  renderOperations([], 'search');
+};
 $('#flightSearchForm').onsubmit = event => {
   event.preventDefault();
   searchFlights();
@@ -791,21 +828,54 @@ async function refreshAircraftVariantLibrary() {
     }
 
     variants.forEach(variant => {
-      const row = document.createElement('label');
+      const row = document.createElement('article');
       row.className = 'variant-library-item';
+
+      const identity = document.createElement('div');
+      identity.className = 'variant-library-identity';
+      const name = document.createElement('strong');
+      name.textContent = variant.label || variant.id;
+      const detail = document.createElement('small');
+      detail.textContent = [variant.type_key, variant.vendor, variant.simbrief_type ? 'SimBrief ' + variant.simbrief_type : null]
+        .filter(Boolean).join(' · ');
+      identity.append(name, detail);
+
+      const controls = document.createElement('div');
+      controls.className = 'variant-library-controls';
+
+      const ownedLabel = document.createElement('label');
+      ownedLabel.className = 'variant-toggle';
       const owned = document.createElement('input');
       owned.type = 'checkbox';
       owned.dataset.variantId = variant.id;
       owned.checked = Boolean(variant.owned);
-      const label = document.createElement('span');
-      label.textContent = (variant.label || variant.id) + ' · ' + (variant.type_key || '') + ' · ' + (variant.vendor || '');
+      const switchUi = document.createElement('span');
+      switchUi.className = 'variant-toggle-ui';
+      const ownedText = document.createElement('b');
+      ownedText.textContent = 'Possédé';
+      ownedLabel.append(owned, switchUi, ownedText);
+
+      const preferredLabel = document.createElement('label');
+      preferredLabel.className = 'variant-preferred';
       const preferred = document.createElement('input');
       preferred.type = 'radio';
       preferred.name = 'preferredAircraftVariant';
       preferred.value = variant.id;
       preferred.checked = Boolean(variant.preferred);
-      preferred.title = 'Variante préférée';
-      row.append(owned, label, preferred);
+      preferred.disabled = !owned.checked;
+      const preferredText = document.createElement('span');
+      preferredText.textContent = '★ Préférée';
+      preferredLabel.append(preferred, preferredText);
+
+      owned.onchange = () => {
+        preferred.disabled = !owned.checked;
+        if (!owned.checked && preferred.checked) preferred.checked = false;
+        row.classList.toggle('owned', owned.checked);
+      };
+
+      controls.append(ownedLabel, preferredLabel);
+      row.append(identity, controls);
+      row.classList.toggle('owned', owned.checked);
       container.append(row);
     });
   } catch (error) {
@@ -2088,13 +2158,13 @@ $('#submitReviewBtn').onclick = async () => {
 
 const capabilityLabels = {
   Position: 'Position', AltitudeMsl: 'Altitude MSL', AltitudeAgl: 'Altitude AGL',
-  IndicatedAirspeed: 'IAS', GroundSpeed: 'Ground speed', VerticalSpeed: 'Vertical speed',
-  Heading: 'Heading', Track: 'Track', Pitch: 'Pitch', Bank: 'Bank', Fuel: 'Fuel', GrossWeight: 'Gross weight',
-  OnGround: 'On ground', ParkingBrake: 'Parking brake', Gear: 'Gear', Flaps: 'Flaps', Spoilers: 'Spoilers',
-  Engines: 'Engines', BeaconLight: 'Beacon', NavigationLight: 'Nav lights', StrobeLight: 'Strobes',
-  LandingLight: 'Landing lights', TaxiLight: 'Taxi lights', SeatBeltSign: 'Seat belt sign', Doors: 'Doors',
-  Transponder: 'Transponder', Autopilot: 'Autopilot', ThrustStable: 'Thrust stable', Slew: 'Slew', Pause: 'Pause', SimulationRate: 'Sim rate',
-  TouchdownRate: 'Touchdown rate', AircraftTitle: 'Aircraft title', AircraftIcao: 'Aircraft ICAO', AircraftModel: 'Aircraft model'
+  IndicatedAirspeed: 'IAS', GroundSpeed: 'Vitesse sol', VerticalSpeed: 'Vitesse verticale',
+  Heading: 'Cap', Track: 'Route sol', Pitch: 'Assiette', Bank: 'Inclinaison', Fuel: 'Carburant', GrossWeight: 'Masse totale',
+  OnGround: 'Au sol', ParkingBrake: 'Frein de parc', Gear: 'Train', Flaps: 'Volets', Spoilers: 'Spoilers',
+  Engines: 'Moteurs', BeaconLight: 'Beacon', NavigationLight: 'Feux NAV', StrobeLight: 'Strobes',
+  LandingLight: 'Feux atterrissage', TaxiLight: 'Feux taxi', SeatBeltSign: 'Ceintures', Doors: 'Portes',
+  Transponder: 'Transpondeur', Autopilot: 'Pilote automatique', ThrustStable: 'Poussée stable', Slew: 'Slew', Pause: 'Pause', SimulationRate: 'Vitesse simulation',
+  TouchdownRate: 'Taux toucher', AircraftTitle: 'Titre appareil', AircraftIcao: 'ICAO appareil', AircraftModel: 'Modèle appareil'
 };
 
 function renderAircraftCapabilities(report) {
@@ -2123,7 +2193,9 @@ function renderAircraftCapabilities(report) {
     const label = document.createElement('strong');
     label.textContent = capabilityLabels[capability] || capability;
     const state = document.createElement('small');
-    state.textContent = availability.toUpperCase();
+    state.textContent = availability === 'Supported' ? 'DISPONIBLE'
+      : availability === 'Unsupported' ? 'NON PRIS EN CHARGE'
+      : 'À COMPLÉTER';
     item.title = source;
     item.append(label, state);
     matrix.append(item);
