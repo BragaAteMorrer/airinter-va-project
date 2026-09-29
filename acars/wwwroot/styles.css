@@ -298,3 +298,220 @@ body[data-appearance="dark"] .capability-item.unsupported{
 .aircraft-selection-status.ready strong::before{content:"✓ "}
 body[data-appearance="dark"] .aircraft-selection-status{background:color-mix(in srgb,#c33b45 12%,var(--panel));border-color:color-mix(in srgb,#c33b45 48%,var(--line));color:#ffb8bd}
 body[data-appearance="dark"] .aircraft-selection-status.ready{background:color-mix(in srgb,#18824e 14%,var(--panel));border-color:color-mix(in srgb,#42b883 50%,var(--line));color:#9fe0ba}
+
+
+/* Structured Mes opérations */
+.operations-browser,
+.operations-current{
+  margin:18px 0;
+  padding:18px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:#f8fafc;
+}
+.operations-browser-heading,
+.operations-current-heading,
+.operations-results-heading{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:18px;
+}
+.operations-browser-heading h3,
+.operations-current-heading h3{margin:4px 0 4px}
+.operations-mode-switch{
+  display:inline-flex;
+  gap:4px;
+  padding:4px;
+  border:1px solid var(--line);
+  border-radius:11px;
+  background:#fff;
+}
+.operations-mode-switch button{
+  min-height:36px;
+  padding:7px 11px;
+  border-color:transparent;
+  background:transparent;
+  box-shadow:none;
+}
+.operations-mode-switch button.active{
+  border-color:#b9d4e7;
+  background:#eaf5fc;
+  color:var(--blue);
+}
+.operations-search-panel{
+  margin-top:14px;
+  padding-top:14px;
+  border-top:1px solid var(--line);
+}
+.operations-search-panel .flight-search{
+  margin:0 0 8px;
+  padding:0;
+  border:0;
+  background:transparent;
+}
+.operations-results-heading{
+  align-items:baseline;
+  margin-top:16px;
+  padding-top:14px;
+  border-top:1px solid var(--line);
+}
+.operations-results-heading strong{
+  color:var(--navy);
+  font-size:13px;
+}
+.operations-results-heading .hint{margin:0;font-size:11px}
+.operations-list{margin-top:12px}
+.operations-current .prefile{margin-top:14px}
+.operations-planning{margin-top:20px}
+
+@media(max-width:800px){
+  .operations-browser-heading,
+  .operations-current-heading,
+  .operations-results-heading{display:grid}
+  .operations-mode-switch{width:100%}
+  .operations-mode-switch button{flex:1}
+}
+
+/* Add-on library: compact cards instead of browser-native giant controls. */
+.settings-sections{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+.settings-addons{grid-column:1/-1}
+#aircraftVariantLibrary{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+  gap:10px;
+  margin:14px 0;
+}
+.variant-library-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  min-width:0;
+  padding:13px 14px;
+  border:1px solid var(--line);
+  border-left:4px solid #cfd8df;
+  border-radius:10px;
+  background:#fff;
+  transition:.15s ease;
+}
+.variant-library-item.owned{
+  border-left-color:var(--ok);
+  background:#f6fbf8;
+}
+.variant-library-identity{
+  display:grid;
+  gap:3px;
+  min-width:0;
+}
+.variant-library-identity strong{
+  overflow-wrap:anywhere;
+  color:var(--ink);
+  font-size:13px;
+}
+.variant-library-identity small{
+  color:var(--muted);
+  font-size:10px;
+}
+.variant-library-controls{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex:0 0 auto;
+}
+.variant-toggle,
+.variant-preferred{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  color:var(--muted);
+  font-size:10px;
+  font-weight:800;
+  cursor:pointer;
+}
+.variant-toggle input,
+.variant-preferred input{
+  position:absolute;
+  width:1px;
+  height:1px;
+  min-height:0;
+  padding:0;
+  opacity:0;
+  pointer-events:none;
+}
+.variant-toggle-ui{
+  position:relative;
+  width:36px;
+  height:20px;
+  border:1px solid #aebdca;
+  border-radius:999px;
+  background:#e8eef3;
+  transition:.15s ease;
+}
+.variant-toggle-ui::after{
+  content:"";
+  position:absolute;
+  top:2px;
+  left:2px;
+  width:14px;
+  height:14px;
+  border-radius:50%;
+  background:#fff;
+  box-shadow:0 1px 3px #0003;
+  transition:.15s ease;
+}
+.variant-toggle input:checked + .variant-toggle-ui{
+  border-color:var(--ok);
+  background:#bfe7d1;
+}
+.variant-toggle input:checked + .variant-toggle-ui::after{
+  transform:translateX(16px);
+  background:var(--ok);
+}
+.variant-preferred span{
+  padding:5px 8px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  background:#fff;
+  white-space:nowrap;
+}
+.variant-preferred input:checked + span{
+  border-color:#d6b05a;
+  background:#fff8e8;
+  color:#8a6100;
+}
+.variant-preferred input:disabled + span{
+  opacity:.4;
+  cursor:not-allowed;
+}
+@media(max-width:720px){
+  .settings-sections{grid-template-columns:1fr}
+  .settings-addons{grid-column:auto}
+  #aircraftVariantLibrary{grid-template-columns:1fr}
+  .variant-library-item{align-items:flex-start;flex-direction:column}
+  .variant-library-controls{width:100%;justify-content:space-between}
+}
+
+/* Recovery now belongs to the Enregistrement workspace. */
+#record .recovery-center{
+  margin:0 0 20px;
+  max-width:none;
+}
+#record .recovery-center[hidden]{display:none}
+
+/* Dark mode fixes for operations/add-on cards. */
+body[data-appearance="dark"] .operations-browser,
+body[data-appearance="dark"] .operations-current,
+body[data-appearance="dark"] .variant-library-item{
+  background:var(--panel);
+  border-color:var(--line);
+}
+body[data-appearance="dark"] .operations-mode-switch,
+body[data-appearance="dark"] .variant-preferred span{
+  background:color-mix(in srgb,var(--panel) 92%,#fff 8%);
+}
+body[data-appearance="dark"] .variant-library-item.owned{
+  background:color-mix(in srgb,var(--ok) 10%,var(--panel));
+}
