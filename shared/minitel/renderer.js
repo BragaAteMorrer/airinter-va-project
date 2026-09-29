@@ -14,6 +14,12 @@
       this.host = host;
       this.speed = runtime.SPEEDS[options.speed] ? options.speed : 'fast';
       this.displayMode = runtime.DISPLAY_MODES[options.displayMode] ? options.displayMode : 'color';
+      this.maxProgressiveDurationMs = Number.isFinite(options.maxProgressiveDurationMs)
+        ? Math.max(250, Number(options.maxProgressiveDurationMs))
+        : 0;
+      this.transmissionTickMs = Number.isFinite(options.transmissionTickMs)
+        ? Math.max(8, Number(options.transmissionTickMs))
+        : 16;
       this.cursor = { row: 24, column: 0, visible: false };
       this.cells = [];
       this.lastSnapshot = null;
@@ -156,12 +162,39 @@
       const operations = runtime.transmissionOperations(snapshot, previous, {
         skipDefaultBlank: previous === null
       });
-      const delay = runtime.transmissionDelay(speed);
-      for (const operation of operations) {
-        if (controller.signal.aborted) return;
-        this.applyCell(operation.row, operation.column, operation.cell);
-        if (delay > 0) await new Promise((resolve) => window.setTimeout(resolve, delay));
+
+      const cps = runtime.SPEEDS[speed] ?? runtime.SPEEDS.fast;
+      const nominalDuration = Number.isFinite(cps) && cps > 0
+        ? (operations.length / cps) * 1000
+        : 0;
+      const duration = this.maxProgressiveDurationMs > 0
+        ? Math.min(nominalDuration, this.maxProgressiveDurationMs)
+        : nominalDuration;
+
+      if (!operations.length || duration <= 0) {
+        operations.forEach((operation) => this.applyCell(operation.row, operation.column, operation.cell));
+      } else {
+        const targetFrames = Math.max(1, Math.min(
+          operations.length,
+          Math.ceil(duration / this.transmissionTickMs)
+        ));
+        const batchSize = Math.max(1, Math.ceil(operations.length / targetFrames));
+        const actualFrames = Math.ceil(operations.length / batchSize);
+        const frameDelay = actualFrames > 1 ? duration / actualFrames : 0;
+
+        for (let index = 0; index < operations.length; index += batchSize) {
+          if (controller.signal.aborted) return;
+          const end = Math.min(operations.length, index + batchSize);
+          for (let cursor = index; cursor < end; cursor += 1) {
+            const operation = operations[cursor];
+            this.applyCell(operation.row, operation.column, operation.cell);
+          }
+          if (end < operations.length && frameDelay > 0) {
+            await new Promise((resolve) => window.setTimeout(resolve, frameDelay));
+          }
+        }
       }
+
       this.lastSnapshot = snapshot;
       this.abortController = null;
     }
