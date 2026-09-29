@@ -31,6 +31,7 @@ class PrometheeServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__.'/../Resources/views', 'promethee');
         $this->loadMigrationsFrom(__DIR__.'/../Database/migrations');
         $this->loadRoutesFrom(__DIR__.'/../routes.php');
+        $this->loadRoutesFrom(__DIR__.'/../routes-minitel.php');
         Event::listen(PirepAccepted::class, [ProgressionEventListener::class, 'onPirepAccepted']);
         Event::listen(PirepAccepted::class, [RegionalOperationsEventListener::class, 'onPirepAccepted']);
         Event::listen(UserStatsChanged::class, [ProgressionEventListener::class, 'onUserStatsChanged']);
