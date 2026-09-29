@@ -542,8 +542,11 @@
         footer(screen);
       },
       acceptInput: key => /^[1-5]$/.test(key),
-      send: value => {
-        if (value === '1') return mt.SYSTEM_PAGES.SETTINGS;
+      send: (value, context) => {
+        if (value === '1') {
+          context.__minitelSettingsReturnPage = 'parameters';
+          return mt.SYSTEM_PAGES.SETTINGS;
+        }
         if (value === '2') setAction('load-status');
         if (value === '3') return 'simbrief';
         if (value === '4') setAction('load-network');
@@ -1095,6 +1098,27 @@
         return show(terminalSession.go('result'), true);
       }
 
+      if (pending.type === 'local-plan-import') {
+        const input = document.getElementById('planFile');
+        if (!input) throw new Error('IMPORT DE PLAN LOCAL INDISPONIBLE');
+        input.addEventListener('change', async () => {
+          const file = input.files?.[0];
+          if (!file) return;
+          hm.localPlan = { name: file.name, size: file.size };
+          if (hm.active && terminalSession?.currentPageId === 'simbrief-local') {
+            await show(terminalSession.render(), true);
+          }
+        }, { once: true });
+        input.click();
+        return show(terminalSession.go('simbrief-local'), false);
+      }
+
+      if (pending.type === 'local-plan-clear') {
+        document.getElementById('clearPlanBtn')?.click();
+        hm.localPlan = null;
+        return show(terminalSession.go('simbrief-local'), true);
+      }
+
       if (pending.type === 'prefile') {
         const result = await runCall(path('/pirep'), {});
         await loadOperation(hm.operation);
@@ -1204,6 +1228,15 @@
         hm.review = hm.filedReview;
         await refreshStatus();
         return show(terminalSession.go('review'), true);
+      }
+
+      if (pending.type === 'abandon-recovery') {
+        const recovery = hm.status?.recovery || {};
+        const pirep = recovery.pirepId || recovery.PirepId || 'VOL INTERROMPU';
+        await runCall('/api/recovery/abandon', {});
+        await refreshStatus();
+        setResult('VOL INTERROMPU ARCHIVE', String(pirep), 'ETAT LOCAL NETTOYE');
+        return show(terminalSession.go('result'), true);
       }
 
       if (pending.type === 'resume-recovery') {
