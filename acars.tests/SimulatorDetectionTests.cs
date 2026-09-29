@@ -27,6 +27,10 @@ public sealed class SimulatorDetectionTests
     }
 
     [Theory]
+    [InlineData("FlightSimulator", SimulatorKind.MicrosoftFlightSimulator)]
+    [InlineData("Microsoft.FlightSimulator", SimulatorKind.MicrosoftFlightSimulator)]
+    [InlineData("FlightSimulator2024", SimulatorKind.MicrosoftFlightSimulator)]
+    [InlineData("Microsoft.FlightSimulator2024", SimulatorKind.MicrosoftFlightSimulator)]
     [InlineData("fs9", SimulatorKind.FlightSimulator2004)]
     [InlineData("fsx_se", SimulatorKind.FlightSimulatorX)]
     [InlineData("Prepar3D_v6", SimulatorKind.Prepar3D)]
