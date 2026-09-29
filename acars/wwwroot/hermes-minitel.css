@@ -1,6 +1,253 @@
-.hermes-minitel-overlay{position:fixed;inset:0;z-index:2147483000;min-height:100dvh;background:#101212}
-.hermes-minitel-overlay .ai-minitel-shell-host,.hermes-minitel-overlay .ai-minitel-shell{height:100%}
-.hermes-minitel-overlay .ai-minitel-shell-terminal{overflow:hidden}
-.hermes-minitel-fatal{display:grid;place-items:center;width:min(100%,40ch);min-height:25em;padding:2em;background:#050505;color:#f26767;font-family:"Minitel","Courier New",monospace;white-space:pre-line;text-align:center;line-height:1.4}
-body[data-era="minitel"]{overflow:hidden}
-@media(max-width:899px),(pointer:coarse){body[data-era="minitel"]{overflow:auto}}
+/* Hermès Minitel skin.
+   The logical renderer remains strictly 40x25. This file only owns the
+   physical terminal presentation and Hermès-specific accessibility rules. */
+
+.hermes-minitel-overlay{
+  position:fixed;
+  inset:0;
+  z-index:2147483000;
+  width:100vw;
+  height:100dvh;
+  min-height:100dvh;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 50% 38%,#1c211f 0,#101412 42%,#070908 78%,#020302 100%);
+  color:#f8f8ef;
+}
+
+.hermes-minitel-overlay .ai-minitel-shell-host,
+.hermes-minitel-overlay .ai-minitel-shell{
+  width:100%;
+  height:100%;
+  min-height:0;
+}
+
+.hermes-minitel-overlay .ai-minitel-shell{
+  grid-template-rows:32px minmax(0,1fr);
+  background:
+    linear-gradient(180deg,#111514 0,#060807 100%);
+}
+
+.hermes-minitel-overlay .ai-minitel-shell-toolbar{
+  min-height:32px;
+  padding:4px 12px;
+  border-bottom:1px solid #3e4541;
+  background:#141817;
+  color:#e8eadf;
+  letter-spacing:.03em;
+}
+
+.hermes-minitel-overlay .ai-minitel-shell-service{
+  color:#58f7ff;
+  text-shadow:0 0 5px rgb(88 247 255 / 28%);
+}
+
+.hermes-minitel-overlay .ai-minitel-shell-exit{
+  min-height:24px;
+  padding:3px 9px;
+  border:1px solid #747a73;
+  border-radius:2px;
+  background:#292e2b;
+  color:#fffef1;
+}
+
+.hermes-minitel-overlay .ai-minitel-shell-terminal{
+  display:grid;
+  place-items:center;
+  width:100%;
+  height:100%;
+  min-width:0;
+  min-height:0;
+  overflow:hidden;
+  padding:6px;
+}
+
+/* Scale the complete physical terminal uniformly. On a 16:9 screen the
+   viewport height is normally the limiting dimension, so width follows from
+   the terminal ratio rather than stretching independently. */
+.hermes-minitel-overlay .ai-minitel-shell-terminal>.ai-minitel-terminal{
+  --mt-chassis-size:min(calc(100dvh - 44px),calc(100vw - 16px),980px);
+  width:var(--mt-chassis-size);
+  height:var(--mt-chassis-size);
+  max-width:100%;
+  max-height:100%;
+  aspect-ratio:1/1;
+  gap:clamp(6px,1vh,12px);
+  padding:
+    clamp(19px,2.5vmin,34px)
+    clamp(20px,2.8vmin,38px)
+    clamp(17px,2.2vmin,29px);
+  border:2px solid #6f6b5d;
+  border-radius:22px 22px 38px 38px;
+  background:
+    linear-gradient(145deg,#f0ead7 0,#ded7c0 32%,#cfc6ac 70%,#aaa28d 100%);
+  box-shadow:
+    0 24px 70px rgb(0 0 0 / 64%),
+    inset 0 2px 0 rgb(255 255 255 / 72%),
+    inset 0 -5px 0 rgb(80 73 59 / 18%);
+  transform:none;
+}
+
+.hermes-minitel-overlay .ai-minitel-shell-terminal>.ai-minitel-terminal::before{
+  left:9%;
+  right:9%;
+  bottom:7px;
+  height:6px;
+  border-radius:2px;
+  background:linear-gradient(#8d8775,#c4bca5);
+}
+
+.hermes-minitel-overlay .ai-minitel-shell-terminal>.ai-minitel-terminal::after{
+  right:6.5%;
+  bottom:9px;
+  width:6px;
+  height:6px;
+  background:#4f9250;
+  box-shadow:0 0 6px rgb(69 170 75 / 48%);
+}
+
+/* CRT aperture: the logical screen is still rendered by the shared 40x25
+   runtime. No HTML overlay is used to fake content. */
+.hermes-minitel-overlay .ai-minitel-shell-terminal .ai-minitel-screen{
+  width:100%;
+  max-width:100%;
+  max-height:100%;
+  aspect-ratio:32/25;
+  border:clamp(10px,1.25vmin,14px) solid #151817;
+  border-radius:12px;
+  background:#020202;
+  box-shadow:
+    inset 0 0 50px rgb(0 0 0 / 72%),
+    0 0 0 2px #70756e,
+    0 8px 18px rgb(0 0 0 / 38%);
+  filter:contrast(1.06) saturate(1.08);
+}
+
+.hermes-minitel-overlay .ai-minitel-screen::before{
+  opacity:.22;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgb(255 255 255 / 3%) 0,
+      rgb(255 255 255 / 3%) 1px,
+      rgb(0 0 0 / 4%) 1px,
+      rgb(0 0 0 / 4%) 2px,
+      transparent 2px,
+      transparent 4px
+    );
+}
+
+.hermes-minitel-overlay .ai-minitel-screen::after{
+  border-radius:10px;
+  box-shadow:
+    inset 0 0 2.2em rgb(0 0 0 / 46%),
+    inset 0 0 .35em rgb(255 255 255 / 3%);
+}
+
+/* Keyboard/chassis details intentionally reference real terminal hardware
+   rather than modern app controls. */
+.hermes-minitel-overlay .ai-minitel-control-deck{
+  gap:clamp(3px,.55vmin,6px);
+}
+
+.hermes-minitel-overlay .ai-minitel-deck-brand{
+  color:#155c23;
+  font-weight:800;
+  letter-spacing:.02em;
+}
+
+.hermes-minitel-overlay .ai-minitel-deck-brand::before{
+  content:"AIR INTER · HERMES ACARS";
+}
+
+.hermes-minitel-overlay .ai-minitel-deck-brand::after{
+  content:"3615 HERMES";
+  color:#1428c8;
+}
+
+.hermes-minitel-overlay .ai-minitel-key{
+  border-radius:1px;
+  outline-offset:2px;
+}
+
+.hermes-minitel-overlay .ai-minitel-key:focus-visible,
+.hermes-minitel-overlay .ai-minitel-shell-exit:focus-visible,
+.hermes-minitel-overlay .ai-minitel-terminal:focus-visible{
+  outline:3px solid #fff35a;
+  outline-offset:2px;
+}
+
+/* Improve legibility without destroying the period look. */
+.hermes-minitel-overlay .ai-minitel-cell{
+  text-shadow:
+    0 0 .45px currentColor,
+    0 0 1.7px color-mix(in srgb,currentColor 20%,transparent);
+}
+
+.hermes-minitel-overlay .ai-minitel-terminal[data-display-mode="monochrome"] .ai-minitel-screen{
+  filter:contrast(1.12) brightness(.96) saturate(0);
+}
+
+.hermes-minitel-fatal{
+  display:grid;
+  place-items:center;
+  width:min(100%,40ch);
+  min-height:25em;
+  padding:2em;
+  background:#050505;
+  color:#ff8b8b;
+  font-family:"Minitel","Courier New",monospace;
+  white-space:pre-line;
+  text-align:center;
+  line-height:1.45;
+}
+
+body[data-era="minitel"]{
+  overflow:hidden;
+  background:#050706;
+}
+
+/* The mode remains desktop-first because the runtime relies on full keyboard
+   semantics. The existing fallback takes over on touch/coarse environments. */
+@media(max-width:899px),(pointer:coarse){
+  body[data-era="minitel"]{overflow:auto}
+  .hermes-minitel-overlay{overflow:auto}
+}
+
+@media(max-height:720px) and (min-width:900px){
+  .hermes-minitel-overlay .ai-minitel-shell-terminal>.ai-minitel-terminal{
+    --mt-chassis-size:min(calc(100dvh - 40px),calc(100vw - 12px),720px);
+    padding:15px 18px 14px;
+    gap:4px;
+  }
+  .hermes-minitel-overlay .ai-minitel-key{min-height:21px}
+  .hermes-minitel-overlay .ai-minitel-control-deck,
+  .hermes-minitel-overlay .ai-minitel-control-row{gap:2px}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .hermes-minitel-overlay *,
+  .hermes-minitel-overlay *::before,
+  .hermes-minitel-overlay *::after{
+    scroll-behavior:auto!important;
+    transition:none!important;
+  }
+  .hermes-minitel-overlay .ai-minitel-screen::before{display:none}
+  .hermes-minitel-overlay .ai-minitel-cell{
+    text-shadow:none;
+  }
+}
+
+@media(forced-colors:active){
+  .hermes-minitel-overlay .ai-minitel-shell-terminal>.ai-minitel-terminal{
+    border:2px solid CanvasText;
+    box-shadow:none;
+  }
+  .hermes-minitel-overlay .ai-minitel-shell-terminal .ai-minitel-screen{
+    border-color:CanvasText;
+    box-shadow:none;
+  }
+  .hermes-minitel-overlay :where(.ai-minitel-key,.ai-minitel-shell-exit):focus-visible{
+    outline:3px solid Highlight;
+  }
+}
