@@ -1324,6 +1324,7 @@
       identity: '',
       speed: terminalPreferences.speed,
       displayMode: terminalPreferences.displayMode,
+      bootFrameDelay: 120,
       onPreferencesChange: persistMinitelPreferences,
       onExit: () => {
         try { localStorage.hermesEra = 'modern'; } catch {}
@@ -1340,7 +1341,9 @@
     shell.mount();
     renderer = new mt.MinitelDomRenderer(shell.terminalNode, {
       speed: terminalPreferences.speed,
-      displayMode: terminalPreferences.displayMode
+      displayMode: terminalPreferences.displayMode,
+      maxProgressiveDurationMs: 2600,
+      transmissionTickMs: 16
     });
     await refreshStatus();
     hm.authenticated = Boolean(hm.status?.connected);
