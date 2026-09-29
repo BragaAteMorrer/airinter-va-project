@@ -11,6 +11,7 @@ class SyncPrometheePasswordFromArgos extends Command
     protected $signature = 'airinter-id:sync-promethee-password
         {--email= : Limit to one Argos e-mail address}
         {--pilot-id= : Limit to one linked Prométhée pilot ident, e.g. IT199}
+        {--all : Synchronize every linked Argos account with a password}
         {--force : Required when APP_ENV=production}';
 
     protected $description = 'Temporarily copy the Argos password hash back to the linked Prométhée account for legacy Hermès authentication.';
@@ -24,10 +25,24 @@ class SyncPrometheePasswordFromArgos extends Command
 
         $email = mb_strtolower(trim((string) $this->option('email')));
         $pilotId = strtoupper(trim((string) $this->option('pilot-id')));
+        $all = (bool) $this->option('all');
 
-        if ($email === '' && $pilotId === '') {
-            $this->error('Provide --email or --pilot-id. Bulk password sync is intentionally disabled.');
+        if ($email === '' && $pilotId === '' && !$all) {
+            $this->error('Provide --email, --pilot-id or --all.');
             return self::FAILURE;
+        }
+
+        if ($all && ($email !== '' || $pilotId !== '')) {
+            $this->error('--all cannot be combined with --email or --pilot-id.');
+            return self::FAILURE;
+        }
+
+        if ($all && !$this->confirm(
+            'Synchronize Argos password hashes to every linked Prométhée account for legacy Hermès login?',
+            false
+        )) {
+            $this->warn('Bulk synchronization cancelled.');
+            return self::SUCCESS;
         }
 
         $query = LegacyIdentity::query()
@@ -42,38 +57,71 @@ class SyncPrometheePasswordFromArgos extends Command
             $query->whereRaw('UPPER(external_ident) = ?', [$pilotId]);
         }
 
-        /** @var LegacyIdentity|null $identity */
-        $identity = $query->first();
+        $identities = $all ? $query->get() : collect([$query->first()]);
+        $matched = 0;
+        $updated = 0;
+        $skipped = 0;
 
-        if (!$identity || !$identity->user) {
-            $this->error('No linked Argos/Prométhée identity matched the requested account.');
+        foreach ($identities as $identity) {
+            if (!$identity || !$identity->user) {
+                $skipped++;
+                continue;
+            }
+
+            $matched++;
+
+            if (empty($identity->user->password)) {
+                $skipped++;
+                $this->warn(sprintf(
+                    'Skipped %s: no Argos password hash.',
+                    $identity->user->email
+                ));
+                continue;
+            }
+
+            $count = DB::connection('promethee')
+                ->table('users')
+                ->where('id', $identity->external_user_id)
+                ->update([
+                    'password' => $identity->user->password,
+                    'updated_at' => now(),
+                ]);
+
+            if ($count < 1) {
+                $skipped++;
+                $this->warn(sprintf(
+                    'Skipped %s: linked Prométhée user #%s was not updated.',
+                    $identity->user->email,
+                    $identity->external_user_id
+                ));
+                continue;
+            }
+
+            $updated++;
+            $this->line(sprintf(
+                '%s -> Prométhée user #%s (%s)',
+                $identity->user->email,
+                $identity->external_user_id,
+                $identity->external_ident ?: 'no ident'
+            ));
+        }
+
+        if ($matched === 0) {
+            $this->error('No linked Argos/Prométhée identity matched the requested scope.');
             return self::FAILURE;
         }
 
-        if (empty($identity->user->password)) {
-            $this->error('The Argos account does not currently have a password hash to synchronize.');
+        $this->newLine();
+        $this->table(
+            ['Matched', 'Updated', 'Skipped'],
+            [[$matched, $updated, $skipped]]
+        );
+
+        if ($updated === 0) {
+            $this->error('No Prométhée password hash was synchronized.');
             return self::FAILURE;
         }
 
-        $updated = DB::connection('promethee')
-            ->table('users')
-            ->where('id', $identity->external_user_id)
-            ->update([
-                'password' => $identity->user->password,
-                'updated_at' => now(),
-            ]);
-
-        if ($updated < 1) {
-            $this->error('The linked Prométhée user was not updated.');
-            return self::FAILURE;
-        }
-
-        $this->info(sprintf(
-            'Password hash synchronized for %s -> Prométhée user #%s (%s).',
-            $identity->user->email,
-            $identity->external_user_id,
-            $identity->external_ident ?: 'no ident'
-        ));
         $this->warn('Compatibility bridge only: remove the legacy password dependency once Hermès PKCE/Argos login is deployed.');
 
         return self::SUCCESS;
