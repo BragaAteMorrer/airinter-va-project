@@ -91,28 +91,65 @@
         <div id="aircraftEligibility" class="eligibility" hidden></div>
       </section>
       <section class="flightplan-source operations-planning">
-        <div class="draft-heading"><div><span class="kicker">03 · PLANIFICATION</span><h3>Source du plan de vol</h3></div><p>Choisissez la méthode adaptée à votre installation. Vous pourrez changer de mode à tout moment.</p></div>
-        <div class="source-tabs" role="tablist">
-          <button type="button" data-plan-mode="account" class="active">Compte SimBrief</button>
-          <button type="button" data-plan-mode="api">API SimBrief</button>
-          <button type="button" data-plan-mode="file">Plan local</button>
+        <div class="draft-heading"><div><span class="kicker">03 · PLANIFICATION</span><h3>Source du plan de vol</h3></div><p>Choisissez une méthode : Hermès n’affiche ensuite que les actions utiles à ce mode.</p></div>
+
+        <div class="source-tabs" role="tablist" aria-label="Source du plan de vol">
+          <button type="button" data-plan-mode="account" class="active" role="tab" aria-selected="true" aria-controls="planPanelAccount">Compte SimBrief</button>
+          <button type="button" data-plan-mode="api" role="tab" aria-selected="false" aria-controls="planPanelApi">API SimBrief</button>
+          <button type="button" data-plan-mode="file" role="tab" aria-selected="false" aria-controls="planPanelFile">Plan local</button>
         </div>
+
         <div id="aircraftSelectionStatus" class="aircraft-selection-status pending" role="status" aria-live="polite">
           <strong>APPAREIL REQUIS</strong>
           <span>Choisissez un type d’appareil puis une immatriculation avant de préparer SimBrief.</span>
         </div>
-        <div class="source-panel active" data-plan-panel="account">
-          <p class="hint">Le compte Navigraph / SimBrief utilisé par Hermès se configure désormais dans Paramètres. Aucun mot de passe Navigraph n’est demandé ou stocké.</p>
-          <div class="tools"><button id="simbriefAccountOpenBtn" type="button" class="primary">Envoyer le vol vers SimBrief</button><button id="simbriefAccountEditBtn" type="button" hidden>Modifier dans SimBrief</button><button id="simbriefAccountImportBtn" type="button">Importer l’OFP généré</button></div>
+
+        <div id="planPanelAccount" class="source-panel active plan-mode-card" data-plan-panel="account" role="tabpanel">
+          <div class="plan-mode-heading">
+            <div><span class="kicker">COMPTE SIMBRIEF</span><h4>Préparer sur SimBrief puis récupérer l’OFP</h4></div>
+            <span class="plan-mode-badge">Compte pilote</span>
+          </div>
+          <p class="hint">Hermès envoie le vol, l’appareil, la variante et votre préparation vers votre compte SimBrief. Après génération sur SimBrief, Hermès récupère le dernier OFP lié à votre compte.</p>
+          <div class="plan-mode-steps">
+            <span><b>1</b> Envoyer la préparation</span>
+            <span><b>2</b> Générer / ajuster sur SimBrief</span>
+            <span><b>3</b> Récupérer l’OFP dans Hermès</span>
+          </div>
+          <div class="tools">
+            <button id="simbriefAccountOpenBtn" type="button" class="primary">Envoyer le vol vers SimBrief</button>
+            <button id="simbriefAccountEditBtn" type="button" hidden>Modifier dans SimBrief</button>
+            <button id="simbriefAccountImportBtn" type="button">Récupérer l’OFP généré</button>
+          </div>
+          <p class="hint plan-mode-footnote">Alias Navigraph / SimBrief et Pilot ID : Paramètres → Compte SimBrief. Aucun mot de passe Navigraph n’est stocké.</p>
         </div>
-        <div class="source-panel" data-plan-panel="api" hidden>
-          <p class="hint">Mode compagnie : génération intégrée via la clé API SimBrief configurée dans Prométhée.</p>
-          <div class="tools"><button id="simbriefBtn" type="button" class="primary">Créer l’OFP via l’API SimBrief</button></div>
+
+        <div id="planPanelApi" class="source-panel plan-mode-card" data-plan-panel="api" role="tabpanel" hidden>
+          <div class="plan-mode-heading">
+            <div><span class="kicker">API SIMBRIEF</span><h4>Génération intégrée compagnie</h4></div>
+            <span class="plan-mode-badge">Prométhée</span>
+          </div>
+          <p class="hint">Prométhée prépare la requête avec la clé API compagnie. Hermès ouvre le générateur SimBrief puis récupère automatiquement l’OFP lorsque la génération est terminée.</p>
+          <div class="plan-mode-steps">
+            <span><b>1</b> Générer avec les données Air Inter</span>
+            <span><b>2</b> Finaliser dans SimBrief</span>
+            <span><b>3</b> Import automatique dans Hermès</span>
+          </div>
+          <div class="tools"><button id="simbriefBtn" type="button" class="primary">Générer et récupérer l’OFP</button></div>
         </div>
-        <div class="source-panel" data-plan-panel="file" hidden>
-          <div class="tools"><label>Plan de vol MSFS / XML<input id="planFile" type="file" accept=".pln,.xml"></label><button id="clearPlanBtn" type="button">Effacer le plan</button></div>
+
+        <div id="planPanelFile" class="source-panel plan-mode-card" data-plan-panel="file" role="tabpanel" hidden>
+          <div class="plan-mode-heading">
+            <div><span class="kicker">PLAN LOCAL</span><h4>Importer un fichier de plan de vol</h4></div>
+            <span class="plan-mode-badge">Fichier local</span>
+          </div>
+          <p class="hint">Utilisez un fichier exporté localement lorsque vous ne souhaitez pas passer par votre compte ou l’API SimBrief.</p>
+          <div class="tools plan-file-tools">
+            <label>Plan de vol MSFS / XML<input id="planFile" type="file" accept=".pln,.xml"></label>
+            <button id="clearPlanBtn" type="button">Effacer le plan</button>
+          </div>
         </div>
-        <span id="simbriefState">Sélectionnez un vol et un appareil.</span>
+
+        <p id="simbriefState" class="plan-state">Sélectionnez un vol et un appareil.</p>
       </section>
       <pre id="planBox" hidden>Aucun plan chargé.</pre>
       <section id="networkPrefilePanel" class="flightplan-source" hidden>
