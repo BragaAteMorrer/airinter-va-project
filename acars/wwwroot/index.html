@@ -37,30 +37,6 @@
         </div>
       </div>
     </header>
-    <section id="recoveryCenter" class="recovery-center" hidden aria-live="assertive">
-      <div class="recovery-heading">
-        <div><span class="kicker">RECOVERY CENTER</span><h2>Vol interrompu détecté</h2><p id="recoverySummary">Hermès a retrouvé un vol enregistré localement.</p></div>
-        <strong id="recoveryPhase" class="ready-state">RECOVERY</strong>
-      </div>
-      <div class="recovery-metrics">
-        <div><span>PIREP</span><strong id="recoveryPirep">—</strong></div>
-        <div><span>Phase</span><strong id="recoveryPhaseValue">—</strong></div>
-        <div><span>Distance</span><strong id="recoveryDistance">—</strong></div>
-        <div><span>Temps de vol</span><strong id="recoveryAirborne">—</strong></div>
-        <div><span>Messages en attente</span><strong id="recoveryPending">0</strong></div>
-      </div>
-      <p id="recoveryHint" class="hint">Connectez-vous à votre compte Air Inter et reconnectez le simulateur pour reprendre exactement ce vol.</p>
-      <div class="actions recovery-actions">
-        <button id="recoveryResumeBtn" class="primary" type="button">Reprendre le vol</button>
-        <button id="recoveryReviewBtn" type="button">Consulter</button>
-        <button id="recoveryAbandonBtn" class="danger" type="button">Abandonner ce vol</button>
-      </div>
-      <div id="recoveryReview" class="recovery-review" hidden>
-        <h3>État local sauvegardé</h3>
-        <div id="recoveryTimeline" class="timeline"></div>
-      </div>
-      <p id="recoveryMessage" class="message" hidden role="status"></p>
-    </section>
     <section id="connect" class="panel active auth-panel">
       <div class="auth-mark"><span>AIR INTER VA</span><strong data-i18n="auth.crew">Accès équipage</strong></div><h2 data-i18n="auth.title">Connexion pilote</h2><p class="hint" data-i18n="auth.hint">Identifiez-vous avec votre compte pilote Air Inter pour préparer et suivre votre vol.</p>
       <form id="loginForm" class="login-form">
@@ -83,23 +59,39 @@
         <div><span class="kicker">PROCHAINE ACTION</span><strong id="nextActionTitle">Choisissez votre vol</strong><p id="nextActionText">Sélectionnez une réservation ou recherchez une ligne du programme Air Inter.</p></div>
         <button id="nextActionBtn" type="button" class="primary">Choisir un vol</button>
       </section>
-      <form id="flightSearchForm" class="flight-search">
-        <label>Numéro de vol<input id="flightNumberSearch" placeholder="ITF749 ou 749" autocomplete="off"></label>
-        <label>Départ<input id="departureSearch" placeholder="LFPO" maxlength="8" autocomplete="off"></label>
-        <label>Arrivée<input id="arrivalSearch" placeholder="LIRF" maxlength="8" autocomplete="off"></label>
-        <label>Type appareil<input id="aircraftTypeSearch" placeholder="A320" maxlength="8" autocomplete="off"></label>
-        <button id="searchBtn" class="primary" type="submit">Rechercher le programme</button>
-        <button id="bidsBtn" type="button">Mes réservations</button>
-      </form>
-      <p class="hint search-hint">Un seul critère suffit. La recherche respecte les droits, qualifications et restrictions de votre compte pilote.</p>
-      <p id="flightMessage" class="message" hidden role="status"></p>
-      <div id="flightList" class="list"></div>
-      <article id="selectedOperation" class="prefile" hidden>
-        <div><p id="selectedFlight">Aucun vol sélectionné</p><p id="operationBrief" class="hint"></p><p id="operationLoad" class="hint" hidden></p></div>
-      </article>
-      <div id="aircraftEligibility" class="eligibility" hidden></div>
-      <section class="flightplan-source">
-        <div class="draft-heading"><div><span class="kicker">PLANIFICATION</span><h3>Source du plan de vol</h3></div><p>Choisissez la méthode adaptée à votre installation. Vous pourrez changer de mode à tout moment.</p></div>
+
+      <section class="operations-browser" aria-label="Sélection de l’opération">
+        <div class="operations-browser-heading">
+          <div><span class="kicker">01 · OPÉRATION</span><h3>Choisir le vol</h3><p class="hint">Vos réservations d’abord. Le programme complet reste accessible sans mélanger les deux listes.</p></div>
+          <div class="operations-mode-switch" role="tablist" aria-label="Source des opérations">
+            <button id="showBidsBtn" type="button" class="active" role="tab" aria-selected="true">Mes réservations</button>
+            <button id="showSearchBtn" type="button" role="tab" aria-selected="false">Rechercher un vol</button>
+          </div>
+        </div>
+        <div id="operationsSearchPanel" class="operations-search-panel" hidden>
+          <form id="flightSearchForm" class="flight-search">
+            <label>Numéro de vol<input id="flightNumberSearch" placeholder="ITF749 ou 749" autocomplete="off"></label>
+            <label>Départ<input id="departureSearch" placeholder="LFPO" maxlength="8" autocomplete="off"></label>
+            <label>Arrivée<input id="arrivalSearch" placeholder="LIRF" maxlength="8" autocomplete="off"></label>
+            <label>Type appareil<input id="aircraftTypeSearch" placeholder="A320" maxlength="8" autocomplete="off"></label>
+            <button id="searchBtn" class="primary" type="submit">Rechercher le programme</button>
+          </form>
+          <p class="hint search-hint">Un seul critère suffit. La recherche respecte vos droits, qualifications et restrictions de compagnie.</p>
+        </div>
+        <div class="operations-results-heading"><strong id="operationsListTitle">Mes réservations</strong><span id="operationsListMeta" class="hint"></span></div>
+        <p id="flightMessage" class="message" hidden role="status"></p>
+        <div id="flightList" class="list operations-list"></div>
+      </section>
+
+      <section class="operations-current">
+        <div class="operations-current-heading"><div><span class="kicker">02 · OPÉRATION ACTIVE</span><h3>Vol sélectionné</h3></div><span class="hint">L’appareil, la variante et l’OFP sont rattachés à cette opération.</span></div>
+        <article id="selectedOperation" class="prefile" hidden>
+          <div><p id="selectedFlight">Aucun vol sélectionné</p><p id="operationBrief" class="hint"></p><p id="operationLoad" class="hint" hidden></p></div>
+        </article>
+        <div id="aircraftEligibility" class="eligibility" hidden></div>
+      </section>
+      <section class="flightplan-source operations-planning">
+        <div class="draft-heading"><div><span class="kicker">03 · PLANIFICATION</span><h3>Source du plan de vol</h3></div><p>Choisissez la méthode adaptée à votre installation. Vous pourrez changer de mode à tout moment.</p></div>
         <div class="source-tabs" role="tablist">
           <button type="button" data-plan-mode="account" class="active">Compte SimBrief</button>
           <button type="button" data-plan-mode="api">API SimBrief</button>
@@ -238,6 +230,30 @@
     </section>
     <section id="record" class="panel">
       <div class="workspace-title"><div><span class="kicker">FLIGHT OPERATIONS</span><h2>Enregistrement ACARS</h2></div><strong id="flightSafetyState" class="ready-state">STANDBY</strong></div>
+      <section id="recoveryCenter" class="recovery-center" hidden aria-live="assertive">
+        <div class="recovery-heading">
+          <div><span class="kicker">RECOVERY CENTER</span><h2>Vol interrompu détecté</h2><p id="recoverySummary">Hermès a retrouvé un vol enregistré localement.</p></div>
+          <strong id="recoveryPhase" class="ready-state">RECOVERY</strong>
+        </div>
+        <div class="recovery-metrics">
+          <div><span>PIREP</span><strong id="recoveryPirep">—</strong></div>
+          <div><span>Phase</span><strong id="recoveryPhaseValue">—</strong></div>
+          <div><span>Distance</span><strong id="recoveryDistance">—</strong></div>
+          <div><span>Temps de vol</span><strong id="recoveryAirborne">—</strong></div>
+          <div><span>Messages en attente</span><strong id="recoveryPending">0</strong></div>
+        </div>
+        <p id="recoveryHint" class="hint">Connectez-vous à votre compte Air Inter et reconnectez le simulateur pour reprendre exactement ce vol.</p>
+        <div class="actions recovery-actions">
+          <button id="recoveryResumeBtn" class="primary" type="button">Reprendre le vol</button>
+          <button id="recoveryReviewBtn" type="button">Consulter</button>
+          <button id="recoveryAbandonBtn" class="danger" type="button">Abandonner ce vol</button>
+        </div>
+        <div id="recoveryReview" class="recovery-review" hidden>
+          <h3>État local sauvegardé</h3>
+          <div id="recoveryTimeline" class="timeline"></div>
+        </div>
+        <p id="recoveryMessage" class="message" hidden role="status"></p>
+      </section>
       <div id="preflightChecks" class="preflight-checks" aria-label="Contrôles avant départ"></div>
       <section id="aircraftCapabilities" class="capability-panel" hidden>
         <div class="capability-heading">
@@ -355,6 +371,6 @@ window.addEventListener('error', event => {
 <script src="/minitel/renderer.js"></script>
 <script src="/minitel/shell.js"></script>
 <script src="/hermes-minitel-core.js"></script>
-<script src="/app.js?rev=20260926-ivao-fps-fix"></script>
+<script src="/app.js?rev=20260930-ops-capabilities"></script>
 <script src="/hermes-minitel.js"></script>
 </body></html>
