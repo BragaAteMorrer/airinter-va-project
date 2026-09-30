@@ -758,13 +758,27 @@ class OperationsV1Controller extends Controller
 
         $pirep = $this->pirepSvc->prefile($request->user(), $attrs, [], []);
 
-        // phpVMS may return an existing duplicate prefile. Reassert the
-        // Prométhée correlation marker so a retry still resolves to this
-        // operation deterministically instead of relying on timestamps.
-        if ($pirep->source_name !== $attrs['source_name']) {
-            $pirep->source_name = $attrs['source_name'];
-            $pirep->save();
+        // phpVMS duplicate detection can return a recently filed PIREP for the
+        // same pilot/route instead of creating the new prefile. A reused
+        // PENDING/ACCEPTED/REJECTED report is terminal for Dispatch and used to
+        // leave Hermès with every visible check green but START permanently
+        // disabled. Hermès prefile must always represent an active operation.
+        if ((int) $pirep->state !== PirepState::IN_PROGRESS || $pirep->submitted_at !== null) {
+            $pirep->state = PirepState::IN_PROGRESS;
+            $pirep->submitted_at = null;
+            $pirep->block_off_time = null;
+            $pirep->block_on_time = null;
+            $pirep->flight_time = 0;
+            $pirep->distance = 0;
+            $pirep->fuel_used = 0;
+            $pirep->landing_rate = null;
         }
+
+        // Reassert the Prométhée correlation marker so the operation resolves
+        // deterministically even when phpVMS returned a duplicate object.
+        $pirep->source_name = $attrs['source_name'];
+        $pirep->status = PirepStatus::INITIATED;
+        $pirep->save();
         $pirep->refresh();
 
         return response()->json(['data' => [
