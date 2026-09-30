@@ -165,6 +165,8 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::delete('/economy/rules/{id}', [PortalController::class,'deletePricingRule'])->name('economy.rules.delete');
         Route::get('/seasons', [PortalController::class,'seasons'])->name('seasons');
         Route::post('/seasons', [PortalController::class,'saveSeason'])->name('seasons.save');
+        Route::post('/seasons/pricing-adjustments', [PortalController::class,'saveSeasonPricingAdjustment'])->name('seasons.pricing-adjustments.save');
+        Route::delete('/seasons/pricing-adjustments/{id}', [PortalController::class,'deleteSeasonPricingAdjustment'])->name('seasons.pricing-adjustments.delete');
         Route::post('/seasons/import', [PortalController::class,'importSchedule'])->name('seasons.import');
         Route::post('/safety', [PortalController::class,'generate'])->name('safety.generate');
         Route::get('/network', [PortalController::class,'network'])->name('network');
