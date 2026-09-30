@@ -415,13 +415,21 @@ function updateWorkflow() {
   const dispatchReady = serverDispatch
     ? (serverDispatch.can_start === true || (serverDispatch.status === 'IN_PROGRESS' && serverChecksReady))
     : (state.operation && state.aircraft && state.ofp && state.pirep);
+
+  // The visible four-step preparation state is allowed to unlock the action
+  // even if a stale dispatch snapshot still exposes can_start=false. Clicking
+  // the button ALWAYS refreshes and re-validates the authoritative dispatch in
+  // assertDispatchCanStart(), so this removes a UI deadlock without bypassing
+  // any Prométhée safety/server rule.
+  const visiblePreparationReady = state.operation && state.aircraft && state.ofp && state.pirep;
+
   // Adapter/variant detection is useful diagnostics, but add-on title strings
   // are not reliable enough to hard-block an otherwise valid flight. Keep the
   // READY badge strict on real simulator safety data and let /api/start remain
   // the final authority for refusal reasons.
   const ready = dispatchReady && readiness.simulator && preflightSafe;
   const terminal = ['COMPLETED', 'CANCELLED'].includes(String(serverDispatch?.status || '').toUpperCase());
-  const canAttemptStart = dispatchReady && readiness.simulator && !terminal;
+  const canAttemptStart = visiblePreparationReady && readiness.simulator && !terminal;
   const node = $('#readyState');
   if (node) {
     const status = String(serverDispatch?.status || '').toUpperCase();
@@ -442,6 +450,29 @@ function updateWorkflow() {
       ? 'Hermès vérifiera les contrôles au clic et affichera précisément ce qui bloque.'
       : '';
   }
+
+  const activeLocalFlight = lastStatus?.flight || lastStatus?.Flight || null;
+  const localRecording = Boolean(activeLocalFlight?.recording ?? activeLocalFlight?.Recording);
+  const localRecovery = Boolean(lastStatus?.recoveryAvailable);
+  const pauseButton = $('#pauseBtn');
+  const resumeButton = $('#resumeBtn');
+
+  if (pauseButton) {
+    pauseButton.disabled = !localRecording;
+    pauseButton.title = localRecording ? 'Mettre l’enregistrement ACARS en pause.' : 'Aucun enregistrement actif à mettre en pause.';
+  }
+
+  if (resumeButton) {
+    const canResumeLocalPause = Boolean(activeLocalFlight) && !localRecording && !localRecovery;
+    resumeButton.disabled = !canResumeLocalPause;
+    resumeButton.textContent = 'Reprendre une pause';
+    resumeButton.title = canResumeLocalPause
+      ? 'Reprendre un enregistrement ACARS local mis en pause.'
+      : (localRecovery
+          ? 'Utilisez le Recovery Center pour un vol interrompu.'
+          : 'Aucun vol local en pause. Utilisez « Démarrer l’enregistrement » pour cette nouvelle opération.');
+  }
+
   updateAircraftSelectionStatus();
   updateNextAction(state, ready);
   updatePreflight(lastStatus, state, ready);
@@ -1802,7 +1833,21 @@ $('#startBtn').onclick = async () => {
   }
 };
 $('#pauseBtn').onclick = () => action('/api/pause', 'Enregistrement en pause.');
-$('#resumeBtn').onclick = () => action('/api/resume', 'Enregistrement repris.');
+$('#resumeBtn').onclick = () => {
+  const activeLocalFlight = lastStatus?.flight || lastStatus?.Flight || null;
+  const localRecording = Boolean(activeLocalFlight?.recording ?? activeLocalFlight?.Recording);
+  const localRecovery = Boolean(lastStatus?.recoveryAvailable);
+  if (!activeLocalFlight || localRecording || localRecovery) {
+    return showMessage(
+      '#recordMessage',
+      localRecovery
+        ? 'Ce vol est en récupération : utilisez le Recovery Center.'
+        : 'Aucun vol local en pause. Pour cette nouvelle opération, cliquez sur « Démarrer l’enregistrement ».',
+      true
+    );
+  }
+  return action('/api/resume', 'Enregistrement repris.');
+};
 $('#syncBtn').onclick = () => action('/api/sync', 'Données synchronisées.');
 $('#fileBtn').onclick = () => {
   document.querySelector('[data-tab="review"]')?.click();
