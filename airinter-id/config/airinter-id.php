@@ -4,6 +4,7 @@ return [
     'name' => env('ARGOS_NAME', 'Argos'),
     'release' => env('ARGOS_RELEASE'),
     'brand_logo_url' => env('ARGOS_BRAND_LOGO_URL', 'https://promethee.airinter-va.org/promethee-assets/logos/air-inter-compact.png'),
+    'favicon_url' => env('ARGOS_FAVICON_URL', env('ARGOS_BRAND_LOGO_URL', 'https://promethee.airinter-va.org/promethee-assets/logos/air-inter-compact.png')),
     'public_url' => env('AIRINTER_ID_PUBLIC_URL', 'https://www.airinter-va.org'),
     'promethee_url' => env('AIRINTER_ID_PROMETHEE_URL', 'https://promethee.airinter-va.org'),
     'hermes_name' => env('AIRINTER_ID_HERMES_NAME', 'Hermès'),
