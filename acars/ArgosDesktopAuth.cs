@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -292,7 +293,7 @@ public sealed class ArgosDesktopAuth
     private static byte[] Base64UrlDecode(string value)
     {
         var normalized = value.Replace('-', '+').Replace('_', '/');
-        normalized += normalized.Length % 4 switch { 2 => "==", 3 => "=", _ => "" };
+        normalized += (normalized.Length % 4) switch { 2 => "==", 3 => "=", _ => "" };
         return Convert.FromBase64String(normalized);
     }
 
