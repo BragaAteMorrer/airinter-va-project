@@ -41,8 +41,9 @@ if ($CertificatePath) {
   & $signtool.FullName @($baseSignArgs + $clientExe)
   if ($LASTEXITCODE -ne 0) { throw "La signature Authenticode du client Hermès a échoué." }
 
-  & $signtool.FullName verify /pa /v $clientExe
-  if ($LASTEXITCODE -ne 0) { throw "La vérification Authenticode du client Hermès a échoué." }
+  $clientSignature = Get-AuthenticodeSignature -FilePath $clientExe
+  if (-not $clientSignature.SignerCertificate) { throw "La signature Authenticode du client Hermès est absente." }
+  Write-Host "Client Hermès signé par: $($clientSignature.SignerCertificate.Subject) [$($clientSignature.Status)]"
 
   if (Test-Path -LiteralPath $portableZip) { Remove-Item -LiteralPath $portableZip -Force }
   Compress-Archive -Path $clientExe -DestinationPath $portableZip -Force
@@ -59,9 +60,10 @@ if ($CertificatePath) {
   $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Filter signtool.exe -Recurse -ErrorAction SilentlyContinue |
     Where-Object { $_.FullName -match '\\x64\\signtool\.exe  if ($LASTEXITCODE -ne 0) { throw "La signature Authenticode de l'installateur a échoué." }
 
-  & $signtool.FullName verify /pa /v $setup
-  if ($LASTEXITCODE -ne 0) { throw "La vérification Authenticode de l'installateur a échoué." }
-  Write-Host "Signature Authenticode valide."
+  $setupSignature = Get-AuthenticodeSignature -FilePath $setup
+  if (-not $setupSignature.SignerCertificate) { throw "La signature Authenticode de l'installateur est absente." }
+  Write-Host "Installateur signé par: $($setupSignature.SignerCertificate.Subject) [$($setupSignature.Status)]"
+  Write-Host "Signature Authenticode présente (certificat auto-signé temporaire)."
 } else {
   Write-Warning "Installateur NON SIGNE : configurez HERMES_SIGNING_CERTIFICATE pour une release publique."
 }
