@@ -44,7 +44,12 @@ button.primary:hover{background:#095494}
 .flight-search{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:13px;align-items:end;margin:23px 0 8px;padding:19px;border:1px solid #d4e0e9;border-radius:13px;background:#f6f9fb}
 .flight-search button{min-height:44px}.search-hint{margin:8px 0 18px;font-size:12px}
 .list{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:11px;margin-top:18px}
+.operation-entry{display:grid;gap:7px;min-width:0}
+.operation-entry .operation{width:100%}
 .operation{position:relative;display:grid;gap:5px;min-height:128px;padding:17px;border:1px solid #d9e3eb;border-radius:12px;background:#fff;text-align:left;box-shadow:0 5px 15px #102c4307}
+.operation-cancel{min-height:34px;padding:7px 10px;border:1px solid #efc1c5;border-radius:9px;background:#fff7f7;color:var(--danger);font-size:11px;font-weight:850;box-shadow:none}
+.operation-cancel:hover{border-color:#dc7e86;background:#fff0f1;transform:none}
+.operation-cancel:disabled{opacity:.55;cursor:wait}
 .operation:hover,.operation.selected{border-color:#68aee1;box-shadow:0 10px 26px #0d66b516;transform:translateY(-2px)}
 .operation.selected{outline:2px solid #0d66b51c;background:#f7fbff}
 .operation em{justify-self:start;padding:3px 7px;border-radius:999px;background:#e9f3fb;color:#286b9d;font-size:9px;font-style:normal;font-weight:900;letter-spacing:.8px}

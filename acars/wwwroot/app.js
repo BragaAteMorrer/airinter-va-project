@@ -528,6 +528,9 @@ function displayFlightIdent(flight) {
 function operationCard(operation) {
   const flight = normalizeFlight(operation.flight || operation);
   const aircraft = operation.aircraft || {};
+  const wrapper = document.createElement('div');
+  wrapper.className = 'operation-entry';
+
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'operation';
@@ -544,7 +547,55 @@ function operationCard(operation) {
   badge.textContent = operation.bid_id ? 'RÉSERVÉ' : 'PROGRAMME';
   button.append(badge, title, route, detail);
   button.onclick = () => selectOperation({ ...operation, flight });
-  return button;
+  wrapper.append(button);
+
+  if (operation.bid_id || operation.operation_id) {
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.className = 'operation-cancel';
+    cancel.textContent = 'Annuler la réservation';
+    cancel.onclick = () => cancelReservation(operation, flight, cancel);
+    wrapper.append(cancel);
+  }
+
+  return wrapper;
+}
+
+async function cancelReservation(operation, flight, button) {
+  const operationId = operation.operation_id || operation.bid_id || operation.id;
+  if (!operationId) return;
+
+  const ident = displayFlightIdent(flight);
+  if (!confirm(`Annuler la réservation ${ident} (${flight.departure || '?'} → ${flight.arrival || '?'}) ?\n\nCette action est possible uniquement tant qu’aucun PIREP n’a été créé.`)) return;
+
+  button.disabled = true;
+  button.textContent = 'Annulation…';
+  try {
+    await call('/api/cancel-operation?operation=' + encodeURIComponent(operationId));
+
+    const selectedId = selectedOperation?.operation_id || selectedOperation?.bid_id || selectedOperation?.id;
+    if (String(selectedId || '') === String(operationId)) {
+      selectedOperation = null;
+      selectedAircraft = null;
+      selectedVariant = null;
+      aircraftEligibility = null;
+      pirepId = null;
+      flightPlan = null;
+      linkedSimBrief = null;
+      serverDispatch = null;
+      lastDatalinkSnapshot = null;
+      $('#selectedOperation').hidden = true;
+      $('#prefileForm').hidden = true;
+      updateWorkflow();
+    }
+
+    showMessage('#flightMessage', `Réservation ${ident} annulée.`);
+    await refreshOperations();
+  } catch (error) {
+    button.disabled = false;
+    button.textContent = 'Annuler la réservation';
+    showMessage('#flightMessage', error.message || 'Impossible d’annuler cette réservation.', true);
+  }
 }
 
 function setOperationsMode(mode) {

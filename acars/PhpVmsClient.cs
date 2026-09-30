@@ -95,27 +95,33 @@ public sealed class PhpVmsClient
         }
     }
 
-    public async Task<JsonElement> Send(string path, object? body = null)
+    public Task<JsonElement> Send(string path, object? body = null) =>
+        SendRequest(body is null ? HttpMethod.Get : HttpMethod.Post, path, body);
+
+    public Task<JsonElement> Delete(string path) =>
+        SendRequest(HttpMethod.Delete, path);
+
+    private async Task<JsonElement> SendRequest(HttpMethod method, string path, object? body = null)
     {
         if (!Connected) throw new InvalidOperationException("Connectez-vous à votre compte pilote.");
         try {
-            using var request = new HttpRequestMessage(body is null ? HttpMethod.Get : HttpMethod.Post, Server + "/api/" + path);
+            using var request = new HttpRequestMessage(method, Server + "/api/" + path);
             request.Headers.Authorization = new("Bearer", credential);
             request.Headers.Add("Accept", "application/json");
             if (body is not null) request.Content = JsonContent.Create(body);
             using var response = await http.SendAsync(request);
             if (!response.IsSuccessStatusCode) {
                 var responseBody = await response.Content.ReadAsStringAsync();
-                System.Diagnostics.Trace.WriteLine($"ACARS API {path} returned {(int)response.StatusCode}: {responseBody}");
+                System.Diagnostics.Trace.WriteLine($"ACARS API {method} {path} returned {(int)response.StatusCode}: {responseBody}");
                 var serverMessage = SafeServerMessage(responseBody);
                 throw new InvalidOperationException(response.StatusCode switch {
                     System.Net.HttpStatusCode.BadRequest => serverMessage ?? "Prométhée a rejeté la requête car son contenu est invalide (HTTP 400).",
                     System.Net.HttpStatusCode.Unauthorized => "Votre session a expiré. Connectez-vous à nouveau.",
                     System.Net.HttpStatusCode.Forbidden => serverMessage ?? "Votre compte ne permet pas cette opération.",
                     System.Net.HttpStatusCode.NotFound => serverMessage ?? "La réservation ou le vol demandé n’existe plus.",
-                    System.Net.HttpStatusCode.Conflict => serverMessage ?? "Les données retournées ne correspondent pas à l’opération sélectionnée.",
+                    System.Net.HttpStatusCode.Conflict => serverMessage ?? "Cette réservation ne peut plus être annulée.",
                     System.Net.HttpStatusCode.BadGateway => serverMessage ?? "Le service externe demandé ne répond pas correctement.",
-                    System.Net.HttpStatusCode.UnprocessableEntity => serverMessage ?? "Les informations du PIREP sont incomplètes ou non valides.",
+                    System.Net.HttpStatusCode.UnprocessableEntity => serverMessage ?? "Les informations de la requête sont incomplètes ou non valides.",
                     System.Net.HttpStatusCode.ServiceUnavailable => serverMessage ?? "Le service demandé est temporairement indisponible.",
                     _ => $"Prométhée a refusé la demande (HTTP {(int)response.StatusCode})."
                 });
