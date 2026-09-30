@@ -21,11 +21,11 @@
                 <h2>Connexion équipage</h2>
             </div>
         </div>
-        <p class="muted">Utilisez votre e-mail ou votre identifiant pilote Air Inter.</p>
+        <p class="muted">Utilisez votre e-mail de pilote Air Inter.</p>
 
         <form method="post" action="{{ route('login') }}">
             @csrf
-            <label>Identifiant pilote ou e-mail
+            <label>E-mail
                 <input name="login" value="{{ old('login') }}" autocomplete="username webauthn" required autofocus placeholder="IT199 ou pilote@airinter-va.org">
             </label>
             @error('login')<p class="error">{{ $message }}</p>@enderror
