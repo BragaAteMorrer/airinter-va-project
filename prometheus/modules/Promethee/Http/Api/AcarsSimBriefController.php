@@ -207,6 +207,8 @@ class AcarsSimBriefController extends Controller
             'estimated_time_enroute' => (int) $ofp->times->est_time_enroute,
             'generated_at' => (string) $ofp->params->time_generated,
             'aircraft_type' => (string) $ofp->aircraft->icaocode,
+            'passengers' => $this->ofpPassengerCount($ofp),
+            'requested_passengers' => isset($resolved['parameters']['pax']) ? (int) $resolved['parameters']['pax'] : null,
             'network_prefiles' => $this->networkPrefiles($ofp),
             'resolved' => $this->resolver->publicView($resolved),
         ]);
@@ -390,6 +392,20 @@ class AcarsSimBriefController extends Controller
      * Planning overrides are intentionally ephemeral. They are validated here,
      * then resolved against the existing DB by SimBriefOperationResolver.
      */
+    private function ofpPassengerCount(\SimpleXMLElement $ofp): ?int
+    {
+        $candidates = [
+            (string) ($ofp->weights->pax_count ?? ''),
+            (string) ($ofp->general->passengers ?? ''),
+        ];
+
+        foreach ($candidates as $value) {
+            if ($value !== '' && is_numeric($value)) return max(0, (int) round((float) $value));
+        }
+
+        return null;
+    }
+
     private function validatePlanningRequest(Request $request): array
     {
         $alternate = trim((string) $request->input('alternate', ''));
