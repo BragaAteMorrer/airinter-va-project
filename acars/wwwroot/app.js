@@ -15,10 +15,13 @@ const call = (path, body) => new Promise((resolve, reject) => {
     return;
   }
   const id = crypto.randomUUID();
+  const timeoutMs = path === '/api/login/argos' ? 5 * 60 * 1000 : 15000;
   const timer = setTimeout(() => {
     chrome.webview.removeEventListener('message', onMessage);
-    reject(new Error('Hermès n’a reçu aucune réponse du backend local après 15 secondes.'));
-  }, 15000);
+    reject(new Error(path === '/api/login/argos'
+      ? 'La connexion Argos a expiré. Relancez-la puis terminez l’authentification dans votre navigateur.'
+      : 'Hermès n’a reçu aucune réponse du backend local après 15 secondes.'));
+  }, timeoutMs);
   const onMessage = event => {
     if (event.data.id !== id) return;
     clearTimeout(timer);
@@ -177,6 +180,30 @@ async function login(form) {
   }
 }
 $('#loginForm').onsubmit = event => { event.preventDefault(); login(event.currentTarget); };
+
+async function loginWithArgos() {
+  const button = $('#argosLoginBtn');
+  if (button) button.disabled = true;
+  showMessage('#loginMessage', 'Ouverture d’Argos dans votre navigateur…');
+  try {
+    const response = await call('/api/login/argos');
+    pilotIdentity(response);
+    setAuthenticated(true);
+    showMessage('#loginMessage', 'Connexion Argos réussie. Chargement de vos opérations…');
+    await refreshOperations();
+    await refreshAircraftVariantLibrary();
+    await refreshNetwork();
+    if (lastStatus?.recoveryAvailable) document.querySelector('[data-tab="record"]').click();
+    else document.querySelector('[data-tab="flight"]').click();
+  } catch (error) {
+    showMessage('#loginMessage', error.message || 'Impossible de se connecter avec Argos.', true);
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+const argosLoginBtn = $('#argosLoginBtn');
+if (argosLoginBtn) argosLoginBtn.onclick = loginWithArgos;
 
 function setIndicator(selector, state, label) {
   const node = $(selector);
