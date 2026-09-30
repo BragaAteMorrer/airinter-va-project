@@ -13,6 +13,7 @@ class ProviderController extends Controller
     public function discovery(OidcTokenService $tokens): JsonResponse
     {
         $issuer = $tokens->issuer();
+        $hermesClient = $this->hermesClientPayload($tokens);
 
         return response()->json([
             'issuer' => $issuer,
@@ -28,6 +29,7 @@ class ProviderController extends Controller
             'token_endpoint_auth_methods_supported' => ['client_secret_basic', 'client_secret_post', 'none'],
             'code_challenge_methods_supported' => ['S256'],
             'claims_supported' => ['sub', 'name', 'email', 'email_verified', 'locale', 'zoneinfo'],
+            'hermes_client' => $hermesClient,
         ])->header('Cache-Control', 'public, max-age=300');
     }
 
@@ -61,6 +63,21 @@ class ProviderController extends Controller
      */
     public function hermesClient(OidcTokenService $tokens): JsonResponse
     {
+        $payload = $this->hermesClientPayload($tokens);
+
+        if ($payload === null) {
+            return response()->json([
+                'error' => 'temporarily_unavailable',
+                'error_description' => 'Hermès OAuth client is not provisioned.',
+            ], 503, ['Cache-Control' => 'no-store']);
+        }
+
+        return response()->json($payload)
+            ->header('Cache-Control', 'public, max-age=300');
+    }
+
+    private function hermesClientPayload(OidcTokenService $tokens): ?array
+    {
         $definition = (array) config('airinter-id.clients.hermes', []);
         $name = (string) ($definition['name'] ?? 'Hermès');
 
@@ -72,20 +89,17 @@ class ProviderController extends Controller
             ->first();
 
         if (!$client) {
-            return response()->json([
-                'error' => 'temporarily_unavailable',
-                'error_description' => 'Hermès OAuth client is not provisioned.',
-            ], 503, ['Cache-Control' => 'no-store']);
+            return null;
         }
 
-        return response()->json([
+        return [
             'issuer' => $tokens->issuer(),
             'client_id' => (string) $client->getKey(),
             'redirect_uri' => (string) ($definition['redirect_uri'] ?? 'http://127.0.0.1:47821/callback'),
             'scope' => implode(' ', (array) ($definition['scopes'] ?? ['openid', 'profile', 'email', 'hermes:operate'])),
             'token_endpoint_auth_method' => 'none',
             'code_challenge_method' => 'S256',
-        ])->header('Cache-Control', 'public, max-age=60');
+        ];
     }
 
     public function userinfo(Request $request): JsonResponse
