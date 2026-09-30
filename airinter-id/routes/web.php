@@ -34,6 +34,10 @@ Route::middleware('guest')->group(function () {
     Route::post('/reset-password', [PasswordResetController::class, 'reset'])->name('password.update.reset');
 });
 
+Route::middleware('auth')->get('/auth/passkey/complete', function () {
+    return redirect()->intended(route('account'));
+})->name('auth.passkey.complete');
+
 Route::middleware('auth')->group(function () {
     Route::get('/account', AccountController::class)->name('account');
     Route::put('/account/preferences', [AccountController::class, 'updatePreferences'])->name('account.preferences.update');
