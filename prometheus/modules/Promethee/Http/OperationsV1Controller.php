@@ -572,9 +572,11 @@ class OperationsV1Controller extends Controller
         $bid = $this->bid($bidId, $request);
         $ofp = $this->operationOfp($bid);
         $pirep = $this->operationPirep($bid);
-        $checks = $this->readinessChecks($bid, $ofp, $pirep);
+        $legacyGhost = $pirep && $this->isLegacyHermesGhostPirep($pirep);
+        $visiblePirep = $legacyGhost ? null : $pirep;
+        $checks = $this->readinessChecks($bid, $ofp, $visiblePirep);
         $serverReady = collect($checks)->every(fn ($check) => $check['ready']);
-        $status = $this->dispatchStatus($bid, $pirep, $serverReady);
+        $status = $this->dispatchStatus($bid, $visiblePirep, $serverReady);
 
         return response()->json(['data' => [
             'contract_version' => '1.0',
@@ -587,7 +589,8 @@ class OperationsV1Controller extends Controller
             'server_checks' => collect($checks)->mapWithKeys(fn ($check) => [strtolower($check['code']) => $check['ready']]),
             'checks' => $checks,
             'actions' => collect($checks)->where('ready', false)->pluck('action')->filter()->values(),
-            'pirep' => $this->pirepDto($pirep),
+            'pirep' => $this->pirepDto($visiblePirep),
+            'legacy_pirep_repair_required' => $legacyGhost,
             'client_checks_required' => $status === 'READY'
                 ? ['SIMULATOR_CONNECTED', 'AIRCRAFT_MATCH', 'DEPARTURE_MATCH']
                 : [],
@@ -600,16 +603,19 @@ class OperationsV1Controller extends Controller
         $bid = $this->bid($bidId, $request);
         $ofp = $this->operationOfp($bid);
         $pirep = $this->operationPirep($bid);
-        $checks = $this->readinessChecks($bid, $ofp, $pirep);
+        $legacyGhost = $pirep && $this->isLegacyHermesGhostPirep($pirep);
+        $visiblePirep = $legacyGhost ? null : $pirep;
+        $checks = $this->readinessChecks($bid, $ofp, $visiblePirep);
 
         return response()->json(['data' => [
             'operation_id' => $this->operationIdentity->id($bid),
             'bid_id' => $bid->id,
             'ready' => collect($checks)->every(fn ($check) => $check['ready']),
-            'status' => $this->dispatchStatus($bid, $pirep, collect($checks)->every(fn ($check) => $check['ready'])),
+            'status' => $this->dispatchStatus($bid, $visiblePirep, collect($checks)->every(fn ($check) => $check['ready'])),
             'checks' => $checks,
             'server_checks_complete' => true,
-            'pirep' => $this->pirepDto($pirep),
+            'pirep' => $this->pirepDto($visiblePirep),
+            'legacy_pirep_repair_required' => $legacyGhost,
             'client_checks_required' => ['SIMULATOR_CONNECTED', 'AIRCRAFT_MATCH', 'DEPARTURE_MATCH'],
         ]]);
     }
@@ -694,11 +700,14 @@ class OperationsV1Controller extends Controller
     {
         $bid = $this->bid($reference, $request);
         $pirep = $this->operationPirep($bid);
+        $legacyGhost = $pirep && $this->isLegacyHermesGhostPirep($pirep);
+        $visiblePirep = $legacyGhost ? null : $pirep;
 
         return response()->json(['data' => [
             'operation_id' => $this->operationIdentity->id($bid),
-            'pirep' => $this->pirepDto($pirep),
-            'pirep_id' => $pirep?->id,
+            'pirep' => $this->pirepDto($visiblePirep),
+            'pirep_id' => $visiblePirep?->id,
+            'legacy_pirep_repair_required' => $legacyGhost,
         ]]);
     }
 
@@ -935,13 +944,16 @@ class OperationsV1Controller extends Controller
             : (str_contains($airline, 'cargo') ? config('acars.load_factors.inter_cargo_service') : config('acars.load_factors.air_inter'));
         $ofp = $this->operationOfp($bid);
         $pirep = $this->operationPirep($bid);
+        $legacyGhost = $pirep && $this->isLegacyHermesGhostPirep($pirep);
+        $visiblePirep = $legacyGhost ? null : $pirep;
         $ofpAvailable = $ofp !== null || ($pirep !== null && filled($pirep->route));
         return [
             'id' => $this->operationIdentity->id($bid),
             'operation_id' => $this->operationIdentity->id($bid),
             'bid_id' => $bid->id,
-            'status' => $this->operationListStatus($pirep, $ofpAvailable),
-            'pirep_id' => $pirep?->id,
+            'status' => $this->operationListStatus($visiblePirep, $ofpAvailable),
+            'pirep_id' => $visiblePirep?->id,
+            'legacy_pirep_repair_required' => $legacyGhost,
             'created_at' => optional($bid->created_at)?->toIso8601String(),
             'flight' => [
                 'id' => $flight?->id,
