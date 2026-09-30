@@ -1896,6 +1896,11 @@ class PortalController extends Controller
             })
             ->with(['airline','fares','subfleets.fares','dpt_airport','arr_airport'])
             ->orderBy('airline_id')->orderBy('dpt_airport_id')->orderBy('arr_airport_id')->get();
+        $networkProfiles = DB::table('promethee_route_pricing_profiles')->pluck('network_class', 'flight_id');
+        $flightPricing->each(fn ($flight) => $flight->setAttribute(
+            'pricing_network_class',
+            $networkProfiles[(string) $flight->id] ?? 'unclassified'
+        ));
         $fuelPricing=Airport::select('id','icao','name','country','region','fuel_jeta_cost','fuel_100ll_cost','fuel_mogas_cost')
             ->when($fuelFilters['fuel_country'] ?? null,fn($query,$country)=>$query->where('country',$country))
             ->when($fuelFilters['fuel_region'] ?? null,fn($query,$region)=>$query->where('region',$region))
@@ -1943,6 +1948,11 @@ class PortalController extends Controller
         $airportOptions=Airport::select('id','icao','name','country','region')->orderBy('country')->orderBy('icao')->get();
         $flightPricing=Flight::where('active',true)->with(['airline','fares','subfleets.fares','dpt_airport','arr_airport'])
             ->orderBy('airline_id')->orderBy('dpt_airport_id')->orderBy('arr_airport_id')->get();
+        $networkProfiles = DB::table('promethee_route_pricing_profiles')->pluck('network_class', 'flight_id');
+        $flightPricing->each(fn ($flight) => $flight->setAttribute(
+            'pricing_network_class',
+            $networkProfiles[(string) $flight->id] ?? 'unclassified'
+        ));
         $flightFareDisplay=$flightPricing->mapWithKeys(fn($flight)=>[
             (string)$flight->id=>$fareResolver->rows($flight)->map(fn($row)=>[
                 'fare_id'=>$row['fare_id'],
