@@ -200,8 +200,16 @@ class AirInterIdController extends Controller
             abort(403, 'Ce compte pilote ne peut pas se connecter actuellement.');
         }
 
-        Auth::login($user, false);
+        // Use the web guard explicitly and keep a remember cookie as a
+        // resilient fallback for shared-hosting setups where PHP session
+        // persistence can be unreliable across redirects.
+        Auth::guard('web')->login($user, true);
         $request->session()->regenerate();
+        $request->session()->save();
+
+        if (!Auth::guard('web')->check() || (int) Auth::guard('web')->id() !== (int) $user->getKey()) {
+            abort(500, 'Prométhée n’a pas pu persister la session utilisateur après Argos.');
+        }
 
         $user->forceFill([
             'last_ip' => $request->ip(),
