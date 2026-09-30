@@ -263,41 +263,47 @@ public sealed class PrometheeWindow : Window
         Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
         return new { ok = true };
     }
-    private object Status() => new {
-        connected=client.Connected,
-        sim=sim.Status,
-        detectedSimulators=SimulatorDetector.DetectRunning(),
-        activeConnector=sim.Active is null ? null : new {
-            id=sim.Active.Descriptor.ConnectorId,
-            name=sim.Active.Descriptor.DisplayName,
-            state=sim.Active.ConnectionState.ToString(),
-            capabilities=sim.Active.Descriptor.Capabilities.ToString(),
-            experimental=sim.Active.Descriptor.IsExperimental
-        },
-        connectors=sim.Connectors,
-        simLinkState=sim.LinkState,
-        simLostAt=sim.LostAt,
-        simRecoveredAt=sim.RecoveredAt,
-        latest=sim.LatestSnapshot,
-        aircraftCapabilities=sim.AircraftCapabilities,
-        flight=recorder.Flight,
-        review=recorder.GetReview(),
-        track=recorder.Track,
-        pending=recorder.Pending.Count+recorder.PendingEvents.Count+recorder.PendingFacts.Count,
-        recoveryAvailable=recorder.RecoveryAvailable,
-        recovery=recorder.GetRecoveryInfo(),
-        syncState=telemetry.SyncState,
-        lastSuccessfulSyncAt=telemetry.LastSuccessfulSyncAt,
-        nextSyncAttemptAt=telemetry.NextSyncAttemptAt,
-        syncFailures=telemetry.ConsecutiveFailures,
-        syncError=telemetry.LastSyncError,
-        remoteConfiguration=recorder.RemoteConfiguration,
-        datalinkLastSuccessfulSyncAt=datalink.LastSuccessfulSyncAt,
-        datalinkError=datalink.LastError,
-        presenceLastHeartbeatAt=presence.LastHeartbeatAt,
-        presenceError=presence.LastError,
-        warning=recorder.Warning
-    };
+    private object Status()
+    {
+        if (client.Connected && !string.IsNullOrWhiteSpace(client.Server))
+            recorder.EnsureRecoveryForServer(client.Server);
+
+        return new {
+            connected=client.Connected,
+            sim=sim.Status,
+            detectedSimulators=SimulatorDetector.DetectRunning(),
+            activeConnector=sim.Active is null ? null : new {
+                id=sim.Active.Descriptor.ConnectorId,
+                name=sim.Active.Descriptor.DisplayName,
+                state=sim.Active.ConnectionState.ToString(),
+                capabilities=sim.Active.Descriptor.Capabilities.ToString(),
+                experimental=sim.Active.Descriptor.IsExperimental
+            },
+            connectors=sim.Connectors,
+            simLinkState=sim.LinkState,
+            simLostAt=sim.LostAt,
+            simRecoveredAt=sim.RecoveredAt,
+            latest=sim.LatestSnapshot,
+            aircraftCapabilities=sim.AircraftCapabilities,
+            flight=recorder.Flight,
+            review=recorder.GetReview(),
+            track=recorder.Track,
+            pending=recorder.Pending.Count+recorder.PendingEvents.Count+recorder.PendingFacts.Count,
+            recoveryAvailable=recorder.RecoveryAvailable,
+            recovery=recorder.GetRecoveryInfo(),
+            syncState=telemetry.SyncState,
+            lastSuccessfulSyncAt=telemetry.LastSuccessfulSyncAt,
+            nextSyncAttemptAt=telemetry.NextSyncAttemptAt,
+            syncFailures=telemetry.ConsecutiveFailures,
+            syncError=telemetry.LastSyncError,
+            remoteConfiguration=recorder.RemoteConfiguration,
+            datalinkLastSuccessfulSyncAt=datalink.LastSuccessfulSyncAt,
+            datalinkError=datalink.LastError,
+            presenceLastHeartbeatAt=presence.LastHeartbeatAt,
+            presenceError=presence.LastError,
+            warning=recorder.Warning
+        };
+    }
     private object About() => new {
         version=Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "dev",
         product="Hermès — Air Inter Virtual Airlines"

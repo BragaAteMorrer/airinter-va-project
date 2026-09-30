@@ -46,6 +46,7 @@ let lastStatus = null;
 let lastFiledReview = null;
 let lastDatalinkSnapshot = null;
 let datalinkRefreshing = false;
+let recoveryWasVisible = false;
 let readiness = { operation: false, aircraft: false, ofp: false, pirep: false, simulator: false };
 
 function setAuthenticated(value) {
@@ -2302,7 +2303,15 @@ function renderRecovery(status) {
   if (!center) return;
   const available = Boolean(status?.recoveryAvailable);
   center.hidden = !available;
-  if (!available) return;
+  if (!available) {
+    recoveryWasVisible = false;
+    return;
+  }
+
+  if (!recoveryWasVisible) {
+    recoveryWasVisible = true;
+    setTimeout(() => center.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+  }
 
   const info = status.recovery || {};
   const read = (camel, pascal) => info[camel] ?? info[pascal];
@@ -2330,7 +2339,15 @@ function renderRecovery(status) {
   else if (!simReady) setText($('#recoveryHint'), status.simLinkState === 'RECONNECTING'
     ? 'Le simulateur a été perdu. Hermès attend sa reconnexion avant de reprendre.'
     : 'Reconnectez le simulateur avant de reprendre ce vol.');
-  else setText($('#recoveryHint'), 'Compte et simulateur disponibles. La reprise peut continuer sans recréer le vol.');
+  else {
+    const warning = String(status.warning || '');
+    if (warning.includes('autre serveur Prométhée')) {
+      resume.disabled = true;
+      setText($('#recoveryHint'), 'Cet ancien état local ne correspond pas au serveur Prométhée actuel. Cliquez « Abandonner ce vol » pour l’archiver localement puis démarrez la nouvelle réservation.');
+    } else {
+      setText($('#recoveryHint'), 'Compte et simulateur disponibles. La reprise peut continuer sans recréer le vol.');
+    }
+  }
 }
 
 $('#recoveryReviewBtn').onclick = async () => {
