@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 
 /**
  * Issues a narrowly-scoped, short-lived credential for the desktop ACARS.
@@ -33,11 +34,72 @@ class AcarsSessionController extends Controller
             ], 401);
         }
 
-        // Keep sessions short and clean expired sessions for this pilot.
+        return $this->issueSession($user);
+    }
+
+    public function storeFromArgos(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'access_token' => ['required', 'string', 'max:8192'],
+        ]);
+
+        $issuer = rtrim((string) env('ARGOS_ISSUER', 'https://argos.airinter-va.org'), '/');
+
+        try {
+            $response = Http::acceptJson()
+                ->withToken($data['access_token'])
+                ->timeout(10)
+                ->get($issuer.'/oauth/hermes/userinfo');
+        } catch (\Throwable $exception) {
+            report($exception);
+            return response()->json([
+                'error' => ['code' => '502', 'message' => 'Prométhée ne parvient pas à joindre Argos.'],
+            ], 502);
+        }
+
+        if ($response->status() === 401) {
+            return response()->json([
+                'error' => ['code' => '401', 'message' => 'La session Argos est invalide ou expirée.'],
+            ], 401);
+        }
+
+        if ($response->status() === 403) {
+            return response()->json([
+                'error' => ['code' => '403', 'message' => 'Cette session Argos ne possède pas le droit hermes:operate.'],
+            ], 403);
+        }
+
+        if (!$response->successful()) {
+            return response()->json([
+                'error' => ['code' => '502', 'message' => 'Argos a refusé la vérification de la session.'],
+            ], 502);
+        }
+
+        $email = mb_strtolower(trim((string) $response->json('email')));
+        if ($email === '') {
+            return response()->json([
+                'error' => ['code' => '422', 'message' => 'Argos n’a pas renvoyé l’adresse e-mail du pilote.'],
+            ], 422);
+        }
+
+        $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
+        if ($user === null || !in_array($user->state, [UserState::ACTIVE, UserState::ON_LEAVE], true)) {
+            return response()->json([
+                'error' => ['code' => '403', 'message' => 'Aucun compte pilote Prométhée actif ne correspond à cette identité Argos.'],
+            ], 403);
+        }
+
+        return $this->issueSession($user);
+    }
+
+    private function issueSession(User $user): JsonResponse
+    {
         $expiresAt = now()->addHours(12);
         $plainToken = bin2hex(random_bytes(32));
+
         DB::table('acars_access_tokens')->where('user_id', $user->id)->whereNull('revoked_at')
             ->where('expires_at', '<=', now())->delete();
+
         DB::table('acars_access_tokens')->insert([
             'user_id'      => $user->id,
             'token_hash'   => hash('sha256', $plainToken),
