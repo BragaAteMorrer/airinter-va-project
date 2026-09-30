@@ -16,6 +16,9 @@ public sealed class ArgosDesktopAuth
     private static readonly SemaphoreSlim MetadataLock = new(1, 1);
     private static ArgosMetadata? CachedMetadata;
     private static DateTimeOffset CachedMetadataUntil = DateTimeOffset.MinValue;
+    private static readonly string MetadataCachePath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "AirInter", "Hermes", "argos-metadata.json");
     private readonly HttpClient http = new() { Timeout = TimeSpan.FromSeconds(20) };
 
     public async Task<JsonElement> SignInAsync(PhpVmsClient promethee, string prometheeServer)
@@ -54,12 +57,46 @@ public sealed class ArgosDesktopAuth
             if (CachedMetadata is not null && CachedMetadataUntil > DateTimeOffset.UtcNow)
                 return CachedMetadata;
 
-            var metadata = await LoadMetadataCoreAsync();
-            CachedMetadata = metadata;
-            CachedMetadataUntil = DateTimeOffset.UtcNow.AddMinutes(10);
-            return metadata;
+            try {
+                var metadata = await LoadMetadataCoreAsync();
+                CachedMetadata = metadata;
+                CachedMetadataUntil = DateTimeOffset.UtcNow.AddMinutes(10);
+                SaveMetadataCache(metadata);
+                return metadata;
+            } catch (InvalidOperationException exception) when (exception.Message.Contains("HTTP 429", StringComparison.Ordinal)) {
+                var cached = LoadMetadataCache();
+                if (cached is not null) {
+                    CachedMetadata = cached;
+                    CachedMetadataUntil = DateTimeOffset.UtcNow.AddMinutes(10);
+                    return cached;
+                }
+                throw;
+            }
         } finally {
             MetadataLock.Release();
+        }
+    }
+
+    private static void SaveMetadataCache(ArgosMetadata metadata)
+    {
+        try {
+            var directory = Path.GetDirectoryName(MetadataCachePath);
+            if (!string.IsNullOrWhiteSpace(directory)) Directory.CreateDirectory(directory);
+            File.WriteAllText(MetadataCachePath, JsonSerializer.Serialize(metadata));
+        } catch (Exception exception) {
+            Trace.WriteLine($"Hermes Argos metadata cache write failed: {exception}");
+        }
+    }
+
+    private static ArgosMetadata? LoadMetadataCache()
+    {
+        try {
+            if (!File.Exists(MetadataCachePath)) return null;
+            var json = File.ReadAllText(MetadataCachePath);
+            return JsonSerializer.Deserialize<ArgosMetadata>(json);
+        } catch (Exception exception) {
+            Trace.WriteLine($"Hermes Argos metadata cache read failed: {exception}");
+            return null;
         }
     }
 
