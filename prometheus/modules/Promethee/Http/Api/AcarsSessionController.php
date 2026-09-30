@@ -46,20 +46,21 @@ class AcarsSessionController extends Controller
         $issuer = rtrim((string) env('ARGOS_ISSUER', 'https://argos.airinter-va.org'), '/');
 
         try {
-            $response = Http::acceptJson()
-                ->withToken($data['access_token'])
-                ->timeout(10)
-                ->get($issuer.'/oauth/hermes/userinfo');
+            // Prefer the dedicated API endpoint. Keep the historical OAuth
+            // userinfo route as a compatibility fallback while Argos deployments
+            // are upgraded. Retry 429/5xx briefly: Hermès metadata and token
+            // exchanges can otherwise hit the same short burst limiter.
+            $response = $this->verifyArgosSession($issuer, $data['access_token']);
         } catch (\Throwable $exception) {
             report($exception);
             return response()->json([
-                'error' => ['code' => '502', 'message' => 'Prométhée ne parvient pas à joindre Argos.'],
+                'error' => ['code' => '502', 'message' => 'Prométhée ne parvient pas à joindre Argos. Réessayez dans quelques secondes.'],
             ], 502);
         }
 
         if ($response->status() === 401) {
             return response()->json([
-                'error' => ['code' => '401', 'message' => 'La session Argos est invalide ou expirée.'],
+                'error' => ['code' => '401', 'message' => 'La session Argos est invalide ou expirée. Reconnectez-vous avec Argos.'],
             ], 401);
         }
 
@@ -69,9 +70,21 @@ class AcarsSessionController extends Controller
             ], 403);
         }
 
-        if (!$response->successful()) {
+        if ($response->status() === 429) {
             return response()->json([
-                'error' => ['code' => '502', 'message' => 'Argos a refusé la vérification de la session.'],
+                'error' => ['code' => '429', 'message' => 'Argos limite temporairement les vérifications. Patientez quelques secondes puis réessayez.'],
+            ], 429);
+        }
+
+        if (!$response->successful()) {
+            $argosMessage = trim((string) ($response->json('error_description') ?? $response->json('message') ?? ''));
+            return response()->json([
+                'error' => [
+                    'code' => (string) $response->status(),
+                    'message' => $argosMessage !== ''
+                        ? 'Argos a refusé la vérification : '.$argosMessage
+                        : 'Argos a refusé la vérification de la session (HTTP '.$response->status().').',
+                ],
             ], 502);
         }
 
@@ -90,6 +103,47 @@ class AcarsSessionController extends Controller
         }
 
         return $this->issueSession($user);
+    }
+
+    private function verifyArgosSession(string $issuer, string $accessToken): \Illuminate\Http\Client\Response
+    {
+        $paths = [
+            '/api/v1/hermes/session',
+            '/oauth/hermes/userinfo',
+        ];
+
+        $lastResponse = null;
+
+        foreach ($paths as $path) {
+            for ($attempt = 0; $attempt < 3; $attempt++) {
+                $response = Http::acceptJson()
+                    ->withToken($accessToken)
+                    ->timeout(10)
+                    ->get($issuer.$path);
+
+                $lastResponse = $response;
+
+                if ($response->successful() || in_array($response->status(), [401, 403], true)) {
+                    return $response;
+                }
+
+                // A 404/405 means this Argos deployment does not expose that
+                // compatibility endpoint; immediately try the next path.
+                if (in_array($response->status(), [404, 405], true)) {
+                    break;
+                }
+
+                if ($response->status() !== 429 && $response->status() < 500) {
+                    return $response;
+                }
+
+                if ($attempt < 2) {
+                    usleep((500 * (2 ** $attempt)) * 1000);
+                }
+            }
+        }
+
+        return $lastResponse ?? throw new \RuntimeException('Argos session verification returned no response.');
     }
 
     private function issueSession(User $user): JsonResponse
