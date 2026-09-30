@@ -2,11 +2,14 @@ param(
   [ValidatePattern('^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$')]
   [string]$Version = '1.0.0',
   [string]$CertificatePath = $env:HERMES_SIGNING_CERTIFICATE,
-  [string]$CertificatePassword = $env:HERMES_SIGNING_CERTIFICATE_PASSWORD
+  [string]$CertificatePassword = $env:HERMES_SIGNING_CERTIFICATE_PASSWORD,
+  [switch]$SkipReleaseBuild
 )
 $ErrorActionPreference = 'Stop'
 
-& (Join-Path $PSScriptRoot 'build-release.ps1') -Version $Version
+if (-not $SkipReleaseBuild) {
+  & (Join-Path $PSScriptRoot 'build-release.ps1') -Version $Version
+}
 
 $candidates = @(
   (Get-Command ISCC.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue),
