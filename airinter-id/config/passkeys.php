@@ -9,5 +9,5 @@ return [
     'middleware' => ['web'],
     'management_middleware' => ['password.confirm'],
     'throttle' => 'throttle:6,1',
-    'redirect' => '/account',
+    'redirect' => '/auth/passkey/complete',
 ];
