@@ -1310,14 +1310,14 @@ function setPlanMode(mode) {
   localSettings.flightPlanMode = mode;
   localStorage.prometheeAcarsSettings = JSON.stringify(localSettings);
 
-  $('[data-plan-mode]').forEach(button => {
+  $$('[data-plan-mode]').forEach(button => {
     const active = button.dataset.planMode === mode;
     button.classList.toggle('active', active);
     button.setAttribute('aria-selected', String(active));
     button.tabIndex = active ? 0 : -1;
   });
 
-  $('[data-plan-panel]').forEach(panel => {
+  $$('[data-plan-panel]').forEach(panel => {
     const active = panel.dataset.planPanel === mode;
     panel.classList.toggle('active', active);
     panel.hidden = !active;
