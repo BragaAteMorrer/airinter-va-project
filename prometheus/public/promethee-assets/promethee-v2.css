@@ -958,6 +958,7 @@ html:not([data-era="minitel"]) .departure-board .split-flap-grid {
 html:not([data-era="minitel"]) .split-flap-head { padding: 0 2px 5px; color: #bdb8a8; font: 700 10px/1 Arial, sans-serif; letter-spacing: .12em; }
 html:not([data-era="minitel"]) .departure-board .dispatch-flight {
   min-height: 39px;
+  contain: layout paint style;
   padding: 0;
   border: 0;
   background: transparent;
@@ -985,6 +986,9 @@ html:not([data-era="minitel"]) .departure-board .dispatch-flight .board-cell,
 .split-flap-plain { display: block; overflow: visible; font-family: system-ui, sans-serif; letter-spacing: 0; text-transform: none; white-space: normal; }
 .split-flap-char {
   position: relative;
+  contain: layout paint;
+  transform: translateZ(0);
+  backface-visibility: hidden;
   display: inline-block;
   flex: 0 0 13px;
   width: 13px;
@@ -1536,4 +1540,20 @@ html[data-appearance="dark"]:not([data-era="minitel"]) .passport-stamp.is-visite
   .passport-stamps-progress{margin:0 16px 15px}
   .passport-stamps-grid{grid-template-columns:repeat(auto-fill,minmax(48px,1fr));gap:7px;padding:0 16px 18px}
   .passport-stamp{height:34px}
+}
+
+/* Split-flap performance: isolate the mechanical boards from the rest of the
+   dashboard so thousands of palette glyphs cannot invalidate page-wide paint. */
+html:not([data-era="minitel"]) .departure-board .flight-stack {
+  contain: layout paint style;
+}
+html:not([data-era="minitel"]) .departure-board .dispatch-flight {
+  content-visibility: auto;
+  contain-intrinsic-size: 39px;
+}
+.split-flap-char.is-flipping {
+  will-change: transform;
+}
+.split-flap-char:not(.is-flipping) {
+  will-change: auto;
 }
