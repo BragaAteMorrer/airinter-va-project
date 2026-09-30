@@ -429,7 +429,10 @@ function updateWorkflow() {
   // the final authority for refusal reasons.
   const ready = dispatchReady && readiness.simulator && preflightSafe;
   const terminal = ['COMPLETED', 'CANCELLED'].includes(String(serverDispatch?.status || '').toUpperCase());
-  const canAttemptStart = visiblePreparationReady && readiness.simulator && !terminal;
+  // Never deadlock the pilot behind a disabled button when Hermès itself shows
+  // every preparation check as complete. The click refreshes Dispatch and
+  // assertDispatchCanStart() remains the authoritative guard.
+  const canAttemptStart = visiblePreparationReady && readiness.simulator;
   const node = $('#readyState');
   if (node) {
     const status = String(serverDispatch?.status || '').toUpperCase();
@@ -447,7 +450,9 @@ function updateWorkflow() {
       ? 'Reprendre l’enregistrement'
       : (ready ? 'Démarrer l’enregistrement' : 'Vérifier et démarrer');
     startButton.title = canAttemptStart && !ready
-      ? 'Hermès vérifiera les contrôles au clic et affichera précisément ce qui bloque.'
+      ? (terminal
+          ? 'Le dernier état Dispatch paraît terminal. Cliquez pour revalider l’opération auprès de Prométhée.'
+          : 'Hermès vérifiera les contrôles au clic et affichera précisément ce qui bloque.')
       : '';
   }
 
