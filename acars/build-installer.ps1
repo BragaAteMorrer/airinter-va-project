@@ -25,43 +25,75 @@ if (-not $iscc) {
   throw "Inno Setup 6 est requis - installez-le avec Chocolatey (choco install innosetup)."
 }
 
+$signtool = $null
+$baseSignArgs = $null
+
 if ($CertificatePath) {
-  if (-not (Test-Path -LiteralPath $CertificatePath)) { throw "Certificat de signature introuvable: $CertificatePath" }
+  if (-not (Test-Path -LiteralPath $CertificatePath)) {
+    throw "Certificat de signature introuvable: $CertificatePath"
+  }
+
   $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Filter signtool.exe -Recurse -ErrorAction SilentlyContinue |
     Where-Object { $_.FullName -match '\\x64\\signtool\.exe$' } |
     Sort-Object FullName -Descending |
     Select-Object -First 1
-  if (-not $signtool) { throw "signtool.exe introuvable. Installez le Windows SDK." }
 
-  if (-not (Test-Path -LiteralPath $clientExe)) { throw "Executable Hermès introuvable: $clientExe" }
+  if (-not $signtool) {
+    throw "signtool.exe introuvable. Installez le Windows SDK."
+  }
+
+  if (-not (Test-Path -LiteralPath $clientExe)) {
+    throw "Executable Hermès introuvable: $clientExe"
+  }
 
   $baseSignArgs = @('sign','/fd','SHA256','/tr','http://timestamp.digicert.com','/td','SHA256','/f',$CertificatePath)
-  if ($CertificatePassword) { $baseSignArgs += @('/p',$CertificatePassword) }
+  if ($CertificatePassword) {
+    $baseSignArgs += @('/p',$CertificatePassword)
+  }
 
   & $signtool.FullName @($baseSignArgs + $clientExe)
-  if ($LASTEXITCODE -ne 0) { throw "La signature Authenticode du client Hermès a échoué." }
+  if ($LASTEXITCODE -ne 0) {
+    throw "La signature Authenticode du client Hermès a échoué."
+  }
 
   $clientSignature = Get-AuthenticodeSignature -FilePath $clientExe
-  if (-not $clientSignature.SignerCertificate) { throw "La signature Authenticode du client Hermès est absente." }
+  if (-not $clientSignature.SignerCertificate) {
+    throw "La signature Authenticode du client Hermès est absente."
+  }
+
   Write-Host "Client Hermès signé par: $($clientSignature.SignerCertificate.Subject) [$($clientSignature.Status)]"
 
-  if (Test-Path -LiteralPath $portableZip) { Remove-Item -LiteralPath $portableZip -Force }
+  if (Test-Path -LiteralPath $portableZip) {
+    Remove-Item -LiteralPath $portableZip -Force
+  }
+
   Compress-Archive -Path $clientExe -DestinationPath $portableZip -Force
+
   $zipHash = Get-FileHash -Algorithm SHA256 -LiteralPath $portableZip
   "$($zipHash.Hash.ToLowerInvariant())  $([IO.Path]::GetFileName($portableZip))" |
     Set-Content -LiteralPath "$portableZip.sha256" -Encoding ascii
 }
 
 & $iscc "/DMyAppVersion=$Version" (Join-Path $PSScriptRoot 'installer.iss')
-if ($LASTEXITCODE -ne 0) { throw "La creation de l'installateur Hermes a echoue." }
-if (-not (Test-Path -LiteralPath $setup)) { throw "Installateur introuvable: $setup" }
+if ($LASTEXITCODE -ne 0) {
+  throw "La creation de l'installateur Hermes a echoue."
+}
+
+if (-not (Test-Path -LiteralPath $setup)) {
+  throw "Installateur introuvable: $setup"
+}
 
 if ($CertificatePath) {
-  $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Filter signtool.exe -Recurse -ErrorAction SilentlyContinue |
-    Where-Object { $_.FullName -match '\\x64\\signtool\.exe  if ($LASTEXITCODE -ne 0) { throw "La signature Authenticode de l'installateur a échoué." }
+  & $signtool.FullName @($baseSignArgs + $setup)
+  if ($LASTEXITCODE -ne 0) {
+    throw "La signature Authenticode de l'installateur a échoué."
+  }
 
   $setupSignature = Get-AuthenticodeSignature -FilePath $setup
-  if (-not $setupSignature.SignerCertificate) { throw "La signature Authenticode de l'installateur est absente." }
+  if (-not $setupSignature.SignerCertificate) {
+    throw "La signature Authenticode de l'installateur est absente."
+  }
+
   Write-Host "Installateur signé par: $($setupSignature.SignerCertificate.Subject) [$($setupSignature.Status)]"
   Write-Host "Signature Authenticode présente (certificat auto-signé temporaire)."
 } else {
@@ -71,28 +103,6 @@ if ($CertificatePath) {
 $hash = Get-FileHash -Algorithm SHA256 -LiteralPath $setup
 "$($hash.Hash.ToLowerInvariant())  $([IO.Path]::GetFileName($setup))" |
   Set-Content -LiteralPath "$setup.sha256" -Encoding ascii
-Write-Host "Installateur cree: $setup"
-Write-Host "SHA-256: $($hash.Hash)"
- } |
-    Sort-Object FullName -Descending |
-    Select-Object -First 1
-  if (-not $signtool) { throw "signtool.exe introuvable. Installez le Windows SDK." }
 
-  $baseSignArgs = @('sign','/fd','SHA256','/tr','http://timestamp.digicert.com','/td','SHA256','/f',$CertificatePath)
-  if ($CertificatePassword) { $baseSignArgs += @('/p',$CertificatePassword) }
-
-  & $signtool.FullName @($baseSignArgs + $setup)
-  if ($LASTEXITCODE -ne 0) { throw "La signature Authenticode de l'installateur a échoué." }
-
-  & $signtool.FullName verify /pa /v $setup
-  if ($LASTEXITCODE -ne 0) { throw "La vérification Authenticode de l'installateur a échoué." }
-  Write-Host "Signature Authenticode valide."
-} else {
-  Write-Warning "Installateur NON SIGNE : configurez HERMES_SIGNING_CERTIFICATE pour une release publique."
-}
-
-$hash = Get-FileHash -Algorithm SHA256 -LiteralPath $setup
-"$($hash.Hash.ToLowerInvariant())  $([IO.Path]::GetFileName($setup))" |
-  Set-Content -LiteralPath "$setup.sha256" -Encoding ascii
 Write-Host "Installateur cree: $setup"
 Write-Host "SHA-256: $($hash.Hash)"
