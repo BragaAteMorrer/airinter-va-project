@@ -80,3 +80,12 @@ Le nom Prométhée est conservé comme nom de projet. Les recherches documentair
 ## License
 
 This repository, including its source code, logos, trademarks and other assets, is licensed under the MIT License. See [LICENSE](./LICENSE).
+
+
+## Code signing policy
+
+Hermès release binaries are built from this public repository with GitHub Actions. For eligible open-source releases, code signing is provided by **SignPath.io / SignPath Foundation**.
+
+SignPath Foundation maintainers/reviewers/approvers may review project eligibility, build provenance and signing requests before approval. Builds submitted for signing must come from the public repository and from GitHub-hosted runners before the signing step.
+
+See [CODE_SIGNING_POLICY.md](./CODE_SIGNING_POLICY.md) for the complete policy and [PRIVACY.md](./PRIVACY.md) for the project privacy policy.
