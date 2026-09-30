@@ -111,6 +111,8 @@ public sealed class PrometheeWindow : Window
             return await DatalinkRead(uri, body);
         if (route == "/api/datalink/ack")
             return await DatalinkAck(uri, body);
+        if (route == "/api/cancel-operation")
+            return await CancelOperation(uri);
         // Compatibility with pre-1.0.1 web assets which queried /api/flights.
         // Keep this alias so a stale WebView2 cache cannot fall through to
         // "Commande ACARS inconnue." after the backend gained /api/v1/flights.
@@ -133,6 +135,12 @@ public sealed class PrometheeWindow : Window
             "/api/history" => recorder.History, "/api/diagnostics" => Diagnostics(), "/api/update/check" => await CheckUpdateStatusAsync(), "/api/open-external" => OpenExternal(body),
             _ => throw new InvalidOperationException("Commande ACARS inconnue.") };
     }
+    private async Task<object> CancelOperation(Uri uri)
+    {
+        var operationId = QueryParameter(uri, "operation");
+        return await client.Delete("v1/operations/" + Uri.EscapeDataString(operationId));
+    }
+
     private async Task<object> Network(Uri uri)
     {
         var operationId = OptionalQueryParameter(uri, "operation");
