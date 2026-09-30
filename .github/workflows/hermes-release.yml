@@ -55,13 +55,119 @@ jobs:
           dotnet restore acars/Promethee.Acars.csproj
           dotnet build acars/Promethee.Acars.csproj -f net8.0-windows -c Release --no-restore
 
+      - name: Detect Artifact Signing configuration
+        id: signing
+        shell: pwsh
+        env:
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_ARTIFACT_SIGNING_ENDPOINT: ${{ secrets.AZURE_ARTIFACT_SIGNING_ENDPOINT }}
+          AZURE_CODE_SIGNING_NAME: ${{ secrets.AZURE_CODE_SIGNING_NAME }}
+          AZURE_CERT_PROFILE_NAME: ${{ secrets.AZURE_CERT_PROFILE_NAME }}
+        run: |
+          $required = @(
+            $env:AZURE_TENANT_ID,
+            $env:AZURE_CLIENT_ID,
+            $env:AZURE_CLIENT_SECRET,
+            $env:AZURE_ARTIFACT_SIGNING_ENDPOINT,
+            $env:AZURE_CODE_SIGNING_NAME,
+            $env:AZURE_CERT_PROFILE_NAME
+          )
+          $enabled = -not ($required | Where-Object { [string]::IsNullOrWhiteSpace($_) })
+          "enabled=$($enabled.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+          if ($enabled) {
+            Write-Host "Azure Artifact Signing is configured: signed Hermès release."
+          } else {
+            Write-Warning "Azure Artifact Signing secrets are incomplete: release will remain unsigned."
+          }
+
+      - name: Build portable Hermès client
+        shell: pwsh
+        run: ./acars/build-release.ps1 -Version '${{ steps.version.outputs.value }}'
+
+      - name: Sign Hermès executable with Azure Artifact Signing
+        if: steps.signing.outputs.enabled == 'true'
+        uses: azure/trusted-signing-action@v0
+        with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          endpoint: ${{ secrets.AZURE_ARTIFACT_SIGNING_ENDPOINT }}
+          trusted-signing-account-name: ${{ secrets.AZURE_CODE_SIGNING_NAME }}
+          certificate-profile-name: ${{ secrets.AZURE_CERT_PROFILE_NAME }}
+          files-folder: ${{ github.workspace }}\\dist\\Promethee-ACARS-win-x64-${{ steps.version.outputs.value }}
+          files-folder-filter: exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+
+      - name: Repack portable archive after signing
+        shell: pwsh
+        run: |
+          $version = '${{ steps.version.outputs.value }}'
+          $folder = Join-Path $PWD "dist/Promethee-ACARS-win-x64-$version"
+          $exe = Join-Path $folder 'Promethee.Acars.exe'
+          $zip = Join-Path $PWD "dist/Promethee-ACARS-win-x64-$version.zip"
+          if (-not (Test-Path $exe)) { throw "Hermès executable missing: $exe" }
+          if (Test-Path $zip) { Remove-Item $zip -Force }
+          Compress-Archive -Path $exe -DestinationPath $zip -Force
+          $hash = Get-FileHash -Algorithm SHA256 -LiteralPath $zip
+          "$($hash.Hash.ToLowerInvariant())  $([IO.Path]::GetFileName($zip))" |
+            Set-Content -LiteralPath "$zip.sha256" -Encoding ascii
+
+      - name: Verify signed Hermès executable
+        if: steps.signing.outputs.enabled == 'true'
+        shell: pwsh
+        run: |
+          $version = '${{ steps.version.outputs.value }}'
+          $exe = Join-Path $PWD "dist/Promethee-ACARS-win-x64-$version/Promethee.Acars.exe"
+          $signature = Get-AuthenticodeSignature -FilePath $exe
+          Write-Host "Signer: $($signature.SignerCertificate.Subject)"
+          Write-Host "Status: $($signature.Status)"
+          if ($signature.Status -ne 'Valid') { throw "Invalid Hermès Authenticode signature: $($signature.Status)" }
+
       - name: Install Inno Setup
         shell: pwsh
         run: choco install innosetup --yes --no-progress
 
-      - name: Build portable client and installer
+      - name: Build installer from signed client
         shell: pwsh
-        run: ./acars/build-installer.ps1 -Version '${{ steps.version.outputs.value }}'
+        run: ./acars/build-installer.ps1 -Version '${{ steps.version.outputs.value }}' -SkipReleaseBuild
+
+      - name: Sign Hermès installer with Azure Artifact Signing
+        if: steps.signing.outputs.enabled == 'true'
+        uses: azure/trusted-signing-action@v0
+        with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          endpoint: ${{ secrets.AZURE_ARTIFACT_SIGNING_ENDPOINT }}
+          trusted-signing-account-name: ${{ secrets.AZURE_CODE_SIGNING_NAME }}
+          certificate-profile-name: ${{ secrets.AZURE_CERT_PROFILE_NAME }}
+          files-folder: ${{ github.workspace }}\\dist
+          files-folder-filter: Hermes-ACARS-Setup-${{ steps.version.outputs.value }}.exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+
+      - name: Verify installer signature and refresh checksum
+        shell: pwsh
+        run: |
+          $version = '${{ steps.version.outputs.value }}'
+          $setup = Join-Path $PWD "dist/Hermes-ACARS-Setup-$version.exe"
+          if (-not (Test-Path $setup)) { throw "Hermès installer missing: $setup" }
+
+          if ('${{ steps.signing.outputs.enabled }}' -eq 'true') {
+            $signature = Get-AuthenticodeSignature -FilePath $setup
+            Write-Host "Signer: $($signature.SignerCertificate.Subject)"
+            Write-Host "Status: $($signature.Status)"
+            if ($signature.Status -ne 'Valid') { throw "Invalid installer Authenticode signature: $($signature.Status)" }
+          }
+
+          $hash = Get-FileHash -Algorithm SHA256 -LiteralPath $setup
+          "$($hash.Hash.ToLowerInvariant())  $([IO.Path]::GetFileName($setup))" |
+            Set-Content -LiteralPath "$setup.sha256" -Encoding ascii
 
       - name: Upload Hermès build artifact
         uses: actions/upload-artifact@v4
