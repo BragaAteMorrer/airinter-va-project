@@ -20,6 +20,7 @@ Route::get('/.well-known/openid-configuration', [ProviderController::class, 'dis
 Route::get('/.well-known/oauth-authorization-server', [ProviderController::class, 'oauthMetadata'])->name('oauth.metadata');
 Route::get('/.well-known/jwks.json', [ProviderController::class, 'jwks'])->name('oidc.jwks');
 Route::get('/.well-known/hermes-client', [ProviderController::class, 'hermesClient'])->name('oidc.hermes-client');
+Route::get('/hermes/client-config', [ProviderController::class, 'hermesClient'])->name('hermes.client-config');
 Route::middleware('auth:api')->get('/oauth/userinfo', [ProviderController::class, 'userinfo'])->name('oidc.userinfo');
 
 Route::middleware('guest')->group(function () {
