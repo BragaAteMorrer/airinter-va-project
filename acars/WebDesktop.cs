@@ -399,6 +399,12 @@ public sealed class PrometheeWindow : Window
     {
         if (!client.Connected) throw new InvalidOperationException("Reconnectez-vous à votre compte Air Inter avant de reprendre.");
         if (sim.LatestSnapshot is null) throw new InvalidOperationException("Le simulateur doit être reconnecté avant de reprendre l’enregistrement.");
+        if (recorder.Flight is null)
+            throw new InvalidOperationException("Aucun vol local en pause. Pour cette nouvelle opération, utilisez « Démarrer l’enregistrement ».");
+        if (recorder.RecoveryAvailable)
+            throw new InvalidOperationException("Ce vol est en récupération. Utilisez le Recovery Center pour le reprendre ou l’abandonner.");
+        if (recorder.Flight.Recording)
+            throw new InvalidOperationException("L’enregistrement ACARS est déjà actif.");
         recorder.Resume(client.Server);
         return new {ok=true};
     }
