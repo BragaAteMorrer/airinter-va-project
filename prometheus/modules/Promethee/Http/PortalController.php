@@ -1824,7 +1824,7 @@ class PortalController extends Controller
             $flight->setAttribute('pricing_network_class', $profiles[(string) $flight->id] ?? 'unclassified');
         });
 
-        return $this->page('admin.pricing-criteria', [
+        return $this->page('admin-pricing-criteria', [
             'itf' => $itf,
             'flights' => $flights,
             'seasons' => DB::table('promethee_seasons')->orderBy('starts_on')->get(),
