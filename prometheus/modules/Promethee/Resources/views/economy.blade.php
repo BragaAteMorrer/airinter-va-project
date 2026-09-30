@@ -37,7 +37,7 @@
     <form method="get" action="{{ route('admin.promethee.economy.flight-prices.edit') }}" id="flight-scope-form">
     <div class="table-wrap">
         <table>
-            <thead><tr><th><input type="checkbox" id="flight-main-select-all" aria-label="Tout sélectionner" @checked($flightSelectAll)></th><th>Compagnie</th><th>Ligne</th><th>Départ</th><th>Arrivée</th><th>Tarif</th><th>Prix actuel</th><th>Couleur</th><th>Édition</th></tr></thead>
+            <thead><tr><th><input type="checkbox" id="flight-main-select-all" aria-label="Tout sélectionner" @checked($flightSelectAll)></th><th>Compagnie</th><th>Ligne</th><th>Type réseau</th><th>Départ</th><th>Arrivée</th><th>Tarif</th><th>Prix actuel</th><th>Couleur</th><th>Édition</th></tr></thead>
             <tbody>
             @forelse($flightPricing as $flight)
                 @php
@@ -56,10 +56,19 @@
                         $bandSummary = '—';
                     }
                 @endphp
-                <tr data-airline="{{ $flight->airline?->icao }}" data-origin="{{ $flight->dpt_airport?->country }}" data-arrival="{{ $flight->arr_airport?->country }}" data-dpt-airport="{{ $flight->dpt_airport_id }}" data-arr-airport="{{ $flight->arr_airport_id }}" data-route="{{ strtolower($flight->ident.' '.$flight->dpt_airport_id.' '.$flight->arr_airport_id) }}">
+                <tr data-airline="{{ $flight->airline?->icao }}" data-origin="{{ $flight->dpt_airport?->country }}" data-arrival="{{ $flight->arr_airport?->country }}" data-dpt-airport="{{ $flight->dpt_airport_id }}" data-arr-airport="{{ $flight->arr_airport_id }}" data-network-class="{{ $flight->pricing_network_class }}" data-route="{{ strtolower($flight->ident.' '.$flight->dpt_airport_id.' '.$flight->arr_airport_id) }}">
                     <td><input type="checkbox" name="flights[]" value="{{ $flight->id }}" @checked($flightSelectAll)></td>
                     <td>{{ $flight->airline?->icao }}</td>
                     <td><strong>{{ $flight->ident }}</strong></td>
+                    <td>
+                        @if($flight->pricing_network_class === 'principal')
+                            <span class="tag">PRINCIPALE</span>
+                        @elseif($flight->pricing_network_class === 'diagonal')
+                            <span class="tag">DIAGONALE</span>
+                        @else
+                            <span class="muted">—</span>
+                        @endif
+                    </td>
                     <td>{{ $flight->dpt_airport_id }} · {{ $flight->dpt_airport?->country }}</td>
                     <td>{{ $flight->arr_airport_id }} · {{ $flight->arr_airport?->country }}</td>
                     <td>{{ $fareSummary }}</td>
@@ -68,7 +77,7 @@
                     <td><a class="button outline" href="{{ route('admin.promethee.economy.flight-prices.line-edit',['flight'=>$flight->id]) }}">Éditer</a></td>
                 </tr>
             @empty
-                <tr><td colspan="9">Aucune ligne active.</td></tr>
+                <tr><td colspan="10">Aucune ligne active.</td></tr>
             @endforelse
             </tbody>
         </table>
