@@ -125,31 +125,44 @@
   const flapFit = (value, width) => flapNormalise(value).slice(0, width).padEnd(width, ' ');
   const flapMarkup = (char, className = '') => `<span class="flap-half ${className}"><span class="flap-face">${char === ' ' ? '&nbsp;' : char}</span></span>`;
 
+  // One mechanical flip per changed palette. The old renderer walked through
+  // the whole alphabet and forced layout on every notch, which could trigger
+  // thousands of DOM rewrites per board refresh. Keeping the same split-flap
+  // faces but jumping directly from the old glyph to the new one preserves the
+  // physical effect while making updates essentially constant-cost per glyph.
+  const flapTimers = new WeakMap();
   const setFlapCharacter = (palette, next, animate, delay = 0) => {
     const current = palette.dataset.value || ' ';
     if (current === next) return;
+
+    const previousTimer = flapTimers.get(palette);
+    if (previousTimer) window.clearTimeout(previousTimer);
+
     const finish = () => {
       palette.dataset.value = next;
       palette.innerHTML = flapMarkup(next, 'flap-top') + flapMarkup(next, 'flap-bottom');
       palette.classList.remove('is-flipping');
+      flapTimers.delete(palette);
     };
-    if (!animate || flapReduced) return finish();
-    const from = flapAlphabet.indexOf(current);
-    const to = flapAlphabet.indexOf(next);
-    const steps = (to - from + flapAlphabet.length) % flapAlphabet.length || flapAlphabet.length;
-    let step = 0;
-    const flip = () => {
-      const visible = flapAlphabet[(from + step) % flapAlphabet.length];
-      const following = flapAlphabet[(from + step + 1) % flapAlphabet.length];
-      palette.innerHTML = flapMarkup(visible, 'flap-top') + flapMarkup(visible, 'flap-bottom') + flapMarkup(visible, 'flap-flip flap-flip-top') + flapMarkup(following, 'flap-bottom flap-flip flap-flip-bottom');
-      palette.classList.remove('is-flipping');
-      void palette.offsetWidth;
+
+    if (!animate || flapReduced || document.hidden) {
+      finish();
+      return;
+    }
+
+    palette.dataset.value = next;
+    palette.innerHTML =
+      flapMarkup(current, 'flap-top') +
+      flapMarkup(next, 'flap-bottom') +
+      flapMarkup(current, 'flap-flip flap-flip-top') +
+      flapMarkup(next, 'flap-bottom flap-flip flap-flip-bottom');
+
+    const timer = window.setTimeout(() => {
       palette.classList.add('is-flipping');
-      step += 1;
-      if (step < steps) window.setTimeout(flip, 116);
-      else window.setTimeout(finish, 116);
-    };
-    window.setTimeout(flip, delay);
+      const done = window.setTimeout(finish, 132);
+      flapTimers.set(palette, done);
+    }, Math.min(delay, 220));
+    flapTimers.set(palette, timer);
   };
 
   const renderFlapField = (field, initial = false) => {
@@ -170,30 +183,46 @@
     field.setAttribute('aria-label', source.trim());
     if (!palettes.length) {
       field.textContent = '';
+      const fragment = document.createDocumentFragment();
+      const rowIndex = Number(field.closest('.dispatch-flight')?.style.getPropertyValue('--board-row')) || 0;
+      const created = [];
       [...target].forEach((char, index) => {
         const palette = document.createElement('span');
         palette.className = 'split-flap-char';
-        // Start a handful of notches before the target: a short believable boot,
-        // rather than a long alphabetic sweep on every cell.
+        // Keep a small believable mismatch for the boot animation, but perform
+        // only one physical flip instead of cycling through the alphabet.
         const targetIndex = flapAlphabet.indexOf(char);
-        const lead = initial && !flapReduced ? 2 + ((index * 5 + width) % 7) : 0;
+        const lead = initial && !flapReduced ? 1 + ((index + width) % 3) : 0;
         const start = flapAlphabet[(targetIndex - lead + flapAlphabet.length) % flapAlphabet.length];
         palette.dataset.value = start;
         palette.innerHTML = flapMarkup(start, 'flap-top') + flapMarkup(start, 'flap-bottom');
-        field.append(palette);
-        setFlapCharacter(palette, char, initial, (index * 17) + ((Number(field.closest('.dispatch-flight')?.style.getPropertyValue('--board-row')) || 0) * 31));
+        fragment.append(palette);
+        created.push([palette, char, Math.min(180, index * 5 + rowIndex * 9)]);
       });
+      field.append(fragment);
+      created.forEach(([palette, char, delay]) => setFlapCharacter(palette, char, initial, delay));
       return;
     }
-    [...target].forEach((char, index) => setFlapCharacter(palettes[index], char, true, index * 13));
+    [...target].forEach((char, index) => setFlapCharacter(palettes[index], char, true, index * 4));
   };
 
   const bootSplitFlapBoards = () => document.querySelectorAll('[data-split-flap-board]').forEach((board) => {
     board.querySelectorAll('.board-cell:not(.split-flap-logo), .airline-logo-fallback').forEach((field) => renderFlapField(field, true));
-    // External live updates can set data-flap-value; only affected palettes flip.
-    new MutationObserver((changes) => changes.forEach((change) => {
-      if (change.type === 'attributes' && change.attributeName === 'data-flap-value') renderFlapField(change.target);
-    })).observe(board, {subtree: true, attributes: true, attributeFilter: ['data-flap-value']});
+    // External live updates can set data-flap-value. Batch all changed fields
+    // into one animation frame so a refresh causes a single layout/render pass.
+    const dirtyFlapFields = new Set();
+    let flapFrame = 0;
+    const flushFlapFields = () => {
+      flapFrame = 0;
+      dirtyFlapFields.forEach((field) => renderFlapField(field));
+      dirtyFlapFields.clear();
+    };
+    new MutationObserver((changes) => {
+      changes.forEach((change) => {
+        if (change.type === 'attributes' && change.attributeName === 'data-flap-value') dirtyFlapFields.add(change.target);
+      });
+      if (!flapFrame && dirtyFlapFields.size) flapFrame = requestAnimationFrame(flushFlapFields);
+    }).observe(board, {subtree: true, attributes: true, attributeFilter: ['data-flap-value']});
 
     if (!board.dataset.boardUrl) return;
     const makeCell = (tag, className, value, width) => {
@@ -204,11 +233,15 @@
       return cell;
     };
     const setLogo = (cell, flight) => {
+      const signature = (flight.logo_url || '') + '|' + (flight.airline_code || '');
+      if (cell.dataset.logoSignature === signature) return;
+      cell.dataset.logoSignature = signature;
       cell.replaceChildren();
       cell.setAttribute('aria-label', flight.airline_code);
       if (flight.logo_url) {
         const logo = document.createElement('img');
         logo.src = flight.logo_url; logo.alt = flight.airline_code;
+        logo.loading = 'lazy'; logo.decoding = 'async';
         cell.append(logo);
       } else {
         const fallback = document.createElement('span');
@@ -238,8 +271,11 @@
         const cells = row.querySelectorAll('.board-cell');
         const values = [flight.flight, flight.departure, flight.departure_time, flight.destination, flight.arrival_time, flight.status_label];
         setLogo(cells[0], flight); cells[1].href = flight.url;
-        values.forEach((value, cellIndex) => cells[cellIndex + 1].dataset.flapValue = value);
-        board.append(row);
+        values.forEach((value, cellIndex) => {
+          const cell = cells[cellIndex + 1];
+          if (cell.dataset.flapValue !== String(value)) cell.dataset.flapValue = value;
+        });
+        if (row !== board.lastElementChild) board.append(row);
       });
       current.forEach((row) => row.remove());
       if (!flights.length) {
@@ -276,7 +312,12 @@
           next = Number(payload.refresh_after_seconds) || next;
           const kind = board.dataset.boardKind === 'arrivals' ? 'arrivals' : 'departures';
           const flights = Array.isArray(payload[kind]) ? payload[kind] : (payload.flights || []);
-          const revision = (payload.revision || '') + ':' + kind + ':' + JSON.stringify(flights);
+          const revision = payload.revision
+            ? String(payload.revision) + ':' + kind
+            : kind + ':' + flights.map((flight) => [
+                flight.id, flight.flight, flight.departure, flight.departure_time,
+                flight.destination, flight.arrival_time, flight.status_label, flight.logo_url
+              ].join('|')).join('~');
           if (revision !== lastRevision) {
             updateRows(flights);
             if (lastRevision !== null) flashBoardUpdate();
