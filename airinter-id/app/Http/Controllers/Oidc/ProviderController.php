@@ -102,6 +102,25 @@ class ProviderController extends Controller
         ];
     }
 
+    public function hermesUserinfo(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!$user || !$user->tokenCan('hermes:operate')) {
+            return response()->json([
+                'error' => 'insufficient_scope',
+                'error_description' => 'The hermes:operate scope is required.',
+            ], 403);
+        }
+
+        return response()->json([
+            'sub' => $user->subject,
+            'name' => $user->display_name,
+            'email' => $user->email,
+            'email_verified' => $user->email_verified_at !== null,
+        ])->header('Cache-Control', 'no-store');
+    }
+
     public function userinfo(Request $request): JsonResponse
     {
         $user = $request->user();
