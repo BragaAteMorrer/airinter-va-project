@@ -12,6 +12,7 @@
     <div class="panel-heading"><div><span class="eyebrow">1. FILTRER ET SÉLECTIONNER</span><h2>Périmètre des lignes</h2><p>Les filtres n’écrivent rien : ils servent uniquement à retrouver les lignes à modifier.</p></div></div>
     <div class="form-grid">
         <label>Compagnie <select id="filter-airline"><option value="">Toutes</option>@foreach($airlines as $airline)<option value="{{ $airline->icao }}">{{ $airline->name }}</option>@endforeach</select></label>
+        <label>Type de ligne ITF <select id="filter-network-class"><option value="">Toutes</option><option value="principal">Lignes principales</option><option value="diagonal">Diagonales régionales</option><option value="unclassified">À classer</option></select></label>
         <label>Pays de départ <select id="filter-origin"><option value="">Tous</option>@foreach($countries as $country)<option value="{{ $country }}">{{ $country }}</option>@endforeach</select></label>
         <label>Aéroport de départ <input type="search" id="filter-dpt-airport" list="flight-price-airports" placeholder="Rechercher ICAO ou nom" autocomplete="off"></label>
         <label>Pays d’arrivée <select id="filter-arrival"><option value="">Tous</option>@foreach($countries as $country)<option value="{{ $country }}">{{ $country }}</option>@endforeach</select></label>
@@ -22,7 +23,7 @@
     <form method="post" action="{{ route('admin.promethee.economy.flight-prices') }}" id="flight-price-form">
         @csrf
         <div class="table-wrap"><table>
-            <thead><tr><th><input type="checkbox" id="flight-select-all" aria-label="Tout sélectionner"></th><th>Compagnie</th><th>Ligne</th><th>Départ</th><th>Arrivée</th><th>Tarif</th><th>Prix actuel</th><th>Couleur</th></tr></thead>
+            <thead><tr><th><input type="checkbox" id="flight-select-all" aria-label="Tout sélectionner"></th><th>Compagnie</th><th>Ligne</th><th>Type réseau</th><th>Départ</th><th>Arrivée</th><th>Tarif</th><th>Prix actuel</th><th>Couleur</th></tr></thead>
             <tbody>
             @foreach($flightPricing as $flight)
                 @php
@@ -41,10 +42,19 @@
                         $bandSummary = '—';
                     }
                 @endphp
-                <tr data-airline="{{ $flight->airline?->icao }}" data-origin="{{ $flight->dpt_airport?->country }}" data-arrival="{{ $flight->arr_airport?->country }}" data-dpt-airport="{{ $flight->dpt_airport_id }}" data-arr-airport="{{ $flight->arr_airport_id }}" data-route="{{ strtolower($flight->ident.' '.$flight->dpt_airport_id.' '.$flight->arr_airport_id) }}">
+                <tr data-airline="{{ $flight->airline?->icao }}" data-network-class="{{ $flight->pricing_network_class }}" data-origin="{{ $flight->dpt_airport?->country }}" data-arrival="{{ $flight->arr_airport?->country }}" data-dpt-airport="{{ $flight->dpt_airport_id }}" data-arr-airport="{{ $flight->arr_airport_id }}" data-route="{{ strtolower($flight->ident.' '.$flight->dpt_airport_id.' '.$flight->arr_airport_id) }}">
                     <td><input type="checkbox" name="flight_ids[]" value="{{ $flight->id }}" @checked(in_array((string)$flight->id,$selectedFlights,true))></td>
                     <td>{{ $flight->airline?->icao }}</td>
                     <td><strong>{{ $flight->ident }}</strong></td>
+                    <td>
+                        @if($flight->pricing_network_class === 'principal')
+                            <span class="tag">PRINCIPALE</span>
+                        @elseif($flight->pricing_network_class === 'diagonal')
+                            <span class="tag">DIAGONALE</span>
+                        @else
+                            <span class="muted">—</span>
+                        @endif
+                    </td>
                     <td>{{ $flight->dpt_airport_id }} · {{ $flight->dpt_airport?->country }}</td>
                     <td>{{ $flight->arr_airport_id }} · {{ $flight->arr_airport?->country }}</td>
                     <td>{{ $fareSummary }}</td>
@@ -68,9 +78,9 @@
 @push('scripts')
 <script>
 (() => {
- const ids=['airline','origin','dpt-airport','arrival','arr-airport','route']; const fields=Object.fromEntries(ids.map(id=>[id,document.querySelector('#filter-'+id)]));
+ const ids=['airline','network-class','origin','dpt-airport','arrival','arr-airport','route']; const fields=Object.fromEntries(ids.map(id=>[id,document.querySelector('#filter-'+id)]));
  const rows=[...document.querySelectorAll('#flight-price-form tbody tr')];
- const apply=()=>rows.forEach(row=>{ const v=fields.route.value.toLowerCase(), departure=fields['dpt-airport'].value.trim().toUpperCase(), arrival=fields['arr-airport'].value.trim().toUpperCase(); row.hidden=!!((fields.airline.value&&row.dataset.airline!==fields.airline.value)||(fields.origin.value&&row.dataset.origin!==fields.origin.value)||(departure&&row.dataset.dptAirport!==departure)||(fields.arrival.value&&row.dataset.arrival!==fields.arrival.value)||(arrival&&row.dataset.arrAirport!==arrival)||(v&&!row.dataset.route.includes(v))); });
+ const apply=()=>rows.forEach(row=>{ const v=fields.route.value.toLowerCase(), departure=fields['dpt-airport'].value.trim().toUpperCase(), arrival=fields['arr-airport'].value.trim().toUpperCase(); row.hidden=!!((fields.airline.value&&row.dataset.airline!==fields.airline.value)||(fields['network-class'].value&&row.dataset.networkClass!==fields['network-class'].value)||(fields.origin.value&&row.dataset.origin!==fields.origin.value)||(departure&&row.dataset.dptAirport!==departure)||(fields.arrival.value&&row.dataset.arrival!==fields.arrival.value)||(arrival&&row.dataset.arrAirport!==arrival)||(v&&!row.dataset.route.includes(v))); });
  const count=()=>{ const n=document.querySelectorAll('input[name="flight_ids[]"]:checked').length; document.querySelector('#selection-count').textContent=n ? n+' ligne(s) sélectionnée(s). Chaque ligne conserve sa propre référence Rouge lors d’un changement BBR.' : 'Aucune ligne sélectionnée.'; };
  const mode=document.querySelector('#bulk-price-mode'), value=document.querySelector('#bulk-price-value');
  const syncValue=()=>{ const needsValue=mode.value!=='band'; value.disabled=!needsValue; value.required=needsValue; if(!needsValue) value.value=''; value.placeholder=needsValue ? 'Ex. 218 ou -10' : 'Inutile pour un changement BBR'; };
