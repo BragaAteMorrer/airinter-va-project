@@ -104,16 +104,41 @@ class AirInterIdController extends Controller
                 'code_verifier' => $codeVerifier,
             ]);
 
-        if (
-            !$tokenResponse->successful()
-            || !$tokenResponse->json('access_token')
-            || !$tokenResponse->json('id_token')
-        ) {
+        if (!$tokenResponse->successful()) {
+            $oauthError = trim((string) $tokenResponse->json('error'));
+            $oauthDescription = trim((string) $tokenResponse->json('error_description'));
+
             report(new RuntimeException(
-                'Argos token exchange failed: HTTP '.$tokenResponse->status()
+                'Argos token exchange failed: HTTP '.$tokenResponse->status().
+                ($oauthError !== '' ? ' '.$oauthError : '').
+                ($oauthDescription !== '' ? ' — '.$oauthDescription : '')
             ));
 
-            abort(502, 'Argos n’a pas pu finaliser la connexion.');
+            $message = 'Argos a refusé l’échange du code OAuth';
+            if ($oauthError !== '') {
+                $message .= ' ('.$oauthError.')';
+            }
+            if ($oauthDescription !== '') {
+                $message .= ' : '.$oauthDescription;
+            }
+
+            abort(502, $message);
+        }
+
+        if (!$tokenResponse->json('access_token')) {
+            report(new RuntimeException(
+                'Argos token exchange succeeded without access_token.'
+            ));
+
+            abort(502, 'Argos a répondu sans access_token.');
+        }
+
+        if (!$tokenResponse->json('id_token')) {
+            report(new RuntimeException(
+                'Argos token exchange succeeded without id_token.'
+            ));
+
+            abort(502, 'Argos a répondu sans id_token OIDC.');
         }
 
         try {
