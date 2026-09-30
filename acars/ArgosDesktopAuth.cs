@@ -13,6 +13,9 @@ public sealed class ArgosDesktopAuth
 {
     private const int CallbackPort = 47821;
     private const string DefaultIssuer = "https://argos.airinter-va.org";
+    private static readonly SemaphoreSlim MetadataLock = new(1, 1);
+    private static ArgosMetadata? CachedMetadata;
+    private static DateTimeOffset CachedMetadataUntil = DateTimeOffset.MinValue;
     private readonly HttpClient http = new() { Timeout = TimeSpan.FromSeconds(20) };
 
     public async Task<JsonElement> SignInAsync(PhpVmsClient promethee, string prometheeServer)
@@ -42,6 +45,25 @@ public sealed class ArgosDesktopAuth
     public void ForgetSession() => ArgosTokenStore.Clear();
 
     private async Task<ArgosMetadata> LoadMetadataAsync()
+    {
+        if (CachedMetadata is not null && CachedMetadataUntil > DateTimeOffset.UtcNow)
+            return CachedMetadata;
+
+        await MetadataLock.WaitAsync();
+        try {
+            if (CachedMetadata is not null && CachedMetadataUntil > DateTimeOffset.UtcNow)
+                return CachedMetadata;
+
+            var metadata = await LoadMetadataCoreAsync();
+            CachedMetadata = metadata;
+            CachedMetadataUntil = DateTimeOffset.UtcNow.AddMinutes(10);
+            return metadata;
+        } finally {
+            MetadataLock.Release();
+        }
+    }
+
+    private async Task<ArgosMetadata> LoadMetadataCoreAsync()
     {
         var issuer = (Environment.GetEnvironmentVariable("HERMES_ARGOS_URL") ?? DefaultIssuer).TrimEnd('/');
         if (!Uri.TryCreate(issuer, UriKind.Absolute, out var issuerUri) || issuerUri.Scheme != Uri.UriSchemeHttps)
@@ -232,11 +254,30 @@ public sealed class ArgosDesktopAuth
 
     private async Task<JsonElement> GetJsonAsync(string url, string label)
     {
-        using var response = await http.GetAsync(url);
-        if (!response.IsSuccessStatusCode)
-            throw new InvalidOperationException($"Impossible de charger la {label} (HTTP {(int)response.StatusCode}).");
-        var json = await response.Content.ReadFromJsonAsync<JsonElement>();
-        return json.Clone();
+        for (var attempt = 0; attempt < 3; attempt++) {
+            using var response = await http.GetAsync(url);
+
+            if (response.StatusCode == (HttpStatusCode)429 && attempt < 2) {
+                var retryAfter = response.Headers.RetryAfter?.Delta
+                    ?? TimeSpan.FromSeconds(2 + attempt * 2);
+                await Task.Delay(retryAfter > TimeSpan.FromSeconds(10)
+                    ? TimeSpan.FromSeconds(10)
+                    : retryAfter);
+                continue;
+            }
+
+            if (!response.IsSuccessStatusCode) {
+                var suffix = response.StatusCode == (HttpStatusCode)429
+                    ? " Argos limite temporairement les requêtes ; réessayez dans quelques secondes."
+                    : "";
+                throw new InvalidOperationException($"Impossible de charger la {label} (HTTP {(int)response.StatusCode}).{suffix}");
+            }
+
+            var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+            return json.Clone();
+        }
+
+        throw new InvalidOperationException($"Impossible de charger la {label}.");
     }
 
     private static async Task<Dictionary<string, string>> ReadCallbackAsync(System.Net.Sockets.TcpClient client)
