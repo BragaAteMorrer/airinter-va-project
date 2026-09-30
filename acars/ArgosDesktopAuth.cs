@@ -78,7 +78,7 @@ public sealed class ArgosDesktopAuth
         var verifier = RandomBase64Url(64);
         var challenge = Base64Url(SHA256.HashData(Encoding.ASCII.GetBytes(verifier)));
 
-        using var listener = new System.Net.Sockets.TcpListener(IPAddress.Loopback, CallbackPort);
+        var listener = new System.Net.Sockets.TcpListener(IPAddress.Loopback, CallbackPort);
         try {
             listener.Start();
         } catch (System.Net.Sockets.SocketException exception) {
@@ -102,8 +102,13 @@ public sealed class ArgosDesktopAuth
             throw new InvalidOperationException("Hermès n’a pas pu ouvrir votre navigateur pour la connexion Argos.", exception);
         }
 
-        using var tcpClient = await listener.AcceptTcpClientAsync().WaitAsync(TimeSpan.FromMinutes(5));
-        var callback = await ReadCallbackAsync(tcpClient);
+        Dictionary<string, string> callback;
+        try {
+            using var tcpClient = await listener.AcceptTcpClientAsync().WaitAsync(TimeSpan.FromMinutes(5));
+            callback = await ReadCallbackAsync(tcpClient);
+        } finally {
+            listener.Stop();
+        }
 
         if (!callback.TryGetValue("state", out var returnedState) || !CryptographicOperations.FixedTimeEquals(
                 Encoding.UTF8.GetBytes(state), Encoding.UTF8.GetBytes(returnedState)))
