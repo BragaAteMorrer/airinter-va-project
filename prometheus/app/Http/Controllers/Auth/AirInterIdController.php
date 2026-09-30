@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Crypt;
 use RuntimeException;
 
 class AirInterIdController extends Controller
@@ -18,22 +19,26 @@ class AirInterIdController extends Controller
     {
         $config = $this->config();
 
-        $state = $this->randomBase64Url(32);
         $nonce = $this->randomBase64Url(32);
         $codeVerifier = $this->randomBase64Url(64);
         $codeChallenge = $this->base64UrlEncode(
             hash('sha256', $codeVerifier, true)
         );
 
-        $request->session()->put([
-            'airinter_id.oauth_state' => $state,
-            'airinter_id.oidc_nonce' => $nonce,
-            'airinter_id.pkce_verifier' => $codeVerifier,
-            'airinter_id.intended' => $request->query(
+        // Keep the OAuth handshake independent from the PHP session. Some
+        // shared-hosting/cPanel setups can lose the Laravel session during the
+        // round-trip to Argos. The state is authenticated + encrypted with
+        // APP_KEY and expires quickly, so PKCE/nonce/intended remain protected
+        // without depending on phpvms_session surviving the redirect.
+        $state = Crypt::encryptString(json_encode([
+            'nonce' => $nonce,
+            'code_verifier' => $codeVerifier,
+            'intended' => $this->safeTarget((string) $request->query(
                 'return_to',
                 config('phpvms.login_redirect', '/dashboard')
-            ),
-        ]);
+            )),
+            'issued_at' => time(),
+        ], JSON_UNESCAPED_SLASHES));
 
         $query = http_build_query([
             'client_id' => $config['client_id'],
@@ -60,18 +65,28 @@ class AirInterIdController extends Controller
             'state' => ['required', 'string'],
         ]);
 
-        $expectedState = (string) $request->session()->pull('airinter_id.oauth_state', '');
-        $expectedNonce = (string) $request->session()->pull('airinter_id.oidc_nonce', '');
-        $codeVerifier = (string) $request->session()->pull('airinter_id.pkce_verifier', '');
-
-        if (
-            $expectedState === ''
-            || !hash_equals($expectedState, (string) $request->input('state'))
-        ) {
-            abort(419, 'Session Argos invalide ou expirée.');
+        try {
+            $statePayload = json_decode(
+                Crypt::decryptString((string) $request->input('state')),
+                true,
+                flags: JSON_THROW_ON_ERROR
+            );
+        } catch (\Throwable $exception) {
+            report($exception);
+            abort(419, 'Contexte Argos invalide ou expiré.');
         }
 
-        if ($expectedNonce === '' || $codeVerifier === '') {
+        $expectedNonce = (string) ($statePayload['nonce'] ?? '');
+        $codeVerifier = (string) ($statePayload['code_verifier'] ?? '');
+        $intended = (string) ($statePayload['intended'] ?? config('phpvms.login_redirect', '/dashboard'));
+        $issuedAt = (int) ($statePayload['issued_at'] ?? 0);
+
+        if (
+            $expectedNonce === ''
+            || $codeVerifier === ''
+            || $issuedAt <= 0
+            || (time() - $issuedAt) > 600
+        ) {
             abort(419, 'Contexte OIDC Argos incomplet ou expiré.');
         }
 
@@ -168,12 +183,7 @@ class AirInterIdController extends Controller
             'lastlogin_at' => now(),
         ])->save();
 
-        $target = (string) $request->session()->pull(
-            'airinter_id.intended',
-            config('phpvms.login_redirect', '/dashboard')
-        );
-
-        return redirect()->to($this->safeTarget($target));
+        return redirect()->to($this->safeTarget($intended));
     }
 
     private function config(): array
