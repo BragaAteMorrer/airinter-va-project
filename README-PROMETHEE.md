@@ -75,3 +75,8 @@ Ne jamais remplacer directement les fichiers de production avec une archive phpV
 ## Note historique
 
 Le nom Prométhée est conservé comme nom de projet. Les recherches documentaires disponibles ici ont confirmé des systèmes Air Inter nommés Sirène puis Antarès, mais pas Prométhée comme nom historique officiel.
+
+
+## License
+
+This repository, including its source code, logos, trademarks and other assets, is licensed under the MIT License. See [LICENSE](./LICENSE).
