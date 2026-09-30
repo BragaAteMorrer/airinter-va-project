@@ -3,6 +3,8 @@
 namespace Modules\Promethee\Services;
 
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use RuntimeException;
 
 /**
@@ -253,6 +255,14 @@ class DatalinkService
 
     private function read(string $operationId): array
     {
+        if ($this->root === null && Schema::hasTable('promethee_datalink_stores')) {
+            $raw = DB::table('promethee_datalink_stores')
+                ->where('operation_id', $operationId)
+                ->value('payload');
+            $decoded = json_decode((string) ($raw ?: '[]'), true);
+            return is_array($decoded) ? $decoded : [];
+        }
+
         $path = $this->path($operationId);
         if (!is_file($path)) return [];
 
@@ -271,6 +281,31 @@ class DatalinkService
 
     private function mutate(string $operationId, callable $callback): mixed
     {
+        if ($this->root === null && Schema::hasTable('promethee_datalink_stores')) {
+            return DB::transaction(function () use ($operationId, $callback) {
+                $row = DB::table('promethee_datalink_stores')
+                    ->where('operation_id', $operationId)
+                    ->lockForUpdate()
+                    ->first();
+
+                $decoded = json_decode((string) ($row?->payload ?: '[]'), true);
+                $messages = is_array($decoded) ? $decoded : [];
+                $result = $callback($messages);
+                $json = json_encode(array_values($messages), JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+
+                DB::table('promethee_datalink_stores')->updateOrInsert(
+                    ['operation_id' => $operationId],
+                    [
+                        'payload' => $json,
+                        'created_at' => $row?->created_at ?? now(),
+                        'updated_at' => now(),
+                    ]
+                );
+
+                return $result;
+            }, 3);
+        }
+
         $path = $this->path($operationId);
         $dir = dirname($path);
         if (!is_dir($dir) && !mkdir($dir, 0770, true) && !is_dir($dir)) {
