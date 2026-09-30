@@ -241,6 +241,91 @@ function buildWorkflowState() {
   };
 }
 
+function simBriefPreparationData(resolved = null) {
+  const form = $('#prefileForm');
+  const flight = normalizeFlight(selectedOperation?.flight || selectedOperation || {});
+  const authoritative = resolved || {};
+  const demand = authoritative.demand || {};
+  const params = authoritative.parameters || {};
+  const aircraft = authoritative.aircraft || selectedAircraft || {};
+  const paxOverride = form?.elements?.pax?.value?.trim();
+  const plannedPax = paxOverride !== ''
+    ? Number(paxOverride)
+    : Number(params.pax ?? demand.passengers ?? aircraft.passengers);
+  return {
+    ident: authoritative.flight?.ident || displayFlightIdent(flight),
+    departure: authoritative.origin?.icao || flight.departure || '—',
+    arrival: authoritative.destination?.icao || flight.arrival || '—',
+    registration: aircraft.registration || '—',
+    type: aircraft.simbrief_type || selectedVariant?.simbrief_type || selectedOperation?.simbrief?.type || aircraft.icao || 'AUTO',
+    variant: selectedVariant?.label || authoritative.aircraft?.variant?.label || selectedOperation?.simbrief?.addon || '',
+    pax: Number.isFinite(plannedPax) ? plannedPax : null,
+    capacity: Number(demand.capacity ?? aircraft.capacity) || null,
+    loadFactor: Number(demand.load_factor_percent ?? aircraft.load_factor_percent),
+    level: params.fl || normalizeFlightLevel(form?.elements?.level?.value || flight.level) || null
+  };
+}
+
+function renderSimBriefPreparationSummary(resolved = null) {
+  const data = simBriefPreparationData(resolved);
+  const nodes = [$('#simbriefAccountSummary'), $('#simbriefApiSummary')].filter(Boolean);
+  const hasAircraft = Boolean(selectedAircraft?.id || resolved?.aircraft?.id);
+  nodes.forEach(node => {
+    node.hidden = !hasAircraft;
+    if (!hasAircraft) { node.replaceChildren(); return; }
+
+    const entries = [
+      ['VOL', data.ident],
+      ['ROUTE', data.departure + ' → ' + data.arrival],
+      ['APPAREIL', data.registration + ' · ' + data.type + (data.variant ? ' · ' + data.variant : '')],
+      ['PAX ENVOYÉS', data.pax === null ? 'AUTO' : String(data.pax) + (data.capacity ? ' / ' + data.capacity : '')],
+      ['REMPLISSAGE', Number.isFinite(data.loadFactor) ? data.loadFactor.toFixed(1).replace('.0','') + ' %' : '—'],
+      ['NIVEAU', data.level ? 'FL' + String(data.level).padStart(3, '0') : 'AUTO']
+    ];
+
+    node.replaceChildren();
+    entries.forEach(([label, value]) => {
+      const item = document.createElement('span');
+      const key = document.createElement('small');
+      const strong = document.createElement('strong');
+      key.textContent = label;
+      strong.textContent = value;
+      item.append(key, strong);
+      node.append(item);
+    });
+  });
+}
+
+function showActionTooltip(button, message) {
+  if (!button) return;
+  document.querySelectorAll('.hermes-action-tooltip').forEach(node => node.remove());
+  const bubble = document.createElement('div');
+  bubble.className = 'hermes-action-tooltip';
+  bubble.setAttribute('role', 'status');
+  bubble.textContent = message;
+  document.body.append(bubble);
+  const rect = button.getBoundingClientRect();
+  const width = Math.min(380, Math.max(250, bubble.offsetWidth || 300));
+  const left = Math.min(window.innerWidth - width - 12, Math.max(12, rect.left + rect.width / 2 - width / 2));
+  bubble.style.width = width + 'px';
+  bubble.style.left = left + 'px';
+  bubble.style.top = Math.min(window.innerHeight - bubble.offsetHeight - 12, rect.bottom + 10) + 'px';
+  button.classList.add('needs-attention');
+  setTimeout(() => {
+    bubble.classList.add('closing');
+    button.classList.remove('needs-attention');
+    setTimeout(() => bubble.remove(), 180);
+  }, 3600);
+}
+
+function requireAircraftForSimBrief(button) {
+  if (selectedAircraft?.id && $('#prefileForm')?.elements?.aircraft_id?.value) return true;
+  showActionTooltip(button, 'Sélectionnez d’abord un type puis une immatriculation. Hermès doit connaître l’appareil précis avant d’envoyer ou récupérer un OFP SimBrief.');
+  $('#aircraftTypeId')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(() => $('#aircraftTypeId')?.focus(), 250);
+  return false;
+}
+
 function updateAircraftSelectionStatus() {
   const node = $('#aircraftSelectionStatus');
   if (!node) return;
@@ -263,6 +348,7 @@ function updateAircraftSelectionStatus() {
     setText(strong, 'APPAREIL REQUIS');
     setText(detail, 'Choisissez un type d’appareil puis une immatriculation avant de préparer SimBrief.');
   }
+  renderSimBriefPreparationSummary();
 }
 
 function updateNextAction(state, ready) {
@@ -492,7 +578,7 @@ function renderEligibility(payload) {
 
   const heading = document.createElement('div');
   heading.className = 'eligibility-heading';
-  heading.innerHTML = '<div><span class="kicker">DISPATCH</span><h3>Types d’appareil disponibles</h3><p class="hint">Choisissez un type puis une immatriculation disponible. Hermès n’affiche que les appareils autorisés pour ce vol.</p></div>';
+  heading.innerHTML = '<div><span class="kicker">DISPATCH</span><h3>Types d’appareil disponibles</h3><p class="hint">Affichez un type à la demande pour consulter sa disponibilité sans dérouler toute la flotte.</p></div>';
   const count = document.createElement('strong');
   count.textContent = types.length + ' type' + (types.length > 1 ? 's' : '');
   heading.append(count);
@@ -506,7 +592,35 @@ function renderEligibility(payload) {
     return;
   }
 
+  const picker = document.createElement('select');
+  picker.className = 'eligibility-type-picker';
+  picker.setAttribute('aria-label', 'Afficher les disponibilités par type d’appareil');
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = 'Afficher un type d’appareil…';
+  picker.append(placeholder);
   types.forEach(type => {
+    const option = document.createElement('option');
+    option.value = String(type.type_key || type.type_label || '');
+    option.textContent = (type.type_label || type.type_key || 'Appareil')
+      + ' · ' + (type.available_count || 0) + ' disponible' + (Number(type.available_count || 0) > 1 ? 's' : '');
+    picker.append(option);
+  });
+  box.append(picker);
+
+  const detail = document.createElement('div');
+  detail.className = 'eligibility-selected-detail';
+  detail.innerHTML = '<p class="hint">Choisissez un type dans le menu pour afficher sa prévision passagers et son remplissage.</p>';
+  box.append(detail);
+
+  picker.onchange = () => {
+    detail.replaceChildren();
+    const type = types.find(item => String(item.type_key || item.type_label || '') === picker.value);
+    if (!type) {
+      detail.innerHTML = '<p class="hint">Choisissez un type dans le menu pour afficher sa prévision passagers et son remplissage.</p>';
+      return;
+    }
+
     const card = document.createElement('article');
     card.className = 'aircraft-card eligible';
     const title = document.createElement('div');
@@ -529,8 +643,8 @@ function renderEligibility(payload) {
       details.append(li);
     });
     card.append(details);
-    box.append(card);
-  });
+    detail.append(card);
+  };
 }
 
 function simulatorCode() {
@@ -1034,6 +1148,7 @@ function renderOperationLoad(aircraft, briefing = flightPlan) {
     + ' · ' + paxText + ' / ' + (aircraft.capacity ?? '—') + ' sièges'
     + ' · ' + (aircraft.load_factor_percent ?? '—') + ' % prévision commerciale · vol ' + band;
   node.hidden = false;
+  renderSimBriefPreparationSummary();
 }
 
 async function selectOperation(operation) {
@@ -1315,6 +1430,7 @@ async function assertSimBriefReady(form, mode = 'company') {
     '#simbriefState',
     `Résolution BDD OK · ${flight} · ${origin} → ${destination} · ${registration} · ${type}${cabin ? ' · ' + cabin : ''}${Number.isFinite(Number(pax)) ? ' · ' + pax + ' pax' : ''}.`
   );
+  renderSimBriefPreparationSummary(resolved);
   return resolved;
 }
 
@@ -1361,6 +1477,17 @@ async function applyBriefing(briefing, sourceLabel) {
   $('#planBox').textContent = JSON.stringify(briefing, null, 2);
   renderNetworkPrefiles(flightPlan.network_prefiles);
   renderOperationLoad(selectedAircraft, flightPlan);
+  renderSimBriefPreparationSummary(briefing.resolved || null);
+
+  const commercialPax = Number(selectedAircraft?.passengers);
+  const actualPax = Number(flightPlan.passengers);
+  if (Number.isFinite(actualPax) && Number.isFinite(commercialPax) && actualPax !== commercialPax) {
+    showMessage(
+      '#pirepMessage',
+      `SimBrief a retenu ${actualPax} pax contre ${commercialPax} prévus par Air Inter. Le PIREP utilisera les ${actualPax} pax réellement présents dans l’OFP.`,
+      false
+    );
+  }
 
   // The imported OFP is authoritative for the client immediately. Refresh the
   // dispatch so step 03 cannot remain stuck on a stale server snapshot.
@@ -1466,7 +1593,8 @@ $('#ivaoPrefileBtn').onclick = async () => {
   }
 };
 
-$('#simbriefAccountOpenBtn').onclick = async () => {
+$('#simbriefAccountOpenBtn').onclick = async event => {
+  if (!requireAircraftForSimBrief(event.currentTarget)) return;
   const form = $('#prefileForm');
   const flightId = form.elements.flight_id.value;
   const aircraftId = form.elements.aircraft_id.value;
@@ -1483,6 +1611,7 @@ $('#simbriefAccountOpenBtn').onclick = async () => {
     showMessage('#simbriefState', 'Envoi de la préparation Air Inter vers SimBrief…');
     const payload = unwrap(await call(simbriefPath('redirect'), simBriefPlanningPayload(form)));
     linkedSimBrief = payload;
+    renderSimBriefPreparationSummary(payload.resolved || null);
     const editButton = $('#simbriefAccountEditBtn');
     if (editButton) editButton.hidden = !payload.edit_url;
     await call('/api/open-external', { url: payload.url });
@@ -1498,7 +1627,8 @@ $('#simbriefAccountEditBtn').onclick = async () => {
   catch (error) { showMessage('#simbriefState', error.message, true); }
 };
 
-$('#simbriefAccountImportBtn').onclick = async () => {
+$('#simbriefAccountImportBtn').onclick = async event => {
+  if (!requireAircraftForSimBrief(event.currentTarget)) return;
   const form = $('#prefileForm');
   const flightId = form.elements.flight_id.value;
   const aircraftId = form.elements.aircraft_id.value;
@@ -1689,7 +1819,8 @@ $('#resetDraftBtn').onclick = () => {
   showMessage('#simbriefState', 'Brouillon réinitialisé aux données du programme.');
 };
 
-$('#simbriefBtn').onclick = async () => {
+$('#simbriefBtn').onclick = async event => {
+  if (!requireAircraftForSimBrief(event.currentTarget)) return;
   const form = $('#prefileForm');
   const flightId = form.elements.flight_id.value;
   const aircraftId = form.elements.aircraft_id.value;
