@@ -30,7 +30,13 @@ if (!string.Equals(Environment.GetEnvironmentVariable("PROMETHEE_ACARS_NO_BROWSE
 }
 
 app.UseDefaultFiles();
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions {
+    OnPrepareResponse = context => {
+        context.Context.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate, max-age=0";
+        context.Context.Response.Headers.Pragma = "no-cache";
+        context.Context.Response.Headers.Expires = "0";
+    }
+});
 
 app.MapGet("/api/status", (PhpVmsClient client, SimConnectReader sim, FlightRecorder recorder) =>
 {
