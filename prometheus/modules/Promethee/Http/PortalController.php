@@ -1153,6 +1153,36 @@ class PortalController extends Controller
    public function documents() {
        return $this->downloadCategoryPage('documents');
    }
+
+   public function myDocuments(Request $r, UserService $users) {
+       $pilot = $r->user();
+       $allowedSubfleets = $users->getAllowableSubfleets($pilot);
+       $aircraftTypes = $allowedSubfleets->pluck('type')->filter()->map(fn ($type) => strtoupper(trim((string) $type)))->unique()->sort()->values();
+
+       $documents = $this->downloadGroups()->get('documents', collect())->map(function (File $file) {
+           $subcategory = $this->downloadSubcategory($file);
+           $parts = array_map('trim', explode('·', $subcategory, 2));
+           $file->setAttribute('promethee_document_section', $parts[0] ?: 'Général');
+           $file->setAttribute('promethee_aircraft_type', strtoupper($parts[1] ?? ''));
+           $file->setAttribute('promethee_extension', strtoupper(pathinfo(parse_url((string) $file->path, PHP_URL_PATH) ?: '', PATHINFO_EXTENSION)));
+           return $file;
+       });
+
+       $personalDocuments = $documents->filter(function (File $file) use ($aircraftTypes) {
+           $type = (string) $file->promethee_aircraft_type;
+           return $type === '' || $aircraftTypes->contains($type);
+       })->values();
+
+       $sections = $personalDocuments->groupBy(fn (File $file) => $file->promethee_document_section);
+
+       return $this->page('my-documents', [
+           'pilot' => $pilot,
+           'aircraftTypes' => $aircraftTypes,
+           'documents' => $personalDocuments,
+           'sections' => $sections,
+           'allDocumentsCount' => $documents->count(),
+       ]);
+   }
    public function document(string $file) {
        $asset = File::findOrFail($file);
        abort_unless($this->downloadCategory($asset) === 'documents' && $this->isManagedDownload($asset), 404);
