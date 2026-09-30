@@ -6,7 +6,7 @@
         'acars' => ['ACARS & HERMÈS', 'Client de vol, installateur et documentation de connexion'],
         'fleet' => ['AVIONS ET FLOTTE', 'Livrées, appareils et documents associés'],
         'airports' => ['AÉROPORTS ET HUBS', 'Scènes, cartes et ressources réseau'],
-        'documents' => ['DOCUMENTS', 'Manuels et documents opérationnels'],
+        'documents' => ['DOCUMENTATION INTERNE', 'Procédures, carrière, formation et documentation par type d’avion'],
     ];
     $resourceCount = $groups->sum(fn ($entries) => $entries->count());
 @endphp
