@@ -19,7 +19,15 @@ public sealed class ArgosDesktopAuth
     private static readonly string MetadataCachePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "AirInter", "Hermes", "argos-metadata.json");
-    private readonly HttpClient http = new() { Timeout = TimeSpan.FromSeconds(20) };
+    private readonly HttpClient http = CreateHttpClient();
+
+    private static HttpClient CreateHttpClient()
+    {
+        var client = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("AirInter-Hermes/1.0");
+        client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
+        return client;
+    }
 
     public async Task<JsonElement> SignInAsync(PhpVmsClient promethee, string prometheeServer)
     {
@@ -107,11 +115,19 @@ public sealed class ArgosDesktopAuth
             throw new InvalidOperationException("L’adresse Argos configurée pour Hermès n’est pas une URL HTTPS valide.");
 
         var discovery = await GetJsonAsync(issuer + "/.well-known/openid-configuration", "configuration OpenID Argos");
+
         JsonElement client;
-        try {
-            client = await GetJsonAsync(issuer + "/.well-known/hermes-client", "configuration du client Hermès");
-        } catch (InvalidOperationException exception) when (exception.Message.Contains("HTTP 429", StringComparison.Ordinal)) {
-            client = await GetJsonAsync(issuer + "/hermes/client-config", "configuration de secours du client Hermès");
+        if (discovery.TryGetProperty("hermes_client", out var embeddedClient)
+            && embeddedClient.ValueKind == JsonValueKind.Object) {
+            client = embeddedClient.Clone();
+        } else {
+            try {
+                client = await GetJsonAsync(issuer + "/.well-known/hermes-client", "configuration du client Hermès");
+            } catch (InvalidOperationException exception) when (
+                exception.Message.Contains("HTTP 404", StringComparison.Ordinal)
+                || exception.Message.Contains("HTTP 405", StringComparison.Ordinal)) {
+                client = await GetJsonAsync(issuer + "/hermes/client-config", "configuration de secours du client Hermès");
+            }
         }
 
         var discoveredIssuer = RequiredString(discovery, "issuer");
