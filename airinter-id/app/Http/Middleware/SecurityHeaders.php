@@ -24,6 +24,12 @@ class SecurityHeaders
             ?? 'https://argos.airinter-va.org';
         $requestOrigin = $this->origin($request->getSchemeAndHttpHost());
         $prometheeOrigin = $this->origin((string) config('airinter-id.promethee_url'));
+        $oauthCallbackOrigins = collect((array) config('airinter-id.clients', []))
+            ->flatMap(fn (array $client) => (array) ($client['redirect_uris'] ?? []))
+            ->map(fn ($uri) => $this->origin((string) $uri))
+            ->filter()
+            ->values()
+            ->all();
 
         $imageSources = array_values(array_unique(array_filter([
             "'self'",
@@ -31,11 +37,11 @@ class SecurityHeaders
             $prometheeOrigin,
         ])));
 
-        $formSources = array_values(array_unique(array_filter([
+        $formSources = array_values(array_unique(array_filter(array_merge([
             "'self'",
             $requestOrigin,
             $argosOrigin,
-        ])));
+        ], $request->is('oauth/authorize') ? $oauthCallbackOrigins : []))));
 
         $response->headers->set(
             'Content-Security-Policy',
