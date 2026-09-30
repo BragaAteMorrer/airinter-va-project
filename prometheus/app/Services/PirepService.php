@@ -346,6 +346,15 @@ class PirepService extends Service
             $where['route_leg'] = $pirep->route_leg;
         }
 
+        // Hermès follows the vmsACARS/phpVMS lifecycle: the prefile is an
+        // IN_PROGRESS working PIREP for one concrete operation, not the filed
+        // report of a previous flight. Distinct Hermès operation IDs must
+        // never be deduplicated into the same PIREP.
+        if (filled($pirep->source_name)
+            && str_starts_with((string) $pirep->source_name, 'Hermes ACARS [op_')) {
+            $where['source_name'] = $pirep->source_name;
+        }
+
         try {
             $found_pireps = Pirep::where($where)
                 ->where('state', '!=', PirepState::CANCELLED)

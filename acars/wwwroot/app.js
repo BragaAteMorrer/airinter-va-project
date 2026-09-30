@@ -1785,7 +1785,7 @@ async function prefilePreparedOperation({ navigate = true, automatic = false } =
         ? 'simbrief_account'
         : (String(flightPlan?.source || '').toLowerCase().includes('simbrief') ? 'simbrief' : undefined)
     } : body;
-    if (!operationRef) throw new Error('Impossible de pré-déposer le PIREP sans operation_id.');
+    if (!operationRef) throw new Error('Impossible de préparer le brouillon PIREP sans operation_id.');
 
     const result = unwrap(await call(`/api/v1/operations/${encodeURIComponent(operationRef)}/pirep`, operationPirepBody));
     pirepId = result.id || result.pirep_id || result.pirep?.id;
@@ -1796,17 +1796,17 @@ async function prefilePreparedOperation({ navigate = true, automatic = false } =
     showMessage(
       '#pirepMessage',
       automatic
-        ? `OFP importé · PIREP ${pirepId} pré-déposé automatiquement. Hermès est prêt pour les contrôles départ.`
-        : `PIREP ${pirepId} prêt. Vérification finale du Dispatch Prométhée terminée.`
+        ? `OFP importé · brouillon PIREP ${pirepId} préparé. Aucun rapport de vol n’est encore déposé : il le sera après le vol.`
+        : `Brouillon PIREP ${pirepId} prêt. Le rapport restera IN_PROGRESS jusqu’à la fin du vol.`
     );
     showMessage('#simbriefState', automatic
-      ? 'OFP importé et PIREP pré-déposé automatiquement.'
+      ? 'OFP importé et brouillon PIREP ACARS préparé.'
       : 'OFP prêt.');
     if (navigate) document.querySelector('[data-tab="record"]')?.click();
     return true;
   } catch (error) {
     showMessage('#pirepMessage', error.message, true);
-    if (automatic) showMessage('#simbriefState', 'OFP importé. Pré-dépôt automatique impossible : ' + error.message, true);
+    if (automatic) showMessage('#simbriefState', 'OFP importé. Préparation du brouillon PIREP impossible : ' + error.message, true);
     return false;
   }
 }
