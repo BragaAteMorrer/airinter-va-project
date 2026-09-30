@@ -22,6 +22,7 @@ Route::get('/.well-known/jwks.json', [ProviderController::class, 'jwks'])->name(
 Route::get('/.well-known/hermes-client', [ProviderController::class, 'hermesClient'])->name('oidc.hermes-client');
 Route::get('/hermes/client-config', [ProviderController::class, 'hermesClient'])->name('hermes.client-config');
 Route::middleware('auth:api')->get('/oauth/userinfo', [ProviderController::class, 'userinfo'])->name('oidc.userinfo');
+Route::middleware('auth:api')->get('/oauth/hermes/userinfo', [ProviderController::class, 'hermesUserinfo'])->name('oidc.hermes-userinfo');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
