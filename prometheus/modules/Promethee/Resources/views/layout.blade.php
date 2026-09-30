@@ -103,7 +103,8 @@ window.prometheeI18n = @json($prometheeI18n);
             ['route' => 'promethee.airlines', 'label' => 'airlines', 'active' => 'promethee.airlines'],
             ['route' => 'promethee.fleet', 'label' => 'fleet', 'active' => 'promethee.fleet'],
             ['route' => 'promethee.maintenance', 'label' => 'maintenance', 'active' => 'promethee.maintenance'],
-            ['route' => 'promethee.downloads', 'label' => 'navigation_menu.downloads', 'active' => 'promethee.downloads*'],
+            ['route' => 'promethee.documents', 'text' => 'Documentation interne', 'active' => 'promethee.documents|promethee.downloads.category'],
+            ['route' => 'promethee.downloads', 'label' => 'navigation_menu.downloads', 'active' => 'promethee.downloads'],
         ],
         'navigation_operations' => [
             ['route' => 'promethee.flights', 'label' => 'flight_schedule', 'active' => 'promethee.flights*'],
