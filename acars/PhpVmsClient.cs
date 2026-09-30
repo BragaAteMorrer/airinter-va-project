@@ -15,6 +15,50 @@ public sealed class PhpVmsClient
 
     public PhpVmsClient() => http.DefaultRequestHeaders.UserAgent.ParseAdd("Promethee-ACARS/2.1");
 
+
+    public async Task<JsonElement> SignInWithArgos(string server, string argosAccessToken)
+    {
+        var validatedServer = ValidateServer(server);
+        Server = validatedServer;
+
+        if (string.IsNullOrWhiteSpace(argosAccessToken))
+            throw new InvalidOperationException("La session Argos est vide.");
+
+        try {
+            using var request = new HttpRequestMessage(HttpMethod.Post, validatedServer + "/api/acars/argos") {
+                Content = JsonContent.Create(new { access_token = argosAccessToken })
+            };
+            request.Headers.Add("Accept", "application/json");
+
+            using var response = await http.SendAsync(request);
+            var responseBody = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode) {
+                var serverMessage = SafeServerMessage(responseBody);
+                System.Diagnostics.Trace.WriteLine($"ACARS Argos bridge {validatedServer}/api/acars/argos returned {(int)response.StatusCode}: {responseBody}");
+                throw new InvalidOperationException(response.StatusCode switch {
+                    System.Net.HttpStatusCode.Unauthorized => serverMessage ?? "La session Argos est invalide ou expirée.",
+                    System.Net.HttpStatusCode.Forbidden => serverMessage ?? "Votre compte Argos ne permet pas d’utiliser Hermès.",
+                    System.Net.HttpStatusCode.BadGateway => serverMessage ?? "Prométhée ne parvient pas à joindre Argos.",
+                    _ => serverMessage ?? $"Prométhée a refusé la session Argos (HTTP {(int)response.StatusCode})."
+                });
+            }
+
+            using var document = JsonDocument.Parse(responseBody);
+            var root = document.RootElement;
+            var data = root.ValueKind == JsonValueKind.Object && root.TryGetProperty("data", out var wrapped) ? wrapped : root;
+            if (!data.TryGetProperty("access_token", out var token) || string.IsNullOrWhiteSpace(token.GetString()))
+                throw new InvalidOperationException("Prométhée n’a pas créé la session Hermès après la connexion Argos.");
+
+            credential = token.GetString()!;
+            return await Send("v1/me");
+        } catch (HttpRequestException ex) {
+            System.Diagnostics.Trace.WriteLine($"ACARS Argos bridge transport failure: {ex}");
+            throw new InvalidOperationException($"Connexion réseau impossible vers {validatedServer} lors de l’échange Argos.");
+        } catch (TaskCanceledException) {
+            throw new InvalidOperationException("Délai dépassé lors de l’échange de la session Argos avec Prométhée.");
+        }
+    }
+
     public async Task<JsonElement> SignIn(string server, string login, string password)
     {
         var validatedServer = ValidateServer(server);
