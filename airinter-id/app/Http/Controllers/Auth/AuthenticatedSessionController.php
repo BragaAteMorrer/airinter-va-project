@@ -92,9 +92,16 @@ class AuthenticatedSessionController extends Controller
             ->where('user_agent', mb_substr((string) $request->userAgent(), 0, 1000))
             ->exists();
 
-        Auth::login($user, $request->boolean('remember'));
+        Auth::guard('web')->login($user, $request->boolean('remember'));
         $request->session()->regenerate();
         $request->session()->put('auth.password_confirmed_at', time());
+        $request->session()->save();
+
+        if (!Auth::guard('web')->check() || (int) Auth::guard('web')->id() !== (int) $user->getKey()) {
+            throw ValidationException::withMessages([
+                'login' => 'Argos n’a pas pu persister votre session. Veuillez réessayer.',
+            ]);
+        }
 
         $user->forceFill(['last_login_at' => now()])->save();
         if (!$knownContext) {
@@ -125,7 +132,7 @@ class AuthenticatedSessionController extends Controller
             'created_at' => now(),
         ]);
 
-        return redirect()->intended(route('account'));
+        return redirect()->route('account');
     }
 
     public function destroy(Request $request): RedirectResponse
