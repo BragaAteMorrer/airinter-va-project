@@ -527,6 +527,37 @@ final class PIREPTest extends TestCase
         $this->assertFalse($dupe_pirep);
     }
 
+    public function test_hermes_duplicate_detection_is_scoped_to_operation_id(): void
+    {
+        $user = User::factory()->create();
+        $existing = Pirep::factory()->create([
+            'user_id' => $user->id,
+            'source_name' => 'Hermes ACARS [op_100]',
+        ]);
+
+        $newOperation = Pirep::factory()->make([
+            'user_id' => $existing->user_id,
+            'airline_id' => $existing->airline_id,
+            'flight_id' => $existing->flight_id,
+            'aircraft_id' => $existing->aircraft_id,
+            'flight_number' => $existing->flight_number,
+            'route_code' => $existing->route_code,
+            'route_leg' => $existing->route_leg,
+            'dpt_airport_id' => $existing->dpt_airport_id,
+            'arr_airport_id' => $existing->arr_airport_id,
+            'source_name' => 'Hermes ACARS [op_101]',
+        ]);
+
+        $this->assertFalse($this->pirepSvc->findDuplicate($newOperation));
+
+        $sameOperationRetry = clone $newOperation;
+        $sameOperationRetry->source_name = 'Hermes ACARS [op_100]';
+        $duplicate = $this->pirepSvc->findDuplicate($sameOperationRetry);
+
+        $this->assertNotFalse($duplicate);
+        $this->assertSame($existing->id, $duplicate->id);
+    }
+
     /**
      * @throws \Exception
      */
