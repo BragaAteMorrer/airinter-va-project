@@ -29,7 +29,7 @@ public sealed class PrometheeWindow : Window
         new FsuipcConnector(SimulatorKind.FlightSimulator2004, "Microsoft Flight Simulator 2004"),
         new FsuipcConnector(SimulatorKind.FlightSimulatorX, "Microsoft Flight Simulator X"),
         new FsuipcConnector(SimulatorKind.Prepar3D, "Prepar3D")); private readonly FlightRecorder recorder = new();
-    private readonly TelemetryService telemetry; private readonly HermesDatalink datalink; private readonly HermesPresence presence; private readonly WebView2 web = new();
+    private readonly TelemetryService telemetry; private readonly HermesDatalink datalink; private readonly HermesPresence presence; private readonly ArgosDesktopAuth argos = new(); private readonly WebView2 web = new();
     private bool ticking; private DateTimeOffset nextDatalinkPollAt = DateTimeOffset.MinValue;
     public PrometheeWindow()
     {
@@ -126,7 +126,7 @@ public sealed class PrometheeWindow : Window
         }
 
         return route switch {
-            "/api/status" => Status(), "/api/about" => About(), "/api/login" => await Login(body),
+            "/api/status" => Status(), "/api/about" => About(), "/api/login" => await Login(body), "/api/login/argos" => await LoginWithArgos(),
             "/api/start" => Start(body), "/api/pause" => Pause(), "/api/resume" => Resume(),
             "/api/recovery" => Recovery(), "/api/recovery/resume" => ResumeRecovery(), "/api/recovery/abandon" => AbandonRecovery(),
             "/api/sync" => new { sent=await telemetry.SyncNow() }, "/api/report" => Report(), "/api/review" => recorder.GetReview() ?? throw new InvalidOperationException("Aucun vol en cours."), "/api/capabilities" => sim.AircraftCapabilities ?? throw new InvalidOperationException("Aucun profil de capacités avion disponible."), "/api/file" => await File(),
@@ -317,6 +317,15 @@ public sealed class PrometheeWindow : Window
         await client.SignIn(ServerConfiguration.Get(), body!.Value.GetProperty("login").GetString() ?? "", body.Value.GetProperty("password").GetString() ?? "");
         var user = await client.Send("v1/me");
         return new { user, configuration = await LoadRemoteConfiguration() };
+    }
+    private async Task<object> LoginWithArgos()
+    {
+        var server = ServerConfiguration.Get();
+        if (string.IsNullOrWhiteSpace(server))
+            throw new InvalidOperationException("Le serveur Prométhée n’est pas configuré sur cette installation Hermès.");
+
+        var user = await argos.SignInAsync(client, server);
+        return new { user, configuration = await LoadRemoteConfiguration(), provider = "argos" };
     }
     private async Task<RemoteAcarsConfiguration> LoadRemoteConfiguration()
     {
