@@ -107,7 +107,12 @@ public sealed class ArgosDesktopAuth
             throw new InvalidOperationException("L’adresse Argos configurée pour Hermès n’est pas une URL HTTPS valide.");
 
         var discovery = await GetJsonAsync(issuer + "/.well-known/openid-configuration", "configuration OpenID Argos");
-        var client = await GetJsonAsync(issuer + "/.well-known/hermes-client", "configuration du client Hermès");
+        JsonElement client;
+        try {
+            client = await GetJsonAsync(issuer + "/.well-known/hermes-client", "configuration du client Hermès");
+        } catch (InvalidOperationException exception) when (exception.Message.Contains("HTTP 429", StringComparison.Ordinal)) {
+            client = await GetJsonAsync(issuer + "/hermes/client-config", "configuration de secours du client Hermès");
+        }
 
         var discoveredIssuer = RequiredString(discovery, "issuer");
         var clientIssuer = RequiredString(client, "issuer");
