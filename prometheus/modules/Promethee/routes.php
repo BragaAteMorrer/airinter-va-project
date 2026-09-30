@@ -125,6 +125,10 @@ Route::middleware(['web','auth'])->prefix('admin/promethee')->name('admin.promet
     Route::get('/dispatch', [DispatchDeskController::class, 'index'])->name('dispatch');
     Route::get('/dispatch/feed', [DispatchDeskController::class, 'feed'])->name('dispatch.feed');
     Route::get('/dispatch/operations/{operation}', [DispatchDeskController::class, 'operation'])->name('dispatch.operation');
+    Route::get('/datalink/messages', [DatalinkController::class, 'adminIndex'])->name('datalink.messages');
+    Route::post('/datalink/messages', [DatalinkController::class, 'adminSend'])->name('datalink.messages.send');
+    Route::post('/datalink/messages/{message}/read', [DatalinkController::class, 'adminRead'])->name('datalink.messages.read');
+    Route::post('/datalink/messages/{message}/ack', [DatalinkController::class, 'adminAcknowledge'])->name('datalink.messages.ack');
 });
 
 /* Administration has a dedicated, server-protected route tree. */
@@ -182,10 +186,6 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::delete('/crm/senders/{id}', [CrmController::class,'deleteSender'])->name('crm.senders.delete');
         Route::get('/crm/campaigns/{id}', [CrmController::class,'campaign'])->name('crm.campaigns.show');
         // Lot 5 transport surface for the future Dispatcher Desk.
-        Route::get('/datalink/messages', [DatalinkController::class, 'adminIndex'])->name('datalink.messages');
-        Route::post('/datalink/messages', [DatalinkController::class, 'adminSend'])->name('datalink.messages.send');
-        Route::post('/datalink/messages/{message}/read', [DatalinkController::class, 'adminRead'])->name('datalink.messages.read');
-        Route::post('/datalink/messages/{message}/ack', [DatalinkController::class, 'adminAcknowledge'])->name('datalink.messages.ack');
         Route::get('/sop', [SopController::class, 'admin'])->name('sop');
         Route::post('/sop/rules', [SopController::class, 'saveRule'])->name('sop.rules.save');
         Route::put('/sop/rules/{rule}', [SopController::class, 'saveRule'])->name('sop.rules.update');

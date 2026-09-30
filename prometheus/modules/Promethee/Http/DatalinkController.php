@@ -7,6 +7,7 @@ use App\Models\Bid;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Modules\Promethee\Services\DatalinkService;
+use Modules\Promethee\Services\DatalinkAccessService;
 use Modules\Promethee\Services\OperationIdentityService;
 use RuntimeException;
 
@@ -17,7 +18,8 @@ class DatalinkController extends Controller
 
     public function __construct(
         private readonly DatalinkService $datalink,
-        private readonly OperationIdentityService $operationIdentity
+        private readonly OperationIdentityService $operationIdentity,
+        private readonly DatalinkAccessService $access
     ) {}
 
     public function index(string $operation, Request $request)
@@ -101,6 +103,7 @@ class DatalinkController extends Controller
 
     public function adminIndex(Request $request)
     {
+        $this->authorizeOps($request);
         $data = $request->validate(['operation' => 'required|string|max:128']);
         $bid = $this->adminBid($data['operation']);
 
@@ -115,6 +118,7 @@ class DatalinkController extends Controller
 
     public function adminSend(Request $request)
     {
+        $this->authorizeOps($request);
         $data = $request->validate([
             'operation' => 'required|string|max:128',
             'body' => 'required|string|min:1|max:2000',
@@ -135,7 +139,7 @@ class DatalinkController extends Controller
             $data['priority'] ?? 'ROUTINE',
             $data['body'],
             (bool) ($data['requires_ack'] ?? true),
-            $data['sender_label'] ?? 'AIR INTER OPS',
+            $data['sender_label'] ?? $this->opsSenderLabel($request),
             $data['client_message_id'] ?? null,
             $data['reply_to'] ?? null
         );
@@ -145,6 +149,7 @@ class DatalinkController extends Controller
 
     public function adminRead(string $message, Request $request)
     {
+        $this->authorizeOps($request);
         $data = $request->validate(['operation' => 'required|string|max:128']);
         $bid = $this->adminBid($data['operation']);
 
@@ -164,6 +169,7 @@ class DatalinkController extends Controller
 
     public function adminAcknowledge(string $message, Request $request)
     {
+        $this->authorizeOps($request);
         $data = $request->validate(['operation' => 'required|string|max:128']);
         $bid = $this->adminBid($data['operation']);
 
@@ -179,6 +185,18 @@ class DatalinkController extends Controller
         }
 
         return response()->json(['data' => ['message' => $updated]]);
+    }
+
+    private function authorizeOps(Request $request): void
+    {
+        abort_unless($this->access->canOperate($request->user()), 403, 'Le Datalink OPS est réservé aux pilotes de grade Captain ou supérieur et aux administrateurs.');
+    }
+
+    private function opsSenderLabel(Request $request): string
+    {
+        $user = $request->user();
+        $ident = trim((string) ($user?->ident ?: 'OPS'));
+        return 'AIR INTER OPS · '.$ident;
     }
 
     private function pilotBid(string $reference, Request $request): Bid

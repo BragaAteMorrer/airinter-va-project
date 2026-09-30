@@ -66,7 +66,7 @@
         </div>
 
         <nav class="dispatch-tabs" aria-label="Détails opération">
-            @foreach(['overview'=>'Overview','aircraft'=>'Aircraft','ofp'=>'OFP','route'=>'Route','weather'=>'Weather','track'=>'Track','fdm'=>'FDM','sop'=>'SOP','messages'=>'Messages','timeline'=>'Timeline'] as $key=>$label)
+            @foreach(['overview'=>'Overview','aircraft'=>'Aircraft','ofp'=>'OFP','route'=>'Route','weather'=>'Weather','track'=>'Track','fdm'=>'FDM','sop'=>'SOP','messages'=>'Datalink','timeline'=>'Timeline'] as $key=>$label)
             <button type="button" data-dispatch-tab="{{ $key }}" @class(['selected'=>$key==='overview'])>{{ strtoupper($label) }}</button>
             @endforeach
         </nav>
@@ -363,7 +363,7 @@
         return (canDispatchActions ? '<div class="dispatch-action-bar">' +
             '<button type="button" class="button secondary" data-quick="weather">Préparer météo</button>' +
             '<button type="button" class="button secondary" data-quick="runway">Préparer piste</button>' +
-        '</div>' : '<div class="notice">Consultation pilote : les commandes OPS restent réservées au dispatch.</div>') +
+        '</div>' : '<div class="notice">Consultation pilote : les commandes OPS sont disponibles à partir du grade Captain ou pour les administrateurs.</div>') +
         '<p class="muted">' + esc(w.note) + '</p>' +
         '<div class="dispatch-message-list">' +
             (messages.length ? messages.map(renderMessage).join('') : '<div class="dispatch-empty-inline">Aucun message WEATHER sur cette opération.</div>') +
@@ -429,7 +429,7 @@
 
     function renderMessages() {
         const messages = state.detail?.messages?.messages || [];
-        return (canDispatchActions ? composeBox() : '<div class="notice">Messagerie en lecture seule pour les pilotes. Les réponses OPS sont réservées au dispatch.</div>') + '<div class="dispatch-message-list">' +
+        return (canDispatchActions ? composeBox() : '<div class="notice">Datalink en lecture seule. L’envoi OPS est réservé aux Captain et grades supérieurs ainsi qu’aux administrateurs.</div>') + '<div class="dispatch-message-list">' +
             (messages.length ? messages.slice().reverse().map(renderMessage).join('') : '<div class="dispatch-empty-inline">Aucun échange Datalink.</div>') +
         '</div>';
     }
