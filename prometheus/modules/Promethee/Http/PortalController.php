@@ -1607,7 +1607,20 @@ class PortalController extends Controller
                 $weather[$icao]=['metar'=>$service->getMetar($icao)?->raw,'taf'=>$service->getTaf($icao)?->raw];
             }
         } catch (\Throwable) { }
-        return $this->page('flight',['flight'=>$flight,'stats'=>$stats,'routeHistory'=>$routeHistory,'weather'=>$weather, 'recentPireps'=>Pirep::with(['user','aircraft'])->where('flight_id',$flight->id)->where('state',PirepState::ACCEPTED)->latest('submitted_at')->limit(12)->get(), 'reservation'=>DB::table('bids')->where(['flight_id'=>$flight->id,'user_id'=>auth()->id()])->first()]);
+        $reservation = Bid::with(['flight','aircraft'])
+            ->where(['flight_id'=>$flight->id,'user_id'=>auth()->id()])
+            ->latest()
+            ->first();
+        if ($reservation) $reservation = $this->bookingOperation($reservation);
+
+        return $this->page('flight',[
+            'flight'=>$flight,
+            'stats'=>$stats,
+            'routeHistory'=>$routeHistory,
+            'weather'=>$weather,
+            'recentPireps'=>Pirep::with(['user','aircraft'])->where('flight_id',$flight->id)->where('state',PirepState::ACCEPTED)->latest('submitted_at')->limit(12)->get(),
+            'reservation'=>$reservation,
+        ]);
     }
     public function reserveFlight(string $id, Request $r, \App\Services\BidService $bids) {
         $flight=Flight::where(['id'=>$id,'active'=>true,'visible'=>true])->firstOrFail();
