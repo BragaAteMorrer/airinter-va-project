@@ -721,7 +721,17 @@ class OperationsV1Controller extends Controller
                 ]]);
             }
 
-            abort(409, 'Cette opération possède déjà un PIREP déposé. Un rapport terminé ne peut jamais être rouvert : créez une nouvelle réservation.');
+            // Compatibility repair for reports polluted by Hermès builds
+            // released before the vmsACARS lifecycle fix. Those builds could
+            // submit a PIREP seconds after prefile without ever starting ACARS.
+            // Never reopen a real terminal PIREP; only purge an unmistakable
+            // zero-flight ghost and preserve its SimBrief OFP for the bid.
+            if ($this->isLegacyHermesGhostPirep($existing)) {
+                $this->purgeLegacyHermesGhostPirep($existing, $bid);
+                $existing = null;
+            } else {
+                abort(409, 'Cette opération possède déjà un PIREP déposé. Un rapport réellement terminé ne peut jamais être rouvert : créez une nouvelle réservation.');
+            }
         }
 
         abort_if(!$bid->aircraft_id, 409, 'Sélectionnez un appareil avant de préparer le PIREP.');
@@ -1057,6 +1067,102 @@ class OperationsV1Controller extends Controller
         }
 
         return $serverReady ? 'READY' : 'PREPARATION_REQUIRED';
+    }
+
+    /**
+     * Detect the specific legacy corruption produced by older Hermès builds:
+     * a PIREP was submitted almost immediately after it was created even though
+     * ACARS never actually started. Keep the signature intentionally strict so
+     * a genuine completed flight can never be silently deleted.
+     */
+    private function isLegacyHermesGhostPirep(Pirep $pirep): bool
+    {
+        if (!str_starts_with((string) $pirep->source_name, 'Hermes ACARS [op_')) return false;
+        if (!$pirep->created_at || !$pirep->submitted_at) return false;
+
+        $submittedSecondsAfterCreation = $pirep->created_at->diffInSeconds($pirep->submitted_at);
+        if ($submittedSecondsAfterCreation > 600) return false;
+
+        if ((int) ($pirep->flight_time ?? 0) > 0) return false;
+        if ($pirep->block_off_time !== null) return false;
+        if ($pirep->landing_rate !== null) return false;
+        if ($this->hasOperationTelemetry($pirep)) return false;
+
+        // Core/phpVMS ACARS points are an independent proof that tracking did
+        // actually begin. Their presence always wins over the legacy heuristic.
+        if (DB::table('acars')->where('pirep_id', $pirep->id)->exists()) return false;
+
+        return true;
+    }
+
+    /**
+     * Remove only a legacy zero-flight ghost while preserving the OFP so the
+     * current reservation can immediately create a clean IN_PROGRESS draft.
+     */
+    private function purgeLegacyHermesGhostPirep(Pirep $pirep, Bid $bid): void
+    {
+        DB::transaction(function () use ($pirep, $bid) {
+            $pirep->loadMissing(['user', 'aircraft']);
+            $wasAccepted = (int) $pirep->state === PirepState::ACCEPTED;
+            $aircraft = $pirep->aircraft;
+            $user = $pirep->user;
+            $departure = $pirep->dpt_airport_id;
+            $arrival = $pirep->arr_airport_id;
+            $createdAt = $pirep->created_at;
+
+            // An accepted ghost incremented the pilot's flight counter even
+            // though flight_time is zero. Reject first to reconcile phpVMS.
+            if ($wasAccepted) {
+                $pirep = $this->pirepSvc->reject($pirep);
+            }
+
+            DB::table('promethee_telemetry')->where('pirep_id', $pirep->id)->delete();
+
+            // PirepService::delete() normally removes the attached SimBrief row.
+            // Detach it first: this is still the OFP for the current reservation.
+            SimBrief::query()
+                ->where('pirep_id', $pirep->id)
+                ->where('user_id', $bid->user_id)
+                ->where('flight_id', $bid->flight_id)
+                ->where('aircraft_id', $bid->aircraft_id)
+                ->update(['pirep_id' => null]);
+
+            $ghostId = $pirep->id;
+            $this->pirepSvc->delete($pirep);
+
+            // Older accepted ghosts could also have moved the pilot/aircraft to
+            // the arrival airport. Only roll that back when there is no newer
+            // report that could legitimately own the current position.
+            if ($aircraft && $departure && (string) $aircraft->airport_id === (string) $arrival) {
+                $hasNewerAircraftPirep = Pirep::query()
+                    ->where('aircraft_id', $aircraft->id)
+                    ->where('created_at', '>', $createdAt)
+                    ->exists();
+                if (!$hasNewerAircraftPirep) {
+                    $aircraft->airport_id = $departure;
+                    $aircraft->save();
+                }
+            }
+
+            if ($user && (string) $user->curr_airport_id === (string) $arrival) {
+                $lastAccepted = Pirep::query()
+                    ->where('user_id', $user->id)
+                    ->where('state', PirepState::ACCEPTED)
+                    ->latest('submitted_at')
+                    ->first();
+                $user->last_pirep_id = $lastAccepted?->id;
+                $user->curr_airport_id = $lastAccepted?->arr_airport_id ?: $user->home_airport_id;
+                $user->save();
+            }
+
+            logger()->warning('Promethee removed a legacy Hermès zero-flight ghost PIREP', [
+                'pirep_id' => $ghostId,
+                'operation_id' => $this->operationIdentity->id($bid),
+                'user_id' => $bid->user_id,
+                'flight_id' => $bid->flight_id,
+                'aircraft_id' => $bid->aircraft_id,
+            ]);
+        });
     }
 
     private function hasOperationTelemetry(Pirep $pirep): bool
