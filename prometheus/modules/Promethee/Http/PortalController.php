@@ -2714,6 +2714,129 @@ class PortalController extends Controller
         $branding->saveCustom($filename);
         return redirect()->route('admin.promethee.branding')->with('success', 'Le logo importé est maintenant actif.');
     }
+    public function emergencyPireps(Request $r)
+    {
+        $filters = $r->validate([
+            'q' => 'nullable|string|max:120',
+            'state' => 'nullable|in:all,pending,accepted,rejected,in_progress,cancelled',
+        ]);
+
+        $term = trim((string) ($filters['q'] ?? ''));
+        $state = $filters['state'] ?? 'all';
+        $stateMap = [
+            'pending' => PirepState::PENDING,
+            'accepted' => PirepState::ACCEPTED,
+            'rejected' => PirepState::REJECTED,
+            'in_progress' => PirepState::IN_PROGRESS,
+            'cancelled' => PirepState::CANCELLED,
+        ];
+
+        $pireps = Pirep::query()
+            ->with(['user:id,name,pilot_id', 'flight:id,route_code,flight_number,dpt_airport_id,arr_airport_id', 'aircraft:id,registration'])
+            ->when($term !== '', function ($query) use ($term) {
+                $query->where(function ($nested) use ($term) {
+                    $nested->where('id', 'like', '%'.$term.'%')
+                        ->orWhere('flight_number', 'like', '%'.strtoupper($term).'%')
+                        ->orWhere('route_code', 'like', '%'.strtoupper($term).'%')
+                        ->orWhere('dpt_airport_id', 'like', '%'.strtoupper($term).'%')
+                        ->orWhere('arr_airport_id', 'like', '%'.strtoupper($term).'%')
+                        ->orWhereHas('user', fn ($users) => $users
+                            ->where('name', 'like', '%'.$term.'%')
+                            ->orWhere('pilot_id', 'like', '%'.$term.'%'));
+                });
+            })
+            ->when($state !== 'all' && isset($stateMap[$state]), fn ($query) => $query->where('state', $stateMap[$state]))
+            ->latest('created_at')
+            ->paginate(30)
+            ->withQueryString();
+
+        return $this->page('admin-pireps-emergency', compact('pireps', 'filters'));
+    }
+
+    public function emergencyDeletePirep(string $id, Request $r)
+    {
+        $data = $r->validate([
+            'confirmation' => 'required|string',
+        ]);
+        abort_unless($data['confirmation'] === 'SUPPRIMER', 422, 'Saisissez SUPPRIMER pour confirmer la remise à zéro.');
+
+        $pirep = Pirep::with(['user', 'aircraft', 'flight'])->findOrFail($id);
+        $snapshot = [
+            'id' => $pirep->id,
+            'user_id' => $pirep->user_id,
+            'pilot_id' => $pirep->user?->pilot_id,
+            'flight_id' => $pirep->flight_id,
+            'ident' => $pirep->ident,
+            'aircraft_id' => $pirep->aircraft_id,
+            'aircraft_registration' => $pirep->aircraft?->registration,
+            'state' => (int) $pirep->state,
+            'status' => (string) $pirep->status,
+            'source_name' => (string) $pirep->source_name,
+            'submitted_at' => optional($pirep->submitted_at)->toIso8601String(),
+        ];
+
+        DB::transaction(function () use ($pirep, $r, $snapshot) {
+            $wasAccepted = (int) $pirep->state === PirepState::ACCEPTED;
+            $aircraft = $pirep->aircraft;
+            $user = $pirep->user;
+            $departure = $pirep->dpt_airport_id;
+
+            // Reverse phpVMS flight-time/count accounting first when an already
+            // accepted report must be removed in an emergency.
+            $service = app(\App\Services\PirepService::class);
+            if ($wasAccepted) {
+                $pirep = $service->reject($pirep);
+            }
+
+            // Prométhée-owned operational data is not known by core phpVMS.
+            DB::table('promethee_telemetry')->where('pirep_id', $pirep->id)->delete();
+            if (preg_match('/Hermes ACARS \\[(op_[^\\]]+)\\]/', (string) $pirep->source_name, $match)) {
+                if (\Illuminate\Support\Facades\Schema::hasTable('promethee_datalink_stores')) {
+                    DB::table('promethee_datalink_stores')->where('operation_id', $match[1])->delete();
+                }
+            }
+
+            $service->delete($pirep);
+
+            // Only move an aircraft/pilot backwards when this PIREP is still
+            // their latest operational movement. Never overwrite a newer flight.
+            if ($aircraft) {
+                $hasNewerAircraftPirep = Pirep::where('aircraft_id', $aircraft->id)
+                    ->where('created_at', '>', $pirep->created_at)
+                    ->exists();
+                if (!$hasNewerAircraftPirep && $departure) {
+                    $aircraft->airport_id = $departure;
+                    $aircraft->save();
+                }
+            }
+
+            if ($user) {
+                $lastAccepted = Pirep::where('user_id', $user->id)
+                    ->where('state', PirepState::ACCEPTED)
+                    ->latest('submitted_at')
+                    ->first();
+                $user->last_pirep_id = $lastAccepted?->id;
+                if (!$lastAccepted || (string) $user->curr_airport_id === (string) ($snapshot['flight_id'] ? $pirep->arr_airport_id : $user->curr_airport_id)) {
+                    $user->curr_airport_id = $lastAccepted?->arr_airport_id ?: $user->home_airport_id;
+                }
+                $user->save();
+            }
+
+            DB::table('promethee_audit_logs')->insert([
+                'actor_id' => $r->user()->id,
+                'action' => 'pirep.emergency_delete',
+                'subject_type' => 'pirep',
+                'subject_id' => $snapshot['id'],
+                'context' => json_encode($snapshot, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        });
+
+        return redirect()->route('admin.promethee.pireps-emergency')
+            ->with('success', 'PIREP '.$snapshot['id'].' supprimé en urgence. Le pilote peut recréer son opération.');
+    }
+
     public function adminMissions() {
         return $this->page('admin-missions', [
             'missions'=>DB::table('promethee_missions')->orderByDesc('created_at')->get(),
