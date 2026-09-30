@@ -33,8 +33,54 @@
     </div>
   </div>
 
-  <form method="post" action="{{ route('admin.promethee.pricing-criteria.save') }}">
+  <form method="post" action="{{ route('admin.promethee.pricing-criteria.save') }}" id="pricing-criteria-form">
     @csrf
+
+    <div class="form-grid" style="margin-bottom:16px">
+      <label class="full">Rechercher une ligne
+        <input type="search" id="criteria-search" placeholder="N° de vol, aéroport, ville…" autocomplete="off">
+      </label>
+      <label>Départ
+        <select id="criteria-departure">
+          <option value="">Tous les départs</option>
+          @foreach($flights->pluck('dpt_airport_id')->filter()->unique()->sort() as $airport)
+            <option value="{{ $airport }}">{{ $airport }}</option>
+          @endforeach
+        </select>
+      </label>
+      <label>Arrivée
+        <select id="criteria-arrival">
+          <option value="">Toutes les arrivées</option>
+          @foreach($flights->pluck('arr_airport_id')->filter()->unique()->sort() as $airport)
+            <option value="{{ $airport }}">{{ $airport }}</option>
+          @endforeach
+        </select>
+      </label>
+      <label>Classement actuel
+        <select id="criteria-class">
+          <option value="">Tous les classements</option>
+          <option value="principal">Lignes principales</option>
+          <option value="diagonal">Diagonales régionales</option>
+          <option value="unclassified">À classer</option>
+        </select>
+      </label>
+      <div style="align-self:end">
+        <button type="button" class="button outline" id="criteria-reset-filters">Réinitialiser les filtres</button>
+      </div>
+    </div>
+
+    <div class="panel-heading" style="margin-bottom:12px">
+      <div>
+        <strong id="criteria-result-count">{{ $flights->count() }} ligne(s) affichée(s)</strong>
+        <p><span id="criteria-selected-count">0</span> ligne(s) sélectionnée(s) sur {{ $flights->count() }} au total.</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="button outline" id="criteria-select-visible">Sélectionner les lignes affichées</button>
+        <button type="button" class="button outline" id="criteria-select-everything">Tout sélectionner</button>
+        <button type="button" class="button outline" id="criteria-unselect-all">Tout désélectionner</button>
+      </div>
+    </div>
+
     <div class="form-grid">
       <label>Classer les lignes sélectionnées
         <select name="network_class" required>
@@ -47,12 +93,20 @@
     </div>
 
     <div class="table-wrap">
-      <table>
-        <thead><tr><th><input type="checkbox" id="criteria-select-all" aria-label="Tout sélectionner"></th><th>Vol</th><th>Départ</th><th>Arrivée</th><th>Classement</th></tr></thead>
+      <table id="criteria-table">
+        <thead><tr><th><input type="checkbox" id="criteria-select-all" aria-label="Sélectionner toutes les lignes affichées"></th><th>Vol</th><th>Départ</th><th>Arrivée</th><th>Classement</th></tr></thead>
         <tbody>
         @forelse($flights as $flight)
-          <tr>
-            <td><input type="checkbox" name="flight_ids[]" value="{{ $flight->id }}"></td>
+          @php
+            $departureLabel = trim($flight->dpt_airport_id.' '.($flight->dpt_airport?->location ?: $flight->dpt_airport?->name));
+            $arrivalLabel = trim($flight->arr_airport_id.' '.($flight->arr_airport?->location ?: $flight->arr_airport?->name));
+          @endphp
+          <tr class="criteria-row"
+              data-search="{{ strtolower($flight->ident.' '.$departureLabel.' '.$arrivalLabel) }}"
+              data-departure="{{ $flight->dpt_airport_id }}"
+              data-arrival="{{ $flight->arr_airport_id }}"
+              data-class="{{ $flight->pricing_network_class }}">
+            <td><input class="criteria-flight-checkbox" type="checkbox" name="flight_ids[]" value="{{ $flight->id }}"></td>
             <td><strong>{{ $flight->ident }}</strong></td>
             <td>{{ $flight->dpt_airport_id }} · {{ $flight->dpt_airport?->location ?: $flight->dpt_airport?->name }}</td>
             <td>{{ $flight->arr_airport_id }} · {{ $flight->arr_airport?->location ?: $flight->arr_airport?->name }}</td>
@@ -69,6 +123,7 @@
         @empty
           <tr><td colspan="5">Aucune ligne ITF active.</td></tr>
         @endforelse
+        <tr id="criteria-no-results" style="display:none"><td colspan="5">Aucune ligne ne correspond aux filtres.</td></tr>
         </tbody>
       </table>
     </div>
@@ -127,11 +182,111 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const all = document.getElementById('criteria-select-all');
-  if (!all) return;
-  all.addEventListener('change', () => {
-    document.querySelectorAll('input[name="flight_ids[]"]').forEach((box) => { box.checked = all.checked; });
+  const form = document.getElementById('pricing-criteria-form');
+  const master = document.getElementById('criteria-select-all');
+  const search = document.getElementById('criteria-search');
+  const departure = document.getElementById('criteria-departure');
+  const arrival = document.getElementById('criteria-arrival');
+  const networkClass = document.getElementById('criteria-class');
+  const reset = document.getElementById('criteria-reset-filters');
+  const selectVisible = document.getElementById('criteria-select-visible');
+  const selectEverything = document.getElementById('criteria-select-everything');
+  const unselectAll = document.getElementById('criteria-unselect-all');
+  const selectedCount = document.getElementById('criteria-selected-count');
+  const resultCount = document.getElementById('criteria-result-count');
+  const noResults = document.getElementById('criteria-no-results');
+  const rows = Array.from(document.querySelectorAll('.criteria-row'));
+
+  if (!form || !master) return;
+
+  const normalize = (value) => (value || '').toString().trim().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  const visibleRows = () => rows.filter((row) => row.style.display !== 'none');
+  const boxes = () => rows.map((row) => row.querySelector('.criteria-flight-checkbox')).filter(Boolean);
+
+  const updateSelectionState = () => {
+    const visible = visibleRows();
+    const visibleBoxes = visible.map((row) => row.querySelector('.criteria-flight-checkbox')).filter(Boolean);
+    const selected = boxes().filter((box) => box.checked).length;
+    const selectedVisible = visibleBoxes.filter((box) => box.checked).length;
+
+    selectedCount.textContent = selected;
+    master.checked = visibleBoxes.length > 0 && selectedVisible === visibleBoxes.length;
+    master.indeterminate = selectedVisible > 0 && selectedVisible < visibleBoxes.length;
+  };
+
+  const applyFilters = () => {
+    const q = normalize(search.value);
+    const dpt = departure.value;
+    const arr = arrival.value;
+    const cls = networkClass.value;
+    let visible = 0;
+
+    rows.forEach((row) => {
+      const matches =
+        (!q || normalize(row.dataset.search).includes(q)) &&
+        (!dpt || row.dataset.departure === dpt) &&
+        (!arr || row.dataset.arrival === arr) &&
+        (!cls || row.dataset.class === cls);
+
+      row.style.display = matches ? '' : 'none';
+      if (matches) visible++;
+    });
+
+    resultCount.textContent = visible + ' ligne(s) affichée(s)';
+    noResults.style.display = visible === 0 ? '' : 'none';
+    updateSelectionState();
+  };
+
+  [search, departure, arrival, networkClass].forEach((input) => {
+    input.addEventListener(input === search ? 'input' : 'change', applyFilters);
   });
+
+  reset.addEventListener('click', () => {
+    search.value = '';
+    departure.value = '';
+    arrival.value = '';
+    networkClass.value = '';
+    applyFilters();
+  });
+
+  master.addEventListener('change', () => {
+    visibleRows().forEach((row) => {
+      const box = row.querySelector('.criteria-flight-checkbox');
+      if (box) box.checked = master.checked;
+    });
+    updateSelectionState();
+  });
+
+  selectVisible.addEventListener('click', () => {
+    visibleRows().forEach((row) => {
+      const box = row.querySelector('.criteria-flight-checkbox');
+      if (box) box.checked = true;
+    });
+    updateSelectionState();
+  });
+
+  selectEverything.addEventListener('click', () => {
+    boxes().forEach((box) => { box.checked = true; });
+    updateSelectionState();
+  });
+
+  unselectAll.addEventListener('click', () => {
+    boxes().forEach((box) => { box.checked = false; });
+    updateSelectionState();
+  });
+
+  boxes().forEach((box) => box.addEventListener('change', updateSelectionState));
+
+  form.addEventListener('submit', (event) => {
+    if (!boxes().some((box) => box.checked)) {
+      event.preventDefault();
+      alert('Sélectionnez au moins une ligne avant d’appliquer un classement.');
+    }
+  });
+
+  applyFilters();
 });
 </script>
 @endpush
