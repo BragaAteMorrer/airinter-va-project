@@ -721,10 +721,7 @@ class OperationsV1Controller extends Controller
                 ]]);
             }
 
-            // A terminal correlated PIREP must never short-circuit a fresh
-            // Hermès prefile. Continue through phpVMS prefile so duplicate
-            // detection may return it, then the normalization below resets it
-            // to IN_PROGRESS / INITIATED for the current operation.
+            abort(409, 'Cette opération possède déjà un PIREP déposé. Un rapport terminé ne peut jamais être rouvert : créez une nouvelle réservation.');
         }
 
         abort_if(!$bid->aircraft_id, 409, 'Sélectionnez un appareil avant de préparer le PIREP.');
@@ -770,28 +767,23 @@ class OperationsV1Controller extends Controller
 
         $pirep = $this->pirepSvc->prefile($request->user(), $attrs, [], []);
 
-        // phpVMS duplicate detection can return a recently filed PIREP for the
-        // same pilot/route instead of creating the new prefile. A reused
-        // PENDING/ACCEPTED/REJECTED report is terminal for Dispatch and used to
-        // leave Hermès with every visible check green but START permanently
-        // disabled. Hermès prefile must always represent an active operation.
-        if ((int) $pirep->state !== PirepState::IN_PROGRESS || $pirep->submitted_at !== null) {
-            $pirep->state = PirepState::IN_PROGRESS;
-            $pirep->submitted_at = null;
-            $pirep->block_off_time = null;
-            $pirep->block_on_time = null;
-            $pirep->flight_time = 0;
-            $pirep->distance = 0;
-            $pirep->fuel_used = 0;
-            $pirep->landing_rate = null;
-        }
+        // vmsACARS semantics: prefile creates the active working PIREP only.
+        // It remains IN_PROGRESS/INITIATED until Hermès has actually flown and
+        // the pilot files it at the end of the ACARS session.
+        abort_if(
+            (int) $pirep->state !== PirepState::IN_PROGRESS
+                || $pirep->submitted_at !== null
+                || $pirep->status === PirepStatus::ARRIVED
+                || $pirep->status === PirepStatus::CANCELLED,
+            409,
+            'Prométhée n’a pas pu ouvrir un brouillon PIREP actif pour cette opération. Aucun rapport terminé n’a été modifié.'
+        );
 
-        // Reassert the Prométhée correlation marker so the operation resolves
-        // deterministically even when phpVMS returned a duplicate object.
-        $pirep->source_name = $attrs['source_name'];
-        $pirep->status = PirepStatus::INITIATED;
-        $pirep->save();
-        $pirep->refresh();
+        abort_if(
+            (string) $pirep->source_name !== $attrs['source_name'],
+            409,
+            'Le brouillon PIREP retourné ne correspond pas à l’opération Hermès sélectionnée.'
+        );
 
         return response()->json(['data' => [
             'operation_id' => $operationId,
