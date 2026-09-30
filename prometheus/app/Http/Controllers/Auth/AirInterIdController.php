@@ -243,6 +243,10 @@ class AirInterIdController extends Controller
 
     private function safeTarget(string $target): string
     {
+        if (in_array($target, ['/dashboard', '/legacy/dashboard'], true)) {
+            return '/';
+        }
+
         if (
             str_starts_with($target, '/')
             && !str_starts_with($target, '//')
@@ -261,7 +265,11 @@ class AirInterIdController extends Controller
             return $target;
         }
 
-        return (string) config('phpvms.login_redirect', '/dashboard');
+        $fallback = (string) config('phpvms.login_redirect', '/');
+
+        return in_array($fallback, ['/dashboard', '/legacy/dashboard'], true)
+            ? '/'
+            : $fallback;
     }
 
     private function randomBase64Url(int $bytes): string
