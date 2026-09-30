@@ -75,6 +75,7 @@ final class SimBriefOperationResolverTest extends TestCase
         $this->assertSame('F-GPMB', $resolved['parameters']['reg']);
         $this->assertSame(350, $resolved['parameters']['fl']);
         $this->assertSame('DCT RESOLVER', $resolved['parameters']['route']);
+        $this->assertSame($resolved['demand']['passengers'], $resolved['parameters']['pax']);
 
         $public = $resolver->publicView($resolved);
         $this->assertSame('flights', $public['sources']['flight']);
