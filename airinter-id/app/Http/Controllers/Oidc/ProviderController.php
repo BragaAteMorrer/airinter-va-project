@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\OidcTokenService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Laravel\Passport\Passport;
 
 class ProviderController extends Controller
 {
@@ -51,6 +52,40 @@ class ProviderController extends Controller
     {
         return response()->json($tokens->jwks())
             ->header('Cache-Control', 'public, max-age=300');
+    }
+
+    /**
+     * Public desktop-client metadata. OAuth client IDs are identifiers, not
+     * secrets, so Hermès discovers the currently active client at runtime.
+     * This keeps client rotation independent from desktop releases.
+     */
+    public function hermesClient(OidcTokenService $tokens): JsonResponse
+    {
+        $definition = (array) config('airinter-id.clients.hermes', []);
+        $name = (string) ($definition['name'] ?? 'Hermès');
+
+        $client = Passport::client()
+            ->newQuery()
+            ->where('name', $name)
+            ->where('revoked', false)
+            ->latest('created_at')
+            ->first();
+
+        if (!$client) {
+            return response()->json([
+                'error' => 'temporarily_unavailable',
+                'error_description' => 'Hermès OAuth client is not provisioned.',
+            ], 503, ['Cache-Control' => 'no-store']);
+        }
+
+        return response()->json([
+            'issuer' => $tokens->issuer(),
+            'client_id' => (string) $client->getKey(),
+            'redirect_uri' => (string) ($definition['redirect_uri'] ?? 'http://127.0.0.1:47821/callback'),
+            'scope' => implode(' ', (array) ($definition['scopes'] ?? ['openid', 'profile', 'email', 'hermes:operate'])),
+            'token_endpoint_auth_method' => 'none',
+            'code_challenge_method' => 'S256',
+        ])->header('Cache-Control', 'public, max-age=60');
     }
 
     public function userinfo(Request $request): JsonResponse
