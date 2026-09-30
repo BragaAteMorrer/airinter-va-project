@@ -1058,15 +1058,17 @@ class PortalController extends Controller
        }
 
        $hasTelemetry = $pirep && DB::table('promethee_telemetry')->where('pirep_id', $pirep->id)->exists();
-       $completed = $pirep && ($pirep->submitted_at !== null
-           || in_array((int) $pirep->state, [PirepState::PENDING, PirepState::ACCEPTED, PirepState::REJECTED], true)
-           || $pirep->status === PirepStatus::ARRIVED);
-       $cancelled = $pirep && ((int) $pirep->state === PirepState::CANCELLED || $pirep->status === PirepStatus::CANCELLED);
+       $legacyGhost = $pirep && $this->isLegacyHermesGhostForPortal($pirep, $hasTelemetry);
+       $statusPirep = $legacyGhost ? null : $pirep;
+       $completed = $statusPirep && ($statusPirep->submitted_at !== null
+           || in_array((int) $statusPirep->state, [PirepState::PENDING, PirepState::ACCEPTED, PirepState::REJECTED], true)
+           || $statusPirep->status === PirepStatus::ARRIVED);
+       $cancelled = $statusPirep && ((int) $statusPirep->state === PirepState::CANCELLED || $statusPirep->status === PirepStatus::CANCELLED);
 
        $status = $cancelled ? 'CANCELLED'
            : ($completed ? 'COMPLETED'
            : ($hasTelemetry ? 'IN_PROGRESS'
-           : ($pirep ? 'READY'
+           : ($statusPirep ? 'READY'
            : ($ofp && $booking->aircraft_id ? 'PIREP_REQUIRED'
            : ($booking->aircraft_id ? 'OFP_REQUIRED' : 'AIRCRAFT_REQUIRED')))));
 
@@ -1086,7 +1088,10 @@ class PortalController extends Controller
        $booking->setAttribute('operation_status', $status);
        $booking->setAttribute('operation_progress', $progress);
        $booking->setAttribute('operation_can_delete', $pirep === null);
-       $booking->setAttribute('operation_next_action', match ($status) {
+       $booking->setAttribute('operation_legacy_ghost', $legacyGhost);
+       $booking->setAttribute('operation_next_action', $legacyGhost
+           ? 'Réparer l’ancien PIREP dans Hermès'
+           : match ($status) {
            'AIRCRAFT_REQUIRED' => 'Sélectionner un appareil',
            'OFP_REQUIRED' => 'Préparer l’OFP',
            'PIREP_REQUIRED' => 'Préparer le PIREP',
@@ -1098,6 +1103,18 @@ class PortalController extends Controller
        });
 
        return $booking;
+   }
+
+   private function isLegacyHermesGhostForPortal(Pirep $pirep, bool $hasTelemetry): bool
+   {
+       if (!str_starts_with((string) $pirep->source_name, 'Hermes ACARS [op_')) return false;
+       if (!$pirep->created_at || !$pirep->submitted_at) return false;
+       if ($pirep->created_at->diffInSeconds($pirep->submitted_at) > 600) return false;
+       if ((int) ($pirep->flight_time ?? 0) > 0) return false;
+       if ($pirep->block_off_time !== null || $pirep->landing_rate !== null) return false;
+       if ($hasTelemetry) return false;
+       if (DB::table('acars')->where('pirep_id', $pirep->id)->exists()) return false;
+       return true;
    }
 
    private function downloadCategory(File $file): string {
