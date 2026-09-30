@@ -7,7 +7,25 @@
         <h1>{{ $flight->ident }}</h1>
         <p>{{ $flight->dpt_airport_id }} → {{ $flight->arr_airport_id }} · {{ $flight->flight_type }}</p>
     </div>
-    <div class="toolbar"><a class="button outline" href="{{ route('promethee.flights') }}">← Retour au programme</a>@if($reservation)<span class="tag">Vol déjà réservé</span>@else<form method="post" action="{{ route('promethee.flights.reserve',$flight->id) }}">@csrf<button class="button">Réserver ce vol</button></form>@endif<a class="button outline" href="{{ route('promethee.flights.briefing',$flight->id) }}">Préparer le vol</a><a class="button" href="{{ route('promethee.acars') }}">Ouvrir ACARS ↗</a></div>
+    <div class="toolbar">
+        <a class="button outline" href="{{ route('promethee.flights') }}">← Retour au programme</a>
+        @if($reservation)
+            <span class="tag">Vol déjà réservé</span>
+            @if($reservation->operation_can_delete)
+                <form method="POST" action="{{ route('promethee.bookings.cancel', $reservation->id) }}" onsubmit="return confirm('Annuler la réservation {{ $flight->ident }} ? Cette action est possible uniquement tant qu’aucun PIREP Hermès n’a été créé.');">
+                    @csrf
+                    @method('DELETE')
+                    <button class="button danger" type="submit">Annuler la réservation</button>
+                </form>
+            @else
+                <span class="tag">Annulation verrouillée · PIREP créé</span>
+            @endif
+        @else
+            <form method="post" action="{{ route('promethee.flights.reserve',$flight->id) }}">@csrf<button class="button">Réserver ce vol</button></form>
+        @endif
+        <a class="button outline" href="{{ route('promethee.flights.briefing',$flight->id) }}">Préparer le vol</a>
+        <a class="button" href="{{ route('promethee.acars') }}">Ouvrir ACARS ↗</a>
+    </div>
 </div>
 
 <section class="control-strip">
