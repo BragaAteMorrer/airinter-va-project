@@ -1153,6 +1153,44 @@ class PortalController extends Controller
    public function documents() {
        return $this->downloadCategoryPage('documents');
    }
+   public function document(string $file) {
+       $asset = File::findOrFail($file);
+       abort_unless($this->downloadCategory($asset) === 'documents' && $this->isManagedDownload($asset), 404);
+
+       $urlPath = parse_url((string) $asset->path, PHP_URL_PATH) ?: '';
+       $extension = strtolower(pathinfo($urlPath, PATHINFO_EXTENSION));
+       $officeExtensions = ['ppt', 'pptx', 'doc', 'docx', 'xls', 'xlsx'];
+       $previewType = match (true) {
+           $extension === 'pdf' => 'pdf',
+           in_array($extension, ['png', 'jpg', 'jpeg', 'gif', 'webp'], true) => 'image',
+           in_array($extension, $officeExtensions, true) => 'office',
+           in_array($extension, ['txt', 'md', 'csv'], true) => 'text',
+           default => 'none',
+       };
+
+       return $this->page('document-viewer', compact('asset', 'extension', 'previewType'));
+   }
+   public function documentContent(string $file) {
+       $asset = File::findOrFail($file);
+       abort_unless($this->downloadCategory($asset) === 'documents' && $this->isManagedDownload($asset), 404);
+
+       if ($asset->isExternalFile) {
+           return redirect()->away($asset->url);
+       }
+
+       $disk = $asset->disk ?? config('filesystems.public_files');
+       abort_unless(\Illuminate\Support\Facades\Storage::disk($disk)->exists($asset->path), 404);
+
+       $path = \Illuminate\Support\Facades\Storage::disk($disk)->path($asset->path);
+       $mime = mime_content_type($path) ?: 'application/octet-stream';
+
+       return response()->file($path, [
+           'Content-Type' => $mime,
+           'Content-Disposition' => 'inline; filename="'.addslashes($asset->filename).'"',
+           'X-Content-Type-Options' => 'nosniff',
+           'Cache-Control' => 'private, max-age=300',
+       ]);
+   }
    public function downloadCategoryPage(string $category) {
        $sections = ['acars' => ['ACARS', 'Clients et documentation de connexion'], 'fleet' => ['Avions et flotte', 'Livrées, appareils et documents associés'], 'airports' => ['Aéroports et HUBs', 'Scènes, cartes et ressources réseau'], 'documents' => ['Documentation interne', 'Procédures, carrière, formation et documentation par type d’avion']];
        abort_unless(array_key_exists($category, $sections), 404);
