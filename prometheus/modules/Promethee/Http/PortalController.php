@@ -2212,13 +2212,56 @@ class PortalController extends Controller
         return $this->page('health',['latestTelemetry'=>$latest,'audit'=>DB::table('promethee_audit_logs')->latest()->limit(30)->get(),'tables'=>['Télémétrie'=>DB::table('promethee_telemetry')->count(),'Briefings'=>DB::table('promethee_briefings')->count(),'Événements'=>DB::table('promethee_events')->count(),'Saisons'=>DB::table('promethee_seasons')->count()]]);
     }
     public function seasons(Request $r) {
-        return $this->page('seasons',['seasons'=>DB::table('promethee_seasons')->orderByDesc('starts_on')->get()]);
+        $seasons = DB::table('promethee_seasons')->orderByDesc('starts_on')->get();
+        $seasonAdjustments = DB::table('promethee_season_pricing_adjustments as adjustment')
+            ->join('promethee_seasons as season', 'season.id', '=', 'adjustment.season_id')
+            ->leftJoin('flights', 'flights.id', '=', 'adjustment.flight_id')
+            ->leftJoin('airlines', 'airlines.id', '=', 'flights.airline_id')
+            ->select('adjustment.*', 'season.name as season_name', 'season.starts_on', 'season.ends_on',
+                'airlines.icao as airline_icao', 'flights.flight_number', 'flights.dpt_airport_id', 'flights.arr_airport_id')
+            ->orderByDesc('season.starts_on')->orderBy('adjustment.scope')->orderBy('adjustment.id')->get();
+        $seasonFlights = Flight::with('airline')->where('active', true)
+            ->orderBy('airline_id')->orderBy('flight_number')->get();
+
+        return $this->page('seasons', compact('seasons', 'seasonAdjustments', 'seasonFlights'));
     }
     public function saveSeason(Request $r) {
         $data=$r->validate(['name'=>'required|string|max:80','starts_on'=>'required|date','ends_on'=>'required|date|after:starts_on','notes'=>'nullable|string|max:2000','active'=>'nullable|boolean']);
         if (!empty($data['active'])) DB::table('promethee_seasons')->update(['active'=>false,'updated_at'=>now()]);
         DB::table('promethee_seasons')->insert($data+['active'=>$r->boolean('active'),'created_at'=>now(),'updated_at'=>now()]);
         return back()->with('success','Saison enregistrée.');
+    }
+    public function saveSeasonPricingAdjustment(Request $r) {
+        $data=$r->validate([
+            'season_id'=>'required|exists:promethee_seasons,id',
+            'scope'=>'required|in:global,flight',
+            'flight_id'=>'nullable|required_if:scope,flight|exists:flights,id',
+            'direction'=>'required|in:increase,decrease',
+            'mode'=>'required|in:percent,amount',
+            'value'=>'required|numeric|min:0.01|max:999999',
+            'notes'=>'nullable|string|max:1000',
+            'active'=>'nullable|boolean',
+        ]);
+
+        DB::table('promethee_season_pricing_adjustments')->insert([
+            'season_id'=>(int)$data['season_id'],
+            'scope'=>$data['scope'],
+            'flight_id'=>$data['scope']==='flight' ? $data['flight_id'] : null,
+            'direction'=>$data['direction'],
+            'mode'=>$data['mode'],
+            'value'=>(float)$data['value'],
+            'notes'=>$data['notes'] ?? null,
+            'active'=>$r->boolean('active'),
+            'created_by'=>$r->user()->id,
+            'created_at'=>now(),
+            'updated_at'=>now(),
+        ]);
+
+        return back()->with('success','Ajustement tarifaire saisonnier enregistré.');
+    }
+    public function deleteSeasonPricingAdjustment(int $id) {
+        DB::table('promethee_season_pricing_adjustments')->where('id',$id)->delete();
+        return back()->with('success','Ajustement tarifaire saisonnier supprimé.');
     }
     public function importSchedule(Request $r) {
         $data=$r->validate(['schedule'=>'required|file|mimes:csv,txt|max:5120']);
