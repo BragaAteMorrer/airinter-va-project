@@ -41,20 +41,20 @@
         <input type="search" id="criteria-search" placeholder="N° de vol, aéroport, ville…" autocomplete="off">
       </label>
       <label>Départ
-        <select id="criteria-departure">
-          <option value="">Tous les départs</option>
-          @foreach($flights->pluck('dpt_airport_id')->filter()->unique()->sort() as $airport)
-            <option value="{{ $airport }}">{{ $airport }}</option>
+        <input type="search" id="criteria-departure" list="criteria-departure-airports" placeholder="Ville, nom ou code ICAO" autocomplete="off">
+        <datalist id="criteria-departure-airports">
+          @foreach($flights->map(fn($flight) => $flight->dpt_airport)->filter()->unique('id')->sortBy('icao') as $airport)
+            <option value="{{ $airport->icao }}" label="{{ $airport->location ?: $airport->name }} · {{ $airport->name }}"></option>
           @endforeach
-        </select>
+        </datalist>
       </label>
       <label>Arrivée
-        <select id="criteria-arrival">
-          <option value="">Toutes les arrivées</option>
-          @foreach($flights->pluck('arr_airport_id')->filter()->unique()->sort() as $airport)
-            <option value="{{ $airport }}">{{ $airport }}</option>
+        <input type="search" id="criteria-arrival" list="criteria-arrival-airports" placeholder="Ville, nom ou code ICAO" autocomplete="off">
+        <datalist id="criteria-arrival-airports">
+          @foreach($flights->map(fn($flight) => $flight->arr_airport)->filter()->unique('id')->sortBy('icao') as $airport)
+            <option value="{{ $airport->icao }}" label="{{ $airport->location ?: $airport->name }} · {{ $airport->name }}"></option>
           @endforeach
-        </select>
+        </datalist>
       </label>
       <label>Classement actuel
         <select id="criteria-class">
@@ -103,8 +103,8 @@
           @endphp
           <tr class="criteria-row"
               data-search="{{ strtolower($flight->ident.' '.$departureLabel.' '.$arrivalLabel) }}"
-              data-departure="{{ $flight->dpt_airport_id }}"
-              data-arrival="{{ $flight->arr_airport_id }}"
+              data-departure="{{ strtolower($departureLabel.' '.$flight->dpt_airport?->name) }}"
+              data-arrival="{{ strtolower($arrivalLabel.' '.$flight->arr_airport?->name) }}"
               data-class="{{ $flight->pricing_network_class }}">
             <td><input class="criteria-flight-checkbox" type="checkbox" name="flight_ids[]" value="{{ $flight->id }}"></td>
             <td><strong>{{ $flight->ident }}</strong></td>
@@ -218,16 +218,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const applyFilters = () => {
     const q = normalize(search.value);
-    const dpt = departure.value;
-    const arr = arrival.value;
+    const dpt = normalize(departure.value);
+    const arr = normalize(arrival.value);
     const cls = networkClass.value;
     let visible = 0;
 
     rows.forEach((row) => {
       const matches =
         (!q || normalize(row.dataset.search).includes(q)) &&
-        (!dpt || row.dataset.departure === dpt) &&
-        (!arr || row.dataset.arrival === arr) &&
+        (!dpt || normalize(row.dataset.departure).includes(dpt)) &&
+        (!arr || normalize(row.dataset.arrival).includes(arr)) &&
         (!cls || row.dataset.class === cls);
 
       row.style.display = matches ? '' : 'none';
@@ -239,9 +239,8 @@ document.addEventListener('DOMContentLoaded', () => {
     updateSelectionState();
   };
 
-  [search, departure, arrival, networkClass].forEach((input) => {
-    input.addEventListener(input === search ? 'input' : 'change', applyFilters);
-  });
+  [search, departure, arrival].forEach((input) => input.addEventListener('input', applyFilters));
+  networkClass.addEventListener('change', applyFilters);
 
   reset.addEventListener('click', () => {
     search.value = '';
