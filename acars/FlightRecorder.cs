@@ -52,6 +52,23 @@ public sealed class FlightRecorder
     public RemoteAcarsConfiguration? RemoteConfiguration { get; private set; }
     public bool RecoveryAvailable { get { lock (Gate) return recoveryRequired && Flight is not null && !Flight.Recording; } }
 
+    public bool EnsureRecoveryForServer(string server)
+    {
+        lock (Gate) {
+            if (Flight is null || Flight.Recording) return false;
+            if (recoveryRequired) return true;
+            if (SameServer(Flight.Server, server)) return false;
+
+            // A paused/local flight can become stale after a server URL change,
+            // migration or a filing edge-case. Promote it to Recovery Center
+            // instead of leaving the user with a hidden, unblockable state.
+            recoveryRequired = true;
+            Warning = "Un ancien état ACARS local appartient à un autre serveur Prométhée. Utilisez le Recovery Center pour l’archiver avant de continuer.";
+            Save();
+            return true;
+        }
+    }
+
     public FlightRecorder(string? storageFolder = null)
     {
         folder = storageFolder ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AirInter", "Promethee");
@@ -139,8 +156,14 @@ public sealed class FlightRecorder
     }
 
     public void Resume(string server) { lock (Gate) {
-        if (Flight is null || !SameServer(Flight.Server, server))
-            throw new InvalidOperationException("Ce vol de récupération appartient à un autre serveur Prométhée. Archivez l’ancien vol depuis le Recovery Center avant de démarrer une nouvelle opération.");
+        if (Flight is null)
+            throw new InvalidOperationException("Aucun vol local à reprendre.");
+        if (!SameServer(Flight.Server, server)) {
+            recoveryRequired = true;
+            Warning = "Un ancien état ACARS local appartient à un autre serveur Prométhée. Archivez-le depuis le Recovery Center.";
+            Save();
+            throw new InvalidOperationException("Ce vol de récupération appartient à un autre serveur Prométhée. Le Recovery Center est maintenant disponible pour l’archiver.");
+        }
         tracking.Restore(
             FlightTrackingEngine.ParsePhase(Flight.Phase),
             Flight.Journal.Any(x => x.Name == "ON"));
