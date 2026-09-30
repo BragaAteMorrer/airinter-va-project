@@ -26,14 +26,14 @@
         <p class="privacy-note">Votre mot de passe Argos n’est jamais transmis à {{ $client->name }}.</p>
 
         <div class="actions consent-actions">
-            <form method="post" action="{{ route('passport.authorizations.approve') }}">
+            <form method="post" action="{{ route('passport.authorizations.approve', [], false) }}">
                 @csrf
                 <input type="hidden" name="state" value="{{ $request->state }}">
                 <input type="hidden" name="client_id" value="{{ $client->getKey() }}">
                 <input type="hidden" name="auth_token" value="{{ $authToken }}">
                 <button class="button primary">Autoriser</button>
             </form>
-            <form method="post" action="{{ route('passport.authorizations.deny') }}">
+            <form method="post" action="{{ route('passport.authorizations.deny', [], false) }}">
                 @csrf
                 @method('DELETE')
                 <input type="hidden" name="state" value="{{ $request->state }}">
