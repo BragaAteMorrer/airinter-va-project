@@ -38,9 +38,9 @@
                 </a>
             @endif
             @if($booking->operation_can_delete)
-                <form method="POST" action="{{ route('promethee.bookings.cancel', $booking->id) }}" onsubmit="return confirm('Supprimer cette réservation ?');">
+                <form method="POST" action="{{ route('promethee.bookings.cancel', $booking->id) }}" onsubmit="return confirm('Annuler cette réservation ? Cette action est possible uniquement tant qu’aucun PIREP Hermès n’a été créé.');">
                     @csrf @method('DELETE')
-                    <button class="button button-secondary" type="submit">Supprimer</button>
+                    <button class="button button-secondary" type="submit">Annuler la réservation</button>
                 </form>
             @endif
         </div>
@@ -53,5 +53,5 @@
 </table>
 </section>
 
-<p style="opacity:.7;margin-top:1rem"><small>Une réservation peut être supprimée tant qu’aucun PIREP Hermès n’a été créé. Dès la préparation du PIREP, elle devient un enregistrement opérationnel conservé.</small></p>
+<p style="opacity:.7;margin-top:1rem"><small>Une réservation peut être annulée tant qu’aucun PIREP Hermès n’a été créé. Dès la préparation du PIREP, elle devient un enregistrement opérationnel conservé.</small></p>
 @endsection
