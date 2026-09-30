@@ -59,9 +59,54 @@ jobs:
         shell: pwsh
         run: choco install innosetup --yes --no-progress
 
-      - name: Build portable client and installer
+      - name: Create temporary Hermès code-signing certificate
+        id: selfsign
         shell: pwsh
-        run: ./acars/build-installer.ps1 -Version '${{ steps.version.outputs.value }}'
+        run: |
+          $password = [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))
+          $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
+          $cert = New-SelfSignedCertificate `
+            -Type CodeSigningCert `
+            -Subject 'CN=Air Inter Virtual Airlines - Hermès Development Signing' `
+            -FriendlyName 'Hermès temporary development signing certificate' `
+            -CertStoreLocation 'Cert:\CurrentUser\My' `
+            -KeyAlgorithm RSA `
+            -KeyLength 3072 `
+            -HashAlgorithm SHA256 `
+            -NotAfter (Get-Date).AddYears(2)
+
+          $pfx = Join-Path $env:RUNNER_TEMP 'hermes-self-sign.pfx'
+          $cer = Join-Path $PWD 'dist/Hermes-Development-Signing.cer'
+          New-Item -ItemType Directory -Force -Path (Split-Path $cer) | Out-Null
+
+          Export-PfxCertificate -Cert $cert -FilePath $pfx -Password $securePassword | Out-Null
+          Export-Certificate -Cert $cert -FilePath $cer | Out-Null
+
+          "pfx=$pfx" >> $env:GITHUB_OUTPUT
+          "password=$password" >> $env:GITHUB_OUTPUT
+          Write-Host "Temporary code-signing certificate created: $($cert.Thumbprint)"
+          Write-Warning "This is a SELF-SIGNED development certificate. Windows will not trust it on other PCs until the public .cer is explicitly trusted."
+
+      - name: Build and self-sign portable client and installer
+        shell: pwsh
+        run: |
+          ./acars/build-installer.ps1 `
+            -Version '${{ steps.version.outputs.value }}' `
+            -CertificatePath '${{ steps.selfsign.outputs.pfx }}' `
+            -CertificatePassword '${{ steps.selfsign.outputs.password }}'
+
+      - name: Show Authenticode signatures
+        shell: pwsh
+        run: |
+          $version = '${{ steps.version.outputs.value }}'
+          foreach ($file in @(
+            "dist/Promethee-ACARS-win-x64-$version/Promethee.Acars.exe",
+            "dist/Hermes-ACARS-Setup-$version.exe"
+          )) {
+            $sig = Get-AuthenticodeSignature $file
+            Write-Host "$file -> $($sig.Status) / $($sig.SignerCertificate.Subject)"
+            if (-not $sig.SignerCertificate) { throw "Missing Authenticode signature on $file" }
+          }
 
       - name: Upload Hermès build artifact
         uses: actions/upload-artifact@v4
@@ -72,8 +117,10 @@ jobs:
           path: |
             dist/Hermes-ACARS-Setup-${{ steps.version.outputs.value }}.exe
             dist/Hermes-ACARS-Setup-${{ steps.version.outputs.value }}.exe.sha256
+            dist/Hermes-Development-Signing.cer
             dist/Promethee-ACARS-win-x64-${{ steps.version.outputs.value }}.zip
             dist/Promethee-ACARS-win-x64-${{ steps.version.outputs.value }}.zip.sha256
+            dist/Hermes-Development-Signing.cer
 
       - name: Publish GitHub release
         if: startsWith(github.ref, 'refs/tags/hermes-v') || startsWith(github.ref, 'refs/heads/release/hermes-')

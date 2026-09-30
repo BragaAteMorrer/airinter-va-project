@@ -23,6 +23,9 @@ if (-not $iscc) {
 if ($LASTEXITCODE -ne 0) { throw "La creation de l'installateur Hermes a echoue." }
 
 $dist = Join-Path (Split-Path $PSScriptRoot -Parent) 'dist'
+$releaseDir = Join-Path $dist "Promethee-ACARS-win-x64-$Version"
+$clientExe = Join-Path $releaseDir 'Promethee.Acars.exe'
+$portableZip = Join-Path $dist "Promethee-ACARS-win-x64-$Version.zip"
 $setup = Join-Path $dist "Hermes-ACARS-Setup-$Version.exe"
 if (-not (Test-Path -LiteralPath $setup)) { throw "Installateur introuvable: $setup" }
 
@@ -35,10 +38,24 @@ if ($CertificatePath) {
     Select-Object -First 1
   if (-not $signtool) { throw "signtool.exe introuvable. Installez le Windows SDK." }
 
-  $signArgs = @('sign','/fd','SHA256','/tr','http://timestamp.digicert.com','/td','SHA256','/f',$CertificatePath)
-  if ($CertificatePassword) { $signArgs += @('/p',$CertificatePassword) }
-  $signArgs += $setup
-  & $signtool.FullName @signArgs
+  if (-not (Test-Path -LiteralPath $clientExe)) { throw "Executable Hermès introuvable: $clientExe" }
+
+  $baseSignArgs = @('sign','/fd','SHA256','/tr','http://timestamp.digicert.com','/td','SHA256','/f',$CertificatePath)
+  if ($CertificatePassword) { $baseSignArgs += @('/p',$CertificatePassword) }
+
+  & $signtool.FullName @($baseSignArgs + $clientExe)
+  if ($LASTEXITCODE -ne 0) { throw "La signature Authenticode du client Hermès a échoué." }
+
+  & $signtool.FullName verify /pa /v $clientExe
+  if ($LASTEXITCODE -ne 0) { throw "La vérification Authenticode du client Hermès a échoué." }
+
+  if (Test-Path -LiteralPath $portableZip) { Remove-Item -LiteralPath $portableZip -Force }
+  Compress-Archive -Path $clientExe -DestinationPath $portableZip -Force
+  $zipHash = Get-FileHash -Algorithm SHA256 -LiteralPath $portableZip
+  "$($zipHash.Hash.ToLowerInvariant())  $([IO.Path]::GetFileName($portableZip))" |
+    Set-Content -LiteralPath "$portableZip.sha256" -Encoding ascii
+
+  & $signtool.FullName @($baseSignArgs + $setup)
   if ($LASTEXITCODE -ne 0) { throw "La signature Authenticode de l'installateur a échoué." }
 
   & $signtool.FullName verify /pa /v $setup
