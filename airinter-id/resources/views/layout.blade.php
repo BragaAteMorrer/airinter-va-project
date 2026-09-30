@@ -7,7 +7,7 @@
     <meta name="color-scheme" content="light dark">
     <meta name="theme-color" content="#102d56">
     <title>@yield('title', config('airinter-id.name', 'Argos'))</title>
-    <link rel="icon" href="{{ config('airinter-id.brand_logo_url') }}">
+    <link rel="icon" href="{{ config('airinter-id.favicon_url') }}">
     <link rel="stylesheet" href="/id.css">
 </head>
 <body>
