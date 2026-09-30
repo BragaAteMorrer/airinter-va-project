@@ -647,3 +647,15 @@ body[data-appearance="dark"] .plan-mode-steps span{
   .plan-mode-steps{grid-template-columns:1fr}
   .plan-file-tools{grid-template-columns:1fr}
 }
+
+
+.simbrief-preparation-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin:12px 0;padding:10px;border:1px solid #2f536a;border-radius:10px;background:#0e2a3c66}
+.simbrief-preparation-summary span{display:grid;gap:3px;min-width:0;padding:7px 9px;border-radius:8px;background:#ffffff08}
+.simbrief-preparation-summary small{font-size:9px;font-weight:800;letter-spacing:.08em;opacity:.65}
+.simbrief-preparation-summary strong{font-size:12px;white-space:normal;overflow-wrap:anywhere}
+.eligibility-type-picker{width:min(100%,440px);margin:10px 0 4px}
+.eligibility-selected-detail{margin-top:8px}
+.hermes-action-tooltip{position:fixed;z-index:10000;padding:10px 12px;border:1px solid #efb4ba;border-radius:9px;background:#fff7f8;color:#8b1e28;font-size:12px;font-weight:750;line-height:1.35;box-shadow:0 12px 32px #0003;opacity:1;transition:opacity .18s ease,transform .18s ease}
+.hermes-action-tooltip:before{content:"";position:absolute;top:-6px;left:50%;width:10px;height:10px;background:#fff7f8;border-left:1px solid #efb4ba;border-top:1px solid #efb4ba;transform:translateX(-50%) rotate(45deg)}
+.hermes-action-tooltip.closing{opacity:0;transform:translateY(-3px)}
+button.needs-attention{outline:2px solid #d93a49;outline-offset:2px}
