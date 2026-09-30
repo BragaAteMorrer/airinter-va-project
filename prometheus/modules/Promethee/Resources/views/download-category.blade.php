@@ -40,7 +40,7 @@
                 <p>{{ $file->description ?: 'Document de référence Air Inter.' }}</p>
                 @if($updated)<small>Mis à jour le {{ $updated->setTimezone('Europe/Paris')->format('d/m/Y') }}</small>@endif
             </div>
-            <a href="{{ route('promethee.downloads.download', $file->id) }}">Consulter →</a>
+            <a href="{{ route('promethee.documents.show', $file->id) }}">Consulter en ligne →</a>
         </article>
         @else
         <article>
