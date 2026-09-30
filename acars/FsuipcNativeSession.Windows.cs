@@ -41,6 +41,9 @@ internal sealed class FsuipcNativeSession : IFsuipcSession
     private readonly Offset<string> aircraftTitle = new(0x3D00, 256);
     private readonly Offset<double> grossWeight = new(0x30C0);
     private readonly Offset<byte> seatBeltSign = new(0x341D);
+    // FSUIPC exit-open bit mask: bit 0 = Exit 1 ... bit 7 = Exit 8.
+    // A non-zero value means at least one simulator exit/door is open.
+    private readonly Offset<byte> doorsOpen = new(0x3367);
     private readonly Offset<ushort> transponderCode = new(0x0354);
     private readonly Offset<int> autopilotMaster = new(0x07BC);
     private readonly Offset<ushort> pauseIndicator = new(0x0264);
@@ -130,7 +133,7 @@ internal sealed class FsuipcNativeSession : IFsuipcSession
             string.IsNullOrWhiteSpace(title) ? null : title,
             GrossWeightPounds: double.IsFinite(grossWeight.Value) && grossWeight.Value > 0 ? grossWeight.Value : null,
             SeatBeltSign: seatBeltSign.Value != 0,
-            DoorsOpen: null,
+            DoorsOpen: doorsOpen.Value != 0,
             TransponderCode: DecodeBcd4(transponderCode.Value),
             AutopilotEnabled: autopilotMaster.Value != 0,
             Paused: paused,

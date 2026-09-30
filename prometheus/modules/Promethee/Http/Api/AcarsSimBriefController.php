@@ -140,13 +140,29 @@ class AcarsSimBriefController extends Controller
         $aircraft = $resolved['aircraft_model'];
         $staticId = $this->staticId($request, (string) Auth::id(), (string) $flight->id, (string) $aircraft->id);
 
-        $query = !empty($attrs['pilot_id'])
-            ? ['userid' => $attrs['pilot_id'], 'static_id' => $staticId]
-            : ['username' => $attrs['username']];
-
+        // The Dispatch Redirect is created with a deterministic static_id per
+        // Prométhée operation. SimBrief's XML Fetcher supports static_id-only
+        // lookups; use that first so we import the exact OFP just generated
+        // instead of whichever flight happens to be the account's latest one.
         $response = Http::accept('application/xml')->timeout(15)
-            ->get('https://www.simbrief.com/api/xml.fetcher.php', $query);
-        abort_unless($response->successful(), 502, 'SimBrief n’a pas pu retourner le dernier OFP de ce compte.');
+            ->get('https://www.simbrief.com/api/xml.fetcher.php', ['static_id' => $staticId]);
+
+        // Compatibility fallback for accounts/plans generated without preserving
+        // static_id. This still validates origin/destination below before import.
+        if (!$response->successful()) {
+            $fallbackQuery = !empty($attrs['pilot_id'])
+                ? ['userid' => $attrs['pilot_id']]
+                : ['username' => $attrs['username']];
+
+            $response = Http::accept('application/xml')->timeout(15)
+                ->get('https://www.simbrief.com/api/xml.fetcher.php', $fallbackQuery);
+        }
+
+        abort_unless(
+            $response->successful(),
+            502,
+            'SimBrief n’a pas pu retourner l’OFP généré. Vérifiez que la génération est terminée, puis réessayez.'
+        );
 
         $body = $response->body();
         $ofp = @simplexml_load_string($body, \App\Models\SimBriefXML::class);

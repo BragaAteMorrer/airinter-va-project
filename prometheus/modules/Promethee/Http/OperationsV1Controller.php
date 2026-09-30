@@ -55,11 +55,22 @@ class OperationsV1Controller extends Controller
             ->latest()
             ->get();
 
+        $operations = $bids
+            ->map(fn (Bid $bid) => $this->safeOperationDto($bid, $simulator))
+            // "Mes réservations" is an active-work queue. A bid whose correlated
+            // PIREP is already filed/arrived/cancelled must not look flyable.
+            ->reject(fn (array $operation) => in_array(
+                strtolower((string) ($operation['status'] ?? '')),
+                ['completed', 'cancelled'],
+                true
+            ))
+            ->values();
+
         return response()->json(['data' => [
             'contract_version' => '1.0',
             'simulator' => $simulator,
             'simulators' => self::SIMULATORS,
-            'operations' => $bids->map(fn (Bid $bid) => $this->safeOperationDto($bid, $simulator))->values(),
+            'operations' => $operations,
         ]]);
     }
 
@@ -901,7 +912,7 @@ class OperationsV1Controller extends Controller
             'id' => $this->operationIdentity->id($bid),
             'operation_id' => $this->operationIdentity->id($bid),
             'bid_id' => $bid->id,
-            'status' => $pirep ? 'prefiled' : ($ofpAvailable ? 'planned' : 'reserved'),
+            'status' => $this->operationListStatus($pirep, $ofpAvailable),
             'pirep_id' => $pirep?->id,
             'created_at' => optional($bid->created_at)?->toIso8601String(),
             'flight' => [
@@ -954,6 +965,25 @@ class OperationsV1Controller extends Controller
                 'fuel_policy' => 'trip + 5% + alternate + expected holding + 45 minutes reserve',
             ],
         ];
+    }
+
+    private function operationListStatus(?Pirep $pirep, bool $ofpAvailable): string
+    {
+        if ($pirep) {
+            if ((int) $pirep->state === PirepState::CANCELLED || $pirep->status === PirepStatus::CANCELLED) {
+                return 'cancelled';
+            }
+
+            if ($pirep->submitted_at !== null
+                || in_array((int) $pirep->state, [PirepState::PENDING, PirepState::ACCEPTED, PirepState::REJECTED], true)
+                || $pirep->status === PirepStatus::ARRIVED) {
+                return 'completed';
+            }
+
+            return 'prefiled';
+        }
+
+        return $ofpAvailable ? 'planned' : 'reserved';
     }
 
     private function operationPirep(Bid $bid): ?Pirep
