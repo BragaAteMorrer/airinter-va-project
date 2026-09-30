@@ -415,13 +415,21 @@ function updateWorkflow() {
   const dispatchReady = serverDispatch
     ? (serverDispatch.can_start === true || (serverDispatch.status === 'IN_PROGRESS' && serverChecksReady))
     : (state.operation && state.aircraft && state.ofp && state.pirep);
+
+  // The visible four-step preparation state is allowed to unlock the action
+  // even if a stale dispatch snapshot still exposes can_start=false. Clicking
+  // the button ALWAYS refreshes and re-validates the authoritative dispatch in
+  // assertDispatchCanStart(), so this removes a UI deadlock without bypassing
+  // any Prométhée safety/server rule.
+  const visiblePreparationReady = state.operation && state.aircraft && state.ofp && state.pirep;
+
   // Adapter/variant detection is useful diagnostics, but add-on title strings
   // are not reliable enough to hard-block an otherwise valid flight. Keep the
   // READY badge strict on real simulator safety data and let /api/start remain
   // the final authority for refusal reasons.
   const ready = dispatchReady && readiness.simulator && preflightSafe;
   const terminal = ['COMPLETED', 'CANCELLED'].includes(String(serverDispatch?.status || '').toUpperCase());
-  const canAttemptStart = dispatchReady && readiness.simulator && !terminal;
+  const canAttemptStart = visiblePreparationReady && readiness.simulator && !terminal;
   const node = $('#readyState');
   if (node) {
     const status = String(serverDispatch?.status || '').toUpperCase();
