@@ -40,11 +40,18 @@
     </header>
     <section id="connect" class="panel active auth-panel">
       <div class="auth-mark"><span>AIR INTER VA</span><strong data-i18n="auth.crew">Accès équipage</strong></div><h2 data-i18n="auth.title">Connexion pilote</h2><p class="hint" data-i18n="auth.hint">Identifiez-vous avec votre compte pilote Air Inter pour préparer et suivre votre vol.</p>
-      <form id="loginForm" class="login-form">
-        <label><span data-i18n="auth.login">Identifiant pilote ou e-mail</span><input name="login" autocomplete="username" required></label>
-        <label><span data-i18n="auth.password">Mot de passe</span><input name="password" type="password" autocomplete="current-password" required></label>
-        <button class="primary"><span data-i18n="auth.submit">Se connecter à Air Inter</span></button>
-      </form>
+      <div class="login-form">
+        <button id="argosLoginBtn" class="primary" type="button">Se connecter avec Argos</button>
+        <p class="hint">La connexion s’ouvre dans votre navigateur. Hermès utilise OAuth 2.0 / OpenID Connect avec PKCE et ne reçoit jamais votre mot de passe Argos.</p>
+      </div>
+      <details class="legacy-login">
+        <summary>Connexion de secours Prométhée</summary>
+        <form id="loginForm" class="login-form">
+          <label><span data-i18n="auth.login">Identifiant pilote ou e-mail</span><input name="login" autocomplete="username" required></label>
+          <label><span data-i18n="auth.password">Mot de passe</span><input name="password" type="password" autocomplete="current-password" required></label>
+          <button type="submit"><span data-i18n="auth.submit">Connexion de secours</span></button>
+        </form>
+      </details>
       <p id="loginMessage" class="message" hidden role="status"></p>
     </section>
     <section id="flight" class="panel">
