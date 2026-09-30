@@ -3,6 +3,7 @@
 namespace Tests;
 
 use App\Models\Airport;
+use App\Models\Airline;
 use App\Models\Enums\FareType;
 use App\Models\Fare;
 use App\Models\Flight;
@@ -191,6 +192,38 @@ final class PrometheeDemandEconomyTest extends TestCase
             substr_count($response->getContent(), 'name="flights[]" value="'.$flight->id.'"'),
             'A flight with several fares must still have a single bulk-selection checkbox.'
         );
+    }
+
+    public function test_admin_can_classify_itf_routes_and_filter_economy_by_network_class(): void
+    {
+        $admin = $this->createAdminUser();
+        $itf = Airline::factory()->create(['icao' => 'ITF', 'name' => 'Air Inter']);
+        $principal = Flight::factory()->create(['airline_id' => $itf->id, 'active' => true]);
+        $diagonal = Flight::factory()->create(['airline_id' => $itf->id, 'active' => true]);
+
+        $this->actingAs($admin, 'web')->post('/admin/promethee/pricing-criteria', [
+            'flight_ids' => [$principal->id],
+            'network_class' => 'principal',
+        ])->assertStatus(302);
+
+        $this->actingAs($admin, 'web')->post('/admin/promethee/pricing-criteria', [
+            'flight_ids' => [$diagonal->id],
+            'network_class' => 'diagonal',
+        ])->assertStatus(302);
+
+        $this->assertDatabaseHas('promethee_route_pricing_profiles', [
+            'flight_id' => $principal->id,
+            'network_class' => 'principal',
+        ]);
+        $this->assertDatabaseHas('promethee_route_pricing_profiles', [
+            'flight_id' => $diagonal->id,
+            'network_class' => 'diagonal',
+        ]);
+
+        $response = $this->actingAs($admin, 'web')->get('/admin/promethee/economy?flight_airline=ITF&flight_network_class=diagonal');
+        $response->assertOk();
+        $response->assertSee('value="'.$diagonal->id.'"', false);
+        $response->assertDontSee('value="'.$principal->id.'"', false);
     }
 
     public function test_admin_can_save_bbr_fares_and_load_ranges(): void

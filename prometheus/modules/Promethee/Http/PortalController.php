@@ -1807,6 +1807,69 @@ class PortalController extends Controller
         return redirect()->route('admin.promethee.bbr')->with('success', 'Tarification et remplissage Bleu-Blanc-Rouge enregistrés.');
     }
 
+    public function pricingCriteria(Request $r)
+    {
+        $itf = Airline::where('icao', 'ITF')->first();
+        $profiles = DB::table('promethee_route_pricing_profiles')->pluck('network_class', 'flight_id');
+
+        $flights = $itf
+            ? Flight::where('airline_id', $itf->id)
+                ->where('active', true)
+                ->with(['dpt_airport:id,icao,name,location', 'arr_airport:id,icao,name,location'])
+                ->orderBy('dpt_airport_id')->orderBy('arr_airport_id')->orderBy('flight_number')
+                ->get()
+            : collect();
+
+        $flights->each(function ($flight) use ($profiles) {
+            $flight->setAttribute('pricing_network_class', $profiles[(string) $flight->id] ?? 'unclassified');
+        });
+
+        return $this->page('admin.pricing-criteria', [
+            'itf' => $itf,
+            'flights' => $flights,
+            'seasons' => DB::table('promethee_seasons')->orderBy('starts_on')->get(),
+            'counts' => [
+                'principal' => $flights->where('pricing_network_class', 'principal')->count(),
+                'diagonal' => $flights->where('pricing_network_class', 'diagonal')->count(),
+                'unclassified' => $flights->where('pricing_network_class', 'unclassified')->count(),
+            ],
+        ]);
+    }
+
+    public function savePricingCriteria(Request $r)
+    {
+        $data = $r->validate([
+            'flight_ids' => 'required|array|min:1',
+            'flight_ids.*' => 'exists:flights,id',
+            'network_class' => 'required|in:principal,diagonal,unclassified',
+        ]);
+
+        $itfId = Airline::where('icao', 'ITF')->value('id');
+        abort_unless($itfId, 422, 'Compagnie ITF introuvable.');
+
+        $validIds = Flight::where('airline_id', $itfId)
+            ->whereIn('id', $data['flight_ids'])
+            ->pluck('id')->map(fn ($id) => (string) $id);
+
+        abort_if($validIds->count() !== count($data['flight_ids']), 422, 'La classification régionale est réservée aux lignes ITF.');
+
+        DB::transaction(function () use ($validIds, $data) {
+            foreach ($validIds as $flightId) {
+                if ($data['network_class'] === 'unclassified') {
+                    DB::table('promethee_route_pricing_profiles')->where('flight_id', $flightId)->delete();
+                    continue;
+                }
+
+                DB::table('promethee_route_pricing_profiles')->updateOrInsert(
+                    ['flight_id' => $flightId],
+                    ['network_class' => $data['network_class'], 'updated_at' => now(), 'created_at' => now()]
+                );
+            }
+        });
+
+        return back()->with('success', $validIds->count().' ligne(s) ITF classée(s).');
+    }
+
     public function economy(Request $r, EconomyFareResolver $fareResolver) {
         foreach (['flight_dpt_airport', 'flight_arr_airport'] as $airportFilter) {
             if ($r->filled($airportFilter)) {
@@ -1814,7 +1877,7 @@ class PortalController extends Controller
             }
         }
 
-        $flightFilters=$r->validate(['flight_airline'=>'nullable|string|max:10','flight_origin'=>'nullable|string|size:2','flight_arrival'=>'nullable|string|size:2','flight_dpt_airport'=>'nullable|string|max:10','flight_arr_airport'=>'nullable|string|max:10','flight_search'=>'nullable|string|max:80','flight_select_all'=>'nullable|boolean']);
+        $flightFilters=$r->validate(['flight_airline'=>'nullable|string|max:10','flight_origin'=>'nullable|string|size:2','flight_arrival'=>'nullable|string|size:2','flight_dpt_airport'=>'nullable|string|max:10','flight_arr_airport'=>'nullable|string|max:10','flight_search'=>'nullable|string|max:80','flight_network_class'=>'nullable|in:principal,diagonal,unclassified','flight_select_all'=>'nullable|boolean']);
         $fuelFilters=$r->validate(['fuel_country'=>'nullable|string|size:2','fuel_region'=>'nullable|string|max:191','fuel_search'=>'nullable|string|max:80','fuel_select_all'=>'nullable|boolean']);
         $airportOptions=Airport::select('id','icao','name','country','region','location')->orderBy('country')->orderBy('region')->orderBy('location')->get();
         $flightPricing=Flight::where('active',true)
@@ -1824,6 +1887,13 @@ class PortalController extends Controller
             ->when($flightFilters['flight_dpt_airport'] ?? null,fn($query,$airport)=>$query->where('dpt_airport_id',$airport))
             ->when($flightFilters['flight_arr_airport'] ?? null,fn($query,$airport)=>$query->where('arr_airport_id',$airport))
             ->when($flightFilters['flight_search'] ?? null,fn($query,$search)=>$query->where(fn($where)=>$where->where('flight_number','like','%'.$search.'%')->orWhere('route_code','like','%'.$search.'%')->orWhere('dpt_airport_id','like','%'.$search.'%')->orWhere('arr_airport_id','like','%'.$search.'%')))
+            ->when($flightFilters['flight_network_class'] ?? null, function ($query, $class) {
+                if ($class === 'unclassified') {
+                    $query->whereNotIn('flights.id', DB::table('promethee_route_pricing_profiles')->select('flight_id'));
+                    return;
+                }
+                $query->whereIn('flights.id', DB::table('promethee_route_pricing_profiles')->where('network_class', $class)->select('flight_id'));
+            })
             ->with(['airline','fares','subfleets.fares','dpt_airport','arr_airport'])
             ->orderBy('airline_id')->orderBy('dpt_airport_id')->orderBy('arr_airport_id')->get();
         $fuelPricing=Airport::select('id','icao','name','country','region','fuel_jeta_cost','fuel_100ll_cost','fuel_mogas_cost')

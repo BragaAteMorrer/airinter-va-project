@@ -9,7 +9,7 @@
         <h1>Économie.</h1>
         <p>Édition des prix des vols et du carburant.</p>
     </div>
-    <a class="button outline" href="{{ route('admin.promethee.bbr') }}">Tarifs Bleu-Blanc-Rouge</a>
+    <div><a class="button outline" href="{{ route('admin.promethee.pricing-criteria') }}">Critères ITF</a> <a class="button outline" href="{{ route('admin.promethee.bbr') }}">Tarifs Bleu-Blanc-Rouge</a></div>
 </div>
 
 <section class="panel" id="prix-vols">
@@ -22,6 +22,7 @@
     </div>
     <form method="get" action="{{ route('admin.promethee.economy') }}#prix-vols" class="form-grid">
             <label>Compagnie <select id="filter-airline" name="flight_airline"><option value="">Toutes</option>@foreach($airlines as $airline)<option value="{{ $airline->icao }}" @selected(($flightFilters['flight_airline'] ?? '') === $airline->icao)>{{ $airline->name }}</option>@endforeach</select></label>
+            <label>Type de ligne ITF <select name="flight_network_class"><option value="">Toutes</option><option value="principal" @selected(($flightFilters['flight_network_class'] ?? '') === 'principal')>Lignes principales</option><option value="diagonal" @selected(($flightFilters['flight_network_class'] ?? '') === 'diagonal')>Diagonales régionales</option><option value="unclassified" @selected(($flightFilters['flight_network_class'] ?? '') === 'unclassified')>À classer</option></select></label>
             <label>Pays de départ <select id="filter-origin" name="flight_origin"><option value="">Tous</option>@foreach($countries as $country)<option value="{{ $country }}" @selected(($flightFilters['flight_origin'] ?? '') === $country)>{{ $country }}</option>@endforeach</select></label>
             <label>Aéroport de départ <input type="search" id="filter-dpt-airport" name="flight_dpt_airport" list="economy-airports" value="{{ $flightFilters['flight_dpt_airport'] ?? '' }}" placeholder="Rechercher ICAO ou nom" autocomplete="off"></label>
             <label>Pays d’arrivée <select id="filter-arrival" name="flight_arrival"><option value="">Tous</option>@foreach($countries as $country)<option value="{{ $country }}" @selected(($flightFilters['flight_arrival'] ?? '') === $country)>{{ $country }}</option>@endforeach</select></label>
