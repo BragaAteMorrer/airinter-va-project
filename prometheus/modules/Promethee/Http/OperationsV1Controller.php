@@ -707,12 +707,24 @@ class OperationsV1Controller extends Controller
         $bid = $this->bid($reference, $request);
         $existing = $this->operationPirep($bid);
         if ($existing) {
-            return response()->json(['data' => [
-                'operation_id' => $this->operationIdentity->id($bid),
-                'pirep' => $this->pirepDto($existing),
-                'pirep_id' => $existing->id,
-                'already_prefiled' => true,
-            ]]);
+            $existingIsActive = (int) $existing->state === PirepState::IN_PROGRESS
+                && $existing->submitted_at === null
+                && $existing->status !== PirepStatus::ARRIVED
+                && $existing->status !== PirepStatus::CANCELLED;
+
+            if ($existingIsActive) {
+                return response()->json(['data' => [
+                    'operation_id' => $this->operationIdentity->id($bid),
+                    'pirep' => $this->pirepDto($existing),
+                    'pirep_id' => $existing->id,
+                    'already_prefiled' => true,
+                ]]);
+            }
+
+            // A terminal correlated PIREP must never short-circuit a fresh
+            // Hermès prefile. Continue through phpVMS prefile so duplicate
+            // detection may return it, then the normalization below resets it
+            // to IN_PROGRESS / INITIATED for the current operation.
         }
 
         abort_if(!$bid->aircraft_id, 409, 'Sélectionnez un appareil avant de préparer le PIREP.');
