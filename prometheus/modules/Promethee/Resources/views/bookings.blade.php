@@ -28,7 +28,12 @@
         </div>
         <small>{{ $booking->operation_progress }}%</small>
     </td>
-    <td><strong>{{ str_replace('_', ' ', $booking->operation_status) }}</strong></td>
+    <td>
+        <strong>{{ str_replace('_', ' ', $booking->operation_status) }}</strong>
+        @if($booking->operation_legacy_ghost ?? false)
+            <small style="display:block;color:#e24b57;margin-top:.35rem">Ancien PIREP fantôme détecté</small>
+        @endif
+    </td>
     <td>{{ $booking->operation_next_action ?? '—' }}</td>
     <td>
         <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
