@@ -1150,8 +1150,11 @@ class PortalController extends Controller
    public function downloads(Request $r) {
        return $this->page('downloads', ['groups' => $this->downloadGroups()]);
    }
+   public function documents() {
+       return $this->downloadCategoryPage('documents');
+   }
    public function downloadCategoryPage(string $category) {
-       $sections = ['acars' => ['ACARS', 'Clients et documentation de connexion'], 'fleet' => ['Avions et flotte', 'Livrées, appareils et documents associés'], 'airports' => ['Aéroports et HUBs', 'Scènes, cartes et ressources réseau'], 'documents' => ['Documents', 'Manuels et documents opérationnels']];
+       $sections = ['acars' => ['ACARS', 'Clients et documentation de connexion'], 'fleet' => ['Avions et flotte', 'Livrées, appareils et documents associés'], 'airports' => ['Aéroports et HUBs', 'Scènes, cartes et ressources réseau'], 'documents' => ['Documentation interne', 'Procédures, carrière, formation et documentation par type d’avion']];
        abort_unless(array_key_exists($category, $sections), 404);
        $files = $this->downloadGroups()->get($category, collect())->groupBy(fn (File $file) => $this->downloadSubcategory($file));
        return $this->page('download-category', compact('category', 'sections', 'files'));
@@ -1163,19 +1166,35 @@ class PortalController extends Controller
        return app(\App\Http\Controllers\Frontend\DownloadController::class)->show($file);
    }
    public function adminDownloads() {
-       return $this->page('admin.downloads', ['groups' => $this->downloadGroups()]);
+       return $this->page('admin.downloads', [
+           'groups' => $this->downloadGroups(),
+           'aircraftTypes' => Subfleet::query()->pluck('type')->filter()->unique()->sort()->values(),
+       ]);
    }
    public function storeDownload(Request $r, FileService $files) {
        $data = $r->validate([
            'name' => 'required|string|max:120', 'description' => 'nullable|string|max:1000',
-           'category' => 'required|in:acars,fleet,airports,documents', 'subcategory' => 'nullable|string|max:80', 'file' => 'nullable|file|max:102400',
+           'category' => 'required|in:acars,fleet,airports,documents', 'subcategory' => 'nullable|string|max:80',
+           'document_section' => 'nullable|in:general,operations,career,training,aircraft,regulations,forms',
+           'aircraft_type' => 'nullable|string|max:30', 'file' => 'nullable|file|max:102400',
            'url' => 'nullable|url|max:2000', 'public' => 'nullable|boolean',
        ]);
        if (!$r->hasFile('file') && empty($data['url'])) return back()->withErrors(['url' => 'Ajoutez un fichier ou une URL.'])->withInput();
+       $documentSections = [
+           'general' => 'Général', 'operations' => 'Opérations', 'career' => 'Carrière',
+           'training' => 'Formation', 'aircraft' => 'Documentation avion',
+           'regulations' => 'Réglementation', 'forms' => 'Formulaires',
+       ];
+       $subcategory = trim($data['subcategory'] ?? '');
+       if ($data['category'] === 'documents') {
+           $section = $documentSections[$data['document_section'] ?? 'general'] ?? 'Général';
+           $aircraftType = strtoupper(trim($data['aircraft_type'] ?? ''));
+           $subcategory = $section.($aircraftType !== '' ? ' · '.$aircraftType : '');
+       }
        $attributes = [
            'name' => $data['name'], 'description' => $data['description'] ?? '', 'public' => $r->boolean('public'),
            'ref_model' => 'Modules\\Promethee\\Download\\'.ucfirst($data['category']),
-           'ref_model_id' => trim($data['subcategory'] ?? '') ?: $data['category'],
+           'ref_model_id' => $subcategory !== '' ? $subcategory : $data['category'],
        ];
        if ($r->hasFile('file')) $files->saveFile($r->file('file'), 'promethee-downloads', $attributes);
        else { $asset = new File($attributes); $asset->id = File::createNewHashId(); $asset->path = $data['url']; $asset->save(); }
@@ -1191,7 +1210,8 @@ class PortalController extends Controller
    public function editDownload(string $file) {
        $asset = File::findOrFail($file);
        abort_unless($this->isManagedDownload($asset), 403);
-       return $this->page('admin.edit-download', compact('asset'));
+       $aircraftTypes = Subfleet::query()->pluck('type')->filter()->unique()->sort()->values();
+       return $this->page('admin.edit-download', compact('asset', 'aircraftTypes'));
    }
    public function updateDownload(Request $r, string $file, FileService $files) {
        $asset = File::findOrFail($file);
@@ -1200,12 +1220,25 @@ class PortalController extends Controller
        $data = $r->validate([
            'name' => 'required|string|max:120', 'description' => 'nullable|string|max:1000',
            'category' => 'required|in:acars,fleet,airports,documents', 'subcategory' => 'nullable|string|max:80',
+           'document_section' => 'nullable|in:general,operations,career,training,aircraft,regulations,forms',
+           'aircraft_type' => 'nullable|string|max:30',
            'file' => 'nullable|file|max:102400', 'url' => 'nullable|url|max:2000', 'public' => 'nullable|boolean',
        ]);
+       $documentSections = [
+           'general' => 'Général', 'operations' => 'Opérations', 'career' => 'Carrière',
+           'training' => 'Formation', 'aircraft' => 'Documentation avion',
+           'regulations' => 'Réglementation', 'forms' => 'Formulaires',
+       ];
+       $subcategory = trim($data['subcategory'] ?? '');
+       if ($data['category'] === 'documents') {
+           $section = $documentSections[$data['document_section'] ?? 'general'] ?? 'Général';
+           $aircraftType = strtoupper(trim($data['aircraft_type'] ?? ''));
+           $subcategory = $section.($aircraftType !== '' ? ' · '.$aircraftType : '');
+       }
        $attributes = [
            'name' => $data['name'], 'description' => $data['description'] ?? '', 'public' => $r->boolean('public'),
            'ref_model' => 'Modules\\Promethee\\Download\\'.ucfirst($data['category']),
-           'ref_model_id' => trim($data['subcategory'] ?? '') ?: $data['category'],
+           'ref_model_id' => $subcategory !== '' ? $subcategory : $data['category'],
        ];
 
        if ($r->hasFile('file')) {
