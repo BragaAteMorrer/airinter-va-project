@@ -132,7 +132,7 @@ class AuthenticatedSessionController extends Controller
             'created_at' => now(),
         ]);
 
-        return redirect()->route('account');
+        return redirect()->intended(route('account'));
     }
 
     public function destroy(Request $request): RedirectResponse
