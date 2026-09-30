@@ -89,6 +89,8 @@ Route::middleware(['web','auth'])->name('promethee.')->group(function () {
     // Native Promethee pages backed directly by phpVMS data/models.
     Route::get('/airlines', [PortalController::class, 'airlines'])->name('airlines');
     Route::get('/documents', [PortalController::class, 'documents'])->name('documents');
+    Route::get('/documents/{file}', [PortalController::class, 'document'])->name('documents.show');
+    Route::get('/documents/{file}/content', [PortalController::class, 'documentContent'])->name('documents.content');
     Route::get('/finances', [PortalController::class, 'finances'])->name('finances');
     Route::get('/maintenance', [PortalController::class, 'maintenance'])->name('maintenance');
     Route::get('/aircraft/{registration}', [PortalController::class, 'aircraftDetail'])->name('aircraft.show');
