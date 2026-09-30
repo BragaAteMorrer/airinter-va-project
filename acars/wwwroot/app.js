@@ -442,6 +442,29 @@ function updateWorkflow() {
       ? 'Hermès vérifiera les contrôles au clic et affichera précisément ce qui bloque.'
       : '';
   }
+
+  const activeLocalFlight = lastStatus?.flight || lastStatus?.Flight || null;
+  const localRecording = Boolean(activeLocalFlight?.recording ?? activeLocalFlight?.Recording);
+  const localRecovery = Boolean(lastStatus?.recoveryAvailable);
+  const pauseButton = $('#pauseBtn');
+  const resumeButton = $('#resumeBtn');
+
+  if (pauseButton) {
+    pauseButton.disabled = !localRecording;
+    pauseButton.title = localRecording ? 'Mettre l’enregistrement ACARS en pause.' : 'Aucun enregistrement actif à mettre en pause.';
+  }
+
+  if (resumeButton) {
+    const canResumeLocalPause = Boolean(activeLocalFlight) && !localRecording && !localRecovery;
+    resumeButton.disabled = !canResumeLocalPause;
+    resumeButton.textContent = 'Reprendre une pause';
+    resumeButton.title = canResumeLocalPause
+      ? 'Reprendre un enregistrement ACARS local mis en pause.'
+      : (localRecovery
+          ? 'Utilisez le Recovery Center pour un vol interrompu.'
+          : 'Aucun vol local en pause. Utilisez « Démarrer l’enregistrement » pour cette nouvelle opération.');
+  }
+
   updateAircraftSelectionStatus();
   updateNextAction(state, ready);
   updatePreflight(lastStatus, state, ready);
@@ -1802,7 +1825,21 @@ $('#startBtn').onclick = async () => {
   }
 };
 $('#pauseBtn').onclick = () => action('/api/pause', 'Enregistrement en pause.');
-$('#resumeBtn').onclick = () => action('/api/resume', 'Enregistrement repris.');
+$('#resumeBtn').onclick = () => {
+  const activeLocalFlight = lastStatus?.flight || lastStatus?.Flight || null;
+  const localRecording = Boolean(activeLocalFlight?.recording ?? activeLocalFlight?.Recording);
+  const localRecovery = Boolean(lastStatus?.recoveryAvailable);
+  if (!activeLocalFlight || localRecording || localRecovery) {
+    return showMessage(
+      '#recordMessage',
+      localRecovery
+        ? 'Ce vol est en récupération : utilisez le Recovery Center.'
+        : 'Aucun vol local en pause. Pour cette nouvelle opération, cliquez sur « Démarrer l’enregistrement ».',
+      true
+    );
+  }
+  return action('/api/resume', 'Enregistrement repris.');
+};
 $('#syncBtn').onclick = () => action('/api/sync', 'Données synchronisées.');
 $('#fileBtn').onclick = () => {
   document.querySelector('[data-tab="review"]')?.click();
