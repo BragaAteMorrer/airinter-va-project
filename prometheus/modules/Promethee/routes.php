@@ -140,6 +140,8 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::get('/tarifs-bbr', [PortalController::class,'bbrSettings'])->name('bbr');
         Route::post('/tarifs-bbr', [PortalController::class,'saveBbrSettings'])->name('bbr.save');
         Route::get('/economy', [PortalController::class,'economy'])->name('economy');
+        Route::get('/pricing-criteria', [PortalController::class,'pricingCriteria'])->name('pricing-criteria');
+        Route::post('/pricing-criteria', [PortalController::class,'savePricingCriteria'])->name('pricing-criteria.save');
         Route::get('/economy/flight-prices/edit', [PortalController::class,'flightPriceEditor'])->name('economy.flight-prices.edit');
         Route::get('/economy/flight-prices/{flight}/edit', [PortalController::class,'flightPriceEdit'])->name('economy.flight-prices.line-edit');
         Route::post('/economy/bands', [PortalController::class,'saveBandSettings'])->name('economy.bands');
