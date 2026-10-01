@@ -1163,6 +1163,18 @@ async function selectOperation(operation) {
     }
   }
 
+  // Switching operations must be atomic from the UI point of view. Do not
+  // render the new flight with the previous flight's terminal Dispatch/OFP
+  // snapshot for even one refresh cycle (that used to show "Vol déjà terminé"
+  // on a brand-new selection).
+  serverDispatch = null;
+  flightPlan = null;
+  linkedSimBrief = null;
+  readiness.operation = false;
+  readiness.aircraft = false;
+  readiness.ofp = false;
+  readiness.pirep = false;
+
   selectedOperation = operation;
   // Rehydrate an already-prefiled operation after a restart/reselection. The
   // server is authoritative; never keep a stale PIREP id from another flight.
@@ -1175,9 +1187,8 @@ async function selectOperation(operation) {
   setTimeout(refreshDatalink, 0);
   setTimeout(refreshNetwork, 0);
   updateWorkflow();
-  $$('.operation').forEach(node => node.classList.remove('selected'));
+  $('.operation').forEach(node => node.classList.remove('selected'));
   if (document.activeElement?.classList?.contains('operation')) document.activeElement.classList.add('selected');
-  flightPlan = null;
   renderNetworkPrefiles(null);
   const flight = normalizeFlight(operation.flight || operation);
   const form = $('#prefileForm');
