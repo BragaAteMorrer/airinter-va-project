@@ -1038,9 +1038,12 @@ class PortalController extends Controller
    private function bookingOperation(Bid $booking): Bid
    {
        $operationId = 'op_'.$booking->id;
+       // Hermès correlates by immutable operation id. The aircraft can change
+       // during preparation, so filtering the PIREP by the current aircraft
+       // can hide an older ghost and make the same reservation look completed
+       // again as soon as that aircraft is re-selected.
        $pirep = Pirep::where('user_id', $booking->user_id)
            ->where('flight_id', $booking->flight_id)
-           ->where('aircraft_id', $booking->aircraft_id)
            ->where('source_name', 'Hermes ACARS ['.$operationId.']')
            ->latest('created_at')->first();
 
