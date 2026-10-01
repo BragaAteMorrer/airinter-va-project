@@ -1116,20 +1116,25 @@ class OperationsV1Controller extends Controller
             || $pirep->status === PirepStatus::ARRIVED;
         if (!$terminal) return false;
 
-        if ((int) ($pirep->flight_time ?? 0) > 0) return false;
-        if ($pirep->block_off_time !== null) return false;
-        if ($pirep->landing_rate !== null) return false;
+        // Do not trust summary fields such as flight_time, block_off_time or
+        // landing_rate as proof of a real Hermès flight. Broken pre-lifecycle
+        // builds could file immediately and still write synthetic values (for
+        // example flight_time=1 through Math.Max(1, ...)). The only reliable
+        // proof that the simulator actually ran is recorded telemetry.
         if ($this->hasOperationTelemetry($pirep)) return false;
 
         // SimBrief attachment creates ROUTE rows in phpVMS' acars table during
         // prefile, before the simulator has moved an inch. Those route points
-        // are planning data, not proof that ACARS tracking began. Only a
-        // non-route ACARS row (flight path/log) is flight evidence.
+        // are planning data, not proof that ACARS tracking began. Non-route
+        // rows (flight path/log) remain valid evidence for older Hermès builds.
         if (DB::table('acars')
             ->where('pirep_id', $pirep->id)
             ->where('type', '!=', \App\Models\Enums\AcarsType::ROUTE)
             ->exists()) return false;
 
+        // Terminal Hermès report with no telemetry evidence = impossible
+        // completed flight. Treat it as the known legacy ghost regardless of
+        // synthetic summary values left behind by an older client.
         return true;
     }
 
