@@ -1187,7 +1187,7 @@ async function selectOperation(operation) {
   setTimeout(refreshDatalink, 0);
   setTimeout(refreshNetwork, 0);
   updateWorkflow();
-  $('.operation').forEach(node => node.classList.remove('selected'));
+  $$('.operation').forEach(node => node.classList.remove('selected'));
   if (document.activeElement?.classList?.contains('operation')) document.activeElement.classList.add('selected');
   renderNetworkPrefiles(null);
   const flight = normalizeFlight(operation.flight || operation);
