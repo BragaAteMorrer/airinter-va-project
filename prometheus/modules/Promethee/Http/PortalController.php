@@ -1108,12 +1108,17 @@ class PortalController extends Controller
    private function isLegacyHermesGhostForPortal(Pirep $pirep, bool $hasTelemetry): bool
    {
        if (!str_starts_with((string) $pirep->source_name, 'Hermes ACARS [op_')) return false;
-       if (!$pirep->created_at || !$pirep->submitted_at) return false;
-       if ($pirep->created_at->diffInSeconds($pirep->submitted_at) > 600) return false;
+
+       $terminal = $pirep->submitted_at !== null
+           || in_array((int) $pirep->state, [PirepState::PENDING, PirepState::ACCEPTED, PirepState::REJECTED], true)
+           || $pirep->status === PirepStatus::ARRIVED;
+       if (!$terminal) return false;
+
        if ((int) ($pirep->flight_time ?? 0) > 0) return false;
-       if ($pirep->block_off_time !== null || $pirep->landing_rate !== null) return false;
+       if ($pirep->block_off_time !== null || $pirep->block_on_time !== null) return false;
        if ($hasTelemetry) return false;
        if (DB::table('acars')->where('pirep_id', $pirep->id)->exists()) return false;
+
        return true;
    }
 
