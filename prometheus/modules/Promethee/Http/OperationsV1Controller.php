@@ -1082,18 +1082,23 @@ class OperationsV1Controller extends Controller
     }
 
     /**
-     * Detect the specific legacy corruption produced by older Hermès builds:
-     * a PIREP was submitted almost immediately after it was created even though
-     * ACARS never actually started. Keep the signature intentionally strict so
-     * a genuine completed flight can never be silently deleted.
+     * A Hermès report may only be terminal after a flight actually produced
+     * flight evidence. Older/broken builds could flip a freshly prefiled PIREP
+     * to PENDING/ARRIVED without ever starting ACARS. Treat that impossible
+     * zero-flight terminal state as repairable regardless of how old it is.
+     *
+     * A legitimate Hermès filing always has at least one of the following:
+     * positive flight time, an OUT/block-off timestamp, a landing rate, or
+     * recorded ACARS/Prométhée telemetry.
      */
     private function isLegacyHermesGhostPirep(Pirep $pirep): bool
     {
         if (!str_starts_with((string) $pirep->source_name, 'Hermes ACARS [op_')) return false;
-        if (!$pirep->created_at || !$pirep->submitted_at) return false;
 
-        $submittedSecondsAfterCreation = $pirep->created_at->diffInSeconds($pirep->submitted_at);
-        if ($submittedSecondsAfterCreation > 600) return false;
+        $terminal = $pirep->submitted_at !== null
+            || in_array((int) $pirep->state, [PirepState::PENDING, PirepState::ACCEPTED, PirepState::REJECTED], true)
+            || $pirep->status === PirepStatus::ARRIVED;
+        if (!$terminal) return false;
 
         if ((int) ($pirep->flight_time ?? 0) > 0) return false;
         if ($pirep->block_off_time !== null) return false;
@@ -1101,7 +1106,7 @@ class OperationsV1Controller extends Controller
         if ($this->hasOperationTelemetry($pirep)) return false;
 
         // Core/phpVMS ACARS points are an independent proof that tracking did
-        // actually begin. Their presence always wins over the legacy heuristic.
+        // actually begin. Their presence always wins over the repair heuristic.
         if (DB::table('acars')->where('pirep_id', $pirep->id)->exists()) return false;
 
         return true;
