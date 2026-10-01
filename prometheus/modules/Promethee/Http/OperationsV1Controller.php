@@ -786,14 +786,25 @@ class OperationsV1Controller extends Controller
 
         $pirep = $this->pirepSvc->prefile($request->user(), $attrs, [], []);
 
+        $activeDraft = fn (Pirep $candidate): bool =>
+            (int) $candidate->state === PirepState::IN_PROGRESS
+            && $candidate->submitted_at === null
+            && $candidate->status !== PirepStatus::ARRIVED
+            && $candidate->status !== PirepStatus::CANCELLED;
+
+        // phpVMS duplicate detection can return an older row for the same
+        // operation. If that row is the known zero-flight Hermès corruption,
+        // purge it and retry once instead of leaving the reservation at 100%.
+        if (!$activeDraft($pirep) && $this->isLegacyHermesGhostPirep($pirep)) {
+            $this->purgeLegacyHermesGhostPirep($pirep, $bid);
+            $pirep = $this->pirepSvc->prefile($request->user(), $attrs, [], []);
+        }
+
         // vmsACARS semantics: prefile creates the active working PIREP only.
         // It remains IN_PROGRESS/INITIATED until Hermès has actually flown and
         // the pilot files it at the end of the ACARS session.
         abort_if(
-            (int) $pirep->state !== PirepState::IN_PROGRESS
-                || $pirep->submitted_at !== null
-                || $pirep->status === PirepStatus::ARRIVED
-                || $pirep->status === PirepStatus::CANCELLED,
+            !$activeDraft($pirep),
             409,
             'Prométhée n’a pas pu ouvrir un brouillon PIREP actif pour cette opération. Aucun rapport terminé n’a été modifié.'
         );
@@ -1029,10 +1040,15 @@ class OperationsV1Controller extends Controller
     private function operationPirep(Bid $bid): ?Pirep
     {
         $operationId = $this->operationIdentity->id($bid);
+
+        // The operation id is the immutable Hermès correlation key. Aircraft
+        // selection is mutable during preparation, so it must never participate
+        // in resolving the operation's PIREP. Otherwise an old zero-flight
+        // PIREP can disappear when the pilot changes aircraft, then be picked
+        // back up by phpVMS duplicate detection during the next prefile.
         return Pirep::query()
             ->where('user_id', $bid->user_id)
             ->where('flight_id', $bid->flight_id)
-            ->where('aircraft_id', $bid->aircraft_id)
             ->where('source_name', 'Hermes ACARS ['.$operationId.']')
             ->latest('created_at')
             ->first();
@@ -1105,9 +1121,14 @@ class OperationsV1Controller extends Controller
         if ($pirep->landing_rate !== null) return false;
         if ($this->hasOperationTelemetry($pirep)) return false;
 
-        // Core/phpVMS ACARS points are an independent proof that tracking did
-        // actually begin. Their presence always wins over the repair heuristic.
-        if (DB::table('acars')->where('pirep_id', $pirep->id)->exists()) return false;
+        // SimBrief attachment creates ROUTE rows in phpVMS' acars table during
+        // prefile, before the simulator has moved an inch. Those route points
+        // are planning data, not proof that ACARS tracking began. Only a
+        // non-route ACARS row (flight path/log) is flight evidence.
+        if (DB::table('acars')
+            ->where('pirep_id', $pirep->id)
+            ->where('type', '!=', \App\Models\Enums\AcarsType::ROUTE)
+            ->exists()) return false;
 
         return true;
     }
