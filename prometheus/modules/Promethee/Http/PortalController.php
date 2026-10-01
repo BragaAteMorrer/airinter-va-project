@@ -1117,7 +1117,13 @@ class PortalController extends Controller
        if ((int) ($pirep->flight_time ?? 0) > 0) return false;
        if ($pirep->block_off_time !== null || $pirep->landing_rate !== null) return false;
        if ($hasTelemetry) return false;
-       if (DB::table('acars')->where('pirep_id', $pirep->id)->exists()) return false;
+       // SimBrief stores planned ROUTE points in the core ACARS table as
+       // soon as a PIREP is prefiled. Ignore those rows when deciding whether a
+       // terminal Hermès PIREP was actually flown.
+       if (DB::table('acars')
+           ->where('pirep_id', $pirep->id)
+           ->where('type', '!=', \App\Models\Enums\AcarsType::ROUTE)
+           ->exists()) return false;
        return true;
    }
 
