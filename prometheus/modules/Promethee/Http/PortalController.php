@@ -1117,16 +1117,19 @@ class PortalController extends Controller
            || $pirep->status === PirepStatus::ARRIVED;
        if (!$terminal) return false;
 
-       if ((int) ($pirep->flight_time ?? 0) > 0) return false;
-       if ($pirep->block_off_time !== null || $pirep->landing_rate !== null) return false;
+       // Legacy broken Hermès clients could write synthetic summary values
+       // while filing an unflown PIREP, so flight_time/block timestamps are
+       // not sufficient proof that the simulator actually ran.
        if ($hasTelemetry) return false;
-       // SimBrief stores planned ROUTE points in the core ACARS table as
-       // soon as a PIREP is prefiled. Ignore those rows when deciding whether a
-       // terminal Hermès PIREP was actually flown.
+
+       // SimBrief stores planned ROUTE points in the core ACARS table as soon
+       // as a PIREP is prefiled. Ignore those rows; only real flight/log rows
+       // count as evidence for older Hermès builds.
        if (DB::table('acars')
            ->where('pirep_id', $pirep->id)
            ->where('type', '!=', \App\Models\Enums\AcarsType::ROUTE)
            ->exists()) return false;
+
        return true;
    }
 
