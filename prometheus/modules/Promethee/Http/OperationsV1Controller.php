@@ -1090,18 +1090,21 @@ class OperationsV1Controller extends Controller
     private function isLegacyHermesGhostPirep(Pirep $pirep): bool
     {
         if (!str_starts_with((string) $pirep->source_name, 'Hermes ACARS [op_')) return false;
-        if (!$pirep->created_at || !$pirep->submitted_at) return false;
 
-        $submittedSecondsAfterCreation = $pirep->created_at->diffInSeconds($pirep->submitted_at);
-        if ($submittedSecondsAfterCreation > 600) return false;
+        $terminal = $pirep->submitted_at !== null
+            || in_array((int) $pirep->state, [PirepState::PENDING, PirepState::ACCEPTED, PirepState::REJECTED], true)
+            || $pirep->status === PirepStatus::ARRIVED;
+        if (!$terminal) return false;
 
+        // A real Hermès/vmsACARS session creates its first position as soon as
+        // StartCore() is called. Therefore the reliable distinction is not
+        // "how quickly was it submitted?" but "did ACARS ever start?".
+        //
+        // Old broken builds could leave submitted_at/state/status terminal,
+        // and sometimes landing_rate=0, without one second of actual tracking.
         if ((int) ($pirep->flight_time ?? 0) > 0) return false;
-        if ($pirep->block_off_time !== null) return false;
-        if ($pirep->landing_rate !== null) return false;
+        if ($pirep->block_off_time !== null || $pirep->block_on_time !== null) return false;
         if ($this->hasOperationTelemetry($pirep)) return false;
-
-        // Core/phpVMS ACARS points are an independent proof that tracking did
-        // actually begin. Their presence always wins over the legacy heuristic.
         if (DB::table('acars')->where('pirep_id', $pirep->id)->exists()) return false;
 
         return true;
