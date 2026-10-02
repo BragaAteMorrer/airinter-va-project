@@ -192,7 +192,7 @@ final class SimBriefOperationResolverTest extends TestCase
         $aircraft->name = 'Nord 262';
         $aircraft->icao = 'N262';
         $aircraft->simbrief_type = null;
-        $aircraft->status = AircraftState::PARKED ? AircraftStatus::ACTIVE : AircraftStatus::ACTIVE;
+        $aircraft->status = AircraftStatus::ACTIVE;
         $aircraft->state = AircraftState::PARKED;
         $aircraft->airport_id = $origin->id;
         $aircraft->save();
