@@ -222,6 +222,13 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::post('/regional-operations/bases', [PortalController::class,'saveRegionalBase'])->name('regional.bases.save');
         Route::post('/regional-operations/aircraft', [PortalController::class,'assignAircraftBase'])->name('regional.aircraft.assign');
         Route::post('/regional-operations/repatriation/sync', [PortalController::class,'syncRegionalRepatriations'])->name('regional.repatriation.sync');
+        Route::post('/regional-operations/rotation/settings', [PortalController::class,'saveFleetRotationSettings'])->name('regional.rotation.settings');
+        Route::post('/regional-operations/rotation/run', [PortalController::class,'runFleetRotation'])->name('regional.rotation.run');
+        Route::get('/maintenance', [PortalController::class,'adminMaintenance'])->name('maintenance');
+        Route::post('/maintenance/engine-profiles', [PortalController::class,'saveEngineProfile'])->name('maintenance.engine-profiles.save');
+        Route::post('/maintenance/engines', [PortalController::class,'createEngineUnit'])->name('maintenance.engines.create');
+        Route::post('/maintenance/engines/{engine}/overhaul', [PortalController::class,'overhaulEngine'])->name('maintenance.engines.overhaul');
+        Route::post('/maintenance/engines/{engine}/install', [PortalController::class,'installEngine'])->name('maintenance.engines.install');
         Route::get('/passport', [PortalController::class,'adminPassport'])->name('passport');
         Route::post('/passport', [PortalController::class,'savePassportSettings'])->name('passport.save');
         Route::get('/shop', [PortalController::class,'adminShop'])->name('shop');
