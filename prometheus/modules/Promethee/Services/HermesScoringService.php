@@ -25,6 +25,7 @@ final class HermesScoringService
         'SIMRATE_INCREASED',
         'SLEW_ACTIVATED',
         'SPEED_UNDER_10K',
+        'STABILIZED_APPROACH',
         'HARD_LANDING',
     ];
 
@@ -335,9 +336,67 @@ final class HermesScoringService
                     ];
                 }
             ),
+            'STABILIZED_APPROACH' => $this->evaluateStabilizedApproach($rule, $samples),
             'HARD_LANDING' => $this->evaluateHardLanding($rule, $landingRate),
             default => ['evaluable' => false, 'occurrences' => [], 'reason' => 'Règle non prise en charge.'],
         };
+    }
+
+    private function evaluateStabilizedApproach(object $rule, array $samples): array
+    {
+        $gate = is_numeric($rule->parameter) ? (float) $rule->parameter : 1500.0;
+        $previousAgl = null;
+        $sawAirborneAgl = false;
+
+        foreach ($samples as $sample) {
+            if (($sample['on_ground'] ?? null) !== false || !isset($sample['agl']) || !is_numeric($sample['agl'])) {
+                continue;
+            }
+
+            $agl = (float) $sample['agl'];
+            $sawAirborneAgl = true;
+
+            if ($previousAgl !== null && $previousAgl > $gate && $agl <= $gate) {
+                if (!array_key_exists('gear_down', $sample)
+                    || !array_key_exists('landing_flaps', $sample)
+                    || $sample['gear_down'] === null
+                    || $sample['landing_flaps'] === null) {
+                    return [
+                        'evaluable' => false,
+                        'occurrences' => [],
+                        'reason' => 'Train ou volets inconnus au passage du seuil d’approche.',
+                    ];
+                }
+
+                if ($sample['gear_down'] === true && $sample['landing_flaps'] === true) {
+                    return ['evaluable' => true, 'occurrences' => []];
+                }
+
+                $missing = [];
+                if ($sample['gear_down'] !== true) $missing[] = 'train';
+                if ($sample['landing_flaps'] !== true) $missing[] = 'volets';
+
+                return [
+                    'evaluable' => true,
+                    'occurrences' => [[
+                        'occurred_at' => $sample['recorded_at'] ?? null,
+                        'value' => round($agl, 0),
+                        'unit' => 'ft AGL',
+                        'detail' => 'Approche non configurée à '.round($gate, 0).' ft AGL : '.implode(' et ', $missing).'.',
+                    ]],
+                ];
+            }
+
+            $previousAgl = $agl;
+        }
+
+        return [
+            'evaluable' => false,
+            'occurrences' => [],
+            'reason' => $sawAirborneAgl
+                ? 'Le passage en descente du seuil '.round($gate, 0).' ft AGL n’a pas été observé.'
+                : 'Altitude AGL d’approche indisponible.',
+        ];
     }
 
     private function evaluateHardLanding(object $rule, ?float $landingRate): array
