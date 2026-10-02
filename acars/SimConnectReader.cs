@@ -38,6 +38,7 @@ public sealed class SimConnectReader : ISimulatorConnector
     private double? previousThrottle2;
     private uint pauseFlags;
     private bool simStopped;
+    private bool simVarPaused;
     public Sample? Latest { get; private set; }
     public string Status { get; private set; } = "Simulateur non détecté";
     public event Action<Sample>? Received;
@@ -125,8 +126,8 @@ public sealed class SimConnectReader : ISimulatorConnector
             DoorsOpen=v[29] > 0.5 || v[30] > 0.5 || v[31] > 0.5 || v[32] > 0.5,
             TransponderCode=NormalizeTransponder(v[33]),
             AutopilotEnabled=v[34] != 0,
-            Paused=ResolvePaused(v[35] != 0),
-            PauseKind=ResolvePauseKind(v[35] != 0),
+            Paused=ResolvePaused(simVarPaused = v[35] != 0),
+            PauseKind=ResolvePauseKind(simVarPaused),
             ThrustStable=thrustStable,
             AircraftTitle=aircraftTitle,
             AircraftIcao=LooksLikeIcao(aircraftModel) ? aircraftModel : null,
@@ -145,6 +146,7 @@ public sealed class SimConnectReader : ISimulatorConnector
 
         if (eventId == PauseEventId) {
             pauseFlags = eventData;
+            if (eventData == 0) simVarPaused = false;
             RefreshPauseSnapshot();
             return;
         }
@@ -162,7 +164,6 @@ public sealed class SimConnectReader : ISimulatorConnector
     {
         if (LatestSnapshot is null) return;
         var now = DateTimeOffset.UtcNow;
-        var simVarPaused = LatestSnapshot.Paused == true && pauseFlags == 0 && !simStopped;
         LatestSnapshot = LatestSnapshot with {
             SampleId = Guid.NewGuid(),
             RecordedAt = now,
@@ -213,7 +214,7 @@ public sealed class SimConnectReader : ISimulatorConnector
     private void Close(){
         if(handle!=IntPtr.Zero){SimConnect_Close(handle);handle=IntPtr.Zero;}
         Latest=null;LatestSnapshot=null;aircraftTitle=null;aircraftModel=null;aircraftType=null;
-        previousThrottle1=null;previousThrottle2=null;pauseFlags=0;simStopped=false;
+        previousThrottle1=null;previousThrottle2=null;pauseFlags=0;simStopped=false;simVarPaused=false;
     } public void Dispose()=>Close();
     [UnmanagedFunctionPointer(CallingConvention.StdCall)] private delegate void Dispatch(IntPtr data,uint length,IntPtr context);
     [DllImport("SimConnect.dll",CharSet=CharSet.Ansi)] private static extern int SimConnect_Open(out IntPtr handle,string name,IntPtr window,uint message,IntPtr signal,uint index);
