@@ -129,6 +129,8 @@ public sealed class TelemetryService(ISimulatorConnector sim, FlightRecorder rec
                             thrust_stable=raw?.ThrustStable ?? (raw is null ? (bool?)x.Sample.ThrustStable : null),
                             localizer_dots=raw?.LocalizerDots ?? (raw is null ? (double?)x.Sample.LocalizerDots : null),
                             glideslope_dots=raw?.GlideslopeDots ?? (raw is null ? (double?)x.Sample.GlideslopeDots : null),
+                            paused=raw?.Paused,
+                            pause_kind=raw?.PauseKind,
                             phase=flight.Phase
                         };
                     })

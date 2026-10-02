@@ -173,6 +173,17 @@ vmsacars_rules:
       cooldown: 60
       enabled: true
       order: 70
+    - id: PAUSE_ACTIVATED
+      name: Simulator Pause Activated
+      description: Detects simulator pause, Active Pause, or simulator menu/dialog pause while recording
+      parameter:
+      points: 2
+      has_parameter: false
+      repeatable: true
+      delay: 1
+      cooldown: 60
+      enabled: true
+      order: 72
     - id: SPEED_UNDER_10K
       name: Overspeed under 10k
       description: "Speed of 250kts under 10,000' is exceeded"

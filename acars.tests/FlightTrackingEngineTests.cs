@@ -199,6 +199,22 @@ public sealed class FlightTrackingEngineTests
         Assert.DoesNotContain(decision.Events, x => x.Type.Contains("PENALTY", StringComparison.Ordinal));
     }
 
+    [Fact]
+    public void Pause_transitions_are_emitted_as_operational_facts()
+    {
+        var engine = new FlightTrackingEngine();
+        var t = DateTimeOffset.Parse("2026-10-03T20:00:00Z");
+
+        engine.Process(new AircraftSnapshot(Guid.NewGuid(), t, Paused: false));
+        var paused = engine.Process(new AircraftSnapshot(
+            Guid.NewGuid(), t.AddSeconds(1), Paused: true, PauseKind: "ACTIVE_PAUSE"));
+        var resumed = engine.Process(new AircraftSnapshot(
+            Guid.NewGuid(), t.AddSeconds(8), Paused: false));
+
+        Assert.Contains(paused.Events, x => x.Type == "PAUSE_STARTED" && x.Snapshot.PauseKind == "ACTIVE_PAUSE");
+        Assert.Contains(resumed.Events, x => x.Type == "PAUSE_ENDED");
+    }
+
     private static void Add(TrackingDecision decision, List<FlightEvent> events) => events.AddRange(decision.Events);
 
     private static AircraftSnapshot Snapshot(
