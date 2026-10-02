@@ -47,6 +47,7 @@ app.MapGet("/api/status", (PhpVmsClient client, SimConnectReader sim, FlightReco
             sim = sim.Status,
             latest = sim.Latest,
             flight = recorder.Flight,
+            review = recorder.GetReview(),
             track = recorder.Track,
             pending = recorder.Pending.Count + recorder.PendingEvents.Count + recorder.PendingFacts.Count,
             recoveryAvailable = recorder.RecoveryAvailable,
@@ -163,8 +164,9 @@ app.MapPost("/api/file", async (FilePirepRequest input, PhpVmsClient client, Fli
     if (flight.LandingRate is not null) report["landing_rate"] = flight.LandingRate.Value;
     if (!string.IsNullOrWhiteSpace(input.Notes)) report["notes"] = input.Notes.Trim();
     await client.Send("pireps/" + Uri.EscapeDataString(flight.PirepId) + "/file", report);
+    var review = recorder.GetReview();
     recorder.Complete();
-    return Results.Ok();
+    return Results.Ok(new { review });
 });
 
 app.MapFallbackToFile("index.html");

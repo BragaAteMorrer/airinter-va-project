@@ -31,9 +31,12 @@ for (const [file, budget] of Object.entries(budgets)) {
 }
 
 const hermesIndex = read('acars/wwwroot/index.html');
+const hermesApp = read('acars/wwwroot/app.js');
+const hermesDesktop = read('acars/WebDesktop.cs');
 const hermesTheme = read('acars/wwwroot/hermes-themes.css');
 const prometheeV2 = read('prometheus/public/promethee-assets/promethee-v2.css');
 const dispatch = read('prometheus/modules/Promethee/Resources/views/admin/dispatch.blade.php');
+const crm = read('prometheus/modules/Promethee/Resources/views/admin/crm.blade.php');
 
 const stylesheetHrefs = [...hermesIndex.matchAll(/<link\b[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["']/gi)]
   .map(match => match[1]);
@@ -44,6 +47,14 @@ expect(!/<script\b[^>]*src=["']\/minitel\//i.test(hermesIndex),
   'Hermès must lazy-load Minitel scripts instead of loading them in the default shell.');
 expect(!/<link\b[^>]*href=["']\/minitel\//i.test(hermesIndex),
   'Hermès must lazy-load Minitel styles instead of loading them in the default shell.');
+
+expect(hermesIndex.includes('reviewAltitudeChart') && hermesIndex.includes('reviewFuelChart'),
+  'Hermès Flight Review must preserve altitude and fuel chart surfaces.');
+expect(hermesApp.includes('normalizeReviewProfile') && hermesApp.includes('renderReviewCharts'),
+  'Hermès Flight Review must preserve profile-series rendering.');
+expect(hermesDesktop.includes('"/api/file" => await File(body)')
+    && hermesDesktop.includes('report["notes"] = notes'),
+  'Hermès desktop must forward the optional pilot Flight Review comment when filing.');
 
 expect(hermesTheme.includes('prefers-reduced-motion'),
   'Hermès theme CSS must preserve prefers-reduced-motion handling.');
@@ -58,6 +69,24 @@ expect(dispatch.includes("if (!document.hidden) refreshBoard()"),
   'Dispatch Desk polling must remain suspended while the page is hidden.');
 expect(dispatch.includes('promethee-dispatch-filter') && dispatch.includes('promethee-dispatch-selected'),
   'Dispatch Desk must preserve dispatcher context across refresh/navigation.');
+
+expect(crm.includes('data-crm-campaign-workspace')
+    && crm.includes('promethee-crm-selected-campaign')
+    && crm.includes('admin-master-detail'),
+  'CRM must preserve the reusable master/detail campaign workspace and selected campaign context.');
+expect(prometheeV2.includes('.admin-master-detail')
+    && prometheeV2.includes('.admin-detail-pane')
+    && prometheeV2.includes('.admin-master-row'),
+  'Prométhée must preserve shared staff master/detail primitives.');
+
+const inlineStyleFreeViews = [
+  'prometheus/modules/Promethee/Resources/views/bookings.blade.php',
+  'prometheus/modules/Promethee/Resources/views/flight.blade.php',
+];
+for (const file of inlineStyleFreeViews) {
+  expect(!/<[^>]+\sstyle\s*=/i.test(read(file)),
+    `${file} must use shared CSS primitives instead of inline style attributes.`);
+}
 
 if (failures.length) {
   console.error('\nFrontend quality gate failed:');

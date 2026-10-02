@@ -391,6 +391,86 @@ final class HermesOperationLifecycleTest extends TestCase
         $this->assertContains($fx['operation_id'], array_column($this->operations($fx['user']), 'operation_id'));
     }
 
+    public function test_portal_projection_keeps_arrived_operation_awaiting_filing(): void
+    {
+        $fx = $this->operationFixture();
+        $pirepId = $this->prefile($fx);
+        $this->telemetry($fx, 'IN');
+
+        $pirep = Pirep::findOrFail($pirepId);
+        $pirep->status = PirepStatus::ARRIVED;
+        $pirep->state = PirepState::IN_PROGRESS;
+        $pirep->submitted_at = null;
+        $pirep->save();
+
+        $controller = app(\Modules\Promethee\Http\PortalController::class);
+        $method = new \ReflectionMethod($controller, 'bookingOperation');
+        $method->setAccessible(true);
+        $booking = $method->invoke($controller, $fx['bid']->fresh(['flight', 'aircraft']));
+
+        $this->assertSame('AWAITING_FILING', $booking->operation_status);
+        $this->assertSame(95, $booking->operation_progress);
+        $this->assertSame('Ouvrir le Flight Review', $booking->operation_next_action);
+    }
+
+    public function test_repeat_cleanup_removes_only_terminal_stale_bid_before_fresh_operation(): void
+    {
+        $fx = $this->operationFixture(assignAircraft: false, createOfp: false);
+        $staleBid = $fx['bid'];
+
+        $terminalPirep = Pirep::factory()->create([
+            'user_id' => $fx['user']->id,
+            'airline_id' => $fx['flight']->airline_id,
+            'flight_id' => $fx['flight']->id,
+            'flight_number' => $fx['flight']->flight_number,
+            'dpt_airport_id' => $fx['origin']->id,
+            'arr_airport_id' => $fx['destination']->id,
+            'source_name' => 'Hermes ACARS [op_'.$staleBid->id.']',
+            'state' => PirepState::ACCEPTED,
+            'status' => PirepStatus::ARRIVED,
+            'submitted_at' => now(),
+        ]);
+        // A real completed operation has simulator evidence. Without it this
+        // fixture would intentionally be classified as a legacy zero-flight
+        // ghost and the safety guard must refuse to delete its reservation.
+        \App\Models\Acars::factory()->create([
+            'pirep_id' => $terminalPirep->id,
+            'type' => \App\Models\Enums\AcarsType::FLIGHT_PATH,
+        ]);
+
+        $controller = app(\Modules\Promethee\Http\PortalController::class);
+        $method = new \ReflectionMethod($controller, 'releaseTerminalReservationsForFlight');
+        $method->setAccessible(true);
+
+        $active = $method->invoke($controller, $fx['flight']->fresh(), $fx['user']->fresh());
+
+        $this->assertNull($active);
+        $this->assertDatabaseMissing('bids', ['id' => $staleBid->id]);
+
+        /** @var BidService $bids */
+        $bids = app(BidService::class);
+        $newBid = $bids->addBid($fx['flight']->fresh(), $fx['user']->fresh());
+
+        $this->assertNotSame((string) $staleBid->id, (string) $newBid->id);
+        $this->assertSame('op_'.$newBid->id, app(\Modules\Promethee\Services\OperationIdentityService::class)->id($newBid));
+    }
+
+    public function test_repeat_cleanup_never_deletes_non_terminal_operation(): void
+    {
+        $fx = $this->operationFixture(assignAircraft: false, createOfp: false);
+
+        $controller = app(\Modules\Promethee\Http\PortalController::class);
+        $method = new \ReflectionMethod($controller, 'releaseTerminalReservationsForFlight');
+        $method->setAccessible(true);
+
+        $active = $method->invoke($controller, $fx['flight']->fresh(), $fx['user']->fresh());
+
+        $this->assertNotNull($active);
+        $this->assertSame((string) $fx['bid']->id, (string) $active->id);
+        $this->assertDatabaseHas('bids', ['id' => $fx['bid']->id]);
+        $this->assertSame('AIRCRAFT_REQUIRED', $active->operation_status);
+    }
+
     public function test_legacy_zero_flight_terminal_pirep_is_never_reopened_or_deleted_automatically(): void
     {
         $fx = $this->operationFixture();

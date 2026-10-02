@@ -2861,6 +2861,108 @@ function reviewValue(review, camel, pascal = camel) {
   return review?.[camel] ?? review?.[pascal] ?? null;
 }
 
+const reviewSvgNamespace = 'http://www.w3.org/2000/svg';
+
+function normalizeReviewProfile(review) {
+  return (reviewValue(review, 'profile', 'Profile') || [])
+    .map((point, index) => {
+      const recordedAt = point.recordedAt ?? point.RecordedAt ?? null;
+      return {
+        index,
+        recordedAt,
+        time: recordedAt ? Date.parse(recordedAt) : index,
+        altitude: Number(point.altitude ?? point.Altitude),
+        fuel: Number(point.fuel ?? point.Fuel),
+        groundSpeed: Number(point.groundSpeed ?? point.GroundSpeed)
+      };
+    })
+    .filter(point => Number.isFinite(point.altitude) && Number.isFinite(point.fuel));
+}
+
+function svgElement(name, attributes = {}) {
+  const node = document.createElementNS(reviewSvgNamespace, name);
+  Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, String(value)));
+  return node;
+}
+
+function renderReviewSeries(selector, profile, key, label, baselineZero = false) {
+  const svg = $(selector);
+  if (!svg) return;
+  svg.replaceChildren();
+
+  const title = svgElement('title');
+  title.textContent = label;
+  svg.append(title);
+
+  if (!profile.length) {
+    const empty = svgElement('text', { x: 320, y: 92, 'text-anchor': 'middle', class: 'review-chart-empty' });
+    empty.textContent = 'En attente de données de vol';
+    svg.append(empty);
+    return;
+  }
+
+  const width = 640;
+  const height = 180;
+  const padX = 12;
+  const padY = 12;
+  const values = profile.map(point => Number(point[key])).filter(Number.isFinite);
+  if (!values.length) return;
+
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+  const lower = baselineZero ? 0 : Math.max(0, minValue - Math.max(1, (maxValue - minValue) * .12));
+  const upper = Math.max(lower + 1, maxValue + Math.max(1, (maxValue - lower) * .06));
+  const times = profile.map(point => Number.isFinite(point.time) ? point.time : point.index);
+  const minTime = Math.min(...times);
+  const maxTime = Math.max(...times);
+  const timeSpan = Math.max(1, maxTime - minTime);
+
+  for (let step = 0; step <= 4; step += 1) {
+    const y = padY + ((height - padY * 2) * step / 4);
+    svg.append(svgElement('line', { x1: padX, y1: y, x2: width - padX, y2: y, class: 'review-chart-gridline' }));
+  }
+
+  const points = profile.map((point, index) => {
+    const time = Number.isFinite(point.time) ? point.time : index;
+    const x = padX + ((time - minTime) / timeSpan) * (width - padX * 2);
+    const value = Math.min(upper, Math.max(lower, Number(point[key])));
+    const y = height - padY - ((value - lower) / (upper - lower)) * (height - padY * 2);
+    return [x, y];
+  });
+
+  const path = svgElement('path', {
+    d: points.map(([x, y], index) => `${index ? 'L' : 'M'} ${x.toFixed(2)} ${y.toFixed(2)}`).join(' '),
+    class: 'review-chart-path'
+  });
+  svg.append(path);
+}
+
+function renderReviewCharts(review) {
+  const profile = normalizeReviewProfile(review);
+  renderReviewSeries('#reviewAltitudeChart', profile, 'altitude', 'Profil d’altitude du vol', true);
+  renderReviewSeries('#reviewFuelChart', profile, 'fuel', 'Évolution du carburant du vol');
+
+  if (!profile.length) {
+    setText($('#reviewAltitudeChartMeta'), 'En attente de données');
+    setText($('#reviewFuelChartMeta'), 'En attente de données');
+    return;
+  }
+
+  const altitudeMax = Math.max(...profile.map(point => point.altitude));
+  const first = profile[0];
+  const last = profile[profile.length - 1];
+  const firstTime = Number.isFinite(first.time) ? first.time : 0;
+  const lastTime = Number.isFinite(last.time) ? last.time : firstTime;
+  const duration = Math.max(0, Math.round((lastTime - firstTime) / 60000));
+  const fuelDelta = last.fuel - first.fuel;
+  const signedFuel = (fuelDelta > 0 ? '+' : '') + Math.round(fuelDelta);
+
+  setText($('#reviewAltitudeChartMeta'),
+    'Max ' + Math.round(altitudeMax).toLocaleString('fr-FR') + ' ft · ' + profile.length + ' points · ' + duration + ' min');
+  setText($('#reviewFuelChartMeta'),
+    Math.round(first.fuel).toLocaleString('fr-FR') + ' → ' + Math.round(last.fuel).toLocaleString('fr-FR') + ' lb · Δ ' + signedFuel + ' lb');
+}
+
 function renderObservations(selector, entries, emptyText) {
   const node = $(selector);
   if (!node) return;
@@ -3020,6 +3122,7 @@ function renderReview(review) {
   const state = $('#reviewState');
   if (!current) {
     renderReviewContext(null);
+    renderReviewCharts(null);
     if (state) { state.textContent = 'AUCUN VOL'; state.classList.remove('ready'); }
     ['#reviewDistance','#reviewAirborne','#reviewBlock','#reviewFuel','#reviewLandingRate','#reviewMaxBank','#reviewFuelAdded','#reviewSimRate'].forEach(id => setText($(id), '—'));
     setText($('#review1000'), 'NON OBSERVÉ');
@@ -3035,6 +3138,7 @@ function renderReview(review) {
   }
 
   renderReviewContext(current);
+  renderReviewCharts(current);
   const phase = String(reviewValue(current, 'phase', 'Phase') || '—');
   const ready = Boolean(reviewValue(current, 'readyToFile', 'ReadyToFile'));
   const filed = Boolean(lastFiledReview && !lastStatus?.review && !lastStatus?.Review);

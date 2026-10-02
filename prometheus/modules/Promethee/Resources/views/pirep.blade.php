@@ -13,6 +13,8 @@
     $airportPath = collect([$pirep->dpt_airport, $pirep->arr_airport])->filter(fn ($airport) => is_numeric($airport->lat) && is_numeric($airport->lon))->map(fn ($airport) => [(float) $airport->lat, (float) $airport->lon])->values();
     $mapPath = $actualPath->isNotEmpty() ? $actualPath : ($plannedPath->isNotEmpty() ? $plannedPath : $airportPath);
     $isOwner = auth()->check() && auth()->id() === $pirep->user_id;
+    $canRepeat = $isOwner && $pirep->flight && ($pirep->submitted_at !== null
+        || in_array((int) $pirep->state, [PirepState::PENDING, PirepState::ACCEPTED, PirepState::REJECTED], true));
 @endphp
 <div class="ops-header compact report-heading">
   <div><span class="eyebrow">RAPPORT DE VOL · AIR INTER</span><h1>{{ $pirep->ident }}</h1><p>{{ $pirep->dpt_airport_id }} → {{ $pirep->arr_airport_id }} · {{ optional($pirep->submitted_at)->setTimezone('Europe/Paris')->format('d/m/Y') ?? 'En préparation' }}</p></div>
@@ -26,8 +28,17 @@
     @if($pirep->simbrief)
       <a class="button outline" href="{{ route('frontend.simbrief.briefing', $pirep->simbrief->id) }}">Ouvrir SimBrief</a>
     @endif
+    @if($canRepeat)
+      <form method="post" action="{{ route('promethee.pireps.repeat', $pirep->id) }}">
+        @csrf
+        <button class="button outline" type="submit">Refaire ce vol</button>
+      </form>
+    @endif
   </div>
 </div>
+@if($errors->has('reservation'))
+  <div class="alert alert-danger no-print">{{ $errors->first('reservation') }}</div>
+@endif
 <section class="control-strip report-strip">
   <article><span>État</span><strong>{{ $state }}</strong><small>{{ $status ?: 'Rapport de vol' }}</small></article><article><span>Temps de vol</span><strong>{{ $duration($pirep->flight_time) }}</strong><small>Bloc : {{ $duration($pirep->block_time) }}</small></article><article><span>Distance</span><strong>{{ $pirep->distance ? number_format($pirep->distance->toUnit('nmi'), 0, ',', ' ') : '—' }}</strong><small>milles nautiques</small></article><article><span>Atterrissage</span><strong>{{ $pirep->landing_rate !== null ? number_format($pirep->landing_rate, 0, ',', ' ') : '—' }}</strong><small>ft/min{{ $pirep->score !== null ? ' · score '.$pirep->score : '' }}</small></article>
 </section>

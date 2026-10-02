@@ -5,7 +5,7 @@
   <title>Hermès ACARS — Air Inter</title>
   <link rel="icon" type="image/png" href="/air-inter-va-hermes.png">
   <link rel="apple-touch-icon" href="/air-inter-va-hermes.png">
-  <link rel="stylesheet" href="/styles.css?rev=20261002-audit-phase2"><link rel="stylesheet" href="/hermes-themes.css?rev=20260930-wcag-night"><link rel="stylesheet" href="/layout-overrides.css?rev=20260930-wcag-night">
+  <link rel="stylesheet" href="/styles.css?rev=20261003-review-profile"><link rel="stylesheet" href="/hermes-themes.css?rev=20260930-wcag-night"><link rel="stylesheet" href="/layout-overrides.css?rev=20260930-wcag-night">
 </head>
 <body class="auth-locked">
   <aside class="rail">
@@ -420,6 +420,16 @@
         <div><span>Max sim rate</span><strong id="reviewSimRate">—</strong></div>
         <div><span>Score compagnie</span><strong id="reviewScore">—</strong></div>
       </div>
+      <div class="review-chart-grid" aria-label="Profils du vol">
+        <article class="review-chart-card">
+          <div class="review-chart-heading"><div><span class="kicker">PROFIL DE VOL</span><h3>Altitude</h3></div><small id="reviewAltitudeChartMeta">En attente de données</small></div>
+          <svg id="reviewAltitudeChart" class="review-chart review-chart--altitude" viewBox="0 0 640 180" preserveAspectRatio="none" role="img" aria-label="Profil d’altitude du vol"></svg>
+        </article>
+        <article class="review-chart-card">
+          <div class="review-chart-heading"><div><span class="kicker">ÉNERGIE</span><h3>Carburant</h3></div><small id="reviewFuelChartMeta">En attente de données</small></div>
+          <svg id="reviewFuelChart" class="review-chart review-chart--fuel" viewBox="0 0 640 180" preserveAspectRatio="none" role="img" aria-label="Évolution du carburant du vol"></svg>
+        </article>
+      </div>
       <div class="review-gates">
         <article><span class="kicker">1000 FT AGL</span><strong id="review1000">NON OBSERVÉ</strong><p>Train, volets, VS et bank selon les données disponibles.</p></article>
         <article><span class="kicker">500 FT AGL</span><strong id="review500">NON OBSERVÉ</strong><p>Contrôle générique, indépendant du score Air Inter.</p></article>
@@ -527,5 +537,5 @@ try {
   if ((localStorage.hermesEra || localStorage.prometheeEra || 'modern') === 'minitel') window.loadHermesMinitel();
 } catch {}
 </script>
-<script src="/app.js?rev=20261003-vmsacars-scoring"></script>
+<script src="/app.js?rev=20261003-vmsacars-scoring-review-profile"></script>
 </body></html>
