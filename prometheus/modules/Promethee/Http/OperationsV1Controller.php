@@ -936,10 +936,28 @@ class OperationsV1Controller extends Controller
             fn ($variant) => ($variant['id'] ?? null) === ($variantState['selected_variant_id'] ?? null)
         );
         $resolvedAircraftProfile = $aircraft ? $this->aircraftConfigurations->resolve($aircraft) : null;
-        $simbriefType = $resolvedAircraftProfile['simbrief']['effective_type']
+        $simbriefCalculationType = $resolvedAircraftProfile['simbrief']['effective_type']
             ?? $selectedVariant['simbrief_type']
             ?? $fallback['simbrief_type']
             ?? ($aircraft?->simbrief_type ?: ($subfleet?->simbrief_type ?: $aircraft?->icao));
+        $simbriefStrategy = $selectedVariant['simbrief_strategy']
+            ?? ($selectedVariant['simbrief_profile']['strategy'] ?? null)
+            ?? 'native';
+        $simbriefDisplayType = strtoupper((string) (
+            $aircraft?->icao
+            ?: $subfleet?->type
+            ?: $simbriefCalculationType
+        ));
+            ?? $fallback['simbrief_type']
+            ?? ($aircraft?->simbrief_type ?: ($subfleet?->simbrief_type ?: $aircraft?->icao));
+        $simbriefStrategy = $selectedVariant['simbrief_strategy']
+            ?? ($selectedVariant['simbrief_profile']['strategy'] ?? null)
+            ?? 'native';
+        $simbriefDisplayType = strtoupper((string) (
+            $aircraft?->icao
+            ?: $subfleet?->type
+            ?: $simbriefCalculationType
+        ));
         $airline = Str::lower((string) ($flight?->airline?->name ?? ''));
         $loadFactor = str_contains($airline, 'charter') ? config('acars.load_factors.air_charter_international')
             : (str_contains($airline, 'cargo') ? config('acars.load_factors.inter_cargo_service') : config('acars.load_factors.air_inter'));
@@ -948,6 +966,19 @@ class OperationsV1Controller extends Controller
         $legacyGhost = $pirep && $this->isLegacyHermesGhostPirep($pirep);
         $visiblePirep = $legacyGhost ? null : $pirep;
         $ofpAvailable = $ofp !== null || ($pirep !== null && filled($pirep->route));
+        $demand = $aircraft && $flight
+            ? $this->demandProfile->profile($aircraft, $flight, $this->operationIdentity->id($bid))
+            : null;
+        $variantMaxPax = $selectedVariant['simbrief_profile']['maxpax'] ?? null;
+        if ($demand && is_numeric($variantMaxPax) && (int) $variantMaxPax > 0) {
+            $demand['capacity'] = (int) $variantMaxPax;
+            $demand['capacity_source'] = 'sb_airframe';
+            $demand['passengers'] = min(
+                (int) $variantMaxPax,
+                max(0, (int) round((int) $variantMaxPax * (float) $demand['load_factor_percent'] / 100))
+            );
+        }
+
         return [
             'id' => $this->operationIdentity->id($bid),
             'operation_id' => $this->operationIdentity->id($bid),
@@ -982,9 +1013,14 @@ class OperationsV1Controller extends Controller
                 'resolved_profile' => $resolvedAircraftProfile['resolved'] ?? null,
                 'profile_provenance' => $resolvedAircraftProfile['provenance'] ?? null,
                 'simulator_profiles' => $resolvedAircraftProfile['simulator_profiles'] ?? [],
-            ], $flight ? $this->demandProfile->profile($aircraft, $flight, $this->operationIdentity->id($bid)) : []) : null,
+            ], $demand ?? []) : null,
             'simbrief' => [
-                'type' => $simbriefType,
+                // Pilot-facing identity always remains the real aircraft.
+                'type' => $simbriefDisplayType,
+                'calculation_type' => $simbriefCalculationType,
+                'strategy' => $simbriefStrategy,
+                'profile' => $selectedVariant['simbrief_profile'] ?? null,
+                'compatible' => filled($simbriefCalculationType),
                 'addon' => $selectedVariant['label'] ?? ($fallback['addon'] ?? null),
                 'variant' => $selectedVariant,
                 'variants' => $variantState['variants'] ?? [],
@@ -999,15 +1035,9 @@ class OperationsV1Controller extends Controller
             'operating_rules' => [
                 'passenger_weight_kg' => config('acars.passenger_weight_kg'),
                 'checked_baggage_kg' => config('acars.checked_baggage_kg'),
-                'load_factor_percent' => $aircraft && $flight
-                    ? $this->demandProfile->profile($aircraft, $flight, $this->operationIdentity->id($bid))['load_factor_percent']
-                    : $loadFactor,
-                'passengers' => $aircraft && $flight
-                    ? $this->demandProfile->profile($aircraft, $flight, $this->operationIdentity->id($bid))['passengers']
-                    : null,
-                'capacity' => $aircraft && $flight
-                    ? $this->demandProfile->profile($aircraft, $flight, $this->operationIdentity->id($bid))['capacity']
-                    : null,
+                'load_factor_percent' => $demand['load_factor_percent'] ?? $loadFactor,
+                'passengers' => $demand['passengers'] ?? null,
+                'capacity' => $demand['capacity'] ?? null,
                 'pricing_band' => $flight ? $this->demandProfile->bandForFlight($flight) : null,
                 'fuel_policy' => 'trip + 5% + alternate + expected holding + 45 minutes reserve',
             ],

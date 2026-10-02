@@ -5,8 +5,7 @@
   <title>Hermès ACARS — Air Inter</title>
   <link rel="icon" type="image/png" href="/air-inter-va-hermes.png">
   <link rel="apple-touch-icon" href="/air-inter-va-hermes.png">
-  <link rel="stylesheet" href="/styles.css?rev=20261002-live-map"><link rel="stylesheet" href="/hermes-themes.css?rev=20260930-wcag-night"><link rel="stylesheet" href="/layout-overrides.css?rev=20260930-wcag-night"><link rel="stylesheet" href="/minitel/minitel-runtime.css"><link rel="stylesheet" href="/minitel/minitel-shell.css"><link rel="stylesheet" href="/hermes-minitel.css">
-  <link rel="stylesheet" href="/styles.css?rev=20261002-live-map"><link rel="stylesheet" href="/hermes-themes.css"><link rel="stylesheet" href="/layout-overrides.css"><link rel="stylesheet" href="/minitel/minitel-runtime.css"><link rel="stylesheet" href="/minitel/minitel-shell.css"><link rel="stylesheet" href="/hermes-minitel.css?rev=20260930-videotex-r2">
+  <link rel="stylesheet" href="/styles.css?rev=20261002-audit-ux"><link rel="stylesheet" href="/hermes-themes.css?rev=20260930-wcag-night"><link rel="stylesheet" href="/layout-overrides.css?rev=20260930-wcag-night"><link rel="stylesheet" href="/minitel/minitel-runtime.css"><link rel="stylesheet" href="/minitel/minitel-shell.css"><link rel="stylesheet" href="/hermes-minitel.css?rev=20261002-audit-ux">
 </head>
 <body class="auth-locked">
   <aside class="rail">
@@ -57,11 +56,9 @@
     <section id="flight" class="panel">
       <div class="workspace-title"><div><span class="kicker">FLIGHT WORKSPACE</span><h2>Préparation opérationnelle</h2></div><strong id="readyState" class="ready-state">NOT READY</strong></div>
       <div id="workflow" class="workflow" aria-label="État de préparation">
-        <div data-step="operation"><span>01</span><strong>Opération</strong><small>Sélectionner le vol</small></div>
-        <div data-step="aircraft"><span>02</span><strong>Appareil</strong><small>Dispatch & éligibilité</small></div>
-        <div data-step="ofp"><span>03</span><strong>OFP</strong><small>Briefing SimBrief</small></div>
-        <div data-step="pirep"><span>04</span><strong>PIREP</strong><small>Brouillon ACARS</small></div>
-        <div data-step="ready"><span>05</span><strong>Ready</strong><small>Contrôles départ</small></div>
+        <div data-phase="flight"><span>01</span><strong>Vol</strong><small>Opération + appareil</small></div>
+        <div data-phase="briefing"><span>02</span><strong>Briefing</strong><small>OFP + préparation enregistrée</small></div>
+        <div data-phase="ready"><span>03</span><strong>Prêt</strong><small>Simulateur + contrôles départ</small></div>
       </div>
       <section id="nextAction" class="next-action">
         <div><span class="kicker">PROCHAINE ACTION</span><strong id="nextActionTitle">Choisissez votre vol</strong><p id="nextActionText">Sélectionnez une réservation ou recherchez une ligne du programme Air Inter.</p></div>
@@ -99,9 +96,12 @@
         <div id="aircraftEligibility" class="eligibility" hidden></div>
       </section>
       <section class="flightplan-source operations-planning">
-        <div class="draft-heading"><div><span class="kicker">03 · PLANIFICATION</span><h3>Source du plan de vol</h3></div><p>Choisissez une méthode : Hermès n’affiche ensuite que les actions utiles à ce mode.</p></div>
-
-        <div class="source-tabs" role="tablist" aria-label="Source du plan de vol">
+        <div class="draft-heading ofp-task-heading">
+          <div><span class="kicker">02 · BRIEFING</span><h3>Préparer l’OFP</h3><p>Hermès choisit la meilleure source disponible pour cette opération. Les sources restent modifiables pour les cas particuliers.</p></div>
+          <div class="ofp-primary-actions"><button id="prepareOfpBtn" type="button" class="primary">Préparer l’OFP</button><span id="ofpSourceHint" class="hint">Source recommandée : détection en cours…</span></div>
+        </div>
+        <p class="hint source-choice-label"><strong>Changer de source</strong> · options avancées</p>
+        <div class="source-tabs" role="tablist" aria-label="Sources avancées du plan de vol">
           <button type="button" data-plan-mode="account" class="active" role="tab" aria-selected="true" aria-controls="planPanelAccount">Compte SimBrief</button>
           <button type="button" data-plan-mode="api" role="tab" aria-selected="false" aria-controls="planPanelApi">API SimBrief</button>
           <button type="button" data-plan-mode="file" role="tab" aria-selected="false" aria-controls="planPanelFile">Plan local</button>
@@ -177,7 +177,7 @@
       <form id="prefileForm" class="grid flight-draft" hidden>
         <div class="draft-heading">
           <div><span class="kicker">BROUILLON OPÉRATIONNEL</span><h3>Personnaliser le vol</h3></div>
-          <p>Les données du programme sont verrouillées. Vous pouvez adapter la préparation avant SimBrief ou le pré-dépôt.</p>
+          <p>Les données du programme sont verrouillées. Vous pouvez adapter la préparation avant SimBrief ou l’enregistrement de la préparation.</p>
         </div>
         <input name="flight_id" type="hidden">
         <input name="airline_id" type="hidden">
@@ -207,7 +207,8 @@
           <summary><strong>Options SimBrief avancées</strong><span>Airframe · performances · carburant · OFP · pistes</span></summary>
           <div class="grid simbrief-advanced-grid">
             <label>Profil / Internal ID
-              <input name="simbrief_type" maxlength="64" placeholder="AUTO · A319 · 80_1709125568637">
+              <input name="simbrief_type" maxlength="64" placeholder="Géré par Prométhée / sb-airframe" readonly>
+              <small>Le type de calcul est résolu côté Prométhée depuis sb-airframe afin de préserver l’identité réelle de l’appareil.</small>
               <small>Un Internal ID force un airframe SimBrief précis (Fenix, PMDG, profil personnel…).</small>
             </label>
             <label>ATC Callsign<input name="callsign" maxlength="16" placeholder="AUTO · ITF143"></label>
@@ -270,7 +271,7 @@
 
         <div class="draft-actions">
           <button id="resetDraftBtn" type="button">Réinitialiser</button>
-          <button class="primary">Préparer le brouillon PIREP</button>
+          <button class="primary">Finaliser la préparation</button>
         </div>
       </form>
       <p id="pirepMessage" class="message" hidden role="status"></p>
@@ -335,11 +336,14 @@
         </div>
         <a class="flight-map-attribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a>
       </div>
+      <div class="flight-map-legend" aria-label="Légende de la carte"><span><i class="planned"></i> Route prévue</span><span><i class="actual"></i> Route réellement volée</span></div>
       <div class="flight-map-meta">
         <div><span>Vol</span><strong id="flightMapFlight">—</strong></div>
         <div><span>Position</span><strong id="flightMapPosition">—</strong></div>
         <div><span>Altitude</span><strong id="flightMapAltitude">—</strong></div>
         <div><span>GS</span><strong id="flightMapSpeed">—</strong></div>
+        <div><span>Progression</span><strong id="flightMapProgress">—</strong></div>
+        <div><span>Temps restant</span><strong id="flightMapEta">—</strong></div>
       </div>
       <div id="timeline" class="timeline"><p class="empty">En attente d’un vol.</p></div>
     </section>

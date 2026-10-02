@@ -805,7 +805,15 @@ class PortalController extends Controller
         $dayEnd = now('Europe/Paris')->endOfDay()->utc();
         $monthStart = now('Europe/Paris')->startOfMonth()->utc();
         $homeAirportId = $r->user()->home_airport_id;
+        $nextOperation = Bid::with(['flight.airline','aircraft.subfleet'])
+            ->where('user_id', $r->user()->id)
+            ->latest('created_at')
+            ->get()
+            ->map(fn (Bid $booking) => $this->bookingOperation($booking))
+            ->first(fn (Bid $booking) => !in_array($booking->operation_status, ['COMPLETED','CANCELLED'], true));
+
         return [
+            'nextOperation'=>$nextOperation,
             'activeFlights'=>Pirep::whereIn('state',[PirepState::IN_PROGRESS,PirepState::PAUSED])->count(),
             'pendingPireps'=>Pirep::where('state',PirepState::PENDING)->count(),
             'acceptedToday'=>Pirep::where('state',PirepState::ACCEPTED)->whereBetween('submitted_at',[$dayStart,$dayEnd])->count(),
@@ -1125,7 +1133,7 @@ class PortalController extends Controller
            : match ($status) {
            'AIRCRAFT_REQUIRED' => 'Sélectionner un appareil',
            'OFP_REQUIRED' => 'Préparer l’OFP',
-           'PIREP_REQUIRED' => 'Préparer le PIREP',
+           'PIREP_REQUIRED' => 'Finaliser la préparation',
            'READY' => 'Démarrer dans Hermès',
            'IN_PROGRESS' => 'Vol en cours',
            'COMPLETED' => 'Consulter le vol',

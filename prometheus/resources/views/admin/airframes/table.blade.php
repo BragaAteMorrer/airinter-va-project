@@ -3,7 +3,8 @@
     <thead>
       <th>ICAO</th>
       <th>Name</th>
-      <th>SB Airframe ID</th>
+      <th>Mode SimBrief</th>
+      <th>Profil calcul</th>
       <th>Created At</th>
       <th>Updated At</th>
       <th></th>
@@ -13,7 +14,17 @@
         <tr>
           <td>{{ $af->icao }}</a></td>
           <td>{{ $af->name }}</td>
-          <td>{{ $af->airframe_id }}</td>
+          @php($sb = $af->simbriefProfile())
+          <td>{{ $sb['strategy'] }}</td>
+          <td>
+            @if($sb['strategy'] === 'proxy')
+              {{ $sb['proxy_type'] }} <small class="text-muted">(proxy)</small>
+            @elseif($sb['strategy'] === 'custom_airframe')
+              {{ $sb['internal_id'] ?: 'Internal ID manquant' }}
+            @else
+              {{ $af->icao }}
+            @endif
+          </td>
           <td>{{ $af->created_at->format('d.M.y H:i') }}</td>
           <td>{{ $af->updated_at->format('d.M.y H:i') }}</td>
           <td class="text-right">

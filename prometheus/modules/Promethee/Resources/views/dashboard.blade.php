@@ -14,6 +14,53 @@
     </div>
 </div>
 
+@php
+    $nextStatus = $nextOperation?->operation_status;
+    $nextStatusLabel = match($nextStatus) {
+        'AIRCRAFT_REQUIRED' => 'Appareil à affecter',
+        'OFP_REQUIRED' => 'Briefing à préparer',
+        'PIREP_REQUIRED' => 'Préparation à finaliser',
+        'READY' => 'Prêt pour Hermès',
+        'IN_PROGRESS' => 'Vol en cours',
+        default => $nextStatus ?: 'À préparer',
+    };
+@endphp
+<section class="panel next-operation-panel" aria-labelledby="next-operation-title">
+    <div class="next-operation-heading">
+        <div><span class="eyebrow">AUJOURD’HUI · PROCHAINE OPÉRATION</span><h2 id="next-operation-title">Votre prochain vol</h2></div>
+        @if($nextOperation)<span class="tag">{{ $nextStatusLabel }}</span>@endif
+    </div>
+    @if($nextOperation)
+        @php($nextFlight = $nextOperation->flight)
+        <div class="next-operation-main">
+            <div class="next-operation-identity">
+                <strong>{{ $nextFlight?->ident ?? 'VOL' }}</strong>
+                <span>{{ $nextFlight?->dpt_airport_id ?? '—' }} <i>→</i> {{ $nextFlight?->arr_airport_id ?? '—' }}</span>
+                <small>{{ $nextOperation->aircraft?->registration ?? 'Appareil à affecter' }}@if($nextOperation->aircraft?->subfleet?->name) · {{ $nextOperation->aircraft->subfleet->name }}@endif</small>
+            </div>
+            <div class="next-operation-state">
+                <span>Prochaine action</span>
+                <strong>{{ $nextOperation->operation_next_action ?? $nextStatusLabel }}</strong>
+                <div class="next-operation-progress" role="progressbar" aria-label="Progression de la préparation" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ $nextOperation->operation_progress }}"><i style="width:{{ $nextOperation->operation_progress }}%"></i></div>
+                <small>{{ $nextOperation->operation_progress }} % · {{ $nextOperation->operation_id }}</small>
+            </div>
+            <div class="next-operation-actions">
+                <a class="button secondary" href="{{ route('promethee.flights.show', $nextOperation->flight_id) }}">Ouvrir le dossier</a>
+                @if(in_array($nextStatus, ['AIRCRAFT_REQUIRED','OFP_REQUIRED','PIREP_REQUIRED']))
+                    <a class="button" href="{{ route('promethee.flights.briefing', $nextOperation->flight_id) }}">Préparer le vol</a>
+                @else
+                    <a class="button" href="{{ route('promethee.acars', ['operation'=>$nextOperation->operation_id]) }}">Ouvrir Hermès</a>
+                @endif
+            </div>
+        </div>
+    @else
+        <div class="next-operation-empty">
+            <div><strong>Aucune opération réservée.</strong><span>Choisissez une ligne : Prométhée gardera ensuite ce vol au premier plan jusqu’à son débrief.</span></div>
+            <a class="button" href="{{ route('promethee.flights') }}">Choisir un vol</a>
+        </div>
+    @endif
+</section>
+
 <section class="control-strip">
     <article><span>{{ __('promethee.dashboard_page.active_flights') }}</span><strong>{{ $activeFlights }}</strong><small>{{ __('promethee.dashboard_page.open_pireps') }}</small></article>
     <article><span>{{ __('promethee.dashboard_page.pending') }}</span><strong>{{ $pendingPireps }}</strong><small>{{ __('promethee.dashboard_page.admin_queue') }}</small></article>

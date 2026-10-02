@@ -206,10 +206,15 @@ class AcarsSimBriefController extends Controller
             'block_fuel' => (float) $ofp->fuel->plan_ramp,
             'estimated_time_enroute' => (int) $ofp->times->est_time_enroute,
             'generated_at' => (string) $ofp->params->time_generated,
-            'aircraft_type' => (string) $ofp->aircraft->icaocode,
+            // Never let the SimBrief calculation base replace the real aircraft
+            // identity in Hermès/Prométhée (e.g. N262 planned through SH33).
+            'aircraft_type' => $resolved['aircraft']['icao'],
+            'simbrief_calculation_type' => (string) $ofp->aircraft->icaocode,
+            'simbrief_profile' => $resolved['aircraft']['simbrief_profile'] ?? null,
             'passengers' => $this->ofpPassengerCount($ofp),
             'requested_passengers' => isset($resolved['parameters']['pax']) ? (int) $resolved['parameters']['pax'] : null,
             'network_prefiles' => $this->networkPrefiles($ofp),
+            'route_points' => $this->routePoints($ofp),
             'resolved' => $this->resolver->publicView($resolved),
         ]);
     }
@@ -293,6 +298,10 @@ class AcarsSimBriefController extends Controller
             'estimated_time_enroute' => (int) $xml->times->est_time_enroute,
             'briefing_url' => route('api.flights.briefing', ['id' => $simbrief->id]),
             'network_prefiles' => $this->networkPrefiles($xml),
+            'route_points' => $this->routePoints($xml),
+            'aircraft_type' => $resolved['aircraft']['icao'],
+            'simbrief_calculation_type' => (string) $xml->aircraft->icaocode,
+            'simbrief_profile' => $resolved['aircraft']['simbrief_profile'] ?? null,
             'resolved' => $this->resolver->publicView($resolved),
         ]);
     }
@@ -339,6 +348,30 @@ class AcarsSimBriefController extends Controller
         $request->merge(['aircraft_id' => $aircraftId, 'operation_id' => $operationId]);
 
         return $this->import($request, $flightId);
+    }
+
+    private function routePoints(\SimpleXMLElement $xml): array
+    {
+        $points = [];
+        if (!isset($xml->navlog)) return $points;
+
+        foreach ($xml->navlog->children()->fix as $fix) {
+            $lat = (float) ($fix->pos_lat ?? 0);
+            $lon = (float) ($fix->pos_long ?? 0);
+            if (!is_finite($lat) || !is_finite($lon) || abs($lat) > 90 || abs($lon) > 180) continue;
+            if ($lat === 0.0 && $lon === 0.0) continue;
+
+            $points[] = [
+                'ident' => trim((string) ($fix->ident ?? '')),
+                'type' => trim((string) ($fix->type ?? '')),
+                'lat' => round($lat, 6),
+                'lon' => round($lon, 6),
+                'altitude' => is_numeric((string) ($fix->altitude_feet ?? '')) ? (int) $fix->altitude_feet : null,
+            ];
+            if (count($points) >= 400) break;
+        }
+
+        return $points;
     }
 
     private function networkPrefiles(\SimpleXMLElement $xml): array
