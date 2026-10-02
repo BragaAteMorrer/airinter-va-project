@@ -744,4 +744,118 @@ final class PIREPTest extends TestCase
 
         Notification::assertSentTo([$pirep], PirepDiverted::class);
     }
+
+    public function test_hermes_prefile_cannot_be_filed_without_recorded_flight(): void
+    {
+        $pirep = $this->makeHermesDraftForLifecycleTest();
+
+        $response = $this->post(
+            '/api/pireps/'.$pirep->id.'/file',
+            $this->hermesFilePayload(),
+            [],
+            $this->user
+        );
+
+        $response->assertStatus(409);
+
+        $pirep->refresh();
+        $this->assertSame(PirepState::IN_PROGRESS, (int) $pirep->state);
+        $this->assertNull($pirep->submitted_at);
+        $this->assertNotSame(PirepStatus::ARRIVED, $pirep->status);
+    }
+
+    public function test_hermes_recorded_flight_without_in_event_cannot_be_filed(): void
+    {
+        $pirep = $this->makeHermesDraftForLifecycleTest();
+        $this->addHermesFlightPathForLifecycleTest($pirep);
+
+        $response = $this->post(
+            '/api/pireps/'.$pirep->id.'/file',
+            $this->hermesFilePayload(),
+            [],
+            $this->user
+        );
+
+        $response->assertStatus(409);
+
+        $pirep->refresh();
+        $this->assertSame(PirepState::IN_PROGRESS, (int) $pirep->state);
+        $this->assertNull($pirep->submitted_at);
+    }
+
+    public function test_hermes_final_file_requires_recorded_flight_and_in_event(): void
+    {
+        $pirep = $this->makeHermesDraftForLifecycleTest();
+        $this->addHermesFlightPathForLifecycleTest($pirep);
+
+        Acars::factory()->create([
+            'pirep_id' => $pirep->id,
+            'type' => AcarsType::LOG,
+            'log' => 'IN',
+            'sim_time' => Carbon::now('UTC')->toIso8601String(),
+        ]);
+
+        $response = $this->post(
+            '/api/pireps/'.$pirep->id.'/file',
+            $this->hermesFilePayload(),
+            [],
+            $this->user
+        );
+
+        $response->assertStatus(200);
+
+        $pirep->refresh();
+        $this->assertNotNull($pirep->submitted_at);
+        $this->assertSame(PirepStatus::ARRIVED, $pirep->status);
+        $this->assertContains(
+            (int) $pirep->state,
+            [PirepState::PENDING, PirepState::ACCEPTED, PirepState::REJECTED]
+        );
+    }
+
+    private function makeHermesDraftForLifecycleTest(): Pirep
+    {
+        $pirep = $this->createPirep([], [
+            'source_name' => 'Hermes ACARS [op_lifecycle_test]',
+            'state' => PirepState::IN_PROGRESS,
+            'status' => PirepStatus::INITIATED,
+            'submitted_at' => null,
+            'block_off_time' => null,
+            'block_on_time' => null,
+            'flight_time' => 0,
+            'distance' => 0,
+            'fuel_used' => 0,
+            'landing_rate' => null,
+        ]);
+        $pirep->save();
+
+        return $pirep;
+    }
+
+    private function addHermesFlightPathForLifecycleTest(Pirep $pirep): void
+    {
+        Acars::factory()->create([
+            'pirep_id' => $pirep->id,
+            'type' => AcarsType::FLIGHT_PATH,
+            'log' => null,
+            'sim_time' => Carbon::now('UTC')->subMinutes(20)->toIso8601String(),
+        ]);
+    }
+
+    private function hermesFilePayload(): array
+    {
+        $blockOn = Carbon::now('UTC');
+        $blockOff = $blockOn->copy()->subMinutes(55);
+
+        return [
+            'distance' => 320.4,
+            'flight_time' => 45,
+            'fuel_used' => 1200,
+            'block_time' => 55,
+            'block_off_time' => $blockOff->toIso8601String(),
+            'block_on_time' => $blockOn->toIso8601String(),
+            'landing_rate' => -220,
+        ];
+    }
+
 }
