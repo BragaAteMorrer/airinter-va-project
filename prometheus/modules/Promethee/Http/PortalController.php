@@ -17,7 +17,7 @@ use App\Services\FileService;
 use App\Services\UserService;
 use App\Support\Money;
 use App\Support\Countries;
-use Modules\Promethee\Services\{BrandingService,BulletinService,CompanyAccessService,DemandProfileService,EconomyFareResolver,EconomyService,EngineMaintenanceService,FleetRotationService,FlightOpsService,RegionalOperationsService,SafetyAnalyzer};
+use Modules\Promethee\Services\{AirframeMaintenanceService,BrandingService,BulletinService,CompanyAccessService,DemandProfileService,EconomyFareResolver,EconomyService,EngineMaintenanceService,FleetRotationService,FlightOpsService,RegionalOperationsService,SafetyAnalyzer};
 
 class PortalController extends Controller
 {
@@ -3049,8 +3049,9 @@ class PortalController extends Controller
         return back()->with('success','Compagnie et seuil d’accès enregistrés.');
     }
 
-    public function adminMaintenance() {
+    public function adminMaintenance(AirframeMaintenanceService $airframeService) {
         abort_unless(Schema::hasTable('promethee_engine_profiles'), 503, 'Migration maintenance moteur non appliquée.');
+        abort_unless(Schema::hasTable('promethee_airframe_maintenance'), 503, 'Migration maintenance cellule non appliquée.');
 
         $profiles = DB::table('promethee_engine_profiles as profile')
             ->join('subfleets as subfleet', 'subfleet.id', '=', 'profile.subfleet_id')
@@ -3060,6 +3061,20 @@ class PortalController extends Controller
 
         $subfleets = Subfleet::with('airline')->orderBy('name')->get();
         $aircraft = Aircraft::with('subfleet.airline')->orderBy('registration')->get();
+
+        $airframeSettings = $airframeService->settings();
+        $airframeStates = $airframeService->fleetStatus();
+        $airframeSummary = [
+            'total' => $airframeStates->count(),
+            'serviceable' => $airframeStates->where('maintenance_state', 'serviceable')->count(),
+            'warning' => $airframeStates->where('maintenance_state', 'warning')->count(),
+            'due' => $airframeStates->where('maintenance_state', 'due')->count(),
+            'maintenance' => $airframeStates->where('maintenance_state', 'maintenance')->count(),
+        ];
+        $airframeEvents = DB::table('promethee_airframe_maintenance_events as event')
+            ->join('aircraft', 'aircraft.id', '=', 'event.aircraft_id')
+            ->select('event.*', 'aircraft.registration')
+            ->latest('event.occurred_at')->limit(30)->get();
 
         $engineUnits = DB::table('promethee_engines as engine')
             ->join('promethee_engine_profiles as profile', 'profile.id', '=', 'engine.engine_profile_id')
@@ -3124,7 +3139,40 @@ class PortalController extends Controller
             ->select('event.*', 'engine.serial_number', 'aircraft.registration')
             ->latest('event.occurred_at')->limit(30)->get();
 
-        return $this->page('admin-maintenance', compact('profiles','subfleets','aircraft','engineUnits','engineSites','engineEvents','engineSummary'));
+        return $this->page('admin-maintenance', compact(
+            'profiles','subfleets','aircraft','engineUnits','engineSites','engineEvents','engineSummary',
+            'airframeSettings','airframeStates','airframeSummary','airframeEvents'
+        ));
+    }
+
+    public function saveAirframeMaintenanceSettings(Request $r, AirframeMaintenanceService $airframeService) {
+        $data = $r->validate([
+            'a_time_limit_hours'=>'required|numeric|min:0.1|max:100000',
+            'a_cycle_limit'=>'required|integer|min:1|max:100000',
+            'a_duration_hours'=>'required|numeric|min:0|max:10000',
+            'b_time_limit_hours'=>'required|numeric|min:0.1|max:100000',
+            'b_cycle_limit'=>'required|integer|min:1|max:100000',
+            'b_duration_hours'=>'required|numeric|min:0|max:10000',
+            'c_time_limit_hours'=>'required|numeric|min:0.1|max:100000',
+            'c_cycle_limit'=>'required|integer|min:1|max:100000',
+            'c_duration_hours'=>'required|numeric|min:0|max:10000',
+            'warning_percent'=>'required|numeric|min:0|max:100',
+        ]);
+
+        $airframeService->saveSettings($data);
+
+        return back()->with('success','Limites heures/cycles et durées des checks A/B/C enregistrées.');
+    }
+
+    public function startAirframeCheck(int $aircraft, Request $r, AirframeMaintenanceService $airframeService) {
+        $data = $r->validate(['check'=>'required|in:a,b,c']);
+        try {
+            $airframeService->startCheck($aircraft, $data['check'], (int) $r->user()->id);
+        } catch (\RuntimeException $exception) {
+            return back()->withErrors(['airframe'=>$exception->getMessage()]);
+        }
+
+        return back()->with('success',strtoupper($data['check']).' Check démarré ; l’appareil est immobilisé pendant la durée configurée.');
     }
 
     public function syncEngineFleet(EngineMaintenanceService $engineService) {
@@ -3408,6 +3456,7 @@ class PortalController extends Controller
             'min_idle_hours'=>'required|integer|min:0|max:720',
             'cooldown_days'=>'required|integer|min:0|max:365',
             'maintenance_bias_hours'=>'required|integer|min:0|max:5000',
+            'airframe_bias_percent'=>'required|numeric|min:0|max:100',
         ]);
 
         foreach ([
@@ -3417,6 +3466,7 @@ class PortalController extends Controller
             'regional.rotation_min_idle_hours'=>$data['min_idle_hours'],
             'regional.rotation_cooldown_days'=>$data['cooldown_days'],
             'regional.rotation_maintenance_bias_hours'=>$data['maintenance_bias_hours'],
+            'regional.rotation_airframe_bias_percent'=>$data['airframe_bias_percent'],
         ] as $key=>$value) {
             DB::table('promethee_settings')->updateOrInsert(
                 ['key'=>$key],
@@ -3433,7 +3483,8 @@ class PortalController extends Controller
             'success',
             $result['pairs'].' permutation(s) effectuée(s), '
             .$result['aircraft'].' appareil(s) déplacé(s), '
-            .$result['maintenance_priority'].' priorité(s) moteur. ['.$result['reason'].']'
+            .$result['maintenance_priority'].' priorité(s) moteur, '
+            .$result['airframe_maintenance_priority'].' priorité(s) cellule. ['.$result['reason'].']'
         );
     }
     public function adminPassport() { return $this->page('admin-passport',['enabled'=>DB::table('promethee_settings')->where('key','passport.enabled')->value('value') !== '0','showMap'=>DB::table('promethee_settings')->where('key','passport.map_enabled')->value('value') !== '0']); }
