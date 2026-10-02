@@ -27,6 +27,7 @@ use Modules\Promethee\Services\DemandProfileService;
 use Modules\Promethee\Services\AircraftVariantService;
 use Modules\Promethee\Services\AircraftConfigurationResolver;
 use Modules\Promethee\Services\HermesPirepLifecycleService;
+use Modules\Promethee\Models\PirepAircraftProfile;
 
 /**
  * Stable Air Inter operations facade.
@@ -789,6 +790,18 @@ class OperationsV1Controller extends Controller
 
         $pirep = $this->pirepSvc->prefile($request->user(), $attrs, [], []);
 
+        // Freeze the exact technical identity used by this operation. The
+        // aircraft_id already preserves the physical registration; this
+        // snapshot also preserves variant/configuration/performance data if
+        // the administration changes sb-airframe later.
+        PirepAircraftProfile::query()->updateOrCreate(
+            ['pirep_id' => $pirep->id],
+            [
+                'aircraft_id' => $bid->aircraft_id,
+                'snapshot' => $this->aircraftConfigurations->resolveAircraft($bid->aircraft),
+            ]
+        );
+
         // vmsACARS semantics: prefile creates the active working PIREP only.
         // It remains IN_PROGRESS/INITIATED until Hermès has actually flown and
         // the pilot files it at the end of the ACARS session. Never mutate a
@@ -1137,11 +1150,16 @@ class OperationsV1Controller extends Controller
 
     private function pirepDto(?Pirep $pirep): array
     {
+        $technicalSnapshot = $pirep
+            ? PirepAircraftProfile::query()->find($pirep->id)?->snapshot
+            : null;
+
         return $pirep ? [
             'id' => $pirep->id,
             'available' => true,
             'state' => $pirep->state,
             'status' => $pirep->status,
+            'aircraft_profile' => $technicalSnapshot,
             'created_at' => optional($pirep->created_at)?->toIso8601String(),
             'submitted_at' => optional($pirep->submitted_at)?->toIso8601String(),
         ] : [
@@ -1149,6 +1167,7 @@ class OperationsV1Controller extends Controller
             'available' => false,
             'state' => null,
             'status' => null,
+            'aircraft_profile' => null,
             'created_at' => null,
             'submitted_at' => null,
         ];
