@@ -149,6 +149,7 @@ jobs:
           php -l tests/HermesOperationLifecycleTest.php
           php -l app/Http/Controllers/Api/PirepController.php
           php -l app/Models/Casts/CarbonCast.php
+          php -l app/Database/migrations/2026_10_02_190300_add_block_time_to_pireps.php
           php -l modules/Promethee/Http/DatalinkController.php
           php -l modules/Promethee/Services/DatalinkService.php
           php -l tests/DatalinkServiceTest.php
