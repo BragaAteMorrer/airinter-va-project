@@ -264,6 +264,7 @@ final class HermesOperationLifecycleTest extends TestCase
             'flight_id' => $fx['flight']->id,
             'aircraft_id' => $fx['second_aircraft']->id,
             'pirep_id' => null,
+            'ofp_xml' => $this->minimalSimBriefXml(),
             'created_at' => now()->addSecond(),
             'updated_at' => now()->addSecond(),
         ]);
@@ -457,6 +458,7 @@ final class HermesOperationLifecycleTest extends TestCase
                 'flight_id' => $flight->id,
                 'aircraft_id' => $aircraft->id,
                 'pirep_id' => null,
+                'ofp_xml' => $this->minimalSimBriefXml(),
                 'created_at' => now()->addSecond(),
                 'updated_at' => now()->addSecond(),
             ]);
@@ -473,6 +475,26 @@ final class HermesOperationLifecycleTest extends TestCase
             'bid' => $bid,
             'operation_id' => 'op_'.$bid->id,
         ];
+    }
+
+    private function minimalSimBriefXml(): string
+    {
+        return <<<'XML'
+<ofp>
+  <general>
+    <route>DCT HERMES</route>
+    <initial_altitude>33000</initial_altitude>
+  </general>
+  <navlog>
+    <fix>
+      <ident>HERMES</ident>
+      <type>wpt</type>
+      <pos_lat>48.7000</pos_lat>
+      <pos_long>2.3000</pos_long>
+    </fix>
+  </navlog>
+</ofp>
+XML;
     }
 
     private function prefile(array $fx): string
