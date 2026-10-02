@@ -933,9 +933,17 @@ class OperationsV1Controller extends Controller
         $selectedVariant = collect($variantState['variants'] ?? [])->first(
             fn ($variant) => ($variant['id'] ?? null) === ($variantState['selected_variant_id'] ?? null)
         );
-        $simbriefType = $selectedVariant['simbrief_type']
+        $simbriefCalculationType = $selectedVariant['simbrief_type']
             ?? $fallback['simbrief_type']
             ?? ($aircraft?->simbrief_type ?: ($subfleet?->simbrief_type ?: $aircraft?->icao));
+        $simbriefStrategy = $selectedVariant['simbrief_strategy']
+            ?? ($selectedVariant['simbrief_profile']['strategy'] ?? null)
+            ?? 'native';
+        $simbriefDisplayType = strtoupper((string) (
+            $aircraft?->icao
+            ?: $subfleet?->type
+            ?: $simbriefCalculationType
+        ));
         $airline = Str::lower((string) ($flight?->airline?->name ?? ''));
         $loadFactor = str_contains($airline, 'charter') ? config('acars.load_factors.air_charter_international')
             : (str_contains($airline, 'cargo') ? config('acars.load_factors.inter_cargo_service') : config('acars.load_factors.air_inter'));
@@ -975,7 +983,12 @@ class OperationsV1Controller extends Controller
                 'airport' => $aircraft->airport_id,
             ], $flight ? $this->demandProfile->profile($aircraft, $flight, $this->operationIdentity->id($bid)) : []) : null,
             'simbrief' => [
-                'type' => $simbriefType,
+                // Pilot-facing identity always remains the real aircraft.
+                'type' => $simbriefDisplayType,
+                'calculation_type' => $simbriefCalculationType,
+                'strategy' => $simbriefStrategy,
+                'profile' => $selectedVariant['simbrief_profile'] ?? null,
+                'compatible' => filled($simbriefCalculationType),
                 'addon' => $selectedVariant['label'] ?? ($fallback['addon'] ?? null),
                 'variant' => $selectedVariant,
                 'variants' => $variantState['variants'] ?? [],
