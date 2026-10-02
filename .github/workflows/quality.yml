@@ -60,6 +60,10 @@ jobs:
         run: |
           python -m py_compile tools/phpvms_upstream_audit.py
           python tools/phpvms_upstream_audit.py --check-manifest
+      - name: Validate frontend performance and accessibility budgets
+        run: |
+          node --check tools/check_frontend_quality.cjs
+          node tools/check_frontend_quality.cjs
       - name: Guard Air Inter-only Hermès authentication
         shell: bash
         run: |
