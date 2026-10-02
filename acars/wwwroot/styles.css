@@ -725,3 +725,21 @@ body[data-era="minitel"] .review-compare article:last-child{border-top-color:var
 
 .review-comment{display:grid;gap:7px;margin:16px 0}.review-comment>span{font-size:.78rem;font-weight:800;letter-spacing:.03em;text-transform:uppercase}.review-comment>span small{margin-left:6px;color:var(--muted,#65717d);font-size:.68rem;font-weight:500;letter-spacing:0;text-transform:none}.review-comment textarea{width:100%;resize:vertical;min-height:84px;padding:10px 12px;border:1px solid var(--line,#d6dee6);border-radius:8px;background:var(--panel,#fff);color:inherit;font:inherit;line-height:1.45}.review-comment textarea:focus{outline:2px solid color-mix(in srgb,var(--blue,#2f8fd8) 70%,transparent);outline-offset:2px}.review-comment textarea:disabled{opacity:.65;cursor:not-allowed}
 body[data-era="2000"] .review-comment textarea,body[data-era="minitel"] .review-comment textarea{border-radius:0}body[data-era="minitel"] .review-comment textarea{border-color:var(--line);background:#07130b;color:var(--ink)}
+
+
+/* Flight Review profile charts */
+.review-chart-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:18px 0}
+.review-chart-card{min-width:0;padding:17px;border:1px solid var(--line);border-radius:var(--radius);background:var(--paper)}
+.review-chart-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:12px}
+.review-chart-heading h3{margin:3px 0 0}
+.review-chart-heading>small{max-width:58%;color:var(--muted);text-align:right;font:700 10px/1.4 Consolas,monospace}
+.review-chart{display:block;width:100%;height:180px;border:1px solid var(--line);border-radius:calc(var(--radius) * .65);background:color-mix(in srgb,var(--paper) 92%,var(--blue) 8%);overflow:visible}
+.review-chart--altitude{color:var(--blue)}
+.review-chart--fuel{color:var(--red)}
+.review-chart-gridline{stroke:color-mix(in srgb,currentColor 16%,transparent);stroke-width:1;vector-effect:non-scaling-stroke}
+.review-chart-path{fill:none;stroke:currentColor;stroke-width:2.25;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.review-chart-empty{fill:var(--muted);font:700 13px/1.4 Inter,"Segoe UI",Arial,sans-serif}
+body[data-era="2000"] .review-chart-card,body[data-era="2000"] .review-chart{border-radius:0;box-shadow:none}
+body[data-era="minitel"] .review-chart-card,body[data-era="minitel"] .review-chart{border-radius:0;box-shadow:none}
+body[data-era="minitel"] .review-chart{background:var(--paper)}
+@media(max-width:900px){.review-chart-grid{grid-template-columns:1fr}.review-chart-heading{display:grid}.review-chart-heading>small{max-width:none;text-align:left}}
