@@ -207,6 +207,13 @@ jobs:
           php -l app/Notifications/Messages/NewsAdded.php
           php -l app/Notifications/Messages/InviteLink.php
           php -l modules/Promethee/Providers/PrometheeServiceProvider.php
+          php -l modules/Promethee/Services/AirframeMaintenanceService.php
+          php -l modules/Promethee/Services/FleetRotationService.php
+          php -l modules/Promethee/Listeners/AirframeMaintenanceEventListener.php
+          php -l modules/Promethee/Console/ProcessAirframeMaintenanceCommand.php
+          php -l modules/Promethee/Console/RotateFleetCommand.php
+          php -l modules/Promethee/Database/migrations/2026_10_03_000024_add_airframe_check_cycles.php
+          php -l tests/PrometheeAirframeMaintenanceTest.php
           php -l modules/Promethee/Listeners/ProgressionEventListener.php
           php -l modules/Promethee/Services/ProgressionService.php
           php -l modules/Promethee/Console/RecalculateProgressionCommand.php
@@ -260,6 +267,8 @@ jobs:
         run: vendor/bin/phpunit tests/HermesOperationLifecycleTest.php
       - name: Run sb-airframe historical configuration tests
         run: vendor/bin/phpunit tests/AircraftConfigurationResolverTest.php
+      - name: Run airframe maintenance and fleet rotation tests
+        run: vendor/bin/phpunit tests/PrometheeAirframeMaintenanceTest.php
 
   minitel-release-gate:
     name: Minitel M7 release gate
