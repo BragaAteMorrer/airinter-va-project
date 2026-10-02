@@ -28,7 +28,8 @@ class SimBriefOperationResolver
         private readonly FareService $fares,
         private readonly DemandProfileService $demand,
         private readonly SimBriefCompanyKeyService $companyKey,
-        private readonly AircraftVariantService $aircraftVariants
+        private readonly AircraftVariantService $aircraftVariants,
+        private readonly AircraftConfigurationResolver $aircraftConfigurations
     ) {}
 
     public function resolveOperation(string $reference, User $user, array $overrides = []): array
@@ -80,9 +81,24 @@ class SimBriefOperationResolver
         $this->assertEligible($flight, $aircraft, $user, $bid);
 
         $type = $this->simbriefType($aircraft);
-        $variant = $bid ? $this->aircraftVariants->selectedForBid($bid, $user) : null;
-        if ($variant && filled($variant['simbrief_type'] ?? null)) {
-            $type = ['value' => strtoupper((string) $variant['simbrief_type']), 'source' => 'operation_aircraft_variant'];
+
+        // Real aircraft identity/configuration wins over simulator add-on choice.
+        // This keeps historical variants and VA operational calibrations
+        // independent from Fenix/iniBuilds/TFDi/etc.
+        $resolvedAircraft = $this->aircraftConfigurations->resolve($aircraft);
+        $resolvedSimBrief = $resolvedAircraft['simbrief'] ?? [];
+        if (filled($resolvedSimBrief['effective_type'] ?? null)) {
+            $type = [
+                'value' => strtoupper((string) $resolvedSimBrief['effective_type']),
+                'source' => 'aircraft_configuration_resolver',
+            ];
+        } else {
+            // Compatibility fallback for fleets not migrated to the historical
+            // configuration layer yet.
+            $variant = $bid ? $this->aircraftVariants->selectedForBid($bid, $user) : null;
+            if ($variant && filled($variant['simbrief_type'] ?? null)) {
+                $type = ['value' => strtoupper((string) $variant['simbrief_type']), 'source' => 'operation_aircraft_variant'];
+            }
         }
         if (filled($overrides['simbrief_type'] ?? null)) {
             // SimBrief accepts either an ICAO type or an airframe Internal ID
