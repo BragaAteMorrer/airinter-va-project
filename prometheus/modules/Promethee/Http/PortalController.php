@@ -2315,7 +2315,6 @@ class PortalController extends Controller
             'value'=>'required|numeric|min:0.01|max:999999',
             'notes'=>'nullable|string|max:1000',
             'active'=>'nullable|boolean',
-            'engine_overhaul'=>'nullable|boolean',
         ]);
 
         DB::table('promethee_season_pricing_adjustments')->insert([
@@ -3137,6 +3136,7 @@ class PortalController extends Controller
             'is_regional_platform'=>'nullable|boolean',
             'is_technical_stop'=>'nullable|boolean',
             'active'=>'nullable|boolean',
+            'engine_overhaul'=>'nullable|boolean',
         ]);
 
         $airportId=strtoupper($data['airport_id']);
