@@ -111,7 +111,7 @@ class SimBriefAirframe extends Model
             'strategy' => $strategy,
             'internal_id' => filled($this->airframe_id) ? (string) $this->airframe_id : null,
             'icao' => strtoupper((string) $this->icao),
-            'name' => (string) $this->name,
+            'actual_name' => (string) $this->name,
         ]);
     }
 
