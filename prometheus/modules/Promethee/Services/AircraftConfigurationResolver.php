@@ -59,7 +59,8 @@ class AircraftConfigurationResolver
             $typeProfile,
             $variant,
             $configuration,
-            $assignment?->overrides ?? []
+            $assignment?->overrides ?? [],
+            $effective
         );
 
         return [
@@ -185,7 +186,8 @@ class AircraftConfigurationResolver
         ?AircraftTypeProfile $typeProfile,
         ?AircraftHistoricalVariant $variant,
         ?AirframeConfiguration $configuration,
-        array $registrationOverrides
+        array $registrationOverrides,
+        array $effective
     ): array {
         $state = [
             'strategy' => 'native',
@@ -241,6 +243,8 @@ class AircraftConfigurationResolver
             default => $state['internal_id'] ?: $state['type'],
         };
 
+        $acdata = $this->simBriefAircraftData($aircraft, $variant, $effective, $strategy);
+
         return [
             'strategy' => $strategy,
             'type' => $this->upper($state['type']),
@@ -253,7 +257,93 @@ class AircraftConfigurationResolver
             'source' => $state['source'],
             'actual_aircraft' => $this->normaliseKey($aircraft->icao ?: $aircraft->subfleet?->type),
             'actual_variant' => $variant?->code,
+            'acdata' => $acdata,
         ];
+    }
+
+    /**
+     * Build SimBrief's documented acdata payload. SimBrief requires all weight
+     * values in thousands of pounds regardless of the OFP display unit, so we
+     * only transmit weights when sb-airframe explicitly records their unit.
+     */
+    private function simBriefAircraftData(
+        Aircraft $aircraft,
+        ?AircraftHistoricalVariant $variant,
+        array $effective,
+        string $strategy
+    ): array {
+        $data = [];
+        $weightUnit = strtolower((string) ($effective['weight_unit'] ?? ''));
+
+        if (isset($effective['max_pax']) && (int) $effective['max_pax'] >= 0) {
+            $data['maxpax'] = (string) (int) $effective['max_pax'];
+        }
+
+        foreach ([
+            'oew' => 'oew',
+            'mzfw' => 'mzfw',
+            'mtow' => 'mtow',
+            'mlw' => 'mlw',
+            'max_fuel' => 'maxfuel',
+        ] as $source => $target) {
+            $converted = $this->toThousandsOfPounds($effective[$source] ?? null, $weightUnit);
+            if ($converted !== null) $data[$target] = $converted;
+        }
+
+        $category = strtoupper(trim((string) ($effective['weight_category'] ?? '')));
+        $equipment = trim((string) ($effective['equipment'] ?? ''));
+        $transponder = trim((string) ($effective['transponder'] ?? ''));
+        if ($category !== '' && $equipment !== '' && $transponder !== '') {
+            $data['cat'] = $category;
+            $data['equip'] = strtoupper($equipment);
+            $data['transponder'] = strtoupper($transponder);
+        }
+
+        if (filled($effective['pbn'] ?? null)) {
+            $pbn = strtoupper(trim((string) $effective['pbn']));
+            $data['pbn'] = str_starts_with($pbn, 'PBN/') ? $pbn : 'PBN/'.$pbn;
+        }
+
+        if (filled($aircraft->hex_code)) {
+            $data['hexcode'] = strtoupper((string) $aircraft->hex_code);
+        }
+
+        // For unsupported types, SimBrief explicitly supports spoofing the real
+        // identity on top of a similar proxy performance model.
+        if ($strategy === 'proxy') {
+            $actualIcao = $this->normaliseKey($aircraft->icao ?: $aircraft->subfleet?->type);
+            if ($actualIcao) $data['icao'] = substr($actualIcao, 0, 4);
+
+            $name = $variant?->short_name ?: $variant?->name ?: $aircraft->name;
+            if (filled($name)) $data['name'] = substr(trim((string) $name), 0, 12);
+
+            $engine = is_array($effective['engine'] ?? null) ? $effective['engine'] : [];
+            $engineLabel = $engine['simbrief_label'] ?? null;
+            if (!filled($engineLabel)) {
+                $engineLabel = trim(implode(' ', array_filter([
+                    $engine['model'] ?? null,
+                    $engine['variant'] ?? null,
+                ])));
+            }
+            if (filled($engineLabel)) $data['engines'] = substr((string) $engineLabel, 0, 12);
+        }
+
+        return $data;
+    }
+
+    private function toThousandsOfPounds(mixed $value, string $unit): ?float
+    {
+        if ($value === null || $value === '' || !is_numeric($value)) return null;
+
+        $weight = (float) $value;
+        $pounds = match ($unit) {
+            'kg', 'kgs' => $weight * 2.2046226218,
+            'lb', 'lbs' => $weight,
+            'klb' => $weight * 1000,
+            default => null,
+        };
+
+        return $pounds === null ? null : round($pounds / 1000, 3);
     }
 
     private function simulatorProfiles(
