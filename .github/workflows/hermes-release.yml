@@ -82,6 +82,12 @@ jobs:
           Export-PfxCertificate -Cert $cert -FilePath $pfx -Password $securePassword | Out-Null
           Export-Certificate -Cert $cert -FilePath $cer | Out-Null
 
+          # The fallback certificate is intentionally self-signed. Trust it
+          # only inside this ephemeral GitHub-hosted runner so signtool can
+          # verify the cryptographic signature and timestamp after signing.
+          # This does NOT make the certificate trusted on pilot machines.
+          Import-Certificate -FilePath $cer -CertStoreLocation 'Cert:\CurrentUser\Root' | Out-Null
+
           "pfx=$pfx" >> $env:GITHUB_OUTPUT
           "password=$password" >> $env:GITHUB_OUTPUT
           Write-Host "Temporary code-signing certificate created: $($cert.Thumbprint)"
