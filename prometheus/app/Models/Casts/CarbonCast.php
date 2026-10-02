@@ -19,6 +19,13 @@ class CarbonCast implements CastsAttributes
      */
     public function get($model, string $key, $value, array $attributes)
     {
+        // Database NULL must stay NULL. Carbon(null) means "now", which makes
+        // nullable lifecycle timestamps such as pireps.submitted_at look set
+        // even when the report has only been prefiled.
+        if ($value === null || $value === '') {
+            return null;
+        }
+
         if ($value instanceof Carbon) {
             return $value;
         }

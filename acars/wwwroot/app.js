@@ -359,6 +359,7 @@ function updateNextAction(state, ready) {
 
   const dispatchStatus = String(serverDispatch?.status || '').toUpperCase();
   const terminal = ['COMPLETED', 'CANCELLED'].includes(dispatchStatus);
+  const awaitingFiling = dispatchStatus === 'AWAITING_FILING';
   let action = () => {};
   if (terminal) {
     setText(title, dispatchStatus === 'COMPLETED' ? 'Vol déjà terminé' : 'Opération annulée');
@@ -367,6 +368,11 @@ function updateNextAction(state, ready) {
       : 'Cette opération ne peut plus être démarrée. Sélectionnez une autre réservation.');
     setText(button, 'Choisir un autre vol');
     action = () => document.querySelector('[data-tab="flight"]')?.click();
+  } else if (awaitingFiling) {
+    setText(title, 'Vol arrivé · PIREP à déposer');
+    setText(text, 'Hermès a reçu l’événement IN. Ouvrez Flight Review, vérifiez la synthèse puis déposez le rapport final.');
+    setText(button, 'Ouvrir Flight Review');
+    action = () => document.querySelector('[data-tab="review"]')?.click();
   } else if (!state.operation) {
     setText(title, 'Choisissez votre vol');
     setText(text, 'Sélectionnez une réservation ou recherchez une ligne du programme Air Inter.');
@@ -514,20 +520,30 @@ function updateWorkflow() {
   // READY badge strict on real simulator safety data and let /api/start remain
   // the final authority for refusal reasons.
   const ready = dispatchReady && readiness.simulator && preflightSafe;
-  const terminal = ['COMPLETED', 'CANCELLED'].includes(String(serverDispatch?.status || '').toUpperCase());
-  // Never deadlock the pilot behind a disabled button when Hermès itself shows
-  // every preparation check as complete. The click refreshes Dispatch and
-  // assertDispatchCanStart() remains the authoritative guard.
-  const canAttemptStart = visiblePreparationReady && readiness.simulator;
+  const status = String(serverDispatch?.status || '').toUpperCase();
+  const terminal = ['COMPLETED', 'CANCELLED'].includes(status);
+  const awaitingFiling = status === 'AWAITING_FILING';
+
+  // A stale PREPARATION_REQUIRED snapshot may still be revalidated on click,
+  // but a server-confirmed terminal/arrival state must never offer a new START.
+  // The pilot files the report from Flight Review after ARRIVAL/IN.
+  const canAttemptStart = visiblePreparationReady
+    && readiness.simulator
+    && !terminal
+    && !awaitingFiling;
+
   const node = $('#readyState');
   if (node) {
-    const status = String(serverDispatch?.status || '').toUpperCase();
     node.textContent = status === 'COMPLETED'
       ? 'FLIGHT COMPLETED'
       : status === 'CANCELLED'
         ? 'CANCELLED'
-        : (ready ? 'READY FOR DEPARTURE' : 'NOT READY');
-    node.classList.toggle('ready', ready);
+        : status === 'AWAITING_FILING'
+          ? 'ARRIVED · PIREP TO FILE'
+          : status === 'IN_PROGRESS'
+            ? 'FLIGHT IN PROGRESS'
+            : (ready ? 'READY FOR DEPARTURE' : 'NOT READY');
+    node.classList.toggle('ready', ready || awaitingFiling || status === 'IN_PROGRESS');
   }
   const startButton = $('#startBtn');
   if (startButton) {
@@ -535,11 +551,13 @@ function updateWorkflow() {
     startButton.textContent = serverDispatch?.status === 'IN_PROGRESS'
       ? 'Reprendre l’enregistrement'
       : (ready ? 'Démarrer l’enregistrement' : 'Vérifier et démarrer');
-    startButton.title = canAttemptStart && !ready
-      ? (terminal
-          ? 'Le dernier état Dispatch paraît terminal. Cliquez pour revalider l’opération auprès de Prométhée.'
-          : 'Hermès vérifiera les contrôles au clic et affichera précisément ce qui bloque.')
-      : '';
+    startButton.title = awaitingFiling
+      ? 'Le vol est arrivé. Déposez maintenant le PIREP final depuis Flight Review.'
+      : (terminal
+          ? 'Cette opération est terminée et ne peut pas être redémarrée.'
+          : (canAttemptStart && !ready
+              ? 'Hermès vérifiera les contrôles au clic et affichera précisément ce qui bloque.'
+              : ''));
   }
 
   const activeLocalFlight = lastStatus?.flight || lastStatus?.Flight || null;
@@ -1313,7 +1331,7 @@ async function refreshDispatch() {
   readiness.ofp = Boolean(checks.ofp);
   readiness.pirep = Boolean(checks.pirep);
 
-  const labels = { PREPARATION_REQUIRED: 'PRÉPARATION REQUISE', READY: 'PRÊT POUR HERMÈS', IN_PROGRESS: 'VOL EN COURS', COMPLETED: 'VOL TERMINÉ', CANCELLED: 'OPÉRATION ANNULÉE' };
+  const labels = { PREPARATION_REQUIRED: 'PRÉPARATION REQUISE', READY: 'PRÊT POUR HERMÈS', IN_PROGRESS: 'VOL EN COURS', AWAITING_FILING: 'ARRIVÉ · PIREP À DÉPOSER', COMPLETED: 'VOL TERMINÉ', CANCELLED: 'OPÉRATION ANNULÉE' };
   setText($('#operationBrief'), `${labels[serverDispatch?.status] || serverDispatch?.status || 'DISPATCH'} · Dispatch Prométhée`);
   updateWorkflow();
   return serverDispatch;

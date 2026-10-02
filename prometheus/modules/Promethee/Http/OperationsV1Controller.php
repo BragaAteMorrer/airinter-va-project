@@ -25,6 +25,7 @@ use Modules\Promethee\Services\SafetyAnalyzer;
 use Modules\Promethee\Services\AircraftOperationalStateService;
 use Modules\Promethee\Services\DemandProfileService;
 use Modules\Promethee\Services\AircraftVariantService;
+use Modules\Promethee\Services\HermesPirepLifecycleService;
 
 /**
  * Stable Air Inter operations facade.
@@ -43,7 +44,8 @@ class OperationsV1Controller extends Controller
         private readonly SafetyAnalyzer $safetyAnalyzer,
         private readonly AircraftOperationalStateService $aircraftState,
         private readonly DemandProfileService $demandProfile,
-        private readonly AircraftVariantService $aircraftVariants
+        private readonly AircraftVariantService $aircraftVariants,
+        private readonly HermesPirepLifecycleService $pirepLifecycle
     ) {}
 
     public function index(Request $request)
@@ -716,12 +718,9 @@ class OperationsV1Controller extends Controller
         $bid = $this->bid($reference, $request);
         $existing = $this->operationPirep($bid);
         if ($existing) {
-            $existingIsActive = (int) $existing->state === PirepState::IN_PROGRESS
-                && $existing->submitted_at === null
-                && $existing->status !== PirepStatus::ARRIVED
-                && $existing->status !== PirepStatus::CANCELLED;
+            if ($this->pirepLifecycle->isActiveDraft($existing)) {
+                logger()->info('hermes_operation_transition', $this->transitionLogContext($bid, $existing, 'PREFILE_IDEMPOTENT'));
 
-            if ($existingIsActive) {
                 return response()->json(['data' => [
                     'operation_id' => $this->operationIdentity->id($bid),
                     'pirep' => $this->pirepDto($existing),
@@ -730,17 +729,15 @@ class OperationsV1Controller extends Controller
                 ]]);
             }
 
-            // Compatibility repair for reports polluted by Hermès builds
-            // released before the vmsACARS lifecycle fix. Those builds could
-            // submit a PIREP seconds after prefile without ever starting ACARS.
-            // Never reopen a real terminal PIREP; only purge an unmistakable
-            // zero-flight ghost and preserve its SimBrief OFP for the bid.
-            if ($this->isLegacyHermesGhostPirep($existing)) {
-                $this->purgeLegacyHermesGhostPirep($existing, $bid);
-                $existing = null;
-            } else {
-                abort(409, 'Cette opération possède déjà un PIREP déposé. Un rapport réellement terminé ne peut jamais être rouvert : créez une nouvelle réservation.');
+            if ($this->pirepLifecycle->isLegacyGhost($existing)) {
+                logger()->warning('hermes_legacy_pirep_requires_manual_repair', $this->transitionLogContext($bid, $existing, 'PREFILE_BLOCKED'));
+                abort(
+                    409,
+                    'Une ancienne donnée Hermès incohérente est liée à cette opération. Prométhée ne la modifie pas automatiquement. Faites diagnostiquer/réparer cette operation_id côté administration.'
+                );
             }
+
+            abort(409, 'Cette opération possède déjà un PIREP déposé. Un rapport réellement terminé ne peut jamais être rouvert : créez une nouvelle réservation.');
         }
 
         abort_if(!$bid->aircraft_id, 409, 'Sélectionnez un appareil avant de préparer le PIREP.');
@@ -786,25 +783,12 @@ class OperationsV1Controller extends Controller
 
         $pirep = $this->pirepSvc->prefile($request->user(), $attrs, [], []);
 
-        $activeDraft = fn (Pirep $candidate): bool =>
-            (int) $candidate->state === PirepState::IN_PROGRESS
-            && $candidate->submitted_at === null
-            && $candidate->status !== PirepStatus::ARRIVED
-            && $candidate->status !== PirepStatus::CANCELLED;
-
-        // phpVMS duplicate detection can return an older row for the same
-        // operation. If that row is the known zero-flight Hermès corruption,
-        // purge it and retry once instead of leaving the reservation at 100%.
-        if (!$activeDraft($pirep) && $this->isLegacyHermesGhostPirep($pirep)) {
-            $this->purgeLegacyHermesGhostPirep($pirep, $bid);
-            $pirep = $this->pirepSvc->prefile($request->user(), $attrs, [], []);
-        }
-
         // vmsACARS semantics: prefile creates the active working PIREP only.
         // It remains IN_PROGRESS/INITIATED until Hermès has actually flown and
-        // the pilot files it at the end of the ACARS session.
+        // the pilot files it at the end of the ACARS session. Never mutate a
+        // terminal duplicate here: historical repair is an explicit CLI action.
         abort_if(
-            !$activeDraft($pirep),
+            !$this->pirepLifecycle->isActiveDraft($pirep),
             409,
             'Prométhée n’a pas pu ouvrir un brouillon PIREP actif pour cette opération. Aucun rapport terminé n’a été modifié.'
         );
@@ -814,6 +798,8 @@ class OperationsV1Controller extends Controller
             409,
             'Le brouillon PIREP retourné ne correspond pas à l’opération Hermès sélectionnée.'
         );
+
+        logger()->info('hermes_operation_transition', $this->transitionLogContext($bid, $pirep, 'PREFILE'));
 
         return response()->json(['data' => [
             'operation_id' => $operationId,
@@ -1021,14 +1007,18 @@ class OperationsV1Controller extends Controller
     private function operationListStatus(?Pirep $pirep, bool $ofpAvailable): string
     {
         if ($pirep) {
-            if ((int) $pirep->state === PirepState::CANCELLED || $pirep->status === PirepStatus::CANCELLED) {
+            if ($this->pirepLifecycle->isCancelled($pirep)) {
                 return 'cancelled';
             }
 
-            if ($pirep->submitted_at !== null
-                || in_array((int) $pirep->state, [PirepState::PENDING, PirepState::ACCEPTED, PirepState::REJECTED], true)
-                || $pirep->status === PirepStatus::ARRIVED) {
+            if ($this->pirepLifecycle->isFiled($pirep)) {
                 return 'completed';
+            }
+
+            // ARRIVED is explicitly non-terminal until phpVMS has a submitted
+            // final report. Keep the reservation visible while filing is due.
+            if ($this->pirepLifecycle->isAwaitingFiling($pirep)) {
+                return 'arrived';
             }
 
             return 'prefiled';
@@ -1064,9 +1054,7 @@ class OperationsV1Controller extends Controller
             && (!setting('pireps.only_aircraft_at_dpt_airport')
                 || strtoupper((string) $aircraft->airport_id) === strtoupper((string) $flight?->dpt_airport_id));
         $ofpReady = $ofp !== null;
-        $pirepReady = $pirep !== null
-            && (int) $pirep->state === PirepState::IN_PROGRESS
-            && $pirep->status !== PirepStatus::CANCELLED;
+        $pirepReady = $pirep !== null && $this->pirepLifecycle->isActiveDraft($pirep);
 
         return [
             ['code' => 'OPERATION', 'ready' => true, 'label' => 'Réservation valide', 'action' => null],
@@ -1079,17 +1067,19 @@ class OperationsV1Controller extends Controller
     private function dispatchStatus(Bid $bid, ?Pirep $pirep, bool $serverReady): string
     {
         if ($pirep) {
-            if ((int) $pirep->state === PirepState::CANCELLED || $pirep->status === PirepStatus::CANCELLED) {
+            if ($this->pirepLifecycle->isCancelled($pirep)) {
                 return 'CANCELLED';
             }
 
-            if ($pirep->submitted_at !== null
-                || in_array((int) $pirep->state, [PirepState::PENDING, PirepState::ACCEPTED, PirepState::REJECTED], true)
-                || $pirep->status === PirepStatus::ARRIVED) {
+            if ($this->pirepLifecycle->isFiled($pirep)) {
                 return 'COMPLETED';
             }
 
-            if ($this->hasOperationTelemetry($pirep)) {
+            if ($this->pirepLifecycle->isAwaitingFiling($pirep)) {
+                return 'AWAITING_FILING';
+            }
+
+            if ($this->pirepLifecycle->hasFlightEvidence($pirep)) {
                 return 'IN_PROGRESS';
             }
         }
@@ -1097,122 +1087,23 @@ class OperationsV1Controller extends Controller
         return $serverReady ? 'READY' : 'PREPARATION_REQUIRED';
     }
 
-    /**
-     * A Hermès report may only be terminal after a flight actually produced
-     * flight evidence. Older/broken builds could flip a freshly prefiled PIREP
-     * to PENDING/ARRIVED without ever starting ACARS. Treat that impossible
-     * zero-flight terminal state as repairable regardless of how old it is.
-     *
-     * A legitimate Hermès filing always has at least one of the following:
-     * positive flight time, an OUT/block-off timestamp, a landing rate, or
-     * recorded ACARS/Prométhée telemetry.
-     */
     private function isLegacyHermesGhostPirep(Pirep $pirep): bool
     {
-        if (!str_starts_with((string) $pirep->source_name, 'Hermes ACARS [op_')) return false;
-
-        $terminal = $pirep->submitted_at !== null
-            || in_array((int) $pirep->state, [PirepState::PENDING, PirepState::ACCEPTED, PirepState::REJECTED], true)
-            || $pirep->status === PirepStatus::ARRIVED;
-        if (!$terminal) return false;
-
-        // Do not trust summary fields such as flight_time, block_off_time or
-        // landing_rate as proof of a real Hermès flight. Broken pre-lifecycle
-        // builds could file immediately and still write synthetic values (for
-        // example flight_time=1 through Math.Max(1, ...)). The only reliable
-        // proof that the simulator actually ran is recorded telemetry.
-        if ($this->hasOperationTelemetry($pirep)) return false;
-
-        // SimBrief attachment creates ROUTE rows in phpVMS' acars table during
-        // prefile, before the simulator has moved an inch. Those route points
-        // are planning data, not proof that ACARS tracking began. Non-route
-        // rows (flight path/log) remain valid evidence for older Hermès builds.
-        if (DB::table('acars')
-            ->where('pirep_id', $pirep->id)
-            ->where('type', '!=', \App\Models\Enums\AcarsType::ROUTE)
-            ->exists()) return false;
-
-        // Terminal Hermès report with no telemetry evidence = impossible
-        // completed flight. Treat it as the known legacy ghost regardless of
-        // synthetic summary values left behind by an older client.
-        return true;
+        return $this->pirepLifecycle->isLegacyGhost($pirep);
     }
 
-    /**
-     * Remove only a legacy zero-flight ghost while preserving the OFP so the
-     * current reservation can immediately create a clean IN_PROGRESS draft.
-     */
-    private function purgeLegacyHermesGhostPirep(Pirep $pirep, Bid $bid): void
+    private function transitionLogContext(Bid $bid, ?Pirep $pirep, string $transition): array
     {
-        DB::transaction(function () use ($pirep, $bid) {
-            $pirep->loadMissing(['user', 'aircraft']);
-            $wasAccepted = (int) $pirep->state === PirepState::ACCEPTED;
-            $aircraft = $pirep->aircraft;
-            $user = $pirep->user;
-            $departure = $pirep->dpt_airport_id;
-            $arrival = $pirep->arr_airport_id;
-            $createdAt = $pirep->created_at;
-
-            // An accepted ghost incremented the pilot's flight counter even
-            // though flight_time is zero. Reject first to reconcile phpVMS.
-            if ($wasAccepted) {
-                $pirep = $this->pirepSvc->reject($pirep);
-            }
-
-            DB::table('promethee_telemetry')->where('pirep_id', $pirep->id)->delete();
-
-            // PirepService::delete() normally removes the attached SimBrief row.
-            // Detach it first: this is still the OFP for the current reservation.
-            SimBrief::query()
-                ->where('pirep_id', $pirep->id)
-                ->where('user_id', $bid->user_id)
-                ->where('flight_id', $bid->flight_id)
-                ->where('aircraft_id', $bid->aircraft_id)
-                ->update(['pirep_id' => null]);
-
-            $ghostId = $pirep->id;
-            $this->pirepSvc->delete($pirep);
-
-            // Older accepted ghosts could also have moved the pilot/aircraft to
-            // the arrival airport. Only roll that back when there is no newer
-            // report that could legitimately own the current position.
-            if ($aircraft && $departure && (string) $aircraft->airport_id === (string) $arrival) {
-                $hasNewerAircraftPirep = Pirep::query()
-                    ->where('aircraft_id', $aircraft->id)
-                    ->where('created_at', '>', $createdAt)
-                    ->exists();
-                if (!$hasNewerAircraftPirep) {
-                    $aircraft->airport_id = $departure;
-                    $aircraft->save();
-                }
-            }
-
-            if ($user && (string) $user->curr_airport_id === (string) $arrival) {
-                $lastAccepted = Pirep::query()
-                    ->where('user_id', $user->id)
-                    ->where('state', PirepState::ACCEPTED)
-                    ->latest('submitted_at')
-                    ->first();
-                $user->last_pirep_id = $lastAccepted?->id;
-                $user->curr_airport_id = $lastAccepted?->arr_airport_id ?: $user->home_airport_id;
-                $user->save();
-            }
-
-            logger()->warning('Promethee removed a legacy Hermès zero-flight ghost PIREP', [
-                'pirep_id' => $ghostId,
-                'operation_id' => $this->operationIdentity->id($bid),
-                'user_id' => $bid->user_id,
-                'flight_id' => $bid->flight_id,
-                'aircraft_id' => $bid->aircraft_id,
-            ]);
-        });
-    }
-
-    private function hasOperationTelemetry(Pirep $pirep): bool
-    {
-        return DB::table('promethee_telemetry')
-            ->where('pirep_id', $pirep->id)
-            ->exists();
+        return [
+            'transition' => $transition,
+            'operation_id' => $this->operationIdentity->id($bid),
+            'bid_id' => $bid->id,
+            'pirep_id' => $pirep?->id,
+            'pirep_state' => $pirep ? (int) $pirep->state : null,
+            'pirep_status' => $pirep?->status instanceof \BackedEnum ? $pirep->status->value : $pirep?->status,
+            'dispatch_status' => $pirep ? $this->dispatchStatus($bid, $pirep, false) : null,
+            'aircraft_id' => $bid->aircraft_id,
+        ];
     }
 
     private function ofpDto(?SimBrief $ofp): array

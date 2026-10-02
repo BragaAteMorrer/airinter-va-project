@@ -144,6 +144,12 @@ jobs:
           php -l modules/Promethee/Http/AcarsOperationsController.php
           php -l modules/Promethee/Http/OperationsV1Controller.php
           php -l modules/Promethee/Http/TelemetryController.php
+          php -l modules/Promethee/Services/HermesPirepLifecycleService.php
+          php -l modules/Promethee/Console/RepairHermesPirepCommand.php
+          php -l tests/HermesOperationLifecycleTest.php
+          php -l app/Http/Controllers/Api/PirepController.php
+          php -l app/Models/Casts/CarbonCast.php
+          php -l app/Database/migrations/2026_10_02_190300_add_block_time_to_pireps.php
           php -l modules/Promethee/Http/DatalinkController.php
           php -l modules/Promethee/Services/DatalinkService.php
           php -l tests/DatalinkServiceTest.php
@@ -205,6 +211,33 @@ jobs:
           for file in resources/lang/*/promethee.php resources/lang/*/promethee_briefing.php; do php -l "$file"; done
 
 
+  promethee-hermes-lifecycle:
+    name: Promethee Hermès lifecycle tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: prometheus
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: memory
+      CACHE_DRIVER: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+      MAIL_MAILER: array
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install PHP and Composer
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          tools: composer:v2
+          extensions: json, mbstring, simplexml, bcmath, pdo, pdo_sqlite, intl, zip
+      - name: Install Promethee dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Run Hermès operation lifecycle regression suite
+        run: vendor/bin/phpunit tests/HermesOperationLifecycleTest.php
+
   minitel-release-gate:
     name: Minitel M7 release gate
     runs-on: ubuntu-latest
@@ -212,6 +245,7 @@ jobs:
       - repository-hygiene
       - hermes
       - promethee
+      - promethee-hermes-lifecycle
     steps:
       - name: Checkout
         uses: actions/checkout@v4
