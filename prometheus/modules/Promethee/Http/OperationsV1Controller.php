@@ -586,9 +586,12 @@ class OperationsV1Controller extends Controller
         $checks = $this->readinessChecks($bid, $ofp, $visiblePirep);
         $serverReady = collect($checks)->every(fn ($check) => $check['ready']);
         $status = $this->dispatchStatus($bid, $visiblePirep, $serverReady);
+        $workflowState = $this->workflowState($bid, $visiblePirep, $serverReady, $checks);
 
         return response()->json(['data' => [
             'contract_version' => '1.0',
+            'workflow_contract_version' => '2.0',
+            'workflow_state' => $workflowState,
             'operation_id' => $this->operationIdentity->id($bid),
             'operation' => $this->operationDto($bid),
             'ofp' => $this->ofpDto($ofp),
@@ -615,12 +618,16 @@ class OperationsV1Controller extends Controller
         $legacyGhost = $pirep && $this->isLegacyHermesGhostPirep($pirep);
         $visiblePirep = $legacyGhost ? null : $pirep;
         $checks = $this->readinessChecks($bid, $ofp, $visiblePirep);
+        $serverReady = collect($checks)->every(fn ($check) => $check['ready']);
+        $status = $this->dispatchStatus($bid, $visiblePirep, $serverReady);
 
         return response()->json(['data' => [
             'operation_id' => $this->operationIdentity->id($bid),
             'bid_id' => $bid->id,
-            'ready' => collect($checks)->every(fn ($check) => $check['ready']),
-            'status' => $this->dispatchStatus($bid, $visiblePirep, collect($checks)->every(fn ($check) => $check['ready'])),
+            'workflow_contract_version' => '2.0',
+            'workflow_state' => $this->workflowState($bid, $visiblePirep, $serverReady, $checks),
+            'ready' => $serverReady,
+            'status' => $status,
             'checks' => $checks,
             'server_checks_complete' => true,
             'pirep' => $this->pirepDto($visiblePirep),
@@ -1142,6 +1149,60 @@ class OperationsV1Controller extends Controller
         }
 
         return $serverReady ? 'READY' : 'PREPARATION_REQUIRED';
+    }
+
+    /**
+     * Canonical pilot-facing workflow state.
+     *
+     * The legacy dispatch status remains available for backwards compatibility.
+     * RECOVERY is intentionally a client-side override because only Hermès knows
+     * whether a local interrupted recording exists on this workstation.
+     */
+    private function workflowState(Bid $bid, ?Pirep $pirep, bool $serverReady, array $checks): array
+    {
+        $legacyStatus = $this->dispatchStatus($bid, $pirep, $serverReady);
+        $checkMap = collect($checks)->mapWithKeys(
+            fn (array $check) => [strtoupper((string) $check['code']) => (bool) $check['ready']]
+        );
+
+        $state = match ($legacyStatus) {
+            'READY', 'IN_PROGRESS', 'AWAITING_FILING', 'COMPLETED', 'CANCELLED' => $legacyStatus,
+            default => !$checkMap->get('AIRCRAFT', false) ? 'RESERVED' : 'PLANNING',
+        };
+
+        [$actionCode, $actionLabel] = match ($state) {
+            'RESERVED' => ['SELECT_AIRCRAFT', 'Affecter un appareil'],
+            'PLANNING' => !$checkMap->get('OFP', false)
+                ? ['PREPARE_OFP', 'Préparer le briefing']
+                : (!$checkMap->get('PIREP', false)
+                    ? ['FINALIZE_PREPARATION', 'Finaliser la préparation']
+                    : ['CHECK_READINESS', 'Vérifier les contrôles avant départ']),
+            'READY' => ['START_RECORDING', 'Commencer l’enregistrement'],
+            'IN_PROGRESS' => ['TRACK_FLIGHT', 'Poursuivre le vol'],
+            'AWAITING_FILING' => ['REVIEW_AND_FILE', 'Ouvrir le Flight Review'],
+            'COMPLETED' => ['SELECT_NEW_OPERATION', 'Choisir une nouvelle opération'],
+            'CANCELLED' => ['SELECT_NEW_OPERATION', 'Choisir une autre opération'],
+            default => ['CHECK_OPERATION', 'Actualiser l’opération'],
+        };
+
+        $passedChecks = collect($checks)->where('ready', true)->count();
+        $checkCount = max(1, count($checks));
+        $preparationProgress = in_array($state, ['READY', 'IN_PROGRESS', 'AWAITING_FILING', 'COMPLETED'], true)
+            ? 100
+            : (int) round(($passedChecks / $checkCount) * 100);
+
+        return [
+            'state' => $state,
+            'legacy_status' => $legacyStatus,
+            'operation_id' => $this->operationIdentity->id($bid),
+            'preparation_progress' => $preparationProgress,
+            'next_action' => [
+                'code' => $actionCode,
+                'label' => $actionLabel,
+            ],
+            'terminal' => in_array($state, ['COMPLETED', 'CANCELLED'], true),
+            'client_recovery_override' => true,
+        ];
     }
 
     private function isLegacyHermesGhostPirep(Pirep $pirep): bool
