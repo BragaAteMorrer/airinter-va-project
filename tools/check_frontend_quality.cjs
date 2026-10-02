@@ -32,6 +32,7 @@ for (const [file, budget] of Object.entries(budgets)) {
 
 const hermesIndex = read('acars/wwwroot/index.html');
 const hermesApp = read('acars/wwwroot/app.js');
+const hermesDesktop = read('acars/WebDesktop.cs');
 const hermesTheme = read('acars/wwwroot/hermes-themes.css');
 const prometheeV2 = read('prometheus/public/promethee-assets/promethee-v2.css');
 const dispatch = read('prometheus/modules/Promethee/Resources/views/admin/dispatch.blade.php');
@@ -50,6 +51,9 @@ expect(hermesIndex.includes('reviewAltitudeChart') && hermesIndex.includes('revi
   'Hermès Flight Review must preserve altitude and fuel chart surfaces.');
 expect(hermesApp.includes('normalizeReviewProfile') && hermesApp.includes('renderReviewCharts'),
   'Hermès Flight Review must preserve profile-series rendering.');
+expect(hermesDesktop.includes('"/api/file" => await File(body)')
+    && hermesDesktop.includes('report["notes"] = notes'),
+  'Hermès desktop must forward the optional pilot Flight Review comment when filing.');
 
 expect(hermesTheme.includes('prefers-reduced-motion'),
   'Hermès theme CSS must preserve prefers-reduced-motion handling.');
