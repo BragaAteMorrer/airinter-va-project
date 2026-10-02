@@ -241,7 +241,7 @@ final class HermesOperationLifecycleTest extends TestCase
         $newBid = $bids->addBid($fx['flight']->fresh(), $fx['user']->fresh());
 
         $this->assertNotSame((string) $fx['bid']->id, (string) $newBid->id);
-        $this->assertSame($fx['flight']->id, $newBid->flight_id);
+        $this->assertSame((string) $fx['flight']->id, (string) $newBid->flight_id);
         $this->assertSame('op_'.$newBid->id, app(\Modules\Promethee\Services\OperationIdentityService::class)->id($newBid));
     }
 
@@ -256,8 +256,14 @@ final class HermesOperationLifecycleTest extends TestCase
         /** @var BidService $bids */
         $bids = app(BidService::class);
         $newBid = $bids->addBid($fx['flight']->fresh(), $fx['user']->fresh());
-        $newBid->aircraft_id = $fx['second_aircraft']->id;
-        $newBid->save();
+
+        // BidService::getBid() enriches the returned model with a reconciled
+        // flight object. Persist only the actual column here so that synthetic
+        // presentation attributes are never sent back to the bids table.
+        Bid::query()->whereKey($newBid->id)->update([
+            'aircraft_id' => $fx['second_aircraft']->id,
+        ]);
+        $newBid = Bid::query()->findOrFail($newBid->id);
 
         SimBrief::factory()->create([
             'user_id' => $fx['user']->id,
