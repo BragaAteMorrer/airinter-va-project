@@ -188,7 +188,10 @@ public sealed class FlightRecorder
     }
 
     public void Pause() { lock (Gate) {
-        if (Flight is not null) Flight = Flight with { Recording = false };
+        if (Flight is not null) {
+            AddObservations(fdm.Flush(previousSnapshot, FlightTrackingEngine.ParsePhase(Flight.Phase)));
+            Flight = Flight with { Recording = false };
+        }
         previous = null;
         previousSnapshot = null;
         Save();
