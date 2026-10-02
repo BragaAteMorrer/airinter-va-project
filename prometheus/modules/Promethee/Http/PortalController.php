@@ -3191,12 +3191,36 @@ class PortalController extends Controller
 
     public function assignAircraftBase(Request $r) {
         $data=$r->validate(['aircraft_id'=>'required|integer|exists:aircraft,id','base_airport_id'=>'required|string|max:8|exists:promethee_operational_bases,airport_id','rotation_locked'=>'nullable|boolean']);
-        DB::table('promethee_aircraft_bases')->updateOrInsert(
-            ['aircraft_id'=>$data['aircraft_id']],
-            ['base_airport_id'=>strtoupper($data['base_airport_id']),'assigned_at'=>now(),'away_since'=>null,'repatriation_mission_id'=>null,'rotation_locked'=>$r->boolean('rotation_locked'),'created_at'=>now(),'updated_at'=>now()]
-        );
-        Aircraft::where('id',$data['aircraft_id'])->update(['hub_id'=>strtoupper($data['base_airport_id'])]);
-        return back()->with('success','Base de l’appareil mise à jour.');
+        $aircraft=Aircraft::findOrFail($data['aircraft_id']);
+        $assignment=DB::table('promethee_aircraft_bases')->where('aircraft_id',$aircraft->id)->first();
+        $newBase=strtoupper($data['base_airport_id']);
+        $baseChanged=!$assignment || strtoupper((string)$assignment->base_airport_id) !== $newBase;
+
+        $values=[
+            'base_airport_id'=>$newBase,
+            'rotation_locked'=>$r->boolean('rotation_locked'),
+            'updated_at'=>now(),
+        ];
+
+        if (!$assignment) {
+            $values += ['assigned_at'=>now(),'away_since'=>null,'repatriation_mission_id'=>null,'created_at'=>now()];
+        } elseif ($baseChanged) {
+            if ($assignment->repatriation_mission_id) {
+                DB::table('promethee_missions')->where('id',$assignment->repatriation_mission_id)->update(['active'=>false,'updated_at'=>now()]);
+            }
+            $current=strtoupper((string)$aircraft->airport_id);
+            $values += [
+                'assigned_at'=>now(),
+                'away_since'=>$current !== '' && $current !== $newBase ? ($aircraft->landing_time ?: now()) : null,
+                'repatriation_mission_id'=>null,
+            ];
+        }
+
+        DB::table('promethee_aircraft_bases')->updateOrInsert(['aircraft_id'=>$aircraft->id],$values);
+        if ($baseChanged) {
+            $aircraft->update(['hub_id'=>$newBase]);
+        }
+        return back()->with('success',$baseChanged ? 'Base de l’appareil mise à jour.' : 'Préférence de rotation mise à jour.');
     }
     public function syncRegionalRepatriations(RegionalOperationsService $operations) {
         $result = $operations->sync(true);
