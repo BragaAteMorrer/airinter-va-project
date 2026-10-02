@@ -27,6 +27,7 @@ use Modules\Promethee\Services\DemandProfileService;
 use Modules\Promethee\Services\AircraftVariantService;
 use Modules\Promethee\Services\AircraftConfigurationResolver;
 use Modules\Promethee\Services\HermesPirepLifecycleService;
+use Modules\Promethee\Models\PirepAircraftProfile;
 
 /**
  * Stable Air Inter operations facade.
@@ -360,6 +361,7 @@ class OperationsV1Controller extends Controller
                 if (!$freeOfp) $reasons[] = $this->reason('ACTIVE_OFP', 'Un OFP actif utilise déjà cet appareil.');
             }
 
+            $resolvedAircraft = $this->aircraftConfigurations->resolveAircraft($plane);
             $profile = count($reasons) === 0
                 ? $this->demandProfile->profile($plane, $flight, $operationId)
                 : null;
@@ -385,6 +387,9 @@ class OperationsV1Controller extends Controller
                 'pricing_band' => $profile['band'] ?? null,
                 'fare_percent' => $profile['fare_percent'] ?? null,
                 'load_range' => $profile['load_range'] ?? null,
+                'historical_variant' => $resolvedAircraft['variant'] ?? null,
+                'configuration' => $resolvedAircraft['configuration'] ?? null,
+                'simbrief_profile' => $resolvedAircraft['simbrief'] ?? null,
             ];
 
             if (count($reasons) === 0) {
@@ -785,6 +790,18 @@ class OperationsV1Controller extends Controller
 
         $pirep = $this->pirepSvc->prefile($request->user(), $attrs, [], []);
 
+        // Freeze the exact technical identity used by this operation. The
+        // aircraft_id already preserves the physical registration; this
+        // snapshot also preserves variant/configuration/performance data if
+        // the administration changes sb-airframe later.
+        PirepAircraftProfile::query()->updateOrCreate(
+            ['pirep_id' => $pirep->id],
+            [
+                'aircraft_id' => $bid->aircraft_id,
+                'snapshot' => $this->aircraftConfigurations->resolveAircraft($bid->aircraft),
+            ]
+        );
+
         // vmsACARS semantics: prefile creates the active working PIREP only.
         // It remains IN_PROGRESS/INITIATED until Hermès has actually flown and
         // the pilot files it at the end of the ACARS session. Never mutate a
@@ -935,18 +952,28 @@ class OperationsV1Controller extends Controller
         $selectedVariant = collect($variantState['variants'] ?? [])->first(
             fn ($variant) => ($variant['id'] ?? null) === ($variantState['selected_variant_id'] ?? null)
         );
-        $resolvedAircraftProfile = $aircraft ? $this->aircraftConfigurations->resolve($aircraft) : null;
-        $simbriefCalculationType = $resolvedAircraftProfile['simbrief']['effective_type']
-            ?? $selectedVariant['simbrief_type']
-            ?? $fallback['simbrief_type']
-            ?? ($aircraft?->simbrief_type ?: ($subfleet?->simbrief_type ?: $aircraft?->icao));
-        $simbriefStrategy = $selectedVariant['simbrief_strategy']
-            ?? ($selectedVariant['simbrief_profile']['strategy'] ?? null)
-            ?? 'native';
+        $resolvedAircraft = $aircraft ? $this->aircraftConfigurations->resolveAircraft($aircraft) : null;
+        $resolvedSimBrief = $resolvedAircraft['simbrief'] ?? [];
+        $hasConfiguredTechnicalProfile = $resolvedAircraft
+            && (($resolvedSimBrief['source'] ?? 'phpvms') !== 'phpvms');
+
+        $simbriefCalculationType = $hasConfiguredTechnicalProfile
+            ? ($resolvedSimBrief['value'] ?? null)
+            : ($selectedVariant['simbrief_type']
+                ?? $fallback['simbrief_type']
+                ?? ($resolvedSimBrief['value'] ?? null)
+                ?? ($aircraft?->simbrief_type ?: ($subfleet?->simbrief_type ?: $aircraft?->icao)));
+        $simbriefStrategy = $hasConfiguredTechnicalProfile
+            ? ($resolvedSimBrief['strategy'] ?? 'native')
+            : ($selectedVariant['simbrief_strategy']
+                ?? ($selectedVariant['simbrief_profile']['strategy'] ?? null)
+                ?? ($resolvedSimBrief['strategy'] ?? null)
+                ?? 'native');
         $simbriefDisplayType = strtoupper((string) (
-            $aircraft?->icao
-            ?: $subfleet?->type
-            ?: $simbriefCalculationType
+            $resolvedSimBrief['actual_aircraft']
+            ?? $aircraft?->icao
+            ?? $subfleet?->type
+            ?? $simbriefCalculationType
         ));
         $airline = Str::lower((string) ($flight?->airline?->name ?? ''));
         $loadFactor = str_contains($airline, 'charter') ? config('acars.load_factors.air_charter_international')
@@ -959,7 +986,9 @@ class OperationsV1Controller extends Controller
         $demand = $aircraft && $flight
             ? $this->demandProfile->profile($aircraft, $flight, $this->operationIdentity->id($bid))
             : null;
-        $variantMaxPax = $selectedVariant['simbrief_profile']['maxpax'] ?? null;
+        $variantMaxPax = !$hasConfiguredTechnicalProfile
+            ? ($selectedVariant['simbrief_profile']['maxpax'] ?? null)
+            : null;
         if ($demand && is_numeric($variantMaxPax) && (int) $variantMaxPax > 0) {
             $demand['capacity'] = (int) $variantMaxPax;
             $demand['capacity_source'] = 'sb_airframe';
@@ -998,11 +1027,9 @@ class OperationsV1Controller extends Controller
                 'type_key' => $this->demandProfile->typeKey($aircraft),
                 'type_label' => $this->demandProfile->typeLabel($aircraft),
                 'airport' => $aircraft->airport_id,
-                'historical_variant' => $resolvedAircraftProfile['variant'] ?? null,
-                'configuration' => $resolvedAircraftProfile['configuration'] ?? null,
-                'resolved_profile' => $resolvedAircraftProfile['resolved'] ?? null,
-                'profile_provenance' => $resolvedAircraftProfile['provenance'] ?? null,
-                'simulator_profiles' => $resolvedAircraftProfile['simulator_profiles'] ?? [],
+                'historical_variant' => $resolvedAircraft['variant'] ?? null,
+                'configuration' => $resolvedAircraft['configuration'] ?? null,
+                'resolved_profile' => $resolvedAircraft,
             ], $demand ?? []) : null,
             'simbrief' => [
                 // Pilot-facing identity always remains the real aircraft.
@@ -1010,6 +1037,7 @@ class OperationsV1Controller extends Controller
                 'calculation_type' => $simbriefCalculationType,
                 'strategy' => $simbriefStrategy,
                 'profile' => $selectedVariant['simbrief_profile'] ?? null,
+                'resolved_profile' => $resolvedSimBrief,
                 'compatible' => filled($simbriefCalculationType),
                 'addon' => $selectedVariant['label'] ?? ($fallback['addon'] ?? null),
                 'variant' => $selectedVariant,
@@ -1020,7 +1048,6 @@ class OperationsV1Controller extends Controller
                 // Hermès only needs to know whether company generation can be
                 // offered. The actual API key never leaves Prométhée.
                 'company_api_available' => app(\Modules\Promethee\Services\SimBriefCompanyKeyService::class)->configured(),
-                'resolved_profile' => $resolvedAircraftProfile['simbrief'] ?? null,
             ],
             'operating_rules' => [
                 'passenger_weight_kg' => config('acars.passenger_weight_kg'),
@@ -1148,11 +1175,16 @@ class OperationsV1Controller extends Controller
 
     private function pirepDto(?Pirep $pirep): array
     {
+        $technicalSnapshot = $pirep
+            ? PirepAircraftProfile::query()->find($pirep->id)?->snapshot
+            : null;
+
         return $pirep ? [
             'id' => $pirep->id,
             'available' => true,
             'state' => $pirep->state,
             'status' => $pirep->status,
+            'aircraft_profile' => $technicalSnapshot,
             'created_at' => optional($pirep->created_at)?->toIso8601String(),
             'submitted_at' => optional($pirep->submitted_at)?->toIso8601String(),
         ] : [
@@ -1160,6 +1192,7 @@ class OperationsV1Controller extends Controller
             'available' => false,
             'state' => null,
             'status' => null,
+            'aircraft_profile' => null,
             'created_at' => null,
             'submitted_at' => null,
         ];

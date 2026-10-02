@@ -11,13 +11,17 @@ use App\Models\SimBrief;
 use App\Services\UserService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Modules\Promethee\Services\AircraftConfigurationResolver;
 
 /** API contract used by the desktop ACARS; it deliberately exposes only the pilot's own operations. */
 class AcarsOperationsController extends Controller
 {
     private const SIMULATORS = ['fs2004', 'fsx', 'p3d', 'msfs2020', 'msfs2024', 'xplane'];
 
-    public function __construct(private readonly UserService $userSvc) {}
+    public function __construct(
+        private readonly UserService $userSvc,
+        private readonly AircraftConfigurationResolver $aircraftConfigurations
+    ) {}
 
     public function index(Request $request)
     {
@@ -71,13 +75,20 @@ class AcarsOperationsController extends Controller
             ->whereIn('subfleet_id', $subfleetIds)
             ->whereHas('subfleet', fn ($query) => $query->where('airline_id', $flight->airline_id))
             ->orderBy('icao')->orderBy('registration')->get()
-            ->map(fn (Aircraft $plane) => [
-                'id' => $plane->id,
-                'registration' => $plane->registration,
-                'name' => $plane->name,
-                'icao' => $plane->icao,
-                'subfleet' => $plane->subfleet?->name,
-            ])->values();
+            ->map(function (Aircraft $plane) {
+                $resolved = $this->aircraftConfigurations->resolveAircraft($plane);
+
+                return [
+                    'id' => $plane->id,
+                    'registration' => $plane->registration,
+                    'name' => $plane->name,
+                    'icao' => $plane->icao,
+                    'subfleet' => $plane->subfleet?->name,
+                    'historical_variant' => $resolved['variant'],
+                    'configuration' => $resolved['configuration'],
+                    'simbrief_profile' => $resolved['simbrief'],
+                ];
+            })->values();
 
         return response()->json(['data' => $aircraft]);
     }
@@ -90,9 +101,16 @@ class AcarsOperationsController extends Controller
         $name = (string) ($subfleet?->name ?? $aircraft?->name ?? '');
         $key = Str::of($name)->lower()->replace(['_', '-'], ' ')->squish()->toString();
         $fallback = config('acars.substitutions.'.$key.'.'.$simulator, []);
-        // A documented simulator substitution has priority: the OFP must be
-        // calculated for the aircraft the pilot will actually fly.
-        $simbriefType = $fallback['simbrief_type'] ?? ($aircraft?->simbrief_type ?: ($subfleet?->simbrief_type ?: $aircraft?->icao));
+        $resolvedAircraft = $aircraft ? $this->aircraftConfigurations->resolveAircraft($aircraft) : null;
+        $resolvedSimBrief = $resolvedAircraft['simbrief'] ?? [];
+        // A registration-level historical/VA configuration is authoritative.
+        // Legacy simulator substitutions remain a fallback for aircraft which
+        // have not yet been described in sb-airframe.
+        $simbriefType = (($resolvedSimBrief['source'] ?? 'phpvms') !== 'phpvms')
+            ? ($resolvedSimBrief['value'] ?? null)
+            : ($fallback['simbrief_type']
+                ?? ($resolvedSimBrief['value'] ?? null)
+                ?? ($aircraft?->simbrief_type ?: ($subfleet?->simbrief_type ?: $aircraft?->icao)));
         $airline = Str::lower((string) ($flight?->airline?->name ?? ''));
         $loadFactor = str_contains($airline, 'charter') ? config('acars.load_factors.air_charter_international')
             : (str_contains($airline, 'cargo') ? config('acars.load_factors.inter_cargo_service') : config('acars.load_factors.air_inter'));
@@ -106,9 +124,18 @@ class AcarsOperationsController extends Controller
                 'arrival' => $flight?->arr_airport_id, 'alternate' => $flight?->alt_airport_id,
                 'route' => $flight?->route, 'level' => $flight?->level,
             ],
-            'aircraft' => ['id' => $aircraft?->id, 'registration' => $aircraft?->registration, 'subfleet' => $name],
+            'aircraft' => [
+                'id' => $aircraft?->id,
+                'registration' => $aircraft?->registration,
+                'subfleet' => $name,
+                'historical_variant' => $resolvedAircraft['variant'] ?? null,
+                'configuration' => $resolvedAircraft['configuration'] ?? null,
+                'resolved_profile' => $resolvedAircraft,
+            ],
             'simbrief' => [
                 'type' => $simbriefType,
+                'strategy' => $resolvedSimBrief['strategy'] ?? 'native',
+                'profile' => $resolvedSimBrief,
                 'addon' => $fallback['addon'] ?? null,
                 'ofp_id' => $ofp?->id,
                 'available' => $ofp !== null,

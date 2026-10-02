@@ -14,8 +14,9 @@ use Modules\Promethee\Http\DatalinkController;
 use Modules\Promethee\Http\SopController;
 use Modules\Promethee\Http\PresenceController;
 use Modules\Promethee\Http\DispatchDeskController;
-use Modules\Promethee\Http\AircraftConfigurationController;
 use Modules\Promethee\Http\CrmController;
+use Modules\Promethee\Http\AircraftConfigurationAdminController;
+use Modules\Promethee\Http\Api\AircraftConfigurationController;
 use Modules\Promethee\Http\Api\AcarsSimBriefController;
 use Modules\Promethee\Http\Api\AcarsSessionController;
 
@@ -139,6 +140,14 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::post('/identite', [PortalController::class, 'saveBranding'])->name('branding.save');
         Route::post('/identite/importer', [PortalController::class, 'importBranding'])->name('branding.import');
         Route::get('/simbrief', [PortalController::class, 'adminSimbrief'])->name('simbrief');
+        Route::get('/airframes', [AircraftConfigurationAdminController::class, 'index'])->name('airframes');
+        Route::post('/airframes/types', [AircraftConfigurationAdminController::class, 'storeType'])->name('airframes.types.save');
+        Route::post('/airframes/variants', [AircraftConfigurationAdminController::class, 'storeVariant'])->name('airframes.variants.save');
+        Route::post('/airframes/variants/{variant}/duplicate', [AircraftConfigurationAdminController::class, 'duplicateVariant'])->name('airframes.variants.duplicate');
+        Route::post('/airframes/configurations', [AircraftConfigurationAdminController::class, 'storeConfiguration'])->name('airframes.configurations.save');
+        Route::post('/airframes/assign', [AircraftConfigurationAdminController::class, 'assign'])->name('airframes.assign');
+        Route::post('/airframes/simulator-profiles', [AircraftConfigurationAdminController::class, 'storeSimulatorProfile'])->name('airframes.simulator-profiles.save');
+        Route::post('/airframes/modifications', [AircraftConfigurationAdminController::class, 'storeModification'])->name('airframes.modifications.save');
         Route::get('/pireps-emergency', [PortalController::class,'emergencyPireps'])->name('pireps-emergency');
         Route::delete('/pireps-emergency/{id}', [PortalController::class,'emergencyDeletePirep'])->name('pireps-emergency.delete');
         Route::post('/simbrief/api-key', [PortalController::class, 'saveSimbriefApiKey'])->name('simbrief.api-key.save');
@@ -226,11 +235,6 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::post('/regional-operations/rotation/settings', [PortalController::class,'saveFleetRotationSettings'])->name('regional.rotation.settings');
         Route::post('/regional-operations/rotation/run', [PortalController::class,'runFleetRotation'])->name('regional.rotation.run');
         Route::get('/maintenance', [PortalController::class,'adminMaintenance'])->name('maintenance');
-        Route::get('/aircraft-configurations', [AircraftConfigurationController::class,'adminIndex'])->name('aircraft-configurations');
-        Route::post('/aircraft-configurations/variants', [AircraftConfigurationController::class,'saveVariant'])->name('aircraft-configurations.variants.save');
-        Route::post('/aircraft-configurations/configurations', [AircraftConfigurationController::class,'saveConfiguration'])->name('aircraft-configurations.configurations.save');
-        Route::post('/aircraft-configurations/assign', [AircraftConfigurationController::class,'assign'])->name('aircraft-configurations.assign');
-        Route::post('/aircraft-configurations/simulator-profiles', [AircraftConfigurationController::class,'saveSimulatorProfile'])->name('aircraft-configurations.simulator-profiles.save');
         Route::post('/maintenance/engine-profiles', [PortalController::class,'saveEngineProfile'])->name('maintenance.engine-profiles.save');
         Route::post('/maintenance/engines', [PortalController::class,'createEngineUnit'])->name('maintenance.engines.create');
         Route::post('/maintenance/engines/{engine}/overhaul', [PortalController::class,'overhaulEngine'])->name('maintenance.engines.overhaul');
@@ -263,6 +267,7 @@ Route::middleware(['api','api.auth'])->delete('/api/acars/session', [AcarsSessio
 
 // Compatibility endpoints for older Hermès builds. New clients use /api/v1/operations/*.
 Route::middleware(['api','api.auth'])->prefix('api/acars')->group(function () {
+    Route::get('/aircraft/{registration}/resolved-profile', [AircraftConfigurationController::class, 'show']);
     Route::post('/flights/{flight_id}/simbrief/session', [AcarsSimBriefController::class, 'session']);
     Route::post('/flights/{flight_id}/simbrief/redirect', [AcarsSimBriefController::class, 'redirect']);
     Route::post('/flights/{flight_id}/simbrief/account/import', [AcarsSimBriefController::class, 'importAccount']);
@@ -274,9 +279,11 @@ Route::middleware('api')->get('/api/v1/hermes/releases/latest', [HermesReleaseCo
 
 Route::middleware(['api','api.auth'])->prefix('api/v1')->group(function () {
     Route::get('/me', [OperationsV1Controller::class, 'me']);
-    Route::get('/aircraft/{registration}/resolved-profile', [AircraftConfigurationController::class, 'resolved']);
+    Route::get('/aircraft/{registration}/resolved-profile', [AircraftConfigurationController::class, 'show']);
     Route::get('/me/aircraft-variants', [OperationsV1Controller::class, 'myAircraftVariants']);
     Route::put('/me/aircraft-variants', [OperationsV1Controller::class, 'saveMyAircraftVariants']);
+    Route::get('/me/simulator-profiles', [OperationsV1Controller::class, 'myAircraftVariants']);
+    Route::put('/me/simulator-profiles', [OperationsV1Controller::class, 'saveMyAircraftVariants']);
     Route::get('/flights', [OperationsV1Controller::class, 'searchFlights']);
     Route::post('/flights/{flightId}/reserve', [OperationsV1Controller::class, 'reserveFlight']);
     Route::get('/operations', [OperationsV1Controller::class, 'index']);
@@ -286,6 +293,8 @@ Route::middleware(['api','api.auth'])->prefix('api/v1')->group(function () {
     Route::put('/operations/{bid}/aircraft', [OperationsV1Controller::class, 'selectAircraft']);
     Route::get('/operations/{bid}/aircraft-variants', [OperationsV1Controller::class, 'aircraftVariants']);
     Route::put('/operations/{bid}/aircraft-variant', [OperationsV1Controller::class, 'selectAircraftVariant']);
+    Route::get('/operations/{bid}/simulator-profiles', [OperationsV1Controller::class, 'aircraftVariants']);
+    Route::put('/operations/{bid}/simulator-profile', [OperationsV1Controller::class, 'selectAircraftVariant']);
     Route::get('/operations/{bid}/briefing', [OperationsV1Controller::class, 'briefing']);
     Route::get('/operations/{bid}/readiness', [OperationsV1Controller::class, 'readiness']);
     Route::get('/operations/{bid}/dispatch', [OperationsV1Controller::class, 'operationDispatch']);

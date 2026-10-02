@@ -18,8 +18,7 @@ class DemandProfileService
     private ?array $settingsCache = null;
 
     public function __construct(
-        private readonly AirInterCabinProfileService $cabinProfiles,
-        private readonly AircraftConfigurationResolver $aircraftConfigurations
+        private readonly AirInterCabinProfileService $cabinProfiles
     ) {}
 
     public function settings(): array
@@ -96,27 +95,6 @@ class DemandProfileService
         $key = $flight->id.'|'.$aircraft->id;
         if (array_key_exists($key, $this->capacityCache)) {
             return $this->capacityCache[$key];
-        }
-
-        // Registration -> historical/VA configuration -> max_pax is the
-        // authoritative capacity when present. Existing phpVMS fare capacities
-        // remain the compatibility fallback for aircraft not migrated yet.
-        $resolvedAircraft = $this->aircraftConfigurations->resolve($aircraft);
-        $resolvedCapacity = (int) ($resolvedAircraft['resolved']['max_pax'] ?? 0);
-        if ($resolvedCapacity > 0) {
-            $this->cabinProfileCache[$key] = [
-                'capacity' => $resolvedCapacity,
-                'database_capacity' => $resolvedCapacity,
-                'source' => 'aircraft_configuration',
-                'key' => $resolvedAircraft['configuration']['code']
-                    ?? $resolvedAircraft['variant']['code']
-                    ?? $resolvedAircraft['aircraft']['type_key'],
-                'label' => $resolvedAircraft['configuration']['name']
-                    ?? $resolvedAircraft['variant']['name']
-                    ?? $resolvedAircraft['aircraft']['name'],
-            ];
-
-            return $this->capacityCache[$key] = $resolvedCapacity;
         }
 
         $rows = DB::table('subfleet_fare as subfare')

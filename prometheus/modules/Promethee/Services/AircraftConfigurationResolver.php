@@ -3,264 +3,546 @@
 namespace Modules\Promethee\Services;
 
 use App\Models\Aircraft;
-use Carbon\CarbonImmutable;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\Schema;
+use Modules\Promethee\Models\AircraftConfigurationAssignment;
+use Modules\Promethee\Models\AircraftHistoricalVariant;
+use Modules\Promethee\Models\AircraftModification;
+use Modules\Promethee\Models\AircraftTypeProfile;
+use Modules\Promethee\Models\AirframeConfiguration;
+use Modules\Promethee\Models\AirframeSimulatorProfile;
 
 class AircraftConfigurationResolver
 {
-    private const OVERRIDABLE = [
-        'max_pax','seat_configuration','oew','mzfw','mtow','mlw','max_fuel','max_cargo',
-        'engine_manufacturer','engine_model','engine_variant','engine_count','engine_simbrief_label',
-        'cruise_speed','cruise_mach','ceiling','range_nm','equipment','transponder','pbn',
-        'simbrief_strategy','simbrief_type','simbrief_internal_id','simbrief_proxy_type',
-        'fuel_factor','climb_profile','cruise_profile','descent_profile',
-    ];
-
-    public function resolveByRegistration(string $registration, mixed $date = null, bool $preferVaActive = true): array
+    public function resolveByRegistration(string $registration, CarbonInterface|string|null $date = null): array
     {
         $aircraft = Aircraft::query()
             ->with('subfleet')
             ->whereRaw('UPPER(registration) = ?', [strtoupper(trim($registration))])
             ->firstOrFail();
 
-        return $this->resolve($aircraft, $date, $preferVaActive);
+        return $this->resolveAircraft($aircraft, $date);
     }
 
-    public function resolve(Aircraft $aircraft, mixed $date = null, bool $preferVaActive = true): array
+    public function resolveAircraft(Aircraft $aircraft, CarbonInterface|string|null $date = null): array
     {
-        $on = $date ? CarbonImmutable::parse($date)->startOfDay() : CarbonImmutable::today();
+        $at = $this->date($date);
+        $aircraft->loadMissing('subfleet');
 
-        $assignment = $this->assignmentFor($aircraft, $on, $preferVaActive);
-        $variant = $assignment?->variant_id
-            ? DB::table('promethee_aircraft_variants')->where('id', $assignment->variant_id)->first()
-            : null;
-        $configuration = $assignment?->configuration_id
-            ? DB::table('promethee_airframe_configurations')->where('id', $assignment->configuration_id)->first()
-            : null;
+        $assignment = $this->assignment($aircraft, $at);
+        $variant = $assignment?->variant;
+        $configuration = $assignment?->configuration;
 
-        if (!$variant && $configuration?->variant_id) {
-            $variant = DB::table('promethee_aircraft_variants')->where('id', $configuration->variant_id)->first();
+        // A configuration always belongs to one historical variant. Prefer that
+        // relation if old/imported assignment data points at a different ID.
+        if ($configuration && (!$variant || (int) $configuration->variant_id !== (int) $variant->id)) {
+            $variant = $configuration->variant;
         }
 
-        $base = $this->aircraftTypeDefaults($aircraft);
-        $resolved = $base;
-        $provenance = array_fill_keys(self::OVERRIDABLE, 'aircraft_type');
+        // Once a registration has an explicit historical variant, its type_key
+        // is the most reliable link to the type defaults (important for legacy
+        // ICAO codes such as A30B vs the administrative A300 family key).
+        $typeProfile = $this->typeProfile($aircraft, $variant?->type_key);
 
-        $this->applyRow($resolved, $provenance, $variant, 'aircraft_variant');
-        $this->applyRow($resolved, $provenance, $configuration, 'historical_configuration');
-        if ($assignment) {
-            $this->applyJsonOverrides($resolved, $provenance, $assignment->overrides ?? null, 'registration_override');
-        }
+        $base = $this->coreData($aircraft);
+        $effective = $this->merge(
+            $base,
+            $typeProfile?->data ?? [],
+            $variant?->data ?? [],
+            $configuration?->data ?? [],
+            $assignment?->overrides ?? []
+        );
 
-        $this->validateResolved($resolved);
-
-        $profiles = $this->simulatorProfiles($variant?->id, $configuration?->id);
-        $simbrief = $this->simbriefProfile($resolved);
+        $simbrief = $this->resolveSimBrief(
+            $aircraft,
+            $typeProfile,
+            $variant,
+            $configuration,
+            $assignment?->overrides ?? [],
+            $effective
+        );
 
         return [
-            'registration' => (string) $aircraft->registration,
-            'aircraft_id' => $aircraft->id,
+            'registration' => strtoupper((string) $aircraft->registration),
+            'resolved_at' => $at->toDateString(),
             'aircraft' => [
-                'icao' => $base['icao_type'],
-                'name' => (string) ($aircraft->name ?: $aircraft->subfleet?->name ?: $base['icao_type']),
-                'type_key' => $base['aircraft_type_key'],
+                'id' => $aircraft->id,
+                'registration' => strtoupper((string) $aircraft->registration),
+                'icao' => strtoupper((string) $aircraft->icao),
+                'name' => $aircraft->name,
+                'subfleet_id' => $aircraft->subfleet_id,
+                'subfleet' => $aircraft->subfleet?->name,
+                'type_key' => $typeProfile?->type_key ?? $this->typeKey($aircraft),
+                'type_name' => $typeProfile?->name ?? ($aircraft->subfleet?->name ?: $aircraft->name),
             ],
-            'variant' => $variant ? [
-                'id' => $variant->id,
-                'code' => $variant->short_name ?: $variant->manufacturer_variant ?: $variant->name,
-                'name' => $variant->name,
-                'manufacturer_variant' => $variant->manufacturer_variant,
-                'operator_variant' => $variant->operator_variant,
-                'phase' => $variant->phase,
-                'historical_confidence' => $variant->historical_confidence,
+            'type_profile' => $this->profileDto($typeProfile),
+            'variant' => $this->variantDto($variant),
+            'configuration' => $this->configurationDto($configuration, $effective),
+            'period' => $assignment ? [
+                'valid_from' => optional($assignment->valid_from)?->toDateString(),
+                'valid_until' => optional($assignment->valid_until)?->toDateString(),
+                'active' => (bool) $assignment->active,
             ] : null,
-            'configuration' => $configuration ? [
-                'id' => $configuration->id,
-                'code' => $configuration->code,
-                'name' => $configuration->name,
-                'kind' => $configuration->kind,
-                'phase' => $configuration->phase,
-                'valid_from' => $configuration->valid_from,
-                'valid_until' => $configuration->valid_until,
-                'historical_confidence' => $configuration->historical_confidence,
-            ] : null,
-            'assignment' => $assignment ? [
-                'id' => $assignment->id,
-                'valid_from' => $assignment->valid_from,
-                'valid_until' => $assignment->valid_until,
-                'active_for_va' => (bool) $assignment->active_for_va,
-                'historical_confidence' => $assignment->historical_confidence,
-            ] : null,
-            'resolved' => Arr::only($resolved, array_merge(self::OVERRIDABLE, [
-                'aircraft_type_key','icao_type',
-            ])),
-            'provenance' => $provenance,
+            'effective' => $effective,
             'simbrief' => $simbrief,
-            'simulator_profiles' => $profiles,
-            'resolved_for' => $on->toDateString(),
+            'simulator_profiles' => $this->simulatorProfiles($variant, $configuration),
+            'modifications' => $this->modifications($aircraft, $variant, $configuration, $at),
+            'provenance' => array_values(array_filter([
+                $typeProfile ? [
+                    'layer' => 'aircraft_type',
+                    'source' => $typeProfile->source,
+                    'source_url' => $typeProfile->source_url,
+                    'confidence' => $typeProfile->historical_confidence,
+                ] : null,
+                $variant ? [
+                    'layer' => 'historical_variant',
+                    'source' => $variant->source,
+                    'source_url' => $variant->source_url,
+                    'confidence' => $variant->historical_confidence,
+                ] : null,
+                $configuration ? [
+                    'layer' => 'airframe_configuration',
+                    'source' => $configuration->source,
+                    'source_url' => $configuration->source_url,
+                    'confidence' => $configuration->historical_confidence,
+                ] : null,
+                $assignment ? [
+                    'layer' => 'registration',
+                    'source' => $assignment->source,
+                    'source_url' => $assignment->source_url,
+                    'confidence' => $assignment->historical_confidence,
+                ] : null,
+            ])),
         ];
     }
 
-    private function assignmentFor(Aircraft $aircraft, CarbonImmutable $on, bool $preferVaActive): ?object
+    private function assignment(Aircraft $aircraft, CarbonInterface $at): ?AircraftConfigurationAssignment
     {
-        if (!Schema::hasTable('promethee_aircraft_configuration_assignments')) return null;
-
-        $query = DB::table('promethee_aircraft_configuration_assignments')
-            ->where('aircraft_id', $aircraft->id)
-            ->where(function ($q) use ($on) {
-                $q->whereNull('valid_from')->orWhereDate('valid_from', '<=', $on->toDateString());
-            })
-            ->where(function ($q) use ($on) {
-                $q->whereNull('valid_until')->orWhereDate('valid_until', '>=', $on->toDateString());
-            });
-
-        if ($preferVaActive) {
-            $active = (clone $query)->where('active_for_va', true)->orderByDesc('valid_from')->first();
-            if ($active) return $active;
+        if (!Schema::hasTable('promethee_aircraft_configuration_assignments')) {
+            return null;
         }
 
-        return $query->orderByDesc('valid_from')->orderByDesc('id')->first();
+        return AircraftConfigurationAssignment::query()
+            ->with(['variant', 'configuration.variant'])
+            ->where('aircraft_id', $aircraft->id)
+            ->where('active', true)
+            ->where(function ($query) use ($at) {
+                $query->whereNull('valid_from')->orWhereDate('valid_from', '<=', $at->toDateString());
+            })
+            ->where(function ($query) use ($at) {
+                $query->whereNull('valid_until')->orWhereDate('valid_until', '>=', $at->toDateString());
+            })
+            ->orderByRaw('CASE WHEN valid_from IS NULL THEN 1 ELSE 0 END')
+            ->orderByDesc('valid_from')
+            ->orderByDesc('id')
+            ->first();
     }
 
-    private function aircraftTypeDefaults(Aircraft $aircraft): array
+    private function typeProfile(Aircraft $aircraft, ?string $preferredTypeKey = null): ?AircraftTypeProfile
     {
-        $typeKey = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string) (
-            $aircraft->icao ?: $aircraft->subfleet?->type ?: $aircraft->subfleet?->simbrief_type ?: $aircraft->subfleet?->name
-        )));
-        $icao = strtoupper((string) ($aircraft->icao ?: $aircraft->subfleet?->type ?: $aircraft->subfleet?->simbrief_type ?: $typeKey));
+        if (!Schema::hasTable('promethee_aircraft_type_profiles')) {
+            return null;
+        }
 
-        return [
-            'aircraft_type_key' => $typeKey,
-            'icao_type' => $icao,
-            'max_pax' => $this->nullableInt($aircraft->max_pax ?? $aircraft->subfleet?->max_pax ?? null),
-            'seat_configuration' => null,
-            'oew' => $this->nullableInt($aircraft->oew ?? null),
-            'mzfw' => $this->nullableInt($aircraft->mzfw ?? null),
-            'mtow' => $this->nullableInt($aircraft->mtow ?? null),
-            'mlw' => $this->nullableInt($aircraft->mlw ?? null),
-            'max_fuel' => $this->nullableInt($aircraft->max_fuel ?? null),
-            'max_cargo' => $this->nullableInt($aircraft->max_cargo ?? null),
-            'engine_manufacturer' => null,
-            'engine_model' => null,
-            'engine_variant' => null,
-            'engine_count' => null,
-            'engine_simbrief_label' => null,
-            'cruise_speed' => null,
-            'cruise_mach' => null,
-            'ceiling' => null,
-            'range_nm' => null,
-            'equipment' => null,
-            'transponder' => null,
-            'pbn' => null,
-            'simbrief_strategy' => filled($aircraft->simbrief_type ?? null) ? 'type' : null,
-            'simbrief_type' => $aircraft->simbrief_type ?? $aircraft->subfleet?->simbrief_type ?? $icao,
-            'simbrief_internal_id' => null,
-            'simbrief_proxy_type' => null,
-            'fuel_factor' => null,
-            'climb_profile' => null,
-            'cruise_profile' => null,
-            'descent_profile' => null,
+        $candidates = collect([
+            $this->normaliseKey($preferredTypeKey),
+            $this->normaliseKey($aircraft->icao),
+            $this->normaliseKey($aircraft->subfleet?->type),
+            $this->normaliseKey($aircraft->subfleet?->simbrief_type),
+            $this->normaliseKey($aircraft->name),
+            $this->normaliseKey($aircraft->subfleet?->name),
+        ])->filter()->unique()->values()->all();
+
+        if ($candidates === []) return null;
+
+        $profiles = AircraftTypeProfile::query()
+            ->whereIn('type_key', $candidates)
+            ->get()
+            ->keyBy('type_key');
+
+        foreach ($candidates as $candidate) {
+            if ($profiles->has($candidate)) return $profiles->get($candidate);
+        }
+
+        return null;
+    }
+
+    private function coreData(Aircraft $aircraft): array
+    {
+        return array_filter([
+            'icao_type' => $this->normaliseKey($aircraft->icao ?: $aircraft->subfleet?->type),
+            'oew' => $this->number($aircraft->dow),
+            'mzfw' => $this->number($aircraft->zfw),
+            'mtow' => $this->number($aircraft->mtow),
+            'mlw' => $this->number($aircraft->mlw),
+            'max_fuel' => $this->number($aircraft->subfleet?->fuel_capacity),
+            'max_cargo' => $this->number($aircraft->subfleet?->cargo_capacity),
+        ], fn ($value) => $value !== null && $value !== '');
+    }
+
+    private function resolveSimBrief(
+        Aircraft $aircraft,
+        ?AircraftTypeProfile $typeProfile,
+        ?AircraftHistoricalVariant $variant,
+        ?AirframeConfiguration $configuration,
+        array $registrationOverrides,
+        array $effective
+    ): array {
+        $state = [
+            'strategy' => 'native',
+            'type' => $this->firstFilled([
+                $aircraft->simbrief_type,
+                $aircraft->subfleet?->simbrief_type,
+                $aircraft->icao,
+                $aircraft->subfleet?->type,
+            ]),
+            'internal_id' => null,
+            'proxy_type' => null,
+            'source' => 'phpvms',
         ];
-    }
 
-    private function applyRow(array &$resolved, array &$provenance, ?object $row, string $source): void
-    {
-        if (!$row) return;
-        foreach (self::OVERRIDABLE as $field) {
-            if (property_exists($row, $field) && $row->{$field} !== null && $row->{$field} !== '') {
-                $resolved[$field] = $row->{$field};
-                $provenance[$field] = $source;
+        foreach ([
+            ['aircraft_type', $typeProfile],
+            ['historical_variant', $variant],
+            ['airframe_configuration', $configuration],
+        ] as [$source, $model]) {
+            if (!$model) continue;
+
+            foreach ([
+                'strategy' => 'simbrief_strategy',
+                'type' => 'simbrief_type',
+                'internal_id' => 'simbrief_internal_id',
+                'proxy_type' => 'simbrief_proxy_type',
+            ] as $target => $column) {
+                if (filled($model->{$column})) {
+                    $state[$target] = trim((string) $model->{$column});
+                    $state['source'] = $source;
+                }
             }
         }
-        $this->applyJsonOverrides($resolved, $provenance, $row->overrides ?? null, $source);
-    }
 
-    private function applyJsonOverrides(array &$resolved, array &$provenance, mixed $json, string $source): void
-    {
-        if (!$json) return;
-        $values = is_array($json) ? $json : json_decode((string) $json, true);
-        if (!is_array($values)) return;
-
-        foreach ($values as $field => $value) {
-            if (!in_array($field, self::OVERRIDABLE, true) || $value === null || $value === '') continue;
-            $resolved[$field] = $value;
-            $provenance[$field] = $source;
+        $override = is_array($registrationOverrides['simbrief'] ?? null)
+            ? $registrationOverrides['simbrief']
+            : [];
+        foreach (['strategy', 'type', 'internal_id', 'proxy_type'] as $key) {
+            if (filled($override[$key] ?? null)) {
+                $state[$key] = trim((string) $override[$key]);
+                $state['source'] = 'registration_override';
+            }
         }
+
+        $strategy = strtolower((string) ($state['strategy'] ?: 'native'));
+        if (!in_array($strategy, ['native', 'internal_id', 'proxy'], true)) {
+            $strategy = 'native';
+        }
+
+        $value = match ($strategy) {
+            'proxy' => $state['proxy_type'] ?: $state['type'],
+            'internal_id' => $state['internal_id'] ?: $state['type'],
+            default => $state['internal_id'] ?: $state['type'],
+        };
+
+        $acdata = $this->simBriefAircraftData($aircraft, $variant, $effective, $strategy);
+
+        return [
+            'strategy' => $strategy,
+            'type' => $this->upper($state['type']),
+            'internal_id' => $state['internal_id'] ?: null,
+            'proxy_type' => $this->upper($state['proxy_type']),
+            'base_type' => $strategy === 'proxy'
+                ? $this->upper($state['proxy_type'] ?: $state['type'])
+                : $this->upper($state['type']),
+            'value' => $value ? strtoupper((string) $value) : null,
+            'source' => $state['source'],
+            'actual_aircraft' => $this->normaliseKey($aircraft->icao ?: $aircraft->subfleet?->type),
+            'actual_variant' => $variant?->code,
+            'acdata' => $acdata,
+        ];
     }
 
-    private function simulatorProfiles(?int $variantId, ?int $configurationId): array
-    {
-        if ((!$variantId && !$configurationId) || !Schema::hasTable('promethee_aircraft_simulator_profiles')) return [];
+    /**
+     * Build SimBrief's documented acdata payload. SimBrief requires all weight
+     * values in thousands of pounds regardless of the OFP display unit, so we
+     * only transmit weights when sb-airframe explicitly records their unit.
+     */
+    private function simBriefAircraftData(
+        Aircraft $aircraft,
+        ?AircraftHistoricalVariant $variant,
+        array $effective,
+        string $strategy
+    ): array {
+        $data = [];
+        $weightUnit = strtolower((string) ($effective['weight_unit'] ?? ''));
 
-        return DB::table('promethee_aircraft_simulator_profiles')
+        if (isset($effective['max_pax']) && (int) $effective['max_pax'] >= 0) {
+            $data['maxpax'] = (string) (int) $effective['max_pax'];
+        }
+
+        foreach ([
+            'oew' => 'oew',
+            'mzfw' => 'mzfw',
+            'mtow' => 'mtow',
+            'mlw' => 'mlw',
+            'max_fuel' => 'maxfuel',
+        ] as $source => $target) {
+            $converted = $this->toThousandsOfPounds($effective[$source] ?? null, $weightUnit);
+            if ($converted !== null) $data[$target] = $converted;
+        }
+
+        $category = strtoupper(trim((string) ($effective['weight_category'] ?? '')));
+        $equipment = trim((string) ($effective['equipment'] ?? ''));
+        $transponder = trim((string) ($effective['transponder'] ?? ''));
+        if ($category !== '' && $equipment !== '' && $transponder !== '') {
+            $data['cat'] = $category;
+            $data['equip'] = strtoupper($equipment);
+            $data['transponder'] = strtoupper($transponder);
+        }
+
+        if (filled($effective['pbn'] ?? null)) {
+            $pbn = strtoupper(trim((string) $effective['pbn']));
+            $data['pbn'] = str_starts_with($pbn, 'PBN/') ? $pbn : 'PBN/'.$pbn;
+        }
+
+        if (filled($aircraft->hex_code)) {
+            $data['hexcode'] = strtoupper((string) $aircraft->hex_code);
+        }
+
+        // For unsupported types, SimBrief explicitly supports spoofing the real
+        // identity on top of a similar proxy performance model.
+        if ($strategy === 'proxy') {
+            $actualIcao = $this->normaliseKey($aircraft->icao ?: $aircraft->subfleet?->type);
+            if ($actualIcao) $data['icao'] = substr($actualIcao, 0, 4);
+
+            $name = $variant?->short_name ?: $variant?->name ?: $aircraft->name;
+            if (filled($name)) $data['name'] = substr(trim((string) $name), 0, 12);
+
+            $engine = is_array($effective['engine'] ?? null) ? $effective['engine'] : [];
+            $engineLabel = $engine['simbrief_label'] ?? null;
+            if (!filled($engineLabel)) {
+                $engineLabel = trim(implode(' ', array_filter([
+                    $engine['model'] ?? null,
+                    $engine['variant'] ?? null,
+                ])));
+            }
+            if (filled($engineLabel)) $data['engines'] = substr((string) $engineLabel, 0, 12);
+        }
+
+        return $data;
+    }
+
+    private function toThousandsOfPounds(mixed $value, string $unit): ?float
+    {
+        if ($value === null || $value === '' || !is_numeric($value)) return null;
+
+        $weight = (float) $value;
+        $pounds = match ($unit) {
+            'kg', 'kgs' => $weight * 2.2046226218,
+            'lb', 'lbs' => $weight,
+            'klb' => $weight * 1000,
+            default => null,
+        };
+
+        return $pounds === null ? null : round($pounds / 1000, 3);
+    }
+
+    private function simulatorProfiles(
+        ?AircraftHistoricalVariant $variant,
+        ?AirframeConfiguration $configuration
+    ): array {
+        if (!$variant || !Schema::hasTable('promethee_airframe_simulator_profiles')) {
+            return [];
+        }
+
+        return AirframeSimulatorProfile::query()
+            ->with('simbriefAirframe')
+            ->where('variant_id', $variant->id)
             ->where('active', true)
-            ->where(function ($q) use ($variantId, $configurationId) {
-                if ($configurationId) $q->orWhere('configuration_id', $configurationId);
-                if ($variantId) $q->orWhere('variant_id', $variantId);
+            ->where(function ($query) use ($configuration) {
+                $query->whereNull('configuration_id');
+                if ($configuration) {
+                    $query->orWhere('configuration_id', $configuration->id);
+                }
             })
+            ->orderByRaw('configuration_id IS NULL')
             ->orderBy('simulator')
             ->orderBy('addon_name')
             ->get()
-            ->map(fn ($row) => [
-                'id' => $row->id,
-                'simulator' => $row->simulator,
-                'addon_name' => $row->addon_name,
-                'addon_version' => $row->addon_version,
-                'aircraft_identifier' => $row->aircraft_identifier,
-                'simbrief_airframe' => $row->simbrief_airframe,
-                'telemetry_profile' => $row->telemetry_profile,
-                'scope' => $row->configuration_id ? 'configuration' : 'variant',
+            ->unique(fn ($profile) => strtolower($profile->simulator.'|'.$profile->addon_name))
+            ->map(fn ($profile) => [
+                'id' => $profile->id,
+                'simulator' => $profile->simulator,
+                'addon_name' => $profile->addon_name,
+                'addon_version' => $profile->addon_version,
+                'aircraft_identifier' => $profile->aircraft_identifier,
+                'telemetry_profile' => $profile->telemetry_profile,
+                'simbrief_airframe_id' => $profile->simbrief_airframe_id,
+                'simbrief_type' => $profile->simbriefAirframe?->airframe_id
+                    ?: $profile->simbriefAirframe?->icao,
             ])
             ->values()
             ->all();
     }
 
-    private function simbriefProfile(array $resolved): array
+    private function modifications(
+        Aircraft $aircraft,
+        ?AircraftHistoricalVariant $variant,
+        ?AirframeConfiguration $configuration,
+        CarbonInterface $at
+    ): array {
+        if (!Schema::hasTable('promethee_aircraft_modifications')) return [];
+
+        return AircraftModification::query()
+            ->where(function ($query) use ($aircraft, $variant, $configuration) {
+                $query->where('aircraft_id', $aircraft->id);
+                if ($variant) $query->orWhere('variant_id', $variant->id);
+                if ($configuration) $query->orWhere('configuration_id', $configuration->id);
+            })
+            ->where(function ($query) use ($at) {
+                $query->whereNull('effective_from')->orWhereDate('effective_from', '<=', $at->toDateString());
+            })
+            ->where(function ($query) use ($at) {
+                $query->whereNull('effective_until')->orWhereDate('effective_until', '>=', $at->toDateString());
+            })
+            ->orderBy('effective_from')
+            ->get()
+            ->map(fn ($modification) => [
+                'id' => $modification->id,
+                'name' => $modification->name,
+                'category' => $modification->category,
+                'description' => $modification->description,
+                'effective_from' => optional($modification->effective_from)?->toDateString(),
+                'effective_until' => optional($modification->effective_until)?->toDateString(),
+                'previous_value' => $modification->previous_value,
+                'new_value' => $modification->new_value,
+                'source' => $modification->source,
+                'source_url' => $modification->source_url,
+            ])
+            ->all();
+    }
+
+    private function profileDto(?AircraftTypeProfile $profile): ?array
     {
-        $strategy = $resolved['simbrief_strategy'] ?: (
-            filled($resolved['simbrief_internal_id']) ? 'internal_id' : (
-                filled($resolved['simbrief_proxy_type']) ? 'proxy' : 'type'
-            )
-        );
+        if (!$profile) return null;
 
         return [
-            'strategy' => $strategy,
-            'type' => $resolved['simbrief_type'] ?: $resolved['icao_type'],
-            'internal_id' => $resolved['simbrief_internal_id'],
-            'proxy_type' => $resolved['simbrief_proxy_type'],
-            'effective_type' => match ($strategy) {
-                'internal_id' => $resolved['simbrief_internal_id'] ?: $resolved['simbrief_type'] ?: $resolved['icao_type'],
-                'proxy' => $resolved['simbrief_proxy_type'] ?: $resolved['simbrief_type'] ?: $resolved['icao_type'],
-                default => $resolved['simbrief_type'] ?: $resolved['icao_type'],
-            },
-            'fuel_factor' => $resolved['fuel_factor'],
-            'climb_profile' => $resolved['climb_profile'],
-            'cruise_profile' => $resolved['cruise_profile'],
-            'descent_profile' => $resolved['descent_profile'],
+            'id' => $profile->id,
+            'type_key' => $profile->type_key,
+            'name' => $profile->name,
+            'historical_confidence' => $profile->historical_confidence,
         ];
     }
 
-    private function validateResolved(array $resolved): void
+    private function variantDto(?AircraftHistoricalVariant $variant): ?array
     {
-        foreach (['max_pax','oew','mzfw','mtow','mlw','max_fuel','max_cargo'] as $field) {
-            if (isset($resolved[$field]) && $resolved[$field] !== null && (float) $resolved[$field] < 0) {
-                throw new \DomainException($field.' ne peut pas être négatif.');
-            }
-        }
-        $mtow = $resolved['mtow'] ?? null;
-        if ($mtow) {
-            foreach (['oew','mzfw','mlw'] as $field) {
-                if (($resolved[$field] ?? null) && (float) $resolved[$field] > (float) $mtow) {
-                    throw new \DomainException(strtoupper($field).' ne peut pas être supérieur au MTOW.');
+        if (!$variant) return null;
+
+        return [
+            'id' => $variant->id,
+            'code' => $variant->code,
+            'name' => $variant->name,
+            'short_name' => $variant->short_name,
+            'icao_type' => $variant->icao_type,
+            'manufacturer_variant' => $variant->manufacturer_variant,
+            'operator_variant' => $variant->operator_variant,
+            'valid_from' => optional($variant->valid_from)?->toDateString(),
+            'valid_until' => optional($variant->valid_until)?->toDateString(),
+            'historical_confidence' => $variant->historical_confidence,
+        ];
+    }
+
+    private function configurationDto(?AirframeConfiguration $configuration, array $effective): ?array
+    {
+        if (!$configuration) return null;
+
+        return [
+            'id' => $configuration->id,
+            'code' => $configuration->code,
+            'name' => $configuration->name,
+            'kind' => $configuration->configuration_kind,
+            'phase' => $configuration->phase,
+            'valid_from' => optional($configuration->valid_from)?->toDateString(),
+            'valid_until' => optional($configuration->valid_until)?->toDateString(),
+            'historical_confidence' => $configuration->historical_confidence,
+            'max_pax' => $effective['max_pax'] ?? null,
+            'seat_configuration' => $effective['seat_configuration'] ?? null,
+            'oew' => $effective['oew'] ?? null,
+            'mzfw' => $effective['mzfw'] ?? null,
+            'mtow' => $effective['mtow'] ?? null,
+            'mlw' => $effective['mlw'] ?? null,
+            'max_fuel' => $effective['max_fuel'] ?? null,
+            'max_cargo' => $effective['max_cargo'] ?? null,
+            'engine' => $effective['engine'] ?? null,
+        ];
+    }
+
+    private function merge(array ...$layers): array
+    {
+        $result = [];
+
+        foreach ($layers as $layer) {
+            foreach ($layer as $key => $value) {
+                if ($value === null || $value === '') continue;
+
+                if (is_array($value) && is_array($result[$key] ?? null)) {
+                    $result[$key] = $this->merge($result[$key], $value);
+                } else {
+                    $result[$key] = $value;
                 }
             }
         }
+
+        return $result;
     }
 
-    private function nullableInt(mixed $value): ?int
+    private function date(CarbonInterface|string|null $date): CarbonInterface
     {
-        return is_numeric($value) ? (int) $value : null;
+        if ($date instanceof CarbonInterface) return $date;
+        if (filled($date)) return Carbon::parse((string) $date)->startOfDay();
+
+        return now()->startOfDay();
+    }
+
+    private function typeKey(Aircraft $aircraft): string
+    {
+        return $this->normaliseKey(
+            $aircraft->icao
+                ?: $aircraft->subfleet?->type
+                ?: $aircraft->subfleet?->name
+                ?: $aircraft->name
+        ) ?: 'AIRCRAFT';
+    }
+
+    private function normaliseKey(mixed $value): ?string
+    {
+        $value = strtoupper(trim((string) $value));
+        if ($value === '') return null;
+
+        return preg_replace('/[^A-Z0-9]+/', '', $value) ?: null;
+    }
+
+    private function upper(mixed $value): ?string
+    {
+        $value = trim((string) $value);
+        return $value === '' ? null : strtoupper($value);
+    }
+
+    private function firstFilled(array $values): ?string
+    {
+        foreach ($values as $value) {
+            if (filled($value)) return trim((string) $value);
+        }
+        return null;
+    }
+
+    private function number(mixed $value): int|float|null
+    {
+        if ($value === null || $value === '') return null;
+        if (is_numeric($value)) return $value + 0;
+        if (is_object($value) && method_exists($value, '__toString') && is_numeric((string) $value)) {
+            return ((string) $value) + 0;
+        }
+
+        return null;
     }
 }
