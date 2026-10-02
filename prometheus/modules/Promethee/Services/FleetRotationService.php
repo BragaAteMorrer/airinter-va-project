@@ -23,6 +23,7 @@ class FleetRotationService
                 'regional.rotation_min_idle_hours',
                 'regional.rotation_cooldown_days',
                 'regional.rotation_maintenance_bias_hours',
+                'regional.rotation_airframe_bias_percent',
                 'regional.rotation_last_run_at',
             ])->pluck('value', 'key')
             : collect();
@@ -39,6 +40,7 @@ class FleetRotationService
             'min_idle_hours' => max(0, min(720, (int) ($values['regional.rotation_min_idle_hours'] ?? 8))),
             'cooldown_days' => max(0, min(365, (int) ($values['regional.rotation_cooldown_days'] ?? 3))),
             'maintenance_bias_hours' => max(0, min(5000, (int) ($values['regional.rotation_maintenance_bias_hours'] ?? 50))),
+            'airframe_bias_percent' => max(0, min(100, (float) ($values['regional.rotation_airframe_bias_percent'] ?? 10))),
             'last_run_at' => trim((string) ($values['regional.rotation_last_run_at'] ?? '')) ?: null,
         ];
     }
@@ -46,21 +48,21 @@ class FleetRotationService
     public function rotate(bool $force = false): array
     {
         if (!Schema::hasTable('promethee_aircraft_bases') || !Schema::hasTable('promethee_fleet_rotation_log')) {
-            return ['pairs' => 0, 'aircraft' => 0, 'maintenance_priority' => 0, 'reason' => 'SCHEMA_NOT_READY'];
+            return ['pairs' => 0, 'aircraft' => 0, 'maintenance_priority' => 0, 'airframe_maintenance_priority' => 0, 'reason' => 'SCHEMA_NOT_READY'];
         }
 
         $settings = $this->settings();
         if (!$force && !$settings['enabled']) {
-            return ['pairs' => 0, 'aircraft' => 0, 'maintenance_priority' => 0, 'reason' => 'DISABLED'];
+            return ['pairs' => 0, 'aircraft' => 0, 'maintenance_priority' => 0, 'airframe_maintenance_priority' => 0, 'reason' => 'DISABLED'];
         }
         if (!$force && !$this->isDue($settings)) {
-            return ['pairs' => 0, 'aircraft' => 0, 'maintenance_priority' => 0, 'reason' => 'NOT_DUE'];
+            return ['pairs' => 0, 'aircraft' => 0, 'maintenance_priority' => 0, 'airframe_maintenance_priority' => 0, 'reason' => 'NOT_DUE'];
         }
 
         $candidates = $this->eligibleAircraft($settings);
         if ($candidates->count() < 2 || $settings['percent'] <= 0) {
             $this->markRun();
-            return ['pairs' => 0, 'aircraft' => 0, 'maintenance_priority' => 0, 'reason' => 'NO_CANDIDATES'];
+            return ['pairs' => 0, 'aircraft' => 0, 'maintenance_priority' => 0, 'airframe_maintenance_priority' => 0, 'reason' => 'NO_CANDIDATES'];
         }
 
         $maxAircraft = min(
@@ -70,15 +72,24 @@ class FleetRotationService
         $pairBudget = intdiv($maxAircraft, 2);
         if ($pairBudget < 1) {
             $this->markRun();
-            return ['pairs' => 0, 'aircraft' => 0, 'maintenance_priority' => 0, 'reason' => 'NO_BUDGET'];
+            return ['pairs' => 0, 'aircraft' => 0, 'maintenance_priority' => 0, 'airframe_maintenance_priority' => 0, 'reason' => 'NO_BUDGET'];
         }
 
         $used = [];
         $pairs = 0;
         $maintenancePriority = 0;
+        $airframeMaintenancePriority = 0;
         $overhaulBases = Schema::hasColumn('promethee_operational_bases', 'engine_overhaul')
             ? DB::table('promethee_operational_bases')->where('active', true)->where('engine_overhaul', true)->pluck('airport_id')->map(fn ($id) => strtoupper((string) $id))->all()
             : ['LFPO', 'LFPG'];
+
+        $checkBases = [];
+        foreach (['a', 'b', 'c'] as $check) {
+            $column = 'check_'.$check;
+            $checkBases[$check] = Schema::hasTable('promethee_operational_bases') && Schema::hasColumn('promethee_operational_bases', $column)
+                ? DB::table('promethee_operational_bases')->where('active', true)->where($column, true)->pluck('airport_id')->map(fn ($id) => strtoupper((string) $id))->all()
+                : [];
+        }
 
         $groups = $candidates->groupBy('subfleet_id');
 
@@ -99,7 +110,8 @@ class FleetRotationService
                         && !isset($used[$candidate->aircraft_id])
                         && $candidate->base !== $priority->base
                         && in_array($candidate->base, $overhaulBases, true)
-                        && !$candidate->engine_priority;
+                        && !$candidate->engine_priority
+                        && !$candidate->airframe_check;
                 });
 
                 if ($partner && $this->swap($priority, $partner, 'engine_maintenance_bias')) {
@@ -111,17 +123,51 @@ class FleetRotationService
             }
         }
 
-        // Then rotate the oldest eligible airframes between different bases.
+        // Then preserve the same base quotas while steering airframes nearing
+        // an A/B/C limit toward a station capable of the required check.
+        foreach ($groups as $group) {
+            if ($pairs >= $pairBudget) {
+                break;
+            }
+
+            foreach ($group->filter(fn ($candidate) => $candidate->airframe_check !== null) as $priority) {
+                if ($pairs >= $pairBudget || isset($used[$priority->aircraft_id])) {
+                    continue;
+                }
+
+                $capableBases = $checkBases[$priority->airframe_check] ?? [];
+                if (!$capableBases || in_array($priority->base, $capableBases, true)) {
+                    continue;
+                }
+
+                $partner = $group->first(function ($candidate) use ($priority, $used, $capableBases) {
+                    return $candidate->aircraft_id !== $priority->aircraft_id
+                        && !isset($used[$candidate->aircraft_id])
+                        && $candidate->base !== $priority->base
+                        && in_array($candidate->base, $capableBases, true)
+                        && !$candidate->engine_priority
+                        && !$candidate->airframe_check;
+                });
+
+                if ($partner && $this->swap($priority, $partner, 'airframe_maintenance_bias_'.$priority->airframe_check)) {
+                    $used[$priority->aircraft_id] = true;
+                    $used[$partner->aircraft_id] = true;
+                    $pairs++;
+                    $airframeMaintenancePriority++;
+                }
+            }
+        }
+
+        // Finally rotate the oldest eligible airframes between different bases.
         foreach ($groups as $group) {
             if ($pairs >= $pairBudget) {
                 break;
             }
 
             $available = $group
-                // An aircraft nearing engine TBO may only move toward an
-                // overhaul-capable site in the priority pass above. Never send
-                // it away again as part of a routine overnight permutation.
-                ->filter(fn ($candidate) => !isset($used[$candidate->aircraft_id]) && !$candidate->engine_priority)
+                // Aircraft nearing engine TBO or an A/B/C limit may only move
+                // toward maintenance in the priority passes above.
+                ->filter(fn ($candidate) => !isset($used[$candidate->aircraft_id]) && !$candidate->engine_priority && !$candidate->airframe_check)
                 ->sortBy(fn ($candidate) => $candidate->last_rotated_at ?: '1970-01-01 00:00:00')
                 ->values();
 
@@ -150,6 +196,7 @@ class FleetRotationService
             'pairs' => $pairs,
             'aircraft' => $pairs * 2,
             'maintenance_priority' => $maintenancePriority,
+            'airframe_maintenance_priority' => $airframeMaintenancePriority,
             'reason' => $pairs > 0 ? 'ROTATED' : 'NO_COMPATIBLE_PAIR',
         ];
     }
@@ -166,10 +213,16 @@ class FleetRotationService
         $missionAircraft = Schema::hasTable('promethee_missions')
             ? DB::table('promethee_missions')->where('active', true)->whereNotNull('aircraft_id')->pluck('aircraft_id')->map(fn ($id) => (int) $id)->flip()
             : collect();
-        $maintenanceAircraft = Schema::hasTable('disposable_maintenance')
+        $legacyMaintenanceAircraft = Schema::hasTable('disposable_maintenance')
             ? DB::table('disposable_maintenance')->whereNotNull('act_note')->pluck('aircraft_id')->map(fn ($id) => (int) $id)->flip()
             : collect();
+        $airframeMaintenanceAircraft = Schema::hasTable('promethee_airframe_maintenance')
+            ? DB::table('promethee_airframe_maintenance')->whereNotNull('active_check')->pluck('aircraft_id')->map(fn ($id) => (int) $id)->flip()
+            : collect();
         $enginePriority = $this->enginePriorityAircraft((float) $settings['maintenance_bias_hours']);
+        $airframePriority = Schema::hasTable('promethee_airframe_maintenance')
+            ? app(AirframeMaintenanceService::class)->rotationPriorities((float) $settings['airframe_bias_percent'])
+            : collect();
 
         $idleBefore = now()->subHours($settings['min_idle_hours']);
         $rotatedBefore = now()->subDays($settings['cooldown_days']);
@@ -180,7 +233,7 @@ class FleetRotationService
             ->whereNotNull('subfleet_id')
             ->orderBy('id')
             ->get(['id', 'subfleet_id', 'registration', 'airport_id', 'hub_id', 'landing_time', 'status', 'state'])
-            ->map(function (Aircraft $aircraft) use ($assignments, $bidAircraft, $busyPireps, $missionAircraft, $maintenanceAircraft, $enginePriority, $idleBefore, $rotatedBefore, $settings) {
+            ->map(function (Aircraft $aircraft) use ($assignments, $bidAircraft, $busyPireps, $missionAircraft, $legacyMaintenanceAircraft, $airframeMaintenanceAircraft, $enginePriority, $airframePriority, $idleBefore, $rotatedBefore, $settings) {
                 $assignment = $assignments->get($aircraft->id);
                 if (!$assignment) {
                     return null;
@@ -194,7 +247,13 @@ class FleetRotationService
                 if (!empty($assignment->rotation_locked) || $assignment->away_since || $assignment->repatriation_mission_id) {
                     return null;
                 }
-                if ($bidAircraft->has((int) $aircraft->id) || $busyPireps->has((int) $aircraft->id) || $missionAircraft->has((int) $aircraft->id) || $maintenanceAircraft->has((int) $aircraft->id)) {
+                if (
+                    $bidAircraft->has((int) $aircraft->id)
+                    || $busyPireps->has((int) $aircraft->id)
+                    || $missionAircraft->has((int) $aircraft->id)
+                    || $legacyMaintenanceAircraft->has((int) $aircraft->id)
+                    || $airframeMaintenanceAircraft->has((int) $aircraft->id)
+                ) {
                     return null;
                 }
                 if ($aircraft->landing_time && CarbonImmutable::parse($aircraft->landing_time)->greaterThan($idleBefore)) {
@@ -211,6 +270,7 @@ class FleetRotationService
                     'base' => $base,
                     'last_rotated_at' => $assignment->last_rotated_at,
                     'engine_priority' => $enginePriority->has((int) $aircraft->id),
+                    'airframe_check' => $airframePriority->get((int) $aircraft->id)?->check,
                 ];
             })
             ->filter()

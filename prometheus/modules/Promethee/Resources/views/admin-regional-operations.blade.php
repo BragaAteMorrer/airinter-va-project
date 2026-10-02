@@ -86,6 +86,10 @@
       <input type="number" name="maintenance_bias_hours" min="0" max="5000" value="{{ $rotationSettings['maintenance_bias_hours'] }}" required>
       <small>heures TBO restantes : l’appareil est orienté vers un site capable de révision</small>
     </label>
+    <label>Priorité maintenance cellule
+      <input type="number" name="airframe_bias_percent" min="0" max="100" step="0.1" value="{{ $rotationSettings['airframe_bias_percent'] }}" required>
+      <small>% de potentiel restant : l’appareil est orienté vers une base capable du A/B/C Check requis</small>
+    </label>
     <button>Enregistrer la rotation</button>
   </form>
   <p class="hint">Dernière exécution : {{ $rotationSettings['last_run_at'] ? \Carbon\Carbon::parse($rotationSettings['last_run_at'])->locale('fr')->diffForHumans() : 'jamais' }}. Une rotation ne crée jamais de mission de rapatriement : position et base attitrée sont permutées ensemble.</p>
@@ -234,7 +238,15 @@
         <td><strong>{{ $rotation->first_registration }}</strong></td>
         <td><strong>{{ $rotation->second_registration }}</strong></td>
         <td>{{ $rotation->first_from_base }} ⇄ {{ $rotation->second_from_base }}</td>
-        <td>{{ $rotation->reason === 'engine_maintenance_bias' ? 'Approche TBO moteur' : 'Rotation exploitation' }}</td>
+        <td>
+          @if($rotation->reason === 'engine_maintenance_bias')
+            Approche TBO moteur
+          @elseif(str_starts_with($rotation->reason, 'airframe_maintenance_bias_'))
+            Approche {{ strtoupper(substr($rotation->reason, -1)) }} Check cellule
+          @else
+            Rotation exploitation
+          @endif
+        </td>
       </tr>
     @empty
       <tr><td colspan="5">Aucune rotation enregistrée.</td></tr>
