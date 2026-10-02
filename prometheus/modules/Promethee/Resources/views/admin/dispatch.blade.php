@@ -91,8 +91,33 @@
     const datalinkAckBase = @json(url('/admin/promethee/datalink/messages'));
     const canDispatchActions = @json((bool) ($canDispatchActions ?? false));
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const storageKeys = {
+        filter: 'promethee-dispatch-filter',
+        selected: 'promethee-dispatch-selected',
+        tab: 'promethee-dispatch-tab'
+    };
+    const stored = key => {
+        try { return localStorage.getItem(key); } catch (_) { return null; }
+    };
+    const persist = (key, value) => {
+        try {
+            if (value === null || value === undefined || value === '') localStorage.removeItem(key);
+            else localStorage.setItem(key, String(value));
+        } catch (_) {}
+    };
+    const allowedTabs = ['overview','aircraft','ofp','route','weather','track','fdm','sop','messages','timeline'];
+    const storedTab = stored(storageKeys.tab);
 
-    const state = { operations: [], selected: null, detail: null, tab: 'overview', timer: null, map: null, layer: null, trackLayer: null };
+    const state = {
+        operations: [],
+        selected: stored(storageKeys.selected),
+        detail: null,
+        tab: allowedTabs.includes(storedTab) ? storedTab : 'overview',
+        timer: null,
+        map: null,
+        layer: null,
+        trackLayer: null
+    };
 
     const rows = document.querySelector('#dispatch-rows');
     const updated = document.querySelector('#dispatch-updated');
@@ -103,6 +128,13 @@
     const attentionQueue = document.querySelector('#dispatch-attention-queue');
     const attentionList = document.querySelector('#dispatch-attention-list');
     const attentionCount = document.querySelector('#dispatch-attention-count');
+    filter.value = stored(storageKeys.filter) || '';
+
+    const persistContext = () => {
+        persist(storageKeys.filter, filter.value.trim());
+        persist(storageKeys.selected, state.selected);
+        persist(storageKeys.tab, state.tab);
+    };
 
     const esc = value => String(value ?? '—').replace(/[&<>"']/g, char => ({
         '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;'
@@ -295,7 +327,16 @@
 
             if (state.selected) {
                 const stillExists = state.operations.some(op => op.operation_id === state.selected);
-                if (stillExists) await refreshDetail(false);
+                if (stillExists) {
+                    await refreshDetail(false);
+                } else {
+                    state.selected = null;
+                    state.detail = null;
+                    persistContext();
+                    workspace.hidden = true;
+                    empty.hidden = false;
+                    state.trackLayer?.clearLayers();
+                }
             }
         } catch (error) {
             updated.textContent = 'Flux OCC indisponible';
@@ -303,9 +344,10 @@
         }
     }
 
-    async function selectOperation(operationId) {
+    async function selectOperation(operationId, preserveTab = false) {
         state.selected = operationId;
-        state.tab = 'overview';
+        if (!preserveTab) state.tab = 'overview';
+        persistContext();
         renderBoard();
         await refreshDetail(true);
     }
@@ -517,6 +559,7 @@
         const form = document.querySelector('#dispatch-compose');
         if (!form) {
             state.tab = 'messages';
+            persistContext();
             renderTab();
             return setTimeout(() => quickTemplate(kind), 0);
         }
@@ -591,15 +634,28 @@
     document.querySelectorAll('[data-dispatch-tab]').forEach(button => {
         button.addEventListener('click', () => {
             state.tab = button.dataset.dispatchTab;
+            persistContext();
             renderTab();
         });
     });
     document.querySelector('#dispatch-refresh').addEventListener('click', refreshBoard);
-    filter.addEventListener('input', renderBoard);
+    filter.addEventListener('input', () => {
+        persistContext();
+        renderBoard();
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) refreshBoard();
+    });
+    window.addEventListener('pagehide', () => {
+        if (state.timer) clearInterval(state.timer);
+    }, {once:true});
 
     initMap();
     refreshBoard();
-    state.timer = setInterval(refreshBoard, 5000);
+    state.timer = setInterval(() => {
+        if (!document.hidden) refreshBoard();
+    }, 5000);
 })();
 </script>
 @endsection

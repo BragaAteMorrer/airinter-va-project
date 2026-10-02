@@ -987,8 +987,21 @@ async function refreshOperations() {
   try {
     showMessage('#flightMessage', 'Chargement de vos réservations…');
     const simulator = simulatorCode();
-    renderOperations(await call('/api/v1/operations' + (simulator ? '?simulator=' + encodeURIComponent(simulator) : '')), 'reservations');
-    showMessage('#flightMessage', '');
+    const payload = unwrap(await call('/api/v1/operations' + (simulator ? '?simulator=' + encodeURIComponent(simulator) : '')));
+    const operations = Array.isArray(payload) ? payload : (payload?.operations || payload?.data || []);
+    renderOperations(operations, 'reservations');
+
+    const canAutoSelect = operations.length === 1
+      && !selectedOperation
+      && !lastStatus?.recoveryAvailable;
+    if (canAutoSelect) {
+      const flight = normalizeFlight(operations[0].flight || operations[0]);
+      showMessage('#flightMessage', 'Réservation active détectée : ' + displayFlightIdent(flight) + '. Chargement automatique…');
+      await selectOperation(operations[0]);
+      showMessage('#flightMessage', 'Réservation active chargée automatiquement.');
+    } else {
+      showMessage('#flightMessage', '');
+    }
   } catch (error) {
     showMessage('#flightMessage', friendlyError(error), true);
   }
