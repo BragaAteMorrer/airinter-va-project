@@ -261,6 +261,11 @@ final class LegacyPirepScoringService
             'FUEL_REFILLED' => $this->factOccurrences($facts, ['FUEL_ADDED'], fn ($f) => (float) ($f['value'] ?? 0) > 0),
             'SIMRATE_INCREASED' => $this->factOccurrences($facts, ['SIM_RATE'], fn ($f) => (float) ($f['value'] ?? 0) > $parameter),
             'SLEW_ACTIVATED' => $this->factOccurrences($facts, ['SLEW']),
+            'PAUSE_ACTIVATED' => $this->factOccurrences(
+                $facts,
+                ['PAUSE'],
+                fn ($fact) => (float) ($fact['value'] ?? 0) >= max(1, $delay)
+            ),
             'STABILIZED_APPROACH' => $this->factOccurrences($facts, ['APPROACH_1000_UNSTABLE','APPROACH_500_UNSTABLE']),
             'HARD_LANDING' => $this->hardLanding($pirep, $facts, $parameter),
             // Hermès does not currently expose trustworthy signals for these
