@@ -28,7 +28,8 @@ class SimBriefOperationResolver
         private readonly FareService $fares,
         private readonly DemandProfileService $demand,
         private readonly SimBriefCompanyKeyService $companyKey,
-        private readonly AircraftVariantService $aircraftVariants
+        private readonly AircraftVariantService $aircraftVariants,
+        private readonly AircraftConfigurationResolver $aircraftConfigurations
     ) {}
 
     public function resolveOperation(string $reference, User $user, array $overrides = []): array
@@ -79,11 +80,26 @@ class SimBriefOperationResolver
         $operationId = $operationId ?: 'legacy_'.$user->id.'_'.$flight->id.'_'.$aircraft->id;
         $this->assertEligible($flight, $aircraft, $user, $bid);
 
+        $technicalProfile = $this->aircraftConfigurations->resolveAircraft($aircraft);
         $type = $this->simbriefType($aircraft);
         $variant = $bid ? $this->aircraftVariants->selectedForBid($bid, $user) : null;
-        if ($variant && filled($variant['simbrief_type'] ?? null)) {
-            $type = ['value' => strtoupper((string) $variant['simbrief_type']), 'source' => 'operation_aircraft_variant'];
+
+        // Historical/VA sb-airframe data is authoritative whenever an admin
+        // configured it for this registration. The legacy add-on selector may
+        // still provide an airframe when no technical profile overrides phpVMS.
+        $technicalSimBrief = $technicalProfile['simbrief'] ?? [];
+        if (filled($technicalSimBrief['value'] ?? null)
+            && ($technicalSimBrief['source'] ?? 'phpvms') !== 'phpvms') {
+            $type = [
+                'value' => strtoupper((string) $technicalSimBrief['value']),
+                'source' => 'aircraft_configuration.'.($technicalSimBrief['source'] ?? 'resolved'),
+            ];
+        } elseif ($variant && filled($variant['simbrief_type'] ?? null)) {
+            $type = ['value' => strtoupper((string) $variant['simbrief_type']), 'source' => 'simulator_profile'];
+        } elseif (filled($technicalSimBrief['value'] ?? null)) {
+            $type = ['value' => strtoupper((string) $technicalSimBrief['value']), 'source' => 'phpvms'];
         }
+
         if (filled($overrides['simbrief_type'] ?? null)) {
             // SimBrief accepts either an ICAO type or an airframe Internal ID
             // in the "type" parameter (e.g. a curated Fenix profile).
@@ -207,7 +223,13 @@ class SimBriefOperationResolver
                 'simbrief_type_source' => $type['source'],
                 'type_key' => $this->demand->typeKey($aircraft),
                 'type_label' => $this->demand->typeLabel($aircraft),
+                // "variant" is retained for old Hermès builds: historically
+                // it meant the simulator/add-on profile, not the real variant.
                 'variant' => $variant,
+                'simulator_profile' => $variant,
+                'historical_variant' => $technicalProfile['variant'] ?? null,
+                'configuration' => $technicalProfile['configuration'] ?? null,
+                'resolved_profile' => $technicalProfile,
             ],
             'demand' => $profile,
             'fares' => $effectiveFares,
@@ -222,7 +244,10 @@ class SimBriefOperationResolver
                 'aircraft' => 'aircraft',
                 'subfleet' => 'subfleets',
                 'simbrief_type' => $type['source'],
-                'aircraft_variant' => $variant ? 'promethee_operation_aircraft_variants' : null,
+                'aircraft_variant' => $technicalProfile['variant'] ? 'promethee_aircraft_historical_variants' : null,
+                'aircraft_configuration' => $technicalProfile['configuration'] ? 'promethee_airframe_configurations' : null,
+                'registration_profile' => $technicalProfile['period'] ? 'promethee_aircraft_configuration_assignments' : null,
+                'simulator_profile' => $variant ? 'promethee_operation_aircraft_variants' : null,
                 'passengers' => 'DemandProfileService',
                 'fares' => 'FareService',
             ],
