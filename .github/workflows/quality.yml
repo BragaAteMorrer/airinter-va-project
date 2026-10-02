@@ -194,6 +194,8 @@ jobs:
           php -l modules/Promethee/Database/migrations/2026_09_11_000000_create_acars_access_tokens_table.php
           php -l tests/PrometheeDemandEconomyTest.php
           php -l modules/Promethee/routes.php
+          php -l app/Http/Controllers/Frontend/FlightController.php
+          for file in resources/lang/*/flights.php; do php -l "$file"; done
           php -l app/Http/Controllers/Auth/RegisterController.php
           php -l tests/RegistrationTest.php
           php -l tests/MinitelProjectionTest.php
