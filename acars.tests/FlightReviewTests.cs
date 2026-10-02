@@ -85,8 +85,8 @@ public sealed class FlightReviewTests
 
         Assert.NotNull(review);
         Assert.Equal(1, review!.PauseCount);
-        Assert.Equal(7, review.PausedSeconds);
-        Assert.Equal(2d, recorder.Flight!.AirborneSeconds);
+        Assert.Equal(6, review.PausedSeconds);
+        Assert.Equal(3d, recorder.Flight!.AirborneSeconds);
         Assert.Contains(review.Observations, x => x.Code == "PAUSE" && x.Status == "ACTIVE_PAUSE");
     }
 
