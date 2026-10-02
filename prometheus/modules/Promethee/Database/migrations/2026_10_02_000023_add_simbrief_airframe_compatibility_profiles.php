@@ -36,6 +36,7 @@ return new class() extends Migration
                 'simbrief' => [
                     'strategy' => 'proxy',
                     'proxy_type' => 'SH33',
+                    'name' => 'NORD 262',
                     'engines' => 'BASTAN VIC',
                     'maxpax' => 29,
                     'weights_kg' => [],
