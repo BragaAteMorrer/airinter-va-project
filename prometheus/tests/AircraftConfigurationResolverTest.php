@@ -16,6 +16,10 @@ final class AircraftConfigurationResolverTest extends TestCase
     {
         $fleet = $this->createSubfleetWithAircraft(1);
         $aircraft = $fleet['aircraft']->first();
+        // Factory-created models only contain the attributes explicitly
+        // returned by the factory. Refresh before save so phpVMS' activity-log
+        // accessors (notably landing_time) see the complete database row.
+        $aircraft->refresh();
         $aircraft->registration = 'F-N262';
         $aircraft->icao = 'N262';
         $aircraft->simbrief_type = null;
@@ -79,6 +83,10 @@ final class AircraftConfigurationResolverTest extends TestCase
     {
         $fleet = $this->createSubfleetWithAircraft(1);
         $aircraft = $fleet['aircraft']->first();
+        // Factory-created models only contain the attributes explicitly
+        // returned by the factory. Refresh before save so phpVMS' activity-log
+        // accessors (notably landing_time) see the complete database row.
+        $aircraft->refresh();
         $aircraft->registration = 'F-HIST';
         $aircraft->icao = 'A300';
         $aircraft->save();
@@ -152,6 +160,10 @@ final class AircraftConfigurationResolverTest extends TestCase
     {
         $fleet = $this->createSubfleetWithAircraft(1);
         $aircraft = $fleet['aircraft']->first();
+        // Factory-created models only contain the attributes explicitly
+        // returned by the factory. Refresh before save so phpVMS' activity-log
+        // accessors (notably landing_time) see the complete database row.
+        $aircraft->refresh();
         $aircraft->registration = 'F-BASE';
         $aircraft->icao = 'A319';
         $aircraft->simbrief_type = 'A319';
