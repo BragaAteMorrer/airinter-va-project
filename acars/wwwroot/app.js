@@ -2959,6 +2959,8 @@ function renderReview(review) {
 
   const button = $('#submitReviewBtn');
   if (button) button.disabled = !ready || filed;
+  const comment = $('#reviewComment');
+  if (comment) comment.disabled = filed;
   setText($('#reviewHint'), ready
     ? 'Vol arrivé au parking. Vérifiez la synthèse puis déposez le PIREP.'
     : 'Flight Review en cours · phase ' + phase + '. Le dépôt sera disponible après IN.');
@@ -2966,7 +2968,8 @@ function renderReview(review) {
 
 $('#submitReviewBtn').onclick = async () => {
   try {
-    const result = await call('/api/file', {});
+    const notes = $('#reviewComment')?.value?.trim() || '';
+    const result = await call('/api/file', { notes });
     lastFiledReview = result.review || result.Review || lastStatus?.review || lastStatus?.Review || null;
     showMessage('#reviewMessage', 'PIREP déposé. Flight Review archivé localement.');
     renderReview(lastFiledReview);
