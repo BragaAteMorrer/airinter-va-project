@@ -19,7 +19,7 @@ public sealed class XPlaneUdpConnector : ISimulatorConnector
     public SimulatorDescriptor Descriptor { get; } = new(
         SimulatorKind.XPlane, "X-Plane (UDP DataRef)", "xplane-udp",
         SimulatorCapabilities.Position | SimulatorCapabilities.FlightDynamics | SimulatorCapabilities.Fuel |
-        SimulatorCapabilities.AircraftSystems, IsExperimental: true);
+        SimulatorCapabilities.AircraftSystems | SimulatorCapabilities.SimulatorControls, IsExperimental: true);
     public SimulatorConnectionState ConnectionState { get; private set; } = SimulatorConnectionState.NotDetected;
     public string Status { get; private set; } = "X-Plane non connecté";
     public AircraftSnapshot? LatestSnapshot { get; private set; }
