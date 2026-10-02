@@ -49,7 +49,7 @@ final class PrometheeHermesScoringTest extends TestCase
             'touchdown_rate' => -650,
         ]);
 
-        $result = app(HermesScoringService::class)->calculate($pirep);
+        $result = app(HermesScoringService::class)->calculate($pirep, -650);
 
         $this->assertTrue($result['available']);
         $this->assertSame(73, $result['score']);
