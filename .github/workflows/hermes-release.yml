@@ -86,7 +86,8 @@ jobs:
           # only inside this ephemeral GitHub-hosted runner so signtool can
           # verify the cryptographic signature and timestamp after signing.
           # This does NOT make the certificate trusted on pilot machines.
-          Import-Certificate -FilePath $cer -CertStoreLocation 'Cert:\CurrentUser\Root' | Out-Null
+          & certutil.exe -user -addstore -f Root $cer | Out-Host
+          if ($LASTEXITCODE -ne 0) { throw "Unable to trust the temporary Hermès signing certificate on the runner." }
 
           "pfx=$pfx" >> $env:GITHUB_OUTPUT
           "password=$password" >> $env:GITHUB_OUTPUT
