@@ -6,8 +6,30 @@ use App\Models\Aircraft;
 
 class AirInterCabinProfileService
 {
+    public function __construct(
+        private readonly AircraftConfigurationResolver $aircraftConfigurations
+    ) {}
+
     public function resolve(Aircraft $aircraft, int $databaseCapacity): array
     {
+        $technical = $this->aircraftConfigurations->resolveAircraft($aircraft);
+        $resolvedCapacity = (int) ($technical['effective']['max_pax'] ?? 0);
+
+        if ($resolvedCapacity > 0) {
+            return [
+                'key' => $technical['configuration']['code']
+                    ?? $technical['variant']['code']
+                    ?? $technical['aircraft']['type_key'],
+                'label' => $technical['configuration']['name']
+                    ?? $technical['variant']['name']
+                    ?? $technical['aircraft']['type_name'],
+                'capacity' => $resolvedCapacity,
+                'source' => 'aircraft_configuration',
+                'database_capacity' => max(0, $databaseCapacity),
+                'resolved_profile' => $technical,
+            ];
+        }
+
         $profiles = (array) config('promethee.cabin-profiles.profiles', []);
         $profileKey = $this->profileKey($aircraft);
 
