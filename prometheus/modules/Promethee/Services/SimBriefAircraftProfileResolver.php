@@ -48,7 +48,7 @@ class SimBriefAircraftProfileResolver
                 'Le profil sb-airframe '.$actualIcao.' utilise une stratégie SimBrief inconnue.');
 
             $profileIcao = strtoupper(trim((string) ($profile['icao'] ?? '')));
-            $profileName = trim((string) ($profile['name'] ?? ''));
+            $profileName = trim((string) ($profile['actual_name'] ?? ''));
             if ($profileIcao !== '') $actualIcao = $profileIcao;
             if ($profileName !== '') $actualName = $profileName;
 
