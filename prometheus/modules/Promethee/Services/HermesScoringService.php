@@ -30,10 +30,6 @@ final class HermesScoringService
 
     public function calculate(Pirep $pirep, ?float $landingRate = null): array
     {
-        if (!Schema::hasTable('vmsacars_rules')) {
-            return $this->unavailableResult('vmsacars_rules table is unavailable.');
-        }
-
         $samples = $this->samples($pirep);
         // The final landing rate comes from Hermès' confirmed ON event
         // (or an explicit preview value). Do not infer it from arbitrary vertical
@@ -42,12 +38,11 @@ final class HermesScoringService
             ? (float) $pirep->landing_rate
             : null;
 
-        $rules = Rule::query()
-            ->where('enabled', true)
-            ->orderBy('order')
-            ->get()
-            ->filter(fn (Rule $rule) => (int) $rule->points > 0)
-            ->values();
+        $policy = $this->resolvePolicy();
+        $rules = $policy['rules'];
+        if ($rules === []) {
+            return $this->unavailableResult('Aucun barème vmsACARS n’est disponible.', $policy['source']);
+        }
 
         $deductions = [];
         $evaluated = [];
@@ -103,7 +98,7 @@ final class HermesScoringService
             'stored' => false,
             'engine' => 'vmsacars-compatible',
             'engine_version' => self::VERSION,
-            'policy_source' => 'vmsacars_rules',
+            'policy_source' => $policy['source'],
             'base_score' => self::BASE_SCORE,
             'score' => max(0, self::BASE_SCORE - $deductionsTotal),
             'deductions_total' => $deductionsTotal,
@@ -204,7 +199,7 @@ final class HermesScoringService
         return $samples;
     }
 
-    private function evaluateRule(Rule $rule, array $samples, ?float $landingRate): array
+    private function evaluateRule(object $rule, array $samples, ?float $landingRate): array
     {
         $parameter = is_numeric($rule->parameter) ? (float) $rule->parameter : null;
 
@@ -345,7 +340,7 @@ final class HermesScoringService
         };
     }
 
-    private function evaluateHardLanding(Rule $rule, ?float $landingRate): array
+    private function evaluateHardLanding(object $rule, ?float $landingRate): array
     {
         if ($landingRate === null) {
             return ['evaluable' => false, 'occurrences' => [], 'reason' => 'Taux d’atterrissage indisponible.'];
@@ -368,7 +363,7 @@ final class HermesScoringService
         ];
     }
 
-    private function evaluateFuelRefill(Rule $rule, array $samples): array
+    private function evaluateFuelRefill(object $rule, array $samples): array
     {
         $known = false;
         $occurrences = [];
@@ -412,7 +407,7 @@ final class HermesScoringService
      * Evaluate sustained conditions while respecting legacy delay/cooldown and
      * repeatable semantics. A telemetry gap resets the sustained-condition timer.
      */
-    private function evaluateCondition(Rule $rule, array $samples, callable $condition): array
+    private function evaluateCondition(object $rule, array $samples, callable $condition): array
     {
         $known = false;
         $occurrences = [];
@@ -485,7 +480,61 @@ final class HermesScoringService
         return $values[0];
     }
 
-    private function ruleSnapshot(Rule $rule): array
+    private function resolvePolicy(): array
+    {
+        if (Schema::hasTable('vmsacars_rules')) {
+            $databaseRules = Rule::query()
+                ->where('enabled', true)
+                ->orderBy('order')
+                ->get()
+                ->filter(fn (Rule $rule) => (int) $rule->points > 0)
+                ->map(fn (Rule $rule) => (object) [
+                    'id' => (string) $rule->id,
+                    'name' => (string) $rule->name,
+                    'parameter' => $rule->parameter,
+                    'points' => (int) $rule->points,
+                    'repeatable' => (bool) $rule->repeatable,
+                    'delay' => (int) $rule->delay,
+                    'cooldown' => (int) $rule->cooldown,
+                    'enabled' => (bool) $rule->enabled,
+                    'order' => (int) $rule->order,
+                ])
+                ->values()
+                ->all();
+
+            if ($databaseRules !== []) {
+                return [
+                    'source' => 'vmsacars_rules',
+                    'rules' => $databaseRules,
+                ];
+            }
+        }
+
+        $fallback = collect(config('promethee.vmsacars-scoring.rules', []))
+            ->filter(fn ($rule) => (bool) ($rule['enabled'] ?? true) && (int) ($rule['points'] ?? 0) > 0)
+            ->sortBy(fn ($rule) => (int) ($rule['order'] ?? 0))
+            ->map(fn ($rule) => (object) [
+                'id' => (string) ($rule['id'] ?? ''),
+                'name' => (string) ($rule['name'] ?? $rule['id'] ?? 'VMSAcars'),
+                'parameter' => $rule['parameter'] ?? null,
+                'points' => (int) ($rule['points'] ?? 0),
+                'repeatable' => (bool) ($rule['repeatable'] ?? false),
+                'delay' => (int) ($rule['delay'] ?? 0),
+                'cooldown' => (int) ($rule['cooldown'] ?? 0),
+                'enabled' => (bool) ($rule['enabled'] ?? true),
+                'order' => (int) ($rule['order'] ?? 0),
+            ])
+            ->filter(fn (object $rule) => $rule->id !== '')
+            ->values()
+            ->all();
+
+        return [
+            'source' => 'promethee_legacy_vmsacars_fallback',
+            'rules' => $fallback,
+        ];
+    }
+
+    private function ruleSnapshot(object $rule): array
     {
         return [
             'id' => $rule->id,
@@ -498,14 +547,14 @@ final class HermesScoringService
         ];
     }
 
-    private function unavailableResult(string $reason): array
+    private function unavailableResult(string $reason, string $policySource = 'unavailable'): array
     {
         return [
             'available' => false,
             'stored' => false,
             'engine' => 'vmsacars-compatible',
             'engine_version' => self::VERSION,
-            'policy_source' => 'vmsacars_rules',
+            'policy_source' => $policySource,
             'base_score' => self::BASE_SCORE,
             'score' => null,
             'deductions_total' => 0,
