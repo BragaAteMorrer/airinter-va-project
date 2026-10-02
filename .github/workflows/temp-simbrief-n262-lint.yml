@@ -1,0 +1,31 @@
+name: Temporary SimBrief N262 lint
+
+on:
+  push:
+    branches:
+      - feature/simbrief-airframe-proxy-n262
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+      - name: PHP syntax
+        run: |
+          php -l prometheus/app/Models/SimBriefAirframe.php
+          php -l prometheus/app/Http/Controllers/Admin/AirframeController.php
+          php -l prometheus/modules/Promethee/Services/SimBriefAircraftProfileResolver.php
+          php -l prometheus/modules/Promethee/Services/SimBriefAircraftPayloadBuilder.php
+          php -l prometheus/modules/Promethee/Services/AircraftVariantService.php
+          php -l prometheus/modules/Promethee/Services/SimBriefOperationResolver.php
+          php -l prometheus/modules/Promethee/Http/Api/AcarsSimBriefController.php
+          php -l prometheus/modules/Promethee/Http/OperationsV1Controller.php
+          php -l prometheus/modules/Promethee/Database/migrations/2026_10_02_000023_add_simbrief_airframe_compatibility_profiles.php
+          php -l prometheus/tests/SimBriefAircraftPayloadBuilderTest.php
+          php -l prometheus/tests/SimBriefAircraftProfileResolverTest.php
+          php -l prometheus/tests/SimBriefOperationResolverTest.php
+      - name: Hermès JavaScript syntax
+        run: node --check acars/wwwroot/app.js
