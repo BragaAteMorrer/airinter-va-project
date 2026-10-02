@@ -20,6 +20,7 @@ const budgets = {
   'prometheus/public/promethee-assets/promethee-v2.css': 90000,
   'prometheus/public/promethee-assets/promethee-appearance.css': 40000,
   'prometheus/modules/Promethee/Resources/views/admin/dispatch.blade.php': 45000,
+  'prometheus/modules/Promethee/Resources/views/admin/automation.blade.php': 20000,
 };
 
 console.log('Frontend performance budgets');
@@ -36,6 +37,7 @@ const hermesDesktop = read('acars/WebDesktop.cs');
 const hermesTheme = read('acars/wwwroot/hermes-themes.css');
 const prometheeV2 = read('prometheus/public/promethee-assets/promethee-v2.css');
 const dispatch = read('prometheus/modules/Promethee/Resources/views/admin/dispatch.blade.php');
+const automationAdmin = read('prometheus/modules/Promethee/Resources/views/admin/automation.blade.php');
 
 const stylesheetHrefs = [...hermesIndex.matchAll(/<link\b[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["']/gi)]
   .map(match => match[1]);
@@ -68,6 +70,17 @@ expect(dispatch.includes("if (!document.hidden) refreshBoard()"),
   'Dispatch Desk polling must remain suspended while the page is hidden.');
 expect(dispatch.includes('promethee-dispatch-filter') && dispatch.includes('promethee-dispatch-selected'),
   'Dispatch Desk must preserve dispatcher context across refresh/navigation.');
+
+expect(automationAdmin.includes('data-admin-workspace-root="automation"')
+    && automationAdmin.includes('data-automation-workspace-panel="rules"')
+    && automationAdmin.includes('data-automation-workspace-panel="catalogue"'),
+  'Automation admin must preserve its task-oriented master/detail workspace.');
+expect(automationAdmin.includes('promethee-admin-automation-workspace')
+    && automationAdmin.includes('promethee-admin-automation-rules-detail')
+    && automationAdmin.includes('promethee-admin-automation-catalogue-detail'),
+  'Automation admin must preserve staff context across navigation.');
+expect(!/<[^>]+\sstyle\s*=/i.test(automationAdmin),
+  'Automation admin must use shared workspace primitives instead of inline style attributes.');
 
 const inlineStyleFreeViews = [
   'prometheus/modules/Promethee/Resources/views/bookings.blade.php',
