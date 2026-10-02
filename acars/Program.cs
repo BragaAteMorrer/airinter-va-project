@@ -142,7 +142,7 @@ app.MapGet("/api/diagnostics", (PhpVmsClient client, SimConnectReader sim, Fligh
         pendingEvents = recorder.PendingEvents.Count, pendingSopFacts = recorder.PendingFacts.Count,
         remoteConfiguration = recorder.RemoteConfiguration, warning = recorder.Warning }));
 
-app.MapPost("/api/file", async (PhpVmsClient client, FlightRecorder recorder) =>
+app.MapPost("/api/file", async (FilePirepRequest input, PhpVmsClient client, FlightRecorder recorder) =>
 {
     await TelemetryWorker.SendPending(client, recorder);
     FlightState flight;
@@ -161,6 +161,7 @@ app.MapPost("/api/file", async (PhpVmsClient client, FlightRecorder recorder) =>
         ["created_at"] = flight.BlockOn!.Value
     };
     if (flight.LandingRate is not null) report["landing_rate"] = flight.LandingRate.Value;
+    if (!string.IsNullOrWhiteSpace(input.Notes)) report["notes"] = input.Notes.Trim();
     await client.Send("pireps/" + Uri.EscapeDataString(flight.PirepId) + "/file", report);
     recorder.Complete();
     return Results.Ok();
@@ -195,6 +196,7 @@ static async Task<RemoteAcarsConfiguration> LoadRemoteConfiguration(PhpVmsClient
 
 public sealed record LoginRequest(string Login, string Password);
 public sealed record StartRequest(string PirepId, string? OperationId = null);
+public sealed record FilePirepRequest(string? Notes = null);
 
 public sealed class TelemetryWorker(SimConnectReader sim, FlightRecorder recorder, PhpVmsClient client) : BackgroundService
 {
