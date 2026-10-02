@@ -28,7 +28,9 @@ class SimBriefOperationResolver
         private readonly FareService $fares,
         private readonly DemandProfileService $demand,
         private readonly SimBriefCompanyKeyService $companyKey,
-        private readonly AircraftVariantService $aircraftVariants
+        private readonly AircraftVariantService $aircraftVariants,
+        private readonly SimBriefAircraftProfileResolver $aircraftProfiles,
+        private readonly SimBriefAircraftPayloadBuilder $aircraftPayloads
     ) {}
 
     public function resolveOperation(string $reference, User $user, array $overrides = []): array
@@ -79,19 +81,19 @@ class SimBriefOperationResolver
         $operationId = $operationId ?: 'legacy_'.$user->id.'_'.$flight->id.'_'.$aircraft->id;
         $this->assertEligible($flight, $aircraft, $user, $bid);
 
-        $type = $this->simbriefType($aircraft);
-        $variant = $bid ? $this->aircraftVariants->selectedForBid($bid, $user) : null;
-        if ($variant && filled($variant['simbrief_type'] ?? null)) {
-            $type = ['value' => strtoupper((string) $variant['simbrief_type']), 'source' => 'operation_aircraft_variant'];
-        }
-        if (filled($overrides['simbrief_type'] ?? null)) {
-            // SimBrief accepts either an ICAO type or an airframe Internal ID
-            // in the "type" parameter (e.g. a curated Fenix profile).
-            $type = ['value' => strtoupper((string) $overrides['simbrief_type']), 'source' => 'planning_override'];
-        }
-        abort_if($type['value'] === null, 422,
-            'Aucun type SimBrief n’est défini pour '.$aircraft->registration
-            .' (aircraft.simbrief_type, subfleet.simbrief_type et aircraft.icao sont vides).');
+        $variant = $bid
+            ? $this->aircraftVariants->selectedForBid($bid, $user)
+            : $this->aircraftVariants->defaultForAircraft($aircraft);
+        $aircraftProfile = $this->aircraftProfiles->resolve(
+            $aircraft,
+            $variant,
+            filled($overrides['simbrief_type'] ?? null) ? (string) $overrides['simbrief_type'] : null
+        );
+        $aircraftPayload = $this->aircraftPayloads->build($aircraftProfile);
+        $type = [
+            'value' => $aircraftPayload['parameters']['type'],
+            'source' => $aircraftProfile['source'],
+        ];
 
         $origin = $this->airportFromFlight($flight->dpt_airport, (string) $flight->dpt_airport_id, 'départ');
         $destination = $this->airportFromFlight($flight->arr_airport, (string) $flight->arr_airport_id, 'arrivée');
@@ -123,6 +125,15 @@ class SimBriefOperationResolver
         }
 
         $profile = $this->demand->profile($aircraft, $flight, $operationId);
+        $maxPax = $this->aircraftPayloads->maxPassengers($aircraftProfile);
+        if ($maxPax !== null && $maxPax > 0) {
+            $profile['capacity'] = $maxPax;
+            $profile['capacity_source'] = 'sb_airframe';
+            $profile['passengers'] = min(
+                $maxPax,
+                max(0, (int) round($maxPax * (float) $profile['load_factor_percent'] / 100))
+            );
+        }
         $effectiveFares = $this->effectiveFares($flight, $aircraft, (int) $profile['capacity']);
 
         $defaultCallsign = setting('simbrief.callsign', true)
@@ -137,7 +148,14 @@ class SimBriefOperationResolver
                 ? $overrides[$key]
                 : $default;
 
-        $parameters = array_filter([
+        $planningPax = $value('pax', $profile['capacity'] > 0 ? $profile['passengers'] : null);
+        if ($maxPax !== null && $planningPax !== null) {
+            abort_if((int) $planningPax > $maxPax, 422,
+                'Le nombre de passagers demandé ('.(int) $planningPax.') dépasse la capacité réelle sb-airframe '
+                .$maxPax.' de '.$aircraftProfile['actual_icao'].'.');
+        }
+
+        $parameters = array_merge($aircraftPayload['parameters'], array_filter([
             'airline' => strtoupper((string) $airline->icao),
             'fltnum' => (string) $flight->flight_number,
             'type' => $type['value'],
@@ -147,7 +165,7 @@ class SimBriefOperationResolver
             'route' => $route !== '' ? $route : null,
             'fl' => $level,
             'reg' => strtoupper((string) $aircraft->registration),
-            'pax' => $value('pax', $profile['capacity'] > 0 ? $profile['passengers'] : null),
+            'pax' => $planningPax,
             'callsign' => $callsign !== '' ? $callsign : strtoupper((string) $airline->icao).$flight->flight_number,
 
             // SimBrief dispatch options exposed by Hermès. Values are request
@@ -172,7 +190,20 @@ class SimBriefOperationResolver
             'taxiout' => $value('taxiout'),
             'taxiin' => $value('taxiin'),
             'manualrmk' => $value('manualrmk'),
-        ], fn ($value) => $value !== null && $value !== '');
+        ], fn ($value) => $value !== null && $value !== ''));
+
+        logger()->info('[SimBrief] Aircraft profile resolved', [
+            'aircraft_registration' => $aircraft->registration,
+            'actual_icao' => $aircraftProfile['actual_icao'],
+            'strategy' => $aircraftProfile['strategy'],
+            'calculation_type' => $aircraftProfile['type'],
+            'proxy_aircraft' => $aircraftProfile['proxy_type'],
+            'internal_id' => $aircraftProfile['internal_id'],
+            'pax' => $planningPax,
+            'maxpax' => $maxPax,
+            'mtow_kg' => $aircraftProfile['config']['weights_kg']['mtow'] ?? null,
+            'fuelfactor' => $aircraftProfile['config']['performance']['fuelfactor'] ?? null,
+        ]);
 
         return [
             'operation_id' => $operationId,
@@ -204,7 +235,18 @@ class SimBriefOperationResolver
                 'subfleet_id' => $aircraft->subfleet_id,
                 'subfleet' => $aircraft->subfleet?->name,
                 'simbrief_type' => $type['value'],
+                'simbrief_display_type' => $aircraftProfile['actual_icao'],
                 'simbrief_type_source' => $type['source'],
+                'simbrief_strategy' => $aircraftProfile['strategy'],
+                'simbrief_profile' => [
+                    'strategy' => $aircraftProfile['strategy'],
+                    'actual_icao' => $aircraftProfile['actual_icao'],
+                    'actual_name' => $aircraftProfile['actual_name'],
+                    'calculation_type' => $aircraftProfile['type'],
+                    'proxy_type' => $aircraftProfile['proxy_type'],
+                    'airframe_db_id' => $aircraftProfile['airframe_db_id'],
+                    'maxpax' => $maxPax,
+                ],
                 'type_key' => $this->demand->typeKey($aircraft),
                 'type_label' => $this->demand->typeLabel($aircraft),
                 'variant' => $variant,
@@ -222,6 +264,7 @@ class SimBriefOperationResolver
                 'aircraft' => 'aircraft',
                 'subfleet' => 'subfleets',
                 'simbrief_type' => $type['source'],
+                'simbrief_profile' => $aircraftProfile['source'],
                 'aircraft_variant' => $variant ? 'promethee_operation_aircraft_variants' : null,
                 'passengers' => 'DemandProfileService',
                 'fares' => 'FareService',
