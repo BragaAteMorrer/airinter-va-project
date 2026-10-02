@@ -84,6 +84,50 @@ class PortalController extends Controller
 
         return $this->page('pirep', ['pirep' => $pirep]);
     }
+
+    /**
+     * Start a fresh operation from a genuinely finished PIREP.
+     *
+     * Repeating a flight must never reuse the old Bid/operation id: Hermès
+     * deliberately scopes duplicate detection and PIREP correlation to that
+     * immutable id. Reusing it would make the new attempt inherit the terminal
+     * state of the previous flight.
+     */
+    public function repeatPirep(string $id, Request $r, \App\Services\BidService $bids) {
+        $pirep = Pirep::with('flight')
+            ->where('user_id', $r->user()->id)
+            ->findOrFail($id);
+
+        if (!$pirep->flight) {
+            return back()->withErrors(['reservation' => 'Ce rapport n’est plus rattaché à un vol réservable.']);
+        }
+
+        $isFinal = $pirep->submitted_at !== null
+            || in_array((int) $pirep->state, [PirepState::PENDING, PirepState::ACCEPTED, PirepState::REJECTED], true);
+        if (!$isFinal) {
+            return back()->withErrors(['reservation' => 'Finalisez d’abord le Flight Review et le dépôt du PIREP avant de refaire ce vol.']);
+        }
+
+        $flight = $pirep->flight;
+        abort_unless($flight->active && $flight->visible, 409, 'Ce vol n’est plus réservable dans le programme actuel.');
+        abort_unless(app(CompanyAccessService::class)->canAccessAirline($r->user(), (int) $flight->airline_id), 403, 'Cette compagnie n’est pas encore accessible avec votre nombre d’heures de vol.');
+
+        $existing = $this->releaseTerminalReservationsForFlight($flight, $r->user());
+        if ($existing) {
+            return redirect()->route('promethee.flights.show', $flight->id)
+                ->with('success', 'Une opération active existe déjà pour ce vol ('.$existing->operation_id.').');
+        }
+
+        try {
+            $newBid = $bids->addBid($flight, $r->user());
+            $operationId = app(\Modules\Promethee\Services\OperationIdentityService::class)->id($newBid);
+
+            return redirect()->route('promethee.flights.briefing', $flight->id)
+                ->with('success', 'Nouvelle opération '.$operationId.' créée pour '.$flight->ident.'. Le précédent PIREP reste archivé.');
+        } catch (\Throwable $e) {
+            return back()->withErrors(['reservation' => $e->getMessage() ?: 'Impossible de créer une nouvelle opération pour ce vol.']);
+        }
+    }
     public function publicLive() { return view('promethee::public-live'); }
 
     /** Native company pages replacing the disabled Disposable module. */
@@ -1099,17 +1143,20 @@ class PortalController extends Controller
        $hasTelemetry = $pirep && DB::table('promethee_telemetry')->where('pirep_id', $pirep->id)->exists();
        $legacyGhost = $pirep && $this->isLegacyHermesGhostForPortal($pirep, $hasTelemetry);
        $statusPirep = $legacyGhost ? null : $pirep;
-       $completed = $statusPirep && ($statusPirep->submitted_at !== null
-           || in_array((int) $statusPirep->state, [PirepState::PENDING, PirepState::ACCEPTED, PirepState::REJECTED], true)
-           || $statusPirep->status === PirepStatus::ARRIVED);
        $cancelled = $statusPirep && ((int) $statusPirep->state === PirepState::CANCELLED || $statusPirep->status === PirepStatus::CANCELLED);
+       $completed = $statusPirep && !$cancelled && ($statusPirep->submitted_at !== null
+           || in_array((int) $statusPirep->state, [PirepState::PENDING, PirepState::ACCEPTED, PirepState::REJECTED], true));
+       // ARRIVED is deliberately non-terminal: the simulator flight is over,
+       // but the pilot still has to review and file the final report.
+       $awaitingFiling = $statusPirep && !$cancelled && !$completed && $statusPirep->status === PirepStatus::ARRIVED;
 
        $status = $cancelled ? 'CANCELLED'
            : ($completed ? 'COMPLETED'
+           : ($awaitingFiling ? 'AWAITING_FILING'
            : ($hasTelemetry ? 'IN_PROGRESS'
            : ($statusPirep ? 'READY'
            : ($ofp && $booking->aircraft_id ? 'PIREP_REQUIRED'
-           : ($booking->aircraft_id ? 'OFP_REQUIRED' : 'AIRCRAFT_REQUIRED')))));
+           : ($booking->aircraft_id ? 'OFP_REQUIRED' : 'AIRCRAFT_REQUIRED'))))));
 
        $progress = match ($status) {
            'AIRCRAFT_REQUIRED' => 10,
@@ -1117,6 +1164,7 @@ class PortalController extends Controller
            'PIREP_REQUIRED' => 55,
            'READY' => 70,
            'IN_PROGRESS' => 85,
+           'AWAITING_FILING' => 95,
            'COMPLETED', 'CANCELLED' => 100,
            default => 0,
        };
@@ -1136,12 +1184,38 @@ class PortalController extends Controller
            'PIREP_REQUIRED' => 'Finaliser la préparation',
            'READY' => 'Démarrer dans Hermès',
            'IN_PROGRESS' => 'Vol en cours',
+           'AWAITING_FILING' => 'Ouvrir le Flight Review',
            'COMPLETED' => 'Consulter le vol',
            'CANCELLED' => 'Opération annulée',
            default => null,
        });
 
        return $booking;
+   }
+
+   /**
+    * Remove only stale terminal reservations for this exact pilot/flight.
+    * Any non-terminal operation wins and is returned untouched.
+    */
+   private function releaseTerminalReservationsForFlight(Flight $flight, User $user): ?Bid
+   {
+       $active = null;
+       $reservations = Bid::with(['flight', 'aircraft'])
+           ->where(['flight_id' => $flight->id, 'user_id' => $user->id])
+           ->latest()
+           ->get();
+
+       foreach ($reservations as $reservation) {
+           $operation = $this->bookingOperation($reservation);
+           if (in_array($operation->operation_status, ['COMPLETED', 'CANCELLED'], true)) {
+               $reservation->delete();
+               continue;
+           }
+
+           $active ??= $operation;
+       }
+
+       return $active;
    }
 
    private function isLegacyHermesGhostForPortal(Pirep $pirep, bool $hasTelemetry): bool
@@ -1680,7 +1754,15 @@ class PortalController extends Controller
             ->where(['flight_id'=>$flight->id,'user_id'=>auth()->id()])
             ->latest()
             ->first();
-        if ($reservation) $reservation = $this->bookingOperation($reservation);
+        if ($reservation) {
+            $reservation = $this->bookingOperation($reservation);
+            // A stale terminal bid must never make a completed line look
+            // permanently reserved. The actual cleanup happens only on POST
+            // when the pilot explicitly reserves/repeats the flight.
+            if (in_array($reservation->operation_status, ['COMPLETED', 'CANCELLED'], true)) {
+                $reservation = null;
+            }
+        }
 
         return $this->page('flight',[
             'flight'=>$flight,
@@ -1694,6 +1776,13 @@ class PortalController extends Controller
     public function reserveFlight(string $id, Request $r, \App\Services\BidService $bids) {
         $flight=Flight::where(['id'=>$id,'active'=>true,'visible'=>true])->firstOrFail();
         abort_unless(app(CompanyAccessService::class)->canAccessAirline($r->user(), (int) $flight->airline_id), 403, 'Cette compagnie n’est pas encore accessible avec votre nombre d’heures de vol.');
+
+        $existing = $this->releaseTerminalReservationsForFlight($flight, $r->user());
+        if ($existing) {
+            return redirect()->route('promethee.flights.show', $flight->id)
+                ->with('success', 'Ce vol possède déjà une opération active ('.$existing->operation_id.').');
+        }
+
         try { $bids->addBid($flight,$r->user()); return back()->with('success','Vol '.$flight->ident.' réservé.'); }
         catch (\Throwable $e) { return back()->withErrors(['reservation'=>$e->getMessage() ?: 'Cette réservation ne peut pas être créée.']); }
     }

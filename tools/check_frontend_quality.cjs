@@ -59,6 +59,15 @@ expect(dispatch.includes("if (!document.hidden) refreshBoard()"),
 expect(dispatch.includes('promethee-dispatch-filter') && dispatch.includes('promethee-dispatch-selected'),
   'Dispatch Desk must preserve dispatcher context across refresh/navigation.');
 
+const inlineStyleFreeViews = [
+  'prometheus/modules/Promethee/Resources/views/bookings.blade.php',
+  'prometheus/modules/Promethee/Resources/views/flight.blade.php',
+];
+for (const file of inlineStyleFreeViews) {
+  expect(!/<[^>]+\sstyle\s*=/i.test(read(file)),
+    `${file} must use shared CSS primitives instead of inline style attributes.`);
+}
+
 if (failures.length) {
   console.error('\nFrontend quality gate failed:');
   failures.forEach(item => console.error('- ' + item));

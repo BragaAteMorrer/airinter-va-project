@@ -1,6 +1,18 @@
 @extends('promethee::layout')
 @section('title', __('promethee.navigation_menu.bookings'))
 @section('content')
+@php
+    $operationStatusLabels = [
+        'AIRCRAFT_REQUIRED' => 'Appareil à sélectionner',
+        'OFP_REQUIRED' => 'OFP à préparer',
+        'PIREP_REQUIRED' => 'Préparation à finaliser',
+        'READY' => 'Prêt au départ',
+        'IN_PROGRESS' => 'Vol en cours',
+        'AWAITING_FILING' => 'Flight Review à finaliser',
+        'COMPLETED' => 'Terminé',
+        'CANCELLED' => 'Annulé',
+    ];
+@endphp
 <div class="ops-header compact">
     <div><span class="eyebrow">ESPACE PILOTE · OPÉRATIONS</span><h1>{{ __('promethee.navigation_menu.bookings') }}</h1><p>Suivez chaque vol depuis la réservation jusqu’au PIREP terminé.</p></div>
     <a class="button" href="{{ route('promethee.flights') }}">{{ __('promethee.flight_schedule') }}</a>
@@ -18,25 +30,23 @@
 <tr>
     <td>
         <strong>{{ $booking->flight?->ident ?? '—' }}</strong>
-        <small style="display:block;opacity:.65">{{ $booking->operation_id }}</small>
+        <small class="operation-id">{{ $booking->operation_id }}</small>
     </td>
     <td>{{ $booking->flight?->dpt_airport_id ?? '—' }} → {{ $booking->flight?->arr_airport_id ?? '—' }}</td>
     <td>{{ $booking->aircraft?->registration ?? 'À sélectionner' }}</td>
-    <td style="min-width:150px">
-        <div style="height:6px;background:rgba(127,127,127,.2);border-radius:99px;overflow:hidden">
-            <div style="height:100%;width:{{ $booking->operation_progress }}%;background:currentColor"></div>
-        </div>
+    <td class="operation-progress-cell">
+        <progress class="operation-progress" value="{{ $booking->operation_progress }}" max="100" aria-label="Progression de l’opération : {{ $booking->operation_progress }} %">{{ $booking->operation_progress }}%</progress>
         <small>{{ $booking->operation_progress }}%</small>
     </td>
     <td>
-        <strong>{{ str_replace('_', ' ', $booking->operation_status) }}</strong>
+        <strong class="operation-status">{{ $operationStatusLabels[$booking->operation_status] ?? str_replace('_', ' ', $booking->operation_status) }}</strong>
         @if($booking->operation_legacy_ghost ?? false)
-            <small style="display:block;color:#e24b57;margin-top:.35rem">Ancien PIREP fantôme détecté</small>
+            <small class="operation-warning">Ancien PIREP fantôme détecté</small>
         @endif
     </td>
     <td>{{ $booking->operation_next_action ?? '—' }}</td>
     <td>
-        <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
+        <div class="operation-actions">
             @if($booking->flight)
                 <a class="button" href="{{ route('promethee.flights.show', $booking->flight->id) }}">
                     {{ in_array($booking->operation_status, ['COMPLETED','CANCELLED'], true) ? 'Voir le vol' : 'Ouvrir l’opération' }}
@@ -58,5 +68,5 @@
 </table>
 </section>
 
-<p style="opacity:.7;margin-top:1rem"><small>Une réservation peut être annulée tant qu’aucun PIREP Hermès n’a été créé. Dès la préparation du PIREP, elle devient un enregistrement opérationnel conservé.</small></p>
+<p class="page-footnote"><small>Une réservation peut être annulée tant qu’aucun PIREP Hermès n’a été créé. Dès la préparation du PIREP, elle devient un enregistrement opérationnel conservé.</small></p>
 @endsection
