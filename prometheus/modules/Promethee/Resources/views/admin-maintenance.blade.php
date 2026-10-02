@@ -1,13 +1,14 @@
 @extends('promethee::layout')
-@section('title','Maintenance moteurs')
+@section('title','Maintenance cellule & moteurs')
 @section('content')
 <div class="ops-header compact">
   <div>
     <span class="eyebrow">AIR INTER · DIRECTION TECHNIQUE</span>
-    <h1>Révisions moteurs & TBO.</h1>
-    <p>Les checks A/B/C restent liés à la cellule. Les moteurs disposent ici de leurs propres heures, cycles, TBO, montages et révisions.</p>
+    <h1>Maintenance cellule & moteurs.</h1>
+    <p>Prométhée suit séparément les checks A/B/C de la cellule et le potentiel TBO de chaque moteur, avec des compteurs heures + cycles issus des PIREPs acceptés.</p>
   </div>
   <div class="inline-form">
+    <span class="tag">{{ $airframeSummary['total'] }} cellule(s)</span>
     <span class="tag">{{ $engineUnits->count() }} moteur(s)</span>
     <form method="post" action="{{ route('admin.promethee.maintenance.sync') }}">
       @csrf
@@ -26,6 +27,166 @@
 @if($errors->any())
 <section class="panel"><strong>Impossible d’enregistrer :</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></section>
 @endif
+
+<section class="control-strip">
+  <article><span>Cellules suivies</span><strong>{{ $airframeSummary['total'] }}</strong><small>compteurs A/B/C actifs</small></article>
+  <article><span>À surveiller</span><strong>{{ $airframeSummary['warning'] }}</strong><small>dans la fenêtre d’alerte</small></article>
+  <article><span>Check dû</span><strong>{{ $airframeSummary['due'] }}</strong><small>limite heures ou cycles atteinte</small></article>
+  <article><span>En maintenance</span><strong>{{ $airframeSummary['maintenance'] }}</strong><small>immobilisation en cours</small></article>
+</section>
+
+<section class="panel">
+  <div class="panel-heading">
+    <div>
+      <span class="eyebrow">MAINTENANCE CELLULE</span>
+      <h2>Paramètres des checks A / B / C</h2>
+      <p>Un check devient exigible dès que la limite en heures <strong>ou</strong> la limite en cycles est atteinte. La durée correspond à l’immobilisation planifiée de l’appareil.</p>
+    </div>
+  </div>
+  <form method="post" action="{{ route('admin.promethee.maintenance.airframe-settings.save') }}" class="form-grid">
+    @csrf
+    <label>A Check Time Limit
+      <input type="number" name="a_time_limit_hours" min="0.1" max="100000" step="0.1" value="{{ $airframeSettings['checks']['a']['time_limit_hours'] }}" required>
+      <small>heures de vol depuis le dernier A/B/C Check</small>
+    </label>
+    <label>A Check Cycle Limit
+      <input type="number" name="a_cycle_limit" min="1" max="100000" value="{{ $airframeSettings['checks']['a']['cycle_limit'] }}" required>
+      <small>cycles depuis le dernier A/B/C Check</small>
+    </label>
+    <label>A Check Duration
+      <input type="number" name="a_duration_hours" min="0" max="10000" step="0.1" value="{{ $airframeSettings['checks']['a']['duration_hours'] }}" required>
+      <small>heures d’immobilisation</small>
+    </label>
+
+    <label>B Check Time Limit
+      <input type="number" name="b_time_limit_hours" min="0.1" max="100000" step="0.1" value="{{ $airframeSettings['checks']['b']['time_limit_hours'] }}" required>
+      <small>heures de vol depuis le dernier B/C Check</small>
+    </label>
+    <label>B Check Cycle Limit
+      <input type="number" name="b_cycle_limit" min="1" max="100000" value="{{ $airframeSettings['checks']['b']['cycle_limit'] }}" required>
+      <small>cycles depuis le dernier B/C Check</small>
+    </label>
+    <label>B Check Duration
+      <input type="number" name="b_duration_hours" min="0" max="10000" step="0.1" value="{{ $airframeSettings['checks']['b']['duration_hours'] }}" required>
+      <small>heures d’immobilisation</small>
+    </label>
+
+    <label>C Check Time Limit
+      <input type="number" name="c_time_limit_hours" min="0.1" max="100000" step="0.1" value="{{ $airframeSettings['checks']['c']['time_limit_hours'] }}" required>
+      <small>heures de vol depuis le dernier C Check</small>
+    </label>
+    <label>C Check Cycle Limit
+      <input type="number" name="c_cycle_limit" min="1" max="100000" value="{{ $airframeSettings['checks']['c']['cycle_limit'] }}" required>
+      <small>cycles depuis le dernier C Check</small>
+    </label>
+    <label>C Check Duration
+      <input type="number" name="c_duration_hours" min="0" max="10000" step="0.1" value="{{ $airframeSettings['checks']['c']['duration_hours'] }}" required>
+      <small>heures d’immobilisation</small>
+    </label>
+
+    <label>Fenêtre d’alerte cellule
+      <input type="number" name="warning_percent" min="0" max="100" step="0.1" value="{{ $airframeSettings['warning_percent'] }}" required>
+      <small>% de potentiel restant avant mise en évidence dans Prométhée</small>
+    </label>
+    <button type="submit">Enregistrer les cycles / durées</button>
+  </form>
+  <p class="hint">La fin d’un B Check remet aussi les compteurs A à zéro. La fin d’un C Check remet les compteurs A, B et C à zéro. Les PIREPs rejetés sont retirés des compteurs.</p>
+</section>
+
+<section class="panel table-wrap">
+  <div class="panel-heading">
+    <div>
+      <span class="eyebrow">POTENTIEL CELLULE</span>
+      <h2>Checks A / B / C par appareil</h2>
+      <p>Les deux limites sont suivies en parallèle : la première atteinte déclenche le besoin de maintenance.</p>
+    </div>
+  </div>
+  <table>
+    <thead><tr><th>Appareil</th><th>Position</th><th>État</th><th>A Check restant</th><th>B Check restant</th><th>C Check restant</th><th>Check actif</th><th>Action</th></tr></thead>
+    <tbody>
+    @forelse($airframeStates as $state)
+      <tr>
+        <td><strong>{{ $state->registration }}</strong><br><small>{{ $state->airline_icao ?: '—' }} · {{ $state->subfleet_name ?: $state->subfleet_type }}</small></td>
+        <td>{{ $state->airport_id ?: '—' }}</td>
+        <td>
+          @if($state->maintenance_state === 'maintenance')
+            <span class="tag">MAINTENANCE</span>
+          @elseif($state->maintenance_state === 'due')
+            <span class="tag">CHECK DÛ</span>
+          @elseif($state->maintenance_state === 'warning')
+            <span class="tag">À PLANIFIER</span>
+          @else
+            <span class="tag">SERVICE</span>
+          @endif
+        </td>
+        @foreach(['a','b','c'] as $check)
+          @php($checkState = $state->checks[$check])
+          <td>
+            <strong>{{ number_format($checkState['remaining_hours'],1,',',' ') }} h</strong><br>
+            <small>{{ number_format($checkState['remaining_cycles']) }} cycles · {{ number_format($checkState['progress_percent'],1,',',' ') }} % consommé</small><br>
+            @if($checkState['due'])
+              <span class="tag">{{ strtoupper($check) }} DÛ</span>
+            @elseif($checkState['warning'])
+              <span class="tag">{{ strtoupper($check) }} À PLANIFIER</span>
+            @endif
+          </td>
+        @endforeach
+        <td>
+          @if($state->active_check)
+            <strong>{{ strtoupper($state->active_check) }} Check</strong><br>
+            <small>
+              {{ $state->active_started_at ? CarbonCarbon::parse($state->active_started_at)->locale('fr')->isoFormat('DD/MM HH:mm') : '—' }}
+              →
+              {{ $state->active_due_at ? CarbonCarbon::parse($state->active_due_at)->locale('fr')->isoFormat('DD/MM HH:mm') : '—' }}
+            </small>
+          @else
+            —
+          @endif
+        </td>
+        <td>
+          @if(!$state->active_check)
+            <form method="post" action="{{ route('admin.promethee.maintenance.airframe.start', $state->aircraft_id) }}" class="inline-form" onsubmit="return confirm('Immobiliser cet appareil pour le check sélectionné ?');">
+              @csrf
+              <select name="check" required>
+                <option value="a" @selected($state->next_check === 'a')>A Check</option>
+                <option value="b" @selected($state->next_check === 'b')>B Check</option>
+                <option value="c" @selected($state->next_check === 'c')>C Check</option>
+              </select>
+              <button type="submit">Démarrer</button>
+            </form>
+          @else
+            <small>Remise en service automatique à l’échéance.</small>
+          @endif
+        </td>
+      </tr>
+    @empty
+      <tr><td colspan="8">Aucun appareil à suivre.</td></tr>
+    @endforelse
+    </tbody>
+  </table>
+</section>
+
+<section class="panel table-wrap">
+  <div class="panel-heading"><div><span class="eyebrow">JOURNAL CELLULE</span><h2>Derniers checks A / B / C</h2></div></div>
+  <table>
+    <thead><tr><th>Date</th><th>Appareil</th><th>Check</th><th>Événement</th><th>Site</th><th>Situation avant</th><th>Note</th></tr></thead>
+    <tbody>
+    @forelse($airframeEvents as $event)
+      <tr>
+        <td>{{ CarbonCarbon::parse($event->occurred_at)->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') }}</td>
+        <td><strong>{{ $event->registration }}</strong></td>
+        <td>{{ strtoupper($event->check_type) }} Check</td>
+        <td>{{ $event->event_type === 'started' ? 'Début' : 'Terminé' }}</td>
+        <td>{{ $event->airport_id ?: '—' }}</td>
+        <td>{{ $event->minutes_before !== null ? number_format($event->minutes_before / 60,1,',',' ') . ' h' : '—' }} / {{ $event->cycles_before !== null ? number_format($event->cycles_before) . ' cycles' : '—' }}</td>
+        <td>{{ $event->notes ?: '—' }}</td>
+      </tr>
+    @empty
+      <tr><td colspan="7">Aucun check cellule enregistré.</td></tr>
+    @endforelse
+    </tbody>
+  </table>
+</section>
 
 <div class="two-columns">
   <section class="panel">
