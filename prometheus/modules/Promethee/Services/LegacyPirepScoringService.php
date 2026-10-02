@@ -262,7 +262,7 @@ final class LegacyPirepScoringService
             'SIMRATE_INCREASED' => $this->factOccurrences($facts, ['SIM_RATE'], fn ($f) => (float) ($f['value'] ?? 0) > $parameter),
             'SLEW_ACTIVATED' => $this->factOccurrences($facts, ['SLEW']),
             'STABILIZED_APPROACH' => $this->factOccurrences($facts, ['APPROACH_1000_UNSTABLE','APPROACH_500_UNSTABLE']),
-            'HARD_LANDING' => $this->hardLanding($pirep, $parameter),
+            'HARD_LANDING' => $this->hardLanding($pirep, $facts, $parameter),
             // Hermès does not currently expose trustworthy signals for these
             // historical rules. Unknown data must never become a penalty.
             'EXCESS_GFORCE', 'OVERSPEED_WARNING', 'RUNWAY_OVERRUN', 'STALL_WARNING',
@@ -271,18 +271,27 @@ final class LegacyPirepScoringService
         };
     }
 
-    private function hardLanding(Pirep $pirep, float $threshold): array
+    private function hardLanding(Pirep $pirep, array $facts, float $threshold): array
     {
-        if ($pirep->landing_rate === null) return [];
-        $rate = (float) $pirep->landing_rate;
-        if (abs($rate) < abs($threshold)) return [];
+        if ($pirep->landing_rate !== null) {
+            $rate = (float) $pirep->landing_rate;
+            if (abs($rate) < abs($threshold)) return [];
 
-        return [[
-            'at' => optional($pirep->block_on_time)?->toIso8601String(),
-            'value' => $rate,
-            'unit' => 'ft/min',
-            'source' => 'pirep',
-        ]];
+            return [[
+                'at' => optional($pirep->block_on_time)?->toIso8601String(),
+                'value' => $rate,
+                'unit' => 'ft/min',
+                'source' => 'pirep',
+            ]];
+        }
+
+        // Before FILE, phpVMS has not received landing_rate yet. Hermès has,
+        // however, already synchronized the TOUCHDOWN FDM fact, which lets the
+        // Flight Review preview the same hard-landing penalty before submission.
+        return $this->factOccurrences($facts, ['TOUCHDOWN'], function ($fact) use ($threshold) {
+            if (!is_numeric($fact['value'] ?? null)) return false;
+            return abs((float) $fact['value']) >= abs($threshold);
+        });
     }
 
     private function factOccurrences(array $facts, array $codes, ?callable $predicate = null): array
