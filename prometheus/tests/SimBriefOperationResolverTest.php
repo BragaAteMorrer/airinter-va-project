@@ -30,6 +30,7 @@ final class SimBriefOperationResolverTest extends TestCase
         $aircraft->simbrief_type = 'A320-214';
         $aircraft->status = AircraftStatus::ACTIVE;
         $aircraft->state = AircraftState::PARKED;
+        $aircraft->landing_time = null;
         $aircraft->airport_id = $origin->id;
         $aircraft->save();
 
@@ -142,6 +143,7 @@ final class SimBriefOperationResolverTest extends TestCase
         $aircraft->icao = 'A320';
         $aircraft->status = AircraftStatus::ACTIVE;
         $aircraft->state = AircraftState::PARKED;
+        $aircraft->landing_time = null;
         $aircraft->save();
 
         $rank = $this->createRank(2, [$subfleet->id]);
@@ -194,6 +196,7 @@ final class SimBriefOperationResolverTest extends TestCase
         $aircraft->simbrief_type = null;
         $aircraft->status = AircraftStatus::ACTIVE;
         $aircraft->state = AircraftState::PARKED;
+        $aircraft->landing_time = null;
         $aircraft->airport_id = $origin->id;
         $aircraft->save();
 
@@ -273,6 +276,7 @@ final class SimBriefOperationResolverTest extends TestCase
         $aircraft->icao = 'A319';
         $aircraft->status = AircraftStatus::ACTIVE;
         $aircraft->state = AircraftState::PARKED;
+        $aircraft->landing_time = null;
         $aircraft->airport_id = $origin->id;
         $aircraft->save();
 
