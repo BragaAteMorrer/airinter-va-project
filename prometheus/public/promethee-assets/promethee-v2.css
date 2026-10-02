@@ -1739,6 +1739,13 @@ html[data-appearance="dark"] .next-operation-panel{background:linear-gradient(11
   gap:8px;
   align-items:center;
 }
+.automation-catalogue-thumb{
+  display:block;
+  width:auto;
+  max-width:96px;
+  max-height:56px;
+  object-fit:contain;
+}
 .admin-detail-summary{
   display:grid;
   gap:8px;
