@@ -86,6 +86,27 @@ public sealed class FlightDataMonitoringTests
     }
 
     [Fact]
+    public void Pause_segment_is_recorded_with_kind_and_duration()
+    {
+        var monitor = new FlightDataMonitor();
+        var t = DateTimeOffset.Parse("2026-10-03T20:00:00Z");
+
+        monitor.Process(new AircraftSnapshot(
+            Guid.NewGuid(), t, OnGround: false, Paused: true, PauseKind: "ACTIVE_PAUSE"), FlightPhase.Cruise, []);
+        Assert.Empty(monitor.Process(new AircraftSnapshot(
+            Guid.NewGuid(), t.AddSeconds(5), OnGround: false, Paused: true, PauseKind: "ACTIVE_PAUSE"), FlightPhase.Cruise, []));
+
+        var observations = monitor.Process(new AircraftSnapshot(
+            Guid.NewGuid(), t.AddSeconds(12), OnGround: false, Paused: false), FlightPhase.Cruise, []);
+
+        var pause = Assert.Single(observations);
+        Assert.Equal("PAUSE", pause.Code);
+        Assert.Equal("ACTIVE_PAUSE", pause.Status);
+        Assert.Equal(12d, pause.Value);
+        Assert.Contains("Active Pause", pause.Message);
+    }
+
+    [Fact]
     public void Restore_prevents_duplicate_approach_gate_after_recovery()
     {
         var monitor = new FlightDataMonitor();
