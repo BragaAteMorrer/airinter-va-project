@@ -1,5 +1,6 @@
 <?php
 
+use App\Contracts\Model as BaseModel;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -118,6 +119,17 @@ return new class extends Migration {
             });
         }
 
+        if (!Schema::hasTable('promethee_pirep_aircraft_profiles')) {
+            Schema::create('promethee_pirep_aircraft_profiles', function (Blueprint $table) {
+                $table->string('pirep_id', BaseModel::ID_MAX_LENGTH);
+                $table->unsignedInteger('aircraft_id');
+                $table->longText('snapshot');
+                $table->timestamps();
+                $table->primary('pirep_id');
+                $table->index('aircraft_id', 'prom_pirep_aircraft_idx');
+            });
+        }
+
         if (!Schema::hasTable('promethee_aircraft_modifications')) {
             Schema::create('promethee_aircraft_modifications', function (Blueprint $table) {
                 $table->increments('id');
@@ -143,6 +155,7 @@ return new class extends Migration {
     public function down(): void
     {
         Schema::dropIfExists('promethee_aircraft_modifications');
+        Schema::dropIfExists('promethee_pirep_aircraft_profiles');
         Schema::dropIfExists('promethee_airframe_simulator_profiles');
         Schema::dropIfExists('promethee_aircraft_configuration_assignments');
         Schema::dropIfExists('promethee_airframe_configurations');
