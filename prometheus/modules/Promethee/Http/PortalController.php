@@ -2625,12 +2625,52 @@ class PortalController extends Controller
     }
     public function adminDashboard(Request $r) {
         $monthStart = now()->startOfMonth();
+        $activePilots = User::where('state', UserState::ACTIVE)->count();
+        $newPilots = User::where('created_at', '>=', $monthStart)->count();
+        $pendingPireps = Pirep::where('state', PirepState::PENDING)->count();
+        $acceptedPireps = Pirep::where('state', PirepState::ACCEPTED)->where('submitted_at','>=',$monthStart)->count();
+        $rejectedPireps = Pirep::where('state', PirepState::REJECTED)->where('submitted_at','>=',$monthStart)->count();
+        $simbriefApiConfigured = app(\Modules\Promethee\Services\SimBriefCompanyKeyService::class)->configured();
+
+        $attentionItems = [];
+        if ($pendingPireps > 0) {
+            $attentionItems[] = [
+                'severity' => 'critical',
+                'title' => 'PIREPs en attente',
+                'description' => 'Des rapports attendent une décision staff.',
+                'count' => $pendingPireps,
+                'href' => url('/admin/pireps'),
+                'action' => 'Traiter les PIREPs',
+            ];
+        }
+        if ($rejectedPireps > 0) {
+            $attentionItems[] = [
+                'severity' => 'warning',
+                'title' => 'PIREPs rejetés ce mois',
+                'description' => 'Contrôlez les rejets récents et les éventuelles reprises pilote.',
+                'count' => $rejectedPireps,
+                'href' => url('/admin/pireps'),
+                'action' => 'Voir les rejets',
+            ];
+        }
+        if (!$simbriefApiConfigured) {
+            $attentionItems[] = [
+                'severity' => 'warning',
+                'title' => 'SimBrief compagnie non configuré',
+                'description' => 'La génération OFP peut être dégradée tant que la clé compagnie n’est pas disponible.',
+                'count' => null,
+                'href' => route('admin.promethee.simbrief'),
+                'action' => 'Configurer SimBrief',
+            ];
+        }
+
         return $this->page('admin.dashboard', [
-            'activePilots' => User::where('state', UserState::ACTIVE)->count(),
-            'newPilots' => User::where('created_at', '>=', $monthStart)->count(),
-            'pendingPireps' => Pirep::where('state', PirepState::PENDING)->count(),
-            'acceptedPireps' => Pirep::where('state', PirepState::ACCEPTED)->where('submitted_at','>=',$monthStart)->count(),
-            'rejectedPireps' => Pirep::where('state', PirepState::REJECTED)->where('submitted_at','>=',$monthStart)->count(),
+            'activePilots' => $activePilots,
+            'newPilots' => $newPilots,
+            'pendingPireps' => $pendingPireps,
+            'acceptedPireps' => $acceptedPireps,
+            'rejectedPireps' => $rejectedPireps,
+            'attentionItems' => $attentionItems,
             'flightMinutes' => (int) Pirep::where('state', PirepState::ACCEPTED)->sum('flight_time'),
             'activeEvents' => DB::table('promethee_events')->where('ends_at','>=',now())->count(),
             'recentProgression' => DB::table('promethee_progression_history')->latest()->limit(8)->get(),
@@ -2640,7 +2680,7 @@ class PortalController extends Controller
             'shopItems' => DB::table('promethee_shop_items')->where('active',true)->count(),
             'regionalBases' => DB::table('promethee_operational_bases')->where('active',true)->count(),
             'jumpseatCount' => DB::table('promethee_transfer_requests')->where('type','jumpseat')->count(),
-            'simbriefApiConfigured' => app(\Modules\Promethee\Services\SimBriefCompanyKeyService::class)->configured(),
+            'simbriefApiConfigured' => $simbriefApiConfigured,
         ]);
     }
     public function automation() {
