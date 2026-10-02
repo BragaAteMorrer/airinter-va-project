@@ -41,6 +41,37 @@ public sealed class FlightReviewTests
         Assert.Contains(review.Observations, x => x.Code == "APPROACH_1000_STABLE");
         Assert.Contains(review.Observations, x => x.Code == "APPROACH_500_UNSTABLE");
         Assert.Contains(review.Observations, x => x.Code == "TOUCHDOWN");
+        Assert.True(review.Profile.Count >= 6);
+        Assert.Equal(300d, review.Profile.First().Altitude, 0);
+        Assert.Contains(review.Profile, point => point.Altitude >= 35000);
+    }
+
+    [Fact]
+    public void Review_profile_is_sampled_with_altitude_and_fuel_and_survives_recovery()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "AirInter-Hermes-Review-Tests", Guid.NewGuid().ToString("N"));
+        var t = DateTimeOffset.Parse("2026-09-24T18:00:00Z");
+        var first = new FlightRecorder(folder);
+
+        first.Start("https://promethee.example", "pirep-profile",
+            S(t, true, 0, 0, 0, true) with { Fuel = 10000 });
+        first.Capture(S(t.AddSeconds(31), true, 10, 0, 0, false) with { Fuel = 9800 });
+        first.Capture(S(t.AddSeconds(62), false, 180, 2500, 1200, false, gearDown: false) with { Fuel = 9400 });
+        first.Capture(S(t.AddSeconds(93), false, 300, 12000, 1400, false, gearDown: false) with { Fuel = 9000 });
+
+        var review = first.GetReview();
+        Assert.NotNull(review);
+        Assert.True(review!.Profile.Count >= 4);
+        Assert.Equal(10000d, review.Profile.First().Fuel, 0);
+        Assert.Equal(9000d, review.Profile.Last().Fuel, 0);
+        Assert.True(review.Profile.Last().Altitude > review.Profile.First().Altitude);
+
+        var recovered = new FlightRecorder(folder);
+        Assert.True(recovered.RecoveryAvailable);
+        var recoveredReview = recovered.GetReview();
+        Assert.NotNull(recoveredReview);
+        Assert.Equal(review.Profile.Count, recoveredReview!.Profile.Count);
+        Assert.Equal(review.Profile.Last().Fuel, recoveredReview.Profile.Last().Fuel);
     }
 
     [Fact]

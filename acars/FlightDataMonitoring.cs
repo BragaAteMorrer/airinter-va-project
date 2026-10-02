@@ -11,6 +11,12 @@ public sealed record FdmObservation(
     string? Phase = null,
     string? Status = null);
 
+public sealed record FlightProfilePoint(
+    DateTimeOffset RecordedAt,
+    double Altitude,
+    double Fuel,
+    double GroundSpeed);
+
 public sealed record FlightReview(
     string PirepId,
     string Phase,
@@ -31,7 +37,8 @@ public sealed record FlightReview(
     int PausedSeconds,
     IReadOnlyList<FlightIssue> Issues,
     IReadOnlyList<FdmObservation> Observations,
-    IReadOnlyList<PhaseEntry> Timeline);
+    IReadOnlyList<PhaseEntry> Timeline,
+    IReadOnlyList<FlightProfilePoint> Profile);
 
 /// <summary>
 /// Simulator-neutral Flight Data Monitoring. It records observations only:

@@ -44,6 +44,7 @@ public sealed class FlightRecorder
     private bool recoveryRequired;
     public FlightState? Flight { get; private set; }
     public List<TrackPoint> Track { get; private set; } = [];
+    public List<FlightProfilePoint> Profile { get; private set; } = [];
     public List<FlightSummary> History { get; private set; } = [];
     public AcarsRules Rules { get; private set; } = new();
     public List<Envelope> Pending { get; private set; } = [];
@@ -86,6 +87,7 @@ public sealed class FlightRecorder
                 Flight = saved?.Flight; Pending = saved?.Pending ?? []; PendingEvents = saved?.PendingEvents ?? [];
                 PendingFacts = saved?.PendingFacts ?? [];
                 Track = saved?.Track ?? [];
+                Profile = saved?.Profile ?? [];
                 if (Flight is not null) {
                     Flight = Flight with { Recording = false };
                     recoveryRequired = true;
@@ -102,7 +104,8 @@ public sealed class FlightRecorder
         List<Envelope> Pending,
         List<AcarsEvent> PendingEvents,
         List<TrackPoint>? Track = null,
-        List<SopFactEnvelope>? PendingFacts = null);
+        List<SopFactEnvelope>? PendingFacts = null,
+        List<FlightProfilePoint>? Profile = null);
     private void SaveHistory() => File.WriteAllText(Path.Combine(folder, "history.json"), JsonSerializer.Serialize(History));
     public void SetRules(AcarsRules rules) { lock (Gate) { if (rules.TaxiSpeed is < 5 or > 100 || rules.HardLandingRate is < 100 or > 2000) throw new InvalidOperationException("Valeurs de règles invalides."); Rules = rules; File.WriteAllText(Path.Combine(folder, "rules.json"), JsonSerializer.Serialize(rules)); } }
     public void ApplyRemoteConfiguration(RemoteAcarsConfiguration configuration)
@@ -116,7 +119,7 @@ public sealed class FlightRecorder
     {
         var temp = Path.Combine(folder, "state.tmp");
         using (var file = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None)) {
-            JsonSerializer.Serialize(file, new Saved(Flight, Pending, PendingEvents, Track, PendingFacts)); file.Flush(true);
+            JsonSerializer.Serialize(file, new Saved(Flight, Pending, PendingEvents, Track, PendingFacts, Profile)); file.Flush(true);
         }
         File.Move(temp, Path.Combine(folder, "state.json"), true);
     }
@@ -149,6 +152,7 @@ public sealed class FlightRecorder
             PendingEvents = [];
             PendingFacts = [];
             Track = [];
+            Profile = [new(sample.RecordedAt, sample.Altitude, sample.Fuel, sample.Gs)];
             tracking.Process(snapshot);
             fdm.Process(snapshot, FlightPhase.Boarding, []);
             QueuePosition(sample, snapshot);
@@ -222,7 +226,20 @@ public sealed class FlightRecorder
         Track.Add(new(s.RecordedAt, s.Lat, s.Lon, s.Altitude));
         if (Track.Count > 720) Track.RemoveRange(0, Track.Count - 720);
 
-        var changed = Flight.Phase != phaseBefore;
+        // Keep a lightweight, full-flight series for Flight Review. This is
+        // deliberately separate from the live-map track and network queue:
+        // one point every 30 seconds plus phase transitions gives several
+        // hours of profile history without growing the local state endlessly.
+        var phaseChanged = Flight.Phase != phaseBefore;
+        var profileChanged = Profile.Count == 0
+            || s.RecordedAt - Profile[^1].RecordedAt >= TimeSpan.FromSeconds(30)
+            || phaseChanged;
+        if (profileChanged) {
+            Profile.Add(new(s.RecordedAt, s.Altitude, s.Fuel, s.Gs));
+            if (Profile.Count > 720) Profile.RemoveRange(0, Profile.Count - 720);
+        }
+
+        var changed = phaseChanged || profileChanged;
         if (previous is not null) {
             var dt = (s.RecordedAt - previous.RecordedAt).TotalSeconds;
             if (dt > 0 && dt <= 10) {
@@ -275,7 +292,7 @@ public sealed class FlightRecorder
         var block = flight.BlockOn is null || flight.BlockOff is null ? 0 : (int)Math.Round((flight.BlockOn.Value - flight.BlockOff.Value).TotalMinutes);
         History.Insert(0, new(flight.PirepId, DateTimeOffset.UtcNow, Math.Round(flight.Distance, 2), (int)Math.Round(flight.AirborneSeconds / 60), block, Math.Round(flight.FuelUsed), flight.LandingRate, flight.Issues, flight.Observations));
         if (History.Count > 25) History.RemoveRange(25, History.Count - 25);
-        SaveHistory(); Flight = null; previous = null; previousSnapshot = null; Track = []; recoveryRequired = false; Save();
+        SaveHistory(); Flight = null; previous = null; previousSnapshot = null; Track = []; Profile = []; recoveryRequired = false; Save();
     }}
 
     public FlightReview? GetReview()
@@ -314,7 +331,8 @@ public sealed class FlightRecorder
                 (int)Math.Round(Flight.PausedSeconds),
                 Flight.Issues,
                 observations,
-                Flight.Timeline);
+                Flight.Timeline,
+                Profile.ToArray());
         }
     }
 
@@ -353,6 +371,7 @@ public sealed class FlightRecorder
             PendingEvents = [];
             PendingFacts = [];
             Track = [];
+            Profile = [];
             recoveryRequired = false;
             Warning = null;
             Save();
