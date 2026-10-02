@@ -170,6 +170,9 @@ jobs:
           php -l tests/PresenceServiceTest.php
           php -l modules/Promethee/Services/OperationIdentityService.php
           php -l modules/Promethee/Services/SafetyAnalyzer.php
+          php -l modules/Promethee/Services/HermesScoringService.php
+          php -l modules/Promethee/Database/migrations/2026_10_03_000024_add_hermes_pirep_scoring.php
+          php -l tests/PrometheeHermesScoringTest.php
           php -l modules/Promethee/Services/AircraftOperationalStateService.php
           php -l modules/Promethee/Services/DemandProfileService.php
           php -l modules/Promethee/Services/AirInterCabinProfileService.php
@@ -258,6 +261,8 @@ jobs:
         run: composer install --no-interaction --prefer-dist --no-progress
       - name: Run Hermès operation lifecycle regression suite
         run: vendor/bin/phpunit tests/HermesOperationLifecycleTest.php
+      - name: Run Hermès vmsACARS scoring regression suite
+        run: vendor/bin/phpunit tests/PrometheeHermesScoringTest.php
       - name: Run sb-airframe historical configuration tests
         run: vendor/bin/phpunit tests/AircraftConfigurationResolverTest.php
 
