@@ -266,6 +266,7 @@ class PirepController extends Controller
         $this->checkReadOnly($pirep);
 
         $attrs = $this->parsePirep($request);
+        $hermesScoring = null;
 
         // Hermès is a two-phase lifecycle: PREFILE prepares the active report,
         // FILE is allowed only after the simulator has actually produced flight
@@ -300,6 +301,21 @@ class PirepController extends Controller
                 409,
                 'Dépôt final refusé : Hermès n’a pas encore confirmé l’arrivée au parking (événement IN).'
             );
+
+            // The score is server-authoritative. Never trust a score supplied by
+            // the desktop client: calculate it from the current vmsACARS policy
+            // and the telemetry already received by Prométhée.
+            $landingRate = isset($attrs['landing_rate']) && is_numeric($attrs['landing_rate'])
+                ? (float) $attrs['landing_rate']
+                : null;
+            $hermesScoring = app(\Modules\Promethee\Services\HermesScoringService::class)
+                ->calculate($pirep, $landingRate);
+
+            if (($hermesScoring['available'] ?? false) && isset($hermesScoring['score'])) {
+                $attrs['score'] = (int) $hermesScoring['score'];
+            } else {
+                unset($attrs['score']);
+            }
         }
 
         // If aircraft is being changed, see if this user is allowed to fly this aircraft
@@ -334,6 +350,11 @@ class PirepController extends Controller
         $this->pirepSvc->submit($pirep);
         $pirep->refresh();
 
+        if (is_array($hermesScoring) && ($hermesScoring['available'] ?? false)) {
+            app(\Modules\Promethee\Services\HermesScoringService::class)
+                ->persist($pirep, $hermesScoring);
+        }
+
         if (str_starts_with((string) $pirep->source_name, 'Hermes ACARS [op_')) {
             preg_match('/Hermes ACARS \\[(op_[^\\]]+)\\]/', (string) $pirep->source_name, $matches);
             Log::info('hermes_operation_transition', [
@@ -343,6 +364,8 @@ class PirepController extends Controller
                 'pirep_state' => (int) $pirep->state,
                 'pirep_status' => $pirep->status instanceof \BackedEnum ? $pirep->status->value : $pirep->status,
                 'aircraft_id' => $pirep->aircraft_id,
+            'score' => $pirep->score,
+                'score_deductions' => $hermesScoring['deductions_total'] ?? null,
             ]);
         }
 
