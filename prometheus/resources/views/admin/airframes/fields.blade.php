@@ -49,9 +49,19 @@
     <p class="text-danger">{{ $errors->first('simbrief_proxy_type') }}</p>
   </div>
   <div class="form-group col-sm-4" data-sb-section="proxy">
+    <label for="simbrief_name">Nom transmis à SimBrief</label>
+    <input class="form-control" id="simbrief_name" name="simbrief_name" maxlength="12"
+           value="{{ old('simbrief_name', $sb['name'] ?? '') }}" placeholder="NORD 262">
+    <p class="help-block">1 à 12 caractères. Le nom d’affichage Prométhée reste inchangé.</p>
+    <p class="text-danger">{{ $errors->first('simbrief_name') }}</p>
+  </div>
+</div>
+<div class="row" data-sb-section="proxy">
+  <div class="form-group col-sm-4">
     <label for="simbrief_engines">Moteur transmis</label>
-    <input class="form-control" id="simbrief_engines" name="simbrief_engines"
+    <input class="form-control" id="simbrief_engines" name="simbrief_engines" maxlength="12"
            value="{{ old('simbrief_engines', $sb['engines'] ?? '') }}" placeholder="BASTAN VIC">
+    <p class="help-block">1 à 12 caractères, conformément à l’API SimBrief.</p>
     <p class="text-danger">{{ $errors->first('simbrief_engines') }}</p>
   </div>
 </div>
