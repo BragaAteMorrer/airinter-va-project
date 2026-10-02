@@ -82,7 +82,42 @@ class FleetRotationService
 
         $groups = $candidates->groupBy('subfleet_id');
 
-        // First use invisible rotation to bring an engine nearing TBO to a
+        // First keep airframes approaching an A/B/C limit on a site able to
+        // perform the required check. C has precedence over B, then A.
+        foreach ($groups as $group) {
+            if ($pairs >= $pairBudget) {
+                break;
+            }
+
+            foreach ($group->filter(fn ($candidate) => $candidate->check_priority !== null) as $priority) {
+                if ($pairs >= $pairBudget || isset($used[$priority->aircraft_id])) {
+                    continue;
+                }
+
+                $capableBases = $this->checkCapableBases($priority->check_priority);
+                if (in_array($priority->base, $capableBases, true)) {
+                    continue;
+                }
+
+                $partner = $group->first(function ($candidate) use ($priority, $used, $capableBases) {
+                    return $candidate->aircraft_id !== $priority->aircraft_id
+                        && !isset($used[$candidate->aircraft_id])
+                        && $candidate->base !== $priority->base
+                        && in_array($candidate->base, $capableBases, true)
+                        && $candidate->check_priority === null
+                        && !$candidate->engine_priority;
+                });
+
+                if ($partner && $this->swap($priority, $partner, 'airframe_check_'.strtolower($priority->check_priority).'_bias')) {
+                    $used[$priority->aircraft_id] = true;
+                    $used[$partner->aircraft_id] = true;
+                    $pairs++;
+                    $maintenancePriority++;
+                }
+            }
+        }
+
+        // Then use invisible rotation to bring an engine nearing TBO to a
         // capable maintenance station, without changing the base quota.
         foreach ($groups as $group) {
             if ($pairs >= $pairBudget) {
@@ -99,7 +134,8 @@ class FleetRotationService
                         && !isset($used[$candidate->aircraft_id])
                         && $candidate->base !== $priority->base
                         && in_array($candidate->base, $overhaulBases, true)
-                        && !$candidate->engine_priority;
+                        && !$candidate->engine_priority
+                        && $candidate->check_priority === null;
                 });
 
                 if ($partner && $this->swap($priority, $partner, 'engine_maintenance_bias')) {
@@ -121,7 +157,7 @@ class FleetRotationService
                 // An aircraft nearing engine TBO may only move toward an
                 // overhaul-capable site in the priority pass above. Never send
                 // it away again as part of a routine overnight permutation.
-                ->filter(fn ($candidate) => !isset($used[$candidate->aircraft_id]) && !$candidate->engine_priority)
+                ->filter(fn ($candidate) => !isset($used[$candidate->aircraft_id]) && !$candidate->engine_priority && $candidate->check_priority === null)
                 ->sortBy(fn ($candidate) => $candidate->last_rotated_at ?: '1970-01-01 00:00:00')
                 ->values();
 
@@ -170,6 +206,7 @@ class FleetRotationService
             ? DB::table('disposable_maintenance')->whereNotNull('act_note')->pluck('aircraft_id')->map(fn ($id) => (int) $id)->flip()
             : collect();
         $enginePriority = $this->enginePriorityAircraft((float) $settings['maintenance_bias_hours']);
+        $airframePriority = $this->airframeMaintenancePriorityAircraft();
 
         $idleBefore = now()->subHours($settings['min_idle_hours']);
         $rotatedBefore = now()->subDays($settings['cooldown_days']);
@@ -180,7 +217,7 @@ class FleetRotationService
             ->whereNotNull('subfleet_id')
             ->orderBy('id')
             ->get(['id', 'subfleet_id', 'registration', 'airport_id', 'hub_id', 'landing_time', 'status', 'state'])
-            ->map(function (Aircraft $aircraft) use ($assignments, $bidAircraft, $busyPireps, $missionAircraft, $maintenanceAircraft, $enginePriority, $idleBefore, $rotatedBefore, $settings) {
+            ->map(function (Aircraft $aircraft) use ($assignments, $bidAircraft, $busyPireps, $missionAircraft, $maintenanceAircraft, $enginePriority, $airframePriority, $idleBefore, $rotatedBefore, $settings) {
                 $assignment = $assignments->get($aircraft->id);
                 if (!$assignment) {
                     return null;
@@ -211,10 +248,68 @@ class FleetRotationService
                     'base' => $base,
                     'last_rotated_at' => $assignment->last_rotated_at,
                     'engine_priority' => $enginePriority->has((int) $aircraft->id),
+                    'check_priority' => $airframePriority->get((int) $aircraft->id),
                 ];
             })
             ->filter()
             ->values();
+    }
+
+    private function airframeMaintenancePriorityAircraft(): Collection
+    {
+        if (!Schema::hasTable('disposable_maintenance')) {
+            return collect();
+        }
+
+        return DB::table('disposable_maintenance')
+            ->get(['aircraft_id', 'rem_ta', 'rem_tb', 'rem_tc', 'rem_ca', 'rem_cb', 'rem_cc'])
+            ->mapWithKeys(function ($row) {
+                // The legacy maintenance engine stores remaining time in
+                // minutes. Move an idle airframe toward a capable base before
+                // it reaches the limit: 10 h or 3 cycles, whichever comes first.
+                $thresholdMinutes = 10 * 60;
+                $thresholdCycles = 3;
+
+                $priority = null;
+                foreach (['C', 'B', 'A'] as $check) {
+                    $suffix = strtolower($check);
+                    $remainingMinutes = $row->{'rem_t'.$suffix};
+                    $remainingCycles = $row->{'rem_c'.$suffix};
+
+                    $timeNear = $remainingMinutes !== null && (int) $remainingMinutes <= $thresholdMinutes;
+                    $cyclesNear = $remainingCycles !== null && (int) $remainingCycles <= $thresholdCycles;
+                    if ($timeNear || $cyclesNear) {
+                        $priority = $check;
+                        break;
+                    }
+                }
+
+                return $priority === null ? [] : [(int) $row->aircraft_id => $priority];
+            });
+    }
+
+    private function checkCapableBases(string $check): array
+    {
+        if (!Schema::hasTable('promethee_operational_bases')) {
+            return [];
+        }
+
+        $column = match (strtoupper($check)) {
+            'C' => 'check_c',
+            'B' => 'check_b',
+            default => 'check_a',
+        };
+
+        if (!Schema::hasColumn('promethee_operational_bases', $column)) {
+            return [];
+        }
+
+        return DB::table('promethee_operational_bases')
+            ->where('active', true)
+            ->where($column, true)
+            ->pluck('airport_id')
+            ->map(fn ($id) => strtoupper((string) $id))
+            ->all();
     }
 
     private function enginePriorityAircraft(float $biasHours): Collection
