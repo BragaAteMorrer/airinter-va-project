@@ -42,11 +42,19 @@ public sealed class PrometheeWindow : Window
     private async Task StartAsync()
     {
         await web.EnsureCoreWebView2Async(); var core=web.CoreWebView2;
+
+        // wwwroot is packaged with Hermès but WebView2 keeps a persistent HTTP
+        // cache for the virtual host. Clear only the disk cache (not cookies or
+        // DOM storage) so an updated app.js can never keep running an obsolete
+        // PIREP lifecycle after an application update.
+        await core.Profile.ClearBrowsingDataAsync(CoreWebView2BrowsingDataKinds.DiskCache);
+
         core.Settings.AreDevToolsEnabled=false; core.Settings.AreDefaultContextMenusEnabled=false; core.WebMessageReceived += async (_, e) => await Handle(e.WebMessageAsJson);
         var assets = Path.Combine(AppContext.BaseDirectory,"wwwroot");
         if (!System.IO.File.Exists(Path.Combine(assets, "index.html"))) throw new InvalidOperationException("Ressources ACARS introuvables dans la publication.");
         core.SetVirtualHostNameToFolderMapping("promethee.local", assets, CoreWebView2HostResourceAccessKind.DenyCors);
-        core.Navigate("https://promethee.local/index.html?rev=20260928-hermes-108-operational");
+        var assetRevision = typeof(WebDesktop).Assembly.GetName().Version?.ToString() ?? UpdateService.CurrentVersion;
+        core.Navigate($"https://promethee.local/index.html?rev={Uri.EscapeDataString(assetRevision)}");
     }
     private async Task CheckForUpdatesAsync()
     {
