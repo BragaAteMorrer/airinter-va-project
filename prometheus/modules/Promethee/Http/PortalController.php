@@ -2952,7 +2952,7 @@ class PortalController extends Controller
         return back()->with('success','Compagnie et seuil d’accès enregistrés.');
     }
 
-    public function adminMaintenance(EngineMaintenanceService $engineService) {
+    public function adminMaintenance() {
         abort_unless(Schema::hasTable('promethee_engine_profiles'), 503, 'Migration maintenance moteur non appliquée.');
 
         $profiles = DB::table('promethee_engine_profiles as profile')
@@ -3037,7 +3037,7 @@ class PortalController extends Controller
         return back()->with('success','Profil moteur enregistré et flotte correspondante synchronisée.');
     }
 
-    public function createEngineUnit(Request $r) {
+    public function createEngineUnit(Request $r, EngineMaintenanceService $engineService) {
         $data = $r->validate([
             'engine_profile_id'=>'required|integer|exists:promethee_engine_profiles,id',
             'serial_number'=>'required|string|max:96|unique:promethee_engines,serial_number',
@@ -3048,7 +3048,7 @@ class PortalController extends Controller
         $profile = DB::table('promethee_engine_profiles')->where('id',$data['engine_profile_id'])->first();
         abort_unless($profile,404);
 
-        DB::table('promethee_engines')->insert([
+        $engineId=DB::table('promethee_engines')->insertGetId([
             'engine_profile_id'=>$profile->id,
             'serial_number'=>strtoupper(trim($data['serial_number'])),
             'engine_type'=>$profile->engine_type,
@@ -3061,6 +3061,7 @@ class PortalController extends Controller
             'created_at'=>now(),
             'updated_at'=>now(),
         ]);
+        $engineService->refreshStatus((int)$engineId);
 
         return back()->with('success','Moteur ajouté au stock.');
     }
