@@ -6,6 +6,7 @@ use App\Models\Aircraft;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class AircraftConfigurationResolver
 {
@@ -104,6 +105,8 @@ class AircraftConfigurationResolver
 
     private function assignmentFor(Aircraft $aircraft, CarbonImmutable $on, bool $preferVaActive): ?object
     {
+        if (!Schema::hasTable('promethee_aircraft_configuration_assignments')) return null;
+
         $query = DB::table('promethee_aircraft_configuration_assignments')
             ->where('aircraft_id', $aircraft->id)
             ->where(function ($q) use ($on) {
@@ -189,6 +192,8 @@ class AircraftConfigurationResolver
 
     private function simulatorProfiles(?int $variantId, ?int $configurationId): array
     {
+        if ((!$variantId && !$configurationId) || !Schema::hasTable('promethee_aircraft_simulator_profiles')) return [];
+
         return DB::table('promethee_aircraft_simulator_profiles')
             ->where('active', true)
             ->where(function ($q) use ($variantId, $configurationId) {
