@@ -43,6 +43,12 @@ final class HermesOperationLifecycleTest extends TestCase
         $this->assertSame('reserved', $operation['status']);
         $this->assertNull($operation['pirep_id']);
         $this->assertNotSame('completed', $operation['status']);
+
+        $dispatch = $this->dispatch($fx);
+        $this->assertSame('2.0', $dispatch['workflow_contract_version']);
+        $this->assertSame('RESERVED', $dispatch['workflow_state']['state']);
+        $this->assertSame('SELECT_AIRCRAFT', $dispatch['workflow_state']['next_action']['code']);
+        $this->assertFalse((bool) $dispatch['workflow_state']['terminal']);
     }
 
     public function test_02_aircraft_selection_keeps_operation_active(): void
@@ -79,6 +85,10 @@ final class HermesOperationLifecycleTest extends TestCase
         $this->assertTrue((bool) $operation['simbrief']['available']);
         $this->assertSame('planned', $operation['status']);
         $this->assertNotSame('completed', $operation['status']);
+
+        $dispatch = $this->dispatch($fx);
+        $this->assertSame('PLANNING', $dispatch['workflow_state']['state']);
+        $this->assertSame('FINALIZE_PREPARATION', $dispatch['workflow_state']['next_action']['code']);
     }
 
     public function test_04_prefile_creates_active_pirep_and_keeps_reservation_visible(): void
@@ -94,6 +104,9 @@ final class HermesOperationLifecycleTest extends TestCase
 
         $dispatch = $this->dispatch($fx);
         $this->assertSame('READY', $dispatch['status']);
+        $this->assertSame('READY', $dispatch['workflow_state']['state']);
+        $this->assertSame('START_RECORDING', $dispatch['workflow_state']['next_action']['code']);
+        $this->assertSame(100, $dispatch['workflow_state']['preparation_progress']);
         $this->assertTrue((bool) $dispatch['can_start']);
         $this->assertNotSame('COMPLETED', $dispatch['status']);
 
@@ -155,6 +168,8 @@ final class HermesOperationLifecycleTest extends TestCase
 
         $dispatch = $this->dispatch($fx);
         $this->assertSame('IN_PROGRESS', $dispatch['status']);
+        $this->assertSame('IN_PROGRESS', $dispatch['workflow_state']['state']);
+        $this->assertSame('TRACK_FLIGHT', $dispatch['workflow_state']['next_action']['code']);
         $this->assertFalse((bool) $dispatch['terminal']);
         $this->assertSame($pirepId, $dispatch['pirep']['id']);
 
@@ -365,6 +380,8 @@ final class HermesOperationLifecycleTest extends TestCase
 
         $dispatch = $this->dispatch($fx);
         $this->assertSame('AWAITING_FILING', $dispatch['status']);
+        $this->assertSame('AWAITING_FILING', $dispatch['workflow_state']['state']);
+        $this->assertSame('REVIEW_AND_FILE', $dispatch['workflow_state']['next_action']['code']);
         $this->assertFalse((bool) $dispatch['terminal']);
 
         $operation = $this->get('/api/v1/operations/'.$fx['operation_id'], [], $fx['user'])
