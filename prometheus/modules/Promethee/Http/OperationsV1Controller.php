@@ -652,6 +652,8 @@ class OperationsV1Controller extends Controller
             })->all();
 
         $debrief = $this->safetyAnalyzer->debrief($pirep->landing_rate, $samples);
+        $scoringService = app(\Modules\Promethee\Services\HermesScoringService::class);
+        $scoring = $scoringService->stored($pirep) ?? $scoringService->calculate($pirep);
         $first = $samples[0] ?? null;
         $last = $samples ? $samples[array_key_last($samples)] : null;
         $blockMinutes = ($pirep->block_off_time && $pirep->block_on_time)
@@ -678,10 +680,12 @@ class OperationsV1Controller extends Controller
                 'telemetry_samples' => count($samples),
             ],
             'debrief' => $debrief,
+            'scoring' => $scoring,
             'provenance' => [
                 'flight_record' => 'phpvms_pirep',
                 'telemetry' => 'hermes',
                 'analysis' => 'promethee_safety_analyzer_v'.SafetyAnalyzer::VERSION,
+                'scoring' => 'vmsacars-compatible-v'.\Modules\Promethee\Services\HermesScoringService::VERSION,
             ],
         ]]);
     }
