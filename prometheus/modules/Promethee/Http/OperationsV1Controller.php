@@ -653,7 +653,30 @@ class OperationsV1Controller extends Controller
 
         $debrief = $this->safetyAnalyzer->debrief($pirep->landing_rate, $samples);
         $scoringService = app(\Modules\Promethee\Services\HermesScoringService::class);
-        $scoring = $scoringService->stored($pirep) ?? $scoringService->calculate($pirep);
+        $scoringLandingRate = is_numeric($pirep->landing_rate) ? (float) $pirep->landing_rate : null;
+
+        // Before FILE, phpVMS has not stored landing_rate yet. Hermès already
+        // sent the confirmed TOUCHDOWN FDM fact, so use that exact event for the
+        // preview instead of guessing from generic vertical-speed samples.
+        if ($scoringLandingRate === null
+            && preg_match('/Hermes ACARS \\[(op_[^\\]]+)\\]/', (string) $pirep->source_name, $operationMatch)) {
+            try {
+                $sopState = app(\Modules\Promethee\Services\SopEngineService::class)
+                    ->operation($operationMatch[1], (int) $request->user()->id);
+                $touchdown = collect($sopState['facts'] ?? [])
+                    ->filter(fn (array $fact) => ($fact['code'] ?? null) === 'TOUCHDOWN' && is_numeric($fact['value'] ?? null))
+                    ->sortBy('occurred_at')
+                    ->last();
+                if ($touchdown) {
+                    $scoringLandingRate = (float) $touchdown['value'];
+                }
+            } catch (\Throwable) {
+                // Missing SOP state must only make the rule non-evaluable.
+            }
+        }
+
+        $scoring = $scoringService->stored($pirep)
+            ?? $scoringService->calculate($pirep, $scoringLandingRate);
         $first = $samples[0] ?? null;
         $last = $samples ? $samples[array_key_last($samples)] : null;
         $blockMinutes = ($pirep->block_off_time && $pirep->block_on_time)
@@ -674,7 +697,7 @@ class OperationsV1Controller extends Controller
                 'block_minutes' => $blockMinutes,
                 'flight_minutes' => $pirep->flight_time,
                 'fuel_used' => $this->scalarValue($pirep->fuel_used),
-                'landing_rate_fpm' => $pirep->landing_rate,
+                'landing_rate_fpm' => $pirep->landing_rate ?? $scoringLandingRate,
                 'telemetry_first_at' => $first['recorded_at'] ?? null,
                 'telemetry_last_at' => $last['recorded_at'] ?? null,
                 'telemetry_samples' => count($samples),
