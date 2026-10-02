@@ -148,6 +148,7 @@ jobs:
           php -l modules/Promethee/Console/RepairHermesPirepCommand.php
           php -l tests/HermesOperationLifecycleTest.php
           php -l app/Http/Controllers/Api/PirepController.php
+          php -l app/Models/Casts/CarbonCast.php
           php -l modules/Promethee/Http/DatalinkController.php
           php -l modules/Promethee/Services/DatalinkService.php
           php -l tests/DatalinkServiceTest.php
