@@ -25,6 +25,7 @@ use Modules\Promethee\Services\SafetyAnalyzer;
 use Modules\Promethee\Services\AircraftOperationalStateService;
 use Modules\Promethee\Services\DemandProfileService;
 use Modules\Promethee\Services\AircraftVariantService;
+use Modules\Promethee\Services\AircraftConfigurationResolver;
 use Modules\Promethee\Services\HermesPirepLifecycleService;
 
 /**
@@ -45,6 +46,7 @@ class OperationsV1Controller extends Controller
         private readonly AircraftOperationalStateService $aircraftState,
         private readonly DemandProfileService $demandProfile,
         private readonly AircraftVariantService $aircraftVariants,
+        private readonly AircraftConfigurationResolver $aircraftConfigurations,
         private readonly HermesPirepLifecycleService $pirepLifecycle
     ) {}
 
@@ -933,7 +935,9 @@ class OperationsV1Controller extends Controller
         $selectedVariant = collect($variantState['variants'] ?? [])->first(
             fn ($variant) => ($variant['id'] ?? null) === ($variantState['selected_variant_id'] ?? null)
         );
-        $simbriefType = $selectedVariant['simbrief_type']
+        $resolvedAircraftProfile = $aircraft ? $this->aircraftConfigurations->resolve($aircraft) : null;
+        $simbriefType = $resolvedAircraftProfile['simbrief']['effective_type']
+            ?? $selectedVariant['simbrief_type']
             ?? $fallback['simbrief_type']
             ?? ($aircraft?->simbrief_type ?: ($subfleet?->simbrief_type ?: $aircraft?->icao));
         $airline = Str::lower((string) ($flight?->airline?->name ?? ''));
@@ -973,6 +977,11 @@ class OperationsV1Controller extends Controller
                 'type_key' => $this->demandProfile->typeKey($aircraft),
                 'type_label' => $this->demandProfile->typeLabel($aircraft),
                 'airport' => $aircraft->airport_id,
+                'historical_variant' => $resolvedAircraftProfile['variant'] ?? null,
+                'configuration' => $resolvedAircraftProfile['configuration'] ?? null,
+                'resolved_profile' => $resolvedAircraftProfile['resolved'] ?? null,
+                'profile_provenance' => $resolvedAircraftProfile['provenance'] ?? null,
+                'simulator_profiles' => $resolvedAircraftProfile['simulator_profiles'] ?? [],
             ], $flight ? $this->demandProfile->profile($aircraft, $flight, $this->operationIdentity->id($bid)) : []) : null,
             'simbrief' => [
                 'type' => $simbriefType,
@@ -985,6 +994,7 @@ class OperationsV1Controller extends Controller
                 // Hermès only needs to know whether company generation can be
                 // offered. The actual API key never leaves Prométhée.
                 'company_api_available' => app(\Modules\Promethee\Services\SimBriefCompanyKeyService::class)->configured(),
+                'resolved_profile' => $resolvedAircraftProfile['simbrief'] ?? null,
             ],
             'operating_rules' => [
                 'passenger_weight_kg' => config('acars.passenger_weight_kg'),
