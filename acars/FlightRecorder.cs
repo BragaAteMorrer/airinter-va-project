@@ -229,7 +229,7 @@ public sealed class FlightRecorder
                 else Warning = "Déplacement discontinu détecté ; segment exclu de la distance.";
 
                 var fuel = Flight.FuelUsed + Math.Max(0, previous.Fuel - s.Fuel);
-                var pausedInterval = previousSnapshot?.Paused == true || snapshot.Paused == true;
+                var pausedInterval = previousSnapshot?.Paused == true;
                 var airborne = Flight.AirborneSeconds + (!previous.OnGround && !pausedInterval ? dt : 0);
                 var paused = Flight.PausedSeconds + (pausedInterval ? dt : 0);
                 Flight = Flight with { Distance = distance, FuelUsed = fuel, AirborneSeconds = airborne, PausedSeconds = paused };
