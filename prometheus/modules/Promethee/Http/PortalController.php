@@ -10,13 +10,14 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\File as Filesystem;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use App\Services\AirportService;
 use App\Services\FinanceService;
 use App\Services\FileService;
 use App\Services\UserService;
 use App\Support\Money;
 use App\Support\Countries;
-use Modules\Promethee\Services\{BrandingService,BulletinService,CompanyAccessService,DemandProfileService,EconomyFareResolver,EconomyService,FlightOpsService,RegionalOperationsService,SafetyAnalyzer};
+use Modules\Promethee\Services\{BrandingService,BulletinService,CompanyAccessService,DemandProfileService,EconomyFareResolver,EconomyService,EngineMaintenanceService,FleetRotationService,FlightOpsService,RegionalOperationsService,SafetyAnalyzer};
 
 class PortalController extends Controller
 {
@@ -390,7 +391,33 @@ class PortalController extends Controller
                 is_numeric($item->rem_cc) ? (float) $item->rem_cc * 25 : INF,
             ], fn ($value) => is_finite($value)) ?: [INF]))->values();
 
-        return $this->page('maintenance', compact('maintenance', 'upcomingMaintenance', 'warningHours', 'warningCycles'));
+        $engineWarnings = Schema::hasTable('promethee_aircraft_engines')
+            ? DB::table('promethee_aircraft_engines as installation')
+                ->join('promethee_engines as engine', 'engine.id', '=', 'installation.engine_id')
+                ->join('aircraft as aircraft', 'aircraft.id', '=', 'installation.aircraft_id')
+                ->leftJoin('subfleets as subfleets', 'subfleets.id', '=', 'aircraft.subfleet_id')
+                ->leftJoin('airlines as airlines', 'airlines.id', '=', 'subfleets.airline_id')
+                ->whereIn('engine.status', ['warning', 'due'])
+                ->select([
+                    'engine.*',
+                    'installation.position',
+                    'aircraft.id as aircraft_id',
+                    'aircraft.registration',
+                    'aircraft.icao',
+                    'aircraft.airport_id',
+                    'airlines.icao as airline_icao',
+                ])
+                ->orderByRaw("CASE WHEN engine.status = 'due' THEN 0 ELSE 1 END")
+                ->orderBy('aircraft.registration')
+                ->get()
+                ->map(function ($engine) {
+                    $engine->remaining_hours = $engine->tbo_hours !== null ? round((float) $engine->tbo_hours - (float) $engine->hours_since_overhaul, 2) : null;
+                    $engine->remaining_cycles = $engine->tbo_cycles !== null ? (int) $engine->tbo_cycles - (int) $engine->cycles_since_overhaul : null;
+                    return $engine;
+                })
+            : collect();
+
+        return $this->page('maintenance', compact('maintenance', 'upcomingMaintenance', 'warningHours', 'warningCycles', 'engineWarnings'));
     }
 
     /** Operational record for one aircraft, including type-specific downloads. */
@@ -410,12 +437,13 @@ class PortalController extends Controller
             ->where('aircraft_id', $aircraft->id)->where('state', PirepState::ACCEPTED)
             ->latest('submitted_at')->take(10)->get();
         $maintenance = DB::table('disposable_maintenance')->where('aircraft_id', $aircraft->id)->first();
+        $engineUnits = Schema::hasTable('promethee_aircraft_engines') ? app(EngineMaintenanceService::class)->installedForAircraft((int) $aircraft->id) : collect();
         $stats = Pirep::where('aircraft_id', $aircraft->id)->where('state', PirepState::ACCEPTED)
             ->selectRaw('COUNT(*) as pireps, COALESCE(SUM(flight_time), 0) as flight_minutes, COALESCE(SUM(fuel_used), 0) as fuel_used, COALESCE(SUM(distance), 0) as distance, AVG(landing_rate) as landing_rate')
             ->first();
         $downloads = $aircraft->files->concat($aircraft->subfleet?->files ?? collect())->unique('id')->values();
 
-        return $this->page('aircraft', compact('aircraft', 'pireps', 'maintenance', 'stats', 'downloads'));
+        return $this->page('aircraft', compact('aircraft', 'pireps', 'maintenance', 'engineUnits', 'stats', 'downloads'));
     }
 
     /**
@@ -2287,6 +2315,7 @@ class PortalController extends Controller
             'value'=>'required|numeric|min:0.01|max:999999',
             'notes'=>'nullable|string|max:1000',
             'active'=>'nullable|boolean',
+            'engine_overhaul'=>'nullable|boolean',
         ]);
 
         DB::table('promethee_season_pricing_adjustments')->insert([
@@ -2924,7 +2953,143 @@ class PortalController extends Controller
         return back()->with('success','Compagnie et seuil d’accès enregistrés.');
     }
 
-    public function regionalOperations(Request $r, RegionalOperationsService $operations) {
+    public function adminMaintenance(EngineMaintenanceService $engineService) {
+        abort_unless(Schema::hasTable('promethee_engine_profiles'), 503, 'Migration maintenance moteur non appliquée.');
+
+        $profiles = DB::table('promethee_engine_profiles as profile')
+            ->join('subfleets as subfleet', 'subfleet.id', '=', 'profile.subfleet_id')
+            ->leftJoin('airlines as airline', 'airline.id', '=', 'subfleet.airline_id')
+            ->select('profile.*', 'subfleet.name as subfleet_name', 'subfleet.type as subfleet_type', 'airline.icao as airline_icao')
+            ->orderBy('airline.icao')->orderBy('subfleet.name')->get();
+
+        $subfleets = Subfleet::with('airline')->orderBy('name')->get();
+        $aircraft = Aircraft::with('subfleet.airline')->orderBy('registration')->get();
+
+        $engineUnits = DB::table('promethee_engines as engine')
+            ->join('promethee_engine_profiles as profile', 'profile.id', '=', 'engine.engine_profile_id')
+            ->join('subfleets as subfleet', 'subfleet.id', '=', 'profile.subfleet_id')
+            ->leftJoin('airlines as airline', 'airline.id', '=', 'subfleet.airline_id')
+            ->leftJoin('promethee_aircraft_engines as installation', 'installation.engine_id', '=', 'engine.id')
+            ->leftJoin('aircraft as aircraft', 'aircraft.id', '=', 'installation.aircraft_id')
+            ->select([
+                'engine.*',
+                'profile.subfleet_id',
+                'profile.warning_hours',
+                'profile.warning_cycles',
+                'subfleet.name as subfleet_name',
+                'airline.icao as airline_icao',
+                'installation.aircraft_id',
+                'installation.position',
+                'aircraft.registration',
+                'aircraft.airport_id',
+            ])
+            ->orderBy('airline.icao')->orderBy('subfleet.name')->orderBy('engine.serial_number')->get()
+            ->map(function ($engine) {
+                $engine->remaining_hours = $engine->tbo_hours !== null ? round((float) $engine->tbo_hours - (float) $engine->hours_since_overhaul, 2) : null;
+                $engine->remaining_cycles = $engine->tbo_cycles !== null ? (int) $engine->tbo_cycles - (int) $engine->cycles_since_overhaul : null;
+                return $engine;
+            });
+
+        $engineSites = DB::table('promethee_operational_bases')
+            ->where('active', true)->where('engine_overhaul', true)->orderBy('airport_id')->get();
+
+        $engineEvents = DB::table('promethee_engine_maintenance_events as event')
+            ->join('promethee_engines as engine', 'engine.id', '=', 'event.engine_id')
+            ->leftJoin('aircraft as aircraft', 'aircraft.id', '=', 'event.aircraft_id')
+            ->select('event.*', 'engine.serial_number', 'aircraft.registration')
+            ->latest('event.occurred_at')->limit(30)->get();
+
+        return $this->page('admin-maintenance', compact('profiles','subfleets','aircraft','engineUnits','engineSites','engineEvents'));
+    }
+
+    public function saveEngineProfile(Request $r, EngineMaintenanceService $engineService) {
+        $data = $r->validate([
+            'subfleet_id'=>'required|integer|exists:subfleets,id',
+            'engine_type'=>'required|string|max:80',
+            'engine_count'=>'required|integer|min:1|max:4',
+            'tbo_hours'=>'nullable|numeric|min:1|max:100000',
+            'tbo_cycles'=>'nullable|integer|min:1|max:100000',
+            'warning_hours'=>'required|numeric|min:0|max:10000',
+            'warning_cycles'=>'nullable|integer|min:0|max:10000',
+            'active'=>'nullable|boolean',
+        ]);
+
+        if (!$r->filled('tbo_hours') && !$r->filled('tbo_cycles')) {
+            return back()->withErrors(['tbo_hours'=>'Renseignez au moins une limite TBO en heures ou en cycles.'])->withInput();
+        }
+
+        DB::table('promethee_engine_profiles')->updateOrInsert(
+            ['subfleet_id'=>$data['subfleet_id']],
+            [
+                'engine_type'=>trim($data['engine_type']),
+                'engine_count'=>$data['engine_count'],
+                'tbo_hours'=>$data['tbo_hours'] ?? null,
+                'tbo_cycles'=>$data['tbo_cycles'] ?? null,
+                'warning_hours'=>$data['warning_hours'],
+                'warning_cycles'=>$data['warning_cycles'] ?? null,
+                'active'=>$r->boolean('active'),
+                'created_at'=>now(),
+                'updated_at'=>now(),
+            ]
+        );
+
+        $engineService->syncSubfleet((int) $data['subfleet_id']);
+
+        return back()->with('success','Profil moteur enregistré et flotte correspondante synchronisée.');
+    }
+
+    public function createEngineUnit(Request $r) {
+        $data = $r->validate([
+            'engine_profile_id'=>'required|integer|exists:promethee_engine_profiles,id',
+            'serial_number'=>'required|string|max:96|unique:promethee_engines,serial_number',
+            'hours_since_overhaul'=>'nullable|numeric|min:0|max:100000',
+            'cycles_since_overhaul'=>'nullable|integer|min:0|max:100000',
+        ]);
+
+        $profile = DB::table('promethee_engine_profiles')->where('id',$data['engine_profile_id'])->first();
+        abort_unless($profile,404);
+
+        DB::table('promethee_engines')->insert([
+            'engine_profile_id'=>$profile->id,
+            'serial_number'=>strtoupper(trim($data['serial_number'])),
+            'engine_type'=>$profile->engine_type,
+            'tbo_hours'=>$profile->tbo_hours,
+            'tbo_cycles'=>$profile->tbo_cycles,
+            'hours_since_overhaul'=>$data['hours_since_overhaul'] ?? 0,
+            'cycles_since_overhaul'=>$data['cycles_since_overhaul'] ?? 0,
+            'status'=>'serviceable',
+            'last_overhaul_at'=>null,
+            'created_at'=>now(),
+            'updated_at'=>now(),
+        ]);
+
+        return back()->with('success','Moteur ajouté au stock.');
+    }
+
+    public function overhaulEngine(int $engine, Request $r, EngineMaintenanceService $engineService) {
+        $data=$r->validate(['notes'=>'nullable|string|max:2000']);
+        try {
+            $engineService->overhaul($engine, (int) $r->user()->id, $data['notes'] ?? null);
+        } catch (\RuntimeException $exception) {
+            return back()->withErrors(['engine'=>$exception->getMessage()]);
+        }
+        return back()->with('success','Révision moteur enregistrée ; TBO et cycles remis à zéro.');
+    }
+
+    public function installEngine(int $engine, Request $r, EngineMaintenanceService $engineService) {
+        $data=$r->validate([
+            'aircraft_id'=>'required|integer|exists:aircraft,id',
+            'position'=>'required|integer|min:1|max:4',
+        ]);
+        try {
+            $engineService->install($engine, (int) $data['aircraft_id'], (int) $data['position'], (int) $r->user()->id);
+        } catch (\RuntimeException $exception) {
+            return back()->withErrors(['engine'=>$exception->getMessage()]);
+        }
+        return back()->with('success','Moteur installé ; l’ancien moteur de la position est revenu au stock.');
+    }
+
+    public function regionalOperations(Request $r, RegionalOperationsService $operations, FleetRotationService $rotation) {
         $operations->sync();
         $bases = DB::table('promethee_operational_bases as base')
             ->leftJoin('airports', 'airports.id', '=', 'base.airport_id')
@@ -2938,7 +3103,15 @@ class PortalController extends Controller
         $aircraft = Aircraft::with('subfleet.airline')->orderBy('registration')->get();
         $assignments = DB::table('promethee_aircraft_bases')->get()->keyBy('aircraft_id');
         $settings = $operations->settings();
-        return $this->page('admin-regional-operations', compact('bases','aircraft','assignments','settings'));
+        $rotationSettings = $rotation->settings();
+        $rotationLog = Schema::hasTable('promethee_fleet_rotation_log')
+            ? DB::table('promethee_fleet_rotation_log as rotation')
+                ->join('aircraft as first_aircraft', 'first_aircraft.id', '=', 'rotation.first_aircraft_id')
+                ->join('aircraft as second_aircraft', 'second_aircraft.id', '=', 'rotation.second_aircraft_id')
+                ->select('rotation.*', 'first_aircraft.registration as first_registration', 'second_aircraft.registration as second_registration')
+                ->latest('rotation.rotated_at')->limit(20)->get()
+            : collect();
+        return $this->page('admin-regional-operations', compact('bases','aircraft','assignments','settings','rotationSettings','rotationLog'));
     }
 
     public function saveRegionalOperations(Request $r) {
@@ -3006,6 +3179,7 @@ class PortalController extends Controller
                 'check_a'=>$checkA,
                 'check_b'=>$checkB,
                 'check_c'=>$checkC,
+                'engine_overhaul'=>$r->boolean('engine_overhaul'),
                 'small_maintenance'=>$checkA,
                 'heavy_maintenance'=>$checkB || $checkC,
                 'active'=>$r->boolean('active'),
@@ -3016,10 +3190,10 @@ class PortalController extends Controller
     }
 
     public function assignAircraftBase(Request $r) {
-        $data=$r->validate(['aircraft_id'=>'required|integer|exists:aircraft,id','base_airport_id'=>'required|string|max:8|exists:promethee_operational_bases,airport_id']);
+        $data=$r->validate(['aircraft_id'=>'required|integer|exists:aircraft,id','base_airport_id'=>'required|string|max:8|exists:promethee_operational_bases,airport_id','rotation_locked'=>'nullable|boolean']);
         DB::table('promethee_aircraft_bases')->updateOrInsert(
             ['aircraft_id'=>$data['aircraft_id']],
-            ['base_airport_id'=>strtoupper($data['base_airport_id']),'assigned_at'=>now(),'away_since'=>null,'repatriation_mission_id'=>null,'created_at'=>now(),'updated_at'=>now()]
+            ['base_airport_id'=>strtoupper($data['base_airport_id']),'assigned_at'=>now(),'away_since'=>null,'repatriation_mission_id'=>null,'rotation_locked'=>$r->boolean('rotation_locked'),'created_at'=>now(),'updated_at'=>now()]
         );
         Aircraft::where('id',$data['aircraft_id'])->update(['hub_id'=>strtoupper($data['base_airport_id'])]);
         return back()->with('success','Base de l’appareil mise à jour.');
@@ -3031,6 +3205,43 @@ class PortalController extends Controller
             $result['created'].' mission(s) de rapatriement créée(s), '
             .$result['cleared'].' situation(s) régularisée(s), '
             .$result['returned'].' retour(s) automatique(s).'
+        );
+    }
+
+    public function saveFleetRotationSettings(Request $r) {
+        $data = $r->validate([
+            'enabled'=>'nullable|boolean',
+            'frequency'=>'required|in:daily,weekly',
+            'percent'=>'required|integer|min:0|max:100',
+            'min_idle_hours'=>'required|integer|min:0|max:720',
+            'cooldown_days'=>'required|integer|min:0|max:365',
+            'maintenance_bias_hours'=>'required|integer|min:0|max:5000',
+        ]);
+
+        foreach ([
+            'regional.rotation_enabled'=>$r->boolean('enabled') ? '1' : '0',
+            'regional.rotation_frequency'=>$data['frequency'],
+            'regional.rotation_percent'=>$data['percent'],
+            'regional.rotation_min_idle_hours'=>$data['min_idle_hours'],
+            'regional.rotation_cooldown_days'=>$data['cooldown_days'],
+            'regional.rotation_maintenance_bias_hours'=>$data['maintenance_bias_hours'],
+        ] as $key=>$value) {
+            DB::table('promethee_settings')->updateOrInsert(
+                ['key'=>$key],
+                ['value'=>(string)$value,'created_at'=>now(),'updated_at'=>now()]
+            );
+        }
+
+        return back()->with('success','Règles de rotation automatique enregistrées.');
+    }
+
+    public function runFleetRotation(FleetRotationService $rotation) {
+        $result = $rotation->rotate(true);
+        return back()->with(
+            'success',
+            $result['pairs'].' permutation(s) effectuée(s), '
+            .$result['aircraft'].' appareil(s) déplacé(s), '
+            .$result['maintenance_priority'].' priorité(s) moteur. ['.$result['reason'].']'
         );
     }
     public function adminPassport() { return $this->page('admin-passport',['enabled'=>DB::table('promethee_settings')->where('key','passport.enabled')->value('value') !== '0','showMap'=>DB::table('promethee_settings')->where('key','passport.map_enabled')->value('value') !== '0']); }
