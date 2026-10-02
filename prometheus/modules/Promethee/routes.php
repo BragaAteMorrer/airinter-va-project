@@ -14,6 +14,7 @@ use Modules\Promethee\Http\DatalinkController;
 use Modules\Promethee\Http\SopController;
 use Modules\Promethee\Http\PresenceController;
 use Modules\Promethee\Http\DispatchDeskController;
+use Modules\Promethee\Http\AircraftConfigurationController;
 use Modules\Promethee\Http\CrmController;
 use Modules\Promethee\Http\Api\AcarsSimBriefController;
 use Modules\Promethee\Http\Api\AcarsSessionController;
@@ -225,6 +226,11 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::post('/regional-operations/rotation/settings', [PortalController::class,'saveFleetRotationSettings'])->name('regional.rotation.settings');
         Route::post('/regional-operations/rotation/run', [PortalController::class,'runFleetRotation'])->name('regional.rotation.run');
         Route::get('/maintenance', [PortalController::class,'adminMaintenance'])->name('maintenance');
+        Route::get('/aircraft-configurations', [AircraftConfigurationController::class,'adminIndex'])->name('aircraft-configurations');
+        Route::post('/aircraft-configurations/variants', [AircraftConfigurationController::class,'saveVariant'])->name('aircraft-configurations.variants.save');
+        Route::post('/aircraft-configurations/configurations', [AircraftConfigurationController::class,'saveConfiguration'])->name('aircraft-configurations.configurations.save');
+        Route::post('/aircraft-configurations/assign', [AircraftConfigurationController::class,'assign'])->name('aircraft-configurations.assign');
+        Route::post('/aircraft-configurations/simulator-profiles', [AircraftConfigurationController::class,'saveSimulatorProfile'])->name('aircraft-configurations.simulator-profiles.save');
         Route::post('/maintenance/engine-profiles', [PortalController::class,'saveEngineProfile'])->name('maintenance.engine-profiles.save');
         Route::post('/maintenance/engines', [PortalController::class,'createEngineUnit'])->name('maintenance.engines.create');
         Route::post('/maintenance/engines/{engine}/overhaul', [PortalController::class,'overhaulEngine'])->name('maintenance.engines.overhaul');
@@ -268,6 +274,7 @@ Route::middleware('api')->get('/api/v1/hermes/releases/latest', [HermesReleaseCo
 
 Route::middleware(['api','api.auth'])->prefix('api/v1')->group(function () {
     Route::get('/me', [OperationsV1Controller::class, 'me']);
+    Route::get('/aircraft/{registration}/resolved-profile', [AircraftConfigurationController::class, 'resolved']);
     Route::get('/me/aircraft-variants', [OperationsV1Controller::class, 'myAircraftVariants']);
     Route::put('/me/aircraft-variants', [OperationsV1Controller::class, 'saveMyAircraftVariants']);
     Route::get('/flights', [OperationsV1Controller::class, 'searchFlights']);
