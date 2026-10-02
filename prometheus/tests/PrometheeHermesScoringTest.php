@@ -21,10 +21,11 @@ final class PrometheeHermesScoringTest extends TestCase
             'landing_rate' => null,
         ]);
 
-        DB::table('vmsacars_rules')->update(['enabled' => false]);
-        $this->configureRule('EXCESS_TAXI_SPEED', 5, 30, false);
-        $this->configureRule('SPEED_UNDER_10K', 2, null, false);
-        $this->configureRule('HARD_LANDING', 20, 500, false);
+        $this->setPolicy([
+            $this->rule('EXCESS_TAXI_SPEED', 5, 30),
+            $this->rule('SPEED_UNDER_10K', 2),
+            $this->rule('HARD_LANDING', 20, 500),
+        ]);
 
         $at = Carbon::parse('2026-10-03 10:00:00', 'UTC');
         $this->telemetry($pirep, $at, [
@@ -68,14 +69,8 @@ final class PrometheeHermesScoringTest extends TestCase
             'landing_rate' => null,
         ]);
 
-        DB::table('vmsacars_rules')->update(['enabled' => false]);
-        DB::table('vmsacars_rules')->where('id', 'EXCESS_BANK')->update([
-            'enabled' => true,
-            'points' => 2,
-            'parameter' => 60,
-            'repeatable' => true,
-            'delay' => 0,
-            'cooldown' => 60,
+        $this->setPolicy([
+            $this->rule('EXCESS_BANK', 2, 60, true, 0, 60),
         ]);
 
         $at = Carbon::parse('2026-10-03 11:00:00', 'UTC');
@@ -101,14 +96,8 @@ final class PrometheeHermesScoringTest extends TestCase
             'landing_rate' => null,
         ]);
 
-        DB::table('vmsacars_rules')->update(['enabled' => false]);
-        DB::table('vmsacars_rules')->where('id', 'EXCESS_GFORCE')->update([
-            'enabled' => true,
-            'points' => 5,
-            'parameter' => 1,
-            'repeatable' => true,
-            'delay' => 0,
-            'cooldown' => 0,
+        $this->setPolicy([
+            $this->rule('EXCESS_GFORCE', 5, 1, true),
         ]);
 
         $result = app(HermesScoringService::class)->calculate($pirep);
@@ -133,8 +122,9 @@ final class PrometheeHermesScoringTest extends TestCase
             'landing_rate' => null,
         ]);
 
-        DB::table('vmsacars_rules')->update(['enabled' => false]);
-        $this->configureRule('HARD_LANDING', 20, 500, false);
+        $this->setPolicy([
+            $this->rule('HARD_LANDING', 20, 500),
+        ]);
 
         $at = Carbon::parse('2026-10-03 12:00:00', 'UTC');
         $this->telemetry($pirep, $at, [
@@ -169,14 +159,17 @@ final class PrometheeHermesScoringTest extends TestCase
             'landing_rate' => -700,
         ]);
 
-        DB::table('vmsacars_rules')->update(['enabled' => false]);
-        $this->configureRule('HARD_LANDING', 20, 500, false);
+        $this->setPolicy([
+            $this->rule('HARD_LANDING', 20, 500),
+        ]);
 
         $service = app(HermesScoringService::class);
         $result = $service->calculate($pirep);
         $service->persist($pirep, $result);
 
-        DB::table('vmsacars_rules')->where('id', 'HARD_LANDING')->update(['points' => 1]);
+        $this->setPolicy([
+            $this->rule('HARD_LANDING', 1, 500),
+        ]);
 
         $stored = $service->stored($pirep);
         $recalculated = $service->calculate($pirep);
@@ -187,16 +180,30 @@ final class PrometheeHermesScoringTest extends TestCase
         $this->assertSame(20, $stored['deductions'][0]['points']);
     }
 
-    private function configureRule(string $id, int $points, ?int $parameter, bool $repeatable): void
+    private function setPolicy(array $rules): void
     {
-        DB::table('vmsacars_rules')->where('id', $id)->update([
-            'enabled' => true,
-            'points' => $points,
+        config(['promethee.vmsacars-scoring.rules' => $rules]);
+    }
+
+    private function rule(
+        string $id,
+        int $points,
+        int|float|null $parameter = null,
+        bool $repeatable = false,
+        int $delay = 0,
+        int $cooldown = 0
+    ): array {
+        return [
+            'id' => $id,
+            'name' => $id,
             'parameter' => $parameter,
+            'points' => $points,
             'repeatable' => $repeatable,
-            'delay' => 0,
-            'cooldown' => 0,
-        ]);
+            'delay' => $delay,
+            'cooldown' => $cooldown,
+            'enabled' => true,
+            'order' => 0,
+        ];
     }
 
     private function telemetry(Pirep $pirep, Carbon $at, array $payload): void
