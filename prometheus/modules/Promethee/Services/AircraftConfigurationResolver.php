@@ -30,7 +30,6 @@ class AircraftConfigurationResolver
         $at = $this->date($date);
         $aircraft->loadMissing('subfleet');
 
-        $typeProfile = $this->typeProfile($aircraft);
         $assignment = $this->assignment($aircraft, $at);
         $variant = $assignment?->variant;
         $configuration = $assignment?->configuration;
@@ -40,6 +39,11 @@ class AircraftConfigurationResolver
         if ($configuration && (!$variant || (int) $configuration->variant_id !== (int) $variant->id)) {
             $variant = $configuration->variant;
         }
+
+        // Once a registration has an explicit historical variant, its type_key
+        // is the most reliable link to the type defaults (important for legacy
+        // ICAO codes such as A30B vs the administrative A300 family key).
+        $typeProfile = $this->typeProfile($aircraft, $variant?->type_key);
 
         $base = $this->coreData($aircraft);
         $effective = $this->merge(
@@ -134,13 +138,14 @@ class AircraftConfigurationResolver
             ->first();
     }
 
-    private function typeProfile(Aircraft $aircraft): ?AircraftTypeProfile
+    private function typeProfile(Aircraft $aircraft, ?string $preferredTypeKey = null): ?AircraftTypeProfile
     {
         if (!Schema::hasTable('promethee_aircraft_type_profiles')) {
             return null;
         }
 
         $candidates = collect([
+            $this->normaliseKey($preferredTypeKey),
             $this->normaliseKey($aircraft->icao),
             $this->normaliseKey($aircraft->subfleet?->type),
             $this->normaliseKey($aircraft->subfleet?->simbrief_type),
@@ -241,6 +246,9 @@ class AircraftConfigurationResolver
             'type' => $this->upper($state['type']),
             'internal_id' => $state['internal_id'] ?: null,
             'proxy_type' => $this->upper($state['proxy_type']),
+            'base_type' => $strategy === 'proxy'
+                ? $this->upper($state['proxy_type'] ?: $state['type'])
+                : $this->upper($state['type']),
             'value' => $value ? strtoupper((string) $value) : null,
             'source' => $state['source'],
             'actual_aircraft' => $this->normaliseKey($aircraft->icao ?: $aircraft->subfleet?->type),
