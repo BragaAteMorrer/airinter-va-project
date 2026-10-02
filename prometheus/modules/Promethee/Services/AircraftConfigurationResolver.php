@@ -150,10 +150,16 @@ class AircraftConfigurationResolver
 
         if ($candidates === []) return null;
 
-        return AircraftTypeProfile::query()
+        $profiles = AircraftTypeProfile::query()
             ->whereIn('type_key', $candidates)
-            ->orderByRaw('FIELD(type_key,'.implode(',', array_fill(0, count($candidates), '?')).')', $candidates)
-            ->first();
+            ->get()
+            ->keyBy('type_key');
+
+        foreach ($candidates as $candidate) {
+            if ($profiles->has($candidate)) return $profiles->get($candidate);
+        }
+
+        return null;
     }
 
     private function coreData(Aircraft $aircraft): array
