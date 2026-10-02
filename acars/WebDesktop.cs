@@ -139,7 +139,7 @@ public sealed class PrometheeWindow : Window
             "/api/status" => Status(), "/api/about" => About(), "/api/login" => await Login(body), "/api/login/argos" => await LoginWithArgos(),
             "/api/start" => Start(body), "/api/pause" => Pause(), "/api/resume" => Resume(),
             "/api/recovery" => Recovery(), "/api/recovery/resume" => ResumeRecovery(), "/api/recovery/abandon" => AbandonRecovery(),
-            "/api/sync" => new { sent=await telemetry.SyncNow() }, "/api/report" => Report(), "/api/review" => recorder.GetReview() ?? throw new InvalidOperationException("Aucun vol en cours."), "/api/capabilities" => sim.AircraftCapabilities ?? throw new InvalidOperationException("Aucun profil de capacités avion disponible."), "/api/file" => await File(),
+            "/api/sync" => new { sent=await telemetry.SyncNow() }, "/api/report" => Report(), "/api/review" => recorder.GetReview() ?? throw new InvalidOperationException("Aucun vol en cours."), "/api/capabilities" => sim.AircraftCapabilities ?? throw new InvalidOperationException("Aucun profil de capacités avion disponible."), "/api/file" => await File(body),
             "/api/history" => recorder.History, "/api/diagnostics" => Diagnostics(), "/api/update/check" => await CheckUpdateStatusAsync(), "/api/open-external" => OpenExternal(body),
             _ => throw new InvalidOperationException("Commande ACARS inconnue.") };
     }
@@ -444,9 +444,14 @@ public sealed class PrometheeWindow : Window
     }
 
     private object Report() => recorder.GetReview() ?? throw new InvalidOperationException("Aucun vol en cours.");
-    private async Task<object> File()
+    private async Task<object> File(JsonElement? body)
     {
         var current = recorder.Flight ?? throw new InvalidOperationException("Aucun vol en cours.");
+        var notes = body.HasValue && body.Value.ValueKind == JsonValueKind.Object
+            && body.Value.TryGetProperty("notes", out var notesValue)
+            && notesValue.ValueKind == JsonValueKind.String
+                ? notesValue.GetString()?.Trim()
+                : null;
         if (current.Phase != "IN") throw new InvalidOperationException("Attendez l’arrivée au parking avant de déposer le PIREP.");
 
         // Freeze capture before the final drain. Otherwise the one-second
@@ -471,16 +476,18 @@ public sealed class PrometheeWindow : Window
                 throw new InvalidOperationException("Le temps bloc est incomplet. Vérifiez les événements OUT et IN avant de déposer le PIREP.");
 
             var review = recorder.GetReview() ?? throw new InvalidOperationException("Flight Review indisponible.");
-            await client.Send($"pireps/{Uri.EscapeDataString(f.PirepId)}/file", new {
-                distance=Math.Round(f.Distance,2),
-                flight_time=Math.Max(1,(int)Math.Round(f.AirborneSeconds/60)),
-                fuel_used=Math.Round(f.FuelUsed),
-                block_time=Math.Max(1,(int)Math.Round((f.BlockOn.Value-f.BlockOff.Value).TotalMinutes)),
-                block_off_time=f.BlockOff,
-                block_on_time=f.BlockOn,
-                created_at=f.BlockOn,
-                landing_rate=f.LandingRate
-            });
+            var report = new Dictionary<string, object?> {
+                ["distance"] = Math.Round(f.Distance, 2),
+                ["flight_time"] = Math.Max(1, (int)Math.Round(f.AirborneSeconds / 60)),
+                ["fuel_used"] = Math.Round(f.FuelUsed),
+                ["block_time"] = Math.Max(1, (int)Math.Round((f.BlockOn.Value - f.BlockOff.Value).TotalMinutes)),
+                ["block_off_time"] = f.BlockOff,
+                ["block_on_time"] = f.BlockOn,
+                ["created_at"] = f.BlockOn,
+                ["landing_rate"] = f.LandingRate
+            };
+            if (!string.IsNullOrWhiteSpace(notes)) report["notes"] = notes;
+            await client.Send($"pireps/{Uri.EscapeDataString(f.PirepId)}/file", report);
             serverFiled = true;
             recorder.Complete();
             return new { ok=true, review };
