@@ -234,7 +234,15 @@
         <td><strong>{{ $rotation->first_registration }}</strong></td>
         <td><strong>{{ $rotation->second_registration }}</strong></td>
         <td>{{ $rotation->first_from_base }} ⇄ {{ $rotation->second_from_base }}</td>
-        <td>{{ $rotation->reason === 'engine_maintenance_bias' ? 'Approche TBO moteur' : 'Rotation exploitation' }}</td>
+        <td>
+          @if($rotation->reason === 'engine_maintenance_bias')
+            Approche TBO moteur
+          @elseif(str_starts_with($rotation->reason, 'airframe_check_'))
+            Approche {{ strtoupper(str_replace(['airframe_check_', '_bias'], '', $rotation->reason)) }} Check
+          @else
+            Rotation exploitation
+          @endif
+        </td>
       </tr>
     @empty
       <tr><td colspan="5">Aucune rotation enregistrée.</td></tr>
