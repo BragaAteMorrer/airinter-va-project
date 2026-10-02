@@ -7,8 +7,21 @@
     <h1>Révisions moteurs & TBO.</h1>
     <p>Les checks A/B/C restent liés à la cellule. Les moteurs disposent ici de leurs propres heures, cycles, TBO, montages et révisions.</p>
   </div>
-  <span class="tag">{{ $engineUnits->count() }} moteur(s)</span>
+  <div class="inline-form">
+    <span class="tag">{{ $engineUnits->count() }} moteur(s)</span>
+    <form method="post" action="{{ route('admin.promethee.maintenance.sync') }}">
+      @csrf
+      <button type="submit">Synchroniser toute la flotte</button>
+    </form>
+  </div>
 </div>
+
+<section class="control-strip">
+  <article><span>Moteurs suivis</span><strong>{{ $engineSummary['total'] }}</strong><small>{{ $engineSummary['installed'] }} installés · {{ $engineSummary['stock'] }} en stock</small></article>
+  <article><span>Disponibles</span><strong>{{ $engineSummary['serviceable'] }}</strong><small>potentiel hors alerte</small></article>
+  <article><span>À planifier</span><strong>{{ $engineSummary['warning'] }}</strong><small>dans la fenêtre d’alerte TBO</small></article>
+  <article><span>TBO atteint</span><strong>{{ $engineSummary['due'] }}</strong><small>révision requise</small></article>
+</section>
 
 @if($errors->any())
 <section class="panel"><strong>Impossible d’enregistrer :</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></section>
@@ -36,6 +49,7 @@
       <button>Enregistrer / synchroniser la flotte</button>
     </form>
     <p class="hint">À la première synchronisation, Prométhée crée automatiquement des moteurs virtuels AUTO-* pour les appareils de la sous-flotte. Ils peuvent ensuite être remplacés par des moteurs de stock identifiés par numéro de série.</p>
+    <p class="hint"><strong>Synchroniser toute la flotte</strong> complète aussi les profils moteurs manquants depuis le référentiel Air Inter VA embarqué, sans écraser les profils déjà personnalisés.</p>
   </section>
 
   <section class="panel">
@@ -85,7 +99,7 @@
 <section class="panel table-wrap">
   <div class="panel-heading"><div><span class="eyebrow">MOTEURS</span><h2>Unités installées & stock</h2></div></div>
   <table>
-    <thead><tr><th>N° série</th><th>Type</th><th>Appareil</th><th>Depuis révision</th><th>Restant</th><th>État</th><th>Actions</th></tr></thead>
+    <thead><tr><th>N° série</th><th>Type</th><th>Appareil</th><th>TBO nominal</th><th>Consommé depuis révision</th><th>Potentiel moteur</th><th>Dernière révision</th><th>État</th><th>Actions</th></tr></thead>
     <tbody>
     @forelse($engineUnits as $unit)
       <tr>
@@ -98,8 +112,32 @@
             <span class="tag">STOCK</span>
           @endif
         </td>
-        <td>{{ number_format($unit->hours_since_overhaul,1,',',' ') }} h / {{ number_format($unit->cycles_since_overhaul) }} cycles</td>
-        <td>{{ $unit->remaining_hours !== null ? number_format($unit->remaining_hours,1,',',' ') . ' h' : '—' }} / {{ $unit->remaining_cycles !== null ? number_format($unit->remaining_cycles) . ' cycles' : '—' }}</td>
+        <td>
+          {{ $unit->tbo_hours !== null ? number_format($unit->tbo_hours,1,',',' ') . ' h' : '—' }}<br>
+          <small>{{ $unit->tbo_cycles !== null ? number_format($unit->tbo_cycles) . ' cycles' : '—' }}</small>
+        </td>
+        <td>
+          {{ number_format($unit->hours_since_overhaul,1,',',' ') }} h<br>
+          <small>{{ number_format($unit->cycles_since_overhaul) }} cycles</small>
+        </td>
+        <td>
+          <strong>
+            {{ $unit->remaining_hours !== null ? number_format($unit->remaining_hours,1,',',' ') . ' h' : '—' }}
+            ·
+            {{ $unit->remaining_cycles !== null ? number_format($unit->remaining_cycles) . ' cycles' : '—' }}
+          </strong><br>
+          @if($unit->potential_percent !== null)
+            <span class="tag">{{ number_format($unit->potential_percent,1,',',' ') }} % restant</span>
+            <small>limitant : {{ $unit->potential_basis }}</small><br>
+            <small>
+              H {{ $unit->potential_hours_percent !== null ? number_format($unit->potential_hours_percent,1,',',' ') . ' %' : '—' }}
+              · C {{ $unit->potential_cycles_percent !== null ? number_format($unit->potential_cycles_percent,1,',',' ') . ' %' : '—' }}
+            </small>
+          @else
+            <span class="tag">TBO non renseigné</span>
+          @endif
+        </td>
+        <td>{{ $unit->last_overhaul_at ? \Carbon\Carbon::parse($unit->last_overhaul_at)->locale('fr')->isoFormat('DD/MM/YYYY') : 'Jamais / inconnu' }}</td>
         <td><span class="tag">{{ strtoupper($unit->status) }}</span></td>
         <td>
           @if($unit->aircraft_id)
@@ -126,7 +164,7 @@
         </td>
       </tr>
     @empty
-      <tr><td colspan="7">Aucun moteur configuré.</td></tr>
+      <tr><td colspan="9">Aucun moteur configuré. Créez un profil moteur puis synchronisez toute la flotte.</td></tr>
     @endforelse
     </tbody>
   </table>

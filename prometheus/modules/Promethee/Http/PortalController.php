@@ -3079,12 +3079,41 @@ class PortalController extends Controller
                 'aircraft.registration',
                 'aircraft.airport_id',
             ])
-            ->orderBy('airline.icao')->orderBy('subfleet.name')->orderBy('engine.serial_number')->get()
+            ->orderBy('airline.icao')->orderBy('subfleet.name')->orderBy('aircraft.registration')->orderBy('installation.position')->orderBy('engine.serial_number')->get()
             ->map(function ($engine) {
-                $engine->remaining_hours = $engine->tbo_hours !== null ? round((float) $engine->tbo_hours - (float) $engine->hours_since_overhaul, 2) : null;
-                $engine->remaining_cycles = $engine->tbo_cycles !== null ? (int) $engine->tbo_cycles - (int) $engine->cycles_since_overhaul : null;
+                $engine->remaining_hours = $engine->tbo_hours !== null
+                    ? round((float) $engine->tbo_hours - (float) $engine->hours_since_overhaul, 2)
+                    : null;
+                $engine->remaining_cycles = $engine->tbo_cycles !== null
+                    ? (int) $engine->tbo_cycles - (int) $engine->cycles_since_overhaul
+                    : null;
+
+                $hoursPotential = $engine->tbo_hours !== null && (float) $engine->tbo_hours > 0
+                    ? max(0, min(100, round(($engine->remaining_hours / (float) $engine->tbo_hours) * 100, 1)))
+                    : null;
+                $cyclesPotential = $engine->tbo_cycles !== null && (int) $engine->tbo_cycles > 0
+                    ? max(0, min(100, round(($engine->remaining_cycles / (int) $engine->tbo_cycles) * 100, 1)))
+                    : null;
+
+                $engine->potential_hours_percent = $hoursPotential;
+                $engine->potential_cycles_percent = $cyclesPotential;
+                $availablePotentials = array_values(array_filter([$hoursPotential, $cyclesPotential], fn ($value) => $value !== null));
+                $engine->potential_percent = $availablePotentials ? min($availablePotentials) : null;
+                $engine->potential_basis = $hoursPotential !== null && $cyclesPotential !== null
+                    ? ($hoursPotential <= $cyclesPotential ? 'heures' : 'cycles')
+                    : ($hoursPotential !== null ? 'heures' : ($cyclesPotential !== null ? 'cycles' : null));
+
                 return $engine;
             });
+
+        $engineSummary = [
+            'total' => $engineUnits->count(),
+            'installed' => $engineUnits->whereNotNull('aircraft_id')->count(),
+            'stock' => $engineUnits->whereNull('aircraft_id')->count(),
+            'serviceable' => $engineUnits->where('status', 'serviceable')->count(),
+            'warning' => $engineUnits->where('status', 'warning')->count(),
+            'due' => $engineUnits->where('status', 'due')->count(),
+        ];
 
         $engineSites = DB::table('promethee_operational_bases')
             ->where('active', true)->where('engine_overhaul', true)->orderBy('airport_id')->get();
@@ -3095,7 +3124,48 @@ class PortalController extends Controller
             ->select('event.*', 'engine.serial_number', 'aircraft.registration')
             ->latest('event.occurred_at')->limit(30)->get();
 
-        return $this->page('admin-maintenance', compact('profiles','subfleets','aircraft','engineUnits','engineSites','engineEvents'));
+        return $this->page('admin-maintenance', compact('profiles','subfleets','aircraft','engineUnits','engineSites','engineEvents','engineSummary'));
+    }
+
+    public function syncEngineFleet(EngineMaintenanceService $engineService) {
+        $references = (array) config('promethee.engine-profiles', []);
+        $createdProfiles = 0;
+
+        Subfleet::with('airline')->orderBy('id')->get()->each(function (Subfleet $subfleet) use ($references, &$createdProfiles) {
+            $airlineIcao = strtoupper((string) ($subfleet->airline?->icao ?: ''));
+            $referenceKey = $airlineIcao.'|'.(string) $subfleet->type;
+            $reference = $references[$referenceKey] ?? null;
+
+            if (!$reference || DB::table('promethee_engine_profiles')->where('subfleet_id', $subfleet->id)->exists()) {
+                return;
+            }
+
+            DB::table('promethee_engine_profiles')->insert([
+                'subfleet_id' => $subfleet->id,
+                'engine_type' => (string) $reference['engine_type'],
+                'engine_count' => (int) $reference['engine_count'],
+                'tbo_hours' => $reference['tbo_hours'] ?? null,
+                'tbo_cycles' => $reference['tbo_cycles'] ?? null,
+                'warning_hours' => (float) ($reference['warning_hours'] ?? 100),
+                'warning_cycles' => $reference['warning_cycles'] ?? null,
+                'active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $createdProfiles++;
+        });
+
+        $profileIds = DB::table('promethee_engine_profiles')->where('active', true)->pluck('subfleet_id');
+        $synced = 0;
+        foreach ($profileIds as $subfleetId) {
+            $synced += $engineService->syncSubfleet((int) $subfleetId);
+        }
+
+        return back()->with(
+            'success',
+            $createdProfiles.' profil(s) moteur créé(s) depuis le référentiel · '
+            .$synced.' position(s) moteur vérifiée(s) / synchronisée(s).'
+        );
     }
 
     public function saveEngineProfile(Request $r, EngineMaintenanceService $engineService) {
