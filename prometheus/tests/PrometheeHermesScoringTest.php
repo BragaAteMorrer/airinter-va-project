@@ -8,7 +8,9 @@ use App\Models\Enums\PirepStatus;
 use App\Models\Pirep;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Modules\Promethee\Services\HermesScoringService;
 
@@ -87,6 +89,48 @@ final class PrometheeHermesScoringTest extends TestCase
         $this->assertSame(96, $result['score']);
         $this->assertSame(4, $result['deductions_total']);
         $this->assertSame(2, $result['deductions'][0]['count']);
+    }
+
+    public function test_legacy_vmsacars_table_overrides_fallback_policy(): void
+    {
+        Schema::create('vmsacars_rules', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->string('name');
+            $table->decimal('parameter')->nullable();
+            $table->integer('points')->default(0);
+            $table->boolean('repeatable')->default(false);
+            $table->integer('delay')->default(0);
+            $table->integer('cooldown')->default(0);
+            $table->boolean('enabled')->default(true);
+            $table->integer('order')->default(0);
+        });
+
+        DB::table('vmsacars_rules')->insert([
+            'id' => 'HARD_LANDING',
+            'name' => 'Legacy hard landing override',
+            'parameter' => 500,
+            'points' => 7,
+            'repeatable' => false,
+            'delay' => 0,
+            'cooldown' => 0,
+            'enabled' => true,
+            'order' => 100,
+        ]);
+
+        $this->setPolicy([
+            $this->rule('HARD_LANDING', 20, 500),
+        ]);
+
+        $pirep = Pirep::factory()->create([
+            'source_name' => 'Hermes ACARS [op_legacy_override]',
+            'landing_rate' => -700,
+        ]);
+
+        $result = app(HermesScoringService::class)->calculate($pirep);
+
+        $this->assertSame('vmsacars_rules', $result['policy_source']);
+        $this->assertSame(93, $result['score']);
+        $this->assertSame(7, $result['deductions'][0]['points']);
     }
 
     public function test_unknown_simulator_rule_is_never_turned_into_a_penalty(): void
