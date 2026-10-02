@@ -178,7 +178,19 @@ class SimBriefOperationResolver
             'stepclimbs' => (string) $value('stepclimbs'),
             'etops' => (string) $value('etops'),
             'find_sidstar' => $value('find_sidstar'),
-            'cruise' => $value('cruise'),
+            'fuelfactor' => $value(
+                'fuelfactor',
+                $this->simBriefFuelFactor($technicalProfile['effective']['fuel_factor'] ?? null)
+            ),
+            'climb' => $value('climb', $technicalProfile['effective']['climb_profile'] ?? null),
+            'cruise' => $value('cruise', $technicalProfile['effective']['cruise_profile'] ?? null),
+            'descent' => $value('descent', $technicalProfile['effective']['descent_profile'] ?? null),
+            'equipment' => $value('equipment', $technicalProfile['effective']['equipment'] ?? null),
+            'transponder' => $value('transponder', $technicalProfile['effective']['transponder'] ?? null),
+            'pbn' => $value('pbn', $technicalProfile['effective']['pbn'] ?? null),
+            'acdata' => !empty($technicalProfile['simbrief']['acdata'])
+                ? json_encode($technicalProfile['simbrief']['acdata'], JSON_UNESCAPED_SLASHES)
+                : null,
             'civalue' => $value('civalue'),
             'contpct' => $value('contpct'),
             'resvrule' => $value('resvrule'),
@@ -437,6 +449,18 @@ class SimBriefOperationResolver
             'timezone' => $airport->timezone,
             'source' => $source,
         ];
+    }
+
+    private function simBriefFuelFactor(mixed $factor): ?string
+    {
+        if ($factor === null || $factor === '' || !is_numeric($factor)) return null;
+
+        $value = round((float) $factor, 1);
+        $prefix = $value < 0 ? 'M' : 'P';
+        $absolute = abs($value);
+        $formatted = rtrim(rtrim(number_format($absolute, 1, '.', ''), '0'), '.');
+
+        return $prefix.str_pad($formatted, 2, '0', STR_PAD_LEFT);
     }
 
     private function effectiveFares(Flight $flight, Aircraft $aircraft, int $cabinCapacity): array
