@@ -3,18 +3,21 @@ namespace Modules\Promethee\Providers;
 
 use App\Contracts\Modules\ServiceProvider;
 use App\Events\PirepAccepted;
+use App\Events\PirepRejected;
 use App\Events\UserStatsChanged;
 use App\Services\ModuleService;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Support\Facades\Event;
 use Modules\Promethee\Console\BulletinCommand;
 use Modules\Promethee\Console\CheckPrometheeTranslations;
 use Modules\Promethee\Console\CheckTranslations;
 use Modules\Promethee\Console\LocalUserCommand;
+use Modules\Promethee\Console\ProcessAirframeMaintenanceCommand;
 use Modules\Promethee\Console\RecalculateProgressionCommand;
 use Modules\Promethee\Console\RepairHermesPirepCommand;
 use Modules\Promethee\Console\RotateFleetCommand;
 use Modules\Promethee\Console\SyncRegionalOperationsCommand;
+use Modules\Promethee\Listeners\AirframeMaintenanceEventListener;
 use Modules\Promethee\Listeners\EngineMaintenanceEventListener;
 use Modules\Promethee\Listeners\ProgressionEventListener;
 use Modules\Promethee\Listeners\RegionalOperationsEventListener;
@@ -39,17 +42,31 @@ class PrometheeServiceProvider extends ServiceProvider
         Event::listen(PirepAccepted::class, [ProgressionEventListener::class, 'onPirepAccepted']);
         Event::listen(PirepAccepted::class, [RegionalOperationsEventListener::class, 'onPirepAccepted']);
         Event::listen(PirepAccepted::class, [EngineMaintenanceEventListener::class, 'onPirepAccepted']);
+        Event::listen(PirepAccepted::class, [AirframeMaintenanceEventListener::class, 'onPirepAccepted']);
+        Event::listen(PirepRejected::class, [AirframeMaintenanceEventListener::class, 'onPirepRejected']);
         Event::listen(UserStatsChanged::class, [ProgressionEventListener::class, 'onUserStatsChanged']);
         if ($this->app->runningInConsole()) {
-            $this->commands([BulletinCommand::class, CheckPrometheeTranslations::class, CheckTranslations::class, LocalUserCommand::class, RecalculateProgressionCommand::class, RepairHermesPirepCommand::class, RotateFleetCommand::class, SyncRegionalOperationsCommand::class]);
+            $this->commands([
+                BulletinCommand::class,
+                CheckPrometheeTranslations::class,
+                CheckTranslations::class,
+                LocalUserCommand::class,
+                ProcessAirframeMaintenanceCommand::class,
+                RecalculateProgressionCommand::class,
+                RepairHermesPirepCommand::class,
+                RotateFleetCommand::class,
+                SyncRegionalOperationsCommand::class,
+            ]);
         }
         $this->app->afterResolving(Schedule::class, function (Schedule $schedule) {
             $schedule->command('promethee:bulletin')->monthlyOn(1, '06:00')->timezone('Europe/Paris')->withoutOverlapping();
             $schedule->command('promethee:progression-recalculate')->everyFiveMinutes()->withoutOverlapping();
+            $schedule->command('promethee:airframe-maintenance-process')->everyFiveMinutes()->withoutOverlapping();
             $schedule->command('promethee:regional-operations-sync')->hourly()->withoutOverlapping();
             $schedule->command('promethee:fleet-rotate')->dailyAt('00:10')->timezone('Europe/Paris')->withoutOverlapping();
         });
     }
+
     public function registerLinks(): void
     {
         app(ModuleService::class)->addFrontendLink('Prométhée', '/', 'fas fa-plane', true);
