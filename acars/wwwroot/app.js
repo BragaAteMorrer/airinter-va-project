@@ -142,6 +142,10 @@ let serverDispatch = null;
 let connected = false;
 let lastStatus = null;
 let lastFiledReview = null;
+let lastScoringPreview = null;
+let scoringPreviewPending = false;
+let scoringPreviewFetchedAt = 0;
+let scoringPreviewOperation = null;
 let lastDatalinkSnapshot = null;
 let datalinkRefreshing = false;
 let recoveryWasVisible = false;
@@ -255,6 +259,7 @@ $$('.tab').forEach(button => {
     $('#' + button.dataset.tab).classList.add('active');
     if (button.dataset.tab === 'datalink') refreshDatalink();
     if (button.dataset.tab === 'network') refreshNetwork();
+    if (button.dataset.tab === 'review') refreshScoringPreview(true);
   };
 });
 
@@ -1363,6 +1368,9 @@ async function selectOperation(operation) {
   serverDispatch = null;
   flightPlan = null;
   linkedSimBrief = null;
+  lastScoringPreview = null;
+  scoringPreviewFetchedAt = 0;
+  scoringPreviewOperation = null;
   readiness.operation = false;
   readiness.aircraft = false;
   readiness.ofp = false;
@@ -2224,9 +2232,11 @@ $('#resumeBtn').onclick = () => {
   return action('/api/resume', 'Enregistrement repris.');
 };
 $('#syncBtn').onclick = () => action('/api/sync', 'Données synchronisées.');
-$('#fileBtn').onclick = () => {
+$('#fileBtn').onclick = async () => {
   document.querySelector('[data-tab="review"]')?.click();
   renderReview(lastStatus?.review || lastStatus?.Review || lastFiledReview);
+  try { await call('/api/sync'); } catch {}
+  await refreshScoringPreview(true);
 };
 
 function currentDatalinkOperation() {
@@ -2908,6 +2918,90 @@ function renderReviewContext(current) {
   renderTimeline('#reviewTimeline', reviewValue(current,'timeline','Timeline') || []);
 }
 
+function renderScoring(scoring) {
+  const scoreNode = $('#reviewScore');
+  const summary = $('#reviewScoreSummary');
+  const coverage = $('#reviewScoreCoverage');
+  const penalties = $('#reviewPenalties');
+
+  if (!scoring || scoring.available !== true) {
+    setText(scoreNode, '—');
+    setText(summary, 'Score compagnie en attente');
+    setText(coverage, scoring?.reason || 'Prométhée calcule les pénalités à partir des données réellement disponibles.');
+    if (penalties) penalties.innerHTML = '<p class="empty">Aucune pénalité calculée pour le moment.</p>';
+    return;
+  }
+
+  const score = Number(scoring.score ?? 100);
+  const total = Number(scoring.deductions_total ?? 0);
+  setText(scoreNode, Math.round(score) + '/100');
+  setText(summary, Math.round(score) + '/100 · ' + (total > 0 ? '−' + total + ' point' + (total > 1 ? 's' : '') : 'aucun retrait'));
+
+  const evaluated = Array.isArray(scoring.evaluated_rule_ids) ? scoring.evaluated_rule_ids.length : 0;
+  const unavailable = Array.isArray(scoring.unavailable_rules) ? scoring.unavailable_rules.length : 0;
+  setText(coverage, evaluated + ' règle' + (evaluated > 1 ? 's' : '') + ' évaluée' + (evaluated > 1 ? 's' : '')
+    + (unavailable ? ' · ' + unavailable + ' non évaluable' + (unavailable > 1 ? 's' : '') + ' faute de donnée simulateur' : '')
+    + (scoring.stored ? ' · snapshot enregistré avec le PIREP' : ' · prévisualisation avant dépôt'));
+
+  if (!penalties) return;
+  penalties.replaceChildren();
+  const deductions = Array.isArray(scoring.deductions) ? scoring.deductions : [];
+  if (!deductions.length) {
+    const empty = document.createElement('p');
+    empty.className = 'empty';
+    empty.textContent = 'Aucune pénalité vmsACARS détectée sur les données évaluables.';
+    penalties.append(empty);
+    return;
+  }
+
+  deductions.forEach(item => {
+    const row = document.createElement('article');
+    row.className = 'observation warning';
+    const meta = document.createElement('span');
+    meta.textContent = item.rule_id || 'VMSACARS';
+    const title = document.createElement('strong');
+    title.textContent = (item.label || item.rule_id || 'Règle compagnie') + ' · −' + Number(item.deduction || 0) + ' pt';
+    const detail = document.createElement('small');
+    const first = Array.isArray(item.occurrences) ? item.occurrences[0] : null;
+    detail.textContent = [
+      Number(item.count || 0) + ' × ' + Number(item.points || 0) + ' pt',
+      first?.detail || null,
+      first?.value != null ? String(first.value) + (first.unit ? ' ' + first.unit : '') : null
+    ].filter(Boolean).join(' · ');
+    row.append(meta, title, detail);
+    penalties.append(row);
+  });
+}
+
+async function refreshScoringPreview(force = false) {
+  const activeFlight = lastStatus?.flight || lastStatus?.Flight || null;
+  const operationRef = selectedOperation?.operation_id || selectedOperation?.id
+    || activeFlight?.operationId || activeFlight?.OperationId || null;
+  if (!connected || !operationRef) {
+    if (!lastScoringPreview) renderScoring(null);
+    return;
+  }
+
+  const now = Date.now();
+  if (scoringPreviewPending) return;
+  if (!force && scoringPreviewOperation === operationRef && now - scoringPreviewFetchedAt < 8000) return;
+
+  scoringPreviewPending = true;
+  scoringPreviewFetchedAt = now;
+  scoringPreviewOperation = operationRef;
+  try {
+    const payload = unwrap(await call('/api/v1/operations/' + encodeURIComponent(operationRef) + '/debrief'));
+    lastScoringPreview = payload?.scoring || null;
+    renderScoring(lastScoringPreview);
+  } catch (error) {
+    if (force) {
+      setText($('#reviewScoreCoverage'), 'Score Prométhée indisponible : ' + friendlyError(error, 'Calcul du score indisponible.', 'Flight Review'));
+    }
+  } finally {
+    scoringPreviewPending = false;
+  }
+}
+
 function renderReview(review) {
   const current = review || lastFiledReview;
   const state = $('#reviewState');
@@ -2921,6 +3015,7 @@ function renderReview(review) {
     setText($('#reviewBounce'), '0 rebond');
     renderObservations('#fdmObservations', [], 'Aucune observation pour le moment.');
     renderObservations('#reviewIssues', [], 'Aucune anomalie détectée.');
+    renderScoring(null);
     if ($('#submitReviewBtn')) $('#submitReviewBtn').disabled = true;
     setText($('#reviewHint'), 'Le dépôt du PIREP devient disponible après l’événement IN.');
     return;
@@ -2956,6 +3051,8 @@ function renderReview(review) {
 
   renderObservations('#fdmObservations', reviewValue(current,'observations','Observations') || [], 'Aucune observation FDM.');
   renderObservations('#reviewIssues', reviewValue(current,'issues','Issues') || [], 'Aucune anomalie détectée.');
+  renderScoring(lastScoringPreview);
+  if ($('#review')?.classList.contains('active')) void refreshScoringPreview(false);
 
   const button = $('#submitReviewBtn');
   if (button) button.disabled = !ready || filed;
@@ -2974,6 +3071,7 @@ $('#submitReviewBtn').onclick = async () => {
     showMessage('#reviewMessage', 'PIREP déposé. Flight Review archivé localement.');
     renderReview(lastFiledReview);
     await refreshStatus();
+    await refreshScoringPreview(true);
   } catch (error) {
     showMessage('#reviewMessage', friendlyError(error), true);
   }
