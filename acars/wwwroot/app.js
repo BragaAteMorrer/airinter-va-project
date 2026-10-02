@@ -257,7 +257,9 @@ function simBriefPreparationData(resolved = null) {
     departure: authoritative.origin?.icao || flight.departure || '—',
     arrival: authoritative.destination?.icao || flight.arrival || '—',
     registration: aircraft.registration || '—',
-    type: aircraft.simbrief_type || selectedOperation?.simbrief?.type || selectedVariant?.simbrief_type || aircraft.icao || 'AUTO',
+    type: aircraft.simbrief_display_type || aircraft.icao || selectedOperation?.simbrief?.type || 'AUTO',
+    calculationType: aircraft.simbrief_type || selectedOperation?.simbrief?.calculation_type || selectedVariant?.simbrief_type || null,
+    strategy: aircraft.simbrief_strategy || selectedOperation?.simbrief?.strategy || selectedVariant?.simbrief_strategy || 'native',
     historicalVariant: aircraft.historical_variant?.name
       || aircraft.resolved_profile?.variant?.name
       || selectedAircraft?.historical_variant?.name
@@ -267,6 +269,7 @@ function simBriefPreparationData(resolved = null) {
       || selectedAircraft?.configuration?.name
       || '',
     addon: selectedVariant?.label || aircraft.simulator_profile?.label || selectedOperation?.simbrief?.addon || '',
+    variant: selectedVariant?.label || aircraft.simulator_profile?.label || selectedOperation?.simbrief?.addon || '',
     pax: Number.isFinite(plannedPax) ? plannedPax : null,
     capacity: Number(demand.capacity ?? aircraft.capacity) || null,
     loadFactor: Number(demand.load_factor_percent ?? aircraft.load_factor_percent),
@@ -953,9 +956,11 @@ function renderVariantPreview(variant = selectedVariant) {
     simbrief_airframe: 'Catalogue SimBrief',
     hermes_catalog: 'Catalogue Hermès'
   };
+  const proxy = variant.simbrief_strategy === 'proxy';
   text.textContent = (sourceLabels[variant.source] || variant.vendor || 'Profil appareil')
-    + ' · ' + (variant.simbrief_type || 'AUTO')
-    + (variant.icao ? ' · ' + variant.icao : '');
+    + (proxy
+      ? ' · Compatible via profil Air Inter · ' + (variant.icao || 'appareil réel')
+      : ' · ' + (variant.simbrief_type || 'AUTO') + (variant.icao ? ' · ' + variant.icao : ''));
   preview.append(text);
   preview.hidden = false;
 }
@@ -1039,7 +1044,9 @@ function renderAircraftVariants(payload) {
     option.textContent = (variant.owned ? '★ ' : '')
       + (variant.label || variant.id)
       + (variant.vendor ? ' · ' + variant.vendor : '')
-      + (variant.simbrief_type ? ' · SimBrief ' + variant.simbrief_type : '');
+      + (variant.simbrief_strategy === 'proxy'
+        ? ' · Compatible via profil Air Inter'
+        : (variant.simbrief_type ? ' · SimBrief ' + variant.simbrief_type : ''));
     option.dataset.variant = JSON.stringify(variant);
     select.append(option);
   });
@@ -1101,7 +1108,9 @@ async function refreshAircraftVariantLibrary() {
       const name = document.createElement('strong');
       name.textContent = variant.label || variant.id;
       const detail = document.createElement('small');
-      detail.textContent = [variant.type_key, variant.vendor, variant.simbrief_type ? 'SimBrief ' + variant.simbrief_type : null]
+      detail.textContent = [variant.type_key, variant.vendor, variant.simbrief_strategy === 'proxy'
+        ? 'Compatible via profil Air Inter'
+        : (variant.simbrief_type ? 'SimBrief ' + variant.simbrief_type : null)]
         .filter(Boolean).join(' · ');
       identity.append(name, detail);
 
@@ -1429,7 +1438,7 @@ function simBriefPlanningPayload(form) {
   // Advanced controls remain ephemeral. Empty fields mean "use Prométhée /
   // SimBrief defaults"; only explicit pilot choices cross the API boundary.
   const advanced = [
-    'simbrief_type', 'callsign', 'units', 'planformat', 'maps', 'navlog',
+    'callsign', 'units', 'planformat', 'maps', 'navlog',
     'tlr', 'notams', 'firnot', 'stepclimbs', 'etops', 'find_sidstar',
     'cruise', 'civalue', 'contpct', 'resvrule', 'selcal', 'deprwy',
     'arrrwy', 'taxiout', 'taxiin', 'pax', 'manualrmk'
@@ -1470,12 +1479,14 @@ async function assertSimBriefReady(form, mode = 'company') {
   const origin = resolved?.origin?.icao || '—';
   const destination = resolved?.destination?.icao || '—';
   const registration = resolved?.aircraft?.registration || 'appareil';
-  const type = resolved?.aircraft?.simbrief_type || resolved?.aircraft?.icao || 'type inconnu';
+  const type = resolved?.aircraft?.simbrief_display_type || resolved?.aircraft?.icao || 'type inconnu';
+  const strategy = resolved?.aircraft?.simbrief_strategy;
+  const planningLabel = strategy === 'proxy' ? ' · compatible via profil Air Inter' : '';
   const pax = resolved?.demand?.passengers;
   const cabin = resolved?.demand?.cabin_profile?.label || resolved?.demand?.cabinProfile?.label || '';
   showMessage(
     '#simbriefState',
-    `Résolution BDD OK · ${flight} · ${origin} → ${destination} · ${registration} · ${type}${cabin ? ' · ' + cabin : ''}${Number.isFinite(Number(pax)) ? ' · ' + pax + ' pax' : ''}.`
+    `Résolution BDD OK · ${flight} · ${origin} → ${destination} · ${registration} · ${type}${planningLabel}${cabin ? ' · ' + cabin : ''}${Number.isFinite(Number(pax)) ? ' · ' + pax + ' pax' : ''}.`
   );
   renderSimBriefPreparationSummary(resolved);
   return resolved;
@@ -1815,12 +1826,18 @@ $('#aircraftVariantId').onchange = async event => {
         ...(selectedOperation.simbrief || {}),
         variant: selectedVariant,
         selected_variant_id: selectedVariant.id,
-        type: selectedVariant.simbrief_type || selectedOperation.simbrief?.type,
+        type: selectedVariant.simbrief_strategy === 'proxy'
+          ? (selectedAircraft?.icao || selectedOperation.simbrief?.type)
+          : (selectedAircraft?.icao || selectedOperation.simbrief?.type),
+        calculation_type: selectedVariant.simbrief_type || selectedOperation.simbrief?.calculation_type,
+        strategy: selectedVariant.simbrief_strategy || selectedOperation.simbrief?.strategy,
         addon: selectedVariant.label
       };
     }
     setText($('#operationBrief'), 'Variante ' + (selectedVariant.label || selectedVariant.id)
-      + ' · profil SimBrief ' + (selectedVariant.simbrief_type || 'auto'));
+      + (selectedVariant.simbrief_strategy === 'proxy'
+        ? ' · compatible via profil Air Inter'
+        : ' · profil SimBrief ' + (selectedVariant.simbrief_type || 'auto')));
     await refreshDispatch();
     updateWorkflow();
     showMessage('#pirepMessage', (selectedVariant.label || selectedVariant.id) + ' sélectionné pour cette opération.');

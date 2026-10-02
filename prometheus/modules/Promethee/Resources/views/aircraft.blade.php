@@ -24,6 +24,27 @@
 </div><p>Dernière action : <strong>{{ $maintenance->act_note ?: 'Aucune' }}</strong></p>@else<p class="empty">Aucune donnée de maintenance disponible pour cet appareil.</p>@endif
 </section>
 
+<section class="panel table-wrap">
+  <div class="panel-heading"><div><span class="eyebrow">PROPULSION</span><h2>Moteurs & TBO</h2></div></div>
+  <table>
+    <thead><tr><th>Position</th><th>Moteur</th><th>N° série</th><th>Depuis révision</th><th>Restant</th><th>État</th></tr></thead>
+    <tbody>
+    @forelse($engineUnits as $engine)
+      <tr>
+        <td>M{{ $engine->position }}</td>
+        <td>{{ $engine->engine_type }}</td>
+        <td><strong>{{ $engine->serial_number }}</strong></td>
+        <td>{{ number_format($engine->hours_since_overhaul,1,',',' ') }} h / {{ number_format($engine->cycles_since_overhaul) }} cycles</td>
+        <td>{{ $engine->remaining_hours !== null ? number_format($engine->remaining_hours,1,',',' ') . ' h' : '—' }} / {{ $engine->remaining_cycles !== null ? number_format($engine->remaining_cycles) . ' cycles' : '—' }}</td>
+        <td><span class="tag">{{ strtoupper($engine->status) }}</span></td>
+      </tr>
+    @empty
+      <tr><td colspan="6">Aucun profil moteur n’est encore configuré pour cette sous-flotte.</td></tr>
+    @endforelse
+    </tbody>
+  </table>
+</section>
+
 <section class="panel table-wrap"><div class="panel-heading"><div><span class="eyebrow">HISTORIQUE</span><h2>Rapports de vols</h2></div></div><table><thead><tr><th>Numéro de vol</th><th>Départ / Arrivée</th><th>Temps de vol</th><th>Envoyé</th><th>Statut</th></tr></thead><tbody>
 @forelse($pireps as $pirep)<tr><td><a href="{{ route('promethee.pirep', $pirep->id) }}">{{ $pirep->flight_number }}</a></td><td>{{ $pirep->dpt_airport_id }} / {{ $pirep->arr_airport_id }}</td><td>{{ intdiv((int) $pirep->flight_time, 60) }} h {{ (int) $pirep->flight_time % 60 }} min</td><td>{{ $pirep->submitted_at?->locale('fr')->diffForHumans() }}</td><td><span class="tag">Accepté</span></td></tr>@empty<tr><td colspan="5">Aucun rapport de vol accepté.</td></tr>@endforelse
 </tbody></table></section>

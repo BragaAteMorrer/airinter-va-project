@@ -13,7 +13,9 @@ use Modules\Promethee\Console\CheckTranslations;
 use Modules\Promethee\Console\LocalUserCommand;
 use Modules\Promethee\Console\RecalculateProgressionCommand;
 use Modules\Promethee\Console\RepairHermesPirepCommand;
+use Modules\Promethee\Console\RotateFleetCommand;
 use Modules\Promethee\Console\SyncRegionalOperationsCommand;
+use Modules\Promethee\Listeners\EngineMaintenanceEventListener;
 use Modules\Promethee\Listeners\ProgressionEventListener;
 use Modules\Promethee\Listeners\RegionalOperationsEventListener;
 
@@ -35,14 +37,16 @@ class PrometheeServiceProvider extends ServiceProvider
         $this->loadRoutesFrom(__DIR__.'/../routes-minitel.php');
         Event::listen(PirepAccepted::class, [ProgressionEventListener::class, 'onPirepAccepted']);
         Event::listen(PirepAccepted::class, [RegionalOperationsEventListener::class, 'onPirepAccepted']);
+        Event::listen(PirepAccepted::class, [EngineMaintenanceEventListener::class, 'onPirepAccepted']);
         Event::listen(UserStatsChanged::class, [ProgressionEventListener::class, 'onUserStatsChanged']);
         if ($this->app->runningInConsole()) {
-            $this->commands([BulletinCommand::class, CheckPrometheeTranslations::class, CheckTranslations::class, LocalUserCommand::class, RecalculateProgressionCommand::class, RepairHermesPirepCommand::class, SyncRegionalOperationsCommand::class]);
+            $this->commands([BulletinCommand::class, CheckPrometheeTranslations::class, CheckTranslations::class, LocalUserCommand::class, RecalculateProgressionCommand::class, RepairHermesPirepCommand::class, RotateFleetCommand::class, SyncRegionalOperationsCommand::class]);
         }
         $this->app->afterResolving(Schedule::class, function (Schedule $schedule) {
             $schedule->command('promethee:bulletin')->monthlyOn(1, '06:00')->timezone('Europe/Paris')->withoutOverlapping();
             $schedule->command('promethee:progression-recalculate')->everyFiveMinutes()->withoutOverlapping();
             $schedule->command('promethee:regional-operations-sync')->hourly()->withoutOverlapping();
+            $schedule->command('promethee:fleet-rotate')->dailyAt('00:10')->timezone('Europe/Paris')->withoutOverlapping();
         });
     }
     public function registerLinks(): void
@@ -56,5 +60,6 @@ class PrometheeServiceProvider extends ServiceProvider
         app(ModuleService::class)->addAdminLink('Prométhée · SOP', '/admin/promethee/sop', 'pe-7s-shield');
         app(ModuleService::class)->addAdminLink('Prométhée · Network', '/admin/promethee/network', 'pe-7s-global');
         app(ModuleService::class)->addAdminLink('Prométhée · Dispatch', '/admin/promethee/dispatch', 'pe-7s-monitor');
+        app(ModuleService::class)->addAdminLink('Prométhée · Maintenance', '/admin/promethee/maintenance', 'pe-7s-tools');
     }
 }

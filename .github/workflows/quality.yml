@@ -139,6 +139,11 @@ jobs:
         shell: bash
         run: |
           php -l modules/Promethee/Http/PortalController.php
+          php -l modules/Promethee/Services/EngineMaintenanceService.php
+          php -l modules/Promethee/Services/FleetRotationService.php
+          php -l modules/Promethee/Listeners/EngineMaintenanceEventListener.php
+          php -l modules/Promethee/Console/RotateFleetCommand.php
+          php -l modules/Promethee/Database/migrations/2026_10_02_000023_add_engine_maintenance_and_fleet_rotation.php
           php -l modules/Promethee/Http/MinitelController.php
           php -l modules/Promethee/Http/MinitelOperationsController.php
           php -l modules/Promethee/Http/AcarsOperationsController.php

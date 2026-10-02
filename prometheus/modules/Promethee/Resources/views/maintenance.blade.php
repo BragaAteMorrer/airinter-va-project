@@ -25,4 +25,24 @@
   @endforelse
   </tbody></table>
 </section>
+<section class="panel table-wrap">
+  <div class="panel-heading"><div><span class="eyebrow">MOTEURS</span><h2>Échéances TBO</h2></div><p>Suivi indépendant des checks cellule A/B/C.</p></div>
+  <table>
+    <thead><tr><th>Appareil</th><th>Moteur</th><th>Position</th><th>Depuis révision</th><th>Restant</th><th>État</th></tr></thead>
+    <tbody>
+    @forelse($engineWarnings as $engine)
+      <tr>
+        <td><a href="{{ route('promethee.aircraft.show', $engine->registration) }}"><strong>{{ $engine->registration }}</strong></a> · {{ $engine->airline_icao ?: '—' }}</td>
+        <td>{{ $engine->engine_type }}<br><small>{{ $engine->serial_number }}</small></td>
+        <td>M{{ $engine->position }} · {{ $engine->airport_id ?: '—' }}</td>
+        <td>{{ number_format($engine->hours_since_overhaul,1,',',' ') }} h / {{ number_format($engine->cycles_since_overhaul) }} cycles</td>
+        <td>{{ $engine->remaining_hours !== null ? number_format($engine->remaining_hours,1,',',' ') . ' h' : '—' }} / {{ $engine->remaining_cycles !== null ? number_format($engine->remaining_cycles) . ' cycles' : '—' }}</td>
+        <td><span class="tag">{{ $engine->status === 'due' ? 'TBO ATTEINT' : 'À PLANIFIER' }}</span></td>
+      </tr>
+    @empty
+      <tr><td colspan="6">Aucune échéance moteur dans la fenêtre d’alerte.</td></tr>
+    @endforelse
+    </tbody>
+  </table>
+</section>
 @endsection

@@ -22,6 +22,24 @@
   <p>{{ $airframe->airframe_id }}</p>
 </div>
 
+@php($sb = $simbrief_profile ?? $airframe->simbriefProfile())
+<div class="form-group">
+  <strong>Mode SimBrief</strong>
+  <p>{{ $sb['strategy'] }}</p>
+</div>
+<div class="form-group">
+  <strong>Type de calcul</strong>
+  <p>
+    @if($sb['strategy'] === 'proxy')
+      {{ $sb['proxy_type'] }} — l’appareil reste {{ $airframe->icao }}
+    @elseif($sb['strategy'] === 'custom_airframe')
+      {{ $sb['internal_id'] ?: 'Internal ID manquant' }}
+    @else
+      {{ $airframe->icao }}
+    @endif
+  </p>
+</div>
+
 <!-- Created At Field -->
 <div class="form-group">
   {{ Form::label('created_at', 'Created At:') }}

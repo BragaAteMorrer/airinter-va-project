@@ -171,7 +171,7 @@ class Aircraft extends Model
                     return new Carbon($attrs['landing_time']);
                 }
 
-                return $attrs['landing_time'];
+                return $attrs['landing_time'] ?? null;
             }
         );
     }

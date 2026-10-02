@@ -206,7 +206,11 @@ class AcarsSimBriefController extends Controller
             'block_fuel' => (float) $ofp->fuel->plan_ramp,
             'estimated_time_enroute' => (int) $ofp->times->est_time_enroute,
             'generated_at' => (string) $ofp->params->time_generated,
-            'aircraft_type' => (string) $ofp->aircraft->icaocode,
+            // Never let the SimBrief calculation base replace the real aircraft
+            // identity in Hermès/Prométhée (e.g. N262 planned through SH33).
+            'aircraft_type' => $resolved['aircraft']['icao'],
+            'simbrief_calculation_type' => (string) $ofp->aircraft->icaocode,
+            'simbrief_profile' => $resolved['aircraft']['simbrief_profile'] ?? null,
             'passengers' => $this->ofpPassengerCount($ofp),
             'requested_passengers' => isset($resolved['parameters']['pax']) ? (int) $resolved['parameters']['pax'] : null,
             'network_prefiles' => $this->networkPrefiles($ofp),
@@ -293,6 +297,9 @@ class AcarsSimBriefController extends Controller
             'estimated_time_enroute' => (int) $xml->times->est_time_enroute,
             'briefing_url' => route('api.flights.briefing', ['id' => $simbrief->id]),
             'network_prefiles' => $this->networkPrefiles($xml),
+            'aircraft_type' => $resolved['aircraft']['icao'],
+            'simbrief_calculation_type' => (string) $xml->aircraft->icaocode,
+            'simbrief_profile' => $resolved['aircraft']['simbrief_profile'] ?? null,
             'resolved' => $this->resolver->publicView($resolved),
         ]);
     }

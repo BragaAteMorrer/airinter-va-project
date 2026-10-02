@@ -208,7 +208,8 @@
           <summary><strong>Options SimBrief avancées</strong><span>Airframe · performances · carburant · OFP · pistes</span></summary>
           <div class="grid simbrief-advanced-grid">
             <label>Profil / Internal ID
-              <input name="simbrief_type" maxlength="64" placeholder="AUTO · A319 · 80_1709125568637">
+              <input name="simbrief_type" maxlength="64" placeholder="Géré par Prométhée / sb-airframe" readonly>
+              <small>Le type de calcul est résolu côté Prométhée depuis sb-airframe afin de préserver l’identité réelle de l’appareil.</small>
               <small>Un Internal ID force un airframe SimBrief précis (Fenix, PMDG, profil personnel…).</small>
             </label>
             <label>ATC Callsign<input name="callsign" maxlength="16" placeholder="AUTO · ITF143"></label>
