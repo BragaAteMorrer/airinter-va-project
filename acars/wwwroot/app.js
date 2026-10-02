@@ -487,25 +487,9 @@ function updatePreflight(status, state, ready) {
       : (variantMatch === true
           ? (selectedVariant.label + ' · add-on Prométhée · détecté')
           : variantMatch === false
-            ? (selectedVariant.label + ' · add-on Prométhée · simulateur détecté ' + (capabilityReport.adapterName || capabilityReport.AdapterName || detectedAdapter || 'inconnu') + ' · comparaison informative')
-            : (selectedVariant.label + ' · add-on sélectionné · identité simulateur informative')), 'informational'],
-    ['AU SOL', onGround === null ? null : onGround === true, onGround === null ? 'information indisponible' : (onGround ? 'confirmé' : 'avion en vol'), 'blocking'],
-    ['FREIN DE PARC', parkingBrake === null ? null : parkingBrake === true, parkingBrake === null ? 'information indisponible' : (parkingBrake ? 'serré' : 'desserré'), 'verify'],
-    ['MOTEURS', enginesStopped, enginesStopped === null ? 'information indisponible' : (enginesStopped ? 'arrêtés' : 'en fonctionnement'), 'verify']
-      : (variantMatch === true
-          ? (selectedVariant.label + ' · add-on Prométhée · détecté')
-          : variantMatch === false
-    ['VOL', state.operation, state.operation ? 'opération sélectionnée' : 'à sélectionner', 'blocking'],
-    ['APPAREIL', state.aircraft, state.aircraft ? 'appareil affecté' : 'à sélectionner', 'blocking'],
-    ['OFP', state.ofp, state.ofp ? 'briefing disponible' : 'à préparer', 'blocking'],
-    ['PRÉPARATION', state.pirep, state.pirep ? 'enregistrée' : 'à finaliser', 'blocking'],
-    ['SIMULATEUR', readiness.simulator, readiness.simulator ? connectorName : 'télémétrie en attente', 'blocking'],
-    ['ADD-ON', selectedVariant ? true : null, !selectedVariant
-      ? 'non sélectionné · profil simulateur facultatif'
-      : (variantMatch === true
-          ? (selectedVariant.label + ' · add-on Prométhée · détecté')
-          : variantMatch === false
-            ? (selectedVariant.label + ' · add-on Prométhée · simulateur détecté ' + (capabilityReport.adapterName || capabilityReport.AdapterName || detectedAdapter || 'inconnu') + ' · comparaison informative')
+            ? (selectedVariant.label + ' · add-on Prométhée · simulateur détecté '
+                + (capabilityReport.adapterName || capabilityReport.AdapterName || detectedAdapter || 'inconnu')
+                + ' · comparaison informative')
             : (selectedVariant.label + ' · add-on sélectionné · identité simulateur informative')), 'informational'],
     ['AU SOL', onGround === null ? null : onGround === true, onGround === null ? 'information indisponible' : (onGround ? 'confirmé' : 'avion en vol'), 'blocking'],
     ['FREIN DE PARC', parkingBrake === null ? null : parkingBrake === true, parkingBrake === null ? 'information indisponible' : (parkingBrake ? 'serré' : 'desserré'), 'verify'],
