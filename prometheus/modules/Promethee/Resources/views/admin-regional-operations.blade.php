@@ -46,16 +46,55 @@
         <strong>Maintenance calculée automatiquement :</strong>
         A CHECK sur les sites opérationnels ; A/B/C à LFPO et LFPG. Une escale technique seule ne donne jamais accès aux checks B ou C.
       </div>
+      <label><input type="checkbox" name="engine_overhaul" value="1"> Révision moteurs autorisée sur ce site</label>
       <label><input type="checkbox" name="active" value="1" checked> Site actif</label>
       <button>Enregistrer le site</button>
     </form>
   </section>
 </div>
 
+<section class="panel">
+  <div class="panel-heading regional-aircraft-heading">
+    <div><span class="eyebrow">ROTATION FLOTTE</span><h2>Faire tourner les immatriculations entre bases</h2><p>Seuls les appareils stationnés dans leur propre base, parkés, non réservés et sans mission/PIREP/maintenance en cours sont éligibles. Les permutations se font uniquement entre appareils de la même sous-flotte.</p></div>
+    <form method="post" action="{{ route('admin.promethee.regional.rotation.run') }}" class="inline-form" onsubmit="return confirm('Lancer maintenant une rotation forcée des appareils actuellement éligibles ?');">
+      @csrf
+      <button type="submit" class="outline">Lancer une rotation maintenant</button>
+    </form>
+  </div>
+  <form method="post" action="{{ route('admin.promethee.regional.rotation.settings') }}" class="form-grid">
+    @csrf
+    <label><input type="checkbox" name="enabled" value="1" @checked($rotationSettings['enabled'])> Rotation automatique activée</label>
+    <label>Fréquence
+      <select name="frequency">
+        <option value="daily" @selected($rotationSettings['frequency']==='daily')>Tous les jours</option>
+        <option value="weekly" @selected($rotationSettings['frequency']==='weekly')>Toutes les semaines</option>
+      </select>
+    </label>
+    <label>Part de flotte à faire tourner
+      <input type="number" name="percent" min="0" max="100" value="{{ $rotationSettings['percent'] }}" required>
+      <small>% des appareils éligibles</small>
+    </label>
+    <label>Inactivité minimale
+      <input type="number" name="min_idle_hours" min="0" max="720" value="{{ $rotationSettings['min_idle_hours'] }}" required>
+      <small>heures depuis le dernier atterrissage</small>
+    </label>
+    <label>Délai avant nouvelle rotation
+      <input type="number" name="cooldown_days" min="0" max="365" value="{{ $rotationSettings['cooldown_days'] }}" required>
+      <small>jours</small>
+    </label>
+    <label>Priorité maintenance moteur
+      <input type="number" name="maintenance_bias_hours" min="0" max="5000" value="{{ $rotationSettings['maintenance_bias_hours'] }}" required>
+      <small>heures TBO restantes : l’appareil est orienté vers un site capable de révision</small>
+    </label>
+    <button>Enregistrer la rotation</button>
+  </form>
+  <p class="hint">Dernière exécution : {{ $rotationSettings['last_run_at'] ? CarbonCarbon::parse($rotationSettings['last_run_at'])->locale('fr')->diffForHumans() : 'jamais' }}. Une rotation ne crée jamais de mission de rapatriement : position et base attitrée sont permutées ensemble.</p>
+</section>
+
 <section class="panel table-wrap">
   <div class="panel-heading"><div><span class="eyebrow">RÉSEAU TECHNIQUE</span><h2>Sites opérationnels</h2></div></div>
   <table>
-    <thead><tr><th>Aéroport</th><th>Rôles</th><th>A CHECK</th><th>B CHECK</th><th>C CHECK</th><th>État</th></tr></thead>
+    <thead><tr><th>Aéroport</th><th>Rôles</th><th>A CHECK</th><th>B CHECK</th><th>C CHECK</th><th>Révision moteur</th><th>État</th></tr></thead>
     <tbody>
     @foreach($bases as $base)
       @php($roles = collect([
@@ -71,6 +110,7 @@
         <td>{{ !empty($base->check_a) ? 'Oui' : 'Non' }}</td>
         <td>{{ !empty($base->check_b) ? 'Oui' : 'Non' }}</td>
         <td>{{ !empty($base->check_c) ? 'Oui' : 'Non' }}</td>
+        <td>{{ !empty($base->engine_overhaul) ? 'Oui' : 'Non' }}</td>
         <td>{{ $base->active ? 'Actif' : 'Inactif' }}</td>
       </tr>
     @endforeach
@@ -173,11 +213,32 @@
                 </option>
               @endforeach
             </select>
+            <label><input type="checkbox" name="rotation_locked" value="1" @checked(!empty($assignment?->rotation_locked))> Bloquer la rotation</label>
             <button>Affecter</button>
           </form>
         </td>
       </tr>
     @endforeach
+    </tbody>
+  </table>
+</section>
+
+<section class="panel table-wrap">
+  <div class="panel-heading"><div><span class="eyebrow">HISTORIQUE ROTATION</span><h2>Dernières permutations automatiques</h2></div></div>
+  <table>
+    <thead><tr><th>Date</th><th>Appareil 1</th><th>Appareil 2</th><th>Permutation</th><th>Motif</th></tr></thead>
+    <tbody>
+    @forelse($rotationLog as $rotation)
+      <tr>
+        <td>{{ CarbonCarbon::parse($rotation->rotated_at)->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') }}</td>
+        <td><strong>{{ $rotation->first_registration }}</strong></td>
+        <td><strong>{{ $rotation->second_registration }}</strong></td>
+        <td>{{ $rotation->first_from_base }} ⇄ {{ $rotation->second_from_base }}</td>
+        <td>{{ $rotation->reason === 'engine_maintenance_bias' ? 'Approche TBO moteur' : 'Rotation exploitation' }}</td>
+      </tr>
+    @empty
+      <tr><td colspan="5">Aucune rotation enregistrée.</td></tr>
+    @endforelse
     </tbody>
   </table>
 </section>
