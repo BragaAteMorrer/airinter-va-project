@@ -257,8 +257,16 @@ function simBriefPreparationData(resolved = null) {
     departure: authoritative.origin?.icao || flight.departure || '—',
     arrival: authoritative.destination?.icao || flight.arrival || '—',
     registration: aircraft.registration || '—',
-    type: aircraft.simbrief_type || selectedVariant?.simbrief_type || selectedOperation?.simbrief?.type || aircraft.icao || 'AUTO',
-    variant: selectedVariant?.label || authoritative.aircraft?.variant?.label || selectedOperation?.simbrief?.addon || '',
+    type: aircraft.simbrief_type || selectedOperation?.simbrief?.type || selectedVariant?.simbrief_type || aircraft.icao || 'AUTO',
+    historicalVariant: aircraft.historical_variant?.name
+      || aircraft.resolved_profile?.variant?.name
+      || selectedAircraft?.historical_variant?.name
+      || '',
+    configuration: aircraft.configuration?.name
+      || aircraft.resolved_profile?.configuration?.name
+      || selectedAircraft?.configuration?.name
+      || '',
+    addon: selectedVariant?.label || aircraft.simulator_profile?.label || selectedOperation?.simbrief?.addon || '',
     pax: Number.isFinite(plannedPax) ? plannedPax : null,
     capacity: Number(demand.capacity ?? aircraft.capacity) || null,
     loadFactor: Number(demand.load_factor_percent ?? aircraft.load_factor_percent),
@@ -277,7 +285,10 @@ function renderSimBriefPreparationSummary(resolved = null) {
     const entries = [
       ['VOL', data.ident],
       ['ROUTE', data.departure + ' → ' + data.arrival],
-      ['APPAREIL', data.registration + ' · ' + data.type + (data.variant ? ' · ' + data.variant : '')],
+      ['APPAREIL', data.registration + ' · ' + data.type],
+      ['VARIANTE RÉELLE', data.historicalVariant || 'Non renseignée dans sb-airframe'],
+      ['CONFIGURATION', data.configuration || 'Configuration héritée'],
+      ['ADD-ON', data.addon || 'AUTO / générique'],
       ['PAX ENVOYÉS', data.pax === null ? 'AUTO' : String(data.pax) + (data.capacity ? ' / ' + data.capacity : '')],
       ['REMPLISSAGE', Number.isFinite(data.loadFactor) ? data.loadFactor.toFixed(1).replace('.0','') + ' %' : '—'],
       ['NIVEAU', data.level ? 'FL' + String(data.level).padStart(3, '0') : 'AUTO']
@@ -332,6 +343,12 @@ function updateAircraftSelectionStatus() {
   const typeSelected = Boolean($('#aircraftTypeId')?.value);
   const registration = selectedAircraft?.registration || selectedAircraft?.name || '';
   const label = selectedAircraft?.type_label || selectedAircraft?.subfleet || selectedAircraft?.icao || '';
+  const historicalVariant = selectedAircraft?.historical_variant?.name
+    || selectedAircraft?.resolved_profile?.variant?.name
+    || '';
+  const configuration = selectedAircraft?.configuration?.name
+    || selectedAircraft?.resolved_profile?.configuration?.name
+    || '';
 
   node.classList.toggle('ready', Boolean(selectedAircraft?.id));
   node.classList.toggle('pending', !selectedAircraft?.id);
@@ -340,7 +357,8 @@ function updateAircraftSelectionStatus() {
 
   if (selectedAircraft?.id) {
     setText(strong, 'APPAREIL PRÊT');
-    setText(detail, [registration, label].filter(Boolean).join(' · ') + ' — SimBrief peut maintenant être préparé.');
+    setText(detail, [registration, label, historicalVariant, configuration].filter(Boolean).join(' · ')
+      + ' — configuration résolue automatiquement, SimBrief peut maintenant être préparé.');
   } else if (typeSelected) {
     setText(strong, 'IMMATRICULATION REQUISE');
     setText(detail, 'Type sélectionné. Choisissez maintenant l’appareil précis / l’immatriculation.');
@@ -445,15 +463,15 @@ function updatePreflight(status, state, ready) {
     ['OFP', state.ofp, state.ofp ? 'briefing disponible' : 'à préparer'],
     ['PIREP', state.pirep, state.pirep ? 'pré-déposé' : 'à préparer'],
     ['SIMULATEUR', readiness.simulator, readiness.simulator ? connectorName : 'télémétrie en attente'],
-    ['VARIANTE', selectedVariant ? true : null, !selectedVariant
-      ? 'non sélectionnée · contrôle informatif'
+    ['ADD-ON', selectedVariant ? true : null, !selectedVariant
+      ? 'non sélectionné · profil simulateur facultatif'
       : (variantMatch === true
-          ? (selectedVariant.label + ' · profil Prométhée · détecté')
+          ? (selectedVariant.label + ' · add-on Prométhée · détecté')
           : variantMatch === false
-            ? (selectedVariant.label + ' · profil Prométhée · simulateur détecté '
+            ? (selectedVariant.label + ' · add-on Prométhée · simulateur détecté '
                 + (capabilityReport.adapterName || capabilityReport.AdapterName || detectedAdapter || 'inconnu')
                 + ' · comparaison informative')
-            : (selectedVariant.label + ' · profil Prométhée sélectionné · identité simulateur informative'))],
+            : (selectedVariant.label + ' · add-on sélectionné · identité simulateur informative'))],
     ['AU SOL', onGround === null ? null : onGround === true, onGround === null ? 'information indisponible' : (onGround ? 'confirmé' : 'avion en vol')],
     ['FREIN DE PARC', parkingBrake === null ? null : parkingBrake === true, parkingBrake === null ? 'information indisponible' : (parkingBrake ? 'serré' : 'desserré')],
     ['MOTEURS', enginesStopped, enginesStopped === null ? 'information indisponible' : (enginesStopped ? 'arrêtés' : 'en fonctionnement')]
@@ -1002,7 +1020,7 @@ function renderAircraftVariants(payload) {
   if (!selectedAircraft?.id || !variants.length) {
     const option = document.createElement('option');
     option.value = '';
-    option.textContent = selectedAircraft?.id ? 'Aucune variante configurée pour ce type' : 'Choisissez d’abord un appareil';
+    option.textContent = selectedAircraft?.id ? 'Aucun add-on spécifique configuré pour cet appareil' : 'Choisissez d’abord un appareil';
     select.append(option);
     select.disabled = true;
     selectedVariant = null;
