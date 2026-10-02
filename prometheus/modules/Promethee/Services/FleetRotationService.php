@@ -118,7 +118,10 @@ class FleetRotationService
             }
 
             $available = $group
-                ->filter(fn ($candidate) => !isset($used[$candidate->aircraft_id]))
+                // An aircraft nearing engine TBO may only move toward an
+                // overhaul-capable site in the priority pass above. Never send
+                // it away again as part of a routine overnight permutation.
+                ->filter(fn ($candidate) => !isset($used[$candidate->aircraft_id]) && !$candidate->engine_priority)
                 ->sortBy(fn ($candidate) => $candidate->last_rotated_at ?: '1970-01-01 00:00:00')
                 ->values();
 
