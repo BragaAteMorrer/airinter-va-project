@@ -138,6 +138,7 @@ class AirframeController extends Controller
         $profile = [
             'strategy' => $request->input('simbrief_strategy', filled($input['airframe_id'] ?? null) ? 'custom_airframe' : 'native'),
             'proxy_type' => $nullable($clean($request->input('simbrief_proxy_type'))),
+            'name' => $nullable($clean($request->input('simbrief_name'))),
             'engines' => $nullable($clean($request->input('simbrief_engines'))),
             'cat' => $nullable($clean($request->input('simbrief_cat'))),
             'equip' => $nullable($clean($request->input('simbrief_equip'))),
