@@ -47,6 +47,7 @@ app.MapGet("/api/status", (PhpVmsClient client, SimConnectReader sim, FlightReco
             sim = sim.Status,
             latest = sim.Latest,
             flight = recorder.Flight,
+            review = recorder.GetReview(),
             track = recorder.Track,
             pending = recorder.Pending.Count + recorder.PendingEvents.Count + recorder.PendingFacts.Count,
             recoveryAvailable = recorder.RecoveryAvailable,
