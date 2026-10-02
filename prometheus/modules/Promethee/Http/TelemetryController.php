@@ -45,6 +45,15 @@ class TelemetryController extends Controller
         $data = $request->validate($rules);
         $inserted = 0;
         $id = $pirep->id;
+        $lastTelemetryAt = DB::table('promethee_telemetry')
+            ->where('pirep_id', $id)
+            ->max('recorded_at');
+        $hadTelemetry = $lastTelemetryAt !== null;
+        $hadArrival = DB::table('promethee_telemetry')
+            ->where('pirep_id', $id)
+            ->where('payload', 'like', '%"phase":"IN"%')
+            ->exists();
+
         DB::transaction(function () use ($data,$id,&$inserted) {
             foreach ($data['samples'] as $s) {
                 $date = Carbon::parse($s['recorded_at'])->utc();
@@ -55,8 +64,42 @@ class TelemetryController extends Controller
                 ]);
             }
         });
+
+        $resolvedOperationId = $operationId;
+        if (!$resolvedOperationId && preg_match('/Hermes ACARS \[(op_[^\]]+)\]/', (string) $pirep->source_name, $matches)) {
+            $resolvedOperationId = $matches[1];
+        }
+
+        $transitionContext = [
+            'operation_id' => $resolvedOperationId,
+            'pirep_id' => $pirep->id,
+            'pirep_state' => (int) $pirep->state,
+            'pirep_status' => $pirep->status instanceof \BackedEnum ? $pirep->status->value : $pirep->status,
+            'aircraft_id' => $pirep->aircraft_id,
+        ];
+
+        if (!$hadTelemetry && $inserted > 0) {
+            logger()->info('hermes_operation_transition', ['transition' => 'START'] + $transitionContext);
+        } elseif ($hadTelemetry && $inserted > 0 && $lastTelemetryAt) {
+            $firstIncoming = collect($data['samples'])
+                ->map(fn ($sample) => Carbon::parse($sample['recorded_at'])->utc())
+                ->sort()
+                ->first();
+
+            if ($firstIncoming && $firstIncoming->diffInSeconds(Carbon::parse($lastTelemetryAt)->utc()) >= 120) {
+                logger()->info('hermes_operation_transition', ['transition' => 'RESUME'] + $transitionContext);
+            }
+        }
+
+        $arrivedInBatch = collect($data['samples'])->contains(
+            fn ($sample) => strtoupper((string) ($sample['phase'] ?? '')) === 'IN'
+        );
+        if (!$hadArrival && $arrivedInBatch) {
+            logger()->info('hermes_operation_transition', ['transition' => 'ARRIVAL'] + $transitionContext);
+        }
+
         return response()->json(['data'=>[
-            'operation_id' => $operationId,
+            'operation_id' => $resolvedOperationId,
             'pirep_id' => $pirep->id,
             'inserted' => $inserted,
             'received' => count($data['samples']),
