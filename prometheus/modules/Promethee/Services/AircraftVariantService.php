@@ -260,7 +260,8 @@ class AircraftVariantService
     private function airframeVariant(SimBriefAirframe $airframe): array
     {
         $details = json_decode((string) $airframe->details, true) ?: [];
-        $options = json_decode((string) $airframe->options, true) ?: [];
+        $options = $airframe->decodedOptions();
+        $planning = $airframe->simbriefProfile();
 
         $simulators = $this->normaliseStringList(
             $details['simulators']
@@ -288,13 +289,20 @@ class AircraftVariantService
                 ?? ''
         ));
 
+        $strategy = $planning['strategy'];
+        $simbriefType = match ($strategy) {
+            'custom_airframe' => $planning['internal_id'],
+            'proxy' => $planning['proxy_type'],
+            default => strtoupper((string) $airframe->icao),
+        };
+
         return [
             'id' => 'sbaf:'.$airframe->id,
             'label' => trim((string) $airframe->name) ?: strtoupper((string) $airframe->icao),
             'vendor' => $vendor !== '' ? $vendor : null,
-            'simbrief_type' => filled($airframe->airframe_id)
-                ? (string) $airframe->airframe_id
-                : strtoupper((string) $airframe->icao),
+            'simbrief_type' => filled($simbriefType) ? (string) $simbriefType : null,
+            'simbrief_strategy' => $strategy,
+            'simbrief_profile' => $planning,
             'simulators' => $simulators,
             'adapter_ids' => $adapterIds,
             'default' => (bool) ($details['default'] ?? $options['default'] ?? false),
@@ -313,6 +321,10 @@ class AircraftVariantService
     private function variantIdentity(array $variant): string
     {
         $simbrief = strtoupper(trim((string) ($variant['simbrief_type'] ?? '')));
+        if (($variant['simbrief_strategy'] ?? null) === 'proxy') {
+            $actual = strtoupper(trim((string) ($variant['icao'] ?? $variant['type_key'] ?? '')));
+            return 'PROXY:'.$actual.':'.$simbrief;
+        }
         if ($simbrief !== '') return 'SB:'.$simbrief;
 
         $icao = strtoupper(trim((string) ($variant['icao'] ?? $variant['type_key'] ?? '')));
