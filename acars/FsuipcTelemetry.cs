@@ -82,6 +82,7 @@ public static class FsuipcTelemetryMapper
         TaxiLight: frame.TaxiLight,
         SlewActive: frame.SlewActive,
         Paused: frame.Paused,
+        PauseKind: frame.Paused == true ? "PAUSE" : null,
         SimulationRate: frame.SimulationRate,
         AircraftTitle: frame.AircraftTitle,
         AircraftIcao: frame.AircraftIcao,
