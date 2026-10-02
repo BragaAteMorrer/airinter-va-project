@@ -5,8 +5,8 @@
   <title>Hermès ACARS — Air Inter</title>
   <link rel="icon" type="image/png" href="/air-inter-va-hermes.png">
   <link rel="apple-touch-icon" href="/air-inter-va-hermes.png">
-  <link rel="stylesheet" href="/styles.css?rev=20260930-wcag-night"><link rel="stylesheet" href="/hermes-themes.css?rev=20260930-wcag-night"><link rel="stylesheet" href="/layout-overrides.css?rev=20260930-wcag-night"><link rel="stylesheet" href="/minitel/minitel-runtime.css"><link rel="stylesheet" href="/minitel/minitel-shell.css"><link rel="stylesheet" href="/hermes-minitel.css">
-  <link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/hermes-themes.css"><link rel="stylesheet" href="/layout-overrides.css"><link rel="stylesheet" href="/minitel/minitel-runtime.css"><link rel="stylesheet" href="/minitel/minitel-shell.css"><link rel="stylesheet" href="/hermes-minitel.css?rev=20260930-videotex-r2">
+  <link rel="stylesheet" href="/styles.css?rev=20261002-live-map"><link rel="stylesheet" href="/hermes-themes.css?rev=20260930-wcag-night"><link rel="stylesheet" href="/layout-overrides.css?rev=20260930-wcag-night"><link rel="stylesheet" href="/minitel/minitel-runtime.css"><link rel="stylesheet" href="/minitel/minitel-shell.css"><link rel="stylesheet" href="/hermes-minitel.css">
+  <link rel="stylesheet" href="/styles.css?rev=20261002-live-map"><link rel="stylesheet" href="/hermes-themes.css"><link rel="stylesheet" href="/layout-overrides.css"><link rel="stylesheet" href="/minitel/minitel-runtime.css"><link rel="stylesheet" href="/minitel/minitel-shell.css"><link rel="stylesheet" href="/hermes-minitel.css?rev=20260930-videotex-r2">
 </head>
 <body class="auth-locked">
   <aside class="rail">
@@ -316,7 +316,33 @@
       <div class="cards"><div><span>Phase</span><strong id="phase">—</strong></div><div><span>Altitude</span><strong id="altitude">—</strong></div><div><span>GS</span><strong id="groundSpeed">—</strong></div><div><span>Carburant</span><strong id="fuel">—</strong></div><div><span>Distance</span><strong id="distance">—</strong></div><div><span>Temps de vol</span><strong id="airborne">—</strong></div><div><span>Synchronisation</span><strong id="pending">0</strong></div></div>
       <p id="warning" class="hint"></p><div class="actions"><button id="startBtn" class="primary">Démarrer l’enregistrement</button><button id="pauseBtn">Pause</button><button id="resumeBtn">Reprendre</button><button id="syncBtn">Synchroniser</button><button id="fileBtn">Revoir & déposer le PIREP</button></div><p id="recordMessage" class="message" hidden></p>
     </section>
-    <section id="map" class="panel"><h2>Suivi du vol</h2><canvas id="flightMap" width="960" height="440" aria-label="Trajet enregistré"></canvas><div id="timeline" class="timeline"><p class="empty">En attente d’un vol.</p></div></section>
+    <section id="map" class="panel">
+      <div class="workspace-title flight-map-heading">
+        <div><span class="kicker">LIVE TELEMETRY</span><h2>Suivi du vol</h2><p id="flightMapRoute" class="hint">La carte se mettra à jour dès le premier point ACARS.</p></div>
+        <strong id="flightMapState" class="ready-state">STANDBY</strong>
+      </div>
+      <div id="flightMap" class="flight-map" aria-label="Carte du trajet enregistré" tabindex="0">
+        <div id="flightMapTiles" class="flight-map-tiles" aria-hidden="true"></div>
+        <canvas id="flightMapOverlay" class="flight-map-overlay" aria-hidden="true"></canvas>
+        <div id="flightMapAircraft" class="flight-map-aircraft" aria-label="Position actuelle de l’avion" hidden><span>✈</span></div>
+        <div id="flightMapEmpty" class="flight-map-empty">En attente de la télémétrie…</div>
+        <div class="flight-map-controls" aria-label="Contrôles de la carte">
+          <button id="mapZoomInBtn" type="button" title="Zoom avant" aria-label="Zoom avant">+</button>
+          <span id="flightMapZoom">Z5</span>
+          <button id="mapZoomOutBtn" type="button" title="Zoom arrière" aria-label="Zoom arrière">−</button>
+          <button id="mapFollowBtn" type="button" class="active" aria-pressed="true">Suivi auto ✓</button>
+          <button id="mapFitBtn" type="button">Cadrer le vol</button>
+        </div>
+        <a class="flight-map-attribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a>
+      </div>
+      <div class="flight-map-meta">
+        <div><span>Vol</span><strong id="flightMapFlight">—</strong></div>
+        <div><span>Position</span><strong id="flightMapPosition">—</strong></div>
+        <div><span>Altitude</span><strong id="flightMapAltitude">—</strong></div>
+        <div><span>GS</span><strong id="flightMapSpeed">—</strong></div>
+      </div>
+      <div id="timeline" class="timeline"><p class="empty">En attente d’un vol.</p></div>
+    </section>
     <section id="journal" class="panel"><h2>Journal opérationnel</h2><p class="hint">Événements ACARS enregistrés localement et conservés durant une reprise de vol.</p><div id="journalEntries" class="timeline"><p class="empty">En attente d’un vol.</p></div></section>
     <section id="datalink" class="panel">
       <div class="workspace-title">
@@ -418,6 +444,6 @@ window.addEventListener('error', event => {
 <script src="/minitel/renderer.js"></script>
 <script src="/minitel/shell.js"></script>
 <script src="/hermes-minitel-core.js?rev=20260930-videotex-r2"></script>
-<script src="/app.js?rev=20261002-pirep-lifecycle"></script>
+<script src="/app.js?rev=20261002-live-map"></script>
 <script src="/hermes-minitel.js?rev=20260930-videotex-r2"></script>
 </body></html>
