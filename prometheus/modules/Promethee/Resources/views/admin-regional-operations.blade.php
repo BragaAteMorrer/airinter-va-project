@@ -88,7 +88,7 @@
     </label>
     <button>Enregistrer la rotation</button>
   </form>
-  <p class="hint">Dernière exécution : {{ $rotationSettings['last_run_at'] ? CarbonCarbon::parse($rotationSettings['last_run_at'])->locale('fr')->diffForHumans() : 'jamais' }}. Une rotation ne crée jamais de mission de rapatriement : position et base attitrée sont permutées ensemble.</p>
+  <p class="hint">Dernière exécution : {{ $rotationSettings['last_run_at'] ? \Carbon\Carbon::parse($rotationSettings['last_run_at'])->locale('fr')->diffForHumans() : 'jamais' }}. Une rotation ne crée jamais de mission de rapatriement : position et base attitrée sont permutées ensemble.</p>
 </section>
 
 <section class="panel table-wrap">
@@ -230,7 +230,7 @@
     <tbody>
     @forelse($rotationLog as $rotation)
       <tr>
-        <td>{{ CarbonCarbon::parse($rotation->rotated_at)->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') }}</td>
+        <td>{{ \Carbon\Carbon::parse($rotation->rotated_at)->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') }}</td>
         <td><strong>{{ $rotation->first_registration }}</strong></td>
         <td><strong>{{ $rotation->second_registration }}</strong></td>
         <td>{{ $rotation->first_from_base }} ⇄ {{ $rotation->second_from_base }}</td>
