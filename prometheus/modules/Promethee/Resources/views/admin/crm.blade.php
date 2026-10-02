@@ -243,32 +243,90 @@
   </form>
 </section>
 
-<section class="panel table-wrap">
-  <div class="panel-heading"><div><span class="eyebrow">HISTORIQUE</span><h2>Campagnes récentes</h2></div></div>
-  <table>
-    <thead><tr><th>Date</th><th>Objet</th><th>Expéditeur</th><th>Créée par</th><th>Dest.</th><th>Envoyés</th><th>Échecs</th><th>État</th><th></th></tr></thead>
-    <tbody>
-    @forelse($campaigns as $campaign)
-      <tr>
-        <td>{{ \Carbon\Carbon::parse($campaign->created_at)->setTimezone('Europe/Paris')->format('d/m/Y H:i') }}</td>
-        <td><strong>{{ $campaign->subject }}</strong></td>
-        <td>{{ $campaign->sender_email ?: '—' }}</td>
-        <td>{{ $campaign->creator_name ?: '—' }}</td>
-        <td>{{ $campaign->recipient_count }}</td>
-        <td>{{ $campaign->sent_count }}</td>
-        <td>{{ $campaign->failed_count }}</td>
-        <td><span class="tag">{{ strtoupper($campaign->status) }}</span></td>
-        <td><a href="{{ route('admin.promethee.crm.campaigns.show',$campaign->id) }}">Détails →</a></td>
-      </tr>
-    @empty
-      <tr><td colspan="9">Aucune campagne pour le moment.</td></tr>
-    @endforelse
-    </tbody>
-  </table>
+<section class="panel admin-workspace crm-history-workspace">
+  <div class="panel-heading admin-workspace-heading">
+    <div>
+      <span class="eyebrow">HISTORIQUE</span>
+      <h2>Campagnes récentes</h2>
+      <p>Sélectionnez une campagne pour retrouver son contexte sans quitter l’espace CRM.</p>
+    </div>
+    <span class="tag">{{ $campaigns->count() }} campagne(s)</span>
+  </div>
+
+  @if($campaigns->isEmpty())
+    <p class="empty">Aucune campagne pour le moment.</p>
+  @else
+    <div class="admin-master-detail" data-crm-campaign-workspace>
+      <div class="admin-master-pane" aria-label="Campagnes récentes">
+        <div class="admin-master-list">
+          @foreach($campaigns as $campaign)
+            <button
+              type="button"
+              class="admin-master-row crm-campaign-row"
+              data-crm-campaign="{{ $campaign->id }}"
+              aria-pressed="false"
+            >
+              <span class="admin-master-row-main">
+                <strong>{{ $campaign->subject }}</strong>
+                <small>{{ \Carbon\Carbon::parse($campaign->created_at)->setTimezone('Europe/Paris')->format('d/m/Y H:i') }} · {{ $campaign->sender_email ?: 'Expéditeur inconnu' }}</small>
+              </span>
+              <span class="admin-master-row-meta">
+                <span class="tag">{{ strtoupper($campaign->status) }}</span>
+                @if((int) $campaign->failed_count > 0)
+                  <span class="admin-exception-count">{{ $campaign->failed_count }} échec(s)</span>
+                @endif
+              </span>
+            </button>
+          @endforeach
+        </div>
+      </div>
+
+      <article class="admin-detail-pane" aria-live="polite">
+        <div class="admin-detail-heading">
+          <div>
+            <span class="eyebrow">CAMPAGNE SÉLECTIONNÉE</span>
+            <h3 id="crmCampaignDetailSubject">—</h3>
+            <p id="crmCampaignDetailMeta">Sélectionnez une campagne.</p>
+          </div>
+          <span class="tag" id="crmCampaignDetailStatus">—</span>
+        </div>
+
+        <div class="admin-detail-metrics">
+          <article><span>Destinataires</span><strong id="crmCampaignDetailRecipients">—</strong></article>
+          <article><span>Envoyés</span><strong id="crmCampaignDetailSent">—</strong></article>
+          <article><span>Échecs</span><strong id="crmCampaignDetailFailed">—</strong></article>
+        </div>
+
+        <dl class="admin-detail-facts">
+          <div><dt>Expéditeur</dt><dd id="crmCampaignDetailSender">—</dd></div>
+          <div><dt>Créée par</dt><dd id="crmCampaignDetailCreator">—</dd></div>
+        </dl>
+
+        <div class="admin-detail-actions">
+          <a class="button primary" id="crmCampaignDetailLink" href="#">Ouvrir le journal complet</a>
+        </div>
+      </article>
+    </div>
+  @endif
 </section>
 
 @push('scripts')
 @php
+  $crmCampaignData = $campaigns->map(function ($campaign) {
+    return [
+      'id' => (int) $campaign->id,
+      'subject' => $campaign->subject,
+      'status' => strtoupper((string) $campaign->status),
+      'sender' => $campaign->sender_email ?: '—',
+      'creator' => $campaign->creator_name ?: '—',
+      'recipients' => (int) $campaign->recipient_count,
+      'sent' => (int) $campaign->sent_count,
+      'failed' => (int) $campaign->failed_count,
+      'created_at' => \Carbon\Carbon::parse($campaign->created_at)->setTimezone('Europe/Paris')->format('d/m/Y H:i'),
+      'url' => route('admin.promethee.crm.campaigns.show', $campaign->id),
+    ];
+  })->values();
+
   $crmPilotData = $pilots->map(function ($pilot) {
     return [
       'id' => (int) $pilot->id,
@@ -283,6 +341,50 @@
 @endphp
 <script>
 (() => {
+  const campaigns = {{ \Illuminate\Support\Js::from($crmCampaignData) }};
+  const campaignStorageKey = 'promethee-crm-selected-campaign';
+  const campaignRows = [...document.querySelectorAll('[data-crm-campaign]')];
+  const campaignById = new Map(campaigns.map(item => [String(item.id), item]));
+
+  const showCampaign = id => {
+    const campaign = campaignById.get(String(id));
+    if (!campaign) return false;
+
+    campaignRows.forEach(row => {
+      const selected = row.dataset.crmCampaign === String(campaign.id);
+      row.classList.toggle('selected', selected);
+      row.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    });
+
+    const setText = (selector, value) => {
+      const node = document.querySelector(selector);
+      if (node) node.textContent = value;
+    };
+
+    setText('#crmCampaignDetailSubject', campaign.subject || 'Sans objet');
+    setText('#crmCampaignDetailMeta', campaign.created_at || '—');
+    setText('#crmCampaignDetailStatus', campaign.status || '—');
+    setText('#crmCampaignDetailRecipients', campaign.recipients);
+    setText('#crmCampaignDetailSent', campaign.sent);
+    setText('#crmCampaignDetailFailed', campaign.failed);
+    setText('#crmCampaignDetailSender', campaign.sender || '—');
+    setText('#crmCampaignDetailCreator', campaign.creator || '—');
+
+    const link = document.querySelector('#crmCampaignDetailLink');
+    if (link) link.href = campaign.url;
+
+    try { localStorage.setItem(campaignStorageKey, String(campaign.id)); } catch (_) {}
+    return true;
+  };
+
+  campaignRows.forEach(row => row.addEventListener('click', () => showCampaign(row.dataset.crmCampaign)));
+
+  if (campaignRows.length) {
+    let restored = null;
+    try { restored = localStorage.getItem(campaignStorageKey); } catch (_) {}
+    if (!restored || !showCampaign(restored)) showCampaign(campaignRows[0].dataset.crmCampaign);
+  }
+
   const pilots = {{ \Illuminate\Support\Js::from($crmPilotData) }};
   const form = document.getElementById('crmCampaignForm');
   const count = document.getElementById('crmAudienceCount');
