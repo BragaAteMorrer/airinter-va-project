@@ -2,6 +2,34 @@
 
 Hermès traite le PIREP comme un artefact de l'opération Prométhée tout en conservant les tables et services phpVMS existants.
 
+## Cause racine corrigée
+
+La cause principale du faux `COMPLETED` était dans le cast phpVMS des dates nullable.
+
+`CarbonCast::get()` faisait auparavant :
+
+```php
+return new Carbon($value);
+```
+
+même lorsque la base contenait `NULL`.
+
+Or `new Carbon(null)` signifie « maintenant ». Ainsi, un PIREP simplement pré-déposé avec :
+
+```
+submitted_at = NULL
+```
+
+était lu côté PHP comme si `submitted_at` contenait une date actuelle. Toute logique du type :
+
+```php
+$pirep->submitted_at !== null
+```
+
+classait alors immédiatement le brouillon comme rapport déposé.
+
+Le cast conserve désormais réellement `NULL`. Cette correction rétablit aussi le comportement attendu de `PirepService::file()`, qui peut alors renseigner `submitted_at` uniquement au dépôt final.
+
 ## Invariants absolus
 
 Ces trois règles font partie du contrat public entre Hermès, Prométhée et phpVMS :
