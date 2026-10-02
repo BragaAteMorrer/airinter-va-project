@@ -164,6 +164,18 @@ jobs:
           php -l modules/Promethee/Services/AircraftOperationalStateService.php
           php -l modules/Promethee/Services/DemandProfileService.php
           php -l modules/Promethee/Services/AirInterCabinProfileService.php
+          php -l modules/Promethee/Services/AircraftConfigurationResolver.php
+          php -l modules/Promethee/Http/AircraftConfigurationAdminController.php
+          php -l modules/Promethee/Http/Api/AircraftConfigurationController.php
+          php -l modules/Promethee/Models/AircraftTypeProfile.php
+          php -l modules/Promethee/Models/AircraftHistoricalVariant.php
+          php -l modules/Promethee/Models/AirframeConfiguration.php
+          php -l modules/Promethee/Models/AircraftConfigurationAssignment.php
+          php -l modules/Promethee/Models/AirframeSimulatorProfile.php
+          php -l modules/Promethee/Models/AircraftModification.php
+          php -l modules/Promethee/Models/PirepAircraftProfile.php
+          php -l modules/Promethee/Database/migrations/2026_10_02_000023_add_aircraft_configuration_profiles.php
+          php -l tests/AircraftConfigurationResolverTest.php
           php -l modules/Promethee/Config/cabin-profiles.php
           php -l modules/Promethee/Services/EconomyFareResolver.php
           php -l modules/Promethee/Services/BbrReferenceRepairService.php
@@ -237,6 +249,8 @@ jobs:
         run: composer install --no-interaction --prefer-dist --no-progress
       - name: Run Hermès operation lifecycle regression suite
         run: vendor/bin/phpunit tests/HermesOperationLifecycleTest.php
+      - name: Run sb-airframe historical configuration tests
+        run: vendor/bin/phpunit tests/AircraftConfigurationResolverTest.php
 
   minitel-release-gate:
     name: Minitel M7 release gate
