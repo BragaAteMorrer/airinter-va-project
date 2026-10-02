@@ -3128,13 +3128,44 @@ class PortalController extends Controller
     }
 
     public function syncEngineFleet(EngineMaintenanceService $engineService) {
+        $references = (array) config('promethee.engine-profiles', []);
+        $createdProfiles = 0;
+
+        Subfleet::with('airline')->orderBy('id')->get()->each(function (Subfleet $subfleet) use ($references, &$createdProfiles) {
+            $airlineIcao = strtoupper((string) ($subfleet->airline?->icao ?: ''));
+            $referenceKey = $airlineIcao.'|'.(string) $subfleet->type;
+            $reference = $references[$referenceKey] ?? null;
+
+            if (!$reference || DB::table('promethee_engine_profiles')->where('subfleet_id', $subfleet->id)->exists()) {
+                return;
+            }
+
+            DB::table('promethee_engine_profiles')->insert([
+                'subfleet_id' => $subfleet->id,
+                'engine_type' => (string) $reference['engine_type'],
+                'engine_count' => (int) $reference['engine_count'],
+                'tbo_hours' => $reference['tbo_hours'] ?? null,
+                'tbo_cycles' => $reference['tbo_cycles'] ?? null,
+                'warning_hours' => (float) ($reference['warning_hours'] ?? 100),
+                'warning_cycles' => $reference['warning_cycles'] ?? null,
+                'active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $createdProfiles++;
+        });
+
         $profileIds = DB::table('promethee_engine_profiles')->where('active', true)->pluck('subfleet_id');
         $synced = 0;
         foreach ($profileIds as $subfleetId) {
             $synced += $engineService->syncSubfleet((int) $subfleetId);
         }
 
-        return back()->with('success', $synced.' position(s) moteur vérifiée(s) / synchronisée(s) sur toute la flotte configurée.');
+        return back()->with(
+            'success',
+            $createdProfiles.' profil(s) moteur créé(s) depuis le référentiel · '
+            .$synced.' position(s) moteur vérifiée(s) / synchronisée(s).'
+        );
     }
 
     public function saveEngineProfile(Request $r, EngineMaintenanceService $engineService) {
