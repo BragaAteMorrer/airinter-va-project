@@ -1557,3 +1557,15 @@ html:not([data-era="minitel"]) .departure-board .dispatch-flight {
 .split-flap-char:not(.is-flipping) {
   will-change: auto;
 }
+
+
+/* Audit UX 2026-10-02 — personal-first dashboard. */
+.next-operation-panel{margin-bottom:18px;border-top:4px solid var(--ops-blue);background:linear-gradient(115deg,color-mix(in srgb,var(--ops-blue) 6%,#fff),#fff 46%)}
+.next-operation-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:14px}.next-operation-heading h2{margin:3px 0 0}
+.next-operation-main{display:grid;grid-template-columns:minmax(230px,.85fr) minmax(280px,1fr) auto;align-items:center;gap:22px}
+.next-operation-identity{display:grid;gap:4px}.next-operation-identity>strong{font:800 13px Consolas,monospace;color:var(--ops-red);letter-spacing:.08em}.next-operation-identity>span{font:800 clamp(24px,3vw,38px)/1 Consolas,monospace;color:var(--ops-dark)}.next-operation-identity i{font-style:normal;color:var(--ops-red)}
+.next-operation-identity small,.next-operation-state small,.next-operation-empty span{color:var(--muted)}.next-operation-state{display:grid;gap:6px}.next-operation-state>span{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.next-operation-state>strong{font-size:18px}
+.next-operation-progress{height:7px;overflow:hidden;border-radius:999px;background:color-mix(in srgb,var(--ops-blue) 12%,#fff);border:1px solid var(--line)}.next-operation-progress i{display:block;height:100%;background:linear-gradient(90deg,var(--ops-blue),var(--ops-red));border-radius:inherit}
+.next-operation-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}.next-operation-empty{display:flex;justify-content:space-between;gap:20px;align-items:center}.next-operation-empty>div{display:grid;gap:5px}
+html[data-appearance="dark"] .next-operation-panel{background:linear-gradient(115deg,color-mix(in srgb,var(--ops-blue) 15%,#101c28),#101c28 48%)}
+@media(max-width:980px){.next-operation-main{grid-template-columns:1fr 1fr}.next-operation-actions{grid-column:1/-1;justify-content:flex-start}}@media(max-width:650px){.next-operation-heading,.next-operation-empty{display:grid}.next-operation-main{grid-template-columns:1fr}}
