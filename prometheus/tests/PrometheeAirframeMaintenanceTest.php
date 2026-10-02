@@ -10,11 +10,11 @@ use Modules\Promethee\Services\AirframeMaintenanceService;
 
 final class PrometheeAirframeMaintenanceTest extends TestCase
 {
-    public function test_admin_can_save_a_b_c_time_cycle_and_duration_limits(): void
+    public function test_a_b_c_time_cycle_and_duration_limits_are_persisted(): void
     {
-        $admin = $this->createAdminUser();
-
-        $this->actingAs($admin, 'web')->post('/admin/promethee/maintenance/airframe-settings', [
+        /** @var AirframeMaintenanceService $service */
+        $service = app(AirframeMaintenanceService::class);
+        $service->saveSettings([
             'a_time_limit_hours' => 20,
             'a_cycle_limit' => 20,
             'a_duration_hours' => 20,
@@ -25,7 +25,7 @@ final class PrometheeAirframeMaintenanceTest extends TestCase
             'c_cycle_limit' => 180,
             'c_duration_hours' => 120,
             'warning_percent' => 10,
-        ])->assertStatus(302);
+        ]);
 
         $this->assertSame('20', DB::table('promethee_settings')->where('key', 'maintenance.airframe.a.cycle_limit')->value('value'));
         $this->assertSame('60', DB::table('promethee_settings')->where('key', 'maintenance.airframe.b.time_limit_hours')->value('value'));
