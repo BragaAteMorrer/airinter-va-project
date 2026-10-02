@@ -17,7 +17,8 @@ class RotateFleetCommand extends Command
         $this->info(
             'Rotation flotte : '.$result['pairs'].' permutation(s), '
             .$result['aircraft'].' appareil(s), '
-            .$result['maintenance_priority'].' priorité(s) maintenance. '
+            .$result['maintenance_priority'].' priorité(s) moteur, '
+            .$result['airframe_maintenance_priority'].' priorité(s) cellule. '
             .'['.$result['reason'].']'
         );
 
