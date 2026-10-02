@@ -2,6 +2,8 @@
 
 namespace Tests;
 
+use App\Models\Acars;
+use App\Models\Enums\AcarsType;
 use App\Models\Enums\PirepSource;
 use App\Models\Enums\PirepState;
 use App\Models\Enums\PirepStatus;
@@ -97,13 +99,9 @@ final class HermesPirepLifecycleTest extends TestCase
     public function test_simbrief_route_rows_do_not_count_as_flight_evidence(): void
     {
         $pirep = $this->hermesDraft('op_route-only');
-        DB::table('acars')->insert([
+        Acars::factory()->create([
             'pirep_id' => $pirep->id,
-            'type' => \App\Models\Enums\AcarsType::ROUTE,
-            'name' => 'DCT',
-            'order' => 1,
-            'created_at' => now(),
-            'updated_at' => now(),
+            'type' => AcarsType::ROUTE,
         ]);
 
         /** @var HermesPirepLifecycleService $lifecycle */
