@@ -2305,39 +2305,342 @@ async function refreshNetwork() {
   }
 }
 
-function drawMap(track) {
-  const canvas = $('#flightMap');
-  const context = canvas.getContext('2d');
-  const width = canvas.width;
-  const height = canvas.height;
-  context.fillStyle = '#0d2740';
-  context.fillRect(0, 0, width, height);
-  if (!track?.length) {
-    context.fillStyle = '#a9bfd2';
-    context.font = '20px sans-serif';
-    context.fillText('En attente de la télémétrie…', 28, 48);
+const flightMapState = {
+  centerLat: 46.5,
+  centerLon: 2.5,
+  zoom: 5,
+  autoFit: true,
+  dragging: false,
+  pointerId: null,
+  dragStart: null,
+  dragCenterWorld: null,
+  lastTrack: [],
+  hadTrack: false
+};
+
+function clampMapLatitude(value) {
+  return Math.max(-85.05112878, Math.min(85.05112878, Number(value)));
+}
+
+function mapWorldPoint(lat, lon, zoom = flightMapState.zoom) {
+  const scale = 256 * Math.pow(2, zoom);
+  const x = (Number(lon) + 180) / 360 * scale;
+  const latitude = clampMapLatitude(lat) * Math.PI / 180;
+  const y = (1 - Math.log(Math.tan(latitude) + 1 / Math.cos(latitude)) / Math.PI) / 2 * scale;
+  return { x, y };
+}
+
+function mapGeoPoint(x, y, zoom = flightMapState.zoom) {
+  const scale = 256 * Math.pow(2, zoom);
+  const lon = x / scale * 360 - 180;
+  const n = Math.PI - 2 * Math.PI * y / scale;
+  const lat = 180 / Math.PI * Math.atan(Math.sinh(n));
+  return { lat: clampMapLatitude(lat), lon };
+}
+
+function normalizedTrackPoint(point) {
+  const lat = Number(point?.lat ?? point?.Lat);
+  const lon = Number(point?.lon ?? point?.Lon);
+  const altitude = Number(point?.altitude ?? point?.Altitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return null;
+  return { lat, lon, altitude: Number.isFinite(altitude) ? altitude : null };
+}
+
+function mapScreenPoint(point, width, height) {
+  const center = mapWorldPoint(flightMapState.centerLat, flightMapState.centerLon);
+  const world = mapWorldPoint(point.lat, point.lon);
+  return {
+    x: width / 2 + world.x - center.x,
+    y: height / 2 + world.y - center.y
+  };
+}
+
+function fitFlightMap(points) {
+  const map = $('#flightMap');
+  if (!map || !points.length) return;
+  const width = Math.max(320, map.clientWidth);
+  const height = Math.max(300, map.clientHeight);
+  if (points.length === 1) {
+    flightMapState.centerLat = points[0].lat;
+    flightMapState.centerLon = points[0].lon;
+    flightMapState.zoom = 12;
     return;
   }
-  const latitudes = track.map(point => point.lat ?? point.Lat);
-  const longitudes = track.map(point => point.lon ?? point.Lon);
-  const minLat = Math.min(...latitudes) - 0.03;
-  const maxLat = Math.max(...latitudes) + 0.03;
-  const minLon = Math.min(...longitudes) - 0.03;
-  const maxLon = Math.max(...longitudes) + 0.03;
-  const position = point => {
-    const lat = point.lat ?? point.Lat;
-    const lon = point.lon ?? point.Lon;
-    return [30 + (lon - minLon) / (maxLon - minLon || 1) * (width - 60), height - 30 - (lat - minLat) / (maxLat - minLat || 1) * (height - 60)];
-  };
-  context.strokeStyle = '#54a4ed';
+
+  const minLat = Math.min(...points.map(point => point.lat));
+  const maxLat = Math.max(...points.map(point => point.lat));
+  const minLon = Math.min(...points.map(point => point.lon));
+  const maxLon = Math.max(...points.map(point => point.lon));
+  const padding = 84;
+
+  for (let zoom = 13; zoom >= 3; zoom -= 1) {
+    const northWest = mapWorldPoint(maxLat, minLon, zoom);
+    const southEast = mapWorldPoint(minLat, maxLon, zoom);
+    if (Math.abs(southEast.x - northWest.x) <= width - padding * 2
+      && Math.abs(southEast.y - northWest.y) <= height - padding * 2) {
+      flightMapState.zoom = zoom;
+      const center = mapGeoPoint((northWest.x + southEast.x) / 2, (northWest.y + southEast.y) / 2, zoom);
+      flightMapState.centerLat = center.lat;
+      flightMapState.centerLon = center.lon;
+      return;
+    }
+  }
+
+  flightMapState.zoom = 3;
+  flightMapState.centerLat = (minLat + maxLat) / 2;
+  flightMapState.centerLon = (minLon + maxLon) / 2;
+}
+
+function renderFlightMapTiles(width, height) {
+  const layer = $('#flightMapTiles');
+  if (!layer) return;
+  const zoom = flightMapState.zoom;
+  const center = mapWorldPoint(flightMapState.centerLat, flightMapState.centerLon, zoom);
+  const tileSize = 256;
+  const tilesAcross = Math.pow(2, zoom);
+  const left = center.x - width / 2;
+  const top = center.y - height / 2;
+  const firstX = Math.floor(left / tileSize) - 1;
+  const lastX = Math.floor((left + width) / tileSize) + 1;
+  const firstY = Math.floor(top / tileSize) - 1;
+  const lastY = Math.floor((top + height) / tileSize) + 1;
+  const wanted = new Set();
+
+  for (let tileY = firstY; tileY <= lastY; tileY += 1) {
+    if (tileY < 0 || tileY >= tilesAcross) continue;
+    for (let tileX = firstX; tileX <= lastX; tileX += 1) {
+      const wrappedX = ((tileX % tilesAcross) + tilesAcross) % tilesAcross;
+      const key = zoom + '/' + wrappedX + '/' + tileY + '@' + tileX;
+      wanted.add(key);
+      let tile = layer.querySelector('[data-map-tile="' + key + '"]');
+      if (!tile) {
+        tile = document.createElement('img');
+        tile.className = 'flight-map-tile';
+        tile.alt = '';
+        tile.draggable = false;
+        tile.dataset.mapTile = key;
+        tile.src = 'https://tile.openstreetmap.org/' + zoom + '/' + wrappedX + '/' + tileY + '.png';
+        layer.append(tile);
+      }
+      tile.style.left = (tileX * tileSize - left) + 'px';
+      tile.style.top = (tileY * tileSize - top) + 'px';
+    }
+  }
+
+  layer.querySelectorAll('[data-map-tile]').forEach(tile => {
+    if (!wanted.has(tile.dataset.mapTile)) tile.remove();
+  });
+}
+
+function resizeFlightMapCanvas(canvas, width, height) {
+  const ratio = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  const pixelWidth = Math.round(width * ratio);
+  const pixelHeight = Math.round(height * ratio);
+  if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+    canvas.width = pixelWidth;
+    canvas.height = pixelHeight;
+  }
+  canvas.style.width = width + 'px';
+  canvas.style.height = height + 'px';
+  const context = canvas.getContext('2d');
+  context.setTransform(ratio, 0, 0, ratio, 0, 0);
+  return context;
+}
+
+function approximateTrackHeading(points, latest) {
+  const direct = Number(latest?.headingDegrees ?? latest?.HeadingDegrees ?? latest?.heading ?? latest?.Heading);
+  if (Number.isFinite(direct)) return direct;
+  if (points.length < 2) return 0;
+  const a = points[points.length - 2];
+  const b = points[points.length - 1];
+  const lat1 = a.lat * Math.PI / 180;
+  const lat2 = b.lat * Math.PI / 180;
+  const deltaLon = (b.lon - a.lon) * Math.PI / 180;
+  const y = Math.sin(deltaLon) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(deltaLon);
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+
+function updateFlightMapControls() {
+  const follow = $('#mapFollowBtn');
+  if (follow) {
+    follow.classList.toggle('active', flightMapState.autoFit);
+    follow.setAttribute('aria-pressed', flightMapState.autoFit ? 'true' : 'false');
+    follow.textContent = flightMapState.autoFit ? 'Suivi auto ✓' : 'Suivi auto';
+  }
+  setText($('#flightMapZoom'), 'Z' + flightMapState.zoom);
+}
+
+function drawMap(track, latest = {}) {
+  const map = $('#flightMap');
+  const canvas = $('#flightMapOverlay');
+  const empty = $('#flightMapEmpty');
+  const aircraft = $('#flightMapAircraft');
+  if (!map || !canvas) return;
+
+  const width = Math.max(1, map.clientWidth);
+  const height = Math.max(1, map.clientHeight);
+  const context = resizeFlightMapCanvas(canvas, width, height);
+  const points = (Array.isArray(track) ? track : []).map(normalizedTrackPoint).filter(Boolean);
+  flightMapState.lastTrack = track || [];
+
+  if (!points.length) {
+    if (flightMapState.hadTrack) {
+      flightMapState.centerLat = 46.5;
+      flightMapState.centerLon = 2.5;
+      flightMapState.zoom = 5;
+      flightMapState.autoFit = true;
+    }
+    flightMapState.hadTrack = false;
+    renderFlightMapTiles(width, height);
+    context.clearRect(0, 0, width, height);
+    if (aircraft) aircraft.hidden = true;
+    if (empty) empty.hidden = false;
+    setText($('#flightMapState'), 'STANDBY');
+    setText($('#flightMapFlight'), selectedOperation ? displayFlightIdent(normalizeFlight(selectedOperation.flight || selectedOperation)) : '—');
+    setText($('#flightMapPosition'), '—');
+    setText($('#flightMapAltitude'), '—');
+    setText($('#flightMapSpeed'), '—');
+    const flight = selectedOperation ? normalizeFlight(selectedOperation.flight || selectedOperation) : null;
+    setText($('#flightMapRoute'), flight ? (flight.departure || '—') + ' → ' + (flight.arrival || '—') : 'La carte se mettra à jour dès le premier point ACARS.');
+    updateFlightMapControls();
+    return;
+  }
+
+  flightMapState.hadTrack = true;
+  if (flightMapState.autoFit && !flightMapState.dragging) fitFlightMap(points);
+  renderFlightMapTiles(width, height);
+  context.clearRect(0, 0, width, height);
+
+  const screenPoints = points.map(point => mapScreenPoint(point, width, height));
+  if (screenPoints.length > 1) {
+    context.save();
+    context.lineJoin = 'round';
+    context.lineCap = 'round';
+    context.strokeStyle = 'rgba(5, 29, 52, .45)';
+    context.lineWidth = 7;
+    context.beginPath();
+    screenPoints.forEach((point, index) => index ? context.lineTo(point.x, point.y) : context.moveTo(point.x, point.y));
+    context.stroke();
+    context.strokeStyle = '#2f8fd8';
+    context.lineWidth = 3.5;
+    context.beginPath();
+    screenPoints.forEach((point, index) => index ? context.lineTo(point.x, point.y) : context.moveTo(point.x, point.y));
+    context.stroke();
+    context.restore();
+  }
+
+  const first = screenPoints[0];
+  context.save();
+  context.fillStyle = '#ffffff';
+  context.strokeStyle = '#173b59';
   context.lineWidth = 3;
   context.beginPath();
-  track.forEach((point, index) => {
-    const [x, y] = position(point);
-    index ? context.lineTo(x, y) : context.moveTo(x, y);
-  });
+  context.arc(first.x, first.y, 7, 0, Math.PI * 2);
+  context.fill();
   context.stroke();
+  context.restore();
+
+  const currentPoint = points[points.length - 1];
+  const current = screenPoints[screenPoints.length - 1];
+  if (aircraft) {
+    aircraft.hidden = false;
+    aircraft.style.left = current.x + 'px';
+    aircraft.style.top = current.y + 'px';
+    aircraft.style.setProperty('--aircraft-heading', (approximateTrackHeading(points, latest) - 45) + 'deg');
+  }
+  if (empty) empty.hidden = true;
+
+  const flight = selectedOperation ? normalizeFlight(selectedOperation.flight || selectedOperation) : null;
+  const altitude = Number(latest?.altitudeMslFeet ?? latest?.AltitudeMslFeet ?? latest?.altitude ?? latest?.Altitude ?? currentPoint.altitude);
+  const speed = Number(latest?.groundSpeedKnots ?? latest?.GroundSpeedKnots ?? latest?.gs ?? latest?.Gs);
+  setText($('#flightMapState'), (lastStatus?.flight?.recording ?? lastStatus?.flight?.Recording) ? 'LIVE' : 'TRACK');
+  setText($('#flightMapFlight'), flight ? displayFlightIdent(flight) : 'Vol en cours');
+  setText($('#flightMapRoute'), flight ? (flight.departure || '—') + ' → ' + (flight.arrival || '—') : 'Trajet ACARS enregistré');
+  setText($('#flightMapPosition'), currentPoint.lat.toFixed(4) + ', ' + currentPoint.lon.toFixed(4));
+  setText($('#flightMapAltitude'), Number.isFinite(altitude) ? Math.round(altitude).toLocaleString('fr-FR') + ' ft' : '—');
+  setText($('#flightMapSpeed'), Number.isFinite(speed) ? Math.round(speed) + ' kt' : '—');
+  updateFlightMapControls();
 }
+
+const flightMap = $('#flightMap');
+if (flightMap) {
+  flightMap.addEventListener('pointerdown', event => {
+    if (event.button !== 0 || event.target.closest('.flight-map-controls')) return;
+    flightMapState.dragging = true;
+    flightMapState.pointerId = event.pointerId;
+    flightMapState.dragStart = { x: event.clientX, y: event.clientY };
+    flightMapState.dragCenterWorld = mapWorldPoint(flightMapState.centerLat, flightMapState.centerLon);
+    flightMapState.autoFit = false;
+    flightMap.setPointerCapture?.(event.pointerId);
+    flightMap.classList.add('dragging');
+    updateFlightMapControls();
+  });
+
+  flightMap.addEventListener('pointermove', event => {
+    if (!flightMapState.dragging || event.pointerId !== flightMapState.pointerId) return;
+    const deltaX = event.clientX - flightMapState.dragStart.x;
+    const deltaY = event.clientY - flightMapState.dragStart.y;
+    const center = mapGeoPoint(
+      flightMapState.dragCenterWorld.x - deltaX,
+      flightMapState.dragCenterWorld.y - deltaY
+    );
+    flightMapState.centerLat = center.lat;
+    flightMapState.centerLon = center.lon;
+    drawMap(flightMapState.lastTrack, lastStatus?.latest || {});
+  });
+
+  const stopDragging = event => {
+    if (!flightMapState.dragging || (event.pointerId != null && event.pointerId !== flightMapState.pointerId)) return;
+    flightMapState.dragging = false;
+    flightMap.classList.remove('dragging');
+    if (flightMapState.pointerId != null) {
+      try { flightMap.releasePointerCapture?.(flightMapState.pointerId); } catch {}
+    }
+    flightMapState.pointerId = null;
+  };
+  flightMap.addEventListener('pointerup', stopDragging);
+  flightMap.addEventListener('pointercancel', stopDragging);
+
+  flightMap.addEventListener('wheel', event => {
+    event.preventDefault();
+    flightMapState.autoFit = false;
+    flightMapState.zoom = Math.max(3, Math.min(15, flightMapState.zoom + (event.deltaY < 0 ? 1 : -1)));
+    updateFlightMapControls();
+    drawMap(flightMapState.lastTrack, lastStatus?.latest || {});
+  }, { passive: false });
+}
+
+$('#mapZoomInBtn')?.addEventListener('click', () => {
+  flightMapState.autoFit = false;
+  flightMapState.zoom = Math.min(15, flightMapState.zoom + 1);
+  drawMap(flightMapState.lastTrack, lastStatus?.latest || {});
+});
+
+$('#mapZoomOutBtn')?.addEventListener('click', () => {
+  flightMapState.autoFit = false;
+  flightMapState.zoom = Math.max(3, flightMapState.zoom - 1);
+  drawMap(flightMapState.lastTrack, lastStatus?.latest || {});
+});
+
+$('#mapFollowBtn')?.addEventListener('click', () => {
+  flightMapState.autoFit = !flightMapState.autoFit;
+  if (flightMapState.autoFit) {
+    const points = flightMapState.lastTrack.map(normalizedTrackPoint).filter(Boolean);
+    if (points.length) fitFlightMap(points);
+  }
+  drawMap(flightMapState.lastTrack, lastStatus?.latest || {});
+});
+
+$('#mapFitBtn')?.addEventListener('click', () => {
+  const points = flightMapState.lastTrack.map(normalizedTrackPoint).filter(Boolean);
+  if (!points.length) return;
+  flightMapState.autoFit = true;
+  fitFlightMap(points);
+  drawMap(flightMapState.lastTrack, lastStatus?.latest || {});
+});
+
+window.addEventListener('resize', () => drawMap(flightMapState.lastTrack, lastStatus?.latest || {}));
 
 function renderTimeline(selector, entries) {
   const node = $(selector);
@@ -2656,7 +2959,7 @@ async function refreshStatus() {
     setText($('#fuel'), fuel == null ? '—' : `${Math.round(fuel)} lb`);
     updateRemotePolicy(status.remoteConfiguration || status.RemoteConfiguration);
     if (flight?.pirepId || flight?.PirepId) pirepId = flight.pirepId || flight.PirepId;
-    drawMap(status.track || []);
+    drawMap(status.track || [], latest);
     renderTimeline('#timeline', flight?.timeline || flight?.Timeline || []);
     renderTimeline('#journalEntries', flight?.journal || flight?.Journal || flight?.timeline || flight?.Timeline || []);
     renderReview(status.review || status.Review || lastFiledReview);
