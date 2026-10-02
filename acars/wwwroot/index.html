@@ -393,6 +393,22 @@
     </section>
     <section id="review" class="panel">
       <div class="workspace-title"><div><span class="kicker">FLIGHT DATA MONITORING</span><h2>Flight Review</h2><p class="hint">Synthèse factuelle du vol. Les observations Hermès ne constituent pas, à elles seules, une pénalité compagnie.</p></div><strong id="reviewState" class="ready-state">EN VOL</strong></div>
+      <div class="review-operation-band">
+        <span class="kicker">OPÉRATION</span>
+        <strong id="reviewOperationIdentity">Opération en cours</strong>
+      </div>
+      <div class="review-compare" aria-label="Comparaison planifié et réalisé">
+        <article>
+          <span class="kicker">PLANIFIÉ</span>
+          <strong id="reviewPlannedRoute">AUTO</strong>
+          <small id="reviewPlannedMeta">Planification non disponible</small>
+        </article>
+        <article>
+          <span class="kicker">RÉALISÉ</span>
+          <strong id="reviewActualSummary">En attente du vol</strong>
+          <small id="reviewActualMeta">Les données réalisées apparaîtront pendant l’enregistrement.</small>
+        </article>
+      </div>
       <div class="cards review-cards">
         <div><span>Distance</span><strong id="reviewDistance">—</strong></div>
         <div><span>Airborne</span><strong id="reviewAirborne">—</strong></div>
@@ -407,6 +423,10 @@
         <article><span class="kicker">1000 FT AGL</span><strong id="review1000">NON OBSERVÉ</strong><p>Train, volets, VS et bank selon les données disponibles.</p></article>
         <article><span class="kicker">500 FT AGL</span><strong id="review500">NON OBSERVÉ</strong><p>Contrôle générique, indépendant du score Air Inter.</p></article>
         <article><span class="kicker">APPROCHE</span><strong id="reviewGoAround">0 remise de gaz</strong><p id="reviewBounce">0 rebond</p></article>
+      </div>
+      <div class="review-event-panel">
+        <div><span class="kicker">CHRONOLOGIE</span><h3>Événements importants</h3><p class="hint">Même timeline que le suivi en vol, présentée ici pour expliquer le déroulement avant le dépôt final.</p></div>
+        <div id="reviewTimeline" class="timeline review-timeline"></div>
       </div>
       <div class="review-columns">
         <article><h3>Observations FDM</h3><div id="fdmObservations" class="observation-list"><p class="empty">Aucune observation pour le moment.</p></div></article>
@@ -498,5 +518,5 @@ try {
   if ((localStorage.hermesEra || localStorage.prometheeEra || 'modern') === 'minitel') window.loadHermesMinitel();
 } catch {}
 </script>
-<script src="/app.js?rev=20261002-audit-phase2"></script>
+<script src="/app.js?rev=20261002-audit-state-review"></script>
 </body></html>
