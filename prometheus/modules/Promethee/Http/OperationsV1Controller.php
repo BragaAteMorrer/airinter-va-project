@@ -948,16 +948,6 @@ class OperationsV1Controller extends Controller
             ?: $subfleet?->type
             ?: $simbriefCalculationType
         ));
-            ?? $fallback['simbrief_type']
-            ?? ($aircraft?->simbrief_type ?: ($subfleet?->simbrief_type ?: $aircraft?->icao));
-        $simbriefStrategy = $selectedVariant['simbrief_strategy']
-            ?? ($selectedVariant['simbrief_profile']['strategy'] ?? null)
-            ?? 'native';
-        $simbriefDisplayType = strtoupper((string) (
-            $aircraft?->icao
-            ?: $subfleet?->type
-            ?: $simbriefCalculationType
-        ));
         $airline = Str::lower((string) ($flight?->airline?->name ?? ''));
         $loadFactor = str_contains($airline, 'charter') ? config('acars.load_factors.air_charter_international')
             : (str_contains($airline, 'cargo') ? config('acars.load_factors.inter_cargo_service') : config('acars.load_factors.air_inter'));
