@@ -1062,11 +1062,11 @@ async function refreshAircraftVariants() {
   try {
     const simulator = simulatorCode();
     const payload = unwrap(await call('/api/v1/operations/' + encodeURIComponent(operationRef)
-      + '/aircraft-variants?simulator=' + encodeURIComponent(simulator)));
+      + '/simulator-profiles?simulator=' + encodeURIComponent(simulator)));
     renderAircraftVariants(payload);
   } catch (error) {
     renderAircraftVariants({ variants: [] });
-    showMessage('#pirepMessage', 'Variantes indisponibles : ' + error.message, true);
+    showMessage('#pirepMessage', 'Add-ons indisponibles : ' + error.message, true);
   }
 }
 
@@ -1080,7 +1080,7 @@ async function refreshAircraftVariantLibrary() {
 
   try {
     const simulator = simulatorCode();
-    const payload = unwrap(await call('/api/v1/me/aircraft-variants?simulator=' + encodeURIComponent(simulator)));
+    const payload = unwrap(await call('/api/v1/me/simulator-profiles?simulator=' + encodeURIComponent(simulator)));
     const variants = (payload?.variants || []).filter(item => item.vendor !== 'Generic');
     container.replaceChildren();
 
@@ -1802,7 +1802,7 @@ $('#aircraftVariantId').onchange = async event => {
 
   select.disabled = true;
   try {
-    const result = unwrap(await call('/api/v1/operations/' + encodeURIComponent(operationRef) + '/aircraft-variant', {
+    const result = unwrap(await call('/api/v1/operations/' + encodeURIComponent(operationRef) + '/simulator-profile', {
       _method: 'PUT',
       variant_id: variant.id,
       simulator: simulatorCode()
@@ -3004,7 +3004,7 @@ if (saveAircraftVariantsBtn) saveAircraftVariantsBtn.onclick = async () => {
   const preferredNode = document.querySelector('#aircraftVariantLibrary input[name="preferredAircraftVariant"]:checked');
   const preferred = preferredNode && checked.includes(preferredNode.value) ? preferredNode.value : null;
   try {
-    await call('/api/v1/me/aircraft-variants', {
+    await call('/api/v1/me/simulator-profiles', {
       _method: 'PUT',
       variant_ids: checked,
       preferred_variant_id: preferred
