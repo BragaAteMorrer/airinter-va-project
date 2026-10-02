@@ -35,7 +35,8 @@ class SimBriefAirframe extends Model
         'options' => 'nullable',
         'simbrief_strategy' => 'nullable|in:native,custom_airframe,proxy',
         'simbrief_proxy_type' => 'nullable|string|max:16|regex:/^[A-Za-z0-9_-]+$/|required_if:simbrief_strategy,proxy',
-        'simbrief_engines' => 'nullable|string|max:32|required_if:simbrief_strategy,proxy',
+        'simbrief_name' => 'nullable|string|max:12',
+        'simbrief_engines' => 'nullable|string|max:12|required_if:simbrief_strategy,proxy',
         'simbrief_cat' => 'nullable|in:L,M,H,J',
         'simbrief_equip' => 'nullable|string|max:64',
         'simbrief_transponder' => 'nullable|string|max:32',
@@ -90,6 +91,7 @@ class SimBriefAirframe extends Model
         return array_merge([
             'strategy' => $strategy,
             'proxy_type' => null,
+            'name' => null,
             'engines' => null,
             'cat' => null,
             'equip' => null,
