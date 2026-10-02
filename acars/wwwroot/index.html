@@ -37,6 +37,11 @@
         </div>
       </div>
     </header>
+    <details id="errorCenter" class="error-center" hidden>
+      <summary><span><b>ATTENTION</b> Centre d’erreurs Hermès</span><span id="errorCenterCount" class="nav-badge">0</span></summary>
+      <div class="error-center-toolbar"><p>Résumé humain, impact sur le vol et action recommandée. Les détails techniques restent repliés.</p><button id="errorCenterClearBtn" type="button">Effacer</button></div>
+      <div id="errorCenterList" class="error-center-list"></div>
+    </details>
     <section id="connect" class="panel active auth-panel">
       <div class="auth-mark"><span>AIR INTER VA</span><strong data-i18n="auth.crew">Accès équipage</strong></div><h2 data-i18n="auth.title">Connexion pilote</h2><p class="hint" data-i18n="auth.hint">Identifiez-vous avec votre compte pilote Air Inter pour préparer et suivre votre vol.</p>
       <div class="login-form">
@@ -435,19 +440,45 @@
       <p id="remotePolicy" class="message" hidden></p><p id="settingsMessage" class="message" hidden></p>
     </section>
   </main><script>
+window.__hermesBootErrors = [];
 window.addEventListener('error', event => {
+  const detail = { message: event.message || 'erreur inconnue', error: event.error || event.message || 'erreur inconnue' };
+  window.__hermesBootErrors.push(detail.error);
+  window.dispatchEvent(new CustomEvent('hermes:ui-error', { detail }));
   const message = document.getElementById('loginMessage');
   if (!message) return;
   message.hidden = false;
   message.classList.add('error');
-  message.textContent = 'Interface Hermès en erreur : ' + (event.message || 'erreur inconnue');
+  message.textContent = 'Interface Hermès en erreur : ' + detail.message;
 });
 </script>
 <script src="/i18n.js"></script>
-<script src="/minitel/runtime.js"></script>
-<script src="/minitel/renderer.js"></script>
-<script src="/minitel/shell.js"></script>
-<script src="/hermes-minitel-core.js?rev=20260930-videotex-r2"></script>
-<script src="/app.js?rev=20261002-live-map"></script>
-<script src="/hermes-minitel.js?rev=20260930-videotex-r2"></script>
+<script>
+window.loadHermesMinitel = (() => {
+  let promise;
+  const sources = [
+    '/minitel/runtime.js',
+    '/minitel/renderer.js',
+    '/minitel/shell.js',
+    '/hermes-minitel-core.js?rev=20260930-videotex-r2',
+    '/hermes-minitel.js?rev=20261002-audit-lazy'
+  ];
+  const load = src => new Promise((resolve, reject) => {
+    const existing = document.querySelector('script[data-hermes-minitel-src="' + src + '"]');
+    if (existing?.dataset.loaded === 'true') return resolve();
+    const script = existing || document.createElement('script');
+    script.dataset.hermesMinitelSrc = src;
+    script.src = src;
+    script.async = false;
+    script.addEventListener('load', () => { script.dataset.loaded = 'true'; resolve(); }, { once: true });
+    script.addEventListener('error', () => reject(new Error('Impossible de charger ' + src)), { once: true });
+    if (!existing) document.head.append(script);
+  });
+  return () => promise ||= sources.reduce((chain, src) => chain.then(() => load(src)), Promise.resolve());
+})();
+try {
+  if ((localStorage.hermesEra || localStorage.prometheeEra || 'modern') === 'minitel') window.loadHermesMinitel();
+} catch {}
+</script>
+<script src="/app.js?rev=20261002-audit-phase2"></script>
 </body></html>
