@@ -84,6 +84,16 @@
     if (minitelSessionFallback) initial = 'modern';
   } catch {}
   setEra(initial, !minitelSessionFallback);
+  if (document.documentElement.dataset.era === 'minitel') {
+    window.ensurePrometheeMinitelRuntime?.().catch(error => {
+      console.error('[Prométhée Minitel] runtime loading failed', error);
+      try {
+        sessionStorage.setItem('promethee-minitel-session-disabled', '1');
+        localStorage.setItem('promethee-era', 'modern');
+      } catch {}
+      document.documentElement.dataset.era = 'modern';
+    });
+  }
   let initialAppearance; try { initialAppearance = localStorage.getItem('promethee-appearance'); } catch {}
   setAppearance(appearances.includes(initialAppearance) ? initialAppearance : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'), false);
   document.getElementById('era')?.addEventListener('change',e => {

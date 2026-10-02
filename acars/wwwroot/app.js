@@ -9,21 +9,103 @@ const showMessage = (selector, value, error = false) => {
   node.classList.toggle('error', error);
   setText(node, value || '');
 };
-const friendlyError = (error, fallback = 'Action impossible pour le moment.') => {
+const hermesErrorEntries = [];
+const HERMES_ERROR_LIMIT = 20;
+const classifyHermesError = (error, fallback = 'Action impossible pour le moment.', context = '') => {
   const technical = String(error?.message ?? error ?? '').trim();
-  if (!technical) return fallback;
   const lowered = technical.toLowerCase();
-  if (lowered.includes('failed to fetch') || lowered.includes('network') || lowered.includes('timeout') || /\b50[234]\b/.test(technical)) {
-    return 'Service temporairement indisponible. Hermès conserve votre contexte ; réessayez dans quelques instants.';
+  let family = 'local';
+  let code = 'UNEXPECTED';
+  let summary = technical || fallback;
+  let impact = 'L’action demandée n’a pas pu être terminée.';
+  let action = 'Réessayez. Si le problème persiste, ouvrez les détails techniques.';
+
+  if (lowered.includes('simbrief')) {
+    family = 'service'; code = 'SIMBRIEF_UNAVAILABLE';
+    summary = 'SimBrief est temporairement indisponible.';
+    impact = 'Votre opération et l’appareil sélectionné restent conservés dans Hermès.';
+    action = 'Réessayez plus tard ou utilisez une autre source OFP.';
+  } else if (lowered.includes('argos')) {
+    family = 'service'; code = 'ARGOS_UNAVAILABLE';
+    summary = 'Argos ne répond pas pour le moment.';
+    impact = 'La connexion SSO ne peut pas être terminée, sans effet sur un vol déjà enregistré localement.';
+    action = 'Réessayez la connexion ou utilisez la connexion Prométhée de secours.';
+  } else if (lowered.includes('failed to fetch') || lowered.includes('network') || lowered.includes('timeout') || /\b50[234]\b/.test(technical)) {
+    family = 'service'; code = 'SERVICE_UNAVAILABLE';
+    summary = 'Service temporairement indisponible.';
+    impact = 'Hermès conserve votre contexte et le tracking local continue lorsqu’un vol est en cours.';
+    action = 'La synchronisation reprendra automatiquement ; réessayez l’action si nécessaire.';
+  } else if (/\b401\b/.test(technical) || lowered.includes('unauthorized') || (lowered.includes('session') && (lowered.includes('expir') || lowered.includes('token')))) {
+    family = 'user'; code = 'SESSION_EXPIRED';
+    summary = 'Votre session Air Inter doit être renouvelée.';
+    impact = 'Les actions serveur sont suspendues tant que la session n’est pas renouvelée.';
+    action = 'Reconnectez-vous puis reprenez l’action.';
+  } else if (/\b409\b/.test(technical) || lowered.includes('conflict')) {
+    family = 'operation'; code = 'OPERATION_CONFLICT';
+    summary = 'L’opération a changé côté Prométhée.';
+    impact = 'Hermès refuse d’écraser un état plus récent.';
+    action = 'Actualisez l’état de l’opération avant de réessayer.';
+  } else if (lowered.includes('simulateur') || lowered.includes('simconnect') || lowered.includes('fsuipc') || lowered.includes('x-plane') || lowered.includes('xplane')) {
+    family = 'local'; code = 'SIMULATOR_CONNECTION';
+    summary = technical || 'Connexion simulateur indisponible.';
+    impact = 'Le départ peut être bloqué ; un enregistrement déjà actif reste protégé par la récupération locale.';
+    action = 'Vérifiez le simulateur et le connecteur, puis laissez Hermès reprendre automatiquement.';
   }
-  if (/\b401\b/.test(technical) || lowered.includes('unauthorized') || (lowered.includes('session') && (lowered.includes('expir') || lowered.includes('token')))) {
-    return 'Votre session Air Inter doit être renouvelée. Reconnectez-vous puis reprenez l’action.';
-  }
-  if (/\b409\b/.test(technical) || lowered.includes('conflict')) {
-    return 'L’opération a changé côté Prométhée. Actualisez son état avant de réessayer.';
-  }
-  return technical;
+
+  return { family, code, summary, impact, action, technical: technical || fallback, context, at: new Date() };
 };
+const renderHermesErrorCenter = () => {
+  const center = $('#errorCenter');
+  const list = $('#errorCenterList');
+  const count = $('#errorCenterCount');
+  if (!center || !list || !count) return;
+  center.hidden = hermesErrorEntries.length === 0;
+  count.textContent = String(hermesErrorEntries.length);
+  list.replaceChildren();
+  hermesErrorEntries.forEach(entry => {
+    const article = document.createElement('article');
+    article.className = 'error-center-entry ' + entry.family;
+    const meta = document.createElement('span');
+    meta.className = 'error-center-meta';
+    meta.textContent = [entry.family.toUpperCase(), entry.code, entry.context].filter(Boolean).join(' · ');
+    const title = document.createElement('strong');
+    title.textContent = entry.summary;
+    const impact = document.createElement('p');
+    impact.textContent = entry.impact;
+    const action = document.createElement('small');
+    action.textContent = entry.action;
+    const details = document.createElement('details');
+    const summary = document.createElement('summary');
+    summary.textContent = 'Détails techniques';
+    const detailCode = document.createElement('code');
+    detailCode.textContent = entry.technical;
+    details.append(summary, detailCode);
+    article.append(meta, title, impact, action, details);
+    list.append(article);
+  });
+};
+const registerHermesError = (error, fallback = 'Action impossible pour le moment.', context = '') => {
+  const entry = classifyHermesError(error, fallback, context);
+  const fingerprint = [entry.family, entry.code, entry.summary, context].join('|');
+  const duplicateIndex = hermesErrorEntries.findIndex(item => item.fingerprint === fingerprint);
+  if (duplicateIndex >= 0) hermesErrorEntries.splice(duplicateIndex, 1);
+  hermesErrorEntries.unshift({ ...entry, fingerprint });
+  hermesErrorEntries.splice(HERMES_ERROR_LIMIT);
+  renderHermesErrorCenter();
+  return entry;
+};
+const friendlyError = (error, fallback = 'Action impossible pour le moment.', context = '') =>
+  registerHermesError(error, fallback, context).summary;
+
+$('#errorCenterClearBtn')?.addEventListener('click', event => {
+  event.preventDefault();
+  hermesErrorEntries.splice(0);
+  renderHermesErrorCenter();
+});
+window.addEventListener('hermes:ui-error', event => {
+  registerHermesError(event.detail?.error || event.detail?.message || 'Erreur interface Hermès', 'Erreur interface Hermès.', 'Interface');
+});
+(window.__hermesBootErrors || []).forEach(error => registerHermesError(error, 'Erreur interface Hermès.', 'Démarrage'));
 
 const call = (path, body) => new Promise((resolve, reject) => {
   if (!globalThis.chrome?.webview) {
@@ -138,8 +220,13 @@ applyDisplay(storedEra, storedAppearance, false);
 era.onchange = () => {
   const nextEra = era.value;
   applyDisplay(nextEra, document.body.dataset.appearance);
-  if (nextEra === 'minitel') window.HermesMinitel?.start?.();
-  else window.HermesMinitel?.stop?.();
+  if (nextEra === 'minitel') {
+    Promise.resolve(window.loadHermesMinitel?.()).then(() => window.HermesMinitel?.start?.()).catch(error => {
+      showMessage('#settingsMessage', friendlyError(error, 'Le mode Minitel n’a pas pu être chargé.', 'Minitel'), true);
+    });
+  } else {
+    window.HermesMinitel?.stop?.();
+  }
 };
 appearance.onchange = () => applyDisplay(document.body.dataset.era, appearance.value);
 const storedLanguage = localStorage.hermesLanguage || navigator.language || hermesI18n.defaultLanguage;
@@ -3010,13 +3097,20 @@ async function refreshStatus() {
 updateWorkflow();
 drawMap([]);
 refreshStatus();
-setInterval(refreshStatus, 1000);
-setInterval(() => { if (!document.hidden) refreshDatalink(); }, 5000);
-setInterval(() => { if (!document.hidden) refreshNetwork(); }, 15000);
+setInterval(() => {
+  if (!document.hidden) refreshStatus();
+}, 1000);
+setInterval(() => {
+  if (!document.hidden && $('#datalink')?.classList.contains('active')) refreshDatalink();
+}, 5000);
+setInterval(() => {
+  if (!document.hidden && $('#network')?.classList.contains('active')) refreshNetwork();
+}, 15000);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) return;
-  refreshDatalink();
-  refreshNetwork();
+  refreshStatus();
+  if ($('#datalink')?.classList.contains('active')) refreshDatalink();
+  if ($('#network')?.classList.contains('active')) refreshNetwork();
   drawMap(flightMapState.lastTrack, lastStatus?.latest || {});
 });
 call('/api/about').then(info => {

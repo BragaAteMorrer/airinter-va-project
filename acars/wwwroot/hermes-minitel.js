@@ -1396,9 +1396,14 @@
 
   window.HermesMinitel = Object.freeze({ start, stop, state: hm });
 
-  window.addEventListener('DOMContentLoaded', () => {
+  const startForCurrentEra = () => {
     if (document.body.dataset.era === 'minitel') start();
-  }, { once: true });
+  };
+  if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', startForCurrentEra, { once: true });
+  } else {
+    startForCurrentEra();
+  }
 
   window.addEventListener('hermes:auth-changed', event => {
     hm.authenticated = Boolean(event.detail?.authenticated);
