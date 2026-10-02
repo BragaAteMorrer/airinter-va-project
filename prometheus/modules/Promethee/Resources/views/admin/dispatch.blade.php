@@ -26,6 +26,14 @@
     <article><span>ACK OPS</span><strong id="dispatch-ack">—</strong><small>messages cockpit à traiter</small></article>
 </section>
 
+<section class="panel dispatch-attention-queue" id="dispatch-attention-queue" hidden>
+    <div class="panel-heading">
+        <div><span class="eyebrow">ATTENTION REQUISE</span><h2>Exceptions opérationnelles</h2></div>
+        <span class="tag" id="dispatch-attention-count">0</span>
+    </div>
+    <div id="dispatch-attention-list" class="dispatch-attention-list"></div>
+</section>
+
 <div class="dispatch-overview-grid">
     <section class="panel dispatch-board-panel">
         <div class="panel-heading">
@@ -92,6 +100,9 @@
     const workspace = document.querySelector('#dispatch-workspace');
     const empty = document.querySelector('#dispatch-empty');
     const content = document.querySelector('#dispatch-tab-content');
+    const attentionQueue = document.querySelector('#dispatch-attention-queue');
+    const attentionList = document.querySelector('#dispatch-attention-list');
+    const attentionCount = document.querySelector('#dispatch-attention-count');
 
     const esc = value => String(value ?? '—').replace(/[&<>"']/g, char => ({
         '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;'
@@ -195,9 +206,54 @@
         return haystack.includes(query.toLowerCase());
     }
 
+    function operationAttention(op) {
+        const reasons = [];
+        let score = 0;
+        const signal = String(op.signal?.state || 'WAITING').toUpperCase();
+        if (signal === 'LOST' || signal === 'NO_SIGNAL') { reasons.push(['danger', 'Signal Hermès perdu']); score += 30; }
+        else if (signal === 'STALE') { reasons.push(['warn', 'Télémétrie en retard']); score += 18; }
+
+        (op.alerts || []).forEach(alert => {
+            const level = String(alert.level || 'warning').toLowerCase();
+            reasons.push([level === 'danger' ? 'danger' : 'warn', alert.label || 'Alerte opérationnelle']);
+            score += level === 'danger' ? 25 : 12;
+        });
+
+        const ack = Number(op.datalink?.pending_ops_ack || 0);
+        if (ack > 0) { reasons.push(['warn', ack + ' ACK OPS à traiter']); score += 10 + ack; }
+        if (String(op.status || '').toUpperCase() === 'PAUSED') { reasons.push(['warn', 'Enregistrement en pause']); score += 8; }
+
+        return { score, reasons };
+    }
+
+    function renderAttentionQueue() {
+        const items = state.operations
+            .map(op => ({ op, attention: operationAttention(op) }))
+            .filter(item => item.attention.score > 0)
+            .sort((a, b) => b.attention.score - a.attention.score);
+
+        attentionQueue.hidden = items.length === 0;
+        attentionCount.textContent = String(items.length);
+        attentionList.innerHTML = items.map(({op, attention}) =>
+            '<button type="button" class="dispatch-attention-item" data-attention-operation="' + esc(op.operation_id) + '">' +
+                '<span class="dispatch-attention-flight"><strong>' + esc(op.flight?.ident) + '</strong><small>' +
+                    esc(op.flight?.departure) + ' → ' + esc(op.flight?.arrival) + ' · ' + esc(op.pilot?.ident) + '</small></span>' +
+                '<span class="dispatch-attention-reasons">' + attention.reasons.map(([kind, reason]) => badge(reason, kind)).join('') + '</span>' +
+                '<span class="dispatch-attention-open">OUVRIR →</span>' +
+            '</button>'
+        ).join('');
+
+        attentionList.querySelectorAll('[data-attention-operation]').forEach(button => {
+            button.addEventListener('click', () => selectOperation(button.dataset.attentionOperation));
+        });
+    }
+
     function renderBoard() {
         const query = filter.value.trim();
-        const operations = state.operations.filter(op => operationMatches(op, query));
+        renderAttentionQueue();
+        const operations = state.operations
+            .filter(op => operationMatches(op, query))
+            .sort((a, b) => operationAttention(b).score - operationAttention(a).score);
 
         rows.innerHTML = operations.length ? operations.map(op => {
             const alertCount = (op.alerts || []).length;
