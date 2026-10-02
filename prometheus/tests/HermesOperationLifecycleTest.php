@@ -418,7 +418,7 @@ final class HermesOperationLifecycleTest extends TestCase
         $fx = $this->operationFixture(assignAircraft: false, createOfp: false);
         $staleBid = $fx['bid'];
 
-        Pirep::factory()->create([
+        $terminalPirep = Pirep::factory()->create([
             'user_id' => $fx['user']->id,
             'airline_id' => $fx['flight']->airline_id,
             'flight_id' => $fx['flight']->id,
@@ -429,6 +429,13 @@ final class HermesOperationLifecycleTest extends TestCase
             'state' => PirepState::ACCEPTED,
             'status' => PirepStatus::ARRIVED,
             'submitted_at' => now(),
+        ]);
+        // A real completed operation has simulator evidence. Without it this
+        // fixture would intentionally be classified as a legacy zero-flight
+        // ghost and the safety guard must refuse to delete its reservation.
+        \App\Models\Acars::factory()->create([
+            'pirep_id' => $terminalPirep->id,
+            'type' => \App\Models\Enums\AcarsType::FLIGHT_PATH,
         ]);
 
         $controller = app(\Modules\Promethee\Http\PortalController::class);
