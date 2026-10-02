@@ -344,6 +344,30 @@ function buildWorkflowState() {
   };
 }
 
+function currentCanonicalWorkflow(localState = buildWorkflowState()) {
+  if (lastStatus?.recoveryAvailable) {
+    return {
+      state: 'RECOVERY',
+      preparation_progress: 100,
+      next_action: { code: 'OPEN_RECOVERY', label: 'Ouvrir le Recovery Center' },
+      terminal: false,
+      source: 'hermes-local'
+    };
+  }
+
+  const remote = serverDispatch?.workflow_state || serverDispatch?.workflowState;
+  if (remote?.state) return { ...remote, state: String(remote.state).toUpperCase(), source: 'promethee' };
+
+  const legacy = String(serverDispatch?.status || '').toUpperCase();
+  if (legacy && legacy !== 'PREPARATION_REQUIRED') {
+    return { state: legacy, terminal: ['COMPLETED','CANCELLED'].includes(legacy), source: 'legacy-dispatch' };
+  }
+  if (!localState.operation) return { state: null, terminal: false, source: 'local' };
+  if (!localState.aircraft) return { state: 'RESERVED', terminal: false, source: 'local' };
+  if (!localState.ofp || !localState.pirep) return { state: 'PLANNING', terminal: false, source: 'local' };
+  return { state: 'READY', terminal: false, source: 'local' };
+}
+
 function simBriefPreparationData(resolved = null) {
   const form = $('#prefileForm');
   const flight = normalizeFlight(selectedOperation?.flight || selectedOperation || {});
@@ -481,11 +505,21 @@ function updateNextAction(state, ready) {
   const button = $('#nextActionBtn');
   if (!title || !text || !button) return;
 
-  const dispatchStatus = String(serverDispatch?.status || '').toUpperCase();
-  const terminal = ['COMPLETED', 'CANCELLED'].includes(dispatchStatus);
+  const workflow = currentCanonicalWorkflow(state);
+  const dispatchStatus = String(workflow.state || serverDispatch?.status || '').toUpperCase();
+  const terminal = Boolean(workflow.terminal) || ['COMPLETED', 'CANCELLED'].includes(dispatchStatus);
   const awaitingFiling = dispatchStatus === 'AWAITING_FILING';
+  const recoveryRequired = dispatchStatus === 'RECOVERY';
   let action = () => {};
-  if (terminal) {
+  if (recoveryRequired) {
+    setText(title, 'Reprendre le vol interrompu');
+    setText(text, 'Hermès a retrouvé un enregistrement local interrompu. Restaurez-le avant toute nouvelle opération.');
+    setText(button, 'Ouvrir le Recovery Center');
+    action = () => {
+      document.querySelector('[data-tab="record"]')?.click();
+      $('#recoveryCenter')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    };
+  } else if (terminal) {
     setText(title, dispatchStatus === 'COMPLETED' ? 'Vol déjà terminé' : 'Opération annulée');
     setText(text, dispatchStatus === 'COMPLETED'
       ? 'Ce PIREP a déjà été déposé. Sélectionnez une autre réservation ou un nouveau vol du programme.'
@@ -645,9 +679,11 @@ function updateWorkflow() {
   // READY badge strict on real simulator safety data and let /api/start remain
   // the final authority for refusal reasons.
   const ready = dispatchReady && readiness.simulator && preflightSafe;
-  const status = String(serverDispatch?.status || '').toUpperCase();
-  const terminal = ['COMPLETED', 'CANCELLED'].includes(status);
+  const workflow = currentCanonicalWorkflow(state);
+  const status = String(workflow.state || '').toUpperCase();
+  const terminal = Boolean(workflow.terminal) || ['COMPLETED', 'CANCELLED'].includes(status);
   const awaitingFiling = status === 'AWAITING_FILING';
+  const recoveryRequired = status === 'RECOVERY';
 
   // A stale PREPARATION_REQUIRED snapshot may still be revalidated on click,
   // but a server-confirmed terminal/arrival state must never offer a new START.
@@ -655,7 +691,8 @@ function updateWorkflow() {
   const canAttemptStart = visiblePreparationReady
     && readiness.simulator
     && !terminal
-    && !awaitingFiling;
+    && !awaitingFiling
+    && !recoveryRequired;
 
   const node = $('#readyState');
   if (node) {
@@ -663,12 +700,19 @@ function updateWorkflow() {
       ? 'FLIGHT COMPLETED'
       : status === 'CANCELLED'
         ? 'CANCELLED'
-        : status === 'AWAITING_FILING'
-          ? 'ARRIVED · PIREP TO FILE'
-          : status === 'IN_PROGRESS'
-            ? 'FLIGHT IN PROGRESS'
-            : (ready ? 'READY FOR DEPARTURE' : 'NOT READY');
+        : status === 'RECOVERY'
+          ? 'RECOVERY REQUIRED'
+          : status === 'AWAITING_FILING'
+            ? 'ARRIVED · PIREP TO FILE'
+            : status === 'IN_PROGRESS'
+              ? 'FLIGHT IN PROGRESS'
+              : status === 'PLANNING'
+                ? 'PREPARATION'
+                : status === 'RESERVED'
+                  ? 'FLIGHT RESERVED'
+                  : (ready ? 'READY FOR DEPARTURE' : 'NOT READY');
     node.classList.toggle('ready', ready || awaitingFiling || status === 'IN_PROGRESS');
+    node.title = workflow.next_action?.label || '';
   }
   const startButton = $('#startBtn');
   if (startButton) {
@@ -2827,10 +2871,48 @@ function renderObservations(selector, entries, emptyText) {
   });
 }
 
+function renderReviewContext(current) {
+  const flight = normalizeFlight(selectedOperation?.flight || selectedOperation || {});
+  const form = $('#prefileForm');
+  const route = flightPlan?.route || form?.elements?.route?.value || flight.route || 'AUTO';
+  const level = flightPlan?.level || normalizeFlightLevel(form?.elements?.level?.value || flight.level);
+  const plannedFuel = Number(flightPlan?.block_fuel || form?.elements?.block_fuel?.value || 0);
+  const source = flightPlan?.source || (selectedOperation?.simbrief?.available ? 'SimBrief lié' : 'Programme Air Inter');
+
+  const ident = displayFlightIdent(flight);
+  const cityPair = [flight.departure, flight.arrival].filter(Boolean).join(' → ');
+  const aircraft = selectedAircraft?.registration || selectedAircraft?.name || '';
+  setText($('#reviewOperationIdentity'), [ident, cityPair, aircraft].filter(Boolean).join(' · ') || 'Opération en cours');
+
+  setText($('#reviewPlannedRoute'), route || 'AUTO');
+  const plannedMeta = [
+    level ? 'FL' + String(level).padStart(3, '0') : null,
+    plannedFuel > 0 ? Math.round(plannedFuel) + ' lb block fuel' : null,
+    source
+  ].filter(Boolean).join(' · ');
+  setText($('#reviewPlannedMeta'), plannedMeta || 'Planification non disponible');
+
+  if (!current) {
+    setText($('#reviewActualSummary'), 'En attente du vol');
+    setText($('#reviewActualMeta'), 'Les données réalisées apparaîtront pendant l’enregistrement.');
+    renderTimeline('#reviewTimeline', []);
+    return;
+  }
+
+  const distance = Number(reviewValue(current,'distance','Distance') || 0);
+  const block = Number(reviewValue(current,'blockMinutes','BlockMinutes') || 0);
+  const airborne = Number(reviewValue(current,'airborneMinutes','AirborneMinutes') || 0);
+  const fuel = Number(reviewValue(current,'fuelUsed','FuelUsed') || 0);
+  setText($('#reviewActualSummary'), distance.toFixed(1) + ' NM · ' + block + ' min block');
+  setText($('#reviewActualMeta'), airborne + ' min airborne · ' + Math.round(fuel) + ' lb utilisés');
+  renderTimeline('#reviewTimeline', reviewValue(current,'timeline','Timeline') || []);
+}
+
 function renderReview(review) {
   const current = review || lastFiledReview;
   const state = $('#reviewState');
   if (!current) {
+    renderReviewContext(null);
     if (state) { state.textContent = 'AUCUN VOL'; state.classList.remove('ready'); }
     ['#reviewDistance','#reviewAirborne','#reviewBlock','#reviewFuel','#reviewLandingRate','#reviewMaxBank','#reviewFuelAdded','#reviewSimRate'].forEach(id => setText($(id), '—'));
     setText($('#review1000'), 'NON OBSERVÉ');
@@ -2844,6 +2926,7 @@ function renderReview(review) {
     return;
   }
 
+  renderReviewContext(current);
   const phase = String(reviewValue(current, 'phase', 'Phase') || '—');
   const ready = Boolean(reviewValue(current, 'readyToFile', 'ReadyToFile'));
   const filed = Boolean(lastFiledReview && !lastStatus?.review && !lastStatus?.Review);
@@ -2876,6 +2959,8 @@ function renderReview(review) {
 
   const button = $('#submitReviewBtn');
   if (button) button.disabled = !ready || filed;
+  const comment = $('#reviewComment');
+  if (comment) comment.disabled = filed;
   setText($('#reviewHint'), ready
     ? 'Vol arrivé au parking. Vérifiez la synthèse puis déposez le PIREP.'
     : 'Flight Review en cours · phase ' + phase + '. Le dépôt sera disponible après IN.');
@@ -2883,7 +2968,8 @@ function renderReview(review) {
 
 $('#submitReviewBtn').onclick = async () => {
   try {
-    const result = await call('/api/file', {});
+    const notes = $('#reviewComment')?.value?.trim() || '';
+    const result = await call('/api/file', { notes });
     lastFiledReview = result.review || result.Review || lastStatus?.review || lastStatus?.Review || null;
     showMessage('#reviewMessage', 'PIREP déposé. Flight Review archivé localement.');
     renderReview(lastFiledReview);
