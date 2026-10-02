@@ -35,9 +35,12 @@ final class HermesScoringService
         }
 
         $samples = $this->samples($pirep);
+        // The final landing rate comes from Hermès' confirmed ON event
+        // (or an explicit preview value). Do not infer it from arbitrary vertical
+        // speed samples: some adapters expose current VS through the touchdown field.
         $landingRate ??= is_numeric($pirep->landing_rate)
             ? (float) $pirep->landing_rate
-            : $this->landingRateFromSamples($samples);
+            : null;
 
         $rules = Rule::query()
             ->where('enabled', true)
