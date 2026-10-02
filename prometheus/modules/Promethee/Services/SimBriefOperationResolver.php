@@ -81,7 +81,9 @@ class SimBriefOperationResolver
         $operationId = $operationId ?: 'legacy_'.$user->id.'_'.$flight->id.'_'.$aircraft->id;
         $this->assertEligible($flight, $aircraft, $user, $bid);
 
-        $variant = $bid ? $this->aircraftVariants->selectedForBid($bid, $user) : null;
+        $variant = $bid
+            ? $this->aircraftVariants->selectedForBid($bid, $user)
+            : $this->aircraftVariants->defaultForAircraft($aircraft);
         $aircraftProfile = $this->aircraftProfiles->resolve(
             $aircraft,
             $variant,
