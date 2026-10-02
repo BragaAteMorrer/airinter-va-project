@@ -13,7 +13,7 @@ public record FlightState(string Server, string PirepId, DateTimeOffset Started,
     public List<PhaseEntry> Timeline { get; init; } = [];
     public List<FlightJournalEntry> Journal { get; init; } = [];
 }
-public record Envelope(Sample Sample, AircraftSnapshot? Snapshot = null);
+public record Envelope(Sample Sample, AircraftSnapshot? Snapshot = null, string? Phase = null);
 public record AcarsEvent(Guid EventId, string Name, DateTimeOffset OccurredAt, double Lat, double Lon);
 public record SopFactEnvelope(Guid FactId, FdmObservation Observation);
 public record FlightIssue(DateTimeOffset OccurredAt, string Code, string Message, string Severity = "warning");
@@ -422,7 +422,7 @@ public sealed class FlightRecorder
 
     private void QueuePosition(Sample sample, AircraftSnapshot? snapshot = null) {
         if (Pending.Any(x => x.Sample.SampleId == sample.SampleId)) return;
-        Pending.Add(new(sample, snapshot));
+        Pending.Add(new(sample, snapshot, Flight?.Phase));
         lastQueuedAt = sample.RecordedAt;
     }
 
