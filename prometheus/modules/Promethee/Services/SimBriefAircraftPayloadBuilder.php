@@ -18,12 +18,20 @@ class SimBriefAircraftPayloadBuilder
             $config = is_array($profile['config'] ?? null) ? $profile['config'] : [];
             $actualIcao = strtoupper(trim((string) ($profile['actual_icao'] ?? '')));
             $actualName = trim((string) ($profile['actual_name'] ?? ''));
+            $transmittedName = trim((string) ($config['name'] ?? $actualName));
+            $engines = trim((string) ($config['engines'] ?? ''));
 
             abort_if($actualIcao === '' || $actualName === '', 422,
                 'Le profil proxy sb-airframe est incomplet : ICAO réel et nom appareil sont obligatoires.');
+            abort_if(strlen($actualIcao) > 4, 422,
+                'Le code ICAO réel transmis à SimBrief doit contenir au maximum 4 caractères.');
+            abort_if($transmittedName === '' || strlen($transmittedName) > 12, 422,
+                'Le nom appareil transmis à SimBrief doit contenir entre 1 et 12 caractères.');
+            abort_if($engines === '' || strlen($engines) > 12, 422,
+                'Le moteur transmis à SimBrief doit contenir entre 1 et 12 caractères.');
 
             $acdata['icao'] = $actualIcao;
-            $acdata['name'] = $actualName;
+            $acdata['name'] = $transmittedName;
 
             $direct = [
                 'engines', 'cat', 'equip', 'transponder', 'pbn', 'extrarmk',
