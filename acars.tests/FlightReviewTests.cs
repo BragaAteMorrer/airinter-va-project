@@ -66,6 +66,31 @@ public sealed class FlightReviewTests
     }
 
     [Fact]
+    public void Paused_intervals_are_excluded_from_airborne_time_and_shown_in_review()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "AirInter-Hermes-Review-Tests", Guid.NewGuid().ToString("N"));
+        var recorder = new FlightRecorder(folder);
+        var t = DateTimeOffset.Parse("2026-10-03T20:00:00Z");
+
+        recorder.Start("https://promethee.example", "pirep-pause", A(t, true, 0, 0, 0, true));
+        recorder.Capture(A(t.AddSeconds(1), true, 8, 0, 0, false));
+        recorder.Capture(A(t.AddSeconds(2), false, 150, 80, 1200, false));
+        recorder.Capture(A(t.AddSeconds(3), false, 180, 500, 1200, false, gearDown: false));
+        recorder.Capture(A(t.AddSeconds(4), false, 180, 600, 0, false, gearDown: false, paused: true, pauseKind: "ACTIVE_PAUSE"));
+        recorder.Capture(A(t.AddSeconds(9), false, 180, 600, 0, false, gearDown: false, paused: true, pauseKind: "ACTIVE_PAUSE"));
+        recorder.Capture(A(t.AddSeconds(10), false, 180, 600, 0, false, gearDown: false, paused: false));
+        recorder.Capture(A(t.AddSeconds(11), false, 180, 600, 0, false, gearDown: false, paused: false));
+
+        var review = recorder.GetReview();
+
+        Assert.NotNull(review);
+        Assert.Equal(1, review!.PauseCount);
+        Assert.Equal(7, review.PausedSeconds);
+        Assert.Equal(2d, recorder.Flight!.AirborneSeconds);
+        Assert.Contains(review.Observations, x => x.Code == "PAUSE" && x.Status == "ACTIVE_PAUSE");
+    }
+
+    [Fact]
     public void Fdm_observations_survive_crash_recovery()
     {
         var folder = Path.Combine(Path.GetTempPath(), "AirInter-Hermes-Review-Tests", Guid.NewGuid().ToString("N"));
@@ -100,7 +125,9 @@ public sealed class FlightReviewTests
         bool parking,
         bool gearDown = true,
         double flaps = 0,
-        double? bank = 0) =>
+        double? bank = 0,
+        bool? paused = false,
+        string? pauseKind = null) =>
         new(
             Guid.NewGuid(),
             time,
@@ -117,7 +144,9 @@ public sealed class FlightReviewTests
             ParkingBrake: parking,
             GearDown: gearDown,
             FlapsPercent: flaps,
-            BankDegrees: bank);
+            BankDegrees: bank,
+            Paused: paused,
+            PauseKind: pauseKind);
 
     private static Sample S(
         DateTimeOffset time,
