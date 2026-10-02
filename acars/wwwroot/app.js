@@ -3009,7 +3009,7 @@ function renderReview(review) {
   if (!current) {
     renderReviewContext(null);
     if (state) { state.textContent = 'AUCUN VOL'; state.classList.remove('ready'); }
-    ['#reviewDistance','#reviewAirborne','#reviewBlock','#reviewFuel','#reviewLandingRate','#reviewMaxBank','#reviewFuelAdded','#reviewSimRate'].forEach(id => setText($(id), '—'));
+    ['#reviewDistance','#reviewAirborne','#reviewBlock','#reviewFuel','#reviewLandingRate','#reviewMaxBank','#reviewFuelAdded','#reviewSimRate','#reviewPause'].forEach(id => setText($(id), '—'));
     setText($('#review1000'), 'NON OBSERVÉ');
     setText($('#review500'), 'NON OBSERVÉ');
     setText($('#reviewGoAround'), '0 remise de gaz');
@@ -3044,6 +3044,10 @@ function renderReview(review) {
   setText($('#reviewFuelAdded'), Math.round(Number(reviewValue(current,'fuelAdded','FuelAdded') || 0)) + ' lb');
   const simRate = reviewValue(current,'maxSimulationRate','MaxSimulationRate');
   setText($('#reviewSimRate'), simRate == null ? 'x1' : 'x' + Number(simRate).toFixed(2).replace(/\.00$/,''));
+  const pauseCount = Number(reviewValue(current,'pauseCount','PauseCount') || 0);
+  const pausedSeconds = Number(reviewValue(current,'pausedSeconds','PausedSeconds') || 0);
+  const pausedMinutes = pausedSeconds >= 60 ? Math.floor(pausedSeconds / 60) + ' min ' + Math.round(pausedSeconds % 60) + ' s' : Math.round(pausedSeconds) + ' s';
+  setText($('#reviewPause'), pauseCount > 0 ? pausedMinutes + ' · ' + pauseCount + ' pause' + (pauseCount > 1 ? 's' : '') : '0 s');
 
   setText($('#review1000'), reviewValue(current,'approach1000Status','Approach1000Status') || 'NON OBSERVÉ');
   setText($('#review500'), reviewValue(current,'approach500Status','Approach500Status') || 'NON OBSERVÉ');
