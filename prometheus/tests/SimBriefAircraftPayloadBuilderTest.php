@@ -43,20 +43,22 @@ final class SimBriefAircraftPayloadBuilderTest extends TestCase
         $this->assertSame(22.708, $acdata['mtow']);
     }
 
-    public function test_native_profile_does_not_emit_acdata(): void
+    public function test_native_profiles_do_not_regress_existing_aircraft_types(): void
     {
         $builder = app(SimBriefAircraftPayloadBuilder::class);
 
-        $payload = $builder->build([
-            'strategy' => 'native',
-            'type' => 'A319',
-            'actual_icao' => 'A319',
-            'actual_name' => 'Airbus A319',
-            'config' => [],
-        ]);
+        foreach (['A319', 'A320', 'A300', 'A310'] as $type) {
+            $payload = $builder->build([
+                'strategy' => 'native',
+                'type' => $type,
+                'actual_icao' => $type,
+                'actual_name' => $type,
+                'config' => [],
+            ]);
 
-        $this->assertSame(['type' => 'A319'], $payload['parameters']);
-        $this->assertSame([], $payload['acdata']);
+            $this->assertSame(['type' => $type], $payload['parameters']);
+            $this->assertSame([], $payload['acdata']);
+        }
     }
 
     public function test_partial_icao_equipment_group_is_rejected(): void
