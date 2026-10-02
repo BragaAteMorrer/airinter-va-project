@@ -234,6 +234,13 @@ class AircraftVariantService
         );
     }
 
+    public function defaultForAircraft(Aircraft $aircraft): ?array
+    {
+        return collect($this->databaseAirframesForAircraft($aircraft))
+            ->sortByDesc(fn (array $variant) => (bool) ($variant['default'] ?? false))
+            ->first();
+    }
+
     private function databaseAirframesForAircraft(Aircraft $aircraft): array
     {
         $icaos = collect([
