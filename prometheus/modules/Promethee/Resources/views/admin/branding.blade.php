@@ -3,10 +3,15 @@
 @section('title', 'Prométhée · Identité visuelle')
 
 @section('content')
+  <header class="admin-page-heading">
+    <span class="eyebrow">OCC / HQ · IDENTITÉ</span>
+    <h1>Identité visuelle</h1>
+    <p>Gérez le logo utilisé par le portail pilote et les espaces d’administration sans modifier les règles métier de Prométhée.</p>
+  </header>
   <div class="row">
     <div class="col-md-8">
       <div class="card">
-        <div class="header"><h4 class="title">Identité visuelle</h4><p class="category">Sélectionnez un logo fourni ou importez le vôtre. Le choix est appliqué au portail pilote et à l’administration.</p></div>
+        <div class="header"><h2 class="title">Identité visuelle</h2><p class="category">Sélectionnez un logo fourni ou importez le vôtre. Le choix est appliqué au portail pilote et à l’administration.</p></div>
         <div class="content">
           <div class="well" style="display:flex;align-items:center;gap:20px;margin-bottom:28px">
             <img src="{{ $branding['url'] }}" alt="{{ $branding['label'] }}" style="width:120px;height:80px;object-fit:contain">
