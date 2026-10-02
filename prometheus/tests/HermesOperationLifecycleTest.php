@@ -209,7 +209,7 @@ final class HermesOperationLifecycleTest extends TestCase
         $this->filePirep($fx['user'], $pirepId)
             ->assertStatus(409);
 
-        $this->telemetry($fx, 'IN', now()->addMinutes(55));
+        $this->telemetry($fx, 'IN', now()->addMinute());
         $this->filePirep($fx['user'], $pirepId)
             ->assertOk();
 
@@ -233,7 +233,7 @@ final class HermesOperationLifecycleTest extends TestCase
         $fx = $this->operationFixture();
         $pirepId = $this->prefile($fx);
         $this->telemetry($fx, 'TAXI_OUT');
-        $this->telemetry($fx, 'IN', now()->addHour());
+        $this->telemetry($fx, 'IN', now()->addMinute());
         $this->filePirep($fx['user'], $pirepId)->assertOk();
 
         /** @var BidService $bids */
@@ -250,7 +250,7 @@ final class HermesOperationLifecycleTest extends TestCase
         $fx = $this->operationFixture();
         $oldPirepId = $this->prefile($fx);
         $this->telemetry($fx, 'TAXI_OUT');
-        $this->telemetry($fx, 'IN', now()->addHour());
+        $this->telemetry($fx, 'IN', now()->addMinute());
         $this->filePirep($fx['user'], $oldPirepId)->assertOk();
 
         /** @var BidService $bids */
