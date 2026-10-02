@@ -90,6 +90,7 @@ class AircraftConfigurationAdminController extends Controller
         ]);
         $data['type_key'] = $this->key($data['type_key']);
         $data['data'] = $this->technicalData($data);
+        $this->assertTechnicalConsistency($data['data']);
         $data = $this->stripTechnical($data);
 
         AircraftTypeProfile::query()->updateOrCreate(['type_key' => $data['type_key']], $data);
@@ -125,6 +126,11 @@ class AircraftConfigurationAdminController extends Controller
         $data['code'] = strtoupper(trim($data['code']));
         $data['active'] = $request->boolean('active', true);
         $data['data'] = $this->technicalData($data);
+        $typeDefaults = AircraftTypeProfile::query()
+            ->where('type_key', $data['type_key'])
+            ->value('data') ?? [];
+        if (is_string($typeDefaults)) $typeDefaults = json_decode($typeDefaults, true) ?: [];
+        $this->assertTechnicalConsistency($this->mergeTechnical($typeDefaults, $data['data']));
         $data = $this->stripTechnical($data);
 
         AircraftHistoricalVariant::query()->updateOrCreate(
@@ -212,6 +218,16 @@ class AircraftConfigurationAdminController extends Controller
         $data['code'] = strtoupper(trim($data['code']));
         $data['active'] = $request->boolean('active', true);
         $data['data'] = $this->technicalData($data);
+        $variant = AircraftHistoricalVariant::query()->findOrFail($data['variant_id']);
+        $typeDefaults = AircraftTypeProfile::query()
+            ->where('type_key', $variant->type_key)
+            ->value('data') ?? [];
+        if (is_string($typeDefaults)) $typeDefaults = json_decode($typeDefaults, true) ?: [];
+        $this->assertTechnicalConsistency($this->mergeTechnical(
+            $typeDefaults,
+            $variant->data ?? [],
+            $data['data']
+        ));
         $data = $this->stripTechnical($data);
 
         AirframeConfiguration::query()->updateOrCreate(
@@ -248,6 +264,21 @@ class AircraftConfigurationAdminController extends Controller
         }
 
         $overrides = $this->technicalData($data);
+        $variant = AircraftHistoricalVariant::query()->findOrFail($data['variant_id']);
+        $configuration = !empty($data['configuration_id'])
+            ? AirframeConfiguration::query()->findOrFail($data['configuration_id'])
+            : null;
+        $typeDefaults = AircraftTypeProfile::query()
+            ->where('type_key', $variant->type_key)
+            ->value('data') ?? [];
+        if (is_string($typeDefaults)) $typeDefaults = json_decode($typeDefaults, true) ?: [];
+        $this->assertTechnicalConsistency($this->mergeTechnical(
+            $typeDefaults,
+            $variant->data ?? [],
+            $configuration?->data ?? [],
+            $overrides
+        ));
+
         $validFrom = Carbon::parse($data['valid_from'] ?? now()->toDateString())->startOfDay();
         $validUntil = filled($data['valid_until'] ?? null)
             ? Carbon::parse($data['valid_until'])->startOfDay()
@@ -381,23 +412,6 @@ class AircraftConfigurationAdminController extends Controller
             }
         }
 
-        $weights = array_filter([
-            'oew' => $technical['oew'] ?? null,
-            'mzfw' => $technical['mzfw'] ?? null,
-            'mlw' => $technical['mlw'] ?? null,
-            'mtow' => $technical['mtow'] ?? null,
-        ], fn ($value) => $value !== null);
-
-        if (isset($weights['mtow'])) {
-            foreach (['oew', 'mzfw', 'mlw'] as $key) {
-                if (isset($weights[$key]) && (float) $weights[$key] > (float) $weights['mtow']) {
-                    throw ValidationException::withMessages([
-                        $key => strtoupper($key).' ne peut pas être supérieur au MTOW.',
-                    ]);
-                }
-            }
-        }
-
         $engine = array_filter([
             'manufacturer' => $technical['engine_manufacturer'] ?? null,
             'model' => $technical['engine_model'] ?? null,
@@ -423,6 +437,43 @@ class AircraftConfigurationAdminController extends Controller
     {
         foreach (array_keys($this->technicalRules()) as $key) unset($data[$key]);
         return $data;
+    }
+
+    private function mergeTechnical(array ...$layers): array
+    {
+        $result = [];
+        foreach ($layers as $layer) {
+            foreach ($layer as $key => $value) {
+                if ($value === null || $value === '') continue;
+                if (is_array($value) && is_array($result[$key] ?? null)) {
+                    $result[$key] = $this->mergeTechnical($result[$key], $value);
+                } else {
+                    $result[$key] = $value;
+                }
+            }
+        }
+        return $result;
+    }
+
+    private function assertTechnicalConsistency(array $technical): void
+    {
+        $mtow = isset($technical['mtow']) ? (float) $technical['mtow'] : null;
+        if ($mtow !== null) {
+            foreach (['oew', 'mzfw', 'mlw'] as $key) {
+                if (isset($technical[$key]) && (float) $technical[$key] > $mtow) {
+                    throw ValidationException::withMessages([
+                        $key => strtoupper($key).' ne peut pas être supérieur au MTOW effectif (héritage inclus).',
+                    ]);
+                }
+            }
+        }
+
+        if (isset($technical['oew'], $technical['mzfw'])
+            && (float) $technical['oew'] > (float) $technical['mzfw']) {
+            throw ValidationException::withMessages([
+                'oew' => 'OEW ne peut pas être supérieur au MZFW effectif.',
+            ]);
+        }
     }
 
     private function key(string $value): string
