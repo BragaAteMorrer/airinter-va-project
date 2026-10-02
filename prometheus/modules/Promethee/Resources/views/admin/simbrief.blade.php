@@ -3,11 +3,16 @@
 @section('title', 'Prométhée · SimBrief')
 
 @section('content')
+<header class="admin-page-heading">
+  <span class="eyebrow">OCC / HQ · INTÉGRATIONS</span>
+  <h1>SimBrief</h1>
+  <p>Configurez la source compagnie, vérifiez les airframes disponibles et suivez les données de planification utilisées par Prométhée et Hermès.</p>
+</header>
 <div class="row">
   <div class="col-md-8">
     <div class="card">
       <div class="header">
-        <h4 class="title">Intégration SimBrief</h4>
+        <h2 class="title">Intégration SimBrief</h2>
         <p class="category">État de l’API compagnie, imports OFP et données de planification synchronisées.</p>
       </div>
       <div class="content">
