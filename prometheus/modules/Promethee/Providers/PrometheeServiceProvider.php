@@ -12,6 +12,7 @@ use Modules\Promethee\Console\CheckPrometheeTranslations;
 use Modules\Promethee\Console\CheckTranslations;
 use Modules\Promethee\Console\LocalUserCommand;
 use Modules\Promethee\Console\RecalculateProgressionCommand;
+use Modules\Promethee\Console\RepairHermesPirepCommand;
 use Modules\Promethee\Console\SyncRegionalOperationsCommand;
 use Modules\Promethee\Listeners\ProgressionEventListener;
 use Modules\Promethee\Listeners\RegionalOperationsEventListener;
@@ -36,7 +37,7 @@ class PrometheeServiceProvider extends ServiceProvider
         Event::listen(PirepAccepted::class, [RegionalOperationsEventListener::class, 'onPirepAccepted']);
         Event::listen(UserStatsChanged::class, [ProgressionEventListener::class, 'onUserStatsChanged']);
         if ($this->app->runningInConsole()) {
-            $this->commands([BulletinCommand::class, CheckPrometheeTranslations::class, CheckTranslations::class, LocalUserCommand::class, RecalculateProgressionCommand::class, SyncRegionalOperationsCommand::class]);
+            $this->commands([BulletinCommand::class, CheckPrometheeTranslations::class, CheckTranslations::class, LocalUserCommand::class, RecalculateProgressionCommand::class, RepairHermesPirepCommand::class, SyncRegionalOperationsCommand::class]);
         }
         $this->app->afterResolving(Schedule::class, function (Schedule $schedule) {
             $schedule->command('promethee:bulletin')->monthlyOn(1, '06:00')->timezone('Europe/Paris')->withoutOverlapping();
