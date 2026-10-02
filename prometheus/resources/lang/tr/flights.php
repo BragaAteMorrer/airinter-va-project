@@ -51,4 +51,16 @@ return array_replace_recursive([
     ],
 ], [
     'viewflight' => 'Uçuşu görüntüle', 'addbid' => 'Rezervasyon ekle', 'removebid' => 'Rezervasyonu kaldır', 'createsimbrief' => 'SimBrief uçuş planı oluştur', 'viewsimbrief' => 'SimBrief uçuş planını görüntüle', 'weather' => 'Hava durumu', 'aircraftbooking' => 'Uçak rezervasyonu', 'bookaircraft' => 'Uçak rezerve et', 'dontbookaircraft' => 'Uçak rezerve etme',
+    'no_direct_flight'          => 'Bu güzergâha uygun direkt uçuş bulunamadı.',
+    'alternative_itineraries'  => 'Aktarmalı güzergâhlar',
+    'alternative_explanation'  => 'Prométhée en fazla :count aktarmalı bağlantılar buldu.',
+    'no_alternative_itinerary'  => 'En fazla :count aktarmalı uygun bir güzergâh bulunamadı.',
+    'stopover'                  => ':count aktarma|:count aktarma',
+    'segment'                   => 'Etap :count',
+    'reserve_itinerary'         => ':count uçuşu ayırt|:count uçuşun tümünü ayırt',
+    'already_reserved'          => 'Zaten ayrılmış',
+    'multiple_bids_required'    => 'Toplu rezervasyon için birden fazla rezervasyona izin verilmelidir.',
+    'itinerary_reserved'        => ':count uçuş başarıyla ayrıldı.|:count uçuş başarıyla ayrıldı.',
+    'itinerary_reserve_failed'  => 'Bu güzergâh rezerve edilemedi: :message',
+    'itinerary_invalid'         => 'Önerilen güzergâh artık kullanılamıyor.',
 ]);
