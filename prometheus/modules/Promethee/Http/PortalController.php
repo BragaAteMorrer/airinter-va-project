@@ -3164,7 +3164,125 @@ class PortalController extends Controller
             ->select('event.*', 'engine.serial_number', 'aircraft.registration')
             ->latest('event.occurred_at')->limit(30)->get();
 
-        return $this->page('admin-maintenance', compact('profiles','subfleets','aircraft','engineUnits','engineSites','engineEvents','engineSummary'));
+        $checkSettings = $this->maintenanceCheckSettings();
+
+        return $this->page('admin-maintenance', compact('profiles','subfleets','aircraft','engineUnits','engineSites','engineEvents','engineSummary','checkSettings'));
+    }
+
+    private function maintenanceCheckSettings(): array
+    {
+        $defaults = [
+            'a_time_limit' => 20,
+            'a_cycle_limit' => 20,
+            'a_duration' => 20,
+            'b_time_limit' => 60,
+            'b_cycle_limit' => 60,
+            'b_duration' => 96,
+            'c_time_limit' => 180,
+            'c_cycle_limit' => 180,
+            'c_duration' => 120,
+        ];
+
+        if (!Schema::hasTable('disposable_settings')) {
+            return $defaults;
+        }
+
+        $keyMap = [
+            'a_time_limit' => 'turksim.maint_lim_at',
+            'a_cycle_limit' => 'turksim.maint_lim_ac',
+            'a_duration' => 'turksim.maint_hours_a',
+            'b_time_limit' => 'turksim.maint_lim_bt',
+            'b_cycle_limit' => 'turksim.maint_lim_bc',
+            'b_duration' => 'turksim.maint_hours_b',
+            'c_time_limit' => 'turksim.maint_lim_ct',
+            'c_cycle_limit' => 'turksim.maint_lim_cc',
+            'c_duration' => 'turksim.maint_hours_c',
+        ];
+
+        $rows = DB::table('disposable_settings')
+            ->whereIn('key', array_values($keyMap))
+            ->get(['key', 'value', 'default'])
+            ->keyBy('key');
+
+        foreach ($keyMap as $name => $key) {
+            $row = $rows->get($key);
+            if (!$row) {
+                continue;
+            }
+
+            $raw = $row->value !== null && $row->value !== '' ? $row->value : $row->default;
+            if (is_numeric($raw)) {
+                $defaults[$name] = $name === 'a_duration' || $name === 'b_duration' || $name === 'c_duration'
+                    ? (float) $raw
+                    : (int) $raw;
+            }
+        }
+
+        return $defaults;
+    }
+
+    public function saveMaintenanceCheckSettings(Request $r)
+    {
+        abort_unless(Schema::hasTable('disposable_settings'), 503, 'Le moteur de maintenance cellule n’est pas disponible.');
+
+        $data = $r->validate([
+            'a_time_limit' => 'required|integer|min:1|max:100000',
+            'a_cycle_limit' => 'required|integer|min:1|max:100000',
+            'a_duration' => 'required|numeric|min:0.1|max:10000',
+            'b_time_limit' => 'required|integer|min:1|max:100000',
+            'b_cycle_limit' => 'required|integer|min:1|max:100000',
+            'b_duration' => 'required|numeric|min:0.1|max:10000',
+            'c_time_limit' => 'required|integer|min:1|max:100000',
+            'c_cycle_limit' => 'required|integer|min:1|max:100000',
+            'c_duration' => 'required|numeric|min:0.1|max:10000',
+        ]);
+
+        $settings = [
+            'turksim.maint_lim_at' => ['value' => $data['a_time_limit'], 'name' => 'A Check Time Limit', 'field_type' => 'numeric', 'order' => 9311],
+            'turksim.maint_lim_ac' => ['value' => $data['a_cycle_limit'], 'name' => 'A Check Cycle Limit', 'field_type' => 'numeric', 'order' => 9312],
+            'turksim.maint_hours_a' => ['value' => $data['a_duration'], 'name' => 'A Check Duration', 'field_type' => 'decimal', 'order' => 9313],
+            'turksim.maint_lim_bt' => ['value' => $data['b_time_limit'], 'name' => 'B Check Time Limit', 'field_type' => 'numeric', 'order' => 9321],
+            'turksim.maint_lim_bc' => ['value' => $data['b_cycle_limit'], 'name' => 'B Check Cycle Limit', 'field_type' => 'numeric', 'order' => 9322],
+            'turksim.maint_hours_b' => ['value' => $data['b_duration'], 'name' => 'B Check Duration', 'field_type' => 'decimal', 'order' => 9323],
+            'turksim.maint_lim_ct' => ['value' => $data['c_time_limit'], 'name' => 'C Check Time Limit', 'field_type' => 'numeric', 'order' => 9331],
+            'turksim.maint_lim_cc' => ['value' => $data['c_cycle_limit'], 'name' => 'C Check Cycle Limit', 'field_type' => 'numeric', 'order' => 9332],
+            'turksim.maint_hours_c' => ['value' => $data['c_duration'], 'name' => 'C Check Duration', 'field_type' => 'decimal', 'order' => 9333],
+        ];
+
+        DB::transaction(function () use ($settings) {
+            foreach ($settings as $key => $setting) {
+                DB::table('disposable_settings')->updateOrInsert(
+                    ['key' => $key],
+                    [
+                        'value' => (string) $setting['value'],
+                        'default' => (string) $setting['value'],
+                        'group' => 'Maintenance',
+                        'name' => $setting['name'],
+                        'field_type' => $setting['field_type'],
+                        'order' => $setting['order'],
+                        'updated_at' => now(),
+                        'created_at' => now(),
+                    ]
+                );
+            }
+
+            if (Schema::hasTable('disposable_maintenance')) {
+                \Modules\DisposableSpecial\Models\DS_Maintenance::with('aircraft')
+                    ->orderBy('id')
+                    ->get()
+                    ->each(function ($maintenance) {
+                        $maintenance->rem_ta = (int) $maintenance->limits->time_a - (int) $maintenance->time_a;
+                        $maintenance->rem_tb = (int) $maintenance->limits->time_b - (int) $maintenance->time_b;
+                        $maintenance->rem_tc = (int) $maintenance->limits->time_c - (int) $maintenance->time_c;
+                        $maintenance->rem_ca = (int) $maintenance->limits->cycle_a - (int) $maintenance->cycle_a;
+                        $maintenance->rem_cb = (int) $maintenance->limits->cycle_b - (int) $maintenance->cycle_b;
+                        $maintenance->rem_cc = (int) $maintenance->limits->cycle_c - (int) $maintenance->cycle_c;
+                        $maintenance->save();
+                    });
+            }
+        });
+
+        return back()->with('success', 'Limites heures/cycles et durées des checks A/B/C enregistrées. Les potentiels cellule ont été recalculés.');
     }
 
     public function syncEngineFleet(EngineMaintenanceService $engineService) {
