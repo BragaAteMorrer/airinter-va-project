@@ -31,6 +31,7 @@ for (const [file, budget] of Object.entries(budgets)) {
 }
 
 const hermesIndex = read('acars/wwwroot/index.html');
+const hermesApp = read('acars/wwwroot/app.js');
 const hermesTheme = read('acars/wwwroot/hermes-themes.css');
 const prometheeV2 = read('prometheus/public/promethee-assets/promethee-v2.css');
 const dispatch = read('prometheus/modules/Promethee/Resources/views/admin/dispatch.blade.php');
@@ -44,6 +45,11 @@ expect(!/<script\b[^>]*src=["']\/minitel\//i.test(hermesIndex),
   'Hermès must lazy-load Minitel scripts instead of loading them in the default shell.');
 expect(!/<link\b[^>]*href=["']\/minitel\//i.test(hermesIndex),
   'Hermès must lazy-load Minitel styles instead of loading them in the default shell.');
+
+expect(hermesIndex.includes('reviewAltitudeChart') && hermesIndex.includes('reviewFuelChart'),
+  'Hermès Flight Review must preserve altitude and fuel chart surfaces.');
+expect(hermesApp.includes('normalizeReviewProfile') && hermesApp.includes('renderReviewCharts'),
+  'Hermès Flight Review must preserve profile-series rendering.');
 
 expect(hermesTheme.includes('prefers-reduced-motion'),
   'Hermès theme CSS must preserve prefers-reduced-motion handling.');
