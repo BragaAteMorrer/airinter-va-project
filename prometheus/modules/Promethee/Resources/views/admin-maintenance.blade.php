@@ -139,7 +139,7 @@
     <tbody>
     @forelse($engineEvents as $event)
       <tr>
-        <td>{{ CarbonCarbon::parse($event->occurred_at)->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') }}</td>
+        <td>{{ \Carbon\Carbon::parse($event->occurred_at)->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') }}</td>
         <td><strong>{{ $event->serial_number }}</strong></td>
         <td>{{ $event->registration ?: 'Stock' }}</td>
         <td>{{ strtoupper($event->event_type) }}</td>
