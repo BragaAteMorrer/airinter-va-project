@@ -37,6 +37,7 @@ const hermesTheme = read('acars/wwwroot/hermes-themes.css');
 const prometheeV2 = read('prometheus/public/promethee-assets/promethee-v2.css');
 const dispatch = read('prometheus/modules/Promethee/Resources/views/admin/dispatch.blade.php');
 const crm = read('prometheus/modules/Promethee/Resources/views/admin/crm.blade.php');
+const adminDashboard = read('prometheus/modules/Promethee/Resources/views/admin/dashboard.blade.php');
 
 const stylesheetHrefs = [...hermesIndex.matchAll(/<link\b[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["']/gi)]
   .map(match => match[1]);
@@ -78,6 +79,14 @@ expect(prometheeV2.includes('.admin-master-detail')
     && prometheeV2.includes('.admin-detail-pane')
     && prometheeV2.includes('.admin-master-row'),
   'Prométhée must preserve shared staff master/detail primitives.');
+
+expect(adminDashboard.includes('Inbox d’exceptions')
+    && adminDashboard.includes('attentionItems')
+    && adminDashboard.includes('À TRAITER MAINTENANT'),
+  'Prométhée admin dashboard must preserve its exception-first attention inbox.');
+expect(prometheeV2.includes('.attention-inbox')
+    && prometheeV2.includes('.attention-item'),
+  'Prométhée must preserve shared OCC attention-inbox styling.');
 
 const inlineStyleFreeViews = [
   'prometheus/modules/Promethee/Resources/views/bookings.blade.php',
