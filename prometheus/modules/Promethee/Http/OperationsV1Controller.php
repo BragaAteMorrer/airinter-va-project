@@ -27,6 +27,7 @@ use Modules\Promethee\Services\DemandProfileService;
 use Modules\Promethee\Services\AircraftVariantService;
 use Modules\Promethee\Services\AircraftConfigurationResolver;
 use Modules\Promethee\Services\HermesPirepLifecycleService;
+use Modules\Promethee\Services\LegacyPirepScoringService;
 use Modules\Promethee\Models\PirepAircraftProfile;
 
 /**
@@ -48,7 +49,8 @@ class OperationsV1Controller extends Controller
         private readonly DemandProfileService $demandProfile,
         private readonly AircraftVariantService $aircraftVariants,
         private readonly AircraftConfigurationResolver $aircraftConfigurations,
-        private readonly HermesPirepLifecycleService $pirepLifecycle
+        private readonly HermesPirepLifecycleService $pirepLifecycle,
+        private readonly LegacyPirepScoringService $legacyScoring
     ) {}
 
     public function index(Request $request)
@@ -652,6 +654,7 @@ class OperationsV1Controller extends Controller
             })->all();
 
         $debrief = $this->safetyAnalyzer->debrief($pirep->landing_rate, $samples);
+        $legacyScore = $this->legacyScoring->forPirep($pirep);
         $first = $samples[0] ?? null;
         $last = $samples ? $samples[array_key_last($samples)] : null;
         $blockMinutes = ($pirep->block_off_time && $pirep->block_on_time)
@@ -678,10 +681,12 @@ class OperationsV1Controller extends Controller
                 'telemetry_samples' => count($samples),
             ],
             'debrief' => $debrief,
+            'score' => $legacyScore,
             'provenance' => [
                 'flight_record' => 'phpvms_pirep',
                 'telemetry' => 'hermes',
                 'analysis' => 'promethee_safety_analyzer_v'.SafetyAnalyzer::VERSION,
+                'scoring' => 'vmsacars_rules_v'.LegacyPirepScoringService::VERSION,
             ],
         ]]);
     }
