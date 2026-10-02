@@ -272,6 +272,7 @@ Route::middleware('api')->get('/api/v1/hermes/releases/latest', [HermesReleaseCo
 
 Route::middleware(['api','api.auth'])->prefix('api/v1')->group(function () {
     Route::get('/me', [OperationsV1Controller::class, 'me']);
+    Route::get('/aircraft/{registration}/resolved-profile', [AircraftConfigurationController::class, 'show']);
     Route::get('/me/aircraft-variants', [OperationsV1Controller::class, 'myAircraftVariants']);
     Route::put('/me/aircraft-variants', [OperationsV1Controller::class, 'saveMyAircraftVariants']);
     Route::get('/me/simulator-profiles', [OperationsV1Controller::class, 'myAircraftVariants']);
