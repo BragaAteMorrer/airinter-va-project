@@ -341,7 +341,7 @@ class PirepController extends Controller
                 'operation_id' => $matches[1] ?? null,
                 'pirep_id' => $pirep->id,
                 'pirep_state' => (int) $pirep->state,
-                'pirep_status' => $pirep->status instanceof \\BackedEnum ? $pirep->status->value : $pirep->status,
+                'pirep_status' => $pirep->status instanceof \BackedEnum ? $pirep->status->value : $pirep->status,
                 'aircraft_id' => $pirep->aircraft_id,
             ]);
         }
