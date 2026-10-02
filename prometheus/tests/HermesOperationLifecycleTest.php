@@ -499,12 +499,20 @@ XML;
 
     private function prefile(array $fx): string
     {
-        return (string) $this->post(
+        $response = $this->post(
             '/api/v1/operations/'.$fx['operation_id'].'/pirep',
             [],
             [],
             $fx['user']
-        )->assertStatus(201)->json('data.pirep_id');
+        );
+
+        $this->assertSame(
+            201,
+            $response->status(),
+            'Hermès PREFILE rejected: '.$response->getContent()
+        );
+
+        return (string) $response->json('data.pirep_id');
     }
 
     private function dispatch(array $fx): array
