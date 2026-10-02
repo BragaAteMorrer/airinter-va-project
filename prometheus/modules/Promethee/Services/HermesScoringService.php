@@ -40,7 +40,7 @@ final class HermesScoringService
 
         $policy = $this->resolvePolicy();
         $rules = $policy['rules'];
-        if ($rules === []) {
+        if ($rules === [] && !($policy['configured'] ?? false)) {
             return $this->unavailableResult('Aucun barème vmsACARS n’est disponible.', $policy['source']);
         }
 
@@ -483,30 +483,35 @@ final class HermesScoringService
     private function resolvePolicy(): array
     {
         if (Schema::hasTable('vmsacars_rules')) {
-            $databaseRules = Rule::query()
-                ->where('enabled', true)
-                ->orderBy('order')
-                ->get()
-                ->filter(fn (Rule $rule) => (int) $rule->points > 0)
-                ->map(fn (Rule $rule) => (object) [
-                    'id' => (string) $rule->id,
-                    'name' => (string) $rule->name,
-                    'parameter' => $rule->parameter,
-                    'points' => (int) $rule->points,
-                    'repeatable' => (bool) $rule->repeatable,
-                    'delay' => (int) $rule->delay,
-                    'cooldown' => (int) $rule->cooldown,
-                    'enabled' => (bool) $rule->enabled,
-                    'order' => (int) $rule->order,
-                ])
-                ->values()
-                ->all();
+            try {
+                $configuredRules = Rule::query()->orderBy('order')->get();
+                if ($configuredRules->isNotEmpty()) {
+                    $databaseRules = $configuredRules
+                        ->filter(fn (Rule $rule) => (bool) $rule->enabled && (int) $rule->points > 0)
+                        ->map(fn (Rule $rule) => (object) [
+                            'id' => (string) $rule->id,
+                            'name' => (string) $rule->name,
+                            'parameter' => $rule->parameter,
+                            'points' => (int) $rule->points,
+                            'repeatable' => (bool) $rule->repeatable,
+                            'delay' => (int) $rule->delay,
+                            'cooldown' => (int) $rule->cooldown,
+                            'enabled' => (bool) $rule->enabled,
+                            'order' => (int) $rule->order,
+                        ])
+                        ->values()
+                        ->all();
 
-            if ($databaseRules !== []) {
-                return [
-                    'source' => 'vmsacars_rules',
-                    'rules' => $databaseRules,
-                ];
+                    // An existing table is authoritative even when an admin has
+                    // deliberately disabled every penalty or set all points to 0.
+                    return [
+                        'source' => 'vmsacars_rules',
+                        'configured' => true,
+                        'rules' => $databaseRules,
+                    ];
+                }
+            } catch (\Throwable) {
+                // An old/incomplete legacy schema must not break first-party ACARS.
             }
         }
 
@@ -530,6 +535,7 @@ final class HermesScoringService
 
         return [
             'source' => 'promethee_legacy_vmsacars_fallback',
+            'configured' => $fallback !== [],
             'rules' => $fallback,
         ];
     }
