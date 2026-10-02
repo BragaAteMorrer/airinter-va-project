@@ -38,6 +38,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class PirepController extends Controller
 {
@@ -265,6 +267,41 @@ class PirepController extends Controller
 
         $attrs = $this->parsePirep($request);
 
+        // Hermès is a two-phase lifecycle: PREFILE prepares the active report,
+        // FILE is allowed only after the simulator has actually produced flight
+        // evidence and reached IN. This server-side guard prevents an old,
+        // cached or otherwise broken client from completing a flight during
+        // preflight preparation.
+        if (str_starts_with((string) $pirep->source_name, 'Hermes ACARS [op_')) {
+            $hasPrometheeTelemetry = Schema::hasTable('promethee_telemetry')
+                && DB::table('promethee_telemetry')->where('pirep_id', $pirep->id)->exists();
+            $hasCoreFlightData = Acars::where('pirep_id', $pirep->id)
+                ->where('type', '!=', AcarsType::ROUTE)
+                ->exists();
+
+            abort_unless(
+                $hasPrometheeTelemetry || $hasCoreFlightData,
+                409,
+                'Dépôt final refusé : aucun enregistrement ACARS réel n’a été reçu pour ce PIREP Hermès.'
+            );
+
+            $hasPrometheeArrival = Schema::hasTable('promethee_telemetry')
+                && DB::table('promethee_telemetry')
+                    ->where('pirep_id', $pirep->id)
+                    ->where('payload', 'like', '%"phase":"IN"%')
+                    ->exists();
+            $hasCoreArrival = Acars::where('pirep_id', $pirep->id)
+                ->where('type', AcarsType::LOG)
+                ->where('log', 'IN')
+                ->exists();
+
+            abort_unless(
+                $hasPrometheeArrival || $hasCoreArrival,
+                409,
+                'Dépôt final refusé : Hermès n’a pas encore confirmé l’arrivée au parking (événement IN).'
+            );
+        }
+
         // If aircraft is being changed, see if this user is allowed to fly this aircraft
         if (array_key_exists('aircraft_id', $attrs)
             && setting('pireps.restrict_aircraft_to_rank', false)
@@ -295,6 +332,19 @@ class PirepController extends Controller
         }
 
         $this->pirepSvc->submit($pirep);
+        $pirep->refresh();
+
+        if (str_starts_with((string) $pirep->source_name, 'Hermes ACARS [op_')) {
+            preg_match('/Hermes ACARS \\[(op_[^\\]]+)\\]/', (string) $pirep->source_name, $matches);
+            Log::info('hermes_operation_transition', [
+                'transition' => 'FILE',
+                'operation_id' => $matches[1] ?? null,
+                'pirep_id' => $pirep->id,
+                'pirep_state' => (int) $pirep->state,
+                'pirep_status' => $pirep->status instanceof \\BackedEnum ? $pirep->status->value : $pirep->status,
+                'aircraft_id' => $pirep->aircraft_id,
+            ]);
+        }
 
         return $this->get($pirep->id);
     }
