@@ -12,15 +12,55 @@
 <link rel="stylesheet" href="{{ asset('promethee-assets/promethee-community.css') }}">
 <link rel="stylesheet" href="{{ asset('promethee-assets/airinter-eras.css') }}">
 <link rel="stylesheet" href="{{ asset('promethee-assets/promethee-appearance.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-appearance.css')) }}">
-<link rel="stylesheet" href="{{ asset('promethee-assets/minitel/minitel-runtime.css') }}?v={{ filemtime(public_path('promethee-assets/minitel/minitel-runtime.css')) }}">
-<link rel="stylesheet" href="{{ asset('promethee-assets/minitel/minitel-shell.css') }}?v={{ filemtime(public_path('promethee-assets/minitel/minitel-shell.css')) }}">
-<link rel="stylesheet" href="{{ asset('promethee-assets/promethee-minitel.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-minitel.css')) }}">
-<script src="{{ asset('promethee-assets/minitel/runtime.js') }}?v={{ filemtime(public_path('promethee-assets/minitel/runtime.js')) }}" defer></script>
-<script src="{{ asset('promethee-assets/minitel/renderer.js') }}?v={{ filemtime(public_path('promethee-assets/minitel/renderer.js')) }}" defer></script>
-<script src="{{ asset('promethee-assets/minitel/shell.js') }}?v={{ filemtime(public_path('promethee-assets/minitel/shell.js')) }}" defer></script>
+<script>
+window.ensurePrometheeMinitelStyles = (() => {
+  let loaded = false;
+  const sources = [
+    "{{ asset('promethee-assets/minitel/minitel-runtime.css') }}?v={{ filemtime(public_path('promethee-assets/minitel/minitel-runtime.css')) }}",
+    "{{ asset('promethee-assets/minitel/minitel-shell.css') }}?v={{ filemtime(public_path('promethee-assets/minitel/minitel-shell.css')) }}",
+    "{{ asset('promethee-assets/promethee-minitel.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-minitel.css')) }}"
+  ];
+  return () => {
+    if (loaded) return;
+    loaded = true;
+    sources.forEach(href => {
+      if (document.querySelector('link[data-promethee-minitel-style="' + href + '"]')) return;
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = href;
+      link.dataset.prometheeMinitelStyle = href;
+      document.head.append(link);
+    });
+  };
+})();
+window.ensurePrometheeMinitelRuntime = (() => {
+  let promise;
+  const sources = [
+    "{{ asset('promethee-assets/minitel/runtime.js') }}?v={{ filemtime(public_path('promethee-assets/minitel/runtime.js')) }}",
+    "{{ asset('promethee-assets/minitel/renderer.js') }}?v={{ filemtime(public_path('promethee-assets/minitel/renderer.js')) }}",
+    "{{ asset('promethee-assets/minitel/shell.js') }}?v={{ filemtime(public_path('promethee-assets/minitel/shell.js')) }}",
+    "{{ asset('promethee-assets/promethee-minitel.js') }}?v={{ filemtime(public_path('promethee-assets/promethee-minitel.js')) }}"
+  ];
+  const load = src => new Promise((resolve, reject) => {
+    const existing = document.querySelector('script[data-promethee-minitel-src="' + src + '"]');
+    if (existing?.dataset.loaded === 'true') return resolve();
+    const script = existing || document.createElement('script');
+    script.src = src;
+    script.async = false;
+    script.dataset.prometheeMinitelSrc = src;
+    script.addEventListener('load', () => { script.dataset.loaded = 'true'; resolve(); }, { once: true });
+    script.addEventListener('error', () => reject(new Error('Impossible de charger ' + src)), { once: true });
+    if (!existing) document.head.append(script);
+  });
+  return () => {
+    window.ensurePrometheeMinitelStyles?.();
+    return promise ||= sources.reduce((chain, src) => chain.then(() => load(src)), Promise.resolve());
+  };
+})();
+if (document.documentElement.dataset.era === 'minitel') window.ensurePrometheeMinitelStyles();
+</script>
 <script src="{{ asset('promethee-assets/promethee.js') }}?v={{ filemtime(public_path('promethee-assets/promethee.js')) }}" defer></script>
-<script src="{{ asset('promethee-assets/promethee-minitel.js') }}?v={{ filemtime(public_path('promethee-assets/promethee-minitel.js')) }}" defer></script>
-<script src="{{ asset('promethee-assets/navigation-groups.js') }}" defer></script>
+<script src="{{ asset('promethee-assets/navigation-groups.js') }}?v={{ filemtime(public_path('promethee-assets/navigation-groups.js')) }}" defer></script>
 @php
     // Keeping the array out of the @json directive is deliberate: Blade's
     // directive parser stops at the first closing parenthesis it encounters
@@ -74,7 +114,15 @@ window.prometheeI18n = @json($prometheeI18n);
 @else
 <section class="pilot-space" aria-label="{{ __('promethee.visitor_access') }}"><span class="pilot-space-label"><i class="status-dot"></i> {{ __('promethee.visitor_access') }}</span><span class="pilot-identity"><strong>{{ __('promethee.public_report') }}</strong><small>Air Inter VA</small><em>{{ __('promethee.read_only') }}</em></span><div class="pilot-space-actions"><a href="{{ route('login') }}">{{ __('promethee.login') }}</a><a href="{{ route('register') }}">{{ __('promethee.register') }}</a></div></section>
 @endauth
-<nav class="is-grouped" aria-label="{{ __('promethee.navigation') }}">
+@auth
+<div class="workspace-switch" role="group" aria-label="Espace Prométhée">
+    <button type="button" data-workspace-choice="pilot" aria-pressed="true"><span>PILOTE</span><small>Préparer & voler</small></button>
+    @ability('admin','admin-access')
+    <button type="button" data-workspace-choice="staff" aria-pressed="false"><span>OCC / HQ</span><small>Exploiter & administrer</small></button>
+    @endability
+</div>
+@endauth
+<nav class="is-grouped" aria-label="{{ __('promethee.navigation') }}" data-default-workspace="{{ request()->routeIs('admin.promethee.*', 'admin.users.*', 'admin.ranks.*') ? 'staff' : 'pilot' }}">
 @auth
 @php
     // Each entry uses a registered, server-side route. Optional legacy modules
@@ -119,7 +167,7 @@ window.prometheeI18n = @json($prometheeI18n);
 @endphp
 @foreach($navigationGroups as $groupKey => $links)
     @php($groupActive = collect($links)->contains(fn ($link) => request()->routeIs(...explode('|', $link['active']))))
-    <details @class(['nav-group', 'selected' => $groupActive])>
+    <details @class(['nav-group', 'selected' => $groupActive]) data-workspace-group="{{ in_array($groupKey, ['navigation_welcome','navigation_pilot'], true) ? 'pilot' : 'shared' }}">
         <summary>{{ __('promethee.'.$groupKey) }}<b aria-hidden="true">⌄</b></summary>
         <div class="nav-menu">
             @foreach($links as $link)
@@ -130,7 +178,7 @@ window.prometheeI18n = @json($prometheeI18n);
         </div>
     </details>
 @endforeach
-<details @class(['nav-group', 'selected' => !request()->routeIs('admin.promethee.dispatch*') && request()->routeIs('admin.promethee.*', 'admin.users.*', 'admin.ranks.*')])>
+<details @class(['nav-group', 'selected' => !request()->routeIs('admin.promethee.dispatch*') && request()->routeIs('admin.promethee.*', 'admin.users.*', 'admin.ranks.*')]) data-workspace-group="staff">
     <summary>{{ __('promethee.navigation_private') }}<b aria-hidden="true">⌄</b></summary>
     <div class="nav-menu">
         @ability('admin','admin-access')
