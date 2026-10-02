@@ -274,6 +274,8 @@ Route::middleware(['api','api.auth'])->prefix('api/v1')->group(function () {
     Route::get('/me', [OperationsV1Controller::class, 'me']);
     Route::get('/me/aircraft-variants', [OperationsV1Controller::class, 'myAircraftVariants']);
     Route::put('/me/aircraft-variants', [OperationsV1Controller::class, 'saveMyAircraftVariants']);
+    Route::get('/me/simulator-profiles', [OperationsV1Controller::class, 'myAircraftVariants']);
+    Route::put('/me/simulator-profiles', [OperationsV1Controller::class, 'saveMyAircraftVariants']);
     Route::get('/flights', [OperationsV1Controller::class, 'searchFlights']);
     Route::post('/flights/{flightId}/reserve', [OperationsV1Controller::class, 'reserveFlight']);
     Route::get('/operations', [OperationsV1Controller::class, 'index']);
@@ -283,6 +285,8 @@ Route::middleware(['api','api.auth'])->prefix('api/v1')->group(function () {
     Route::put('/operations/{bid}/aircraft', [OperationsV1Controller::class, 'selectAircraft']);
     Route::get('/operations/{bid}/aircraft-variants', [OperationsV1Controller::class, 'aircraftVariants']);
     Route::put('/operations/{bid}/aircraft-variant', [OperationsV1Controller::class, 'selectAircraftVariant']);
+    Route::get('/operations/{bid}/simulator-profiles', [OperationsV1Controller::class, 'aircraftVariants']);
+    Route::put('/operations/{bid}/simulator-profile', [OperationsV1Controller::class, 'selectAircraftVariant']);
     Route::get('/operations/{bid}/briefing', [OperationsV1Controller::class, 'briefing']);
     Route::get('/operations/{bid}/readiness', [OperationsV1Controller::class, 'readiness']);
     Route::get('/operations/{bid}/dispatch', [OperationsV1Controller::class, 'operationDispatch']);
