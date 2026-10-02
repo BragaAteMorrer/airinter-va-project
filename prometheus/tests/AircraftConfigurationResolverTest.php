@@ -30,7 +30,7 @@ final class AircraftConfigurationResolverTest extends TestCase
         AircraftTypeProfile::query()->create([
             'type_key' => 'N262',
             'name' => 'Nord 262',
-            'data' => ['max_pax' => 20, 'mtow' => 10000],
+            'data' => ['max_pax' => 20, 'mtow' => 10000, 'weight_unit' => 'kg'],
             'historical_confidence' => 'confirmed',
         ]);
 
@@ -48,7 +48,12 @@ final class AircraftConfigurationResolverTest extends TestCase
             'code' => 'ITF_STD_2',
             'name' => 'Air Inter standard 2',
             'configuration_kind' => 'VA_operational',
-            'data' => ['max_pax' => 26, 'seat_configuration' => '2+2'],
+            'data' => [
+                'max_pax' => 26,
+                'seat_configuration' => '2+2',
+                'max_fuel' => 2500,
+                'engine' => ['manufacturer' => 'Turbomeca', 'model' => 'Bastan', 'variant' => 'VI C', 'count' => 2, 'simbrief_label' => 'BASTAN VI C'],
+            ],
             'simbrief_strategy' => 'proxy',
             'simbrief_proxy_type' => 'SH33',
             'historical_confidence' => 'VA_configuration',
@@ -77,6 +82,10 @@ final class AircraftConfigurationResolverTest extends TestCase
         $this->assertSame('SH33', $resolved['simbrief']['value']);
         $this->assertSame('N262', $resolved['simbrief']['actual_aircraft']);
         $this->assertSame('N262A', $resolved['simbrief']['actual_variant']);
+        $this->assertSame('27', $resolved['simbrief']['acdata']['maxpax']);
+        $this->assertEquals(14.33, $resolved['simbrief']['acdata']['oew']);
+        $this->assertSame('N262', $resolved['simbrief']['acdata']['icao']);
+        $this->assertSame('BASTAN VI C', $resolved['simbrief']['acdata']['engines']);
     }
 
     public function test_date_selects_the_configuration_that_was_valid_then(): void
