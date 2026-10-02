@@ -58,8 +58,23 @@ final class HermesPirepLifecycleService
     {
         return !$this->isFiled($pirep)
             && !$this->isCancelled($pirep)
-            && $pirep->status === PirepStatus::ARRIVED
-            && $this->hasFlightEvidence($pirep);
+            && $this->hasArrivalEvidence($pirep);
+    }
+
+    public function hasArrivalEvidence(Pirep $pirep): bool
+    {
+        if (DB::table('promethee_telemetry')
+            ->where('pirep_id', $pirep->id)
+            ->where('payload', 'like', '%"phase":"IN"%')
+            ->exists()) {
+            return true;
+        }
+
+        return DB::table('acars')
+            ->where('pirep_id', $pirep->id)
+            ->where('type', AcarsType::LOG)
+            ->where('log', 'IN')
+            ->exists();
     }
 
     public function hasFlightEvidence(Pirep $pirep): bool
@@ -111,6 +126,7 @@ final class HermesPirepLifecycleService
             'filed' => $this->isFiled($pirep),
             'active_draft' => $this->isActiveDraft($pirep),
             'awaiting_filing' => $this->isAwaitingFiling($pirep),
+            'arrival_evidence' => $this->hasArrivalEvidence($pirep),
             'flight_evidence' => $this->hasFlightEvidence($pirep),
             'legacy_ghost' => $this->isLegacyGhost($pirep),
         ];
