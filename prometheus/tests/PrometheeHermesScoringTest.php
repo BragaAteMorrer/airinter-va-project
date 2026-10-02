@@ -2,7 +2,11 @@
 
 namespace Tests;
 
+use App\Models\Enums\PirepSource;
+use App\Models\Enums\PirepState;
+use App\Models\Enums\PirepStatus;
 use App\Models\Pirep;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -112,6 +116,50 @@ final class PrometheeHermesScoringTest extends TestCase
         $this->assertSame(100, $result['score']);
         $this->assertSame(0, $result['deductions_total']);
         $this->assertSame('EXCESS_GFORCE', $result['unavailable_rules'][0]['rule_id']);
+    }
+
+    public function test_hermes_file_ignores_client_score_and_persists_server_score(): void
+    {
+        $rank = $this->createRank(10, []);
+        $this->user = User::factory()->create(['rank_id' => $rank->id]);
+
+        $pirep = Pirep::factory()->create([
+            'user_id' => $this->user->id,
+            'source' => PirepSource::ACARS,
+            'source_name' => 'Hermes ACARS [op_file_score]',
+            'state' => PirepState::IN_PROGRESS,
+            'status' => PirepStatus::INITIATED,
+            'submitted_at' => null,
+            'landing_rate' => null,
+        ]);
+
+        DB::table('vmsacars_rules')->update(['enabled' => false]);
+        $this->configureRule('HARD_LANDING', 20, 500, false);
+
+        $at = Carbon::parse('2026-10-03 12:00:00', 'UTC');
+        $this->telemetry($pirep, $at, [
+            'phase' => 'IN',
+            'on_ground' => true,
+            'gs' => 0,
+            'touchdown_rate' => -700,
+        ]);
+
+        $response = $this->post('/api/pireps/'.$pirep->id.'/file', [
+            'flight_time' => 60,
+            'distance' => 250,
+            'fuel_used' => 2500,
+            'landing_rate' => -700,
+            'score' => 100,
+        ]);
+
+        $response->assertOk();
+
+        $pirep->refresh();
+        $this->assertSame(80, $pirep->score);
+        $this->assertDatabaseHas('promethee_pirep_scores', [
+            'pirep_id' => $pirep->id,
+            'score' => 80,
+        ]);
     }
 
     public function test_scoring_snapshot_keeps_historical_breakdown(): void
