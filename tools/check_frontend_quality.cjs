@@ -36,6 +36,7 @@ const hermesDesktop = read('acars/WebDesktop.cs');
 const hermesTheme = read('acars/wwwroot/hermes-themes.css');
 const prometheeV2 = read('prometheus/public/promethee-assets/promethee-v2.css');
 const dispatch = read('prometheus/modules/Promethee/Resources/views/admin/dispatch.blade.php');
+const crm = read('prometheus/modules/Promethee/Resources/views/admin/crm.blade.php');
 
 const stylesheetHrefs = [...hermesIndex.matchAll(/<link\b[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["']/gi)]
   .map(match => match[1]);
@@ -68,6 +69,15 @@ expect(dispatch.includes("if (!document.hidden) refreshBoard()"),
   'Dispatch Desk polling must remain suspended while the page is hidden.');
 expect(dispatch.includes('promethee-dispatch-filter') && dispatch.includes('promethee-dispatch-selected'),
   'Dispatch Desk must preserve dispatcher context across refresh/navigation.');
+
+expect(crm.includes('data-crm-campaign-workspace')
+    && crm.includes('promethee-crm-selected-campaign')
+    && crm.includes('admin-master-detail'),
+  'CRM must preserve the reusable master/detail campaign workspace and selected campaign context.');
+expect(prometheeV2.includes('.admin-master-detail')
+    && prometheeV2.includes('.admin-detail-pane')
+    && prometheeV2.includes('.admin-master-row'),
+  'Prométhée must preserve shared staff master/detail primitives.');
 
 const inlineStyleFreeViews = [
   'prometheus/modules/Promethee/Resources/views/bookings.blade.php',
