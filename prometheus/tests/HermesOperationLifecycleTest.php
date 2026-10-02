@@ -391,6 +391,60 @@ final class HermesOperationLifecycleTest extends TestCase
         $this->assertContains($fx['operation_id'], array_column($this->operations($fx['user']), 'operation_id'));
     }
 
+    public function test_portal_keeps_arrived_operation_awaiting_filing(): void
+    {
+        $fx = $this->operationFixture();
+        $pirepId = $this->prefile($fx);
+        $this->telemetry($fx, 'IN');
+
+        $pirep = Pirep::findOrFail($pirepId);
+        $pirep->status = PirepStatus::ARRIVED;
+        $pirep->state = PirepState::IN_PROGRESS;
+        $pirep->submitted_at = null;
+        $pirep->save();
+
+        $this->get('/bookings', [], $fx['user'])
+            ->assertOk()
+            ->assertSee('AWAITING FILING')
+            ->assertSee('Ouvrir le Flight Review')
+            ->assertDontSee('COMPLETED');
+    }
+
+    public function test_repeat_finished_pirep_creates_fresh_operation_without_reusing_terminal_state(): void
+    {
+        $fx = $this->operationFixture();
+        $oldBidId = (string) $fx['bid']->id;
+        $pirepId = $this->prefile($fx);
+        $this->telemetry($fx, 'TAXI_OUT');
+        $this->telemetry($fx, 'IN', now()->addMinute());
+        $this->filePirep($fx['user'], $pirepId)->assertOk();
+
+        $this->assertDatabaseMissing('bids', ['id' => $oldBidId]);
+
+        $this->post('/pireps/'.$pirepId.'/repeat', [], [], $fx['user'])
+            ->assertRedirect(route('promethee.flights.briefing', $fx['flight']->id));
+
+        $newBid = Bid::query()
+            ->where('user_id', $fx['user']->id)
+            ->where('flight_id', $fx['flight']->id)
+            ->latest()
+            ->firstOrFail();
+
+        $this->assertNotSame($oldBidId, (string) $newBid->id);
+        $this->assertSame(1, Bid::query()
+            ->where('user_id', $fx['user']->id)
+            ->where('flight_id', $fx['flight']->id)
+            ->count());
+
+        $operation = $this->get('/api/v1/operations/op_'.$newBid->id, [], $fx['user'])
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame('reserved', $operation['status']);
+        $this->assertNull($operation['pirep_id']);
+        $this->assertNotSame('completed', $operation['status']);
+    }
+
     public function test_legacy_zero_flight_terminal_pirep_is_never_reopened_or_deleted_automatically(): void
     {
         $fx = $this->operationFixture();
