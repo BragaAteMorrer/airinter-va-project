@@ -378,6 +378,8 @@ class AircraftConfigurationAdminController extends Controller
         return [
             'max_pax' => 'nullable|integer|min:0',
             'seat_configuration' => 'nullable|string|max:120',
+            'weight_unit' => 'nullable|in:kg,lb,klb',
+            'weight_category' => 'nullable|in:L,M,H,J',
             'oew' => 'nullable|numeric|min:0',
             'mzfw' => 'nullable|numeric|min:0',
             'mtow' => 'nullable|numeric|min:0',
@@ -396,7 +398,7 @@ class AircraftConfigurationAdminController extends Controller
             'equipment' => 'nullable|string|max:255',
             'transponder' => 'nullable|string|max:120',
             'pbn' => 'nullable|string|max:255',
-            'fuel_factor' => 'nullable|numeric|min:0',
+            'fuel_factor' => 'nullable|numeric|min:-50|max:100',
             'climb_profile' => 'nullable|string|max:120',
             'cruise_profile' => 'nullable|string|max:120',
             'descent_profile' => 'nullable|string|max:120',
