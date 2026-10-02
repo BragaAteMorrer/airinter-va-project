@@ -91,6 +91,40 @@ final class PrometheeHermesScoringTest extends TestCase
         $this->assertSame(2, $result['deductions'][0]['count']);
     }
 
+    public function test_stabilized_approach_rule_deducts_when_gear_or_flaps_are_not_configured(): void
+    {
+        $pirep = Pirep::factory()->create([
+            'source_name' => 'Hermes ACARS [op_stabilized_approach]',
+            'landing_rate' => null,
+        ]);
+
+        $this->setPolicy([
+            $this->rule('STABILIZED_APPROACH', 5, 1500),
+        ]);
+
+        $at = Carbon::parse('2026-10-03 11:30:00', 'UTC');
+        $this->telemetry($pirep, $at, [
+            'phase' => 'APPROACH',
+            'on_ground' => false,
+            'agl' => 1700,
+            'gear_down' => true,
+            'landing_flaps' => false,
+        ]);
+        $this->telemetry($pirep, $at->copy()->addSeconds(15), [
+            'phase' => 'APPROACH',
+            'on_ground' => false,
+            'agl' => 1400,
+            'gear_down' => true,
+            'landing_flaps' => false,
+        ]);
+
+        $result = app(HermesScoringService::class)->calculate($pirep);
+
+        $this->assertSame(95, $result['score']);
+        $this->assertSame('STABILIZED_APPROACH', $result['deductions'][0]['rule_id']);
+        $this->assertSame(5, $result['deductions'][0]['deduction']);
+    }
+
     public function test_legacy_vmsacars_table_overrides_fallback_policy(): void
     {
         Schema::create('vmsacars_rules', function (Blueprint $table) {
