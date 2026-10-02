@@ -3,6 +3,7 @@ namespace Modules\Promethee\Providers;
 
 use App\Contracts\Modules\ServiceProvider;
 use App\Events\PirepAccepted;
+use App\Events\PirepFiled;
 use App\Events\UserStatsChanged;
 use App\Services\ModuleService;
 use Illuminate\Support\Facades\Event;
@@ -16,6 +17,7 @@ use Modules\Promethee\Console\RepairHermesPirepCommand;
 use Modules\Promethee\Console\RotateFleetCommand;
 use Modules\Promethee\Console\SyncRegionalOperationsCommand;
 use Modules\Promethee\Listeners\EngineMaintenanceEventListener;
+use Modules\Promethee\Listeners\HermesPirepScoringListener;
 use Modules\Promethee\Listeners\ProgressionEventListener;
 use Modules\Promethee\Listeners\RegionalOperationsEventListener;
 
@@ -38,6 +40,7 @@ class PrometheeServiceProvider extends ServiceProvider
         Event::listen(PirepAccepted::class, [ProgressionEventListener::class, 'onPirepAccepted']);
         Event::listen(PirepAccepted::class, [RegionalOperationsEventListener::class, 'onPirepAccepted']);
         Event::listen(PirepAccepted::class, [EngineMaintenanceEventListener::class, 'onPirepAccepted']);
+        Event::listen(PirepFiled::class, [HermesPirepScoringListener::class, 'onPirepFiled']);
         Event::listen(UserStatsChanged::class, [ProgressionEventListener::class, 'onUserStatsChanged']);
         if ($this->app->runningInConsole()) {
             $this->commands([BulletinCommand::class, CheckPrometheeTranslations::class, CheckTranslations::class, LocalUserCommand::class, RecalculateProgressionCommand::class, RepairHermesPirepCommand::class, RotateFleetCommand::class, SyncRegionalOperationsCommand::class]);
