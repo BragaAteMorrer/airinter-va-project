@@ -85,7 +85,9 @@ public sealed class XPlaneUdpConnector : ISimulatorConnector
             VerticalSpeedFeetPerMinute: GetConverted(VerticalSpeedMps, 196.850394),
             OnGround: GetBoolean(OnGround), ParkingBrake: GetBoolean(ParkingBrake),
             FuelWeight: GetOptional(FuelKg), GearDown: GetBoolean(GearRatio, .95f),
-            FlapsPercent: GetConverted(FlapsRatio, 100));
+            FlapsPercent: GetConverted(FlapsRatio, 100),
+            Paused: GetBoolean(Paused),
+            PauseKind: GetBoolean(Paused) == true ? "PAUSE" : null);
         LatestSnapshot = snapshot;
         ConnectionState = SimulatorConnectionState.Connected;
         Status = "Connecté à X-Plane (UDP expérimental)";
@@ -117,7 +119,7 @@ public sealed class XPlaneUdpConnector : ISimulatorConnector
 
     private const int Latitude = 1, Longitude = 2, AltitudeMeters = 3, AglMeters = 4, IasMps = 5,
         GroundSpeedMps = 6, HeadingDegrees = 7, VerticalSpeedMps = 8, OnGround = 9, ParkingBrake = 10,
-        FuelKg = 11, GearRatio = 12, FlapsRatio = 13;
+        FuelKg = 11, GearRatio = 12, FlapsRatio = 13, Paused = 14;
     private static readonly (int Index, string DataRef)[] DataRefs = [
         (Latitude, "sim/flightmodel/position/latitude"),
         (Longitude, "sim/flightmodel/position/longitude"),
@@ -131,5 +133,6 @@ public sealed class XPlaneUdpConnector : ISimulatorConnector
         (ParkingBrake, "sim/cockpit2/controls/parking_brake_ratio"),
         (FuelKg, "sim/flightmodel/weight/m_fuel_total"),
         (GearRatio, "sim/flightmodel2/gear/deploy_ratio[0]"),
-        (FlapsRatio, "sim/flightmodel2/controls/flap_handle_deploy_ratio")];
+        (FlapsRatio, "sim/flightmodel2/controls/flap_handle_deploy_ratio"),
+        (Paused, "sim/time/paused")];
 }
