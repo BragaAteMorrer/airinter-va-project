@@ -25,6 +25,7 @@ use Modules\Promethee\Services\SafetyAnalyzer;
 use Modules\Promethee\Services\AircraftOperationalStateService;
 use Modules\Promethee\Services\DemandProfileService;
 use Modules\Promethee\Services\AircraftVariantService;
+use Modules\Promethee\Services\AircraftConfigurationResolver;
 use Modules\Promethee\Services\HermesPirepLifecycleService;
 
 /**
@@ -45,6 +46,7 @@ class OperationsV1Controller extends Controller
         private readonly AircraftOperationalStateService $aircraftState,
         private readonly DemandProfileService $demandProfile,
         private readonly AircraftVariantService $aircraftVariants,
+        private readonly AircraftConfigurationResolver $aircraftConfigurations,
         private readonly HermesPirepLifecycleService $pirepLifecycle
     ) {}
 
@@ -358,6 +360,7 @@ class OperationsV1Controller extends Controller
                 if (!$freeOfp) $reasons[] = $this->reason('ACTIVE_OFP', 'Un OFP actif utilise déjà cet appareil.');
             }
 
+            $resolvedAircraft = $this->aircraftConfigurations->resolveAircraft($plane);
             $profile = count($reasons) === 0
                 ? $this->demandProfile->profile($plane, $flight, $operationId)
                 : null;
@@ -383,6 +386,9 @@ class OperationsV1Controller extends Controller
                 'pricing_band' => $profile['band'] ?? null,
                 'fare_percent' => $profile['fare_percent'] ?? null,
                 'load_range' => $profile['load_range'] ?? null,
+                'historical_variant' => $resolvedAircraft['variant'] ?? null,
+                'configuration' => $resolvedAircraft['configuration'] ?? null,
+                'simbrief_profile' => $resolvedAircraft['simbrief'] ?? null,
             ];
 
             if (count($reasons) === 0) {
@@ -933,9 +939,17 @@ class OperationsV1Controller extends Controller
         $selectedVariant = collect($variantState['variants'] ?? [])->first(
             fn ($variant) => ($variant['id'] ?? null) === ($variantState['selected_variant_id'] ?? null)
         );
-        $simbriefType = $selectedVariant['simbrief_type']
-            ?? $fallback['simbrief_type']
-            ?? ($aircraft?->simbrief_type ?: ($subfleet?->simbrief_type ?: $aircraft?->icao));
+        $resolvedAircraft = $aircraft ? $this->aircraftConfigurations->resolveAircraft($aircraft) : null;
+        $resolvedSimBrief = $resolvedAircraft['simbrief'] ?? [];
+        $hasConfiguredTechnicalProfile = $resolvedAircraft
+            && (($resolvedSimBrief['source'] ?? 'phpvms') !== 'phpvms');
+
+        $simbriefType = $hasConfiguredTechnicalProfile
+            ? ($resolvedSimBrief['value'] ?? null)
+            : ($selectedVariant['simbrief_type']
+                ?? $fallback['simbrief_type']
+                ?? ($resolvedSimBrief['value'] ?? null)
+                ?? ($aircraft?->simbrief_type ?: ($subfleet?->simbrief_type ?: $aircraft?->icao)));
         $airline = Str::lower((string) ($flight?->airline?->name ?? ''));
         $loadFactor = str_contains($airline, 'charter') ? config('acars.load_factors.air_charter_international')
             : (str_contains($airline, 'cargo') ? config('acars.load_factors.inter_cargo_service') : config('acars.load_factors.air_inter'));
@@ -973,6 +987,9 @@ class OperationsV1Controller extends Controller
                 'type_key' => $this->demandProfile->typeKey($aircraft),
                 'type_label' => $this->demandProfile->typeLabel($aircraft),
                 'airport' => $aircraft->airport_id,
+                'historical_variant' => $resolvedAircraft['variant'] ?? null,
+                'configuration' => $resolvedAircraft['configuration'] ?? null,
+                'resolved_profile' => $resolvedAircraft,
             ], $flight ? $this->demandProfile->profile($aircraft, $flight, $this->operationIdentity->id($bid)) : []) : null,
             'simbrief' => [
                 'type' => $simbriefType,
@@ -980,6 +997,8 @@ class OperationsV1Controller extends Controller
                 'variant' => $selectedVariant,
                 'variants' => $variantState['variants'] ?? [],
                 'selected_variant_id' => $variantState['selected_variant_id'] ?? null,
+                'strategy' => $resolvedSimBrief['strategy'] ?? 'native',
+                'resolved_profile' => $resolvedSimBrief,
                 'ofp_id' => $ofp?->id,
                 'available' => $ofpAvailable,
                 // Hermès only needs to know whether company generation can be
