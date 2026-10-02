@@ -49,6 +49,7 @@
       <button>Enregistrer / synchroniser la flotte</button>
     </form>
     <p class="hint">À la première synchronisation, Prométhée crée automatiquement des moteurs virtuels AUTO-* pour les appareils de la sous-flotte. Ils peuvent ensuite être remplacés par des moteurs de stock identifiés par numéro de série.</p>
+    <p class="hint"><strong>Synchroniser toute la flotte</strong> complète aussi les profils moteurs manquants depuis le référentiel Air Inter VA embarqué, sans écraser les profils déjà personnalisés.</p>
   </section>
 
   <section class="panel">
