@@ -27,6 +27,8 @@ public sealed record FlightReview(
     double? MaxBankDegrees,
     double FuelAdded,
     double? MaxSimulationRate,
+    int PauseCount,
+    int PausedSeconds,
     IReadOnlyList<FlightIssue> Issues,
     IReadOnlyList<FdmObservation> Observations,
     IReadOnlyList<PhaseEntry> Timeline);
@@ -50,6 +52,10 @@ public sealed class FlightDataMonitor
     private double taxiPeak;
     private DateTimeOffset taxiPeakAt;
     private string? taxiPhase;
+    private bool pauseSegment;
+    private DateTimeOffset pauseStartedAt;
+    private string? pauseKind;
+    private string? pausePhase;
 
     public void Reset()
     {
@@ -63,6 +69,10 @@ public sealed class FlightDataMonitor
         taxiPeak = 0;
         taxiPeakAt = default;
         taxiPhase = null;
+        pauseSegment = false;
+        pauseStartedAt = default;
+        pauseKind = null;
+        pausePhase = null;
     }
 
     public void Restore(IEnumerable<FdmObservation>? existing)
@@ -81,6 +91,7 @@ public sealed class FlightDataMonitor
     {
         var result = new List<FdmObservation>();
 
+        RecordPause(current, phase, result);
         RecordTaxiSpeed(current, phase, result);
         RecordApproachGate(current, phase, 1000, 1200, ref approach1000Recorded, result);
         RecordApproachGate(current, phase, 500, 1000, ref approach500Recorded, result);
@@ -98,7 +109,60 @@ public sealed class FlightDataMonitor
             CloseBankExcursion(current, phase, result);
         if (taxiSegment && current is not null)
             CloseTaxiSegment(current, result);
+        if (pauseSegment && current is not null)
+            ClosePause(current, result);
         return result;
+    }
+
+    private void RecordPause(AircraftSnapshot current, FlightPhase phase, List<FdmObservation> result)
+    {
+        if (current.Paused == true)
+        {
+            if (!pauseSegment)
+            {
+                pauseSegment = true;
+                pauseStartedAt = current.RecordedAt;
+                pauseKind = current.PauseKind;
+                pausePhase = FlightTrackingEngine.ToExternalPhase(phase);
+            }
+            else if (!string.IsNullOrWhiteSpace(current.PauseKind))
+            {
+                pauseKind = current.PauseKind;
+            }
+            return;
+        }
+
+        if (current.Paused == false && pauseSegment)
+            ClosePause(current, result);
+    }
+
+    private void ClosePause(AircraftSnapshot current, List<FdmObservation> result)
+    {
+        var duration = Math.Max(0, (current.RecordedAt - pauseStartedAt).TotalSeconds);
+        var kind = string.IsNullOrWhiteSpace(pauseKind) ? "PAUSE" : pauseKind;
+        var label = kind switch {
+            "ACTIVE_PAUSE" => "Active Pause",
+            "MENU_OR_DIALOG" => "Menu / dialogue simulateur",
+            "FULL_PAUSE" => "Pause complète",
+            "SIM_PAUSE" => "Pause simulation",
+            _ => kind.Replace('_', ' ')
+        };
+
+        result.Add(new(
+            "PAUSE",
+            "simulator",
+            pauseStartedAt,
+            $"Pause détectée ({label}) pendant environ {duration:0} s.",
+            "attention",
+            Math.Round(duration),
+            "s",
+            pausePhase,
+            kind));
+
+        pauseSegment = false;
+        pauseStartedAt = default;
+        pauseKind = null;
+        pausePhase = null;
     }
 
     private void RecordTaxiSpeed(AircraftSnapshot current, FlightPhase phase, List<FdmObservation> result)
