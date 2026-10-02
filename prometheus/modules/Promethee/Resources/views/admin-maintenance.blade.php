@@ -1,11 +1,11 @@
 @extends('promethee::layout')
-@section('title','Maintenance moteurs')
+@section('title','Maintenance cellule & moteurs')
 @section('content')
 <div class="ops-header compact">
   <div>
     <span class="eyebrow">AIR INTER · DIRECTION TECHNIQUE</span>
-    <h1>Révisions moteurs & TBO.</h1>
-    <p>Les checks A/B/C restent liés à la cellule. Les moteurs disposent ici de leurs propres heures, cycles, TBO, montages et révisions.</p>
+    <h1>Maintenance cellule & moteurs.</h1>
+    <p>Paramétrez les checks A/B/C en heures et en cycles, puis suivez séparément le potentiel TBO des moteurs.</p>
   </div>
   <div class="inline-form">
     <span class="tag">{{ $engineUnits->count() }} moteur(s)</span>
@@ -26,6 +26,51 @@
 @if($errors->any())
 <section class="panel"><strong>Impossible d’enregistrer :</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></section>
 @endif
+
+<section class="panel">
+  <div class="panel-heading">
+    <div>
+      <span class="eyebrow">CELLULE · CHECKS PROGRAMMÉS</span>
+      <h2>Limites heures / cycles et durée d’immobilisation</h2>
+      <p>Un check devient exigible dès qu’une des deux limites — temps ou cycles — est atteinte. Ces valeurs alimentent directement le suivi cellule existant et le moteur de rotation entre bases.</p>
+    </div>
+  </div>
+  <form method="post" action="{{ route('admin.promethee.maintenance.check-settings.save') }}" class="form-grid">
+    @csrf
+    <label>A Check · limite temps (h)
+      <input type="number" name="a_time_limit" min="1" max="100000" value="{{ old('a_time_limit', $checkSettings['a_time_limit']) }}" required>
+    </label>
+    <label>A Check · limite cycles
+      <input type="number" name="a_cycle_limit" min="1" max="100000" value="{{ old('a_cycle_limit', $checkSettings['a_cycle_limit']) }}" required>
+    </label>
+    <label>A Check · durée (h)
+      <input type="number" name="a_duration" min="0.1" max="10000" step="0.1" value="{{ old('a_duration', $checkSettings['a_duration']) }}" required>
+    </label>
+
+    <label>B Check · limite temps (h)
+      <input type="number" name="b_time_limit" min="1" max="100000" value="{{ old('b_time_limit', $checkSettings['b_time_limit']) }}" required>
+    </label>
+    <label>B Check · limite cycles
+      <input type="number" name="b_cycle_limit" min="1" max="100000" value="{{ old('b_cycle_limit', $checkSettings['b_cycle_limit']) }}" required>
+    </label>
+    <label>B Check · durée (h)
+      <input type="number" name="b_duration" min="0.1" max="10000" step="0.1" value="{{ old('b_duration', $checkSettings['b_duration']) }}" required>
+    </label>
+
+    <label>C Check · limite temps (h)
+      <input type="number" name="c_time_limit" min="1" max="100000" value="{{ old('c_time_limit', $checkSettings['c_time_limit']) }}" required>
+    </label>
+    <label>C Check · limite cycles
+      <input type="number" name="c_cycle_limit" min="1" max="100000" value="{{ old('c_cycle_limit', $checkSettings['c_cycle_limit']) }}" required>
+    </label>
+    <label>C Check · durée (h)
+      <input type="number" name="c_duration" min="0.1" max="10000" step="0.1" value="{{ old('c_duration', $checkSettings['c_duration']) }}" required>
+    </label>
+
+    <button type="submit">Enregistrer les checks A/B/C</button>
+  </form>
+  <p class="hint">Les compteurs déjà présents dans <code>disposable_maintenance</code> sont recalculés immédiatement après modification ; les éventuels profils techniques spécifiques à un type d’appareil restent prioritaires.</p>
+</section>
 
 <div class="two-columns">
   <section class="panel">
