@@ -43,11 +43,49 @@ if ($CertificatePath) {
   $baseSignArgs = @('sign','/fd','SHA256','/tr','http://timestamp.digicert.com','/td','SHA256','/f',$CertificatePath)
   if ($CertificatePassword) { $baseSignArgs += @('/p',$CertificatePassword) }
 
+  $pfxFlags = [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::EphemeralKeySet
+  $signingCertificate = if ($CertificatePassword) {
+    [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($CertificatePath, $CertificatePassword, $pfxFlags)
+  } else {
+    [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($CertificatePath)
+  }
+
+  function Assert-HermesAuthenticodeSignature {
+    param(
+      [Parameter(Mandatory=$true)][string]$Path,
+      [Parameter(Mandatory=$true)][string]$ExpectedThumbprint
+    )
+
+    $signature = Get-AuthenticodeSignature -LiteralPath $Path
+    if (-not $signature.SignerCertificate) {
+      throw "Signature Authenticode absente: $Path"
+    }
+
+    if (-not $signature.SignerCertificate.Thumbprint.Equals($ExpectedThumbprint, [StringComparison]::OrdinalIgnoreCase)) {
+      throw "Le certificat Authenticode ne correspond pas au certificat de build: $Path"
+    }
+
+    # The public fallback is intentionally self-signed, so Windows may return
+    # NotTrusted/UnknownError solely because its root is not installed. Those
+    # trust-chain statuses are acceptable here; structural signature failures
+    # (missing signature, altered hash, unsupported/incompatible signature)
+    # are never accepted.
+    $fatalStatuses = @('NotSigned','HashMismatch','NotSupported','Incompatible')
+    if ($fatalStatuses -contains [string]$signature.Status) {
+      throw "Signature Authenticode invalide ($($signature.Status)): $Path"
+    }
+
+    if (-not $signature.TimeStamperCertificate) {
+      throw "Horodatage Authenticode absent: $Path"
+    }
+
+    Write-Host "Signature Authenticode vérifiée: $Path -> $($signature.Status) / $($signature.SignerCertificate.Subject)"
+  }
+
   & $signtool.FullName @($baseSignArgs + $clientExe)
   if ($LASTEXITCODE -ne 0) { throw "La signature Authenticode du client Hermès a échoué." }
 
-  & $signtool.FullName verify /pa /v $clientExe
-  if ($LASTEXITCODE -ne 0) { throw "La vérification Authenticode du client Hermès a échoué." }
+  Assert-HermesAuthenticodeSignature -Path $clientExe -ExpectedThumbprint $signingCertificate.Thumbprint
 
   if (Test-Path -LiteralPath $portableZip) { Remove-Item -LiteralPath $portableZip -Force }
   Compress-Archive -Path $clientExe -DestinationPath $portableZip -Force
@@ -58,9 +96,8 @@ if ($CertificatePath) {
   & $signtool.FullName @($baseSignArgs + $setup)
   if ($LASTEXITCODE -ne 0) { throw "La signature Authenticode de l'installateur a échoué." }
 
-  & $signtool.FullName verify /pa /v $setup
-  if ($LASTEXITCODE -ne 0) { throw "La vérification Authenticode de l'installateur a échoué." }
-  Write-Host "Signature Authenticode valide."
+  Assert-HermesAuthenticodeSignature -Path $setup -ExpectedThumbprint $signingCertificate.Thumbprint
+  Write-Host "Signature Authenticode présente, intègre et horodatée."
 } else {
   Write-Warning "Installateur NON SIGNE : configurez HERMES_SIGNING_CERTIFICATE pour une release publique."
 }

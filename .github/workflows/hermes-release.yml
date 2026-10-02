@@ -82,13 +82,6 @@ jobs:
           Export-PfxCertificate -Cert $cert -FilePath $pfx -Password $securePassword | Out-Null
           Export-Certificate -Cert $cert -FilePath $cer | Out-Null
 
-          # The fallback certificate is intentionally self-signed. Trust it
-          # only inside this ephemeral GitHub-hosted runner so signtool can
-          # verify the cryptographic signature and timestamp after signing.
-          # This does NOT make the certificate trusted on pilot machines.
-          & certutil.exe -user -addstore -f Root $cer | Out-Host
-          if ($LASTEXITCODE -ne 0) { throw "Unable to trust the temporary Hermès signing certificate on the runner." }
-
           "pfx=$pfx" >> $env:GITHUB_OUTPUT
           "password=$password" >> $env:GITHUB_OUTPUT
           Write-Host "Temporary code-signing certificate created: $($cert.Thumbprint)"
