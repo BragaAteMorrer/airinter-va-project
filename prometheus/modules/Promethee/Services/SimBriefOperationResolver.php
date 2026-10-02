@@ -29,6 +29,7 @@ class SimBriefOperationResolver
         private readonly DemandProfileService $demand,
         private readonly SimBriefCompanyKeyService $companyKey,
         private readonly AircraftVariantService $aircraftVariants,
+        private readonly AircraftConfigurationResolver $aircraftConfigurations,
         private readonly SimBriefAircraftProfileResolver $aircraftProfiles,
         private readonly SimBriefAircraftPayloadBuilder $aircraftPayloads
     ) {}
@@ -81,19 +82,92 @@ class SimBriefOperationResolver
         $operationId = $operationId ?: 'legacy_'.$user->id.'_'.$flight->id.'_'.$aircraft->id;
         $this->assertEligible($flight, $aircraft, $user, $bid);
 
+        $technicalProfile = $this->aircraftConfigurations->resolveAircraft($aircraft);
+        $technicalSimBrief = $technicalProfile['simbrief'] ?? [];
+        $hasConfiguredTechnicalProfile = (($technicalSimBrief['source'] ?? 'phpvms') !== 'phpvms');
+
         $variant = $bid
             ? $this->aircraftVariants->selectedForBid($bid, $user)
             : $this->aircraftVariants->defaultForAircraft($aircraft);
-        $aircraftProfile = $this->aircraftProfiles->resolve(
-            $aircraft,
-            $variant,
-            filled($overrides['simbrief_type'] ?? null) ? (string) $overrides['simbrief_type'] : null
-        );
-        $aircraftPayload = $this->aircraftPayloads->build($aircraftProfile);
-        $type = [
-            'value' => $aircraftPayload['parameters']['type'],
-            'source' => $aircraftProfile['source'],
-        ];
+
+        $legacyProfile = null;
+        $aircraftPayload = ['parameters' => [], 'acdata' => []];
+
+        if ($hasConfiguredTechnicalProfile) {
+            $resolvedType = strtoupper(trim((string) ($technicalSimBrief['value'] ?? '')));
+            abort_if($resolvedType === '', 422,
+                'La configuration sb-airframe de '.$aircraft->registration.' ne contient aucun type SimBrief exploitable.');
+
+            $type = [
+                'value' => $resolvedType,
+                'source' => 'aircraft_configuration.'.($technicalSimBrief['source'] ?? 'resolved'),
+            ];
+            if (filled($overrides['simbrief_type'] ?? null)) {
+                $type = [
+                    'value' => strtoupper(trim((string) $overrides['simbrief_type'])),
+                    'source' => 'planning_override',
+                ];
+            }
+
+            $simbriefStrategy = strtolower((string) ($technicalSimBrief['strategy'] ?? 'native'));
+            $simbriefDisplayType = strtoupper((string) (
+                $technicalSimBrief['actual_aircraft']
+                ?? $aircraft->icao
+                ?? $aircraft->subfleet?->type
+                ?? $type['value']
+            ));
+            $simbriefDisplayName = trim((string) (
+                $technicalProfile['variant']['short_name']
+                ?? $technicalProfile['variant']['name']
+                ?? $aircraft->subfleet?->name
+                ?? $aircraft->name
+                ?? $simbriefDisplayType
+            ));
+
+            $aircraftPayload['parameters']['type'] = $type['value'];
+            if (!empty($technicalSimBrief['acdata'])) {
+                $encodedAcData = json_encode(
+                    $technicalSimBrief['acdata'],
+                    JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION
+                );
+                abort_if($encodedAcData === false, 500, 'Impossible d’encoder les données sb-airframe destinées à SimBrief.');
+                $aircraftPayload['parameters']['acdata'] = $encodedAcData;
+                $aircraftPayload['acdata'] = $technicalSimBrief['acdata'];
+            }
+
+            $simbriefProfileSummary = [
+                'strategy' => $simbriefStrategy,
+                'actual_icao' => $simbriefDisplayType,
+                'actual_name' => $simbriefDisplayName,
+                'calculation_type' => $type['value'],
+                'proxy_type' => $technicalSimBrief['proxy_type'] ?? null,
+                'internal_id' => $technicalSimBrief['internal_id'] ?? null,
+                'airframe_db_id' => null,
+            ];
+        } else {
+            $legacyProfile = $this->aircraftProfiles->resolve(
+                $aircraft,
+                $variant,
+                filled($overrides['simbrief_type'] ?? null) ? (string) $overrides['simbrief_type'] : null
+            );
+            $aircraftPayload = $this->aircraftPayloads->build($legacyProfile);
+            $type = [
+                'value' => $aircraftPayload['parameters']['type'],
+                'source' => $legacyProfile['source'],
+            ];
+            $simbriefStrategy = $legacyProfile['strategy'];
+            $simbriefDisplayType = $legacyProfile['actual_icao'];
+            $simbriefDisplayName = $legacyProfile['actual_name'];
+            $simbriefProfileSummary = [
+                'strategy' => $legacyProfile['strategy'],
+                'actual_icao' => $legacyProfile['actual_icao'],
+                'actual_name' => $legacyProfile['actual_name'],
+                'calculation_type' => $legacyProfile['type'],
+                'proxy_type' => $legacyProfile['proxy_type'],
+                'internal_id' => $legacyProfile['internal_id'],
+                'airframe_db_id' => $legacyProfile['airframe_db_id'],
+            ];
+        }
 
         $origin = $this->airportFromFlight($flight->dpt_airport, (string) $flight->dpt_airport_id, 'départ');
         $destination = $this->airportFromFlight($flight->arr_airport, (string) $flight->arr_airport_id, 'arrivée');
@@ -125,10 +199,13 @@ class SimBriefOperationResolver
         }
 
         $profile = $this->demand->profile($aircraft, $flight, $operationId);
-        $maxPax = $this->aircraftPayloads->maxPassengers($aircraftProfile);
+        $technicalMaxPax = $technicalProfile['effective']['max_pax'] ?? null;
+        $maxPax = is_numeric($technicalMaxPax) && (int) $technicalMaxPax > 0
+            ? (int) $technicalMaxPax
+            : ($legacyProfile ? $this->aircraftPayloads->maxPassengers($legacyProfile) : null);
         if ($maxPax !== null && $maxPax > 0) {
             $profile['capacity'] = $maxPax;
-            $profile['capacity_source'] = 'sb_airframe';
+            $profile['capacity_source'] = $hasConfiguredTechnicalProfile ? 'aircraft_configuration' : 'sb_airframe';
             $profile['passengers'] = min(
                 $maxPax,
                 max(0, (int) round($maxPax * (float) $profile['load_factor_percent'] / 100))
@@ -152,7 +229,7 @@ class SimBriefOperationResolver
         if ($maxPax !== null && $planningPax !== null) {
             abort_if((int) $planningPax > $maxPax, 422,
                 'Le nombre de passagers demandé ('.(int) $planningPax.') dépasse la capacité réelle sb-airframe '
-                .$maxPax.' de '.$aircraftProfile['actual_icao'].'.');
+                .$maxPax.' de '.$simbriefDisplayType.'.');
         }
 
         $parameters = array_merge($aircraftPayload['parameters'], array_filter([
@@ -180,7 +257,19 @@ class SimBriefOperationResolver
             'stepclimbs' => (string) $value('stepclimbs'),
             'etops' => (string) $value('etops'),
             'find_sidstar' => $value('find_sidstar'),
-            'cruise' => $value('cruise'),
+            'fuelfactor' => $value(
+                'fuelfactor',
+                $this->simBriefFuelFactor($technicalProfile['effective']['fuel_factor'] ?? null)
+            ),
+            'climb' => $value('climb', $technicalProfile['effective']['climb_profile'] ?? null),
+            'cruise' => $value('cruise', $technicalProfile['effective']['cruise_profile'] ?? null),
+            'descent' => $value('descent', $technicalProfile['effective']['descent_profile'] ?? null),
+            'equipment' => $value('equipment', $technicalProfile['effective']['equipment'] ?? null),
+            'transponder' => $value('transponder', $technicalProfile['effective']['transponder'] ?? null),
+            'pbn' => $value('pbn', $technicalProfile['effective']['pbn'] ?? null),
+            'acdata' => !empty($technicalProfile['simbrief']['acdata'])
+                ? json_encode($technicalProfile['simbrief']['acdata'], JSON_UNESCAPED_SLASHES)
+                : null,
             'civalue' => $value('civalue'),
             'contpct' => $value('contpct'),
             'resvrule' => $value('resvrule'),
@@ -194,15 +283,15 @@ class SimBriefOperationResolver
 
         logger()->info('[SimBrief] Aircraft profile resolved', [
             'aircraft_registration' => $aircraft->registration,
-            'actual_icao' => $aircraftProfile['actual_icao'],
-            'strategy' => $aircraftProfile['strategy'],
-            'calculation_type' => $aircraftProfile['type'],
-            'proxy_aircraft' => $aircraftProfile['proxy_type'],
-            'internal_id' => $aircraftProfile['internal_id'],
+            'actual_icao' => $simbriefDisplayType,
+            'strategy' => $simbriefStrategy,
+            'calculation_type' => $type['value'],
+            'proxy_aircraft' => $technicalSimBrief['proxy_type'] ?? ($legacyProfile['proxy_type'] ?? null),
+            'internal_id' => $technicalSimBrief['internal_id'] ?? ($legacyProfile['internal_id'] ?? null),
             'pax' => $planningPax,
             'maxpax' => $maxPax,
-            'mtow_kg' => $aircraftProfile['config']['weights_kg']['mtow'] ?? null,
-            'fuelfactor' => $aircraftProfile['config']['performance']['fuelfactor'] ?? null,
+            'mtow' => $technicalProfile['effective']['mtow'] ?? ($legacyProfile['config']['weights_kg']['mtow'] ?? null),
+            'fuelfactor' => $technicalProfile['effective']['fuel_factor'] ?? ($legacyProfile['config']['performance']['fuelfactor'] ?? null),
         ]);
 
         return [
@@ -235,20 +324,19 @@ class SimBriefOperationResolver
                 'subfleet_id' => $aircraft->subfleet_id,
                 'subfleet' => $aircraft->subfleet?->name,
                 'simbrief_type' => $type['value'],
-                'simbrief_display_type' => $aircraftProfile['actual_icao'],
+                'simbrief_display_type' => $simbriefDisplayType,
                 'simbrief_type_source' => $type['source'],
-                'simbrief_strategy' => $aircraftProfile['strategy'],
-                'simbrief_profile' => [
-                    'strategy' => $aircraftProfile['strategy'],
-                    'actual_icao' => $aircraftProfile['actual_icao'],
-                    'actual_name' => $aircraftProfile['actual_name'],
-                    'calculation_type' => $aircraftProfile['type'],
-                    'proxy_type' => $aircraftProfile['proxy_type'],
-                    'airframe_db_id' => $aircraftProfile['airframe_db_id'],
-                    'maxpax' => $maxPax,
-                ],
+                'simbrief_strategy' => $simbriefStrategy,
+                'simbrief_profile' => array_merge($simbriefProfileSummary, ['maxpax' => $maxPax]),
                 'type_key' => $this->demand->typeKey($aircraft),
                 'type_label' => $this->demand->typeLabel($aircraft),
+                // "variant" is retained for old Hermès builds: historically
+                // it meant the simulator/add-on profile, not the real variant.
+                'variant' => $variant,
+                'simulator_profile' => $variant,
+                'historical_variant' => $technicalProfile['variant'] ?? null,
+                'configuration' => $technicalProfile['configuration'] ?? null,
+                'resolved_profile' => $technicalProfile,
                 'variant' => $variant,
             ],
             'demand' => $profile,
@@ -264,8 +352,13 @@ class SimBriefOperationResolver
                 'aircraft' => 'aircraft',
                 'subfleet' => 'subfleets',
                 'simbrief_type' => $type['source'],
-                'simbrief_profile' => $aircraftProfile['source'],
-                'aircraft_variant' => $variant ? 'promethee_operation_aircraft_variants' : null,
+                'simbrief_profile' => $hasConfiguredTechnicalProfile
+                    ? 'aircraft_configuration.'.($technicalSimBrief['source'] ?? 'resolved')
+                    : ($legacyProfile['source'] ?? null),
+                'aircraft_variant' => $technicalProfile['variant'] ? 'promethee_aircraft_historical_variants' : null,
+                'aircraft_configuration' => $technicalProfile['configuration'] ? 'promethee_airframe_configurations' : null,
+                'registration_profile' => $technicalProfile['period'] ? 'promethee_aircraft_configuration_assignments' : null,
+                'simulator_profile' => $variant ? 'promethee_operation_aircraft_variants' : null,
                 'passengers' => 'DemandProfileService',
                 'fares' => 'FareService',
             ],
@@ -455,6 +548,18 @@ class SimBriefOperationResolver
             'timezone' => $airport->timezone,
             'source' => $source,
         ];
+    }
+
+    private function simBriefFuelFactor(mixed $factor): ?string
+    {
+        if ($factor === null || $factor === '' || !is_numeric($factor)) return null;
+
+        $value = round((float) $factor, 1);
+        $prefix = $value < 0 ? 'M' : 'P';
+        $absolute = abs($value);
+        $formatted = rtrim(rtrim(number_format($absolute, 1, '.', ''), '0'), '.');
+
+        return $prefix.str_pad($formatted, 2, '0', STR_PAD_LEFT);
     }
 
     private function effectiveFares(Flight $flight, Aircraft $aircraft, int $cabinCapacity): array
