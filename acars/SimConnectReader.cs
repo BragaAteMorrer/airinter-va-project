@@ -89,7 +89,7 @@ public sealed class SimConnectReader : ISimulatorConnector
         } catch(DllNotFoundException ex){System.Diagnostics.Trace.WriteLine(ex);Status="Simulateur non détecté";Close();}
           catch(BadImageFormatException ex){System.Diagnostics.Trace.WriteLine(ex);Status="Simulateur non détecté";Close();}
           catch(Exception ex) when(ex is COMException or EntryPointNotFoundException){System.Diagnostics.Trace.WriteLine(ex);Status="Connexion au simulateur interrompue";Close();}
-        if(Latest is not null && LatestSnapshot?.Paused != true && DateTimeOffset.UtcNow-Latest.RecordedAt>TimeSpan.FromSeconds(15)) Status="Simulateur non détecté";
+        if(LatestSnapshot is not null && LatestSnapshot.Paused != true && DateTimeOffset.UtcNow-LatestSnapshot.RecordedAt>TimeSpan.FromSeconds(15)) Status="Simulateur non détecté";
     }
     private void Receive(IntPtr data,uint length,IntPtr context)
     {
