@@ -164,6 +164,34 @@ html:not([data-era="minitel"]) .departure-board .dispatch-flight .duration { let
 .live-aircraft { position: absolute; color: var(--ops-red); font-size: 21px; transform: translate(-50%,-50%); text-decoration: none; text-shadow: 0 1px 1px #fff; }
 .live-aircraft span { display: block; font: 10px Consolas,monospace; color: var(--ops-dark); background: #ffffffe8; padding: 1px 3px; border-radius: 2px; }
 .replay-dot { position:absolute; width:15px; height:15px; border-radius:50%; transform:translate(-50%,-50%); background:var(--ops-red); border:3px solid white; box-shadow:0 1px 5px #1236; }
+.itinerary-panel { border-left: 4px solid var(--ops-blue); }
+.itinerary-intro { margin: -6px 0 18px; }
+.itinerary-grid { display: grid; gap: 14px; }
+.itinerary-card { border: 1px solid var(--line); border-radius: 7px; padding: 18px; background: var(--panel); display: grid; gap: 14px; }
+.itinerary-card h3 { margin: 5px 0 0; font-size: 20px; }
+.itinerary-summary { display: flex; gap: 8px; flex-wrap: wrap; }
+.itinerary-summary span { border: 1px solid var(--line); border-radius: 999px; padding: 5px 9px; font-size: 10px; color: var(--muted); }
+.itinerary-legs { display: grid; gap: 7px; }
+.itinerary-leg { display: grid; grid-template-columns: 28px minmax(150px,1fr) minmax(120px,.8fr) auto; align-items: center; gap: 10px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 6px; background: #f8fafc; }
+.itinerary-leg-index { display: grid; place-items: center; width: 25px; height: 25px; border-radius: 50%; background: var(--ops-blue); color: #fff; font: 700 11px Consolas,monospace; }
+.itinerary-leg strong,.itinerary-leg span { display: block; }
+.itinerary-leg span { font-size: 11px; }
+.itinerary-leg-time { text-align: right; }
+.itinerary-leg-time small { color: var(--muted); font-size: 10px; }
+.itinerary-leg-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.itinerary-reserve { display: flex; justify-content: flex-end; margin: 0; }
+.itinerary-reserve input[type="hidden"] { display: none; }
+html[data-era="2000"] .itinerary-card,
+html[data-era="2000"] .itinerary-leg { border-radius: 0; box-shadow: 2px 2px 0 #7f93b3; }
+html[data-era="minitel"] .itinerary-panel { border-left-color: #99edb1; }
+html[data-era="minitel"] .itinerary-card,
+html[data-era="minitel"] .itinerary-leg { background: #07130c; border-color: #285e39; border-radius: 0; box-shadow: none; }
+html[data-era="minitel"] .itinerary-leg-index { background: #99edb1; color: #07130c; }
+html[data-era="minitel"] .itinerary-summary span { border-color: #285e39; color: #99edb1; }
+@media (max-width:760px) {
+  .itinerary-leg { grid-template-columns: 28px 1fr auto; }
+  .itinerary-leg-time { grid-column: 2 / -1; text-align: left; }
+}
 .flight-cards { display: grid; grid-template-columns: repeat(auto-fill,minmax(300px,1fr)); gap: 16px; }
 .line-card { display: grid; gap: 16px; }
 .line-card-head { display: flex; justify-content: space-between; gap: 12px; }
