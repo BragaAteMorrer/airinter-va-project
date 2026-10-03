@@ -7,6 +7,7 @@ use App\Models\Bid;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Modules\Promethee\Services\BrandingService;
+use Modules\Promethee\Services\LegacyPirepScoringService;
 use Modules\Promethee\Services\OperationIdentityService;
 use Modules\Promethee\Services\SopEngineService;
 use RuntimeException;
@@ -18,7 +19,8 @@ class SopController extends Controller
 
     public function __construct(
         private readonly SopEngineService $sop,
-        private readonly OperationIdentityService $operationIdentity
+        private readonly OperationIdentityService $operationIdentity,
+        private readonly LegacyPirepScoringService $scoring
     ) {}
 
     public function index(string $operation, Request $request)
@@ -80,11 +82,35 @@ class SopController extends Controller
     {
         return view('promethee::admin.sop', [
             'branding' => app(BrandingService::class)->active(),
+            'scoringRules' => $this->scoring->configurationRules(),
             'rules' => $this->sop->rules(),
             'alerts' => $this->sop->recentDispatchAlerts(100),
             'operators' => self::OPERATORS,
             'severities' => self::SEVERITIES,
         ]);
+    }
+
+    public function saveScoringRule(string $rule, Request $request)
+    {
+        $data = $request->validate([
+            'parameter' => 'nullable|integer|min:-100000|max:100000',
+            'points' => 'required|integer|min:0|max:100',
+            'delay' => 'required|integer|min:0|max:3600',
+            'cooldown' => 'required|integer|min:0|max:86400',
+            'enabled' => 'nullable|boolean',
+            'repeatable' => 'nullable|boolean',
+        ]);
+
+        $data['enabled'] = $request->boolean('enabled');
+        $data['repeatable'] = $request->boolean('repeatable');
+
+        try {
+            $this->scoring->updateRuleConfiguration($rule, $data);
+        } catch (RuntimeException $exception) {
+            return back()->withErrors(['scoring' => $exception->getMessage()])->withInput();
+        }
+
+        return back()->with('success', 'Barème Hermès mis à jour.');
     }
 
     public function saveRule(Request $request, ?string $rule = null)
