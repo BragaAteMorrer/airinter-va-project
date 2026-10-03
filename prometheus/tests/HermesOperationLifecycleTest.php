@@ -580,6 +580,61 @@ final class HermesOperationLifecycleTest extends TestCase
         ];
     }
 
+    public function test_scoring_telemetry_fields_are_preserved_for_debrief(): void
+    {
+        $fx = $this->operationFixture();
+        $pirepId = $this->prefile($fx);
+        $at = now();
+
+        $this->post(
+            '/api/v1/operations/'.$fx['operation_id'].'/telemetry',
+            ['samples' => [[
+                'sample_id' => (string) Str::uuid(),
+                'recorded_at' => $at->toIso8601String(),
+                'phase' => 'LANDING',
+                'lat' => 48.7,
+                'lon' => 2.3,
+                'altitude_msl' => 900,
+                'agl' => 600,
+                'ias' => 140,
+                'gs' => 125,
+                'vs' => -500,
+                'heading' => 180,
+                'fuel' => 5000,
+                'bank' => 3,
+                'pitch' => 2,
+                'g_force' => 1.15,
+                'on_ground' => false,
+                'engines_running' => [true, true],
+                'beacon_light' => true,
+                'landing_light' => true,
+                'slew_active' => false,
+                'simulation_rate' => 1,
+                'overspeed_warning' => false,
+                'stall_warning' => false,
+                'reverser_percent' => [0, 0],
+            ]]],
+            [],
+            $fx['user']
+        )->assertOk();
+
+        $row = DB::table('promethee_telemetry')
+            ->where('pirep_id', $pirepId)
+            ->orderByDesc('recorded_at')
+            ->first();
+
+        $this->assertNotNull($row);
+        $payload = json_decode((string) $row->payload, true, flags: JSON_THROW_ON_ERROR);
+        $this->assertSame([true, true], $payload['engines_running']);
+        $this->assertTrue($payload['beacon_light']);
+        $this->assertTrue($payload['landing_light']);
+        $this->assertSame(1.15, (float) $payload['g_force']);
+        $this->assertFalse($payload['overspeed_warning']);
+        $this->assertFalse($payload['stall_warning']);
+        $this->assertSame([0, 0], $payload['reverser_percent']);
+        $this->assertSame(1.0, (float) $payload['simulation_rate']);
+    }
+
     private function minimalSimBriefXml(): string
     {
         return <<<'XML'
