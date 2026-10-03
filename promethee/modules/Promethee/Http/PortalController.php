@@ -1854,12 +1854,8 @@ class PortalController extends Controller
         if ($r->filled('q')) {
             $raw = trim((string) $filters['q']);
             $term = '%'.strtoupper($raw).'%';
-            $airportIds = Airport::query()->where(fn ($airports) => $airports
-                ->where('id', 'like', $term)->orWhere('icao', 'like', $term)->orWhere('iata', 'like', $term)
-                ->orWhere('name', 'like', '%'.$raw.'%')->orWhere('location', 'like', '%'.$raw.'%'))->pluck('id');
-            $q->where(fn ($flights) => $flights->where('flight_number', 'like', $term)
-                ->orWhere('callsign', 'like', $term)->orWhere('route_code', 'like', $term)
-                ->orWhereIn('dpt_airport_id', $airportIds)->orWhereIn('arr_airport_id', $airportIds));
+            $airportIds = Airport::query()->where(fn ($airports) => $airports->where('id','like',$term)->orWhere('icao','like',$term)->orWhere('iata','like',$term)->orWhere('name','like','%'.$raw.'%')->orWhere('location','like','%'.$raw.'%'))->pluck('id');
+            $q->where(fn ($flights) => $flights->where('flight_number','like',$term)->orWhere('callsign','like',$term)->orWhere('route_code','like',$term)->orWhereIn('dpt_airport_id',$airportIds)->orWhereIn('arr_airport_id',$airportIds));
         }
 
         $sort = $filters['sort'] ?? 'departure';
