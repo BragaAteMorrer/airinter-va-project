@@ -2,12 +2,54 @@
 
 namespace Tests;
 
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Modules\Promethee\Services\LegacyPirepScoringService;
 
 final class LegacyPirepScoringConfigurationTest extends TestCase
 {
-    public function test_admin_configuration_exposes_historical_vmsacars_profile(): void
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        if (!Schema::hasTable('vmsacars_rules')) {
+            Schema::create('vmsacars_rules', function (Blueprint $table) {
+                $table->string('id', 50)->primary();
+                $table->string('name');
+                $table->string('description')->nullable();
+                $table->integer('parameter')->nullable();
+                $table->unsignedInteger('points')->default(5);
+                $table->boolean('enabled')->default(true);
+                $table->boolean('has_parameter')->default(true);
+                $table->boolean('repeatable')->default(false);
+                $table->unsignedInteger('delay')->default(0);
+                $table->unsignedInteger('cooldown')->default(0);
+                $table->unsignedInteger('order')->default(0);
+                $table->timestamps();
+            });
+        }
+
+        DB::table('vmsacars_rules')->updateOrInsert(
+            ['id' => 'EXCESS_TAXI_SPEED'],
+            [
+                'name' => 'Excess Taxi Speed',
+                'description' => 'If an aircraft exceeds this speed while taxiing (knots)',
+                'parameter' => 25,
+                'points' => 5,
+                'enabled' => true,
+                'has_parameter' => true,
+                'repeatable' => true,
+                'delay' => 30,
+                'cooldown' => 60,
+                'order' => 30,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
+    }
+
+    public function test_admin_configuration_exposes_authoritative_vmsacars_profile(): void
     {
         $service = app(LegacyPirepScoringService::class);
 
