@@ -65,6 +65,21 @@ expect(hermesTheme.includes('prefers-reduced-motion'),
   'Hermès theme CSS must preserve prefers-reduced-motion handling.');
 expect(hermesTheme.includes('focus-visible'),
   'Hermès theme CSS must preserve visible keyboard focus handling.');
+
+const hermesOverrides = read('acars/wwwroot/layout-overrides.css');
+expect(hermesIndex.includes('class="rail-nav-label"')
+    && hermesIndex.includes('class="display-settings"')
+    && hermesIndex.includes('20261003-ops-ui-phase2'),
+  'Hermès must preserve the grouped operational navigation and refreshed asset revision.');
+expect(hermesApp.includes('data-tab') || hermesIndex.includes('data-tab="flight"'),
+  'Hermès navigation must keep data-tab based workspace routing.');
+expect(read('acars/wwwroot/styles.css').includes('Audit UX phase 2 — operational visual consolidation.')
+    && read('acars/wwwroot/styles.css').includes('--radius:8px;')
+    && read('acars/wwwroot/styles.css').includes('.rail-nav-label'),
+  'Hermès must preserve the compact operational visual system.');
+expect(!hermesOverrides.includes('.rail')
+    && !hermesOverrides.includes('#selectedOperation.prefile'),
+  'Hermès layout hotfixes must stay consolidated in the canonical stylesheet.');
 expect(prometheeV2.includes('prefers-reduced-motion'),
   'Prométhée v2 CSS must preserve prefers-reduced-motion handling.');
 expect(prometheeV2.includes('focus-visible'),
