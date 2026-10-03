@@ -8,20 +8,26 @@
         <h1>Ma documentation Air Inter.</h1>
         <p>Les procédures générales et les documents correspondant aux appareils auxquels votre profil donne accès.</p>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <a class="button outline" href="{{ route('promethee.documents') }}">Toute la documentation</a>
-        <a class="button outline" href="{{ route('promethee.downloads') }}">Centre de téléchargements</a>
+    <div class="documentation-header-actions">
+        <a class="button outline" href="{{ route('promethee.documents') }}">Bibliothèque complète</a>
+        <a class="button outline" href="{{ route('promethee.downloads') }}">Ressources techniques</a>
     </div>
 </div>
+<nav class="pilot-hub-nav documentation-hub-nav" aria-label="Documentation Air Inter">
+    <a href="#my-documentation">Pour mon profil <span>{{ $documents->count() }}</span></a>
+    <a href="{{ route('promethee.documents') }}">Bibliothèque complète <span>{{ $allDocumentsCount }}</span></a>
+    <a href="{{ route('promethee.downloads') }}">Ressources techniques <span>↗</span></a>
+</nav>
+
 
 <section class="control-strip">
     <article><span>Documents pour vous</span><strong>{{ $documents->count() }}</strong><small>sur {{ $allDocumentsCount }} document(s)</small></article>
-    <article><span>Grade actuel</span><strong style="font-size:18px">{{ $pilot->rank?->name ?? 'Pilote' }}</strong><small>{{ $pilot->ident ?? $pilot->pilot_id }}</small></article>
+    <article><span>Grade actuel</span><strong class="documentation-rank">{{ $pilot->rank?->name ?? 'Pilote' }}</strong><small>{{ $pilot->ident ?? $pilot->pilot_id }}</small></article>
     <article><span>Types accessibles</span><strong>{{ $aircraftTypes->count() }}</strong><small>{{ $aircraftTypes->take(3)->implode(' · ') ?: 'Aucun type spécifique' }}</small></article>
     <article><span>Bibliothèque</span><strong>{{ $sections->count() }}</strong><small>rubrique(s) utile(s)</small></article>
 </section>
 
-<section class="panel">
+<section class="panel" id="my-documentation">
     <div class="panel-heading">
         <div>
             <span class="eyebrow">RECHERCHE</span>
@@ -60,7 +66,7 @@
                 <option value="image">Image</option>
             </select>
         </label>
-        <div style="align-self:end"><button class="button outline" type="button" id="my-doc-reset">Réinitialiser</button></div>
+        <div class="documentation-filter-action"><button class="button outline" type="button" id="my-doc-reset">Réinitialiser</button></div>
     </div>
 </section>
 
