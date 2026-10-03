@@ -16,6 +16,7 @@ use Modules\Promethee\Models\AircraftTypeProfile;
 use Modules\Promethee\Models\AirframeConfiguration;
 use Modules\Promethee\Models\AirframeSimulatorProfile;
 use Modules\Promethee\Services\AircraftConfigurationResolver;
+use Modules\Promethee\Services\BrandingService;
 
 class AircraftConfigurationAdminController extends Controller
 {
@@ -26,7 +27,10 @@ class AircraftConfigurationAdminController extends Controller
         'Navigation', 'Seats', 'Doors', 'Cargo', 'Electrical', 'Other',
     ];
 
-    public function __construct(private readonly AircraftConfigurationResolver $resolver) {}
+    public function __construct(
+        private readonly AircraftConfigurationResolver $resolver,
+        private readonly BrandingService $branding
+    ) {}
 
     public function index()
     {
@@ -70,6 +74,7 @@ class AircraftConfigurationAdminController extends Controller
             'confidenceOptions' => self::CONFIDENCE,
             'strategyOptions' => self::STRATEGIES,
             'modificationCategories' => self::MOD_CATEGORIES,
+            'branding' => $this->branding->active(),
         ]);
     }
 
