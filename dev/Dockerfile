@@ -4,7 +4,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends libicu-dev libz
  && docker-php-ext-install -j2 bcmath intl mbstring pdo_mysql zip gd pcntl soap \
  && rm -rf /var/lib/apt/lists/*
 WORKDIR /var/www/html
-COPY prometheus/ /var/www/html/
+COPY promethee/ /var/www/html/
 COPY dev/ /opt/promethee/
 RUN php /opt/promethee/restore-vendor.php \
  && mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs storage/app bootstrap/cache \
