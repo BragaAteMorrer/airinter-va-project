@@ -1,6 +1,10 @@
 @extends('promethee::layout')
 @section('title','SOP & scoring Hermès')
+@push('styles')
+<link rel="stylesheet" href="{{ asset('promethee-assets/promethee-admin-workspaces.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-admin-workspaces.css')) }}">
+@endpush
 @section('content')
+<div class="admin-workspace-page">
 <div class="ops-header compact">
     <div>
         <span class="eyebrow">AIR INTER · FLIGHT STANDARDS</span>
@@ -8,12 +12,19 @@
         <p>Le barème PIREP ci-dessous est la configuration réellement utilisée pour le score Hermès. Les règles SOP restent un moteur de supervision séparé, sans retrait de points.</p>
     </div>
 </div>
+<nav class="admin-workspace-nav" aria-label="Navigation locale">
+  <a href="#sop-scoring">Barème Hermès</a>
+  <a href="#sop-create">Créer une règle</a>
+  <a href="#sop-rules">Règles SOP</a>
+  <a href="#sop-alerts">Alertes Dispatch</a>
+</nav>
+
 
 @if(session('success')) <div class="notice success">{{ session('success') }}</div> @endif
 @if($errors->any()) <div class="notice warning">{{ $errors->first() }}</div> @endif
 
 
-<section class="panel">
+<section class="panel admin-workspace-section" id="sop-scoring">
     <div class="panel-heading">
         <div>
             <span class="eyebrow">BARÈME HERMÈS · SOURCE AUTORITATIVE</span>
@@ -30,7 +41,7 @@
     @if(!$scoringRules)
         <div class="notice warning">Le barème vmsACARS est indisponible. Vérifiez les migrations du module VMSAcars.</div>
     @else
-    <div class="table-scroll">
+    <div class="table-scroll admin-table-scroll">
         <table>
             <thead>
                 <tr>
@@ -60,15 +71,15 @@
                     </td>
                     <td>
                         @if($rule['has_parameter'])
-                            <input form="{{ $formId }}" name="parameter" type="number" step="1" value="{{ $rule['parameter'] }}" required style="min-width:7rem">
+                            <input form="{{ $formId }}" name="parameter" type="number" step="1" value="{{ $rule['parameter'] }}" required class="admin-field-lg">
                         @else
                             <span class="muted">—</span>
                         @endif
                     </td>
-                    <td><input form="{{ $formId }}" name="points" type="number" min="0" max="100" step="1" value="{{ $rule['points'] }}" required style="min-width:6rem"></td>
-                    <td><input form="{{ $formId }}" name="delay" type="number" min="0" max="3600" step="1" value="{{ $rule['delay'] }}" required style="min-width:6rem"></td>
+                    <td><input form="{{ $formId }}" name="points" type="number" min="0" max="100" step="1" value="{{ $rule['points'] }}" required class="admin-field-md"></td>
+                    <td><input form="{{ $formId }}" name="delay" type="number" min="0" max="3600" step="1" value="{{ $rule['delay'] }}" required class="admin-field-md"></td>
                     <td><input form="{{ $formId }}" name="repeatable" type="checkbox" value="1" @checked($rule['repeatable'])></td>
-                    <td><input form="{{ $formId }}" name="cooldown" type="number" min="0" max="86400" step="1" value="{{ $rule['cooldown'] }}" required style="min-width:6rem"></td>
+                    <td><input form="{{ $formId }}" name="cooldown" type="number" min="0" max="86400" step="1" value="{{ $rule['cooldown'] }}" required class="admin-field-md"></td>
                     <td><input form="{{ $formId }}" name="enabled" type="checkbox" value="1" @checked($rule['enabled'])></td>
                     <td>
                         <form id="{{ $formId }}" method="post" action="{{ route('admin.promethee.sop.scoring.update', $rule['id']) }}">
@@ -85,7 +96,7 @@
     @endif
 </section>
 
-<section class="panel">
+<section class="panel admin-workspace-section" id="sop-create">
     <div class="panel-heading"><div><span class="eyebrow">SUPERVISION SOP · SANS IMPACT SCORE</span><h2>Créer une règle SOP</h2></div></div>
     <form method="post" action="{{ route('admin.promethee.sop.rules.save') }}" class="form-grid">
         @csrf
@@ -108,7 +119,7 @@
     <p class="muted">Variables disponibles : <code>{value}</code>, <code>{unit}</code>, <code>{code}</code>, <code>{phase}</code>, <code>{message}</code>.</p>
 </section>
 
-<section class="panel">
+<section class="panel admin-workspace-section" id="sop-rules">
     <div class="panel-heading"><div><span class="eyebrow">POLITIQUE COMPAGNIE · SUPERVISION</span><h2>Règles SOP / alertes</h2></div><span>{{ count($rules) }} règle(s)</span></div>
     <p class="muted">Ces règles évaluent les faits remontés par Hermès pour la revue pilote et le Dispatch. Elles ne modifient pas le score PIREP.</p>
     <div class="route-list">
@@ -141,12 +152,12 @@
     </div>
 </section>
 
-<section class="panel">
+<section class="panel admin-workspace-section" id="sop-alerts">
     <div class="panel-heading"><div><span class="eyebrow">DISPATCH ALERTS</span><h2>Évaluations récentes</h2></div><span>{{ count($alerts) }}</span></div>
     @if(!$alerts)
         <p class="muted">Aucune alerte SOP reçue.</p>
     @else
-    <div class="table-scroll"><table>
+    <div class="table-scroll admin-table-scroll"><table>
         <thead><tr><th>Heure</th><th>Opération</th><th>Règle</th><th>Fait</th><th>Sévérité</th><th>Observation</th><th>État</th></tr></thead>
         <tbody>
         @foreach($alerts as $alert)
@@ -174,4 +185,5 @@
     </table></div>
     @endif
 </section>
+</div>
 @endsection
