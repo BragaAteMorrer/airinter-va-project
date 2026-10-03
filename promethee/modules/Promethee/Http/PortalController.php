@@ -1852,32 +1852,14 @@ class PortalController extends Controller
         if ($r->filled('time_from')) $q->where('dpt_time', '>=', $filters['time_from']);
         if ($r->filled('time_to')) $q->where('dpt_time', '<=', $filters['time_to']);
         if ($r->filled('q')) {
-            $rawTerm = trim((string) $filters['q']);
-            $upperTerm = strtoupper($rawTerm);
-            $term = '%'.$rawTerm.'%';
-            $upperLike = '%'.$upperTerm.'%';
-
-            $q->where(function ($flights) use ($term, $upperLike) {
-                $flights->where('flight_number', 'like', $upperLike)
-                    ->orWhere('callsign', 'like', $upperLike)
-                    ->orWhere('route_code', 'like', $upperLike)
-                    ->orWhere('dpt_airport_id', 'like', $upperLike)
-                    ->orWhere('arr_airport_id', 'like', $upperLike)
-                    ->orWhereHas('dpt_airport', function ($airports) use ($term, $upperLike) {
-                        $airports->where('id', 'like', $upperLike)
-                            ->orWhere('icao', 'like', $upperLike)
-                            ->orWhere('iata', 'like', $upperLike)
-                            ->orWhere('name', 'like', $term)
-                            ->orWhere('location', 'like', $term);
-                    })
-                    ->orWhereHas('arr_airport', function ($airports) use ($term, $upperLike) {
-                        $airports->where('id', 'like', $upperLike)
-                            ->orWhere('icao', 'like', $upperLike)
-                            ->orWhere('iata', 'like', $upperLike)
-                            ->orWhere('name', 'like', $term)
-                            ->orWhere('location', 'like', $term);
-                    });
-            });
+            $raw = trim((string) $filters['q']);
+            $term = '%'.strtoupper($raw).'%';
+            $airportIds = Airport::query()->where(fn ($airports) => $airports
+                ->where('id', 'like', $term)->orWhere('icao', 'like', $term)->orWhere('iata', 'like', $term)
+                ->orWhere('name', 'like', '%'.$raw.'%')->orWhere('location', 'like', '%'.$raw.'%'))->pluck('id');
+            $q->where(fn ($flights) => $flights->where('flight_number', 'like', $term)
+                ->orWhere('callsign', 'like', $term)->orWhere('route_code', 'like', $term)
+                ->orWhereIn('dpt_airport_id', $airportIds)->orWhereIn('arr_airport_id', $airportIds));
         }
 
         $sort = $filters['sort'] ?? 'departure';
