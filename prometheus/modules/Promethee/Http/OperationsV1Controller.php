@@ -11,6 +11,8 @@ use App\Models\Enums\AircraftState;
 use App\Models\Enums\AircraftStatus;
 use App\Models\SimBrief;
 use App\Models\Pirep;
+use App\Models\PirepFare;
+use App\Models\Enums\FareType;
 use App\Models\Enums\PirepSource;
 use App\Models\Enums\PirepState;
 use App\Models\Enums\PirepStatus;
@@ -776,6 +778,7 @@ class OperationsV1Controller extends Controller
             'route' => 'nullable|string|max:4000',
             'level' => 'nullable|integer|min:10|max:600',
             'block_fuel' => 'nullable|numeric|min:0',
+            'passengers' => 'nullable|integer|min:0|max:1000',
             'simbrief_source' => 'nullable|string|in:simbrief_account,simbrief_api,simbrief',
         ]);
         abort_if(!$ofp && empty($plan['simbrief_source']), 409, 'Préparez ou importez l’OFP SimBrief avant le PIREP.');
@@ -800,7 +803,15 @@ class OperationsV1Controller extends Controller
             'source_name' => 'Hermes ACARS ['.$operationId.']',
         ];
 
-        $pirep = $this->pirepSvc->prefile($request->user(), $attrs, [], []);
+        // Persist the actual SimBrief/Hermès passenger load into phpVMS
+        // PIREP fares. Previously the operation API discarded this value, which
+        // left completed Hermès reports at 0 pax even though the OFP contained it.
+        $passengers = array_key_exists('passengers', $plan)
+            ? (int) $plan['passengers']
+            : $this->simBriefPassengerCount($ofp);
+        $pirepFares = $this->pirepFaresForPassengers($ofp, $passengers);
+
+        $pirep = $this->pirepSvc->prefile($request->user(), $attrs, [], $pirepFares);
 
         // Freeze the exact technical identity used by this operation. The
         // aircraft_id already preserves the physical registration; this
@@ -837,6 +848,7 @@ class OperationsV1Controller extends Controller
             'pirep' => $this->pirepDto($pirep),
             'pirep_id' => $pirep->id,
             'simbrief_id' => $ofp?->id,
+            'passengers' => $passengers,
             'correlation' => [
                 'operation' => $operationId,
                 'bid' => $bid->id,
@@ -846,6 +858,84 @@ class OperationsV1Controller extends Controller
                 'pirep' => $pirep->id,
             ],
         ]], 201);
+    }
+
+    private function simBriefPassengerCount(?SimBrief $ofp): ?int
+    {
+        if (!$ofp?->xml) return null;
+
+        foreach ([
+            (string) ($ofp->xml->weights->pax_count ?? ''),
+            (string) ($ofp->xml->general->passengers ?? ''),
+        ] as $candidate) {
+            if ($candidate !== '' && is_numeric($candidate)) {
+                return max(0, (int) round((float) $candidate));
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Translate the single OFP passenger total back into phpVMS fare rows.
+     * SimBrief stores the effective cabin definitions in fare_data; spread the
+     * real passenger total proportionally across those passenger cabins.
+     *
+     * @return PirepFare[]
+     */
+    private function pirepFaresForPassengers(?SimBrief $ofp, ?int $passengers): array
+    {
+        if (!$ofp || $passengers === null || empty($ofp->fare_data)) return [];
+
+        $decoded = json_decode((string) $ofp->fare_data, true);
+        if (!is_array($decoded)) return [];
+
+        $fares = collect($decoded)
+            ->filter(function ($fare) {
+                if (!is_array($fare)) return false;
+                $fareId = $fare['fare_id'] ?? $fare['id'] ?? null;
+                return filled($fareId) && (int) ($fare['type'] ?? -1) === FareType::PASSENGER;
+            })
+            ->values();
+
+        if ($fares->isEmpty()) return [];
+
+        $totalCapacity = (int) $fares->sum(fn (array $fare) => max(0, (int) ($fare['capacity'] ?? 0)));
+        $target = max(0, $passengers);
+        if ($totalCapacity > 0) $target = min($target, $totalCapacity);
+
+        $remaining = $target;
+        $lastIndex = $fares->count() - 1;
+        $rows = [];
+
+        foreach ($fares as $index => $fare) {
+            $capacity = max(0, (int) ($fare['capacity'] ?? 0));
+            if ($index === $lastIndex) {
+                $count = $capacity > 0 ? min($remaining, $capacity) : $remaining;
+            } elseif ($totalCapacity > 0) {
+                $count = min($remaining, $capacity, (int) round($target * ($capacity / $totalCapacity)));
+            } else {
+                $count = $index === 0 ? $remaining : 0;
+            }
+
+            $remaining -= $count;
+            $rows[] = new PirepFare([
+                'fare_id' => $fare['fare_id'] ?? $fare['id'],
+                'count' => max(0, $count),
+            ]);
+        }
+
+        // Rounding may leave a few passengers undistributed. Add them to the
+        // last cabin without ever exceeding its advertised capacity.
+        if ($remaining > 0 && $rows !== []) {
+            $lastFare = $fares[$lastIndex];
+            $lastCapacity = max(0, (int) ($lastFare['capacity'] ?? 0));
+            $lastRow = $rows[$lastIndex];
+            $room = $lastCapacity > 0 ? max(0, $lastCapacity - (int) $lastRow->count) : $remaining;
+            $lastRow->count = (int) $lastRow->count + min($remaining, $room);
+        }
+
+        return $rows;
     }
 
     private function bid(string $reference, Request $request): Bid
