@@ -137,10 +137,22 @@ html:not([data-era="minitel"]) .departure-board .dispatch-flight .duration { let
 .route-board article { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; background: #f8fafc; }
 .route-board i { height: 2px; background: linear-gradient(90deg,var(--ops-blue),var(--ops-red)); }
 .route-board span { grid-column: 1/-1; color: var(--muted); font-size: 11px; }
-.flight-filter { margin-bottom: 18px; }
-.flight-filter { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); align-items: end; }
-.flight-filter .filter-wide { grid-column: span 2; }
-.flight-filter button, .flight-filter > a { align-self: end; min-height: 40px; }
+/* Audit UX phase 11 — flight programme progressive disclosure. */
+.flight-filter { margin-bottom: 18px; padding: 0; overflow: hidden; }
+.flight-filter-primary { display: grid; grid-template-columns: minmax(240px,1.6fr) minmax(150px,.72fr) minmax(150px,.72fr) auto; gap: 14px; align-items: end; padding: 18px 20px; }
+.flight-filter-primary .filter-wide { min-width: 0; }
+.flight-filter-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; min-height: 40px; }
+.flight-filter-actions .text-button { white-space: nowrap; }
+.flight-filter-advanced { border-top: 1px solid var(--line); }
+.flight-filter-advanced > summary { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; padding: 12px 20px; color: var(--ink); cursor: pointer; list-style: none; background: color-mix(in srgb,var(--paper) 70%,var(--panel)); }
+.flight-filter-advanced > summary::-webkit-details-marker { display: none; }
+.flight-filter-advanced > summary strong { font-size: 11px; }
+.flight-filter-advanced > summary span { color: var(--muted); font-size: 10px; }
+.flight-filter-advanced > summary b { font-size: 13px; transition: transform .14s ease; }
+.flight-filter-advanced[open] > summary b { transform: rotate(180deg); }
+.flight-filter-advanced-grid { display: grid; grid-template-columns: repeat(4,minmax(135px,1fr)); gap: 14px; padding: 16px 20px 4px; }
+.flight-filter-advanced-actions { display: flex; justify-content: flex-end; padding: 12px 20px 18px; }
+
 .directory-filter { margin-bottom: 22px; }
 .network-map-panel { padding-bottom: 16px; }
 .network-map-panel .panel-heading { margin-bottom: 10px; }
@@ -192,8 +204,25 @@ html[data-era="minitel"] .itinerary-summary span { border-color: #285e39; color:
   .itinerary-leg { grid-template-columns: 28px 1fr auto; }
   .itinerary-leg-time { grid-column: 2 / -1; text-align: left; }
 }
-.flight-cards { display: grid; grid-template-columns: repeat(auto-fill,minmax(300px,1fr)); gap: 16px; }
-.line-card { display: grid; gap: 16px; }
+/* Flight results are operational data: use one scan-friendly list instead of a card wall. */
+.flight-results-panel { padding: 0; overflow: hidden; }
+.flight-results-panel > .panel-heading { margin: 0; padding: 18px 20px; }
+.flight-results-panel .table-wrap { border-top: 1px solid var(--line); }
+.flight-results { margin: 0; }
+.flight-results th:first-child,.flight-results td:first-child { padding-left: 20px; }
+.flight-results th:last-child,.flight-results td:last-child { padding-right: 20px; }
+.flight-results td { vertical-align: middle; }
+.flight-results td > small { display: block; max-width: 260px; margin-top: 3px; overflow: hidden; color: var(--muted); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.flight-result-ident { color: var(--ops-dark); font: 750 13px/1.2 Consolas,monospace; letter-spacing: .03em; }
+.flight-result-route { display: flex; align-items: center; gap: 7px; color: var(--ops-dark); font: 750 14px/1.2 Consolas,monospace; }
+.flight-result-route span { color: var(--muted); font-weight: 400; }
+.flight-equipment-list { display: flex; flex-wrap: wrap; gap: 4px; }
+.flight-equipment-list > span { padding: 3px 6px; border: 1px solid var(--line); border-radius: 3px; background: var(--paper); color: var(--ink); font: 650 9px/1.2 Consolas,monospace; }
+.flight-equipment-list em { color: var(--muted); font-size: 10px; font-style: normal; }
+.flight-result-action-cell { width: 56px; text-align: right; }
+.flight-result-action-cell .round-link { margin-left: auto; }
+.flight-results-empty { padding: 28px 20px; }
+
 .line-card-head { display: flex; justify-content: space-between; gap: 12px; }
 .line-card h2 { font-size: 24px; margin: 5px 0 0; }
 .airport-pair { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; font: 700 23px Consolas, monospace; color: var(--ops-dark); }
@@ -490,6 +519,32 @@ html[data-era="modern"] {
 [data-era="modern"] :is(a,button,input,select,textarea,[tabindex]):focus-visible {
   outline: 2px solid #6b9ac6;
   outline-offset: 2px;
+}
+
+/* Audit UX phase 11 — compact shell controls.
+   Keep display/language choices available without letting them dominate the page title. */
+.topbar-controls { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.theme-control-label { white-space: nowrap; }
+
+[data-era="modern"] .topbar-controls {
+  padding-left: 14px;
+  border-left: 1px solid var(--line);
+}
+[data-era="modern"] .topbar-controls .theme-control {
+  gap: 5px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+[data-era="modern"] .topbar-controls .theme-control select {
+  min-height: 30px;
+  margin: 0;
+  padding: 5px 24px 5px 7px;
+  background-color: var(--panel);
+  font-size: 10px;
+  text-transform: none;
 }
 
 /* 2000–2004: constrained portal layout, blue chrome, bevels and glossy UI. */
@@ -1800,3 +1855,57 @@ html[data-appearance="dark"]:not([data-era="minitel"]) .admin-master-pane,html[d
 .attention-empty{display:grid;gap:4px;padding:18px 16px}.attention-empty span{color:var(--muted)}
 [data-era="minitel"] .attention-item-signal{border-radius:0}[data-era="minitel"] .attention-item:hover{background:#0b1d12}
 @media(max-width:650px){.attention-item{grid-template-columns:10px 1fr}.attention-item-action{grid-column:2;justify-items:start;white-space:normal}}
+
+
+/* Audit UX phase 11 — era adapters and responsive flight programme. */
+[data-era="2000"] .topbar-controls { gap: 3px; }
+[data-era="2000"] .topbar-controls .theme-control { margin: 0; font-size: 9px; }
+[data-era="2000"] .topbar-controls .theme-control select { margin: 0; min-height: 28px; padding: 4px 6px; }
+[data-era="2000"] .flight-filter-advanced > summary { border-top: 1px solid #6b82a8; border-bottom: 1px solid #6b82a8; background: linear-gradient(#fff,#bed0e7); }
+[data-era="2000"] .flight-equipment-list > span { border-radius: 0; background: #e4edf8; }
+
+[data-era="minitel"] .topbar-controls { display: contents; }
+[data-era="minitel"] .theme-control-label { display: none; }
+[data-era="minitel"] .flight-filter { overflow: visible; }
+[data-era="minitel"] .flight-filter-primary { display: block; padding: 0; }
+[data-era="minitel"] .flight-filter-primary label { display: block; margin-bottom: 4px; }
+[data-era="minitel"] .flight-filter-actions { justify-content: flex-start; min-height: 0; margin: 6px 0; }
+[data-era="minitel"] .flight-filter-advanced { border-color: var(--minitel-green); }
+[data-era="minitel"] .flight-filter-advanced > summary { display: flex; gap: 1ch; padding: 3px 0; border-block: 1px solid var(--minitel-green); background: var(--minitel-blue); color: var(--minitel-white); }
+[data-era="minitel"] .flight-filter-advanced > summary span { color: var(--minitel-cyan); }
+[data-era="minitel"] .flight-filter-advanced-grid { display: block; padding: 4px 0; }
+[data-era="minitel"] .flight-filter-advanced-grid label { display: block; margin-bottom: 4px; }
+[data-era="minitel"] .flight-filter-advanced-actions { justify-content: flex-start; padding: 4px 0; }
+[data-era="minitel"] .flight-results-panel { border-color: var(--minitel-green); }
+[data-era="minitel"] .flight-results-panel > .panel-heading { padding: 3px 0; }
+[data-era="minitel"] .flight-results-panel .table-wrap { border-color: var(--minitel-green); }
+[data-era="minitel"] .flight-result-ident,
+[data-era="minitel"] .flight-result-route { color: var(--minitel-green); font: inherit; }
+[data-era="minitel"] .flight-equipment-list > span { padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--minitel-cyan); font: inherit; }
+
+@media (max-width: 1180px) {
+  [data-era="modern"] .theme-control-label { display: none; }
+  .flight-filter-primary { grid-template-columns: minmax(220px,1.4fr) repeat(2,minmax(140px,.8fr)); }
+  .flight-filter-actions { grid-column: 1/-1; justify-content: flex-start; }
+  .flight-filter-advanced-grid { grid-template-columns: repeat(3,minmax(140px,1fr)); }
+}
+@media (max-width: 850px) {
+  .topbar-controls { margin-left: auto; }
+  [data-era="modern"] .breadcrumb { max-width: 34vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .flight-filter-primary { grid-template-columns: 1fr 1fr; }
+  .flight-filter-primary .filter-wide { grid-column: 1/-1; }
+  .flight-filter-advanced-grid { grid-template-columns: repeat(2,minmax(130px,1fr)); }
+}
+@media (max-width: 620px) {
+  .topbar-controls { width: 100%; flex-wrap: wrap; }
+  [data-era="modern"] .topbar-controls { padding: 8px 0 0; border-left: 0; border-top: 1px solid var(--line); }
+  [data-era="modern"] .topbar-controls .theme-control { flex: 1 1 auto; }
+  [data-era="modern"] .topbar-controls .theme-control select { width: 100%; }
+  .flight-filter-primary { grid-template-columns: 1fr; padding: 15px; }
+  .flight-filter-primary .filter-wide { grid-column: auto; }
+  .flight-filter-advanced > summary { grid-template-columns: 1fr auto; padding-inline: 15px; }
+  .flight-filter-advanced > summary span { display: none; }
+  .flight-filter-advanced-grid { grid-template-columns: 1fr; padding-inline: 15px; }
+  .flight-filter-advanced-actions { justify-content: flex-start; padding-inline: 15px; }
+  .flight-results-panel > .panel-heading { padding-inline: 15px; }
+}
