@@ -138,21 +138,7 @@ html:not([data-era="minitel"]) .departure-board .dispatch-flight .duration { let
 .route-board i { height: 2px; background: linear-gradient(90deg,var(--ops-blue),var(--ops-red)); }
 .route-board span { grid-column: 1/-1; color: var(--muted); font-size: 11px; }
 /* Audit UX phase 11 — flight programme progressive disclosure. */
-.flight-filter { margin-bottom: 18px; padding: 0; overflow: hidden; }
-.flight-filter-primary { display: grid; grid-template-columns: minmax(240px,1.6fr) minmax(150px,.72fr) minmax(150px,.72fr) auto; gap: 14px; align-items: end; padding: 18px 20px; }
-.flight-filter-primary .filter-wide { min-width: 0; }
-.flight-filter-actions { display: flex; align-items: center; justify-content: flex-end; gap: 12px; min-height: 40px; }
-.flight-filter-actions .text-button { white-space: nowrap; }
-.flight-filter-advanced { border-top: 1px solid var(--line); }
-.flight-filter-advanced > summary { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; padding: 12px 20px; color: var(--ink); cursor: pointer; list-style: none; background: color-mix(in srgb,var(--paper) 70%,var(--panel)); }
-.flight-filter-advanced > summary::-webkit-details-marker { display: none; }
-.flight-filter-advanced > summary strong { font-size: 11px; }
-.flight-filter-advanced > summary span { color: var(--muted); font-size: 10px; }
-.flight-filter-advanced > summary b { font-size: 13px; transition: transform .14s ease; }
-.flight-filter-advanced[open] > summary b { transform: rotate(180deg); }
-.flight-filter-advanced-grid { display: grid; grid-template-columns: repeat(4,minmax(135px,1fr)); gap: 14px; padding: 16px 20px 4px; }
-.flight-filter-advanced-actions { display: flex; justify-content: flex-end; padding: 12px 20px 18px; }
-
+.flight-filter{margin-bottom:18px;padding:0;overflow:hidden}.flight-filter-primary{display:grid;grid-template-columns:minmax(220px,1.6fr) repeat(2,minmax(140px,.75fr)) auto;gap:12px;align-items:end;padding:18px}.flight-filter-actions{display:flex;align-items:center;gap:10px}.flight-filter-advanced{border-top:1px solid var(--line)}.flight-filter-advanced>summary{display:flex;align-items:center;gap:10px;padding:10px 18px;background:var(--paper);color:var(--ink);cursor:pointer;list-style:none}.flight-filter-advanced>summary::-webkit-details-marker{display:none}.flight-filter-advanced>summary span{color:var(--muted);font-size:10px}.flight-filter-advanced>summary b{margin-left:auto}.flight-filter-advanced-grid{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:12px;padding:14px 18px 4px}.flight-filter-advanced-actions{display:flex;justify-content:flex-end;padding:10px 18px 16px}
 .directory-filter { margin-bottom: 22px; }
 .network-map-panel { padding-bottom: 16px; }
 .network-map-panel .panel-heading { margin-bottom: 10px; }
@@ -204,58 +190,27 @@ html[data-era="minitel"] .itinerary-summary span { border-color: #285e39; color:
   .itinerary-leg { grid-template-columns: 28px 1fr auto; }
   .itinerary-leg-time { grid-column: 2 / -1; text-align: left; }
 }
-/* Flight results are operational data: use one scan-friendly list instead of a card wall. */
-.flight-results-panel { padding: 0; overflow: hidden; }
-.flight-results-panel > .panel-heading { margin: 0; padding: 18px 20px; }
-.flight-results-panel .table-wrap { border-top: 1px solid var(--line); }
-.flight-results { margin: 0; }
-.flight-results th:first-child,.flight-results td:first-child { padding-left: 20px; }
-.flight-results th:last-child,.flight-results td:last-child { padding-right: 20px; }
-.flight-results td { vertical-align: middle; }
-.flight-results td > small { display: block; max-width: 260px; margin-top: 3px; overflow: hidden; color: var(--muted); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
-.flight-result-ident { color: var(--ops-dark); font: 750 13px/1.2 Consolas,monospace; letter-spacing: .03em; }
-.flight-result-route { display: flex; align-items: center; gap: 7px; color: var(--ops-dark); font: 750 14px/1.2 Consolas,monospace; }
-.flight-result-route span { color: var(--muted); font-weight: 400; }
-.flight-equipment-list { display: flex; flex-wrap: wrap; gap: 4px; }
-.flight-equipment-list > span { padding: 3px 6px; border: 1px solid var(--line); border-radius: 3px; background: var(--paper); color: var(--ink); font: 650 9px/1.2 Consolas,monospace; }
-.flight-equipment-list em { color: var(--muted); font-size: 10px; font-style: normal; }
-.flight-result-action-cell { width: 56px; text-align: right; }
-.flight-result-action-cell .round-link { margin-left: auto; }
-.flight-results-empty { padding: 28px 20px; }
-
+/* Audit UX phase 11 — scan-friendly direct-flight results. */
+.flight-results-panel{padding:0;overflow:hidden}.flight-results-panel>.panel-heading{margin:0;padding:18px}.flight-results-panel .table-wrap{border-top:1px solid var(--line)}.flight-results{margin:0}.flight-results th:first-child,.flight-results td:first-child{padding-left:18px}.flight-results th:last-child,.flight-results td:last-child{padding-right:18px}.flight-results td{vertical-align:middle}.flight-results td>small{display:block;margin-top:2px;color:var(--muted);font-size:9px}.flight-result-ident,.flight-result-route{color:var(--ops-dark);font-family:Consolas,monospace;font-weight:700}.flight-result-route{display:flex;gap:6px}.flight-result-route span{color:var(--muted)}.flight-equipment-list{display:flex;flex-wrap:wrap;gap:4px}.flight-equipment-list>span{padding:2px 5px;border:1px solid var(--line);border-radius:3px;font-size:9px}.flight-equipment-list em{color:var(--muted);font-size:10px;font-style:normal}.flight-result-action-cell{width:56px}
 .line-card-head { display: flex; justify-content: space-between; gap: 12px; }
-.line-card h2 { font-size: 24px; margin: 5px 0 0; }
-.airport-pair { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; font: 700 23px Consolas, monospace; color: var(--ops-dark); }
-.airport-pair i { height: 3px; background: linear-gradient(90deg,var(--ops-blue),#fff,var(--ops-red)); border: 1px solid var(--line); }
-.line-meta { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin: 0; }
-.line-meta div { border: 1px solid var(--line); border-radius: 6px; padding: 8px; background: #f8fafc; }
-.line-meta dt { font-size: 9px; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; }
-.line-meta dd { margin: 0; font-weight: 700; }
-.fare-chips { display: flex; gap: 6px; flex-wrap: wrap; }
-.fare-chips span { border: 1px solid var(--line); background: #f5f8fb; border-radius: 999px; padding: 4px 8px; font-size: 10px; color: var(--muted); }
 
 html[data-era="2000"] .ops-clock,
 html[data-era="2000"] .control-strip article,
 html[data-era="2000"] .signal,
-html[data-era="2000"] .line-meta div,
 html[data-era="2000"] .route-board article { border-radius: 0; box-shadow: 2px 2px 0 #7f93b3; }
 html[data-era="2000"] .control-strip article { background: linear-gradient(#fff,#d9e7fb); }
 html[data-era="2000"] .signal b { background: #003399; border: 2px outset #9fb7df; }
-html[data-era="2000"] .airport-pair i,
 html[data-era="2000"] .route-board i { background: #003399; border: 0; height: 4px; }
 
 html[data-era="minitel"] .ops-clock,
 html[data-era="minitel"] .control-strip article,
 html[data-era="minitel"] .signal,
-html[data-era="minitel"] .line-meta div,
 html[data-era="minitel"] .route-board article { background: #07130c; border-color: #285e39; border-radius: 0; box-shadow: none; }
 html[data-era="minitel"] .ops-clock strong,
 html[data-era="minitel"] .dispatch-flight time,
-html[data-era="minitel"] .airport-pair { color: #99edb1; }
-html[data-era="minitel"] .signal b { background: #99edb1; color: #07130c; border-radius: 0; }
+html[data-era="minitel"] html[data-era="minitel"] .signal b { background: #99edb1; color: #07130c; border-radius: 0; }
 html[data-era="minitel"] .dispatch-flight .load,
-html[data-era="minitel"] .fare-chips span { background: #102618; border-color: #285e39; color: #99edb1; }
-html[data-era="minitel"] .airport-pair i,
+html[data-era="minitel"]
 html[data-era="minitel"] .route-board i { background: #99edb1; border: 0; }
 html[data-era="minitel"] .map-background, html[data-era="minitel"] .map-selection { background: #07130c; }
 html[data-era="minitel"] .map-grid { stroke: #285e39; }
@@ -281,9 +236,7 @@ html[data-era="minitel"] .map-airport.selected-arrival { fill: #ffbb57; }
   .flight-filter .filter-wide { grid-column: auto; }
   .map-help { text-align: left; }
   .map-selection a { margin-left: 0; }
-  .airport-pair { font-size: 19px; }
-  .line-meta { grid-template-columns: 1fr; }
-}
+    }
 
 /* --------------------------------------------------------------------------
    Promethee visual eras
@@ -521,32 +474,8 @@ html[data-era="modern"] {
   outline-offset: 2px;
 }
 
-/* Audit UX phase 11 — compact shell controls.
-   Keep display/language choices available without letting them dominate the page title. */
-.topbar-controls { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.theme-control-label { white-space: nowrap; }
-
-[data-era="modern"] .topbar-controls {
-  padding-left: 14px;
-  border-left: 1px solid var(--line);
-}
-[data-era="modern"] .topbar-controls .theme-control {
-  gap: 5px;
-  margin: 0;
-  color: var(--muted);
-  font-size: 9px;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-}
-[data-era="modern"] .topbar-controls .theme-control select {
-  min-height: 30px;
-  margin: 0;
-  padding: 5px 24px 5px 7px;
-  background-color: var(--panel);
-  font-size: 10px;
-  text-transform: none;
-}
-
+/* Audit UX phase 11 — compact shell controls. */
+.topbar-controls{display:flex;align-items:center;gap:6px}.theme-control-label{white-space:nowrap}[data-era="modern"] .topbar-controls{padding-left:12px;border-left:1px solid var(--line)}[data-era="modern"] .topbar-controls .theme-control{gap:4px;margin:0;font-size:9px}[data-era="modern"] .topbar-controls .theme-control select{min-height:30px;margin:0;padding:5px 7px;font-size:10px}
 /* 2000–2004: constrained portal layout, blue chrome, bevels and glossy UI. */
 html[data-era="2000"] {
   --paper: #aebbd0;
@@ -987,11 +916,8 @@ html[data-era="minitel"] {
 [data-era="minitel"] .airport-pair i,
 [data-era="minitel"] .route-board i { display: inline; height: auto; border: 0; background: transparent; }
 [data-era="minitel"] .airport-pair i::after { content: " -> "; color: var(--minitel-yellow); }
-[data-era="minitel"] .line-meta div { padding: 2px 0; }
-[data-era="minitel"] .line-meta dt,
-[data-era="minitel"] .line-meta dd { display: inline; font-size: 16px; }
-[data-era="minitel"] .line-meta dt { color: var(--minitel-cyan); }
-[data-era="minitel"] .line-meta dt::after { content: " : "; }
+[data-era="minitel"] [data-era="minitel"] .line-meta dt,
+[data-era="minitel"] [data-era="minitel"] [data-era="minitel"] .line-meta dt::after { content: " : "; }
 
 [data-era="minitel"] a { color: var(--minitel-cyan); }
 [data-era="minitel"] a:hover,
@@ -1858,54 +1784,6 @@ html[data-appearance="dark"]:not([data-era="minitel"]) .admin-master-pane,html[d
 
 
 /* Audit UX phase 11 — era adapters and responsive flight programme. */
-[data-era="2000"] .topbar-controls { gap: 3px; }
-[data-era="2000"] .topbar-controls .theme-control { margin: 0; font-size: 9px; }
-[data-era="2000"] .topbar-controls .theme-control select { margin: 0; min-height: 28px; padding: 4px 6px; }
-[data-era="2000"] .flight-filter-advanced > summary { border-top: 1px solid #6b82a8; border-bottom: 1px solid #6b82a8; background: linear-gradient(#fff,#bed0e7); }
-[data-era="2000"] .flight-equipment-list > span { border-radius: 0; background: #e4edf8; }
-
-[data-era="minitel"] .topbar-controls { display: contents; }
-[data-era="minitel"] .theme-control-label { display: none; }
-[data-era="minitel"] .flight-filter { overflow: visible; }
-[data-era="minitel"] .flight-filter-primary { display: block; padding: 0; }
-[data-era="minitel"] .flight-filter-primary label { display: block; margin-bottom: 4px; }
-[data-era="minitel"] .flight-filter-actions { justify-content: flex-start; min-height: 0; margin: 6px 0; }
-[data-era="minitel"] .flight-filter-advanced { border-color: var(--minitel-green); }
-[data-era="minitel"] .flight-filter-advanced > summary { display: flex; gap: 1ch; padding: 3px 0; border-block: 1px solid var(--minitel-green); background: var(--minitel-blue); color: var(--minitel-white); }
-[data-era="minitel"] .flight-filter-advanced > summary span { color: var(--minitel-cyan); }
-[data-era="minitel"] .flight-filter-advanced-grid { display: block; padding: 4px 0; }
-[data-era="minitel"] .flight-filter-advanced-grid label { display: block; margin-bottom: 4px; }
-[data-era="minitel"] .flight-filter-advanced-actions { justify-content: flex-start; padding: 4px 0; }
-[data-era="minitel"] .flight-results-panel { border-color: var(--minitel-green); }
-[data-era="minitel"] .flight-results-panel > .panel-heading { padding: 3px 0; }
-[data-era="minitel"] .flight-results-panel .table-wrap { border-color: var(--minitel-green); }
-[data-era="minitel"] .flight-result-ident,
-[data-era="minitel"] .flight-result-route { color: var(--minitel-green); font: inherit; }
-[data-era="minitel"] .flight-equipment-list > span { padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--minitel-cyan); font: inherit; }
-
-@media (max-width: 1180px) {
-  [data-era="modern"] .theme-control-label { display: none; }
-  .flight-filter-primary { grid-template-columns: minmax(220px,1.4fr) repeat(2,minmax(140px,.8fr)); }
-  .flight-filter-actions { grid-column: 1/-1; justify-content: flex-start; }
-  .flight-filter-advanced-grid { grid-template-columns: repeat(3,minmax(140px,1fr)); }
-}
-@media (max-width: 850px) {
-  .topbar-controls { margin-left: auto; }
-  [data-era="modern"] .breadcrumb { max-width: 34vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .flight-filter-primary { grid-template-columns: 1fr 1fr; }
-  .flight-filter-primary .filter-wide { grid-column: 1/-1; }
-  .flight-filter-advanced-grid { grid-template-columns: repeat(2,minmax(130px,1fr)); }
-}
-@media (max-width: 620px) {
-  .topbar-controls { width: 100%; flex-wrap: wrap; }
-  [data-era="modern"] .topbar-controls { padding: 8px 0 0; border-left: 0; border-top: 1px solid var(--line); }
-  [data-era="modern"] .topbar-controls .theme-control { flex: 1 1 auto; }
-  [data-era="modern"] .topbar-controls .theme-control select { width: 100%; }
-  .flight-filter-primary { grid-template-columns: 1fr; padding: 15px; }
-  .flight-filter-primary .filter-wide { grid-column: auto; }
-  .flight-filter-advanced > summary { grid-template-columns: 1fr auto; padding-inline: 15px; }
-  .flight-filter-advanced > summary span { display: none; }
-  .flight-filter-advanced-grid { grid-template-columns: 1fr; padding-inline: 15px; }
-  .flight-filter-advanced-actions { justify-content: flex-start; padding-inline: 15px; }
-  .flight-results-panel > .panel-heading { padding-inline: 15px; }
-}
+[data-era="2000"] .topbar-controls .theme-control{margin:0}[data-era="minitel"] .topbar-controls{display:contents}[data-era="minitel"] .theme-control-label{display:none}
+@media(max-width:1180px){[data-era="modern"] .theme-control-label{display:none}.flight-filter-primary{grid-template-columns:1fr 1fr}.flight-filter-primary .filter-wide{grid-column:1/-1}.flight-filter-actions{grid-column:1/-1}.flight-filter-advanced-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:620px){.topbar-controls{width:100%;flex-wrap:wrap}.flight-filter-primary,.flight-filter-advanced-grid{grid-template-columns:1fr}.flight-filter-primary .filter-wide{grid-column:auto}.flight-filter-primary{padding:15px}.flight-filter-advanced>summary,.flight-filter-advanced-grid,.flight-filter-advanced-actions{padding-inline:15px}.flight-filter-advanced>summary span{display:none}.flight-filter-advanced-actions{justify-content:flex-start}}
