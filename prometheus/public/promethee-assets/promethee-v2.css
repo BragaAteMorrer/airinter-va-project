@@ -263,83 +263,96 @@ html[data-era="minitel"] .map-airport.selected-arrival { fill: #ffbb57; }
    the interface.
    -------------------------------------------------------------------------- */
 
-/* Modern: calm, dense enough for operations, and comfortable on touch screens */
+/* Audit UX phase 10 — modern operational visual system.
+   Prométhée should read like an airline operations product, not a generic SaaS
+   dashboard: restrained depth, compact geometry, clear typography and blue-led
+   hierarchy. Red is reserved for warnings, destructive actions and real alerts. */
 html[data-era="modern"] {
-  --ops-blue: #155eef;
-  --ops-dark: #102a56;
-  --ops-red: #e5484d;
-  --ops-yellow: #e8a100;
-  --paper: #f4f7fb;
+  --ops-blue: #155cb8;
+  --ops-dark: #112d48;
+  --ops-red: #d43640;
+  --ops-yellow: #c58b24;
+  --paper: #f4f5f3;
   --panel: #ffffff;
-  --line: #dce5f2;
-  --ink: #172b4d;
-  --muted: #60708a;
-  --radius: 16px;
-  --shadow: 0 14px 38px rgb(20 48 93 / 9%);
+  --line: #d7e0e7;
+  --ink: #1c3043;
+  --muted: #667786;
+  --radius: 8px;
+  --shadow: 0 3px 12px rgb(17 45 72 / 6%);
 }
 
 [data-era="modern"] body {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at 82% -12%, rgb(73 137 255 / 16%), transparent 32rem),
-    radial-gradient(circle at 8% 70%, rgb(228 75 80 / 7%), transparent 27rem),
-    var(--paper);
+  background: var(--paper);
 }
 
 [data-era="modern"] .sidebar {
-  background: linear-gradient(165deg, #0a2045 0%, #102f62 62%, #12346c 100%);
-  box-shadow: 8px 0 28px rgb(11 35 76 / 10%);
+  background: #112d48;
+  box-shadow: inset -1px 0 rgb(255 255 255 / 7%);
 }
 
 [data-era="modern"] .brand-mark {
-  border-radius: 8px;
-  box-shadow: 0 6px 14px rgb(0 0 0 / 24%);
+  border-radius: 4px;
+  box-shadow: none;
 }
 
 [data-era="modern"] .nav-link {
   border: 1px solid transparent;
-  transition: background-color .18s ease, border-color .18s ease, transform .18s ease;
+  transition: background-color .14s ease, border-color .14s ease;
 }
 
 [data-era="modern"] .nav-link:hover {
-  border-color: rgb(255 255 255 / 14%);
-  transform: translateX(2px);
+  border-color: rgb(255 255 255 / 10%);
+  background: rgb(255 255 255 / 6%);
+  transform: none;
 }
 
 [data-era="modern"] .nav-link.selected {
-  background: linear-gradient(90deg, rgb(76 135 246 / 38%), rgb(255 255 255 / 8%));
-  box-shadow: inset 3px 0 #69a2ff;
+  background: rgb(255 255 255 / 9%);
+  box-shadow: inset 3px 0 #6f9fca;
 }
 
 [data-era="modern"] .topbar {
   position: sticky;
   top: 0;
   z-index: 4;
-  height: 70px;
-  background: rgb(255 255 255 / 84%);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  height: 66px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+[data-era="modern"] .theme-control {
+  color: var(--muted);
+  font-weight: 650;
 }
 
 [data-era="modern"] .theme-control select,
 [data-era="modern"] input,
 [data-era="modern"] select,
 [data-era="modern"] textarea {
-  border-color: #cbd8eb;
-  border-radius: 10px;
-  transition: border-color .15s ease, box-shadow .15s ease;
+  border-color: #c8d3dd;
+  border-radius: 5px;
+  box-shadow: none;
+  transition: border-color .12s ease, outline-color .12s ease;
 }
 
 [data-era="modern"] input:hover,
 [data-era="modern"] select:hover,
-[data-era="modern"] textarea:hover { border-color: #9ab8e8; }
+[data-era="modern"] textarea:hover { border-color: #9bb0c2; }
 
 [data-era="modern"] .hero {
-  background:
-    linear-gradient(118deg, rgb(8 36 87 / 98%), rgb(21 94 239 / 94%)),
-    #155eef;
-  border: 1px solid rgb(255 255 255 / 18%);
-  box-shadow: 0 18px 38px rgb(21 61 143 / 18%);
+  min-height: 260px;
+  border: 1px solid #214f7a;
+  border-radius: var(--radius);
+  background: linear-gradient(108deg, #112d48 0%, #155c9e 100%);
+  box-shadow: none;
+}
+
+[data-era="modern"] .hero h2 {
+  font-size: clamp(31px, 3vw, 38px);
+  font-weight: 600;
 }
 
 [data-era="modern"] .panel,
@@ -348,55 +361,121 @@ html[data-era="modern"] {
 [data-era="modern"] .control-strip article,
 [data-era="modern"] .route-board article {
   box-shadow: var(--shadow);
-  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  transition: border-color .14s ease, background-color .14s ease;
+}
+
+[data-era="modern"] .panel > .panel-heading {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
 }
 
 [data-era="modern"] .stat:hover,
 [data-era="modern"] .control-strip article:hover,
 [data-era="modern"] .route-board article:hover {
-  border-color: #b6caf0;
-  box-shadow: 0 18px 40px rgb(20 48 93 / 13%);
-  transform: translateY(-2px);
+  border-color: #becbd5;
+  box-shadow: var(--shadow);
+  transform: none;
+}
+
+[data-era="modern"] .stat strong {
+  font-size: 31px;
+  font-weight: 650;
+}
+
+[data-era="modern"] .ops-clock {
+  border-top-color: var(--ops-blue);
+}
+
+[data-era="modern"] .control-strip article,
+[data-era="modern"] .control-strip article:nth-child(2),
+[data-era="modern"] .control-strip article:nth-child(4) {
+  border-left-color: var(--ops-blue);
 }
 
 [data-era="modern"] .signal {
-  border-radius: 12px;
-  background: rgb(255 255 255 / 75%);
-  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+  border-radius: 6px;
+  background: var(--panel);
+  transition: border-color .14s ease, background-color .14s ease;
 }
 
 [data-era="modern"] .signal:hover {
-  box-shadow: 0 10px 24px rgb(21 94 239 / 12%);
-  transform: translateY(-2px);
+  border-color: #aebfcd;
+  background: #f8fafb;
+  box-shadow: none;
+  transform: none;
 }
 
 [data-era="modern"] button,
 [data-era="modern"] .button {
-  min-height: 42px;
-  border: 0;
-  border-radius: 10px;
-  box-shadow: 0 5px 12px rgb(21 94 239 / 22%);
-  transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease;
+  min-height: 40px;
+  border: 1px solid var(--ops-blue);
+  border-radius: 5px;
+  box-shadow: none;
+  transition: background-color .12s ease, border-color .12s ease, color .12s ease;
 }
 
 [data-era="modern"] button:hover,
 [data-era="modern"] .button:hover {
-  box-shadow: 0 9px 18px rgb(21 94 239 / 28%);
-  transform: translateY(-1px);
+  background: #104f9e;
+  border-color: #104f9e;
+  box-shadow: none;
+  transform: none;
 }
 
 [data-era="modern"] button:active,
-[data-era="modern"] .button:active { transform: translateY(1px); }
+[data-era="modern"] .button:active {
+  background: #0d458b;
+  transform: none;
+}
 
 [data-era="modern"] .button.outline,
 [data-era="modern"] button.outline {
-  border: 1px solid #bdd0ef;
-  background: #fff;
+  border: 1px solid #b8c8d5;
+  background: transparent;
+  color: var(--ops-blue);
   box-shadow: none;
 }
 
-[data-era="modern"] tbody tr { transition: background-color .14s ease; }
-[data-era="modern"] tbody tr:hover { background: #f3f7ff; }
+[data-era="modern"] .button.outline:hover,
+[data-era="modern"] button.outline:hover {
+  border-color: var(--ops-blue);
+  background: #eef4f9;
+  color: #104f9e;
+}
+
+[data-era="modern"] .tabs a.active {
+  border-bottom-color: var(--ops-blue);
+}
+
+[data-era="modern"] th {
+  padding-block: 10px;
+  background: #f2f4f5;
+  color: #586b7a;
+  font-weight: 700;
+}
+
+[data-era="modern"] td { padding-block: 12px; }
+[data-era="modern"] tbody tr { transition: background-color .12s ease; }
+[data-era="modern"] tbody tr:hover { background: #f7f9fa; }
+
+[data-era="modern"] .route-board i {
+  background: var(--ops-blue);
+}
+
+[data-era="modern"] .next-operation-identity > strong,
+[data-era="modern"] .next-operation-identity i {
+  color: var(--ops-blue);
+}
+
+[data-era="modern"] .next-operation-progress i {
+  background: var(--ops-blue);
+}
+
+[data-era="modern"] :is(a,button,input,select,textarea,[tabindex]):focus-visible {
+  outline: 2px solid #6b9ac6;
+  outline-offset: 2px;
+}
 
 /* 2000–2004: constrained portal layout, blue chrome, bevels and glossy UI. */
 html[data-era="2000"] {
