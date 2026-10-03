@@ -652,8 +652,8 @@
         stopPolling();
         if (document.hidden) return;
         state.timer = setTimeout(async () => {
-            await refreshBoard();
-            schedulePolling();
+            try { await refreshBoard(); }
+            finally { schedulePolling(); }
         }, 5000);
     };
     document.addEventListener('visibilitychange', async () => {
