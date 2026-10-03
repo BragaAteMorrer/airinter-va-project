@@ -1,0 +1,5 @@
+/* Audit UX step 7 — keyboard, focus and reduced-motion contract. */
+:where(a,button,input,select,textarea,summary,[tabindex]):focus-visible{outline:3px solid var(--cyan,#72c7ff);outline-offset:3px}
+.flight-map:focus-visible{outline-offset:5px}.tab[aria-selected="true"]{font-weight:850}.message[role="status"]{scroll-margin-top:16px}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-delay:0ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;transition-delay:0ms!important}body[data-theme-transition="true"] *{transition:none!important}.flight-map-aircraft,.status-chip,.ready-state{animation:none!important}}
+@media(forced-colors:active){:where(a,button,input,select,textarea,summary,[tabindex]):focus-visible{outline:3px solid Highlight}.tab.active,.tab[aria-selected="true"]{border:2px solid Highlight}.status-chip,.ready-state,.nav-badge{forced-color-adjust:auto}}
