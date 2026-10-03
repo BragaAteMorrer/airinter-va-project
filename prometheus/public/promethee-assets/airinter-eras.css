@@ -39,56 +39,207 @@ html[data-era="modern"] {
   --sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
-/* Modern: a calm, horizontal airline navigation and a generous operational canvas. */
+/* Modern shell: a stable two-level airline navigation. */
 html[data-era="modern"] .sidebar {
-  position: relative; inset: auto; width: 100%; min-height: 82px; height: auto;
-  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center;
-  gap: 26px; padding: 12px clamp(22px, 4vw, 72px); overflow: visible;
-  background: #fff; color: var(--text); border: 0; border-bottom: 1px solid var(--border);
-  box-shadow: 0 2px 12px rgb(11 45 70 / 4%);
+  position: relative;
+  inset: auto;
+  z-index: 30;
+  width: 100%;
+  min-height: 0;
+  height: auto;
+  display: block;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-top: 5px solid var(--airinter-blue-dark);
+  border-bottom: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  box-shadow: 0 2px 10px rgb(11 45 70 / 5%);
 }
-html[data-era="modern"] .brand { color: var(--text); gap: 10px; }
-html[data-era="modern"] .brand-logo-shell { width: 115px; height: 48px; flex-basis: 115px; }
-html[data-era="modern"] .brand-logo { max-width: 115px; max-height: 48px; }
-html[data-era="modern"] .brand-caption, html[data-era="modern"] .system-name { display: none; }
-html[data-era="modern"] .sidebar nav { display: flex; justify-content: center; align-items: center; gap: 2px; min-width: 0; overflow-x: auto; }
-html[data-era="modern"] .nav-link {
-  flex: 0 0 auto; gap: 0; margin: 0; padding: 11px 10px; border-radius: 0;
-  color: #385064; font-size: 11px; font-weight: 650; white-space: nowrap;
+html[data-era="modern"] .sidebar::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  left: clamp(22px,4vw,72px);
+  top: 0;
+  width: 92px;
+  height: 5px;
+  background: var(--airinter-red);
 }
-html[data-era="modern"] .nav-link span, html[data-era="modern"] .nav-link b { display: none; }
-html[data-era="modern"] .nav-link:hover, html[data-era="modern"] .nav-link.selected { background: transparent; color: var(--airinter-blue); box-shadow: inset 0 -2px var(--airinter-red); }
-html[data-era="modern"] .pilot-space { order: 3; min-width: 0; margin: 0; padding: 0; border: 0; }
-html[data-era="modern"] .pilot-space-label { display: none; }
+html[data-era="modern"] .shell-primary {
+  display: grid;
+  grid-template-columns: minmax(210px,auto) minmax(250px,1fr) auto;
+  align-items: center;
+  gap: clamp(18px,2.5vw,36px);
+  min-height: 72px;
+  padding: 10px clamp(22px,4vw,72px);
+}
+html[data-era="modern"] .shell-branding { display:flex;align-items:center;gap:14px;min-width:0; }
+html[data-era="modern"] .brand { flex:0 0 auto;color:var(--text);gap:0; }
+html[data-era="modern"] .brand-logo-shell { width:92px;height:42px;flex-basis:92px; }
+html[data-era="modern"] .brand-logo { max-width:92px;max-height:42px; }
+html[data-era="modern"] .brand-caption { display:none; }
+html[data-era="modern"] .system-name {
+  display:grid;
+  gap:0;
+  min-width:0;
+  margin:0;
+  padding:0 0 0 13px;
+  border:0;
+  border-left:1px solid var(--border);
+}
+html[data-era="modern"] .system-name .eyebrow { color:#708395;font-size:8px;letter-spacing:.11em; }
+html[data-era="modern"] .system-name strong { margin:0;color:var(--airinter-blue-dark);font-size:19px;line-height:1.1;letter-spacing:-.03em; }
+html[data-era="modern"] .system-name small { overflow:hidden;color:#6d8090;font-size:9px;text-overflow:ellipsis;white-space:nowrap; }
+html[data-era="modern"] .system-name .cursor { color:var(--airinter-blue); }
+
+html[data-era="modern"] .workspace-switch {
+  justify-self:center;
+  width:min(100%,350px);
+  margin:0;
+  padding:3px;
+  gap:3px;
+  border:1px solid var(--border);
+  border-radius:6px;
+  background:#f2f6f8;
+}
+html[data-era="modern"] .workspace-switch button {
+  min-height:38px;
+  padding:6px 12px;
+  border:1px solid transparent;
+  border-radius:4px;
+  background:transparent;
+  color:#5c7182;
+  text-align:center;
+}
+html[data-era="modern"] .workspace-switch button span { font-size:9px;letter-spacing:.08em; }
+html[data-era="modern"] .workspace-switch button small { color:#8495a2;font-size:8px; }
+html[data-era="modern"] .workspace-switch button:hover { border-color:#c8d8e2;background:#fff;color:var(--airinter-blue-dark); }
+html[data-era="modern"] .workspace-switch button.selected,
+html[data-era="modern"] .workspace-switch button[aria-pressed="true"] {
+  border-color:#a9c6d7;
+  background:#fff;
+  color:var(--airinter-blue-dark);
+  box-shadow:0 1px 4px rgb(11 67 104 / 8%);
+}
+html[data-era="modern"] .workspace-switch button.selected small,
+html[data-era="modern"] .workspace-switch button[aria-pressed="true"] small { color:#617b8b; }
+
+html[data-era="modern"] .shell-account { justify-self:end;min-width:0; }
+html[data-era="modern"] .pilot-space { min-width:0;margin:0;padding:0;border:0; }
+html[data-era="modern"] .pilot-space-label { display:none; }
 html[data-era="modern"] .pilot-card-link {
-  display: grid; grid-template-columns: 36px minmax(0, 1fr) 14px; align-items: center; gap: 9px;
-  min-width: 176px; padding: 5px 8px 5px 5px; border: 1px solid #d5e2e9; border-radius: 22px;
-  background: linear-gradient(135deg, #fff 12%, #edf6f9); color: var(--text); box-shadow: 0 2px 8px rgb(11 67 104 / 7%);
+  display:grid;
+  grid-template-columns:34px minmax(88px,1fr) 12px;
+  align-items:center;
+  gap:8px;
+  min-width:164px;
+  padding:4px 7px 4px 4px;
+  border:1px solid #d5e2e9;
+  border-radius:5px;
+  background:#fff;
+  color:var(--text);
+  box-shadow:none;
 }
-html[data-era="modern"] .pilot-card-link:hover { border-color: #82bbd0; background: #fff; color: var(--airinter-blue-dark); box-shadow: 0 5px 14px rgb(11 67 104 / 13%); transform: translateY(-1px); }
-html[data-era="modern"] .pilot-card-link .pilot-avatar { display: block; width: 36px; height: 36px; border: 2px solid #fff; box-shadow: 0 0 0 2px var(--airinter-blue-light); background: var(--airinter-blue); }
-html[data-era="modern"] .pilot-card-link .pilot-identity { display: grid; gap: 0; }
-html[data-era="modern"] .pilot-identity strong { color: var(--airinter-blue-dark); font-size: 11px; font-weight: 750; }
-html[data-era="modern"] .pilot-identity small { color: #617b8b; font-size: 8px; letter-spacing: .7px; }
-html[data-era="modern"] .pilot-card-link em { display: none; }
-html[data-era="modern"] .pilot-open { display: block; color: var(--airinter-red); font-size: 14px; line-height: 1; }
-html[data-era="modern"] .pilot-space-actions { display: flex; justify-content: flex-end; gap: 8px; margin: 5px 7px 0; padding: 0; border: 0; }
-html[data-era="modern"] .pilot-space-actions a { color: #527084; font-size: 8px; font-weight: 650; letter-spacing: .15px; }
-html[data-era="modern"] .pilot-space-actions a:first-child { color: var(--airinter-blue); }
-html[data-era="modern"] .pilot-space-actions a:last-child:hover { color: var(--airinter-red); }
-html[data-era="modern"] .workspace { margin-left: 0; }
-html[data-era="modern"] .topbar { height: 44px; padding: 0 clamp(22px, 4vw, 72px); background: #f1f7f9; border-color: var(--border); }
-html[data-era="modern"] main { max-width: 1440px; padding: clamp(30px, 5vw, 68px) clamp(20px, 5vw, 72px) 72px; }
-html[data-era="modern"] .topbar .breadcrumb { color: var(--airinter-blue-dark); } html[data-era="modern"] .theme-control { font-size: 9px; }
-html[data-era="modern"] .theme-control select { border: 1px solid var(--border); border-radius: 4px; background: #fff; color: var(--text); }
-html[data-era="modern"] h1 { font-size: clamp(30px, 3.5vw, 48px); font-weight: 560; letter-spacing: -.055em; }
-html[data-era="modern"] h2 { font-weight: 620; } html[data-era="modern"] .panel, html[data-era="modern"] .stat { border-color: var(--border); box-shadow: var(--shadow); }
-html[data-era="modern"] .panel { padding: clamp(20px, 2.2vw, 32px); }
-html[data-era="modern"] .control-strip article { background: #fff; border: 1px solid var(--border); border-radius: 6px; }
-html[data-era="modern"] button, html[data-era="modern"] .button { border-radius: 5px; background: var(--airinter-red); border-color: var(--airinter-red); }
-html[data-era="modern"] button:hover, html[data-era="modern"] .button:hover { background: #bc2833; border-color: #bc2833; }
-html[data-era="modern"] table thead th, html[data-era="modern"] th { background: #eef5f8; color: var(--airinter-blue-dark); }
-html[data-era="modern"] .footer { padding-left: clamp(22px, 4vw, 72px); padding-right: clamp(22px, 4vw, 72px); background: #fff; }
+html[data-era="modern"] .pilot-card-link:hover { border-color:#9fc1d2;background:#f8fbfc;color:var(--airinter-blue-dark);box-shadow:none;transform:none; }
+html[data-era="modern"] .pilot-card-link .pilot-avatar { display:block;width:34px;height:34px;border:1px solid #c6dbe6;border-radius:4px;box-shadow:none;background:var(--airinter-blue); }
+html[data-era="modern"] .pilot-card-link .pilot-identity { display:grid;gap:0; }
+html[data-era="modern"] .pilot-identity strong { color:var(--airinter-blue-dark);font-size:10px;font-weight:750; }
+html[data-era="modern"] .pilot-identity small { color:#617b8b;font-size:8px;letter-spacing:.06em; }
+html[data-era="modern"] .pilot-card-link em { display:none; }
+html[data-era="modern"] .pilot-open { display:block;color:#6c8799;font-size:12px; }
+html[data-era="modern"] .pilot-space-actions { display:flex;justify-content:flex-end;gap:10px;margin:3px 1px 0;padding:0;border:0; }
+html[data-era="modern"] .pilot-space-actions a { color:#637d8e;font-size:8px;font-weight:650;letter-spacing:0; }
+html[data-era="modern"] .pilot-space-actions a:hover { color:var(--airinter-blue); }
+
+html[data-era="modern"] .shell-menu-toggle { display:none; }
+html[data-era="modern"] .sidebar nav.is-grouped {
+  display:flex;
+  justify-content:center;
+  align-items:stretch;
+  gap:1px;
+  min-width:0;
+  min-height:43px;
+  padding:0 clamp(22px,4vw,72px);
+  overflow:visible;
+  border-top:1px solid var(--border);
+  background:#f5f8fa;
+  scrollbar-width:none;
+}
+html[data-era="modern"] .sidebar nav::-webkit-scrollbar { display:none; }
+html[data-era="modern"] .nav-group { position:relative;flex:0 0 auto;margin:0; }
+html[data-era="modern"] .nav-group summary {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  min-height:43px;
+  padding:0 14px;
+  border:0;
+  border-bottom:2px solid transparent;
+  color:#40596b;
+  cursor:pointer;
+  font-size:10px;
+  font-weight:750;
+  letter-spacing:.025em;
+  list-style:none;
+  white-space:nowrap;
+}
+html[data-era="modern"] .nav-group summary::-webkit-details-marker { display:none; }
+html[data-era="modern"] .nav-group summary b { color:#8294a1;font-size:9px;transition:transform .14s ease; }
+html[data-era="modern"] .nav-group[open] summary b { transform:rotate(180deg); }
+html[data-era="modern"] .nav-group:hover summary,
+html[data-era="modern"] .nav-group.selected summary,
+html[data-era="modern"] .nav-group[open] summary {
+  border-bottom-color:var(--airinter-blue);
+  background:#fff;
+  color:var(--airinter-blue-dark);
+  box-shadow:none;
+}
+html[data-era="modern"] .nav-menu {
+  position:absolute;
+  z-index:40;
+  top:calc(100% + 1px);
+  left:0;
+  min-width:230px;
+  max-width:310px;
+  padding:6px;
+  border:1px solid var(--border);
+  border-top:2px solid var(--airinter-blue);
+  border-radius:0 0 5px 5px;
+  background:#fff;
+  box-shadow:0 10px 24px rgb(11 45 70 / 13%);
+}
+html[data-era="modern"] .nav-menu a {
+  display:block;
+  padding:8px 10px;
+  border-left:2px solid transparent;
+  color:#35536a;
+  font-size:10px;
+  font-weight:620;
+  line-height:1.35;
+}
+html[data-era="modern"] .nav-menu a:hover,
+html[data-era="modern"] .nav-menu a.selected {
+  border-left-color:var(--airinter-blue);
+  background:#eef5f8;
+  color:var(--airinter-blue-dark);
+  text-decoration:none;
+}
+html[data-era="modern"] .workspace { margin-left:0; }
+html[data-era="modern"] .topbar { position:relative;top:auto;height:40px;padding:0 clamp(22px,4vw,72px);background:#eef5f8;border-top:0;border-color:var(--border); }
+html[data-era="modern"] main { max-width:1440px;padding:clamp(30px,5vw,68px) clamp(20px,5vw,72px) 72px; }
+html[data-era="modern"] .topbar .breadcrumb { color:var(--airinter-blue-dark); }
+html[data-era="modern"] .theme-control { font-size:9px; }
+html[data-era="modern"] .theme-control select { border:1px solid var(--border);border-radius:4px;background:#fff;color:var(--text); }
+html[data-era="modern"] h1 { font-size:clamp(30px,3.5vw,48px);font-weight:560;letter-spacing:-.055em; }
+html[data-era="modern"] h2 { font-weight:620; }
+html[data-era="modern"] .panel,html[data-era="modern"] .stat { border-color:var(--border);box-shadow:var(--shadow); }
+html[data-era="modern"] .panel { padding:clamp(20px,2.2vw,32px); }
+html[data-era="modern"] .control-strip article { background:#fff;border:1px solid var(--border);border-radius:6px; }
+html[data-era="modern"] button,html[data-era="modern"] .button { border-radius:5px; }
+html[data-era="modern"] table thead th,html[data-era="modern"] th { background:#eef5f8;color:var(--airinter-blue-dark); }
+html[data-era="modern"] .footer { padding-left:clamp(22px,4vw,72px);padding-right:clamp(22px,4vw,72px);background:#fff; }
 
 /* 1999–2005: the supplied graphic becomes a structural language, not a background image. */
 html[data-era="2000"] {
@@ -151,25 +302,7 @@ html[data-era="2000"] .footer { padding: 11px 16px; background: #e2f0f5; border-
   html[data-era="2000"] .topbar .theme-control:first-of-type, html[data-era="2000"] .topbar time { display: none; } html[data-era="2000"] main { padding: 15px 10px 24px; }
 }
 
-/* Second pass: make the identity visible at first glance and remove the accidental rail look. */
-html[data-era="modern"] .sidebar { border-top: 6px solid var(--airinter-blue-dark); position: relative; }
-html[data-era="modern"] .sidebar::before {
-  content: ""; position: absolute; left: 0; bottom: -1px; width: 170px; height: 4px;
-  background: var(--airinter-red); clip-path: polygon(0 0,100% 0,87% 100%,0 100%);
-}
-html[data-era="modern"] .sidebar nav { scrollbar-width: none; }
-html[data-era="modern"] .sidebar nav::-webkit-scrollbar { display: none; }
-html[data-era="modern"] .sidebar nav.is-grouped { overflow: visible; }
-html[data-era="modern"] .nav-group { position: relative; flex: 0 0 auto; }
-html[data-era="modern"] .nav-group summary { display: flex; align-items: center; gap: 6px; padding: 11px 10px; color: #385064; cursor: pointer; font-size: 11px; font-weight: 650; list-style: none; white-space: nowrap; }
-html[data-era="modern"] .nav-group summary::-webkit-details-marker { display: none; }
-html[data-era="modern"] .nav-group summary b { font-size: 10px; font-weight: 700; transition: transform .15s ease; }
-html[data-era="modern"] .nav-group[open] summary b { transform: rotate(180deg); }
-html[data-era="modern"] .nav-group:hover summary, html[data-era="modern"] .nav-group.selected summary { color: var(--airinter-blue); box-shadow: inset 0 -2px var(--airinter-red); }
-html[data-era="modern"] .nav-menu { position: absolute; z-index: 20; top: calc(100% + 8px); left: 0; min-width: 205px; padding: 7px; border: 1px solid var(--border); border-top: 3px solid var(--airinter-red); background: #fff; box-shadow: 0 12px 25px rgb(11 45 70 / 14%); }
-html[data-era="modern"] .nav-menu a { display: block; padding: 9px 10px; color: #28475e; font-size: 11px; font-weight: 600; }
-html[data-era="modern"] .nav-menu a:hover, html[data-era="modern"] .nav-menu a.selected { background: #eaf4f8; color: var(--airinter-blue); text-decoration: none; }
-html[data-era="modern"] .topbar { background: linear-gradient(90deg,#eef7fa 0 74%,#d6edf4 74%); border-top: 3px solid var(--airinter-cyan); }
+/* Branded operational surfaces layered below the shell. */
 html[data-era="modern"] .ops-header {
   position: relative; isolation: isolate; overflow: hidden; margin: 0 0 28px; padding: clamp(28px,4vw,50px);
   border: 1px solid #c9e0e9; border-left: 7px solid var(--airinter-blue); background: #fff;
@@ -278,4 +411,116 @@ html[data-era="2000"] .pilot-space-actions a:hover { color: #d22531; }
   html[data-era="2000"] .nav-menu { top: 32px; }
   html[data-era="2000"] .sidebar::before { top: 147px; height: 50px; }
   html[data-era="2000"] .sidebar::after { top: 197px; height: 23px; }
+}
+
+
+/* Prométhée shell navigation v2: mobile and compatibility adapters. */
+html[data-era="2000"] .shell-primary,
+html[data-era="minitel"] .shell-primary { display:contents; }
+html[data-era="2000"] .shell-menu-toggle,
+html[data-era="minitel"] .shell-menu-toggle { display:none; }
+html[data-era="2000"] .workspace-switch {
+  position:absolute;
+  z-index:7;
+  top:27px;
+  left:max(24px,calc((100% - 1100px) / 2));
+  width:190px;
+  margin:0;
+}
+@media (max-width:1180px) {
+  html[data-era="modern"] .shell-primary { grid-template-columns:minmax(190px,auto) minmax(210px,1fr) auto;gap:16px; }
+  html[data-era="modern"] .workspace-switch button small { display:none; }
+  html[data-era="modern"] .system-name small { display:none; }
+}
+@media (max-width:900px) {
+  html[data-era="modern"] .sidebar { border-top-width:4px; }
+  html[data-era="modern"] .sidebar::before { left:16px;width:72px;height:4px; }
+  html[data-era="modern"] .shell-primary {
+    grid-template-columns:minmax(0,1fr) auto;
+    min-height:62px;
+    gap:10px 14px;
+    padding:9px 16px;
+  }
+  html[data-era="modern"] .shell-branding { min-width:0; }
+  html[data-era="modern"] .brand-logo-shell { width:82px;height:38px;flex-basis:82px; }
+  html[data-era="modern"] .brand-logo { max-width:82px;max-height:38px; }
+  html[data-era="modern"] .system-name { padding-left:10px; }
+  html[data-era="modern"] .system-name .eyebrow,
+  html[data-era="modern"] .system-name small { display:none; }
+  html[data-era="modern"] .system-name strong { font-size:17px; }
+  html[data-era="modern"] .shell-menu-toggle {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:38px;
+    padding:7px 11px;
+    border:1px solid #b8cdd9;
+    border-radius:4px;
+    background:#fff;
+    color:var(--airinter-blue-dark);
+    font-size:9px;
+    font-weight:800;
+    letter-spacing:.05em;
+  }
+  html[data-era="modern"] .shell-menu-toggle b { font-size:16px;line-height:1; }
+  html[data-era="modern"] .workspace-switch,
+  html[data-era="modern"] .shell-account { display:none; }
+  html[data-era="modern"] .sidebar nav.is-grouped { display:none; }
+  html[data-era="modern"] .sidebar.is-menu-open .workspace-switch {
+    display:grid;
+    grid-column:1/-1;
+    justify-self:stretch;
+    width:100%;
+    max-width:none;
+    order:3;
+  }
+  html[data-era="modern"] .sidebar.is-menu-open .shell-account {
+    display:block;
+    grid-column:1/-1;
+    order:4;
+    padding-top:8px;
+    border-top:1px solid var(--border);
+  }
+  html[data-era="modern"] .sidebar.is-menu-open .pilot-space { display:flex;align-items:center;justify-content:space-between;gap:12px; }
+  html[data-era="modern"] .sidebar.is-menu-open .pilot-card-link { width:min(100%,260px); }
+  html[data-era="modern"] .sidebar.is-menu-open .pilot-space-actions { margin:0; }
+  html[data-era="modern"] .sidebar.is-menu-open nav.is-grouped {
+    display:block;
+    padding:7px 16px 12px;
+    border-top:1px solid var(--border);
+    background:#f5f8fa;
+  }
+  html[data-era="modern"] .sidebar.is-menu-open .nav-group { width:100%;border-bottom:1px solid #dce6ec; }
+  html[data-era="modern"] .sidebar.is-menu-open .nav-group summary {
+    justify-content:space-between;
+    min-height:42px;
+    padding:0 4px;
+    border-bottom:0;
+    background:transparent;
+  }
+  html[data-era="modern"] .sidebar.is-menu-open .nav-menu {
+    position:static;
+    min-width:0;
+    max-width:none;
+    margin:0 0 7px;
+    padding:4px 0 6px 10px;
+    border:0;
+    border-left:2px solid #b9cfdb;
+    border-radius:0;
+    background:transparent;
+    box-shadow:none;
+  }
+  html[data-era="modern"] .sidebar.is-menu-open .nav-menu a { padding:8px 10px; }
+  html[data-era="modern"] .topbar { min-height:36px;height:auto;padding:6px 16px; }
+  html[data-era="modern"] .topbar .breadcrumb { display:none; }
+  html[data-era="modern"] .topbar-controls { margin-left:0; }
+}
+@media (max-width:620px) {
+  html[data-era="modern"] .system-name { display:none; }
+  html[data-era="modern"] .shell-branding { gap:0; }
+  html[data-era="modern"] .shell-menu-toggle span { display:none; }
+  html[data-era="modern"] .sidebar.is-menu-open .pilot-space { display:grid; }
+  html[data-era="modern"] .sidebar.is-menu-open .pilot-space-actions { justify-content:flex-start; }
+  html[data-era="2000"] .workspace-switch { display:none; }
 }
