@@ -7,12 +7,12 @@ Prométhée is built on phpVMS, but the Air Inter product must remain maintainab
 1. **Never unzip a phpVMS release directly over production.**
 2. **Never use `/update` as a file updater.** The phpVMS `/update` screen only runs migrations/data migrations already present on disk.
 3. Keep Air Inter features inside `modules/Promethee/` whenever possible.
-4. Any unavoidable phpVMS-core edit must be small, documented in `prometheus/.phpvms-upstream.json`, and covered by CI.
+4. Any unavoidable phpVMS-core edit must be small, documented in `promethee/.phpvms-upstream.json`, and covered by CI.
 5. Upgrade through a branch + pull request, then deploy the tested commit.
 
 ## Current upstream baseline
 
-The authoritative baseline is `prometheus/.phpvms-upstream.json`.
+The authoritative baseline is `promethee/.phpvms-upstream.json`.
 
 It records:
 - phpVMS release/tag;
@@ -28,13 +28,13 @@ Do not infer the version from `config/app.php`; phpVMS keeps a generic framework
 From the repository root:
 
 ```bash
-python tools/phpvms_upstream_audit.py --latest
+python promethee/tools/phpvms_upstream_audit.py --latest
 ```
 
 Or for a specific release:
 
 ```bash
-python tools/phpvms_upstream_audit.py --target 7.0.11
+python promethee/tools/phpvms_upstream_audit.py --target 7.0.11
 ```
 
 The audit downloads the pinned release and the target release, verifies the pinned official SHA256, compares upstream files, and classifies target changes:
@@ -55,8 +55,8 @@ The script does **not** modify the repository.
 3. Run the upstream audit against the target release.
 4. Apply safe source changes from upstream.
 5. Manually merge every collision. Prefer moving Air Inter logic into `modules/Promethee/` instead of increasing the core override.
-6. Update `prometheus/.phpvms-upstream.json` with the new release metadata and official SHA256.
-7. Update `prometheus/config/version.yml`.
+6. Update `promethee/.phpvms-upstream.json` with the new release metadata and official SHA256.
+7. Update `promethee/config/version.yml`.
 8. Run CI and local checks.
 9. Deploy the tested commit.
 10. On the server, from the phpVMS/Prométhée directory:
