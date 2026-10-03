@@ -635,6 +635,73 @@ final class HermesOperationLifecycleTest extends TestCase
         $this->assertSame(1.0, (float) $payload['simulation_rate']);
     }
 
+    public function test_scoring_tolerates_mixed_telemetry_schema_after_hermes_update(): void
+    {
+        $fx = $this->operationFixture();
+        $pirepId = $this->prefile($fx);
+        $at = now();
+
+        // Legacy sample: recorded before the scoring telemetry fields existed.
+        $this->post(
+            '/api/v1/operations/'.$fx['operation_id'].'/telemetry',
+            ['samples' => [[
+                'sample_id' => (string) Str::uuid(),
+                'recorded_at' => $at->toIso8601String(),
+                'phase' => 'CRUISE',
+                'lat' => 48.7,
+                'lon' => 2.3,
+                'altitude_msl' => 25000,
+                'agl' => 24000,
+                'ias' => 280,
+                'gs' => 420,
+                'vs' => 0,
+                'heading' => 180,
+                'fuel' => 5000,
+                'on_ground' => false,
+            ]]],
+            [],
+            $fx['user']
+        )->assertOk();
+
+        // Current sample: same PIREP after Hermès has been updated/restarted.
+        $this->post(
+            '/api/v1/operations/'.$fx['operation_id'].'/telemetry',
+            ['samples' => [[
+                'sample_id' => (string) Str::uuid(),
+                'recorded_at' => $at->copy()->addSeconds(20)->toIso8601String(),
+                'phase' => 'CRUISE',
+                'lat' => 48.71,
+                'lon' => 2.31,
+                'altitude_msl' => 25000,
+                'agl' => 24000,
+                'ias' => 280,
+                'gs' => 420,
+                'vs' => 0,
+                'heading' => 180,
+                'fuel' => 4950,
+                'on_ground' => false,
+                'engines_running' => [true, true],
+                'beacon_light' => true,
+                'landing_light' => false,
+                'g_force' => 1.0,
+                'overspeed_warning' => false,
+                'stall_warning' => false,
+                'reverser_percent' => [0, 0],
+                'slew_active' => false,
+                'simulation_rate' => 1.0,
+            ]]],
+            [],
+            $fx['user']
+        )->assertOk();
+
+        $score = app(\Modules\Promethee\Services\LegacyPirepScoringService::class)
+            ->calculate(Pirep::findOrFail($pirepId), $fx['operation_id']);
+
+        $this->assertTrue((bool) $score['available']);
+        $this->assertArrayHasKey('score', $score);
+        $this->assertIsInt($score['score']);
+    }
+
     private function minimalSimBriefXml(): string
     {
         return <<<'XML'
