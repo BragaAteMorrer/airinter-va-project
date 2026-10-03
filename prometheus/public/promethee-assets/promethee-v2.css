@@ -207,10 +207,9 @@ html[data-era="minitel"] .control-strip article,
 html[data-era="minitel"] .signal,
 html[data-era="minitel"] .route-board article { background: #07130c; border-color: #285e39; border-radius: 0; box-shadow: none; }
 html[data-era="minitel"] .ops-clock strong,
-html[data-era="minitel"] .dispatch-flight time,
-html[data-era="minitel"] html[data-era="minitel"] .signal b { background: #99edb1; color: #07130c; border-radius: 0; }
-html[data-era="minitel"] .dispatch-flight .load,
-html[data-era="minitel"]
+html[data-era="minitel"] .dispatch-flight time { color: #99edb1; }
+html[data-era="minitel"] .signal b { background: #99edb1; color: #07130c; border-radius: 0; }
+html[data-era="minitel"] .dispatch-flight .load { background: #102618; border-color: #285e39; color: #99edb1; }
 html[data-era="minitel"] .route-board i { background: #99edb1; border: 0; }
 html[data-era="minitel"] .map-background, html[data-era="minitel"] .map-selection { background: #07130c; }
 html[data-era="minitel"] .map-grid { stroke: #285e39; }
@@ -232,7 +231,6 @@ html[data-era="minitel"] .map-airport.selected-arrival { fill: #ffbb57; }
   .dispatch-flight .load, .dispatch-flight a { justify-self: start; }
   .ops-timeline article, .report-feed article { grid-template-columns: 1fr; }
   .ops-timeline small, .report-feed small { text-align: left; }
-  .flight-cards { grid-template-columns: 1fr; }
   .flight-filter .filter-wide { grid-column: auto; }
   .map-help { text-align: left; }
   .map-selection a { margin-left: 0; }
