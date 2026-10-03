@@ -108,14 +108,14 @@ return new class extends Migration {
             ];
 
             foreach ($defaults as $key => $value) {
-                DB::table('promethee_settings')->updateOrInsert(
-                    ['key' => $key],
-                    [
-                        'value' => DB::raw('COALESCE(value, '.DB::getPdo()->quote($value).')'),
+                if (!DB::table('promethee_settings')->where('key', $key)->exists()) {
+                    DB::table('promethee_settings')->insert([
+                        'key' => $key,
+                        'value' => $value,
                         'created_at' => now(),
                         'updated_at' => now(),
-                    ]
-                );
+                    ]);
+                }
             }
         }
     }
