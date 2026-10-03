@@ -11,6 +11,8 @@
   <AssemblyName>Promethee.Acars</AssemblyName>
   <Product>Hermès — Air Inter Virtual Airlines</Product>
   <Title>Hermès ACARS</Title>
+  <Version>1.0.27</Version>
+  <InformationalVersion>1.0.27</InformationalVersion>
   <Description>Client ACARS officiel Air Inter Virtual Airlines</Description>
   <Company>Air Inter Virtual Airlines</Company>
   <Authors>Air Inter Virtual Airlines</Authors>
