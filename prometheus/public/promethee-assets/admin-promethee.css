@@ -100,8 +100,8 @@ body.admin-promethee {
   --admin-paper:#f4f5f3;
   --admin-panel:#fff;
   --admin-line:#dde4e9;
-  --admin-radius:12px;
-  --admin-shadow:0 5px 20px #162f4610;
+  --admin-radius:7px;
+  --admin-shadow:0 2px 9px #162f460a;
 }
 body.admin-promethee .sidebar { width:258px; background:var(--admin-navy)!important; box-shadow:none; }
 body.admin-promethee .sidebar .logo { min-height:112px!important; padding:26px 22px 21px; }
@@ -139,7 +139,7 @@ body.admin-promethee .navbar .navbar-brand { padding:15px 15px; }
 body.admin-promethee .admin-kicker { color:var(--admin-blue); font-size:9px; letter-spacing:.17em; }
 body.admin-promethee .admin-page-title { color:var(--admin-ink); font-size:29px; font-weight:650; letter-spacing:-1px; }
 body.admin-promethee .navbar-nav>li>a { padding-top:28px; padding-bottom:26px; color:var(--admin-muted)!important; font-size:11px; font-weight:600; }
-body.admin-promethee .content { padding:32px 0 45px; }
+body.admin-promethee .content { padding:26px 0 42px; }
 body.admin-promethee .navbar .container-fluid,
 body.admin-promethee .content>.container-fluid { max-width:1600px; width:calc(100% - 48px); }
 body.admin-promethee .card,
@@ -157,7 +157,7 @@ body.admin-promethee .border-blue-bottom::before {
   background:var(--admin-blue);
 }
 body.admin-promethee .card .content,
-body.admin-promethee .panel-body { padding:25px; }
+body.admin-promethee .panel-body { padding:21px 22px; }
 body.admin-promethee .table-responsive { width:100%; overflow-x:auto; }
 body.admin-promethee .table { width:100%; white-space:nowrap; font-size:12px; }
 body.admin-promethee .table>thead>tr>th {
