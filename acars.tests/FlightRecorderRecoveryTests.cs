@@ -20,6 +20,24 @@ public sealed class FlightRecorderRecoveryTests
     }
 
     [Fact]
+    public void Queued_positions_keep_the_phase_from_capture_time()
+    {
+        var recorder = NewRecorder();
+        var t = DateTimeOffset.Parse("2026-09-22T10:00:00Z");
+        recorder.Start("https://promethee.example", "pirep-phase", Ground(t), "op-phase");
+
+        Assert.Equal("BOARDING", Assert.Single(recorder.Pending).Phase);
+
+        recorder.Capture(Ground(t.AddSeconds(20)) with {
+            SampleId = Guid.NewGuid(),
+            Gs = 5,
+            ParkingBrake = false
+        });
+
+        Assert.Equal("TAXI_OUT", recorder.Pending.Last().Phase);
+    }
+
+    [Fact]
     public void Acknowledgements_remove_only_the_confirmed_messages()
     {
         var recorder = NewRecorder();
