@@ -12,23 +12,23 @@
     <div class="brand"><img class="brand-logo" src="/air-inter-va-hermes.png" alt="Hermès — Air Inter VA"><span>ACARS · OPÉRATIONS</span><strong>Hermès</strong></div>
     <nav aria-label="Navigation ACARS" role="tablist" aria-orientation="vertical">
       <span class="rail-nav-label">SESSION</span>
-      <button class="tab active" data-tab="connect" role="tab" aria-selected="true" aria-controls="connect"><span data-i18n="nav.connect">Connexion</span></button>
+      <button id="tab-connect" class="tab active" data-tab="connect" role="tab" aria-selected="true" aria-controls="connect" tabindex="0"><span data-i18n="nav.connect">Connexion</span></button>
 
       <span class="rail-nav-label protected-tab-label">OPÉRATIONS</span>
-      <button class="tab protected-tab" data-tab="flight" role="tab" aria-selected="false" aria-controls="flight" disabled><span data-i18n="nav.flight">Mes opérations</span></button>
+      <button id="tab-flight" class="tab protected-tab" data-tab="flight" role="tab" aria-selected="false" aria-controls="flight" tabindex="-1" disabled><span data-i18n="nav.flight">Mes opérations</span></button>
 
       <span class="rail-nav-label protected-tab-label">VOL</span>
-      <button class="tab protected-tab" data-tab="record" role="tab" aria-selected="false" aria-controls="record" disabled><span data-i18n="nav.record">Enregistrement</span></button>
-      <button class="tab protected-tab" data-tab="map" role="tab" aria-selected="false" aria-controls="map" disabled><span data-i18n="nav.map">Suivi du vol</span></button>
-      <button class="tab protected-tab" data-tab="journal" role="tab" aria-selected="false" aria-controls="journal" disabled><span data-i18n="nav.journal">Journal de bord</span></button>
-      <button class="tab protected-tab" data-tab="review" role="tab" aria-selected="false" aria-controls="review" disabled><span data-i18n="nav.review">Flight Review</span></button>
+      <button id="tab-record" class="tab protected-tab" data-tab="record" role="tab" aria-selected="false" aria-controls="record" tabindex="-1" disabled><span data-i18n="nav.record">Enregistrement</span></button>
+      <button id="tab-map" class="tab protected-tab" data-tab="map" role="tab" aria-selected="false" aria-controls="map" tabindex="-1" disabled><span data-i18n="nav.map">Suivi du vol</span></button>
+      <button id="tab-journal" class="tab protected-tab" data-tab="journal" role="tab" aria-selected="false" aria-controls="journal" tabindex="-1" disabled><span data-i18n="nav.journal">Journal de bord</span></button>
+      <button id="tab-review" class="tab protected-tab" data-tab="review" role="tab" aria-selected="false" aria-controls="review" tabindex="-1" disabled><span data-i18n="nav.review">Flight Review</span></button>
 
       <span class="rail-nav-label protected-tab-label">COMMUNICATION</span>
-      <button class="tab protected-tab datalink-tab" data-tab="datalink" role="tab" aria-selected="false" aria-controls="datalink" disabled><span data-i18n="nav.datalink">Datalink</span> <span id="datalinkBadge" class="nav-badge" hidden>0</span></button>
-      <button class="tab protected-tab" data-tab="network" role="tab" aria-selected="false" aria-controls="network" disabled><span data-i18n="nav.network">Air Inter Network</span> <span id="networkBadge" class="nav-badge" hidden>0</span></button>
+      <button id="tab-datalink" class="tab protected-tab datalink-tab" data-tab="datalink" role="tab" aria-selected="false" aria-controls="datalink" tabindex="-1" disabled><span data-i18n="nav.datalink">Datalink</span> <span id="datalinkBadge" class="nav-badge" hidden>0</span></button>
+      <button id="tab-network" class="tab protected-tab" data-tab="network" role="tab" aria-selected="false" aria-controls="network" tabindex="-1" disabled><span data-i18n="nav.network">Air Inter Network</span> <span id="networkBadge" class="nav-badge" hidden>0</span></button>
 
       <span class="rail-nav-label protected-tab-label">SYSTÈME</span>
-      <button class="tab protected-tab" data-tab="settings" role="tab" aria-selected="false" aria-controls="settings" disabled><span data-i18n="nav.settings">Paramètres</span></button>
+      <button id="tab-settings" class="tab protected-tab" data-tab="settings" role="tab" aria-selected="false" aria-controls="settings" tabindex="-1" disabled><span data-i18n="nav.settings">Paramètres</span></button>
     </nav>
     <details class="display-settings">
       <summary><span>Affichage</span><b aria-hidden="true">⌄</b></summary>
@@ -54,7 +54,7 @@
       <div class="error-center-toolbar"><p>Résumé humain, impact sur le vol et action recommandée. Les détails techniques restent repliés.</p><button id="errorCenterClearBtn" type="button">Effacer</button></div>
       <div id="errorCenterList" class="error-center-list"></div>
     </details>
-    <section id="connect" class="panel active auth-panel">
+    <section id="connect" class="panel active auth-panel" role="tabpanel" aria-labelledby="tab-connect">
       <div class="auth-mark"><span>AIR INTER VA</span><strong data-i18n="auth.crew">Accès équipage</strong></div><h2 data-i18n="auth.title">Connexion pilote</h2><p class="hint" data-i18n="auth.hint">Identifiez-vous avec votre compte pilote Air Inter pour préparer et suivre votre vol.</p>
       <div class="login-form">
         <button id="argosLoginBtn" class="primary" type="button">Se connecter avec Argos</button>
@@ -70,7 +70,7 @@
       </details>
       <p id="loginMessage" class="message" hidden role="status"></p>
     </section>
-    <section id="flight" class="panel">
+    <section id="flight" class="panel" role="tabpanel" aria-labelledby="tab-flight">
       <div class="workspace-title"><div><span class="kicker">FLIGHT WORKSPACE</span><h2>Préparation opérationnelle</h2></div><strong id="readyState" class="ready-state">NOT READY</strong></div>
       <div id="workflow" class="workflow" aria-label="État de préparation">
         <div data-phase="flight"><span>01</span><strong>Vol</strong><small>Opération + appareil</small></div>
@@ -294,7 +294,7 @@
       </form>
       <p id="pirepMessage" class="message" hidden role="status"></p>
     </section>
-    <section id="record" class="panel">
+    <section id="record" class="panel" role="tabpanel" aria-labelledby="tab-record">
       <div class="workspace-title"><div><span class="kicker">FLIGHT OPERATIONS</span><h2>Enregistrement ACARS</h2></div><strong id="flightSafetyState" class="ready-state">STANDBY</strong></div>
       <section id="recoveryCenter" class="recovery-center" hidden aria-live="assertive">
         <div class="recovery-heading">
@@ -335,7 +335,7 @@
       <div class="cards"><div><span>Phase</span><strong id="phase">—</strong></div><div><span>Altitude</span><strong id="altitude">—</strong></div><div><span>GS</span><strong id="groundSpeed">—</strong></div><div><span>Carburant</span><strong id="fuel">—</strong></div><div><span>Distance</span><strong id="distance">—</strong></div><div><span>Temps de vol</span><strong id="airborne">—</strong></div><div><span>Synchronisation</span><strong id="pending">0</strong></div></div>
       <p id="warning" class="hint"></p><div class="actions"><button id="startBtn" class="primary">Démarrer l’enregistrement</button><button id="pauseBtn">Pause</button><button id="resumeBtn">Reprendre</button><button id="syncBtn">Synchroniser</button><button id="fileBtn">Revoir & déposer le PIREP</button></div><p id="recordMessage" class="message" hidden></p>
     </section>
-    <section id="map" class="panel">
+    <section id="map" class="panel" role="tabpanel" aria-labelledby="tab-map">
       <div class="workspace-title flight-map-heading">
         <div><span class="kicker">LIVE TELEMETRY</span><h2>Suivi du vol</h2><p id="flightMapRoute" class="hint">La carte se mettra à jour dès le premier point ACARS.</p></div>
         <strong id="flightMapState" class="ready-state">STANDBY</strong>
@@ -365,7 +365,7 @@
       </div>
       <div id="timeline" class="timeline"><p class="empty">En attente d’un vol.</p></div>
     </section>
-    <section id="journal" class="panel">
+    <section id="journal" class="panel" role="tabpanel" aria-labelledby="tab-journal">
       <div class="workspace-title">
         <div><span class="kicker">LOGBOOK · ACARS</span><h2>Journal de bord</h2><p class="hint">Le vol en cours et les derniers vols Hermès conservés localement sur ce poste.</p></div>
         <button id="journalRefreshBtn" type="button">Actualiser</button>
@@ -386,7 +386,7 @@
       </section>
       <p id="journalMessage" class="message" hidden role="status"></p>
     </section>
-    <section id="datalink" class="panel">
+    <section id="datalink" class="panel" role="tabpanel" aria-labelledby="tab-datalink">
       <div class="workspace-title">
         <div><span class="kicker">AIR INTER DATALINK</span><h2>OPS / Cockpit</h2><p class="hint">Messages opérationnels liés à l'opération sélectionnée. Envois, lecture et ACK sont conservés localement en cas de coupure.</p></div>
         <strong id="datalinkState" class="ready-state">STANDBY</strong>
@@ -410,7 +410,7 @@
       </form>
       <p id="datalinkMessage" class="message" hidden role="status"></p>
     </section>
-    <section id="network" class="panel">
+    <section id="network" class="panel" role="tabpanel" aria-labelledby="tab-network">
       <div class="workspace-title">
         <div><span class="kicker">AIR INTER NETWORK</span><h2>Équipages connectés</h2><p class="hint">Présence opérationnelle Hermès. Un équipage passe automatiquement hors ligne si son heartbeat disparaît.</p></div>
         <strong id="networkState" class="ready-state">STANDBY</strong>
@@ -423,7 +423,7 @@
       <div id="networkCrews" class="observation-list"><p class="empty">Aucun équipage Hermès détecté.</p></div>
       <p id="networkMessage" class="message" hidden role="status"></p>
     </section>
-    <section id="review" class="panel">
+    <section id="review" class="panel" role="tabpanel" aria-labelledby="tab-review">
       <div class="workspace-title"><div><span class="kicker">FLIGHT DATA MONITORING</span><h2>Flight Review</h2><p class="hint">Synthèse factuelle du vol. Hermès observe ; Prométhée applique le barème VMSAcars officiel et conserve le score du PIREP.</p></div><strong id="reviewState" class="ready-state">EN VOL</strong></div>
       <div class="review-operation-band">
         <span class="kicker">OPÉRATION</span>
@@ -492,7 +492,7 @@
       </div>
       <p id="reviewMessage" class="message" hidden role="status"></p>
     </section>
-    <section id="settings" class="panel"><h2>Paramètres ACARS</h2><p class="hint">Les règles compagnie et la cadence live sont reçues de Prométhée ; ces réglages restent locaux et n’exécutent aucun code distant.</p>
+    <section id="settings" class="panel" role="tabpanel" aria-labelledby="tab-settings"><h2>Paramètres ACARS</h2><p class="hint">Les règles compagnie et la cadence live sont reçues de Prométhée ; ces réglages restent locaux et n’exécutent aucun code distant.</p>
       <form id="settingsForm" class="login-form">
         <label><span>Détection automatique</span><select name="autoDetection"><option value="true">Activée</option><option value="false">Désactivée</option></select></label>
         <label><span>Simulateur principal</span><select name="preferredSimulator"><option value="msfs2024">MSFS 2024</option><option value="msfs2020">MSFS 2020</option><option value="fsx">FSX / Steam</option><option value="p3d">Prepar3D</option><option value="fs2004">FS2004</option><option value="xplane">X-Plane 11 / 12</option></select></label>
