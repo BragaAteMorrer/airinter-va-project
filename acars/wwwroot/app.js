@@ -249,16 +249,40 @@ settingsForm.onsubmit = async event => {
   }
 };
 
-$$('.tab').forEach(button => {
-  button.onclick = () => {
-    if (button.classList.contains('protected-tab') && !connected) return;
-    $$('.tab,.panel').forEach(node => node.classList.remove('active'));
-    button.classList.add('active');
-    $('#' + button.dataset.tab).classList.add('active');
-    if (button.dataset.tab === 'journal') refreshJournal();
-    if (button.dataset.tab === 'datalink') refreshDatalink();
-    if (button.dataset.tab === 'network') refreshNetwork();
+const hermesTabs = $('.tab');
+const enabledHermesTabs = () => hermesTabs.filter(button => !button.disabled && !button.hidden);
+const activateHermesTab = button => {
+  if (!button || (button.classList.contains('protected-tab') && !connected)) return;
+  $('.tab,.panel').forEach(node => node.classList.remove('active'));
+  hermesTabs.forEach(node => {
+    const selected = node === button;
+    node.setAttribute('aria-selected', String(selected));
+    node.tabIndex = selected ? 0 : -1;
+  });
+  button.classList.add('active');
+  $('#' + button.dataset.tab)?.classList.add('active');
+  if (button.dataset.tab === 'map') drawMap(flightMapState.lastTrack, lastStatus?.latest || {});
+  if (button.dataset.tab === 'journal') refreshJournal();
+  if (button.dataset.tab === 'datalink') refreshDatalink();
+  if (button.dataset.tab === 'network') refreshNetwork();
+};
+hermesTabs.forEach(button => {
+  button.onclick = () => activateHermesTab(button);
+  button.onkeydown = event => {
+    if (!['ArrowDown','ArrowUp','Home','End'].includes(event.key)) return;
+    const tabs = enabledHermesTabs();
+    const index = tabs.indexOf(button);
+    if (index < 0 || !tabs.length) return;
+    event.preventDefault();
+    const next = event.key === 'Home' ? 0
+      : event.key === 'End' ? tabs.length - 1
+      : (index + (event.key === 'ArrowDown' ? 1 : -1) + tabs.length) % tabs.length;
+    tabs[next]?.focus();
   };
+});
+$('.message').forEach(node => {
+  if (!node.hasAttribute('role')) node.setAttribute('role', 'status');
+  if (!node.hasAttribute('aria-live')) node.setAttribute('aria-live', 'polite');
 });
 
 function pilotIdentity(value) {
@@ -2169,7 +2193,6 @@ async function prefilePreparedOperation({ navigate = true, automatic = false } =
       route: body.route || flightPlan?.route || undefined,
       level: normalizeFlightLevel(body.level || flightPlan?.level),
       block_fuel: body.block_fuel || flightPlan?.block_fuel || undefined,
-      passengers: Number.isFinite(Number(flightPlan?.passengers)) ? Math.max(0, Math.round(Number(flightPlan.passengers))) : undefined,
       simbrief_source: flightPlan?.source === 'simbrief_account'
         ? 'simbrief_account'
         : (String(flightPlan?.source || '').toLowerCase().includes('simbrief') ? 'simbrief' : undefined)
@@ -2856,25 +2879,47 @@ async function refreshStatus() {
   } catch {}
 }
 
+const hermesPolling = {
+  status: { timer: null, delay: 1000, enabled: () => true, run: refreshStatus },
+  datalink: { timer: null, delay: 5000, enabled: () => $('#datalink')?.classList.contains('active'), run: refreshDatalink },
+  network: { timer: null, delay: 15000, enabled: () => $('#network')?.classList.contains('active'), run: refreshNetwork }
+};
+const stopHermesPolling = () => {
+  Object.values(hermesPolling).forEach(poller => {
+    if (poller.timer) clearTimeout(poller.timer);
+    poller.timer = null;
+  });
+};
+const scheduleHermesPoller = poller => {
+  if (poller.timer) clearTimeout(poller.timer);
+  poller.timer = null;
+  if (document.hidden) return;
+  poller.timer = setTimeout(async () => {
+    try {
+      if (!document.hidden && poller.enabled()) await poller.run();
+    } finally {
+      scheduleHermesPoller(poller);
+    }
+  }, poller.delay);
+};
+const startHermesPolling = () => {
+  stopHermesPolling();
+  Object.values(hermesPolling).forEach(scheduleHermesPoller);
+};
+
 updateWorkflow();
 drawMap([]);
 refreshStatus();
-setInterval(() => {
-  if (!document.hidden) refreshStatus();
-}, 1000);
-setInterval(() => {
-  if (!document.hidden && $('#datalink')?.classList.contains('active')) refreshDatalink();
-}, 5000);
-setInterval(() => {
-  if (!document.hidden && $('#network')?.classList.contains('active')) refreshNetwork();
-}, 15000);
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) return;
-  refreshStatus();
-  if ($('#datalink')?.classList.contains('active')) refreshDatalink();
-  if ($('#network')?.classList.contains('active')) refreshNetwork();
+startHermesPolling();
+document.addEventListener('visibilitychange', async () => {
+  if (document.hidden) return stopHermesPolling();
+  await refreshStatus();
+  if ($('#datalink')?.classList.contains('active')) await refreshDatalink();
+  if ($('#network')?.classList.contains('active')) await refreshNetwork();
   drawMap(flightMapState.lastTrack, lastStatus?.latest || {});
+  startHermesPolling();
 });
+window.addEventListener('pagehide', stopHermesPolling, {once:true});
 call('/api/about').then(info => {
   setText($('#build'), 'Version ' + info.version);
 }).catch(() => setText($('#build'), 'Version inconnue'));
