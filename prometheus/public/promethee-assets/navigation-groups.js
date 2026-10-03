@@ -32,6 +32,42 @@
       || (['pilot','staff'].includes(storedWorkspace) ? storedWorkspace : nav.dataset.defaultWorkspace || 'pilot');
     if (workspace === 'staff' && !staffAvailable) workspace = 'pilot';
 
+    const focusableGroups = () => groups.filter(group => !group.hidden).map(group => group.querySelector('summary')).filter(Boolean);
+    const focusRelativeSummary = (current, delta) => {
+      const summaries = focusableGroups();
+      const index = summaries.indexOf(current);
+      if (index < 0 || !summaries.length) return;
+      summaries[(index + delta + summaries.length) % summaries.length].focus();
+    };
+    groups.forEach(group => {
+      const summary = group.querySelector('summary');
+      const menu = group.querySelector('.nav-menu');
+      summary?.addEventListener('keydown', event => {
+        if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
+          event.preventDefault(); focusRelativeSummary(summary, 1);
+        } else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
+          event.preventDefault(); focusRelativeSummary(summary, -1);
+        } else if (event.key === 'Home') {
+          event.preventDefault(); focusableGroups()[0]?.focus();
+        } else if (event.key === 'End') {
+          event.preventDefault(); focusableGroups().at(-1)?.focus();
+        }
+      });
+      menu?.addEventListener('keydown', event => {
+        const links = [...menu.querySelectorAll('a:not([hidden])')];
+        const index = links.indexOf(document.activeElement);
+        if (event.key === 'Escape') {
+          event.preventDefault(); group.open = false; summary?.focus(); return;
+        }
+        if (index < 0 || !['ArrowDown','ArrowUp','Home','End'].includes(event.key)) return;
+        event.preventDefault();
+        const next = event.key === 'Home' ? 0
+          : event.key === 'End' ? links.length - 1
+          : (index + (event.key === 'ArrowDown' ? 1 : -1) + links.length) % links.length;
+        links[next]?.focus();
+      });
+    });
+
     const setWorkspace = (next, persist = true) => {
       if (!['pilot','staff'].includes(next) || (next === 'staff' && !staffAvailable)) next = 'pilot';
       workspace = next;
