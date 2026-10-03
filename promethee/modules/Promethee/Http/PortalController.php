@@ -1806,7 +1806,7 @@ class PortalController extends Controller
             'airline_id'  => 'nullable|integer|exists:airlines,id',
             'subfleet_id' => 'nullable|integer|exists:subfleets,id',
             'flight_type' => 'nullable|string|size:1',
-            'q'           => 'nullable|string|max:32',
+            'q'           => 'nullable|string|max:80',
             'min_distance'=> 'nullable|numeric|min:0',
             'max_distance'=> 'nullable|numeric|gte:min_distance',
             'time_from'   => 'nullable|date_format:H:i',
@@ -1852,13 +1852,31 @@ class PortalController extends Controller
         if ($r->filled('time_from')) $q->where('dpt_time', '>=', $filters['time_from']);
         if ($r->filled('time_to')) $q->where('dpt_time', '<=', $filters['time_to']);
         if ($r->filled('q')) {
-            $term = '%'.strtoupper($filters['q']).'%';
-            $q->where(function ($flights) use ($term) {
-                $flights->where('flight_number', 'like', $term)
-                    ->orWhere('callsign', 'like', $term)
-                    ->orWhere('route_code', 'like', $term)
-                    ->orWhere('dpt_airport_id', 'like', $term)
-                    ->orWhere('arr_airport_id', 'like', $term);
+            $rawTerm = trim((string) $filters['q']);
+            $upperTerm = strtoupper($rawTerm);
+            $term = '%'.$rawTerm.'%';
+            $upperLike = '%'.$upperTerm.'%';
+
+            $q->where(function ($flights) use ($term, $upperLike) {
+                $flights->where('flight_number', 'like', $upperLike)
+                    ->orWhere('callsign', 'like', $upperLike)
+                    ->orWhere('route_code', 'like', $upperLike)
+                    ->orWhere('dpt_airport_id', 'like', $upperLike)
+                    ->orWhere('arr_airport_id', 'like', $upperLike)
+                    ->orWhereHas('dpt_airport', function ($airports) use ($term, $upperLike) {
+                        $airports->where('id', 'like', $upperLike)
+                            ->orWhere('icao', 'like', $upperLike)
+                            ->orWhere('iata', 'like', $upperLike)
+                            ->orWhere('name', 'like', $term)
+                            ->orWhere('location', 'like', $term);
+                    })
+                    ->orWhereHas('arr_airport', function ($airports) use ($term, $upperLike) {
+                        $airports->where('id', 'like', $upperLike)
+                            ->orWhere('icao', 'like', $upperLike)
+                            ->orWhere('iata', 'like', $upperLike)
+                            ->orWhere('name', 'like', $term)
+                            ->orWhere('location', 'like', $term);
+                    });
             });
         }
 
@@ -1891,7 +1909,7 @@ class PortalController extends Controller
             ->select('dpt_airport_id as id')->union(
                 Flight::where('active', true)->where('visible', true)->select('arr_airport_id as id')
             );
-        $mapAirports = Airport::whereIn('id', $airportIds)->orderBy('icao')->get(['id', 'icao', 'name', 'location', 'lat', 'lon']);
+        $mapAirports = Airport::whereIn('id', $airportIds)->orderBy('icao')->get(['id', 'icao', 'iata', 'name', 'location', 'lat', 'lon']);
         $bounds = [
             'west' => $mapAirports->min('lon') ?? -10,
             'east' => $mapAirports->max('lon') ?? 10,
@@ -1902,6 +1920,7 @@ class PortalController extends Controller
         $latSpan = max(1, $bounds['north'] - $bounds['south']);
         $mapAirports = $mapAirports->map(fn ($airport) => [
             'code' => $airport->id,
+            'iata' => $airport->iata,
             'name' => $airport->name,
             'location' => $airport->location,
             'lat' => (float) $airport->lat,
