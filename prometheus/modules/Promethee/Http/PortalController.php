@@ -21,6 +21,10 @@ use Modules\Promethee\Services\{AirframeMaintenanceService,BrandingService,Bulle
 
 class PortalController extends Controller
 {
+    private const MAX_ITINERARY_STOPS = 3;
+    private const MAX_ITINERARY_LEGS = 4;
+    private const MAX_ITINERARY_RESULTS = 3;
+    private const MAX_ITINERARY_EXPANSIONS = 12000;
     private function page(string $name, array $data=[]) {
         return view('promethee::'.$name, $data + ['branding' => app(BrandingService::class)->active()]);
     }
@@ -1638,6 +1642,7 @@ class PortalController extends Controller
             $value = trim((string) $value);
             if ($value === '') return null;
             $upper = strtoupper($value);
+
             return Airport::query()
                 ->where(function ($airports) use ($value, $upper) {
                     $airports->where('id', $upper)
@@ -1649,13 +1654,18 @@ class PortalController extends Controller
                 ->orderByRaw('CASE WHEN id = ? OR icao = ? OR iata = ? THEN 0 ELSE 1 END', [$upper, $upper, $upper])
                 ->value('id');
         };
+
         $selectedDeparture = $resolveAirport($filters['departure'] ?? null);
         $selectedArrival = $resolveAirport($filters['arrival'] ?? null);
 
-        $q = Flight::where('active', true)->where('visible', true)->with(['airline', 'fares', 'dpt_airport', 'arr_airport', 'subfleets']);
+        $q = Flight::where('active', true)
+            ->where('visible', true)
+            ->with(['airline', 'fares', 'dpt_airport', 'arr_airport', 'subfleets']);
+
         if ($r->user() && !$r->user()->ability('admin', 'admin-access')) {
             $q->whereIn('airline_id', app(CompanyAccessService::class)->allowedAirlineIds($r->user()));
         }
+
         if ($r->filled('departure')) $selectedDeparture ? $q->where('dpt_airport_id', $selectedDeparture) : $q->whereRaw('1 = 0');
         if ($r->filled('arrival')) $selectedArrival ? $q->where('arr_airport_id', $selectedArrival) : $q->whereRaw('1 = 0');
         if ($r->filled('airline_id')) $q->where('airline_id', $filters['airline_id']);
@@ -1681,6 +1691,26 @@ class PortalController extends Controller
         elseif ($sort === 'distance') $q->orderBy('distance');
         else $q->orderBy('dpt_time')->orderBy('route_code')->orderBy('flight_number');
 
+        $flights = $q->paginate(24)->withQueryString();
+
+        // The public programme is not the legacy phpVMS flight screen. When a
+        // real origin/destination search returns no direct line, build possible
+        // connections from the same Prométhée catalogue instead of stopping at
+        // "no result".
+        $itineraries = collect();
+        if ($selectedDeparture
+            && $selectedArrival
+            && $selectedDeparture !== $selectedArrival
+            && $flights->total() === 0
+            && !$r->filled('q')) {
+            $itineraries = $this->findProgrammeItineraries(
+                $r,
+                $filters,
+                $selectedDeparture,
+                $selectedArrival
+            );
+        }
+
         $airportIds = Flight::where('active', true)->where('visible', true)
             ->select('dpt_airport_id as id')->union(
                 Flight::where('active', true)->where('visible', true)->select('arr_airport_id as id')
@@ -1704,27 +1734,64 @@ class PortalController extends Controller
             'y' => round(35 + (($bounds['north'] - $airport->lat) / $latSpan) * 470, 1),
         ]);
         $mapByCode = $mapAirports->keyBy('code');
-        $mapRoutes = collect();
-        if ($selectedDeparture || $selectedArrival) {
-            $mapRoutes = (clone $q)->reorder()->select('dpt_airport_id', 'arr_airport_id', 'airline_id')->distinct()->limit(160)->get()
-                ->map(function ($flight) use ($mapByCode) {
-                    $airlineName = strtolower($flight->airline?->name ?? 'Air Inter');
-                    $airline = str_contains($airlineName, 'air charter')
-                        ? 'air-charter'
-                        : (str_contains($airlineName, 'inter cargo') ? 'ics' : 'air-inter');
 
-                    return [
-                        'from' => $mapByCode->get($flight->dpt_airport_id),
-                        'to' => $mapByCode->get($flight->arr_airport_id),
-                        'airline' => $airline,
-                        'airline_name' => $flight->airline?->name ?? 'Air Inter',
-                    ];
-                })
-                ->filter(fn ($route) => $route['from'] && $route['to'])->values();
+        $mapRouteFlights = collect();
+        if ($itineraries->isNotEmpty()) {
+            $mapRouteFlights = $itineraries
+                ->flatMap(fn ($itinerary) => $itinerary['legs'])
+                ->unique(fn ($flight) => $flight->dpt_airport_id.'>'.$flight->arr_airport_id.'>'.$flight->airline_id)
+                ->values();
+        } elseif ($selectedDeparture || $selectedArrival) {
+            $mapRouteFlights = (clone $q)->reorder()
+                ->with('airline')
+                ->select('id', 'dpt_airport_id', 'arr_airport_id', 'airline_id')
+                ->distinct()
+                ->limit(160)
+                ->get();
         }
 
+        $mapRoutes = $mapRouteFlights
+            ->map(function ($flight) use ($mapByCode) {
+                $airlineName = strtolower($flight->airline?->name ?? 'Air Inter');
+                $airline = str_contains($airlineName, 'air charter')
+                    ? 'air-charter'
+                    : (str_contains($airlineName, 'inter cargo') ? 'ics' : 'air-inter');
+
+                return [
+                    'from' => $mapByCode->get($flight->dpt_airport_id),
+                    'to' => $mapByCode->get($flight->arr_airport_id),
+                    'airline' => $airline,
+                    'airline_name' => $flight->airline?->name ?? 'Air Inter',
+                ];
+            })
+            ->filter(fn ($route) => $route['from'] && $route['to'])
+            ->values();
+
+        $itineraryFlightIds = $itineraries
+            ->flatMap(fn ($itinerary) => collect($itinerary['legs'])->pluck('id'))
+            ->unique()
+            ->values()
+            ->all();
+        $reservedFlightIds = Bid::with(['flight', 'aircraft'])
+            ->where('user_id', $r->user()->id)
+            ->whereIn('flight_id', $itineraryFlightIds)
+            ->get()
+            ->filter(function (Bid $bid) {
+                $operation = $this->bookingOperation($bid);
+
+                return !in_array($operation->operation_status, ['COMPLETED', 'CANCELLED'], true);
+            })
+            ->pluck('flight_id')
+            ->map(fn ($id) => (string) $id)
+            ->unique()
+            ->values()
+            ->all();
+
         return $this->page('flights', [
-            'flights' => $q->paginate(24)->withQueryString(),
+            'flights' => $flights,
+            'itineraries' => $itineraries,
+            'maxItineraryStops' => self::MAX_ITINERARY_STOPS,
+            'reservedFlightIds' => $reservedFlightIds,
             'airlines' => Airline::where('active', true)->orderBy('name')->get(['id', 'name', 'icao']),
             'subfleets' => Subfleet::with('airline')->orderBy('name')->get(['id', 'name', 'type', 'airline_id']),
             'flightTypes' => Flight::where('active', true)->where('visible', true)->distinct()->orderBy('flight_type')->pluck('flight_type')
@@ -1735,6 +1802,227 @@ class PortalController extends Controller
             'selectedArrival' => $selectedArrival,
         ]);
     }
+
+    private function findProgrammeItineraries(Request $r, array $filters, string $origin, string $destination)
+    {
+        $query = Flight::query()
+            ->where('active', true)
+            ->where('visible', true)
+            ->whereNotNull('dpt_airport_id')
+            ->whereNotNull('arr_airport_id')
+            ->whereColumn('dpt_airport_id', '<>', 'arr_airport_id')
+            ->whereHas('airline', fn ($airline) => $airline->where('active', true))
+            ->with(['airline', 'dpt_airport', 'arr_airport', 'subfleets']);
+
+        if ($r->user() && !$r->user()->ability('admin', 'admin-access')) {
+            $query->whereIn('airline_id', app(CompanyAccessService::class)->allowedAirlineIds($r->user()));
+        }
+        if ($r->filled('airline_id')) $query->where('airline_id', $filters['airline_id']);
+        if ($r->filled('subfleet_id')) $query->whereHas('subfleets', fn ($subfleets) => $subfleets->where('subfleets.id', $filters['subfleet_id']));
+        if ($r->filled('flight_type')) $query->where('flight_type', $filters['flight_type']);
+        if ($r->filled('min_distance')) $query->where('distance', '>=', $filters['min_distance']);
+        if ($r->filled('max_distance')) $query->where('distance', '<=', $filters['max_distance']);
+        if ($r->filled('time_from')) $query->where('dpt_time', '>=', $filters['time_from']);
+        if ($r->filled('time_to')) $query->where('dpt_time', '<=', $filters['time_to']);
+
+        $candidates = $query->get();
+        if ($candidates->isEmpty()) return collect();
+
+        // Several timetable rows can describe the same network edge. One
+        // deterministic representative per airport pair keeps the graph small
+        // and prevents visually duplicate proposals.
+        $network = $candidates
+            ->groupBy(fn ($flight) => strtoupper((string) $flight->dpt_airport_id).'>'.strtoupper((string) $flight->arr_airport_id))
+            ->map(function ($sameRoute) {
+                return $sameRoute->sortBy(function ($flight) {
+                    return sprintf(
+                        '%09d:%012.2f:%s',
+                        (int) ($flight->flight_time ?? 999999),
+                        $this->flightDistanceNm($flight) ?: 999999,
+                        (string) $flight->ident
+                    );
+                })->first();
+            })
+            ->values();
+
+        $byDeparture = $network->groupBy(fn ($flight) => strtoupper((string) $flight->dpt_airport_id));
+        $queue = [[
+            'airport' => strtoupper($origin),
+            'legs' => [],
+            'visited' => [strtoupper($origin) => true],
+            'distance_nm' => 0.0,
+            'flight_time' => 0,
+        ]];
+
+        $cursor = 0;
+        $expansions = 0;
+        $found = [];
+        $signatures = [];
+
+        while (isset($queue[$cursor]) && $expansions < self::MAX_ITINERARY_EXPANSIONS) {
+            $state = $queue[$cursor++];
+            if (count($state['legs']) >= self::MAX_ITINERARY_LEGS) continue;
+
+            $outgoing = $byDeparture->get($state['airport'], collect())
+                ->sortBy(fn ($flight) => $this->flightDistanceNm($flight) ?: PHP_FLOAT_MAX);
+
+            foreach ($outgoing as $flight) {
+                if (++$expansions > self::MAX_ITINERARY_EXPANSIONS) break 2;
+
+                $next = strtoupper((string) $flight->arr_airport_id);
+                if (isset($state['visited'][$next])) continue;
+
+                $legs = [...$state['legs'], $flight];
+                $distance = $state['distance_nm'] + $this->flightDistanceNm($flight);
+                $flightTime = $state['flight_time'] + (int) ($flight->flight_time ?? 0);
+
+                if ($next === strtoupper($destination)) {
+                    if (count($legs) < 2) continue;
+
+                    $airports = [strtoupper($origin)];
+                    foreach ($legs as $leg) $airports[] = strtoupper((string) $leg->arr_airport_id);
+                    $signature = implode('>', $airports);
+
+                    if (!isset($signatures[$signature])) {
+                        $signatures[$signature] = true;
+                        $found[] = [
+                            'legs' => $legs,
+                            'stops' => count($legs) - 1,
+                            'distance_nm' => $distance,
+                            'flight_time' => $flightTime,
+                            'airports' => $airports,
+                        ];
+                    }
+
+                    if (count($found) >= 30) break 2;
+                    continue;
+                }
+
+                if (count($legs) < self::MAX_ITINERARY_LEGS) {
+                    $visited = $state['visited'];
+                    $visited[$next] = true;
+                    $queue[] = [
+                        'airport' => $next,
+                        'legs' => $legs,
+                        'visited' => $visited,
+                        'distance_nm' => $distance,
+                        'flight_time' => $flightTime,
+                    ];
+                }
+            }
+        }
+
+        usort($found, static function (array $left, array $right): int {
+            $legs = count($left['legs']) <=> count($right['legs']);
+            if ($legs !== 0) return $legs;
+
+            $distance = $left['distance_nm'] <=> $right['distance_nm'];
+            if ($distance !== 0) return $distance;
+
+            return $left['flight_time'] <=> $right['flight_time'];
+        });
+
+        return collect(array_slice($found, 0, self::MAX_ITINERARY_RESULTS));
+    }
+
+    private function flightDistanceNm(Flight $flight): float
+    {
+        try {
+            return $flight->distance ? (float) $flight->distance->toUnit('nmi') : 0.0;
+        } catch (\Throwable) {
+            return 0.0;
+        }
+    }
+
+    public function reserveItinerary(Request $r, \App\Services\BidService $bids)
+    {
+        $data = $r->validate([
+            'flight_ids' => 'required|array|min:2|max:'.self::MAX_ITINERARY_LEGS,
+            'flight_ids.*' => 'required|distinct|string',
+            'departure' => 'nullable|string|max:8',
+            'arrival' => 'nullable|string|max:8',
+            'dep_icao' => 'nullable|string|max:8',
+            'arr_icao' => 'nullable|string|max:8',
+        ]);
+
+        $origin = strtoupper(trim((string) ($data['departure'] ?? $data['dep_icao'] ?? '')));
+        $destination = strtoupper(trim((string) ($data['arrival'] ?? $data['arr_icao'] ?? '')));
+        if ($origin === '' || $destination === '' || $origin === $destination) {
+            return back()->withErrors(['reservation' => 'L’itinéraire demandé est invalide.']);
+        }
+
+        if (setting('bids.allow_multiple_bids') === false) {
+            return back()->withErrors([
+                'reservation' => 'La réservation groupée nécessite l’activation des réservations multiples dans phpVMS.',
+            ]);
+        }
+
+        $flightIds = array_values($data['flight_ids']);
+        $user = $r->user();
+
+        try {
+            DB::transaction(function () use ($flightIds, $origin, $destination, $user, $bids) {
+                $byId = Flight::query()
+                    ->with(['airline', 'subfleets'])
+                    ->whereIn('id', $flightIds)
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy(fn ($flight) => (string) $flight->id);
+
+                if ($byId->count() !== count($flightIds)) {
+                    throw new \RuntimeException('Un des vols proposés n’existe plus.');
+                }
+
+                $ordered = collect($flightIds)->map(function ($flightId) use ($byId) {
+                    return $byId->get((string) $flightId);
+                });
+
+                $expected = $origin;
+                $visited = [$origin => true];
+                $access = app(CompanyAccessService::class);
+
+                foreach ($ordered as $flight) {
+                    if (!$flight || !$flight->active || !$flight->visible || !$flight->airline?->active) {
+                        throw new \RuntimeException('Un des vols de cet itinéraire n’est plus disponible.');
+                    }
+                    if (!$access->canAccessAirline($user, (int) $flight->airline_id)) {
+                        throw new \RuntimeException('Votre profil ne permet plus de réserver une des compagnies de cet itinéraire.');
+                    }
+
+                    $departure = strtoupper((string) $flight->dpt_airport_id);
+                    $arrival = strtoupper((string) $flight->arr_airport_id);
+                    if ($departure !== $expected || isset($visited[$arrival])) {
+                        throw new \RuntimeException('La chaîne d’escales proposée n’est plus cohérente.');
+                    }
+
+                    $visited[$arrival] = true;
+                    $expected = $arrival;
+                }
+
+                if ($expected !== $destination) {
+                    throw new \RuntimeException('La destination finale de cet itinéraire a changé.');
+                }
+
+                // A segment already reserved by this pilot is valid and should
+                // not make the whole operation fail. Terminal/ghost operations
+                // are cleaned using the same Prométhée lifecycle as a normal
+                // single-flight reservation.
+                foreach ($ordered as $flight) {
+                    $active = $this->releaseTerminalReservationsForFlight($flight, $user);
+                    if ($active) continue;
+                    $bids->addBid($flight, $user);
+                }
+            }, 3);
+        } catch (\Throwable $e) {
+            return back()->withErrors([
+                'reservation' => $e->getMessage() ?: 'Impossible de réserver cet itinéraire.',
+            ]);
+        }
+
+        return redirect()->route('promethee.bookings')
+            ->with('success', count($flightIds).' vols réservés en une seule opération.');
+    }
+
     public function flight(string $id) {
         $flight = Flight::with(['airline','fares','subfleets','dpt_airport','arr_airport','alt_airport'])->findOrFail($id);
         $stats = [

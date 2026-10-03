@@ -1,7 +1,7 @@
 @extends('promethee::layout')
 @section('title','Programme des vols')
 @section('content')
-<div class="ops-header compact"><div><span class="eyebrow">LE RÉSEAU AIR INTER</span><h1>Programme des vols.</h1><p>Filtrer, comparer et préparer une rotation sans quitter Prométhée.</p></div><span class="tag metric-tag">{{ $flights->total() }} lignes publiées</span></div>
+<div class="ops-header compact"><div><span class="eyebrow">LE RÉSEAU AIR INTER</span><h1>Programme des vols.</h1><p>Filtrer, comparer et préparer une rotation sans quitter Prométhée.</p></div><span class="tag metric-tag">@if($flights->total()>0){{ $flights->total() }} lignes publiées @elseif($itineraries->isNotEmpty()){{ $itineraries->count() }} itinéraire{{ $itineraries->count()>1?'s':'' }} proposé{{ $itineraries->count()>1?'s':'' }} @else 0 ligne publiée @endif</span></div>
 <form id="flight-filters" class="panel filters flight-filter" method="get">
 <label class="filter-wide">Vol ou aéroport<input name="q" value="{{ request('q') }}" placeholder="IT123, LFPO, code ligne…"></label>
 <label>Départ<input name="departure" value="{{ request('departure') }}" list="flight-airports" placeholder="OACI, IATA ou ville" autocomplete="off"></label>
@@ -47,6 +47,68 @@
   if(Number.isFinite(previousScroll)&&previousScroll>0){requestAnimationFrame(()=>window.scrollTo({top:previousScroll,left:0,behavior:'auto'}));sessionStorage.removeItem(scrollKey);}
 })();
 </script>
-<section class="flight-cards">@forelse($flights as $flight)<article class="panel line-card"><div class="line-card-head"><div><span class="eyebrow">{{ $flight->airline?->name ?? 'Air Inter' }}</span><h2>{{ $flight->ident }}</h2></div><a class="round-link" aria-label="Préparer {{ $flight->ident }}" href="{{ route('promethee.flights.show',$flight->id) }}">→</a></div><div class="airport-pair"><strong title="{{ $flight->dpt_airport?->name }}">{{ $flight->dpt_airport_id }}</strong><i></i><strong title="{{ $flight->arr_airport?->name }}">{{ $flight->arr_airport_id }}</strong></div><p class="muted">{{ $flight->dpt_airport?->location ?: $flight->dpt_airport_id }} → {{ $flight->arr_airport?->location ?: $flight->arr_airport_id }}</p><dl class="line-meta"><div><dt>Départ</dt><dd>{{ $flight->dpt_time ?: '—' }}</dd></div><div><dt>Arrivée</dt><dd>{{ $flight->arr_time ?: '—' }}</dd></div><div><dt>Distance</dt><dd>{{ number_format($flight->distance->toUnit('nmi'),0,',',' ') }} NM</dd></div></dl><div class="fare-chips">@forelse($flight->subfleets as $subfleet)<span>{{ $subfleet->type }}</span>@empty<span>Flotte à confirmer</span>@endforelse</div></article>@empty<section class="panel empty"><h2>Aucun vol ne correspond à la recherche.</h2><p>Élargissez un filtre ou réinitialisez la recherche.</p></section>@endforelse</section>
+@if($itineraries->isNotEmpty())
+<section class="panel itinerary-panel" aria-labelledby="itinerary-title">
+  <div class="panel-heading">
+    <div>
+      <span class="eyebrow">CORRESPONDANCES PROPOSÉES</span>
+      <h2 id="itinerary-title">Aucun direct : voici les itinéraires possibles.</h2>
+    </div>
+    <span class="tag">Maximum {{ $maxItineraryStops }} escales</span>
+  </div>
+  <p class="muted itinerary-intro">Prométhée utilise uniquement des lignes réellement publiées. Chaque tronçon reste un vol indépendant dans les réservations, Hermès et les PIREP.</p>
+  <div class="itinerary-grid">
+    @foreach($itineraries as $index=>$itinerary)
+      @php
+        $hours=intdiv((int)$itinerary['flight_time'],60);
+        $minutes=(int)$itinerary['flight_time']%60;
+        $allReserved=collect($itinerary['legs'])->every(fn($leg)=>in_array((string)$leg->id,$reservedFlightIds,true));
+      @endphp
+      <article class="itinerary-card">
+        <div class="line-card-head">
+          <div>
+            <span class="eyebrow">OPTION {{ $index+1 }} · {{ $itinerary['stops'] }} ESCALE{{ $itinerary['stops']>1?'S':'' }}</span>
+            <h3>{{ implode(' → ',$itinerary['airports']) }}</h3>
+          </div>
+          <span class="tag">{{ count($itinerary['legs']) }} vols</span>
+        </div>
+        <div class="itinerary-summary">
+          <span>{{ number_format($itinerary['distance_nm'],0,',',' ') }} NM</span>
+          <span>@if($itinerary['flight_time']>0){{ $hours }} h {{ str_pad((string)$minutes,2,'0',STR_PAD_LEFT) }} de vol @else Temps à confirmer @endif</span>
+        </div>
+        <div class="itinerary-legs">
+          @foreach($itinerary['legs'] as $legIndex=>$leg)
+            <div class="itinerary-leg">
+              <div class="itinerary-leg-index">{{ $legIndex+1 }}</div>
+              <div>
+                <strong>{{ $leg->ident }}</strong>
+                <span>{{ $leg->dpt_airport_id }} → {{ $leg->arr_airport_id }}</span>
+              </div>
+              <div class="itinerary-leg-time">
+                <span>{{ $leg->dpt_time ?: '—' }} → {{ $leg->arr_time ?: '—' }}</span>
+                <small>{{ number_format($leg->distance->toUnit('nmi'),0,',',' ') }} NM</small>
+              </div>
+              <div class="itinerary-leg-actions">
+                @if(in_array((string)$leg->id,$reservedFlightIds,true))
+                  <span class="tag">Déjà réservé</span>
+                @endif
+                <a class="round-link" aria-label="Voir {{ $leg->ident }}" href="{{ route('promethee.flights.show',$leg->id) }}">→</a>
+              </div>
+            </div>
+          @endforeach
+        </div>
+        <form class="itinerary-reserve" method="post" action="{{ route('promethee.flights.itineraries.reserve') }}">
+          @csrf
+          <input type="hidden" name="departure" value="{{ $selectedDeparture }}">
+          <input type="hidden" name="arrival" value="{{ $selectedArrival }}">
+          @foreach($itinerary['legs'] as $leg)<input type="hidden" name="flight_ids[]" value="{{ $leg->id }}">@endforeach
+          <button type="submit">{{ $allReserved ? 'Itinéraire déjà réservé' : 'Réserver les '.count($itinerary['legs']).' vols' }}</button>
+        </form>
+      </article>
+    @endforeach
+  </div>
+</section>
+@endif
+<section class="flight-cards">@forelse($flights as $flight)<article class="panel line-card"><div class="line-card-head"><div><span class="eyebrow">{{ $flight->airline?->name ?? 'Air Inter' }}</span><h2>{{ $flight->ident }}</h2></div><a class="round-link" aria-label="Préparer {{ $flight->ident }}" href="{{ route('promethee.flights.show',$flight->id) }}">→</a></div><div class="airport-pair"><strong title="{{ $flight->dpt_airport?->name }}">{{ $flight->dpt_airport_id }}</strong><i></i><strong title="{{ $flight->arr_airport?->name }}">{{ $flight->arr_airport_id }}</strong></div><p class="muted">{{ $flight->dpt_airport?->location ?: $flight->dpt_airport_id }} → {{ $flight->arr_airport?->location ?: $flight->arr_airport_id }}</p><dl class="line-meta"><div><dt>Départ</dt><dd>{{ $flight->dpt_time ?: '—' }}</dd></div><div><dt>Arrivée</dt><dd>{{ $flight->arr_time ?: '—' }}</dd></div><div><dt>Distance</dt><dd>{{ number_format($flight->distance->toUnit('nmi'),0,',',' ') }} NM</dd></div></dl><div class="fare-chips">@forelse($flight->subfleets as $subfleet)<span>{{ $subfleet->type }}</span>@empty<span>Flotte à confirmer</span>@endforelse</div></article>@empty<section class="panel empty">@if($itineraries->isNotEmpty())<h2>Aucun vol direct ne correspond à la recherche.</h2><p>Des correspondances réalisables sont proposées juste au-dessus.</p>@elseif($selectedDeparture && $selectedArrival)<h2>Aucun vol direct ni itinéraire avec jusqu’à {{ $maxItineraryStops }} escales.</h2><p>Élargissez un filtre, changez de compagnie/appareil ou réinitialisez la recherche.</p>@else<h2>Aucun vol ne correspond à la recherche.</h2><p>Élargissez un filtre ou réinitialisez la recherche.</p>@endif</section>@endforelse</section>
 {{ $flights->links('pagination::bootstrap-4') }}
 @endsection

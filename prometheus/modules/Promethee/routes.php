@@ -1,7 +1,6 @@
 <?php
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Frontend\LanguageController;
-use App\Http\Controllers\Frontend\FlightController as FrontendFlightController;
 use Modules\Promethee\Http\PortalController;
 use Modules\Promethee\Http\MinitelController;
 use Modules\Promethee\Http\MinitelOperationsController;
@@ -48,7 +47,7 @@ Route::redirect('/dfleet', '/fleet', 301)->middleware('web');
 
 Route::middleware(['web','auth'])->name('promethee.')->group(function () {
     Route::get('/', [PortalController::class,'dashboard'])->name('dashboard');
-    Route::post('/flights/itineraries/reserve', [FrontendFlightController::class, 'reserveItinerary'])
+    Route::post('/flights/itineraries/reserve', [PortalController::class, 'reserveItinerary'])
         ->name('flights.itineraries.reserve');
     Route::get('/departure-board-data', [PortalController::class,'departureBoardData'])->name('departure-board.data');
     Route::prefix('minitel')->name('minitel.')->group(function () {
