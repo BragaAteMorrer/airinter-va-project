@@ -364,7 +364,7 @@ html[data-era="modern"] {
   transition: border-color .14s ease, background-color .14s ease;
 }
 
-[data-era="modern"] .panel > .panel-heading {
+[data-era="modern"] .panel:not(.departure-board) > .panel-heading {
   margin-bottom: 16px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--line);
@@ -442,6 +442,21 @@ html[data-era="modern"] {
   border-color: var(--ops-blue);
   background: #eef4f9;
   color: #104f9e;
+}
+
+[data-era="modern"] button.text-button {
+  min-height: 0;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: var(--ops-blue);
+}
+
+[data-era="modern"] button.text-button:hover {
+  border: 0;
+  background: transparent;
+  color: #104f9e;
+  text-decoration: underline;
 }
 
 [data-era="modern"] .tabs a.active {
