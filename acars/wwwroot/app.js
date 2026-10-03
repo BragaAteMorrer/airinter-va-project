@@ -142,10 +142,8 @@ let serverDispatch = null;
 let connected = false;
 let lastStatus = null;
 let lastFiledReview = null;
-let lastScoringPreview = null;
-let scoringPreviewPending = false;
-let scoringPreviewFetchedAt = 0;
-let scoringPreviewOperation = null;
+let serverCompanyScore = null;
+let serverCompanyScoreKey = null;
 let lastDatalinkSnapshot = null;
 let datalinkRefreshing = false;
 let recoveryWasVisible = false;
@@ -259,7 +257,6 @@ $$('.tab').forEach(button => {
     $('#' + button.dataset.tab).classList.add('active');
     if (button.dataset.tab === 'datalink') refreshDatalink();
     if (button.dataset.tab === 'network') refreshNetwork();
-    if (button.dataset.tab === 'review') refreshScoringPreview(true);
   };
 });
 
@@ -1379,11 +1376,10 @@ async function selectOperation(operation) {
   // snapshot for even one refresh cycle (that used to show "Vol déjà terminé"
   // on a brand-new selection).
   serverDispatch = null;
+  serverCompanyScore = null;
+  serverCompanyScoreKey = null;
   flightPlan = null;
   linkedSimBrief = null;
-  lastScoringPreview = null;
-  scoringPreviewFetchedAt = 0;
-  scoringPreviewOperation = null;
   readiness.operation = false;
   readiness.aircraft = false;
   readiness.ofp = false;
@@ -2245,11 +2241,9 @@ $('#resumeBtn').onclick = () => {
   return action('/api/resume', 'Enregistrement repris.');
 };
 $('#syncBtn').onclick = () => action('/api/sync', 'Données synchronisées.');
-$('#fileBtn').onclick = async () => {
+$('#fileBtn').onclick = () => {
   document.querySelector('[data-tab="review"]')?.click();
   renderReview(lastStatus?.review || lastStatus?.Review || lastFiledReview);
-  try { await call('/api/sync'); } catch {}
-  await refreshScoringPreview(true);
 };
 
 function currentDatalinkOperation() {
@@ -3033,87 +3027,81 @@ function renderReviewContext(current) {
   renderTimeline('#reviewTimeline', reviewValue(current,'timeline','Timeline') || []);
 }
 
-function renderScoring(scoring) {
-  const scoreNode = $('#reviewScore');
-  const summary = $('#reviewScoreSummary');
-  const coverage = $('#reviewScoreCoverage');
-  const penalties = $('#reviewPenalties');
+function renderCompanyScore(score = serverCompanyScore) {
+  const value = $('#reviewCompanyScore');
+  const meta = $('#reviewScoreMeta');
+  const breakdown = $('#reviewScoreBreakdown');
+  if (!value || !breakdown) return;
 
-  if (!scoring || scoring.available !== true) {
-    setText(scoreNode, '—');
-    setText(summary, 'Score compagnie en attente');
-    setText(coverage, scoring?.reason || 'Prométhée calcule les pénalités à partir des données réellement disponibles.');
-    if (penalties) penalties.innerHTML = '<p class="empty">Aucune pénalité calculée pour le moment.</p>';
-    return;
-  }
-
-  const score = Number(scoring.score ?? 100);
-  const total = Number(scoring.deductions_total ?? 0);
-  setText(scoreNode, Math.round(score) + '/100');
-  setText(summary, Math.round(score) + '/100 · ' + (total > 0 ? '−' + total + ' point' + (total > 1 ? 's' : '') : 'aucun retrait'));
-
-  const evaluated = Array.isArray(scoring.evaluated_rule_ids) ? scoring.evaluated_rule_ids.length : 0;
-  const unavailable = Array.isArray(scoring.unavailable_rules) ? scoring.unavailable_rules.length : 0;
-  setText(coverage, evaluated + ' règle' + (evaluated > 1 ? 's' : '') + ' évaluée' + (evaluated > 1 ? 's' : '')
-    + (unavailable ? ' · ' + unavailable + ' non évaluable' + (unavailable > 1 ? 's' : '') + ' faute de donnée simulateur' : '')
-    + (scoring.stored ? ' · snapshot enregistré avec le PIREP' : ' · prévisualisation avant dépôt'));
-
-  if (!penalties) return;
-  penalties.replaceChildren();
-  const deductions = Array.isArray(scoring.deductions) ? scoring.deductions : [];
-  if (!deductions.length) {
+  breakdown.replaceChildren();
+  if (!score?.available) {
+    value.textContent = '— / 100';
+    value.classList.remove('ready');
+    if (meta) meta.textContent = score?.message || 'Le score sera calculé par Prométhée dès que les données de vol seront disponibles.';
     const empty = document.createElement('p');
     empty.className = 'empty';
-    empty.textContent = 'Aucune pénalité vmsACARS détectée sur les données évaluables.';
-    penalties.append(empty);
+    empty.textContent = 'Aucune pénalité calculée pour le moment.';
+    breakdown.append(empty);
     return;
   }
 
-  deductions.forEach(item => {
-    const row = document.createElement('article');
-    row.className = 'observation warning';
-    const meta = document.createElement('span');
-    meta.textContent = item.rule_id || 'VMSACARS';
-    const title = document.createElement('strong');
-    title.textContent = (item.label || item.rule_id || 'Règle compagnie') + ' · −' + Number(item.deduction || 0) + ' pt';
-    const detail = document.createElement('small');
-    const first = Array.isArray(item.occurrences) ? item.occurrences[0] : null;
-    detail.textContent = [
-      Number(item.count || 0) + ' × ' + Number(item.points || 0) + ' pt',
-      first?.detail || null,
-      first?.value != null ? String(first.value) + (first.unit ? ' ' + first.unit : '') : null
-    ].filter(Boolean).join(' · ');
-    row.append(meta, title, detail);
-    penalties.append(row);
-  });
+  const numericScore = Number(score.score);
+  const penalty = Number(score.penalty_total || 0);
+  value.textContent = Number.isFinite(numericScore) ? Math.round(numericScore) + ' / 100' : '— / 100';
+  value.classList.toggle('ready', Number.isFinite(numericScore) && numericScore >= 80);
+  if (meta) meta.textContent = (score.persisted ? 'Score définitif du PIREP' : 'Prévisualisation avant dépôt')
+    + ' · ' + penalty + ' point' + (penalty > 1 ? 's' : '') + ' retiré' + (penalty > 1 ? 's' : '')
+    + ' · règles ' + (score.rules_source || 'VMSAcars') + '.';
+
+  const items = Array.isArray(score.items) ? score.items : [];
+  if (!items.length) {
+    const empty = document.createElement('p');
+    empty.className = 'empty';
+    empty.textContent = penalty === 0 ? 'Aucun retrait de points.' : 'Détail des pénalités indisponible.';
+    breakdown.append(empty);
+  } else {
+    items.forEach(item => {
+      const row = document.createElement('article');
+      const identity = document.createElement('div');
+      const name = document.createElement('strong');
+      name.textContent = item.name || item.rule_id || 'Règle VMSAcars';
+      const detail = document.createElement('small');
+      const count = Number(item.occurrences || 0);
+      detail.textContent = (item.rule_id || '')
+        + (count > 1 ? ' · ' + count + ' occurrences' : '')
+        + (item.parameter != null ? ' · seuil ' + item.parameter : '');
+      identity.append(name, detail);
+      const deduction = document.createElement('strong');
+      deduction.textContent = '−' + Number(item.deduction || 0) + ' pt';
+      row.append(identity, deduction);
+      breakdown.append(row);
+    });
+  }
+
+  const unavailable = Array.isArray(score.unavailable_rules) ? score.unavailable_rules : [];
+  if (unavailable.length && meta) {
+    meta.textContent += ' ' + unavailable.length + ' règle' + (unavailable.length > 1 ? 's' : '')
+      + ' historique' + (unavailable.length > 1 ? 's' : '') + ' non évaluée'
+      + (unavailable.length > 1 ? 's' : '') + ' faute de télémétrie compatible.';
+  }
 }
 
-async function refreshScoringPreview(force = false) {
-  const activeFlight = lastStatus?.flight || lastStatus?.Flight || null;
-  const operationRef = selectedOperation?.operation_id || selectedOperation?.id
-    || activeFlight?.operationId || activeFlight?.OperationId || null;
-  if (!connected || !operationRef) {
-    if (!lastScoringPreview) renderScoring(null);
-    return;
-  }
+async function refreshCompanyScore(force = false) {
+  const activeFlight = lastStatus?.flight || lastStatus?.Flight || {};
+  const operationRef = selectedOperation?.operation_id || selectedOperation?.id || selectedOperation?.bid_id
+    || activeFlight.operationId || activeFlight.OperationId || null;
+  if (!operationRef || !connected) return;
 
-  const now = Date.now();
-  if (scoringPreviewPending) return;
-  if (!force && scoringPreviewOperation === operationRef && now - scoringPreviewFetchedAt < 8000) return;
+  const key = String(operationRef) + '|' + String(pirepId || activeFlight.pirepId || activeFlight.PirepId || '');
+  if (!force && serverCompanyScoreKey === key) return;
 
-  scoringPreviewPending = true;
-  scoringPreviewFetchedAt = now;
-  scoringPreviewOperation = operationRef;
   try {
-    const payload = unwrap(await call('/api/v1/operations/' + encodeURIComponent(operationRef) + '/debrief'));
-    lastScoringPreview = payload?.scoring || null;
-    renderScoring(lastScoringPreview);
+    const debrief = unwrap(await call('/api/v1/operations/' + encodeURIComponent(operationRef) + '/debrief'));
+    serverCompanyScore = debrief?.score || null;
+    serverCompanyScoreKey = key;
+    renderCompanyScore(serverCompanyScore);
   } catch (error) {
-    if (force) {
-      setText($('#reviewScoreCoverage'), 'Score Prométhée indisponible : ' + friendlyError(error, 'Calcul du score indisponible.', 'Flight Review'));
-    }
-  } finally {
-    scoringPreviewPending = false;
+    if (force) showMessage('#reviewMessage', 'Score compagnie indisponible : ' + friendlyError(error), true);
   }
 }
 
@@ -3124,14 +3112,14 @@ function renderReview(review) {
     renderReviewContext(null);
     renderReviewCharts(null);
     if (state) { state.textContent = 'AUCUN VOL'; state.classList.remove('ready'); }
-    ['#reviewDistance','#reviewAirborne','#reviewBlock','#reviewFuel','#reviewLandingRate','#reviewMaxBank','#reviewFuelAdded','#reviewSimRate'].forEach(id => setText($(id), '—'));
+    ['#reviewDistance','#reviewAirborne','#reviewBlock','#reviewFuel','#reviewLandingRate','#reviewMaxBank','#reviewFuelAdded','#reviewSimRate','#reviewPause'].forEach(id => setText($(id), '—'));
     setText($('#review1000'), 'NON OBSERVÉ');
     setText($('#review500'), 'NON OBSERVÉ');
     setText($('#reviewGoAround'), '0 remise de gaz');
     setText($('#reviewBounce'), '0 rebond');
     renderObservations('#fdmObservations', [], 'Aucune observation pour le moment.');
     renderObservations('#reviewIssues', [], 'Aucune anomalie détectée.');
-    renderScoring(null);
+    renderCompanyScore(null);
     if ($('#submitReviewBtn')) $('#submitReviewBtn').disabled = true;
     setText($('#reviewHint'), 'Le dépôt du PIREP devient disponible après l’événement IN.');
     return;
@@ -3142,6 +3130,8 @@ function renderReview(review) {
   const phase = String(reviewValue(current, 'phase', 'Phase') || '—');
   const ready = Boolean(reviewValue(current, 'readyToFile', 'ReadyToFile'));
   const filed = Boolean(lastFiledReview && !lastStatus?.review && !lastStatus?.Review);
+  renderCompanyScore(serverCompanyScore);
+  if (ready || filed) refreshCompanyScore(false);
   if (state) {
     state.textContent = filed ? 'PIREP DÉPOSÉ' : (ready ? 'READY TO FILE' : phase);
     state.classList.toggle('ready', ready || filed);
@@ -3158,6 +3148,10 @@ function renderReview(review) {
   setText($('#reviewFuelAdded'), Math.round(Number(reviewValue(current,'fuelAdded','FuelAdded') || 0)) + ' lb');
   const simRate = reviewValue(current,'maxSimulationRate','MaxSimulationRate');
   setText($('#reviewSimRate'), simRate == null ? 'x1' : 'x' + Number(simRate).toFixed(2).replace(/\.00$/,''));
+  const pauseCount = Number(reviewValue(current,'pauseCount','PauseCount') || 0);
+  const pausedSeconds = Number(reviewValue(current,'pausedSeconds','PausedSeconds') || 0);
+  const pausedMinutes = pausedSeconds >= 60 ? Math.floor(pausedSeconds / 60) + ' min ' + Math.round(pausedSeconds % 60) + ' s' : Math.round(pausedSeconds) + ' s';
+  setText($('#reviewPause'), pauseCount > 0 ? pausedMinutes + ' · ' + pauseCount + ' pause' + (pauseCount > 1 ? 's' : '') : '0 s');
 
   setText($('#review1000'), reviewValue(current,'approach1000Status','Approach1000Status') || 'NON OBSERVÉ');
   setText($('#review500'), reviewValue(current,'approach500Status','Approach500Status') || 'NON OBSERVÉ');
@@ -3168,8 +3162,6 @@ function renderReview(review) {
 
   renderObservations('#fdmObservations', reviewValue(current,'observations','Observations') || [], 'Aucune observation FDM.');
   renderObservations('#reviewIssues', reviewValue(current,'issues','Issues') || [], 'Aucune anomalie détectée.');
-  renderScoring(lastScoringPreview);
-  if ($('#review')?.classList.contains('active')) void refreshScoringPreview(false);
 
   const button = $('#submitReviewBtn');
   if (button) button.disabled = !ready || filed;
@@ -3188,7 +3180,8 @@ $('#submitReviewBtn').onclick = async () => {
     showMessage('#reviewMessage', 'PIREP déposé. Flight Review archivé localement.');
     renderReview(lastFiledReview);
     await refreshStatus();
-    await refreshScoringPreview(true);
+    serverCompanyScoreKey = null;
+    await refreshCompanyScore(true);
   } catch (error) {
     showMessage('#reviewMessage', friendlyError(error), true);
   }

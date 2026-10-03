@@ -170,10 +170,6 @@ jobs:
           php -l tests/PresenceServiceTest.php
           php -l modules/Promethee/Services/OperationIdentityService.php
           php -l modules/Promethee/Services/SafetyAnalyzer.php
-          php -l modules/Promethee/Services/HermesScoringService.php
-          php -l modules/Promethee/Config/vmsacars-scoring.php
-          php -l modules/Promethee/Database/migrations/2026_10_03_000024_add_hermes_pirep_scoring.php
-          php -l tests/PrometheeHermesScoringTest.php
           php -l modules/Promethee/Services/AircraftOperationalStateService.php
           php -l modules/Promethee/Services/DemandProfileService.php
           php -l modules/Promethee/Services/AirInterCabinProfileService.php
@@ -198,6 +194,8 @@ jobs:
           php -l modules/Promethee/Database/migrations/2026_09_11_000000_create_acars_access_tokens_table.php
           php -l tests/PrometheeDemandEconomyTest.php
           php -l modules/Promethee/routes.php
+          php -l app/Http/Controllers/Frontend/FlightController.php
+          for file in resources/lang/*/flights.php; do php -l "$file"; done
           php -l app/Http/Controllers/Auth/RegisterController.php
           php -l tests/RegistrationTest.php
           php -l tests/MinitelProjectionTest.php
@@ -211,6 +209,13 @@ jobs:
           php -l app/Notifications/Messages/NewsAdded.php
           php -l app/Notifications/Messages/InviteLink.php
           php -l modules/Promethee/Providers/PrometheeServiceProvider.php
+          php -l modules/Promethee/Services/AirframeMaintenanceService.php
+          php -l modules/Promethee/Services/FleetRotationService.php
+          php -l modules/Promethee/Listeners/AirframeMaintenanceEventListener.php
+          php -l modules/Promethee/Console/ProcessAirframeMaintenanceCommand.php
+          php -l modules/Promethee/Console/RotateFleetCommand.php
+          php -l modules/Promethee/Database/migrations/2026_10_03_000024_add_airframe_check_cycles.php
+          php -l tests/PrometheeAirframeMaintenanceTest.php
           php -l modules/Promethee/Listeners/ProgressionEventListener.php
           php -l modules/Promethee/Services/ProgressionService.php
           php -l modules/Promethee/Console/RecalculateProgressionCommand.php
@@ -262,10 +267,10 @@ jobs:
         run: composer install --no-interaction --prefer-dist --no-progress
       - name: Run Hermès operation lifecycle regression suite
         run: vendor/bin/phpunit tests/HermesOperationLifecycleTest.php
-      - name: Run Hermès vmsACARS scoring regression suite
-        run: vendor/bin/phpunit tests/PrometheeHermesScoringTest.php
       - name: Run sb-airframe historical configuration tests
         run: vendor/bin/phpunit tests/AircraftConfigurationResolverTest.php
+      - name: Run airframe maintenance and fleet rotation tests
+        run: vendor/bin/phpunit tests/PrometheeAirframeMaintenanceTest.php
 
   minitel-release-gate:
     name: Minitel M7 release gate

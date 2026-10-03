@@ -24,6 +24,11 @@ public sealed class SimConnectReader : ISimulatorConnector
     private const uint SimConnectDataTypeString128 = 8;
     private const uint SimConnectDataTypeString256 = 9;
     private const uint SimConnectPeriodSecond = 4;
+    private const uint PauseEventId = 1001;
+    private const uint SimStopEventId = 1002;
+    private const uint SimStartEventId = 1003;
+    private const int RecvIdEvent = 4;
+    private const int RecvIdSimObjectData = 8;
 
     private IntPtr handle; private readonly Dispatch callback;
     private string? aircraftTitle;
@@ -31,6 +36,9 @@ public sealed class SimConnectReader : ISimulatorConnector
     private string? aircraftType;
     private double? previousThrottle1;
     private double? previousThrottle2;
+    private uint pauseFlags;
+    private bool simStopped;
+    private bool simVarPaused;
     public Sample? Latest { get; private set; }
     public string Status { get; private set; } = "Simulateur non détecté";
     public event Action<Sample>? Received;
@@ -70,18 +78,24 @@ public sealed class SimConnectReader : ISimulatorConnector
                 Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,TitleRequestId,TitleDefinitionId,0,SimConnectPeriodSecond,0,0,0,0));
                 Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,ModelRequestId,ModelDefinitionId,0,SimConnectPeriodSecond,0,0,0,0));
                 Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,TypeRequestId,TypeDefinitionId,0,SimConnectPeriodSecond,0,0,0,0));
+                TrySubscribeSystemEvent(PauseEventId, "Pause_EX1");
+                TrySubscribeSystemEvent(SimStopEventId, "SimStop");
+                TrySubscribeSystemEvent(SimStartEventId, "SimStart");
                 Status="MSFS détecté";
             }
             Marshal.ThrowExceptionForHR(SimConnect_CallDispatch(handle,callback,IntPtr.Zero));
+            if (LatestSnapshot?.Paused == true)
+                LatestSnapshot = LatestSnapshot with { SampleId = Guid.NewGuid(), RecordedAt = DateTimeOffset.UtcNow };
         } catch(DllNotFoundException ex){System.Diagnostics.Trace.WriteLine(ex);Status="Simulateur non détecté";Close();}
           catch(BadImageFormatException ex){System.Diagnostics.Trace.WriteLine(ex);Status="Simulateur non détecté";Close();}
           catch(Exception ex) when(ex is COMException or EntryPointNotFoundException){System.Diagnostics.Trace.WriteLine(ex);Status="Connexion au simulateur interrompue";Close();}
-        if(Latest is not null && DateTimeOffset.UtcNow-Latest.RecordedAt>TimeSpan.FromSeconds(15)) Status="Simulateur non détecté";
+        if(LatestSnapshot is not null && LatestSnapshot.Paused != true && DateTimeOffset.UtcNow-LatestSnapshot.RecordedAt>TimeSpan.FromSeconds(15)) Status="Simulateur non détecté";
     }
     private void Receive(IntPtr data,uint length,IntPtr context)
     {
         var id=Marshal.ReadInt32(data,8); if(id==3){Status="Simulateur non détecté";Close();return;} if(id==1){Status="Connexion au simulateur interrompue";return;}
-        if(id!=8)return;
+        if(id==RecvIdEvent){ReceiveSystemEvent(data,length);return;}
+        if(id!=RecvIdSimObjectData)return;
         var requestId=Marshal.ReadInt32(data,12);
         if(requestId==TitleRequestId){
             aircraftTitle=ReadFixedString(data,length,256);
@@ -112,13 +126,75 @@ public sealed class SimConnectReader : ISimulatorConnector
             DoorsOpen=v[29] > 0.5 || v[30] > 0.5 || v[31] > 0.5 || v[32] > 0.5,
             TransponderCode=NormalizeTransponder(v[33]),
             AutopilotEnabled=v[34] != 0,
-            Paused=v[35] != 0,
+            Paused=ResolvePaused(simVarPaused = v[35] != 0),
+            PauseKind=ResolvePauseKind(simVarPaused),
             ThrustStable=thrustStable,
             AircraftTitle=aircraftTitle,
             AircraftIcao=LooksLikeIcao(aircraftModel) ? aircraftModel : null,
             AircraftModel=aircraftType ?? aircraftModel
         };
-        Status="Connecté à MSFS";Received?.Invoke(Latest); SnapshotReceived?.Invoke(LatestSnapshot);
+        Status=LatestSnapshot.Paused == true
+            ? "Connecté à MSFS — simulation en pause"
+            : "Connecté à MSFS";
+        Received?.Invoke(Latest); SnapshotReceived?.Invoke(LatestSnapshot);
+    }
+    private void ReceiveSystemEvent(IntPtr data, uint length)
+    {
+        if (length < 24) return;
+        var eventId = (uint)Marshal.ReadInt32(data, 16);
+        var eventData = (uint)Marshal.ReadInt32(data, 20);
+
+        if (eventId == PauseEventId) {
+            pauseFlags = eventData;
+            if (eventData == 0) simVarPaused = false;
+            RefreshPauseSnapshot();
+            return;
+        }
+        if (eventId == SimStopEventId) {
+            simStopped = true;
+            RefreshPauseSnapshot();
+            return;
+        }
+        if (eventId == SimStartEventId) {
+            simStopped = false;
+            RefreshPauseSnapshot();
+        }
+    }
+    private void RefreshPauseSnapshot()
+    {
+        if (LatestSnapshot is null) return;
+        var now = DateTimeOffset.UtcNow;
+        LatestSnapshot = LatestSnapshot with {
+            SampleId = Guid.NewGuid(),
+            RecordedAt = now,
+            Paused = ResolvePaused(simVarPaused),
+            PauseKind = ResolvePauseKind(simVarPaused)
+        };
+        Status = LatestSnapshot.Paused == true
+            ? "Connecté à MSFS — simulation en pause"
+            : "Connecté à MSFS";
+        SnapshotReceived?.Invoke(LatestSnapshot);
+    }
+    private bool ResolvePaused(bool simVarPaused) => simStopped || pauseFlags != 0 || simVarPaused;
+    private string? ResolvePauseKind(bool simVarPaused)
+    {
+        if (simStopped) return "MENU_OR_DIALOG";
+        var kinds = new List<string>();
+        if ((pauseFlags & 4) != 0) kinds.Add("ACTIVE_PAUSE");
+        if ((pauseFlags & 1) != 0) kinds.Add("FULL_PAUSE");
+        if ((pauseFlags & 8) != 0) kinds.Add("SIM_PAUSE");
+        if ((pauseFlags & 2) != 0) kinds.Add("FSX_LEGACY_PAUSE");
+        if (kinds.Count == 0 && simVarPaused) kinds.Add("PAUSE");
+        return kinds.Count == 0 ? null : string.Join("+", kinds);
+    }
+    private void TrySubscribeSystemEvent(uint eventId, string eventName)
+    {
+        try {
+            var result = SimConnect_SubscribeToSystemEvent(handle, eventId, eventName);
+            if (result < 0) Marshal.ThrowExceptionForHR(result);
+        } catch (Exception exception) {
+            System.Diagnostics.Trace.WriteLine($"SimConnect system event {eventName} unavailable: {exception}");
+        }
     }
     private static int? NormalizeTransponder(double value){
         if(!double.IsFinite(value) || value < 0) return null;
@@ -138,7 +214,7 @@ public sealed class SimConnectReader : ISimulatorConnector
     private void Close(){
         if(handle!=IntPtr.Zero){SimConnect_Close(handle);handle=IntPtr.Zero;}
         Latest=null;LatestSnapshot=null;aircraftTitle=null;aircraftModel=null;aircraftType=null;
-        previousThrottle1=null;previousThrottle2=null;
+        previousThrottle1=null;previousThrottle2=null;pauseFlags=0;simStopped=false;simVarPaused=false;
     } public void Dispose()=>Close();
     [UnmanagedFunctionPointer(CallingConvention.StdCall)] private delegate void Dispatch(IntPtr data,uint length,IntPtr context);
     [DllImport("SimConnect.dll",CharSet=CharSet.Ansi)] private static extern int SimConnect_Open(out IntPtr handle,string name,IntPtr window,uint message,IntPtr signal,uint index);
@@ -146,4 +222,5 @@ public sealed class SimConnectReader : ISimulatorConnector
     [DllImport("SimConnect.dll",CharSet=CharSet.Ansi)] private static extern int SimConnect_AddToDataDefinition(IntPtr handle,uint definition,string name,string unit,uint type,float epsilon,uint datum);
     [DllImport("SimConnect.dll")] private static extern int SimConnect_RequestDataOnSimObject(IntPtr handle,uint request,uint definition,uint objectId,uint period,uint flags,uint origin,uint interval,uint limit);
     [DllImport("SimConnect.dll")] private static extern int SimConnect_CallDispatch(IntPtr handle,Dispatch callback,IntPtr context);
+    [DllImport("SimConnect.dll",CharSet=CharSet.Ansi)] private static extern int SimConnect_SubscribeToSystemEvent(IntPtr handle,uint eventId,string systemEventName);
 }

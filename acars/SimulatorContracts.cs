@@ -65,6 +65,7 @@ public sealed record AircraftSnapshot(
     bool? AutopilotEnabled = null,
     bool? SlewActive = null,
     bool? Paused = null,
+    string? PauseKind = null,
     double? SimulationRate = null,
     string? AircraftTitle = null,
     string? AircraftIcao = null,

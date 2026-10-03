@@ -1,6 +1,7 @@
 <?php
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Frontend\LanguageController;
+use App\Http\Controllers\Frontend\FlightController as FrontendFlightController;
 use Modules\Promethee\Http\PortalController;
 use Modules\Promethee\Http\MinitelController;
 use Modules\Promethee\Http\MinitelOperationsController;
@@ -47,6 +48,8 @@ Route::redirect('/dfleet', '/fleet', 301)->middleware('web');
 
 Route::middleware(['web','auth'])->name('promethee.')->group(function () {
     Route::get('/', [PortalController::class,'dashboard'])->name('dashboard');
+    Route::post('/flights/itineraries/reserve', [FrontendFlightController::class, 'reserveItinerary'])
+        ->name('flights.itineraries.reserve');
     Route::get('/departure-board-data', [PortalController::class,'departureBoardData'])->name('departure-board.data');
     Route::prefix('minitel')->name('minitel.')->group(function () {
         Route::get('/bootstrap', [MinitelController::class, 'bootstrap'])->name('bootstrap');
@@ -236,6 +239,9 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::post('/regional-operations/rotation/settings', [PortalController::class,'saveFleetRotationSettings'])->name('regional.rotation.settings');
         Route::post('/regional-operations/rotation/run', [PortalController::class,'runFleetRotation'])->name('regional.rotation.run');
         Route::get('/maintenance', [PortalController::class,'adminMaintenance'])->name('maintenance');
+        Route::post('/maintenance/airframe-settings', [PortalController::class,'saveAirframeMaintenanceSettings'])->name('maintenance.airframe-settings.save');
+        Route::post('/maintenance/airframe/{aircraft}/start', [PortalController::class,'startAirframeCheck'])->name('maintenance.airframe.start');
+        Route::post('/maintenance/sync', [PortalController::class,'syncEngineFleet'])->name('maintenance.sync');
         Route::post('/maintenance/engine-profiles', [PortalController::class,'saveEngineProfile'])->name('maintenance.engine-profiles.save');
         Route::post('/maintenance/engines', [PortalController::class,'createEngineUnit'])->name('maintenance.engines.create');
         Route::post('/maintenance/engines/{engine}/overhaul', [PortalController::class,'overhaulEngine'])->name('maintenance.engines.overhaul');

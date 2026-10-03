@@ -6,7 +6,8 @@ namespace Promethee;
 public record FlightState(string Server, string PirepId, DateTimeOffset Started, double InitialFuel,
     string Phase = "OUT", DateTimeOffset? BlockOff = null, DateTimeOffset? Takeoff = null,
     DateTimeOffset? Landing = null, DateTimeOffset? BlockOn = null, double Distance = 0,
-    double FuelUsed = 0, double AirborneSeconds = 0, double? LandingRate = null, bool Recording = true, string? OperationId = null)
+    double FuelUsed = 0, double AirborneSeconds = 0, double? LandingRate = null, bool Recording = true, string? OperationId = null,
+    double PausedSeconds = 0)
 {
     public List<FlightIssue> Issues { get; init; } = [];
     public List<FdmObservation> Observations { get; init; } = [];
@@ -191,7 +192,10 @@ public sealed class FlightRecorder
     }
 
     public void Pause() { lock (Gate) {
-        if (Flight is not null) Flight = Flight with { Recording = false };
+        if (Flight is not null) {
+            AddObservations(fdm.Flush(previousSnapshot, FlightTrackingEngine.ParsePhase(Flight.Phase)));
+            Flight = Flight with { Recording = false };
+        }
         previous = null;
         previousSnapshot = null;
         Save();
@@ -245,8 +249,10 @@ public sealed class FlightRecorder
                 else Warning = "Déplacement discontinu détecté ; segment exclu de la distance.";
 
                 var fuel = Flight.FuelUsed + Math.Max(0, previous.Fuel - s.Fuel);
-                var airborne = Flight.AirborneSeconds + (!previous.OnGround ? dt : 0);
-                Flight = Flight with { Distance = distance, FuelUsed = fuel, AirborneSeconds = airborne };
+                var pausedInterval = previousSnapshot?.Paused == true;
+                var airborne = Flight.AirborneSeconds + (!previous.OnGround && !pausedInterval ? dt : 0);
+                var paused = Flight.PausedSeconds + (pausedInterval ? dt : 0);
+                Flight = Flight with { Distance = distance, FuelUsed = fuel, AirborneSeconds = airborne, PausedSeconds = paused };
             } else if (dt > 10) {
                 Warning = "Interruption de télémétrie : durée et consommation peuvent être incomplètes.";
             }
@@ -319,6 +325,10 @@ public sealed class FlightRecorder
                 maxBank > 0 ? maxBank : null,
                 Math.Round(observations.Where(x => x.Code == "FUEL_ADDED").Sum(x => x.Value ?? 0)),
                 maxRate > 0 ? maxRate : null,
+                Math.Max(
+                    Flight.Journal.Count(x => x.Name == "PAUSE_STARTED"),
+                    observations.Count(x => x.Code == "PAUSE")),
+                (int)Math.Round(Flight.PausedSeconds),
                 Flight.Issues,
                 observations,
                 Flight.Timeline,

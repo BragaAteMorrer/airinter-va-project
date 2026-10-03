@@ -317,6 +317,11 @@ public sealed class FlightTrackingEngine
         Change(before.NavigationLight, after.NavigationLight, "NAV_LIGHTS", after, events);
         Change(before.StrobeLight, after.StrobeLight, "STROBE_LIGHTS", after, events);
 
+        if (before.Paused != true && after.Paused == true)
+            events.Add(new("PAUSE_STARTED", after.RecordedAt, after));
+        if (before.Paused == true && after.Paused == false)
+            events.Add(new("PAUSE_ENDED", after.RecordedAt, after));
+
         if (before.SlewActive == false && after.SlewActive == true)
             events.Add(new("SLEW_ACTIVE", after.RecordedAt, after));
         if (before.SimulationRate is not null && after.SimulationRate is > 1 && after.SimulationRate > before.SimulationRate)

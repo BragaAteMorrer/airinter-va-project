@@ -123,18 +123,14 @@ public sealed class TelemetryService(ISimulatorConnector sim, FlightRecorder rec
                             fuel=raw?.FuelWeight ?? x.Sample.Fuel,
                             bank=raw?.BankDegrees,
                             pitch=raw?.PitchDegrees,
-                            touchdown_rate=raw?.TouchdownVerticalSpeedFeetPerMinute,
-                            simulation_rate=raw?.SimulationRate,
-                            slew_active=raw?.SlewActive,
-                            beacon_light=raw?.BeaconLight,
-                            landing_light=raw?.LandingLight,
-                            engines_running=raw?.EnginesRunning,
                             on_ground=raw?.OnGround ?? x.Sample.OnGround,
                             gear_down=raw?.GearDown,
                             landing_flaps=raw?.FlapsPercent is { } flaps ? flaps > 0 : (bool?)null,
                             thrust_stable=raw?.ThrustStable ?? (raw is null ? (bool?)x.Sample.ThrustStable : null),
                             localizer_dots=raw?.LocalizerDots ?? (raw is null ? (double?)x.Sample.LocalizerDots : null),
                             glideslope_dots=raw?.GlideslopeDots ?? (raw is null ? (double?)x.Sample.GlideslopeDots : null),
+                            paused=raw?.Paused,
+                            pause_kind=raw?.PauseKind,
                             phase=x.Phase ?? flight.Phase
                         };
                     })

@@ -392,7 +392,7 @@
       <p id="networkMessage" class="message" hidden role="status"></p>
     </section>
     <section id="review" class="panel">
-      <div class="workspace-title"><div><span class="kicker">FLIGHT DATA MONITORING</span><h2>Flight Review</h2><p class="hint">Synthèse factuelle du vol. Le score compagnie est calculé par Prométhée avec le barème vmsACARS ; une donnée inconnue n’est jamais transformée en pénalité.</p></div><strong id="reviewState" class="ready-state">EN VOL</strong></div>
+      <div class="workspace-title"><div><span class="kicker">FLIGHT DATA MONITORING</span><h2>Flight Review</h2><p class="hint">Synthèse factuelle du vol. Hermès observe ; Prométhée applique le barème VMSAcars officiel et conserve le score du PIREP.</p></div><strong id="reviewState" class="ready-state">EN VOL</strong></div>
       <div class="review-operation-band">
         <span class="kicker">OPÉRATION</span>
         <strong id="reviewOperationIdentity">Opération en cours</strong>
@@ -418,7 +418,7 @@
         <div><span>Max bank observé</span><strong id="reviewMaxBank">—</strong></div>
         <div><span>Fuel ajouté</span><strong id="reviewFuelAdded">—</strong></div>
         <div><span>Max sim rate</span><strong id="reviewSimRate">—</strong></div>
-        <div><span>Score compagnie</span><strong id="reviewScore">—</strong></div>
+        <div><span>Pauses simulateur</span><strong id="reviewPause">—</strong></div>
       </div>
       <div class="review-chart-grid" aria-label="Profils du vol">
         <article class="review-chart-card">
@@ -430,6 +430,13 @@
           <svg id="reviewFuelChart" class="review-chart review-chart--fuel" viewBox="0 0 640 180" preserveAspectRatio="none" role="img" aria-label="Évolution du carburant du vol"></svg>
         </article>
       </div>
+      <div class="review-event-panel" id="companyScorePanel">
+        <div><span class="kicker">BARÈME VMSACARS</span><h3>Score compagnie</h3><p id="reviewScoreMeta" class="hint">Le score est calculé par Prométhée à partir des règles VMSAcars actives.</p></div>
+        <div>
+          <strong id="reviewCompanyScore" class="ready-state">— / 100</strong>
+          <div id="reviewScoreBreakdown" class="observation-list"><p class="empty">Aucune pénalité calculée pour le moment.</p></div>
+        </div>
+      </div>
       <div class="review-gates">
         <article><span class="kicker">1000 FT AGL</span><strong id="review1000">NON OBSERVÉ</strong><p>Train, volets, VS et bank selon les données disponibles.</p></article>
         <article><span class="kicker">500 FT AGL</span><strong id="review500">NON OBSERVÉ</strong><p>Contrôle générique, indépendant du score Air Inter.</p></article>
@@ -438,10 +445,6 @@
       <div class="review-event-panel">
         <div><span class="kicker">CHRONOLOGIE</span><h3>Événements importants</h3><p class="hint">Même timeline que le suivi en vol, présentée ici pour expliquer le déroulement avant le dépôt final.</p></div>
         <div id="reviewTimeline" class="timeline review-timeline"></div>
-      </div>
-      <div class="review-event-panel">
-        <div><span class="kicker">BARÈME VMSACARS</span><h3 id="reviewScoreSummary">Score compagnie en attente</h3><p id="reviewScoreCoverage" class="hint">Prométhée calcule les pénalités à partir des données réellement disponibles.</p></div>
-        <div id="reviewPenalties" class="observation-list"><p class="empty">Aucune pénalité calculée pour le moment.</p></div>
       </div>
       <div class="review-columns">
         <article><h3>Observations FDM</h3><div id="fdmObservations" class="observation-list"><p class="empty">Aucune observation pour le moment.</p></div></article>
@@ -537,5 +540,5 @@ try {
   if ((localStorage.hermesEra || localStorage.prometheeEra || 'modern') === 'minitel') window.loadHermesMinitel();
 } catch {}
 </script>
-<script src="/app.js?rev=20261003-vmsacars-scoring-review-profile"></script>
+<script src="/app.js?rev=20261003-review-profile"></script>
 </body></html>

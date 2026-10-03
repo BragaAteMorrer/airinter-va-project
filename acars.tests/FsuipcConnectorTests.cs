@@ -77,6 +77,15 @@ public sealed class FsuipcConnectorTests
     }
 
     [Fact]
+    public void Fsuipc_pause_offset_is_exposed_to_the_common_snapshot()
+    {
+        var snapshot = FsuipcTelemetryMapper.ToSnapshot(Frame(Now, paused: true));
+
+        Assert.True(snapshot.Paused);
+        Assert.Equal("PAUSE", snapshot.PauseKind);
+    }
+
+    [Fact]
     public void Missing_simulator_process_never_opens_fsuipc()
     {
         var session = new FakeSession(Frame(Now));
@@ -131,7 +140,7 @@ public sealed class FsuipcConnectorTests
                 : [],
             () => Now);
 
-    private static FsuipcTelemetryFrame Frame(DateTimeOffset at) => new(
+    private static FsuipcTelemetryFrame Frame(DateTimeOffset at, bool? paused = null) => new(
         at,
         Latitude: 48.725,
         Longitude: 2.36,
@@ -156,7 +165,8 @@ public sealed class FsuipcConnectorTests
         LandingLight: false,
         TaxiLight: false,
         SpoilersArmed: false,
-        AircraftTitle: "Air Inter A320");
+        AircraftTitle: "Air Inter A320",
+        Paused: paused);
 
     private sealed class FakeSession(FsuipcTelemetryFrame frame) : IFsuipcSession
     {

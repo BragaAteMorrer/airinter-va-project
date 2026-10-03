@@ -51,4 +51,16 @@ return array_replace_recursive([
     ],
 ], [
     'viewflight' => '便を表示', 'addbid' => '予約を追加', 'removebid' => '予約を取り消す', 'createsimbrief' => 'SimBriefのフライトプランを作成', 'viewsimbrief' => 'SimBriefのフライトプランを表示', 'weather' => '気象', 'aircraftbooking' => '機材の予約', 'bookaircraft' => '機材を予約', 'dontbookaircraft' => '機材を予約しない',
+    'no_direct_flight'          => 'この区間に一致する直行便はありません。',
+    'alternative_itineraries'  => '乗り継ぎ旅程',
+    'alternative_explanation'  => 'Prométhée は最大 :count 回の乗り継ぎで行ける経路を見つけました。',
+    'no_alternative_itinerary'  => '最大 :count 回の乗り継ぎで利用できる旅程はありません。',
+    'stopover'                  => ':count 回乗り継ぎ|:count 回乗り継ぎ',
+    'segment'                   => '区間 :count',
+    'reserve_itinerary'         => ':count 便を予約|:count 便をまとめて予約',
+    'already_reserved'          => '予約済み',
+    'multiple_bids_required'    => '一括予約には複数予約を有効にする必要があります。',
+    'itinerary_reserved'        => ':count 便を予約しました。|:count 便を予約しました。',
+    'itinerary_reserve_failed'  => 'この旅程を予約できません: :message',
+    'itinerary_invalid'         => 'この旅程は現在利用できません。',
 ]);

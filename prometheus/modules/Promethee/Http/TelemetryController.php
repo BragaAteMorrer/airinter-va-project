@@ -39,13 +39,11 @@ class TelemetryController extends Controller
             'samples.*.phase'=>'nullable|string|in:BOARDING,PUSHBACK,TAXI_OUT,TAKEOFF,CLIMB,CRUISE,ENROUTE,DESCENT,APPROACH,FINAL,LANDING,TAXI_IN,IN',
             'samples.*.bank'=>'nullable|numeric|between:-180,180',
             'samples.*.pitch'=>'nullable|numeric|between:-90,90',
-            'samples.*.touchdown_rate'=>'nullable|numeric|between:-30000,30000',
-            'samples.*.simulation_rate'=>'nullable|numeric|between:0.1,64',
-            'samples.*.engines_running'=>'nullable|array|max:8',
-            'samples.*.engines_running.*'=>'boolean',
             'samples.*.localizer_dots'=>'nullable|numeric|between:-100,100',
-            'samples.*.glideslope_dots'=>'nullable|numeric|between:-100,100'];
-        foreach (['on_ground','gear_down','landing_flaps','thrust_stable','checklist_complete','slew_active','beacon_light','landing_light'] as $field) $rules['samples.*.'.$field]='nullable|boolean';
+            'samples.*.glideslope_dots'=>'nullable|numeric|between:-100,100',
+            'samples.*.paused'=>'nullable|boolean',
+            'samples.*.pause_kind'=>'nullable|string|max:32'];
+        foreach (['on_ground','gear_down','landing_flaps','thrust_stable','checklist_complete'] as $field) $rules['samples.*.'.$field]='nullable|boolean';
         $data = $request->validate($rules);
         $inserted = 0;
         $id = $pirep->id;

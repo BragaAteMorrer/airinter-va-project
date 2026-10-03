@@ -1663,3 +1663,18 @@ html[data-appearance="dark"]:not([data-era="minitel"]) .admin-master-pane,html[d
 [data-era="2000"] .admin-master-pane,[data-era="2000"] .admin-detail-pane{border:2px inset #9cb8dc;border-radius:0}[data-era="2000"] .admin-master-row.selected,[data-era="2000"] .admin-master-row[aria-pressed="true"]{box-shadow:inset 4px 0 0 #244d8b}
 [data-era="minitel"] .admin-master-pane,[data-era="minitel"] .admin-detail-pane{border-color:var(--minitel-green);border-radius:0;background:var(--minitel-black)}[data-era="minitel"] .admin-master-row.selected,[data-era="minitel"] .admin-master-row[aria-pressed="true"]{box-shadow:inset 3px 0 0 var(--minitel-yellow);background:#0b1d12}
 @media(max-width:900px){.admin-master-detail{grid-template-columns:1fr}.admin-master-list{max-height:360px}}@media(max-width:560px){.admin-detail-metrics{grid-template-columns:1fr}.admin-detail-facts div{grid-template-columns:1fr;gap:3px}}
+
+
+/* Audit UX phase 9 — exception-first OCC inbox. */
+.attention-inbox{margin-bottom:18px}.attention-inbox .panel-heading p{max-width:760px;margin:4px 0 0;color:var(--muted)}
+.attention-inbox-list{display:grid;border-top:1px solid var(--line)}
+.attention-item{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);color:var(--ink);text-decoration:none}
+.attention-item:hover{background:color-mix(in srgb,var(--ops-blue) 6%,var(--paper))}
+.attention-item-signal{width:8px;height:8px;border-radius:999px;background:var(--ops-blue)}
+.attention-item.severity-critical .attention-item-signal{background:var(--color-danger,#c53c47);box-shadow:0 0 0 4px color-mix(in srgb,var(--color-danger,#c53c47) 14%,transparent)}
+.attention-item.severity-warning .attention-item-signal{background:#d48a12;box-shadow:0 0 0 4px color-mix(in srgb,#d48a12 14%,transparent)}
+.attention-item-copy{display:grid;gap:3px}.attention-item-copy small{color:var(--muted)}
+.attention-item-action{display:grid;justify-items:end;gap:3px;white-space:nowrap}.attention-item-action b{font:800 18px/1 Consolas,monospace}.attention-item-action span{font-size:10px;font-weight:800;color:var(--ops-blue)}
+.attention-empty{display:grid;gap:4px;padding:18px 16px}.attention-empty span{color:var(--muted)}
+[data-era="minitel"] .attention-item-signal{border-radius:0}[data-era="minitel"] .attention-item:hover{background:#0b1d12}
+@media(max-width:650px){.attention-item{grid-template-columns:10px 1fr}.attention-item-action{grid-column:2;justify-items:start;white-space:normal}}
