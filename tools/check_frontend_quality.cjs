@@ -49,6 +49,7 @@ const crm = read('prometheus/modules/Promethee/Resources/views/admin/crm.blade.p
 const adminDashboard = read('prometheus/modules/Promethee/Resources/views/admin/dashboard.blade.php');
 const prometheeLayout = read('prometheus/modules/Promethee/Resources/views/layout.blade.php');
 const prometheePilots = read('prometheus/modules/Promethee/Resources/views/pilots.blade.php');
+const prometheeProfile = read('prometheus/modules/Promethee/Resources/views/profile.blade.php');
 const prometheeMissions = read('prometheus/modules/Promethee/Resources/views/missions.blade.php');
 const prometheeMyDocuments = read('prometheus/modules/Promethee/Resources/views/my-documents.blade.php');
 const prometheeCommunity = read('prometheus/public/promethee-assets/promethee-community.css');
@@ -168,6 +169,15 @@ expect(prometheeMissions.includes('id="my-missions"')
     && prometheeMissions.includes('$otherMissions')
     && prometheeMissions.includes('pilot-hub-nav'),
   'Prométhée missions must keep personal missions separate from the available mission catalogue.');
+
+expect(!prometheeProfile.includes('id="my-missions"')
+    && prometheeProfile.includes("route('promethee.missions') }}#my-missions")
+    && prometheeProfile.includes('profile-mission-link'),
+  'Prométhée profile must link to the mission workspace instead of duplicating mission management.');
+expect(prometheeLayout.includes("'admin.promethee.network*'")
+    && prometheeLayout.includes("'admin.promethee.mailbox*'")
+    && prometheeLayout.includes("'admin.promethee.health'"),
+  'Prométhée staff navigation must keep OCC routes out of the generic Administration active state.');
 expect(prometheeMyDocuments.includes('Documentation Air Inter')
     && prometheeMyDocuments.includes('documentation-hub-nav')
     && !/<[^>]+\sstyle\s*=/i.test(prometheeMyDocuments),
