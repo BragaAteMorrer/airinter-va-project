@@ -5,6 +5,7 @@ namespace Modules\Promethee\Services;
 use App\Models\Pirep;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use RuntimeException;
 use Throwable;
 
@@ -57,6 +58,10 @@ final class LegacyPirepScoringService
      */
     public function updateRuleConfiguration(string $ruleId, array $input): array
     {
+        if (!Schema::hasTable('vmsacars_rules')) {
+            throw new RuntimeException('Le barème vmsACARS n’est pas installé sur Prométhée.');
+        }
+
         $rule = DB::table('vmsacars_rules')->where('id', $ruleId)->first();
         if (!$rule) {
             throw new RuntimeException('Règle de scoring Hermès introuvable.');
