@@ -635,6 +635,42 @@ final class HermesOperationLifecycleTest extends TestCase
         $this->assertSame(1.0, (float) $payload['simulation_rate']);
     }
 
+    public function test_scoring_tolerates_mixed_telemetry_schema_after_hermes_update(): void
+    {
+        $service = app(\Modules\Promethee\Services\LegacyPirepScoringService::class);
+        $method = new \ReflectionMethod($service, 'telemetryEpisodesIfAvailable');
+        $method->setAccessible(true);
+
+        $at = now();
+        $samples = [
+            [
+                'recorded_at' => $at->toIso8601String(),
+                // Legacy Hermès sample: simulation_rate did not exist yet.
+            ],
+            [
+                'recorded_at' => $at->copy()->addSeconds(20)->toIso8601String(),
+                'simulation_rate' => 2.0,
+            ],
+            [
+                'recorded_at' => $at->copy()->addSeconds(35)->toIso8601String(),
+                'simulation_rate' => 2.0,
+            ],
+        ];
+
+        $episodes = $method->invoke(
+            $service,
+            $samples,
+            ['simulation_rate'],
+            fn ($sample) => (float) $sample['simulation_rate'] > 1,
+            10,
+            fn ($sample) => (float) $sample['simulation_rate']
+        );
+
+        $this->assertIsArray($episodes);
+        $this->assertCount(1, $episodes);
+        $this->assertSame(2.0, (float) $episodes[0]['value']);
+    }
+
     private function minimalSimBriefXml(): string
     {
         return <<<'XML'
