@@ -541,3 +541,20 @@ body[data-appearance="dark"] :where(
     outline:3px solid Highlight !important;
   }
 }
+/* Audit UX phase 2 — visual parity for Modern dark and 2000. */
+body[data-era="modern"][data-appearance="dark"] .rail{background:#0b2236;border-color:#27465e;box-shadow:none}
+body[data-era="modern"][data-appearance="dark"] .display-settings{border-color:#29455d}
+body[data-era="modern"][data-appearance="dark"] .display-controls{background:#091b2a;border-color:#29455d}
+body[data-era="modern"][data-appearance="dark"] .status-chip,
+body[data-era="modern"][data-appearance="dark"] .next-action{background:#10283a;border-color:#52718a}
+body[data-era="modern"][data-appearance="dark"] .operations-browser,
+body[data-era="modern"][data-appearance="dark"] .operations-current{background:#0f2435;border-color:#52718a}
+body[data-era="modern"][data-appearance="dark"] .source-tabs button.active{background:#173a52;color:#9bd4fa}
+body[data-era="2000"] .rail-nav-label{color:#075d99;font-family:Arial,sans-serif;letter-spacing:.04em}
+body[data-era="2000"] .display-settings{border-top-color:#8ca8b9}
+body[data-era="2000"] .display-settings>summary{color:#07518a;font-family:Arial,sans-serif}
+body[data-era="2000"] .display-controls{background:#eaf4f8;border-color:#91aebf;border-radius:0}
+body[data-era="2000"] .operations-browser,
+body[data-era="2000"] .operations-current,
+body[data-era="2000"] .next-action{border-radius:0}
+
