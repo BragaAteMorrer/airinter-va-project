@@ -1,7 +1,7 @@
 <?php
 namespace Modules\Promethee\Http;
 use App\Contracts\Controller;
-use App\Models\{Aircraft,Airline,Airport,Award,Bid,File,Flight,Pirep,SimBrief,User,Fare,Subfleet,Rank};
+use App\Models\{Aircraft,Airline,Airport,Bid,File,Flight,Pirep,SimBrief,User,Fare,Subfleet,Rank};
 use App\Models\Enums\{AircraftState,AircraftStatus,FlightType,PirepState,PirepStatus,UserState};
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -3127,120 +3127,7 @@ class PortalController extends Controller
             'simbriefApiConfigured' => $simbriefApiConfigured,
         ]);
     }
-    public function automation() {
-        $badgeRules = DB::table('promethee_badge_rules')->orderByDesc('updated_at')->get();
-        $rankRules = DB::table('promethee_rank_rules')->orderByDesc('updated_at')->get();
-        return $this->page('admin.automation', [
-            'badgeRules' => $badgeRules,
-            'rankRules' => $rankRules,
-            'badgeRuleData' => $badgeRules->groupBy('award_id')->map(fn ($rules) => $this->rulePayload($rules->first())),
-            'rankRuleData' => $rankRules->groupBy('rank_id')->map(fn ($rules) => $this->rulePayload($rules->first())),
-            'awards' => Award::orderBy('name')->get(), 'ranks' => Rank::orderBy('hours')->get(),
-            'awardData' => Award::orderBy('name')->get()->mapWithKeys(fn ($award) => [$award->id => ['name'=>$award->name, 'description'=>$award->description, 'image_url'=>$award->image_url]]),
-            'rankData' => Rank::orderBy('hours')->get()->mapWithKeys(fn ($rank) => [$rank->id => ['name'=>$rank->name, 'hours'=>$rank->hours, 'image_url'=>$rank->image_url]]),
-            'airlines' => Airline::where('active', true)->orderBy('name')->get(['id','name','icao']),
-            'aircraftTypes' => \App\Models\Aircraft::whereNotNull('icao')->where('icao', '!=', '')->distinct()->orderBy('icao')->pluck('icao'),
-            'events' => DB::table('promethee_events')->orderByDesc('starts_at')->limit(100)->get(['id','title','starts_at']),
-            'airlines' => Airline::orderBy('name')->get(['id','name','icao']),
-            'events' => DB::table('promethee_events')->orderByDesc('starts_at')->get(['id','title','starts_at']),
-            'history' => DB::table('promethee_progression_history')->latest()->limit(30)->get(),
-        ]);
-    }
-    private function rulePayload(object $rule): array {
-        return ['id'=>$rule->id, 'operator'=>$rule->operator, 'criteria'=>json_decode($rule->criteria, true) ?: [], 'active'=>(bool)$rule->active, 'allow_demotion'=>(bool)($rule->allow_demotion ?? false)];
-    }
-    public function automationRule(string $kind, int $id) {
-        $table = $kind === 'badge' ? 'promethee_badge_rules' : 'promethee_rank_rules';
-        $column = $kind === 'badge' ? 'award_id' : 'rank_id';
-        $rule = DB::table($table)->where($column, $id)->orderByDesc('updated_at')->first();
-        return response()->json($rule ? $this->rulePayload($rule) : null);
-    }
-    public function recalculateAutomation(Request $r, \Modules\Promethee\Services\ProgressionService $progression) {
-        $result = $progression->recalculate(null, 'manual');
-        return back()->with('success', $result['awards'].' badge(s) et '.$result['promotions'].' promotion(s) attribué(e)(s).');
-    }
-    private function automationCriteria(Request $r): array {
-        $data = $r->validate(['operator'=>'required|in:and,or','criteria'=>'required|array|min:1|max:12','criteria.*.metric'=>'required|string','criteria.*.value'=>'nullable','criteria.*.text'=>'nullable|string|max:30']);
-        $criteria = $data['criteria'];
-        $metrics = ['validated_flights','flight_minutes','total_distance','visited_airports','visited_countries','seniority_days','required_badge','route','airline','aircraft_icao','event_completed','night_flights'];
-        foreach ($criteria as &$criterion) {
-            abort_unless(is_array($criterion) && in_array($criterion['metric'] ?? null, $metrics, true), 422, 'Critère non valide.');
-            $criterion['value'] = isset($criterion['value']) ? (float) $criterion['value'] : 0;
-            $criterion['route'] = $criterion['metric'] === 'route' ? strtoupper(substr((string)($criterion['text'] ?? ''), 0, 30)) : null;
-            $criterion['text'] = $criterion['metric'] === 'aircraft_icao' ? strtoupper(substr((string)($criterion['text'] ?? ''), 0, 30)) : null;
-        }
-        return [$data['operator'], $criteria];
-    }
-    private function distinctionImage(Request $r): ?string {
-        if ($r->hasFile('image')) {
-            // Public assets are replaced whenever the local image is rebuilt.
-            // Keep uploads on Laravel's persistent storage volume and expose
-            // that directory through the stable public symlink created at boot.
-            $file=$r->file('image'); $directory=storage_path('app/promethee-distinctions');
-            Filesystem::ensureDirectoryExists($directory); 
-            $name=uniqid('distinction_', true).'.'.$file->extension(); $file->move($directory,$name);
-            return '/promethee-assets/distinctions/'.$name;
-        }
-        return $r->filled('image_url') ? $r->string('image_url')->toString() : null;
-    }
-    public function createAutomationAward(Request $r) {
-        $d=$r->validate(['name'=>'required|string|max:191','description'=>'nullable|string|max:1000','image_url'=>'nullable|url|max:2000','image'=>'nullable|image|max:4096']);
-        $d['image_url']=$this->distinctionImage($r); unset($d['image']);
-        Award::create($d+['active'=>true]);
-        return back()->with('success','Badge ajouté au catalogue.');
-    }
-    public function createAutomationRank(Request $r) {
-        $d=$r->validate(['name'=>'required|string|max:50|unique:ranks,name','hours'=>'required|integer|min:0','image_url'=>'nullable|url|max:2000','image'=>'nullable|image|max:4096']);
-        $d['image_url']=$this->distinctionImage($r); unset($d['image']);
-        Rank::create($d);
-        return back()->with('success','Grade ajouté au catalogue.');
-    }
-    public function updateAutomationAward(Request $r, Award $award) {
-        $data=$r->validate(['name'=>'required|string|max:191','description'=>'nullable|string|max:1000','image_url'=>'nullable|url|max:2000','image'=>'nullable|image|max:4096']);
-        $image=$r->hasFile('image') || $r->filled('image_url') ? $this->distinctionImage($r) : $award->image_url;
-        $award->update(['name'=>$data['name'],'description'=>$data['description'] ?? null,'image_url'=>$image]);
-        return back()->with('success', 'Badge mis à jour.');
-    }
-    public function updateAutomationRank(Request $r, Rank $rank) {
-        $data=$r->validate(['name'=>'required|string|max:50|unique:ranks,name,'.$rank->id,'hours'=>'required|integer|min:0','image_url'=>'nullable|url|max:2000','image'=>'nullable|image|max:4096']);
-        $image=$r->hasFile('image') || $r->filled('image_url') ? $this->distinctionImage($r) : $rank->image_url;
-        $rank->update(['name'=>$data['name'],'hours'=>$data['hours'],'image_url'=>$image]);
-        return back()->with('success', 'Grade mis à jour.');
-    }
-    public function previewAutomation(Request $r, \Modules\Promethee\Services\ProgressionService $progression) {
-        [$operator, $criteria] = $this->automationCriteria($r);
-        $rule = ['operator' => $operator, 'criteria' => $criteria];
-        $pilots = User::where('state', UserState::ACTIVE)->get()->filter(fn ($user) => $progression->eligible($user, $rule))->take(100)->values();
-        return back()->with('automation_preview', ['count'=>$pilots->count(), 'pilots'=>$pilots->map(fn($pilot)=>$pilot->pilot_id.' · '.$pilot->name)->all()]);
-    }
-    public function saveBadgeRule(Request $r, \Modules\Promethee\Services\ProgressionService $progression) {
-        $data = $r->validate(['award_id'=>'required|integer|exists:awards,id','rule_id'=>'nullable|integer|exists:promethee_badge_rules,id','active'=>'nullable|boolean']);
-        [$operator,$criteria] = $this->automationCriteria($r);
-        $payload=['award_id'=>$data['award_id'],'operator'=>$operator,'criteria'=>json_encode($criteria),'active'=>$r->boolean('active'),'updated_at'=>now()];
-        if (!empty($data['rule_id'])) {
-            DB::table('promethee_badge_rules')->where('id',$data['rule_id'])->update($payload);
-        } else {
-            DB::table('promethee_badge_rules')->insert($payload+['created_at'=>now()]);
-        }
-
-        $result = $progression->recalculate(null, 'rule:badge_saved');
-
-        return back()->with('success','Règle de badge enregistrée · '.$result['awards'].' badge(s) attribué(s) automatiquement.');
-    }
-    public function saveRankRule(Request $r, \Modules\Promethee\Services\ProgressionService $progression) {
-        $data = $r->validate(['rank_id'=>'required|integer|exists:ranks,id','rule_id'=>'nullable|integer|exists:promethee_rank_rules,id','active'=>'nullable|boolean','allow_demotion'=>'nullable|boolean']);
-        [$operator,$criteria] = $this->automationCriteria($r);
-        $payload=['rank_id'=>$data['rank_id'],'operator'=>$operator,'criteria'=>json_encode($criteria),'active'=>$r->boolean('active'),'allow_demotion'=>$r->boolean('allow_demotion'),'updated_at'=>now()];
-        if (!empty($data['rule_id'])) {
-            DB::table('promethee_rank_rules')->where('id',$data['rule_id'])->update($payload);
-        } else {
-            DB::table('promethee_rank_rules')->insert($payload+['created_at'=>now()]);
-        }
-
-        $result = $progression->recalculate(null, 'rule:rank_saved');
-
-        return back()->with('success','Règle de grade enregistrée · '.$result['promotions'].' promotion(s) appliquée(s) automatiquement.');
-    }
+    // Automation/progression administration moved to AutomationController.
     public function adminSimbrief()
     {
         $companyKey = app(\Modules\Promethee\Services\SimBriefCompanyKeyService::class);

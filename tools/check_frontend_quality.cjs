@@ -13,13 +13,17 @@ const fail = message => failures.push(message);
 const expect = (condition, message) => { if (!condition) fail(message); };
 
 const budgets = {
-  'acars/wwwroot/app.js': 180000,
+  'acars/wwwroot/app.js': 145000,
+  'acars/wwwroot/hermes-map.js': 18000,
+  'acars/wwwroot/hermes-review.js': 20000,
   'acars/wwwroot/index.html': 50000,
   'acars/wwwroot/styles.css': 60000,
   'acars/wwwroot/hermes-themes.css': 35000,
   'prometheus/public/promethee-assets/promethee-v2.css': 90000,
   'prometheus/public/promethee-assets/promethee-appearance.css': 40000,
   'prometheus/public/promethee-assets/promethee-admin-workspaces.css': 12000,
+  'prometheus/modules/Promethee/Http/PortalController.php': 245000,
+  'prometheus/modules/Promethee/Http/AutomationController.php': 14000,
   'prometheus/modules/Promethee/Resources/views/admin/dispatch.blade.php': 45000,
 };
 
@@ -33,6 +37,8 @@ for (const [file, budget] of Object.entries(budgets)) {
 
 const hermesIndex = read('acars/wwwroot/index.html');
 const hermesApp = read('acars/wwwroot/app.js');
+const hermesMap = read('acars/wwwroot/hermes-map.js');
+const hermesReview = read('acars/wwwroot/hermes-review.js');
 const hermesDesktop = read('acars/WebDesktop.cs');
 const hermesTheme = read('acars/wwwroot/hermes-themes.css');
 const prometheeBase = read('prometheus/public/promethee-assets/promethee.css');
@@ -43,6 +49,16 @@ const crm = read('prometheus/modules/Promethee/Resources/views/admin/crm.blade.p
 const adminDashboard = read('prometheus/modules/Promethee/Resources/views/admin/dashboard.blade.php');
 const prometheeLayout = read('prometheus/modules/Promethee/Resources/views/layout.blade.php');
 const prometheeFlights = read('prometheus/modules/Promethee/Resources/views/flights.blade.php');
+const portalController = read('prometheus/modules/Promethee/Http/PortalController.php');
+const automationController = read('prometheus/modules/Promethee/Http/AutomationController.php');
+const prometheeRoutes = read('prometheus/modules/Promethee/routes.php');
+expect(!portalController.includes('public function automation(')
+    && !portalController.includes('public function saveBadgeRule(')
+    && automationController.includes('class AutomationController extends Controller'),
+  'Prométhée progression administration must stay extracted from PortalController.');
+expect(prometheeRoutes.includes("[AutomationController::class,'automation']")
+    && prometheeRoutes.includes("[AutomationController::class,'saveRankRule']"),
+  'Prométhée automation routes must remain owned by AutomationController without changing route names.');
 const adminWorkspaceCss = read('prometheus/public/promethee-assets/promethee-admin-workspaces.css');
 const automationWorkspace = read('prometheus/modules/Promethee/Resources/views/admin/automation.blade.php');
 const seasonsWorkspace = read('prometheus/modules/Promethee/Resources/views/seasons.blade.php');
@@ -61,10 +77,29 @@ expect(!/<script\b[^>]*src=["']\/minitel\//i.test(hermesIndex),
 expect(!/<link\b[^>]*href=["']\/minitel\//i.test(hermesIndex),
   'Hermès must lazy-load Minitel styles instead of loading them in the default shell.');
 
+expect(hermesIndex.indexOf('/hermes-map.js') < hermesIndex.indexOf('/app.js')
+    && hermesIndex.indexOf('/hermes-review.js') < hermesIndex.indexOf('/app.js'),
+  'Hermès architecture modules must load before the orchestration script.');
+expect(hermesMap.includes('Object.assign(window')
+    && hermesMap.includes('drawMap')
+    && hermesMap.includes('flightMapState')
+    && hermesMap.includes('initializeFlightMapControls'),
+  'Hermès map rendering must remain isolated behind the compatibility global contract.');
+expect(hermesReview.includes('Object.assign(window')
+    && hermesReview.includes('renderReview')
+    && hermesReview.includes('refreshCompanyScore')
+    && hermesReview.includes('initializeReviewActions'),
+  'Hermès review rendering must remain isolated behind the compatibility global contract.');
+expect(!hermesApp.includes('function normalizeReviewProfile')
+    && !hermesApp.includes('function drawMap(')
+    && hermesApp.includes('initializeFlightMapControls();')
+    && hermesApp.includes('initializeReviewActions();'),
+  'Hermès app.js must not absorb map/review rendering again.');
+
 expect(hermesIndex.includes('reviewAltitudeChart') && hermesIndex.includes('reviewFuelChart'),
   'Hermès Flight Review must preserve altitude and fuel chart surfaces.');
-expect(hermesApp.includes('normalizeReviewProfile') && hermesApp.includes('renderReviewCharts'),
-  'Hermès Flight Review must preserve profile-series rendering.');
+expect(hermesReview.includes('normalizeReviewProfile') && hermesReview.includes('renderReviewCharts'),
+  'Hermès Flight Review module must preserve profile-series rendering.');
 expect(hermesDesktop.includes('"/api/file" => await File(body)')
     && hermesDesktop.includes('report["notes"] = notes'),
   'Hermès desktop must forward the optional pilot Flight Review comment when filing.');
