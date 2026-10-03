@@ -75,7 +75,11 @@ public sealed record AircraftSnapshot(
     bool? ThrustStable = null,
     string? AircraftModel = null,
     double? LocalizerDots = null,
-    double? GlideslopeDots = null);
+    double? GlideslopeDots = null,
+    double? GForce = null,
+    bool? OverspeedWarning = null,
+    bool? StallWarning = null,
+    IReadOnlyList<double>? ThrustReverserPercent = null);
 
 /// <summary>
 /// Boundary between the ACARS core and simulator-specific code. Connectors must
@@ -110,5 +114,9 @@ public static class SimulatorSnapshotMapper
         TouchdownVerticalSpeedFeetPerMinute: sample.TouchdownVelocity * 60d,
         ThrustStable: sample.ThrustStable,
         LocalizerDots: sample.LocalizerDots,
-        GlideslopeDots: sample.GlideslopeDots);
+        GlideslopeDots: sample.GlideslopeDots,
+        GForce: sample.GForce,
+        OverspeedWarning: sample.OverspeedWarning,
+        StallWarning: sample.StallWarning,
+        ThrustReverserPercent: [sample.Reverse1Percent, sample.Reverse2Percent, sample.Reverse3Percent, sample.Reverse4Percent]);
 }

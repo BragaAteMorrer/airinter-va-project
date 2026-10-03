@@ -15,7 +15,7 @@ use Throwable;
  */
 final class LegacyPirepScoringService
 {
-    public const VERSION = 1;
+    public const VERSION = 2;
     public const STARTING_SCORE = 100;
 
     public function __construct(private readonly SopEngineService $sop) {}
@@ -227,6 +227,33 @@ final class LegacyPirepScoringService
         $delay = max(0, (int) ($rule['delay'] ?? 0));
 
         return match ($rule['id']) {
+            'BEACON_LIGHTS_ON_ENGINE_RUNNING' => $this->telemetryEpisodesIfAvailable(
+                $samples,
+                ['engines_running', 'beacon_light'],
+                fn ($s) => is_array($s['engines_running'] ?? null)
+                    && in_array(true, $s['engines_running'], true)
+                    && ($s['beacon_light'] ?? null) === false,
+                $delay,
+                fn () => null
+            ),
+            'LAND_LIGHTS_OVER_10K' => $this->telemetryEpisodesIfAvailable(
+                $samples,
+                ['on_ground', 'altitude_msl', 'landing_light'],
+                fn ($s) => ($s['on_ground'] ?? null) === false
+                    && (float) $s['altitude_msl'] > $parameter + 500
+                    && ($s['landing_light'] ?? null) === true,
+                $delay,
+                fn ($s) => (float) $s['altitude_msl']
+            ),
+            'LAND_LIGHTS_UNDER_10K' => $this->telemetryEpisodesIfAvailable(
+                $samples,
+                ['on_ground', 'altitude_msl', 'landing_light'],
+                fn ($s) => ($s['on_ground'] ?? null) === false
+                    && (float) $s['altitude_msl'] < max(0, $parameter - 500)
+                    && ($s['landing_light'] ?? null) === false,
+                $delay,
+                fn ($s) => (float) $s['altitude_msl']
+            ),
             'EXCESS_TAXI_SPEED' => $this->telemetryEpisodes(
                 $samples,
                 fn ($s) => ($s['on_ground'] ?? null) === true
@@ -234,6 +261,21 @@ final class LegacyPirepScoringService
                     && isset($s['gs']) && (float) $s['gs'] > $parameter,
                 $delay,
                 fn ($s) => isset($s['gs']) ? (float) $s['gs'] : null
+            ),
+            'EXCESS_GFORCE' => $this->telemetryEpisodesIfAvailable(
+                $samples,
+                ['on_ground', 'g_force'],
+                fn ($s) => ($s['on_ground'] ?? null) === false
+                    && abs((float) $s['g_force']) > $parameter,
+                $delay,
+                fn ($s) => abs((float) $s['g_force'])
+            ),
+            'OVERSPEED_WARNING' => $this->telemetryEpisodesIfAvailable(
+                $samples,
+                ['overspeed_warning'],
+                fn ($s) => ($s['overspeed_warning'] ?? null) === true,
+                $delay,
+                fn () => null
             ),
             'EXCESS_BANK' => $this->telemetryEpisodes(
                 $samples,
@@ -259,21 +301,125 @@ final class LegacyPirepScoringService
                 fn ($s) => isset($s['ias']) ? (float) $s['ias'] : null
             ),
             'FUEL_REFILLED' => $this->factOccurrences($facts, ['FUEL_ADDED'], fn ($f) => (float) ($f['value'] ?? 0) > 0),
-            'SIMRATE_INCREASED' => $this->factOccurrences($facts, ['SIM_RATE'], fn ($f) => (float) ($f['value'] ?? 0) > $parameter),
-            'SLEW_ACTIVATED' => $this->factOccurrences($facts, ['SLEW']),
+            'SIMRATE_INCREASED' => $this->simulationRateOccurrences($samples, $facts, $parameter, $delay),
+            'SLEW_ACTIVATED' => $this->slewOccurrences($samples, $facts, $delay),
             'PAUSE_ACTIVATED' => $this->factOccurrences(
                 $facts,
                 ['PAUSE'],
                 fn ($fact) => (float) ($fact['value'] ?? 0) >= max(1, $delay)
             ),
-            'STABILIZED_APPROACH' => $this->factOccurrences($facts, ['APPROACH_1000_UNSTABLE','APPROACH_500_UNSTABLE']),
+            'STABILIZED_APPROACH' => $this->stabilizedApproach($facts, $parameter),
+            'STALL_WARNING' => $this->telemetryEpisodesIfAvailable(
+                $samples,
+                ['stall_warning'],
+                fn ($s) => ($s['stall_warning'] ?? null) === true,
+                $delay,
+                fn () => null
+            ),
+            'THRUST_REVERSERS_INFLIGHT' => $this->telemetryEpisodesIfAvailable(
+                $samples,
+                ['on_ground', 'reverser_percent'],
+                fn ($s) => ($s['on_ground'] ?? null) === false && $this->reversersActive($s),
+                $delay,
+                fn ($s) => $this->maxReverser($s)
+            ),
+            'THRUST_REVERSERS_SPEED' => $this->telemetryEpisodesIfAvailable(
+                $samples,
+                ['on_ground', 'gs', 'reverser_percent'],
+                fn ($s) => ($s['on_ground'] ?? null) === true
+                    && in_array(strtoupper((string) ($s['phase'] ?? '')), ['LANDING','TAXI_IN'], true)
+                    && (float) $s['gs'] < $parameter
+                    && $this->reversersActive($s),
+                $delay,
+                fn ($s) => (float) $s['gs']
+            ),
             'HARD_LANDING' => $this->hardLanding($pirep, $facts, $parameter),
-            // Hermès does not currently expose trustworthy signals for these
-            // historical rules. Unknown data must never become a penalty.
-            'EXCESS_GFORCE', 'OVERSPEED_WARNING', 'RUNWAY_OVERRUN', 'STALL_WARNING',
-            'THRUST_REVERSERS_INFLIGHT', 'THRUST_REVERSERS_SPEED' => null,
+            // Runway geometry is not supplied by the simulator-neutral Hermès
+            // contract. Unknown data must never become a penalty.
+            'RUNWAY_OVERRUN' => null,
             default => [],
         };
+    }
+
+    private function telemetryEpisodesIfAvailable(
+        array $samples,
+        array $requiredFields,
+        callable $matches,
+        int $delay,
+        callable $value
+    ): ?array {
+        if (!$this->telemetryAvailable($samples, $requiredFields)) return null;
+
+        return $this->telemetryEpisodes($samples, $matches, $delay, $value);
+    }
+
+    private function telemetryAvailable(array $samples, array $requiredFields): bool
+    {
+        foreach ($samples as $sample) {
+            $complete = true;
+            foreach ($requiredFields as $field) {
+                if (!array_key_exists($field, $sample) || $sample[$field] === null) {
+                    $complete = false;
+                    break;
+                }
+            }
+            if ($complete) return true;
+        }
+
+        return false;
+    }
+
+    private function simulationRateOccurrences(array $samples, array $facts, float $parameter, int $delay): array
+    {
+        $telemetry = $this->telemetryEpisodesIfAvailable(
+            $samples,
+            ['simulation_rate'],
+            fn ($s) => (float) $s['simulation_rate'] > $parameter,
+            $delay,
+            fn ($s) => (float) $s['simulation_rate']
+        );
+
+        return $telemetry ?? $this->factOccurrences(
+            $facts,
+            ['SIM_RATE'],
+            fn ($f) => (float) ($f['value'] ?? 0) > $parameter
+        );
+    }
+
+    private function slewOccurrences(array $samples, array $facts, int $delay): array
+    {
+        $telemetry = $this->telemetryEpisodesIfAvailable(
+            $samples,
+            ['slew_active'],
+            fn ($s) => ($s['slew_active'] ?? null) === true,
+            $delay,
+            fn () => null
+        );
+
+        return $telemetry ?? $this->factOccurrences($facts, ['SLEW']);
+    }
+
+    private function stabilizedApproach(array $facts, float $parameter): array
+    {
+        $gate = (int) round($parameter);
+        if (!in_array($gate, [500, 1000], true)) return [];
+
+        return $this->factOccurrences($facts, ['APPROACH_'.$gate.'_UNSTABLE']);
+    }
+
+    private function reversersActive(array $sample): bool
+    {
+        return $this->maxReverser($sample) > 1;
+    }
+
+    private function maxReverser(array $sample): float
+    {
+        $values = array_values(array_filter(
+            is_array($sample['reverser_percent'] ?? null) ? $sample['reverser_percent'] : [],
+            fn ($value) => is_numeric($value)
+        ));
+
+        return $values === [] ? 0.0 : max(array_map('floatval', $values));
     }
 
     private function hardLanding(Pirep $pirep, array $facts, float $threshold): array
