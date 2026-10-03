@@ -202,6 +202,7 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::get('/crm/campaigns/{id}', [CrmController::class,'campaign'])->name('crm.campaigns.show');
         // Lot 5 transport surface for the future Dispatcher Desk.
         Route::get('/sop', [SopController::class, 'admin'])->name('sop');
+        Route::put('/sop/scoring/{rule}', [SopController::class, 'saveScoringRule'])->name('sop.scoring.update');
         Route::post('/sop/rules', [SopController::class, 'saveRule'])->name('sop.rules.save');
         Route::put('/sop/rules/{rule}', [SopController::class, 'saveRule'])->name('sop.rules.update');
         Route::delete('/sop/rules/{rule}', [SopController::class, 'deleteRule'])->name('sop.rules.delete');
