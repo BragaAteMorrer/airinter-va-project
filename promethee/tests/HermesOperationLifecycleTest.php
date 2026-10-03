@@ -586,6 +586,77 @@ final class HermesOperationLifecycleTest extends TestCase
         $this->assertSame('Décollage', $journal->firstWhere('code', 'TAKEOFF')['message']);
     }
 
+    public function test_pirep_journal_reconstructs_aircraft_system_changes_from_rich_telemetry(): void
+    {
+        $fx = $this->operationFixture();
+        $pirepId = $this->prefile($fx);
+        $at = now();
+
+        $this->telemetry($fx, 'BOARDING', $at, [
+            'altitude_msl' => 300,
+            'on_ground' => true,
+            'parking_brake' => true,
+            'gear_down' => true,
+            'flaps_percent' => 0,
+            'engines_running' => [false, false],
+            'beacon_light' => false,
+            'navigation_light' => false,
+            'transponder_code' => 1200,
+            'aircraft_icao' => 'A320',
+            'aircraft_model' => 'FenixA320 CFM WF',
+            'aircraft_title' => 'Fenix A320 Air Inter F-GGEB',
+        ]);
+        $this->telemetry($fx, 'PUSHBACK', $at->copy()->addSeconds(10), [
+            'altitude_msl' => 300,
+            'on_ground' => true,
+            'parking_brake' => false,
+            'gear_down' => true,
+            'flaps_percent' => 18,
+            'engines_running' => [true, true],
+            'beacon_light' => true,
+            'navigation_light' => true,
+            'transponder_code' => 5723,
+        ]);
+        $this->telemetry($fx, 'TAKEOFF', $at->copy()->addSeconds(40), [
+            'altitude_msl' => 600,
+            'on_ground' => false,
+            'parking_brake' => false,
+            'gear_down' => false,
+            'flaps_percent' => 18,
+            'engines_running' => [true, true],
+            'beacon_light' => true,
+            'navigation_light' => true,
+            'transponder_code' => 5723,
+        ]);
+        $this->telemetry($fx, 'CLIMB', $at->copy()->addMinutes(2), [
+            'altitude_msl' => 10500,
+            'on_ground' => false,
+            'parking_brake' => false,
+            'gear_down' => false,
+            'flaps_percent' => 0,
+            'engines_running' => [true, true],
+            'beacon_light' => true,
+            'navigation_light' => true,
+            'transponder_code' => 5723,
+        ]);
+
+        $pirep = Pirep::with('acars_logs')->findOrFail($pirepId);
+        $journal = app(\Modules\Promethee\Services\PirepJournalService::class)->build($pirep);
+        $codes = $journal->pluck('code')->all();
+
+        $this->assertContains('AIRCRAFT_IDENTIFIED', $codes);
+        $this->assertContains('PARKING_BRAKE_RELEASED', $codes);
+        $this->assertContains('ENGINE_1_ON', $codes);
+        $this->assertContains('ENGINE_2_ON', $codes);
+        $this->assertContains('BEACON_ON', $codes);
+        $this->assertContains('NAV_LIGHTS_ON', $codes);
+        $this->assertContains('TRANSPONDER_CHANGED', $codes);
+        $this->assertContains('GEAR_UP', $codes);
+        $this->assertContains('FLAPS_UP', $codes);
+        $this->assertContains('CROSS_10000_UP', $codes);
+        $this->assertContains('TAXI_OUT_TIME', $codes);
+    }
+
     private function operationFixture(bool $assignAircraft = true, bool $createOfp = true): array
     {
         $origin = Airport::factory()->create(['id' => 'H001', 'icao' => 'H001', 'iata' => 'H01']);
@@ -673,14 +744,36 @@ final class HermesOperationLifecycleTest extends TestCase
                 'gs' => 125,
                 'vs' => -500,
                 'heading' => 180,
+                'track' => 178,
+                'mach' => 0.42,
                 'fuel' => 5000,
+                'gross_weight' => 132000,
+                'qnh_hpa' => 1013,
+                'oat_c' => 12,
+                'wind_speed' => 18,
+                'wind_direction' => 240,
                 'bank' => 3,
                 'pitch' => 2,
                 'g_force' => 1.15,
                 'on_ground' => false,
+                'parking_brake' => false,
+                'gear_down' => true,
+                'flaps_percent' => 35,
+                'spoilers_armed' => true,
                 'engines_running' => [true, true],
                 'beacon_light' => true,
+                'navigation_light' => true,
+                'strobe_light' => true,
                 'landing_light' => true,
+                'taxi_light' => false,
+                'seatbelt_sign' => true,
+                'doors_open' => false,
+                'transponder_code' => 5723,
+                'autopilot_enabled' => false,
+                'aircraft_title' => 'Fenix A320 Air Inter F-GGEB',
+                'aircraft_icao' => 'A320',
+                'aircraft_model' => 'FenixA320 CFM WF',
+                'touchdown_rate' => -223,
                 'slew_active' => false,
                 'simulation_rate' => 1,
                 'overspeed_warning' => false,
@@ -699,8 +792,23 @@ final class HermesOperationLifecycleTest extends TestCase
         $this->assertNotNull($row);
         $payload = json_decode((string) $row->payload, true, flags: JSON_THROW_ON_ERROR);
         $this->assertSame([true, true], $payload['engines_running']);
+        $this->assertFalse($payload['parking_brake']);
+        $this->assertTrue($payload['gear_down']);
+        $this->assertSame(35.0, (float) $payload['flaps_percent']);
+        $this->assertTrue($payload['spoilers_armed']);
         $this->assertTrue($payload['beacon_light']);
+        $this->assertTrue($payload['navigation_light']);
+        $this->assertTrue($payload['strobe_light']);
         $this->assertTrue($payload['landing_light']);
+        $this->assertFalse($payload['taxi_light']);
+        $this->assertTrue($payload['seatbelt_sign']);
+        $this->assertFalse($payload['doors_open']);
+        $this->assertSame(5723, (int) $payload['transponder_code']);
+        $this->assertFalse($payload['autopilot_enabled']);
+        $this->assertSame('Fenix A320 Air Inter F-GGEB', $payload['aircraft_title']);
+        $this->assertSame('A320', $payload['aircraft_icao']);
+        $this->assertSame('FenixA320 CFM WF', $payload['aircraft_model']);
+        $this->assertSame(-223.0, (float) $payload['touchdown_rate']);
         $this->assertSame(1.15, (float) $payload['g_force']);
         $this->assertFalse($payload['overspeed_warning']);
         $this->assertFalse($payload['stall_warning']);
@@ -798,27 +906,29 @@ XML;
             ->json('data.operations');
     }
 
-    private function telemetry(array $fx, string $phase, $at = null): void
+    private function telemetry(array $fx, string $phase, $at = null, array $extra = []): void
     {
         $at ??= now();
 
+        $sample = array_merge([
+            'sample_id' => (string) Str::uuid(),
+            'recorded_at' => $at->toIso8601String(),
+            'phase' => $phase,
+            'lat' => 48.7,
+            'lon' => 2.3,
+            'altitude_msl' => $phase === 'IN' ? 300 : 5000,
+            'agl' => $phase === 'IN' ? 0 : 4700,
+            'ias' => $phase === 'IN' ? 0 : 220,
+            'gs' => $phase === 'IN' ? 0 : 240,
+            'vs' => 0,
+            'heading' => 180,
+            'fuel' => 5000,
+            'on_ground' => in_array($phase, ['BOARDING', 'TAXI_OUT', 'IN'], true),
+        ], $extra);
+
         $this->post(
             '/api/v1/operations/'.$fx['operation_id'].'/telemetry',
-            ['samples' => [[
-                'sample_id' => (string) Str::uuid(),
-                'recorded_at' => $at->toIso8601String(),
-                'phase' => $phase,
-                'lat' => 48.7,
-                'lon' => 2.3,
-                'altitude_msl' => $phase === 'IN' ? 300 : 5000,
-                'agl' => $phase === 'IN' ? 0 : 4700,
-                'ias' => $phase === 'IN' ? 0 : 220,
-                'gs' => $phase === 'IN' ? 0 : 240,
-                'vs' => 0,
-                'heading' => 180,
-                'fuel' => 5000,
-                'on_ground' => in_array($phase, ['BOARDING', 'TAXI_OUT', 'IN'], true),
-            ]]],
+            ['samples' => [$sample]],
             [],
             $fx['user']
         )->assertOk();
