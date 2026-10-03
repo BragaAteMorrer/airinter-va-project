@@ -164,7 +164,9 @@ jobs:
           php -l tests/DatalinkServiceTest.php
           php -l modules/Promethee/Http/SopController.php
           php -l modules/Promethee/Services/SopEngineService.php
+          php -l modules/Promethee/Services/LegacyPirepScoringService.php
           php -l tests/SopEngineServiceTest.php
+          php -l tests/LegacyPirepScoringConfigurationTest.php
           php -l modules/Promethee/Http/PresenceController.php
           php -l modules/Promethee/Services/PresenceService.php
           php -l tests/PresenceServiceTest.php
@@ -267,6 +269,8 @@ jobs:
         run: composer install --no-interaction --prefer-dist --no-progress
       - name: Run Hermès operation lifecycle regression suite
         run: vendor/bin/phpunit tests/HermesOperationLifecycleTest.php
+      - name: Run Hermès scoring configuration tests
+        run: vendor/bin/phpunit tests/LegacyPirepScoringConfigurationTest.php
       - name: Run sb-airframe historical configuration tests
         run: vendor/bin/phpunit tests/AircraftConfigurationResolverTest.php
       - name: Run airframe maintenance and fleet rotation tests
