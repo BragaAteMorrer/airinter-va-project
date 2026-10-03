@@ -1,6 +1,10 @@
 @extends('promethee::layout')
 @section('title','Bases régionales & flotte')
+@push('styles')
+<link rel="stylesheet" href="{{ asset('promethee-assets/promethee-admin-workspaces.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-admin-workspaces.css')) }}">
+@endpush
 @section('content')
+<div class="admin-workspace-page">
 <div class="ops-header compact">
   <div>
     <span class="eyebrow">AIR INTER · EXPLOITATION</span>
@@ -9,9 +13,17 @@
   </div>
   <span class="tag">{{ $bases->where('active', true)->count() }} site(s) actif(s)</span>
 </div>
+<nav class="admin-workspace-nav" aria-label="Navigation locale">
+  <a href="#regional-rules">Rapatriement</a>
+  <a href="#regional-sites">Sites</a>
+  <a href="#regional-rotation">Rotation</a>
+  <a href="#regional-fleet">Flotte</a>
+  <a href="#regional-history">Historique</a>
+</nav>
 
-<div class="two-columns">
-  <section class="panel">
+
+<div class="two-columns admin-workspace-grid">
+  <section class="panel admin-workspace-section" id="regional-rules">
     <div class="panel-heading"><div><span class="eyebrow">RAPATRIEMENT</span><h2>Règles automatiques</h2></div></div>
     <form method="post" action="{{ route('admin.promethee.regional.settings') }}" class="form-grid">
       @csrf
@@ -31,7 +43,7 @@
     </form>
   </section>
 
-  <section class="panel">
+  <section class="panel admin-workspace-section" id="regional-sites">
     <div class="panel-heading"><div><span class="eyebrow">SITE OPÉRATIONNEL</span><h2>Ajouter / modifier</h2></div></div>
     <form method="post" action="{{ route('admin.promethee.regional.bases.save') }}" class="form-grid">
       @csrf
@@ -53,7 +65,7 @@
   </section>
 </div>
 
-<section class="panel">
+<section class="panel admin-workspace-section" id="regional-rotation">
   <div class="panel-heading regional-aircraft-heading">
     <div><span class="eyebrow">ROTATION FLOTTE</span><h2>Faire tourner les immatriculations entre bases</h2><p>Seuls les appareils stationnés dans leur propre base, parkés, non réservés et sans mission/PIREP/maintenance en cours sont éligibles. Les permutations se font uniquement entre appareils de la même sous-flotte.</p></div>
     <form method="post" action="{{ route('admin.promethee.regional.rotation.run') }}" class="inline-form" onsubmit="return confirm('Lancer maintenant une rotation forcée des appareils actuellement éligibles ?');">
@@ -122,7 +134,7 @@
   </table>
 </section>
 
-<section class="panel table-wrap" id="aircraft-assignments">
+<section class="panel table-wrap admin-workspace-section" id="regional-fleet">
   <div class="panel-heading regional-aircraft-heading">
     <div>
       <span class="eyebrow">AFFECTATION</span>
@@ -227,7 +239,7 @@
   </table>
 </section>
 
-<section class="panel table-wrap">
+<section class="panel table-wrap admin-workspace-section" id="regional-history">
   <div class="panel-heading"><div><span class="eyebrow">HISTORIQUE ROTATION</span><h2>Dernières permutations automatiques</h2></div></div>
   <table>
     <thead><tr><th>Date</th><th>Appareil 1</th><th>Appareil 2</th><th>Permutation</th><th>Motif</th></tr></thead>
@@ -331,4 +343,5 @@
 })();
 </script>
 @endpush
+</div>
 @endsection
