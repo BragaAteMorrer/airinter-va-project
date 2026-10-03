@@ -2,16 +2,28 @@
 @section('title','Programme des vols')
 @section('content')
 <div class="ops-header compact"><div><span class="eyebrow">LE RÉSEAU AIR INTER</span><h1>Programme des vols.</h1><p>Filtrer, comparer et préparer une rotation sans quitter Prométhée.</p></div><span class="tag metric-tag">@if($flights->total()>0){{ $flights->total() }} lignes publiées @elseif($itineraries->isNotEmpty()){{ $itineraries->count() }} itinéraire{{ $itineraries->count()>1?'s':'' }} proposé{{ $itineraries->count()>1?'s':'' }} @else 0 ligne publiée @endif</span></div>
-<form id="flight-filters" class="panel filters flight-filter" method="get">
+<form id="flight-filters" class="panel flight-filter" method="get">
+<div class="flight-filter-primary">
 <label class="filter-wide">Vol ou aéroport<input name="q" value="{{ request('q') }}" placeholder="IT123, LFPO, code ligne…"></label>
 <label>Départ<input name="departure" value="{{ request('departure') }}" list="flight-airports" placeholder="OACI, IATA ou ville" autocomplete="off"></label>
 <label>Arrivée<input name="arrival" value="{{ request('arrival') }}" list="flight-airports" placeholder="OACI, IATA ou ville" autocomplete="off"></label>
-<datalist id="flight-airports">@foreach($mapAirports as $airport)<option value="{{ $airport['code'] }}">{{ $airport['name'] }}@if($airport['location']) · {{ $airport['location'] }}@endif</option>@endforeach</datalist>
+<div class="flight-filter-actions"><button type="submit">Rechercher</button><a class="text-button" href="{{ route('promethee.flights') }}">Réinitialiser</a></div>
+</div>
+<details class="flight-filter-advanced" @if(request()->filled('airline_id') || request()->filled('subfleet_id') || request()->filled('flight_type') || request()->filled('time_from') || request()->filled('time_to') || request()->filled('min_distance') || request()->filled('max_distance') || request('sort','departure') !== 'departure') open @endif>
+<summary><strong>Filtres avancés</strong><span>Compagnie, flotte, horaires, distance et tri</span><b aria-hidden="true">⌄</b></summary>
+<div class="flight-filter-advanced-grid">
 <label>Compagnie<select name="airline_id"><option value="">Toutes</option>@foreach($airlines as $airline)<option value="{{ $airline->id }}" @selected((string)request('airline_id')===(string)$airline->id)>{{ $airline->icao }} · {{ $airline->name }}</option>@endforeach</select></label>
 <label>Appareil / flotte<select name="subfleet_id"><option value="">Tous</option>@foreach($subfleets as $subfleet)<option value="{{ $subfleet->id }}" @selected((string)request('subfleet_id')===(string)$subfleet->id)>{{ $subfleet->type }} · {{ $subfleet->name }}</option>@endforeach</select></label>
 <label>Type<select name="flight_type"><option value="">Tous</option>@foreach($flightTypes as $code=>$label)<option value="{{ $code }}" @selected(request('flight_type')===$code)>{{ $code }} · {{ $label }}</option>@endforeach</select></label>
-<label>Départ après<input name="time_from" type="time" value="{{ request('time_from') }}"></label><label>Départ avant<input name="time_to" type="time" value="{{ request('time_to') }}"></label><label>Distance min. (NM)<input name="min_distance" type="number" min="0" value="{{ request('min_distance') }}"></label><label>Distance max. (NM)<input name="max_distance" type="number" min="0" value="{{ request('max_distance') }}"></label>
-<label>Trier par<select name="sort"><option value="departure" @selected(request('sort','departure')==='departure')>Heure de départ</option><option value="ident" @selected(request('sort')==='ident')>Numéro de vol</option><option value="distance" @selected(request('sort')==='distance')>Distance</option></select></label><button>Appliquer les filtres</button><a href="{{ route('promethee.flights') }}">Réinitialiser</a>
+<label>Départ après<input name="time_from" type="time" value="{{ request('time_from') }}"></label>
+<label>Départ avant<input name="time_to" type="time" value="{{ request('time_to') }}"></label>
+<label>Distance min. (NM)<input name="min_distance" type="number" min="0" value="{{ request('min_distance') }}"></label>
+<label>Distance max. (NM)<input name="max_distance" type="number" min="0" value="{{ request('max_distance') }}"></label>
+<label>Trier par<select name="sort"><option value="departure" @selected(request('sort','departure')==='departure')>Heure de départ</option><option value="ident" @selected(request('sort')==='ident')>Numéro de vol</option><option value="distance" @selected(request('sort')==='distance')>Distance</option></select></label>
+</div>
+<div class="flight-filter-advanced-actions"><button type="submit">Appliquer tous les filtres</button></div>
+</details>
+<datalist id="flight-airports">@foreach($mapAirports as $airport)<option value="{{ $airport['code'] }}">{{ $airport['name'] }}@if($airport['location']) · {{ $airport['location'] }}@endif</option>@endforeach</datalist>
 </form>
 <section class="panel network-map-panel" aria-labelledby="network-map-title"><div class="panel-heading"><div><span class="eyebrow">SÉLECTION PAR CARTE</span><h2 id="network-map-title">Choisir l’itinéraire</h2></div><p class="map-help">Molette ou boutons +/− pour zoomer ; glissez pour vous déplacer. Cliquez un aéroport pour le départ, puis un second pour l’arrivée.</p></div><div class="map-selection" aria-live="polite"><span>Départ : <b>{{ $selectedDeparture ?: 'à sélectionner' }}</b></span><span>Arrivée : <b>{{ $selectedArrival ?: 'à sélectionner' }}</b></span>@if(request('departure')||request('arrival'))<a href="{{ route('promethee.flights',request()->except(['departure','arrival','page'])) }}">Effacer la sélection</a>@endif</div><div id="flight-network-map" class="network-map" aria-label="Carte interactive des aéroports desservis"></div><p class="map-legend"><i></i> Aéroport desservi <span class="route-legend air-inter"></span> Air Inter <span class="route-legend air-charter"></span> Air Charter <span class="route-legend ics"></span> Inter Cargo Services</p></section>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -109,6 +121,34 @@
   </div>
 </section>
 @endif
-<section class="flight-cards">@forelse($flights as $flight)<article class="panel line-card"><div class="line-card-head"><div><span class="eyebrow">{{ $flight->airline?->name ?? 'Air Inter' }}</span><h2>{{ $flight->ident }}</h2></div><a class="round-link" aria-label="Préparer {{ $flight->ident }}" href="{{ route('promethee.flights.show',$flight->id) }}">→</a></div><div class="airport-pair"><strong title="{{ $flight->dpt_airport?->name }}">{{ $flight->dpt_airport_id }}</strong><i></i><strong title="{{ $flight->arr_airport?->name }}">{{ $flight->arr_airport_id }}</strong></div><p class="muted">{{ $flight->dpt_airport?->location ?: $flight->dpt_airport_id }} → {{ $flight->arr_airport?->location ?: $flight->arr_airport_id }}</p><dl class="line-meta"><div><dt>Départ</dt><dd>{{ $flight->dpt_time ?: '—' }}</dd></div><div><dt>Arrivée</dt><dd>{{ $flight->arr_time ?: '—' }}</dd></div><div><dt>Distance</dt><dd>{{ number_format($flight->distance->toUnit('nmi'),0,',',' ') }} NM</dd></div></dl><div class="fare-chips">@forelse($flight->subfleets as $subfleet)<span>{{ $subfleet->type }}</span>@empty<span>Flotte à confirmer</span>@endforelse</div></article>@empty<section class="panel empty">@if($itineraries->isNotEmpty())<h2>Aucun vol direct ne correspond à la recherche.</h2><p>Des correspondances réalisables sont proposées juste au-dessus.</p>@elseif($selectedDeparture && $selectedArrival)<h2>Aucun vol direct ni itinéraire avec jusqu’à {{ $maxItineraryStops }} escales.</h2><p>Élargissez un filtre, changez de compagnie/appareil ou réinitialisez la recherche.</p>@else<h2>Aucun vol ne correspond à la recherche.</h2><p>Élargissez un filtre ou réinitialisez la recherche.</p>@endif</section>@endforelse</section>
+<section class="panel flight-results-panel" aria-labelledby="flight-results-title">
+<div class="panel-heading"><div><span class="eyebrow">VOLS DIRECTS</span><h2 id="flight-results-title">Lignes publiées</h2></div><span class="tag">{{ $flights->total() }} résultat{{ $flights->total()>1?'s':'' }}</span></div>
+@if($flights->count())
+<div class="table-wrap">
+<table class="flight-results">
+<thead><tr><th>Vol</th><th>Itinéraire</th><th>Départ</th><th>Arrivée</th><th>Distance</th><th>Flotte</th><th>Action</th></tr></thead>
+<tbody>
+@foreach($flights as $flight)
+<tr>
+<td data-label="Vol"><a class="flight-result-ident" href="{{ route('promethee.flights.show',$flight->id) }}">{{ $flight->ident }}</a><small>{{ $flight->airline?->name ?? 'Air Inter' }}</small></td>
+<td data-label="Itinéraire"><div class="flight-result-route"><strong title="{{ $flight->dpt_airport?->name }}">{{ $flight->dpt_airport_id }}</strong><span>→</span><strong title="{{ $flight->arr_airport?->name }}">{{ $flight->arr_airport_id }}</strong></div><small>{{ $flight->dpt_airport?->location ?: $flight->dpt_airport_id }} → {{ $flight->arr_airport?->location ?: $flight->arr_airport_id }}</small></td>
+<td data-label="Départ" class="mono">{{ $flight->dpt_time ?: '—' }}</td>
+<td data-label="Arrivée" class="mono">{{ $flight->arr_time ?: '—' }}</td>
+<td data-label="Distance" class="mono">{{ number_format($flight->distance->toUnit('nmi'),0,',',' ') }} NM</td>
+<td data-label="Flotte"><span class="flight-equipment-list">@forelse($flight->subfleets as $subfleet)<span>{{ $subfleet->type }}</span>@empty<em>À confirmer</em>@endforelse</span></td>
+<td data-label="Action" class="flight-result-action-cell"><a class="round-link" aria-label="Préparer {{ $flight->ident }}" href="{{ route('promethee.flights.show',$flight->id) }}">→</a></td>
+</tr>
+@endforeach
+</tbody>
+</table>
+</div>
+@else
+<div class="empty flight-results-empty">
+@if($itineraries->isNotEmpty())<h2>Aucun vol direct ne correspond à la recherche.</h2><p>Des correspondances réalisables sont proposées juste au-dessus.</p>
+@elseif($selectedDeparture && $selectedArrival)<h2>Aucun vol direct ni itinéraire avec jusqu’à {{ $maxItineraryStops }} escales.</h2><p>Élargissez un filtre, changez de compagnie/appareil ou réinitialisez la recherche.</p>
+@else<h2>Aucun vol ne correspond à la recherche.</h2><p>Élargissez un filtre ou réinitialisez la recherche.</p>@endif
+</div>
+@endif
+</section>
 {{ $flights->links('pagination::bootstrap-4') }}
 @endsection
