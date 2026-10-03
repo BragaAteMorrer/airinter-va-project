@@ -48,6 +48,10 @@ const dispatch = read('prometheus/modules/Promethee/Resources/views/admin/dispat
 const crm = read('prometheus/modules/Promethee/Resources/views/admin/crm.blade.php');
 const adminDashboard = read('prometheus/modules/Promethee/Resources/views/admin/dashboard.blade.php');
 const prometheeLayout = read('prometheus/modules/Promethee/Resources/views/layout.blade.php');
+const prometheePilots = read('prometheus/modules/Promethee/Resources/views/pilots.blade.php');
+const prometheeMissions = read('prometheus/modules/Promethee/Resources/views/missions.blade.php');
+const prometheeMyDocuments = read('prometheus/modules/Promethee/Resources/views/my-documents.blade.php');
+const prometheeCommunity = read('prometheus/public/promethee-assets/promethee-community.css');
 const prometheeFlights = read('prometheus/modules/Promethee/Resources/views/flights.blade.php');
 const portalController = read('prometheus/modules/Promethee/Http/PortalController.php');
 const automationController = read('prometheus/modules/Promethee/Http/AutomationController.php');
@@ -152,6 +156,29 @@ expect(prometheeLayout.includes('data-promethee-shell')
     && prometheeLayout.includes('class="shell-menu-toggle"')
     && prometheeLayout.includes('id="promethee-navigation"'),
   'Prométhée shell must preserve the structured two-level navbar.');
+
+expect(prometheeLayout.includes("'scope' => 'pilot'")
+    && prometheeLayout.includes("'scope' => 'shared'")
+    && prometheeLayout.includes("'scope' => 'staff'")
+    && prometheeLayout.includes("'title' => 'OCC / EXPLOITATION'")
+    && !prometheeLayout.includes("['route' => 'admin.promethee.dispatch', 'label' => 'dispatch_desk', 'active' => 'admin.promethee.dispatch*'],\n            ['route' => 'promethee.missions'"),
+  'Prométhée navigation must keep explicit pilot/shared/staff information architecture.');
+expect(prometheeMissions.includes('id="my-missions"')
+    && prometheeMissions.includes('$myMissions')
+    && prometheeMissions.includes('$otherMissions')
+    && prometheeMissions.includes('pilot-hub-nav'),
+  'Prométhée missions must keep personal missions separate from the available mission catalogue.');
+expect(prometheeMyDocuments.includes('Documentation Air Inter')
+    && prometheeMyDocuments.includes('documentation-hub-nav')
+    && !/<[^>]+\sstyle\s*=/i.test(prometheeMyDocuments),
+  'Prométhée documentation must remain a single pilot hub without inline styles.');
+expect(!prometheePilots.includes('Cette page reste à écrire')
+    && prometheePilots.includes('community-empty-state'),
+  'Prométhée community directory must use finished empty states instead of placeholder copy.');
+expect(prometheeCommunity.includes('Audit UX step 5 — pilot information architecture.')
+    && prometheeCommunity.includes('@media(max-width:760px)')
+    && prometheeCommunity.includes('.mission-owned-row'),
+  'Prométhée pilot information architecture must keep its responsive treatment.');
 expect(prometheeNavigation.includes('setShellMenu')
     && prometheeNavigation.includes("aria-expanded")
     && prometheeNavigation.includes("event.key === 'Escape'"),
