@@ -41,29 +41,29 @@ jobs:
         run: |
           node --check acars/wwwroot/i18n.js
           node --check acars/wwwroot/app.js
-          node tools/check_hermes_i18n.cjs
+          node promethee/tools/check_hermes_i18n.cjs
       - name: Validate Minitel M0 runtime
         run: |
-          node --check shared/minitel/runtime.js
-          node --check shared/minitel/renderer.js
-          node --check shared/minitel/shell.js
-          node --check prometheus/public/promethee-assets/promethee-minitel.js
-          node --check prometheus/public/promethee-assets/login.js
+          node --check promethee/shared/minitel/runtime.js
+          node --check promethee/shared/minitel/renderer.js
+          node --check promethee/shared/minitel/shell.js
+          node --check promethee/public/promethee-assets/promethee-minitel.js
+          node --check promethee/public/promethee-assets/login.js
           node --check acars/wwwroot/hermes-minitel-core.js
           node --check acars/wwwroot/hermes-minitel.js
-          node shared/minitel/runtime.test.cjs
-          node shared/minitel/shell.test.cjs
-          node tools/check_minitel_renderer.test.cjs
-          node tools/check_hermes_minitel.test.cjs
-          node tools/check_minitel_assets.cjs
+          node promethee/shared/minitel/runtime.test.cjs
+          node promethee/shared/minitel/shell.test.cjs
+          node promethee/tools/check_minitel_renderer.test.cjs
+          node promethee/tools/check_hermes_minitel.test.cjs
+          node promethee/tools/check_minitel_assets.cjs
       - name: Validate upstream maintenance tooling
         run: |
-          python -m py_compile tools/phpvms_upstream_audit.py
-          python tools/phpvms_upstream_audit.py --check-manifest
+          python -m py_compile promethee/tools/phpvms_upstream_audit.py
+          python promethee/tools/phpvms_upstream_audit.py --check-manifest
       - name: Validate frontend performance and accessibility budgets
         run: |
-          node --check tools/check_frontend_quality.cjs
-          node tools/check_frontend_quality.cjs
+          node --check promethee/tools/check_frontend_quality.cjs
+          node promethee/tools/check_frontend_quality.cjs
       - name: Guard Air Inter-only Hermès authentication
         shell: bash
         run: |
@@ -127,7 +127,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: prometheus
+        working-directory: promethee
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -248,7 +248,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: prometheus
+        working-directory: promethee
     env:
       APP_ENV: testing
       DB_CONNECTION: memory
@@ -289,8 +289,8 @@ jobs:
         uses: actions/checkout@v4
       - name: Run M7 acceptance gate
         run: |
-          node --check tools/check_minitel_release.cjs
-          node tools/check_minitel_release.cjs --report-dir TestResults/minitel-m7
+          node --check promethee/tools/check_minitel_release.cjs
+          node promethee/tools/check_minitel_release.cjs --report-dir TestResults/minitel-m7
       - name: Upload M7 acceptance report
         if: always()
         uses: actions/upload-artifact@v4

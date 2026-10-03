@@ -52,16 +52,16 @@ mail/
 *.snk
 
 # Laravel / Prométhée
-prometheus/vendor/
-prometheus/node_modules/
-prometheus/bootstrap/cache/*.php
-!prometheus/bootstrap/cache/.gitignore
-prometheus/storage/framework/cache/*
-prometheus/storage/framework/sessions/*
-prometheus/storage/framework/views/*
-prometheus/storage/logs/*
-prometheus/public/hot
-prometheus/public/storage
+promethee/vendor/
+promethee/node_modules/
+promethee/bootstrap/cache/*.php
+!promethee/bootstrap/cache/.gitignore
+promethee/storage/framework/cache/*
+promethee/storage/framework/sessions/*
+promethee/storage/framework/views/*
+promethee/storage/logs/*
+promethee/public/hot
+promethee/public/storage
 
 # .NET / Hermès
 **/bin/

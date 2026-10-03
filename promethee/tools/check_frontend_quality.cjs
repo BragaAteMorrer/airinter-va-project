@@ -13,18 +13,18 @@ const fail = message => failures.push(message);
 const expect = (condition, message) => { if (!condition) fail(message); };
 
 const budgets = {
-  'acars/wwwroot/app.js': 145000,
-  'acars/wwwroot/hermes-map.js': 18000,
-  'acars/wwwroot/hermes-review.js': 20000,
-  'acars/wwwroot/index.html': 50000,
-  'acars/wwwroot/styles.css': 60000,
-  'acars/wwwroot/hermes-themes.css': 35000,
-  'prometheus/public/promethee-assets/promethee-v2.css': 90000,
-  'prometheus/public/promethee-assets/promethee-appearance.css': 40000,
-  'prometheus/public/promethee-assets/promethee-admin-workspaces.css': 12000,
-  'prometheus/modules/Promethee/Http/PortalController.php': 245000,
-  'prometheus/modules/Promethee/Http/AutomationController.php': 14000,
-  'prometheus/modules/Promethee/Resources/views/admin/dispatch.blade.php': 45000,
+  '../acars/wwwroot/app.js': 145000,
+  '../acars/wwwroot/hermes-map.js': 18000,
+  '../acars/wwwroot/hermes-review.js': 20000,
+  '../acars/wwwroot/index.html': 50000,
+  '../acars/wwwroot/styles.css': 60000,
+  '../acars/wwwroot/hermes-themes.css': 35000,
+  'public/promethee-assets/promethee-v2.css': 90000,
+  'public/promethee-assets/promethee-appearance.css': 40000,
+  'public/promethee-assets/promethee-admin-workspaces.css': 12000,
+  'modules/Promethee/Http/PortalController.php': 245000,
+  'modules/Promethee/Http/AutomationController.php': 14000,
+  'modules/Promethee/Resources/views/admin/dispatch.blade.php': 45000,
 };
 
 console.log('Frontend performance budgets');
@@ -35,28 +35,28 @@ for (const [file, budget] of Object.entries(budgets)) {
   expect(bytes <= budget, `${file} exceeds its performance budget (${bytes} > ${budget} bytes)`);
 }
 
-const hermesIndex = read('acars/wwwroot/index.html');
-const hermesApp = read('acars/wwwroot/app.js');
-const hermesMap = read('acars/wwwroot/hermes-map.js');
-const hermesReview = read('acars/wwwroot/hermes-review.js');
-const hermesDesktop = read('acars/WebDesktop.cs');
-const hermesTheme = read('acars/wwwroot/hermes-themes.css');
-const prometheeBase = read('prometheus/public/promethee-assets/promethee.css');
-const prometheeV2 = read('prometheus/public/promethee-assets/promethee-v2.css');
-const prometheeAdmin = read('prometheus/public/promethee-assets/admin-promethee.css');
-const dispatch = read('prometheus/modules/Promethee/Resources/views/admin/dispatch.blade.php');
-const crm = read('prometheus/modules/Promethee/Resources/views/admin/crm.blade.php');
-const adminDashboard = read('prometheus/modules/Promethee/Resources/views/admin/dashboard.blade.php');
-const prometheeLayout = read('prometheus/modules/Promethee/Resources/views/layout.blade.php');
-const prometheePilots = read('prometheus/modules/Promethee/Resources/views/pilots.blade.php');
-const prometheeProfile = read('prometheus/modules/Promethee/Resources/views/profile.blade.php');
-const prometheeMissions = read('prometheus/modules/Promethee/Resources/views/missions.blade.php');
-const prometheeMyDocuments = read('prometheus/modules/Promethee/Resources/views/my-documents.blade.php');
-const prometheeCommunity = read('prometheus/public/promethee-assets/promethee-community.css');
-const prometheeFlights = read('prometheus/modules/Promethee/Resources/views/flights.blade.php');
-const portalController = read('prometheus/modules/Promethee/Http/PortalController.php');
-const automationController = read('prometheus/modules/Promethee/Http/AutomationController.php');
-const prometheeRoutes = read('prometheus/modules/Promethee/routes.php');
+const hermesIndex = read('../acars/wwwroot/index.html');
+const hermesApp = read('../acars/wwwroot/app.js');
+const hermesMap = read('../acars/wwwroot/hermes-map.js');
+const hermesReview = read('../acars/wwwroot/hermes-review.js');
+const hermesDesktop = read('../acars/WebDesktop.cs');
+const hermesTheme = read('../acars/wwwroot/hermes-themes.css');
+const prometheeBase = read('public/promethee-assets/promethee.css');
+const prometheeV2 = read('public/promethee-assets/promethee-v2.css');
+const prometheeAdmin = read('public/promethee-assets/admin-promethee.css');
+const dispatch = read('modules/Promethee/Resources/views/admin/dispatch.blade.php');
+const crm = read('modules/Promethee/Resources/views/admin/crm.blade.php');
+const adminDashboard = read('modules/Promethee/Resources/views/admin/dashboard.blade.php');
+const prometheeLayout = read('modules/Promethee/Resources/views/layout.blade.php');
+const prometheePilots = read('modules/Promethee/Resources/views/pilots.blade.php');
+const prometheeProfile = read('modules/Promethee/Resources/views/profile.blade.php');
+const prometheeMissions = read('modules/Promethee/Resources/views/missions.blade.php');
+const prometheeMyDocuments = read('modules/Promethee/Resources/views/my-documents.blade.php');
+const prometheeCommunity = read('public/promethee-assets/promethee-community.css');
+const prometheeFlights = read('modules/Promethee/Resources/views/flights.blade.php');
+const portalController = read('modules/Promethee/Http/PortalController.php');
+const automationController = read('modules/Promethee/Http/AutomationController.php');
+const prometheeRoutes = read('modules/Promethee/routes.php');
 expect(!portalController.includes('public function automation(')
     && !portalController.includes('public function saveBadgeRule(')
     && automationController.includes('class AutomationController extends Controller'),
@@ -64,13 +64,13 @@ expect(!portalController.includes('public function automation(')
 expect(prometheeRoutes.includes("[AutomationController::class,'automation']")
     && prometheeRoutes.includes("[AutomationController::class,'saveRankRule']"),
   'Prométhée automation routes must remain owned by AutomationController without changing route names.');
-const adminWorkspaceCss = read('prometheus/public/promethee-assets/promethee-admin-workspaces.css');
-const automationWorkspace = read('prometheus/modules/Promethee/Resources/views/admin/automation.blade.php');
-const seasonsWorkspace = read('prometheus/modules/Promethee/Resources/views/seasons.blade.php');
-const economyWorkspace = read('prometheus/modules/Promethee/Resources/views/economy.blade.php');
-const regionalWorkspace = read('prometheus/modules/Promethee/Resources/views/admin-regional-operations.blade.php');
-const maintenanceWorkspace = read('prometheus/modules/Promethee/Resources/views/admin-maintenance.blade.php');
-const sopWorkspace = read('prometheus/modules/Promethee/Resources/views/admin/sop.blade.php');
+const adminWorkspaceCss = read('public/promethee-assets/promethee-admin-workspaces.css');
+const automationWorkspace = read('modules/Promethee/Resources/views/admin/automation.blade.php');
+const seasonsWorkspace = read('modules/Promethee/Resources/views/seasons.blade.php');
+const economyWorkspace = read('modules/Promethee/Resources/views/economy.blade.php');
+const regionalWorkspace = read('modules/Promethee/Resources/views/admin-regional-operations.blade.php');
+const maintenanceWorkspace = read('modules/Promethee/Resources/views/admin-maintenance.blade.php');
+const sopWorkspace = read('modules/Promethee/Resources/views/admin/sop.blade.php');
 
 const stylesheetHrefs = [...hermesIndex.matchAll(/<link\b[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["']/gi)]
   .map(match => match[1]);
@@ -114,16 +114,16 @@ expect(hermesTheme.includes('prefers-reduced-motion'),
 expect(hermesTheme.includes('focus-visible'),
   'Hermès theme CSS must preserve visible keyboard focus handling.');
 
-const hermesOverrides = read('acars/wwwroot/layout-overrides.css');
+const hermesOverrides = read('../acars/wwwroot/layout-overrides.css');
 expect(hermesIndex.includes('class="rail-nav-label"')
     && hermesIndex.includes('class="display-settings"')
     && hermesIndex.includes('20261003-ops-ui-phase2'),
   'Hermès must preserve the grouped operational navigation and refreshed asset revision.');
 expect(hermesApp.includes('data-tab') || hermesIndex.includes('data-tab="flight"'),
   'Hermès navigation must keep data-tab based workspace routing.');
-expect(read('acars/wwwroot/styles.css').includes('Audit UX phase 2 — operational visual consolidation.')
-    && read('acars/wwwroot/styles.css').includes('--radius:8px;')
-    && read('acars/wwwroot/styles.css').includes('.rail-nav-label'),
+expect(read('../acars/wwwroot/styles.css').includes('Audit UX phase 2 — operational visual consolidation.')
+    && read('../acars/wwwroot/styles.css').includes('--radius:8px;')
+    && read('../acars/wwwroot/styles.css').includes('.rail-nav-label'),
   'Hermès must preserve the compact operational visual system.');
 expect(!hermesOverrides.includes('.rail')
     && !hermesOverrides.includes('#selectedOperation.prefile'),
@@ -149,8 +149,8 @@ expect(prometheeLayout.includes('class="topbar-controls"')
     && prometheeLayout.includes('theme-control-label'),
   'Prométhée shell must keep compact grouped display controls.');
 
-const prometheeNavigation = read('prometheus/public/promethee-assets/navigation-groups.js');
-const prometheeEras = read('prometheus/public/promethee-assets/airinter-eras.css');
+const prometheeNavigation = read('public/promethee-assets/navigation-groups.js');
+const prometheeEras = read('public/promethee-assets/airinter-eras.css');
 expect(prometheeLayout.includes('data-promethee-shell')
     && prometheeLayout.includes('class="shell-primary"')
     && prometheeLayout.includes('class="shell-branding"')
@@ -205,9 +205,9 @@ expect(prometheeV2.includes('Audit UX phase 11 — flight programme progressive 
     && prometheeV2.includes('Audit UX phase 11 — compact shell controls'),
   'Prométhée must preserve phase 11 shell and flight-programme primitives.');
 
-const prometheeDashboard = read('prometheus/modules/Promethee/Resources/views/dashboard.blade.php');
-const prometheeFleet = read('prometheus/modules/Promethee/Resources/views/fleet.blade.php');
-const prometheeMaintenance = read('prometheus/modules/Promethee/Resources/views/maintenance.blade.php');
+const prometheeDashboard = read('modules/Promethee/Resources/views/dashboard.blade.php');
+const prometheeFleet = read('modules/Promethee/Resources/views/fleet.blade.php');
+const prometheeMaintenance = read('modules/Promethee/Resources/views/maintenance.blade.php');
 expect(prometheeDashboard.includes('<progress class="operation-progress next-operation-progress"'),
   'Prométhée dashboard must use the shared semantic operation progress primitive.');
 expect(prometheeFleet.includes('class="airline-mark"') && prometheeFleet.includes('PARC ACTIF') && prometheeFleet.includes('table-sort-link'),
@@ -266,10 +266,10 @@ expect(regionalWorkspace.includes('table-wrap admin-table-scroll')
   'Responsive admin workspaces must keep dense tables scrollable and preserve economy deep links.');
 
 const inlineStyleFreeViews = [
-  'prometheus/modules/Promethee/Resources/views/bookings.blade.php',
-  'prometheus/modules/Promethee/Resources/views/flight.blade.php',
-  'prometheus/modules/Promethee/Resources/views/fleet.blade.php',
-  'prometheus/modules/Promethee/Resources/views/maintenance.blade.php',
+  'modules/Promethee/Resources/views/bookings.blade.php',
+  'modules/Promethee/Resources/views/flight.blade.php',
+  'modules/Promethee/Resources/views/fleet.blade.php',
+  'modules/Promethee/Resources/views/maintenance.blade.php',
 ];
 for (const file of inlineStyleFreeViews) {
   expect(!/<[^>]+\sstyle\s*=/i.test(read(file)),

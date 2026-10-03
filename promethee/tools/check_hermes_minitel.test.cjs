@@ -15,7 +15,7 @@ const {
   datalinkSnapshot,
   reviewSummary,
   timeLabel
-} = require('../acars/wwwroot/hermes-minitel-core.js');
+} = require('../../acars/wwwroot/hermes-minitel-core.js');
 
 const tests = [];
 const test = (name, fn) => tests.push([name, fn]);
@@ -207,7 +207,7 @@ test('time label is safe for terminal rendering', () => {
 });
 
 test('Hermès Minitel exposes the renovated 40x25 Videotex screen hierarchy', () => {
-  const source = fs.readFileSync(path.join(__dirname, '..', 'acars', 'wwwroot', 'hermes-minitel.js'), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, '..', '..', 'acars', 'wwwroot', 'hermes-minitel.js'), 'utf8');
   for (const page of [
     'login-user',
     'login-password',
@@ -232,7 +232,7 @@ test('Hermès Minitel exposes the renovated 40x25 Videotex screen hierarchy', ()
 });
 
 test('SimBrief sources are split into exclusive Minitel workflows', () => {
-  const source = fs.readFileSync(path.join(__dirname, '..', 'acars', 'wwwroot', 'hermes-minitel.js'), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, '..', '..', 'acars', 'wwwroot', 'hermes-minitel.js'), 'utf8');
   assert.ok(source.includes("'simbrief-account'"));
   assert.ok(source.includes("'simbrief-api'"));
   assert.ok(source.includes("'simbrief-local'"));
@@ -243,14 +243,14 @@ test('SimBrief sources are split into exclusive Minitel workflows', () => {
 });
 
 test('Recovery is fully operable from Minitel including abandon/archive', () => {
-  const source = fs.readFileSync(path.join(__dirname, '..', 'acars', 'wwwroot', 'hermes-minitel.js'), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, '..', '..', 'acars', 'wwwroot', 'hermes-minitel.js'), 'utf8');
   assert.ok(source.includes('ABANDONNER ET ARCHIVER'));
   assert.ok(source.includes("pending.type === 'abandon-recovery'"));
   assert.ok(source.includes("runCall('/api/recovery/abandon'"));
 });
 
 test('Hermès Minitel caps progressive screen transmission around 2-3 seconds', () => {
-  const source = fs.readFileSync(path.join(__dirname, '..', 'acars', 'wwwroot', 'hermes-minitel.js'), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, '..', '..', 'acars', 'wwwroot', 'hermes-minitel.js'), 'utf8');
   const renderer = fs.readFileSync(path.join(__dirname, '..', 'shared', 'minitel', 'renderer.js'), 'utf8');
   assert.ok(source.includes('maxProgressiveDurationMs: 2600'));
   assert.ok(source.includes('bootFrameDelay: 120'));
@@ -260,7 +260,7 @@ test('Hermès Minitel caps progressive screen transmission around 2-3 seconds', 
 });
 
 test('Hermès Minitel shell scales uniformly and respects accessibility preferences', () => {
-  const css = fs.readFileSync(path.join(__dirname, '..', 'acars', 'wwwroot', 'hermes-minitel.css'), 'utf8').replace(/\s+/g, ' ');
+  const css = fs.readFileSync(path.join(__dirname, '..', '..', 'acars', 'wwwroot', 'hermes-minitel.css'), 'utf8').replace(/\s+/g, ' ');
   assert.ok(css.includes('--mt-chassis-size:min(calc(100dvh - 44px),calc(100vw - 16px),980px)'));
   assert.ok(css.includes('aspect-ratio:1/1'));
   assert.ok(css.includes('@media(prefers-reduced-motion:reduce)'));

@@ -23,10 +23,10 @@ Cette vérification n'est pas une preuve cryptographique d'absence de secret et 
 
 ## Fichiers conservés volontairement
 
-- `prometheus/.env.example` : exemple sans secret ;
-- `prometheus/bin/*` : scripts applicatifs phpVMS ;
+- `promethee/.env.example` : exemple sans secret ;
+- `promethee/bin/*` : scripts applicatifs phpVMS ;
 - vues Laravel `vendor/mail` : templates de mail versionnés ;
-- `prometheus/storage/logs/.gitignore` : garde le dossier sans versionner les logs.
+- `promethee/storage/logs/.gitignore` : garde le dossier sans versionner les logs.
 
 Ils ne doivent pas être supprimés uniquement parce que leur chemin ressemble à un artifact.
 

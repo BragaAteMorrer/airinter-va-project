@@ -6,7 +6,7 @@
   "released_at": "2026-06-26T23:59:34Z",
   "release_asset": "phpvms-7.0.10.zip",
   "release_sha256": "9612a2003e2b69276bddffaee9d4b09b66e21f11aa5345b34d31e6d7f89af843",
-  "local_root": "prometheus",
+  "local_root": ".",
   "ignored_prefixes": [
     "vendor/",
     "node_modules/",

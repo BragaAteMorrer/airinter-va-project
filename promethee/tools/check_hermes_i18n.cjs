@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 global.window = {};
-require(path.resolve(__dirname, '../acars/wwwroot/i18n.js'));
+require(path.resolve(__dirname, '../../acars/wwwroot/i18n.js'));
 
 const i18n = global.window.HermesI18n;
 const expected = ['fr', 'en', 'pt', 'es', 'it', 'ja', 'tr', 'de'];
@@ -24,7 +24,7 @@ for (const locale of expected) {
   }
 }
 
-const index = fs.readFileSync(path.resolve(__dirname, '../acars/wwwroot/index.html'), 'utf8');
+const index = fs.readFileSync(path.resolve(__dirname, '../../acars/wwwroot/index.html'), 'utf8');
 for (const locale of expected) {
   if (!index.includes(`value="${locale}"`)) {
     throw new Error(`Hermès language selector is missing ${locale}`);

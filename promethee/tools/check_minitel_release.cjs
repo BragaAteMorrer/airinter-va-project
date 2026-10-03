@@ -6,7 +6,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'shared', 'minitel', 'acceptance-m7.json'), 'utf8'));
 const runtime = require(path.join(root, 'shared', 'minitel', 'runtime.js'));
-const hermesCore = require(path.join(root, 'acars', 'wwwroot', 'hermes-minitel-core.js'));
+const hermesCore = require(path.join(root, '..', 'acars', 'wwwroot', 'hermes-minitel-core.js'));
 
 const args = process.argv.slice(2);
 const reportIndex = args.indexOf('--report-dir');
@@ -21,19 +21,19 @@ const sources = {
   shell: read('shared/minitel/shell.js'),
   runtimeCss: read('shared/minitel/minitel-runtime.css'),
   shellCss: read('shared/minitel/minitel-shell.css'),
-  prometheeClient: read('prometheus/public/promethee-assets/promethee-minitel.js'),
-  prometheeBase: read('prometheus/public/promethee-assets/promethee.js'),
-  prometheeLayout: read('prometheus/modules/Promethee/Resources/views/layout.blade.php'),
-  prometheeCss: read('prometheus/public/promethee-assets/promethee-v2.css'),
-  prometheeRoutes: read('prometheus/modules/Promethee/routes.php'),
-  minitelOperations: read('prometheus/modules/Promethee/Http/MinitelOperationsController.php'),
-  hermesClient: read('acars/wwwroot/hermes-minitel.js'),
-  hermesCore: read('acars/wwwroot/hermes-minitel-core.js'),
-  hermesApp: read('acars/wwwroot/app.js'),
-  hermesIndex: read('acars/wwwroot/index.html'),
-  hermesThemes: read('acars/wwwroot/hermes-themes.css'),
-  hermesDatalink: read('acars/HermesDatalink.cs'),
-  flightRecorder: read('acars/FlightRecorder.cs')
+  prometheeClient: read('public/promethee-assets/promethee-minitel.js'),
+  prometheeBase: read('public/promethee-assets/promethee.js'),
+  prometheeLayout: read('modules/Promethee/Resources/views/layout.blade.php'),
+  prometheeCss: read('public/promethee-assets/promethee-v2.css'),
+  prometheeRoutes: read('modules/Promethee/routes.php'),
+  minitelOperations: read('modules/Promethee/Http/MinitelOperationsController.php'),
+  hermesClient: read('../acars/wwwroot/hermes-minitel.js'),
+  hermesCore: read('../acars/wwwroot/hermes-minitel-core.js'),
+  hermesApp: read('../acars/wwwroot/app.js'),
+  hermesIndex: read('../acars/wwwroot/index.html'),
+  hermesThemes: read('../acars/wwwroot/hermes-themes.css'),
+  hermesDatalink: read('../acars/HermesDatalink.cs'),
+  flightRecorder: read('../acars/FlightRecorder.cs')
 };
 
 const checks = [];
@@ -58,8 +58,8 @@ let assetsSynced = true;
 for (const name of manifest.shared_assets) {
   const canonical = read('shared/minitel/' + name);
   for (const target of [
-    'prometheus/public/promethee-assets/minitel/' + name,
-    'acars/wwwroot/minitel/' + name
+    'public/promethee-assets/minitel/' + name,
+    '../acars/wwwroot/minitel/' + name
   ]) {
     if (read(target) !== canonical) assetsSynced = false;
   }
