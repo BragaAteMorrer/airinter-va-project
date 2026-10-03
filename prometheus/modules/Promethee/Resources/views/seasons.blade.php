@@ -2,7 +2,11 @@
 
 @section('title', 'Saisons & périodes')
 
+@push('styles')
+<link rel="stylesheet" href="{{ asset('promethee-assets/promethee-admin-workspaces.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-admin-workspaces.css')) }}">
+@endpush
 @section('content')
+<div class="admin-workspace-page">
 <div class="ops-header compact">
     <div>
         <span class="eyebrow">ADMINISTRATION · ÉCONOMIE</span>
@@ -11,6 +15,13 @@
     </div>
     <a class="button outline" href="{{ route('admin.promethee.economy') }}">Retour à l’économie</a>
 </div>
+<nav class="admin-workspace-nav" aria-label="Navigation locale">
+  <a href="#season-create">Créer</a>
+  <a href="#season-calendar">Calendrier</a>
+  <a href="#season-pricing">Tarification</a>
+  <a href="#season-import">Import CSV</a>
+</nav>
+
 
 @if($errors->any())
 <div class="notice danger" role="alert">
@@ -19,7 +30,7 @@
 </div>
 @endif
 
-<section class="panel">
+<section class="panel admin-workspace-section" id="season-create">
     <div class="panel-heading">
         <div>
             <span class="eyebrow">NOUVELLE PÉRIODE</span>
@@ -46,13 +57,13 @@
             <input type="checkbox" name="active" value="1" @checked(old('active'))>
             Définir comme saison active
         </label>
-        <div style="align-self:end">
+        <div class="admin-workspace-form-action">
             <button type="submit">Enregistrer la saison</button>
         </div>
     </form>
 </section>
 
-<section class="panel">
+<section class="panel admin-workspace-section" id="season-calendar">
     <div class="panel-heading">
         <div>
             <span class="eyebrow">CALENDRIER COMMERCIAL</span>
@@ -61,7 +72,7 @@
         <span class="tag">{{ $seasons->count() }} saison(s)</span>
     </div>
 
-    <div class="table-wrap">
+    <div class="table-wrap admin-table-scroll">
         <table>
             <thead>
                 <tr>
@@ -101,7 +112,7 @@
     </div>
 </section>
 
-<section class="panel">
+<section class="panel admin-workspace-section" id="season-pricing">
     <div class="panel-heading">
         <div>
             <span class="eyebrow">PÉRIODES DE L’ANNÉE</span>
@@ -154,14 +165,14 @@
             <textarea name="notes" maxlength="1000" placeholder="Ex. vacances de Noël, ligne très demandée, promotion régionale…"></textarea>
         </label>
         <label><input type="checkbox" name="active" value="1" checked> Règle active</label>
-        <div style="align-self:end"><button type="submit">Ajouter l’ajustement</button></div>
+        <div class="admin-workspace-form-action"><button type="submit">Ajouter l’ajustement</button></div>
     </form>
 
     <div class="notice" role="note">
         Les ajustements globaux s’appliquent à toutes les lignes pendant la période. Les ajustements spécifiques s’ajoutent ensuite uniquement à la ligne choisie.
     </div>
 
-    <div class="table-wrap" style="margin-top:18px">
+    <div class="table-wrap admin-table-scroll admin-workspace-spaced">
         <table>
             <thead><tr><th>Saison</th><th>Périmètre</th><th>Ajustement</th><th>Période</th><th>État</th><th>Note</th><th></th></tr></thead>
             <tbody>
@@ -196,7 +207,7 @@
     </div>
 </section>
 
-<section class="panel">
+<section class="panel admin-workspace-section" id="season-import">
     <div class="panel-heading">
         <div>
             <span class="eyebrow">IMPORT PROGRAMME</span>
@@ -247,4 +258,5 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 @endpush
 
+</div>
 @endsection
