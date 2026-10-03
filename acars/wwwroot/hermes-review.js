@@ -322,6 +322,23 @@ function renderReview(review) {
     : 'Flight Review en cours · phase ' + phase + '. Le dépôt sera disponible après IN.');
 }
 
+  function initializeReviewActions() {
+    $('#submitReviewBtn').onclick = async () => {
+      try {
+        const notes = $('#reviewComment')?.value?.trim() || '';
+        const result = await call('/api/file', { notes });
+        lastFiledReview = result.review || result.Review || lastStatus?.review || lastStatus?.Review || null;
+        showMessage('#reviewMessage', 'PIREP déposé. Flight Review archivé localement.');
+        renderReview(lastFiledReview);
+        await refreshStatus();
+        serverCompanyScoreKey = null;
+        await refreshCompanyScore(true);
+      } catch (error) {
+        showMessage('#reviewMessage', friendlyError(error), true);
+      }
+    };
+  }
+
   Object.assign(window, {
     reviewValue,
     normalizeReviewProfile,
@@ -332,6 +349,7 @@ function renderReview(review) {
     renderReviewContext,
     renderCompanyScore,
     refreshCompanyScore,
-    renderReview
+    renderReview,
+    initializeReviewActions
   });
 })();
