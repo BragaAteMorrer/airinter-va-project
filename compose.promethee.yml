@@ -44,7 +44,7 @@ services:
         # Synchronise le code hôte dans le conteneur sans le reconstruire.
         # Les dépendances et les données runtime restent celles du conteneur.
         - action: sync
-          path: ./prometheus
+          path: ./promethee
           target: /var/www/html
           ignore:
             - vendor/
