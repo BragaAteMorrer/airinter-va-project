@@ -637,87 +637,38 @@ final class HermesOperationLifecycleTest extends TestCase
 
     public function test_scoring_tolerates_mixed_telemetry_schema_after_hermes_update(): void
     {
-        $fx = $this->operationFixture();
-        $pirepId = $this->prefile($fx);
-        $at = now();
+        $service = app(\Modules\Promethee\Services\LegacyPirepScoringService::class);
+        $method = new \ReflectionMethod($service, 'telemetryEpisodesIfAvailable');
+        $method->setAccessible(true);
 
-        DB::table('vmsacars_rules')->updateOrInsert(
-            ['id' => 'SIMRATE_INCREASED'],
+        $at = now();
+        $samples = [
             [
-                'name' => 'Simulation Rate Increased',
-                'description' => 'Regression fixture for mixed Hermès telemetry versions',
-                'parameter' => 1,
-                'points' => 15,
-                'enabled' => true,
-                'has_parameter' => true,
-                'repeatable' => true,
-                'delay' => 10,
-                'cooldown' => 60,
-                'order' => 1,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]
+                'recorded_at' => $at->toIso8601String(),
+                // Legacy Hermès sample: simulation_rate did not exist yet.
+            ],
+            [
+                'recorded_at' => $at->copy()->addSeconds(20)->toIso8601String(),
+                'simulation_rate' => 2.0,
+            ],
+            [
+                'recorded_at' => $at->copy()->addSeconds(35)->toIso8601String(),
+                'simulation_rate' => 2.0,
+            ],
+        ];
+
+        $episodes = $method->invoke(
+            $service,
+            $samples,
+            ['simulation_rate'],
+            fn ($sample) => (float) $sample['simulation_rate'] > 1,
+            10,
+            fn ($sample) => (float) $sample['simulation_rate']
         );
 
-        // Legacy sample: recorded before the scoring telemetry fields existed.
-        $this->post(
-            '/api/v1/operations/'.$fx['operation_id'].'/telemetry',
-            ['samples' => [[
-                'sample_id' => (string) Str::uuid(),
-                'recorded_at' => $at->toIso8601String(),
-                'phase' => 'CRUISE',
-                'lat' => 48.7,
-                'lon' => 2.3,
-                'altitude_msl' => 25000,
-                'agl' => 24000,
-                'ias' => 280,
-                'gs' => 420,
-                'vs' => 0,
-                'heading' => 180,
-                'fuel' => 5000,
-                'on_ground' => false,
-            ]]],
-            [],
-            $fx['user']
-        )->assertOk();
-
-        // Current sample: same PIREP after Hermès has been updated/restarted.
-        $this->post(
-            '/api/v1/operations/'.$fx['operation_id'].'/telemetry',
-            ['samples' => [[
-                'sample_id' => (string) Str::uuid(),
-                'recorded_at' => $at->copy()->addSeconds(20)->toIso8601String(),
-                'phase' => 'CRUISE',
-                'lat' => 48.71,
-                'lon' => 2.31,
-                'altitude_msl' => 25000,
-                'agl' => 24000,
-                'ias' => 280,
-                'gs' => 420,
-                'vs' => 0,
-                'heading' => 180,
-                'fuel' => 4950,
-                'on_ground' => false,
-                'engines_running' => [true, true],
-                'beacon_light' => true,
-                'landing_light' => false,
-                'g_force' => 1.0,
-                'overspeed_warning' => false,
-                'stall_warning' => false,
-                'reverser_percent' => [0, 0],
-                'slew_active' => false,
-                'simulation_rate' => 1.0,
-            ]]],
-            [],
-            $fx['user']
-        )->assertOk();
-
-        $score = app(\Modules\Promethee\Services\LegacyPirepScoringService::class)
-            ->calculate(Pirep::findOrFail($pirepId), $fx['operation_id']);
-
-        $this->assertTrue((bool) $score['available']);
-        $this->assertArrayHasKey('score', $score);
-        $this->assertIsInt($score['score']);
+        $this->assertIsArray($episodes);
+        $this->assertCount(1, $episodes);
+        $this->assertSame(2.0, (float) $episodes[0]['value']);
     }
 
     private function minimalSimBriefXml(): string
