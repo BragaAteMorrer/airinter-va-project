@@ -4,7 +4,7 @@
   const messages = {
     fr: {
       'nav.connect':'Connexion','nav.flight':'Mes opérations','nav.record':'Enregistrement','nav.map':'Suivi du vol',
-      'nav.journal':'Journal','nav.datalink':'Datalink','nav.network':'Air Inter Network','nav.review':'Flight Review','nav.settings':'Paramètres',
+      'nav.journal':'Journal de bord','nav.datalink':'Datalink','nav.network':'Air Inter Network','nav.review':'Flight Review','nav.settings':'Paramètres',
       'display.language':'Langue','display.style':'Style','display.modern':'Moderne','display.2000':'Années 2000','display.appearance':'Apparence','display.light':'Clair','display.dark':'Nuit',
       'header.direction':'DIRECTION DE L’EXPLOITATION AÉRIENNE','header.subtitle':'Le client ACARS officiel d’Air Inter VA.',
       'auth.crew':'Accès équipage','auth.title':'Connexion pilote','auth.hint':'Identifiez-vous avec votre compte pilote Air Inter pour préparer et suivre votre vol.',

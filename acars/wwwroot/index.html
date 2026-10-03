@@ -15,7 +15,7 @@
       <button class="tab protected-tab" data-tab="flight" disabled><span data-i18n="nav.flight">Mes opérations</span></button>
       <button class="tab protected-tab" data-tab="record" disabled><span data-i18n="nav.record">Enregistrement</span></button>
       <button class="tab protected-tab" data-tab="map" disabled><span data-i18n="nav.map">Suivi du vol</span></button>
-      <button class="tab protected-tab" data-tab="journal" disabled><span data-i18n="nav.journal">Journal</span></button>
+      <button class="tab protected-tab" data-tab="journal" disabled><span data-i18n="nav.journal">Journal de bord</span></button>
       <button class="tab protected-tab datalink-tab" data-tab="datalink" disabled><span data-i18n="nav.datalink">Datalink</span> <span id="datalinkBadge" class="nav-badge" hidden>0</span></button>
       <button class="tab protected-tab" data-tab="network" disabled><span data-i18n="nav.network">Air Inter Network</span> <span id="networkBadge" class="nav-badge" hidden>0</span></button>
       <button class="tab protected-tab" data-tab="review" disabled><span data-i18n="nav.review">Flight Review</span></button>
@@ -353,7 +353,27 @@
       </div>
       <div id="timeline" class="timeline"><p class="empty">En attente d’un vol.</p></div>
     </section>
-    <section id="journal" class="panel"><h2>Journal opérationnel</h2><p class="hint">Événements ACARS enregistrés localement et conservés durant une reprise de vol.</p><div id="journalEntries" class="timeline"><p class="empty">En attente d’un vol.</p></div></section>
+    <section id="journal" class="panel">
+      <div class="workspace-title">
+        <div><span class="kicker">LOGBOOK · ACARS</span><h2>Journal de bord</h2><p class="hint">Le vol en cours et les derniers vols Hermès conservés localement sur ce poste.</p></div>
+        <button id="journalRefreshBtn" type="button">Actualiser</button>
+      </div>
+      <section class="journal-current">
+        <div class="journal-heading">
+          <div><span class="kicker">VOL EN COURS</span><h3>Événements opérationnels</h3></div>
+          <span id="journalCurrentMeta" class="hint">Aucun vol en cours</span>
+        </div>
+        <div id="journalEntries" class="timeline"><p class="empty">En attente d’un vol.</p></div>
+      </section>
+      <section class="journal-history-section">
+        <div class="journal-heading">
+          <div><span class="kicker">HISTORIQUE LOCAL</span><h3>Derniers vols enregistrés</h3></div>
+          <span id="journalHistoryMeta" class="hint">Chargement…</span>
+        </div>
+        <div id="journalHistory" class="journal-history"><p class="empty">Aucun vol terminé enregistré sur ce poste.</p></div>
+      </section>
+      <p id="journalMessage" class="message" hidden role="status"></p>
+    </section>
     <section id="datalink" class="panel">
       <div class="workspace-title">
         <div><span class="kicker">AIR INTER DATALINK</span><h2>OPS / Cockpit</h2><p class="hint">Messages opérationnels liés à l'opération sélectionnée. Envois, lecture et ACK sont conservés localement en cas de coupure.</p></div>

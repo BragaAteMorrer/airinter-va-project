@@ -255,6 +255,7 @@ $$('.tab').forEach(button => {
     $$('.tab,.panel').forEach(node => node.classList.remove('active'));
     button.classList.add('active');
     $('#' + button.dataset.tab).classList.add('active');
+    if (button.dataset.tab === 'journal') refreshJournal();
     if (button.dataset.tab === 'datalink') refreshDatalink();
     if (button.dataset.tab === 'network') refreshNetwork();
   };
@@ -2851,6 +2852,94 @@ function renderTimeline(selector, entries) {
   });
 }
 
+function historyValue(entry, camel, pascal = camel) {
+  return entry?.[camel] ?? entry?.[pascal] ?? null;
+}
+
+function renderJournalHistory(entries) {
+  const node = $('#journalHistory');
+  if (!node) return;
+  node.replaceChildren();
+
+  const flights = Array.isArray(entries) ? entries : [];
+  setText($('#journalHistoryMeta'), flights.length
+    ? flights.length + ' vol' + (flights.length > 1 ? 's' : '') + ' conservé' + (flights.length > 1 ? 's' : '') + ' sur ce poste'
+    : 'Aucun vol local');
+
+  if (!flights.length) {
+    const empty = document.createElement('p');
+    empty.className = 'empty';
+    empty.textContent = 'Aucun vol terminé enregistré sur ce poste.';
+    node.append(empty);
+    return;
+  }
+
+  flights.forEach(entry => {
+    const pirep = historyValue(entry, 'pirepId', 'PirepId') || 'PIREP';
+    const completedAt = historyValue(entry, 'completedAt', 'CompletedAt');
+    const distance = Number(historyValue(entry, 'distance', 'Distance') || 0);
+    const airborne = Number(historyValue(entry, 'airborneMinutes', 'AirborneMinutes') || 0);
+    const block = Number(historyValue(entry, 'blockMinutes', 'BlockMinutes') || 0);
+    const fuel = Number(historyValue(entry, 'fuelUsed', 'FuelUsed') || 0);
+    const landingRate = historyValue(entry, 'landingRate', 'LandingRate');
+    const issues = historyValue(entry, 'issues', 'Issues') || [];
+    const observations = historyValue(entry, 'observations', 'Observations') || [];
+
+    const card = document.createElement('article');
+    card.className = 'journal-history-card';
+
+    const header = document.createElement('header');
+    const identity = document.createElement('div');
+    const title = document.createElement('strong');
+    title.textContent = String(pirep);
+    const date = document.createElement('span');
+    date.textContent = completedAt
+      ? new Date(completedAt).toLocaleString('fr-FR', { timeZone: localSettings.timeFormat === 'utc' ? 'UTC' : undefined })
+      : 'Date inconnue';
+    identity.append(title, date);
+
+    const landing = document.createElement('em');
+    landing.textContent = landingRate == null ? 'LANDING —' : Math.round(Number(landingRate)) + ' ft/min';
+    header.append(identity, landing);
+
+    const metrics = document.createElement('div');
+    metrics.className = 'journal-history-metrics';
+    [
+      ['Distance', distance.toFixed(1) + ' NM'],
+      ['Airborne', airborne + ' min'],
+      ['Block', block + ' min'],
+      ['Fuel', Math.round(fuel).toLocaleString('fr-FR') + ' lb'],
+      ['Événements', String(observations.length)],
+      ['Alertes', String(issues.length)]
+    ].forEach(([label, value]) => {
+      const item = document.createElement('span');
+      const small = document.createElement('small');
+      small.textContent = label;
+      const strong = document.createElement('b');
+      strong.textContent = value;
+      item.append(small, strong);
+      metrics.append(item);
+    });
+
+    card.append(header, metrics);
+    node.append(card);
+  });
+}
+
+async function refreshJournal() {
+  try {
+    const history = await call('/api/history');
+    renderJournalHistory(history);
+    showMessage('#journalMessage', '');
+  } catch (error) {
+    renderJournalHistory([]);
+    showMessage('#journalMessage', 'Historique local indisponible : ' + friendlyError(error), true);
+  }
+}
+
+const journalRefreshBtn = $('#journalRefreshBtn');
+if (journalRefreshBtn) journalRefreshBtn.onclick = refreshJournal;
+
 function reviewValue(review, camel, pascal = camel) {
   return review?.[camel] ?? review?.[pascal] ?? null;
 }
@@ -3384,6 +3473,11 @@ async function refreshStatus() {
     drawMap(status.track || [], latest);
     renderTimeline('#timeline', flight?.timeline || flight?.Timeline || []);
     renderTimeline('#journalEntries', flight?.journal || flight?.Journal || flight?.timeline || flight?.Timeline || []);
+    const journalPirep = flight?.pirepId || flight?.PirepId;
+    const journalPhase = flight?.phase || flight?.Phase;
+    setText($('#journalCurrentMeta'), journalPirep
+      ? [journalPirep, journalPhase || 'EN COURS'].filter(Boolean).join(' · ')
+      : 'Aucun vol en cours');
     renderReview(status.review || status.Review || lastFiledReview);
   } catch {}
 }

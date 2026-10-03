@@ -743,3 +743,82 @@ body[data-era="2000"] .review-chart-card,body[data-era="2000"] .review-chart{bor
 body[data-era="minitel"] .review-chart-card,body[data-era="minitel"] .review-chart{border-radius:0;box-shadow:none}
 body[data-era="minitel"] .review-chart{background:var(--paper)}
 @media(max-width:900px){.review-chart-grid{grid-template-columns:1fr}.review-chart-heading{display:grid}.review-chart-heading>small{max-width:none;text-align:left}}
+
+
+/* Journal de bord */
+.journal-current,
+.journal-history-section{
+  margin:18px 0;
+  padding:18px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:#f8fafc;
+}
+.journal-heading{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:18px;
+  margin-bottom:12px;
+}
+.journal-heading h3{margin:4px 0 0}
+.journal-history{display:grid;gap:10px}
+.journal-history-card{
+  display:grid;
+  gap:12px;
+  padding:14px 15px;
+  border:1px solid var(--line);
+  border-left:4px solid var(--blue);
+  border-radius:10px;
+  background:#fff;
+}
+.journal-history-card header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+}
+.journal-history-card header>div{display:grid;gap:3px}
+.journal-history-card header strong{color:var(--navy);font-size:14px}
+.journal-history-card header span{color:var(--muted);font-size:10px}
+.journal-history-card header em{
+  font:800 10px/1.2 ui-monospace,SFMono-Regular,Consolas,monospace;
+  font-style:normal;
+  color:var(--muted);
+}
+.journal-history-metrics{
+  display:grid;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:8px;
+}
+.journal-history-metrics span{
+  display:grid;
+  gap:3px;
+  padding:8px 9px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:#fbfcfd;
+}
+.journal-history-metrics small{
+  color:var(--muted);
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.7px;
+  text-transform:uppercase;
+}
+.journal-history-metrics b{color:var(--ink);font-size:11px}
+body[data-appearance="dark"] .journal-current,
+body[data-appearance="dark"] .journal-history-section,
+body[data-appearance="dark"] .journal-history-card,
+body[data-appearance="dark"] .journal-history-metrics span{
+  background:var(--panel);
+  border-color:var(--line);
+}
+@media(max-width:900px){
+  .journal-history-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:620px){
+  .journal-heading,
+  .journal-history-card header{flex-direction:column}
+  .journal-history-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
