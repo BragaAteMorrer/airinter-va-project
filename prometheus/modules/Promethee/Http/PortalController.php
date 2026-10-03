@@ -2,7 +2,7 @@
 namespace Modules\Promethee\Http;
 use App\Contracts\Controller;
 use App\Models\{Aircraft,Airline,Airport,Bid,File,Flight,Pirep,SimBrief,User,Fare,Subfleet,Rank};
-use App\Models\Enums\{AircraftState,AircraftStatus,FlightType,PirepState,PirepStatus,UserState};
+use App\Models\Enums\{AircraftState,AircraftStatus,FareType,FlightType,PirepState,PirepStatus,UserState};
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +17,7 @@ use App\Services\FileService;
 use App\Services\UserService;
 use App\Support\Money;
 use App\Support\Countries;
-use Modules\Promethee\Services\{AirframeMaintenanceService,BrandingService,BulletinService,CompanyAccessService,DemandProfileService,EconomyFareResolver,EconomyService,EngineMaintenanceService,FleetRotationService,FlightOpsService,RegionalOperationsService,SafetyAnalyzer};
+use Modules\Promethee\Services\{AirframeMaintenanceService,BrandingService,BulletinService,CompanyAccessService,DemandProfileService,EconomyFareResolver,EconomyService,EngineMaintenanceService,FleetRotationService,FlightOpsService,LegacyPirepScoringService,RegionalOperationsService,SafetyAnalyzer};
 
 class PortalController extends Controller
 {
@@ -86,9 +86,23 @@ class PortalController extends Controller
             'flight', 'simbrief', 'user.rank', 'comments.user',
         ])->findOrFail($id);
 
+        $companyScore=['available'=>false,'score'=>$pirep->score,'starting_score'=>100,'penalty_total'=>$pirep->score===null?0:max(0,100-(int)$pirep->score),'items'=>[],'unavailable_rules'=>[]];
+        if (str_starts_with((string)$pirep->source_name,'Hermes ACARS [op_')) {
+            try { $companyScore=app(LegacyPirepScoringService::class)->forPirep($pirep); }
+            catch (\Throwable $e) { logger()->warning('promethee_pirep_score_display_failed',['pirep_id'=>$pirep->id,'error'=>$e->getMessage()]); }
+        }
+        $farePassengers=(int)$pirep->fares->filter(fn($fare)=>(int)$fare->type===FareType::PASSENGER)->sum('count');
+        $simbriefPassengers=null;
+        if ($pirep->simbrief?->xml) foreach ([(string)($pirep->simbrief->xml->weights->pax_count??''),(string)($pirep->simbrief->xml->general->passengers??'')] as $candidate) {
+            if ($candidate!==''&&is_numeric($candidate)) { $simbriefPassengers=max(0,(int)round((float)$candidate)); break; }
+        }
+
         return $this->page('pirep', [
             'pirep' => $pirep,
             'flightJournal' => $this->pirepJournal($pirep),
+            'companyScore' => $companyScore,
+            'passengerCount' => $farePassengers > 0 ? $farePassengers : $simbriefPassengers,
+            'passengerSource' => $farePassengers > 0 ? 'PIREP' : ($simbriefPassengers !== null ? 'OFP SimBrief' : null),
         ]);
     }
 
@@ -1095,9 +1109,6 @@ class PortalController extends Controller
         $pireps = Pirep::whereIn('state', [PirepState::IN_PROGRESS, PirepState::PAUSED])
             ->with(['user', 'aircraft'])->orderByDesc('updated_at')->limit(50)->get();
 
-        // Load the recent Hermès archive once for the whole OCC instead of
-        // issuing one telemetry query per active flight. The archive remains
-        // attached to the phpVMS PIREP; operation_id is the stable public key.
         $telemetry = DB::table('promethee_telemetry')
             ->whereIn('pirep_id', $pireps->pluck('id'))
             ->orderBy('recorded_at')
@@ -1114,6 +1125,14 @@ class PortalController extends Controller
                     return $payload;
                 });
                 $data = $samples->last() ?? [];
+
+                $track=$samples->filter(fn(array $s)=>is_numeric($s['lat']??null)&&is_numeric($s['lon']??null))->map(fn(array $s)=>[(float)$s['lat'],(float)$s['lon']])->values();
+                if ($track->count()>400) {
+                    $stride=(int)ceil($track->count()/400); $last=$track->last();
+                    $track=$track->filter(fn($point,int $i)=>$i%$stride===0)->values();
+                    if ($last&&$track->last()!==$last) $track->push($last);
+                }
+
                 preg_match('/Hermes ACARS \\[(op_[^\\]]+)\\]/', (string) $p->source_name, $operationMatch);
 
                 $transitions = [];
@@ -1154,6 +1173,7 @@ class PortalController extends Controller
                         'in' => $firstAt(['IN']),
                     ],
                     'phase_history' => $transitions,
+                    'track' => $track->all(),
                     'lat' => $data['lat'] ?? null, 'lon' => $data['lon'] ?? null,
                     'altitude' => $data['altitude_msl'] ?? null, 'ias' => $data['ias'] ?? null,
                     'gs' => $data['gs'] ?? null, 'vs' => $data['vs'] ?? null,
@@ -2279,14 +2299,17 @@ class PortalController extends Controller
         ]);
     }
     public function simbrief(string $id, Request $r) {
-        $simbrief=SimBrief::with(['flight.airline','aircraft.subfleet','pirep'])->where('user_id',$r->user()->id)->findOrFail($id);
+        $simbrief=SimBrief::with(['flight.airline','aircraft.subfleet','pirep.flight.airline'])->where('user_id',$r->user()->id)->findOrFail($id);
         abort_unless($simbrief->xml, 404, 'OFP SimBrief indisponible.');
         $fares=collect();
         if (!empty($simbrief->fare_data)) {
             $decoded=json_decode($simbrief->fare_data, true);
             if (is_array($decoded)) $fares=collect($decoded);
         }
-        return $this->page('simbrief', ['simbrief'=>$simbrief,'ofp'=>$simbrief->xml,'flight'=>$simbrief->flight,'aircraft'=>$simbrief->aircraft,'fares'=>$fares]);
+
+        $flight=$simbrief->flight ?: $simbrief->pirep?->flight;
+
+        return $this->page('simbrief', ['simbrief'=>$simbrief,'ofp'=>$simbrief->xml,'flight'=>$flight,'aircraft'=>$simbrief->aircraft,'fares'=>$fares]);
     }
 
     public function saveBriefing(string $id, Request $r) {

@@ -2169,6 +2169,7 @@ async function prefilePreparedOperation({ navigate = true, automatic = false } =
       route: body.route || flightPlan?.route || undefined,
       level: normalizeFlightLevel(body.level || flightPlan?.level),
       block_fuel: body.block_fuel || flightPlan?.block_fuel || undefined,
+      passengers: Number.isFinite(Number(flightPlan?.passengers)) ? Math.max(0, Math.round(Number(flightPlan.passengers))) : undefined,
       simbrief_source: flightPlan?.source === 'simbrief_account'
         ? 'simbrief_account'
         : (String(flightPlan?.source || '').toLowerCase().includes('simbrief') ? 'simbrief' : undefined)

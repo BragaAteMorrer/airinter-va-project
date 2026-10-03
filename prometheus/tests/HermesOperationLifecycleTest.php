@@ -6,8 +6,10 @@ use App\Models\Airport;
 use App\Models\Bid;
 use App\Models\Enums\AircraftState;
 use App\Models\Enums\AircraftStatus;
+use App\Models\Enums\FareType;
 use App\Models\Enums\PirepState;
 use App\Models\Enums\PirepStatus;
+use App\Models\Fare;
 use App\Models\Flight;
 use App\Models\Pirep;
 use App\Models\SimBrief;
@@ -114,6 +116,51 @@ final class HermesOperationLifecycleTest extends TestCase
         $this->assertContains($fx['operation_id'], array_column($operations, 'operation_id'));
         $this->assertDatabaseHas('bids', ['id' => $fx['bid']->id]);
         $this->assertDatabaseHas('aircraft', ['id' => $fx['aircraft']->id, 'airport_id' => $fx['origin']->id]);
+    }
+
+    public function test_04b_prefile_persists_simbrief_passengers_in_pirep_fares(): void
+    {
+        $fx = $this->operationFixture();
+
+        $fare = Fare::factory()->create([
+            'code' => 'Y',
+            'name' => 'Economy',
+            'type' => FareType::PASSENGER,
+            'capacity' => 150,
+            'active' => true,
+        ]);
+        $fx['subfleet']->fares()->syncWithoutDetaching([
+            $fare->id => ['capacity' => 150],
+        ]);
+
+        $ofp = SimBrief::query()
+            ->where('user_id', $fx['user']->id)
+            ->where('flight_id', $fx['flight']->id)
+            ->where('aircraft_id', $fx['aircraft']->id)
+            ->firstOrFail();
+        $ofp->fare_data = json_encode([[
+            'id' => $fare->id,
+            'fare_id' => $fare->id,
+            'code' => 'Y',
+            'name' => 'Economy',
+            'type' => FareType::PASSENGER,
+            'capacity' => 150,
+        ]]);
+        $ofp->ofp_xml = str_replace(
+            '</general>',
+            '</general><weights><pax_count>86</pax_count></weights>',
+            $this->minimalSimBriefXml()
+        );
+        $ofp->save();
+
+        $pirepId = $this->prefile($fx);
+
+        $this->assertDatabaseHas('pirep_fares', [
+            'pirep_id' => $pirepId,
+            'code' => 'Y',
+            'type' => FareType::PASSENGER,
+            'count' => 86,
+        ]);
     }
 
     public function test_05_prefile_is_idempotent_and_never_completes(): void
