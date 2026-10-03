@@ -644,18 +644,27 @@
         renderBoard();
     });
 
-    document.addEventListener('visibilitychange', () => {
-        if (!document.hidden) refreshBoard();
+    const stopPolling = () => {
+        if (state.timer) clearTimeout(state.timer);
+        state.timer = null;
+    };
+    const schedulePolling = () => {
+        stopPolling();
+        if (document.hidden) return;
+        state.timer = setTimeout(async () => {
+            try { await refreshBoard(); }
+            finally { schedulePolling(); }
+        }, 5000);
+    };
+    document.addEventListener('visibilitychange', async () => {
+        if (document.hidden) return stopPolling();
+        await refreshBoard();
+        schedulePolling();
     });
-    window.addEventListener('pagehide', () => {
-        if (state.timer) clearInterval(state.timer);
-    }, {once:true});
+    window.addEventListener('pagehide', stopPolling, {once:true});
 
     initMap();
-    refreshBoard();
-    state.timer = setInterval(() => {
-        if (!document.hidden) refreshBoard();
-    }, 5000);
+    Promise.resolve(refreshBoard()).finally(schedulePolling);
 })();
 </script>
 @endsection
