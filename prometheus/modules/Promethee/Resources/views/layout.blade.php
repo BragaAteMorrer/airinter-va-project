@@ -209,7 +209,7 @@ window.prometheeI18n = @json($prometheeI18n);
                 ['route' => 'promethee.fleet', 'label' => 'fleet', 'active' => 'promethee.fleet'],
                 ['route' => 'promethee.maintenance', 'label' => 'maintenance', 'active' => 'promethee.maintenance'],
                 ['route' => 'promethee.finances', 'label' => 'company_finances', 'active' => 'promethee.finances'],
-                ['route' => 'promethee.documents.mine', 'text' => 'Documentation Air Inter', 'active' => 'promethee.documents.mine|promethee.documents|promethee.documents.show|promethee.downloads.category'],
+                ['route' => 'promethee.documents.mine', 'text' => 'Documentation Air Inter', 'active' => 'promethee.documents.mine|promethee.documents|promethee.documents.show'],
                 ['route' => 'promethee.downloads', 'text' => 'Ressources techniques', 'active' => 'promethee.downloads'],
                 ['route' => 'promethee.safety', 'label' => 'flight_safety', 'active' => 'promethee.safety*'],
             ],
@@ -223,7 +223,6 @@ window.prometheeI18n = @json($prometheeI18n);
                 ['route' => 'admin.promethee.network', 'text' => 'Air Inter Network', 'active' => 'admin.promethee.network*'],
                 ['route' => 'admin.promethee.mailbox', 'text' => 'Boîte OCC', 'active' => 'admin.promethee.mailbox*'],
                 ['route' => 'admin.promethee.health', 'text' => 'État des services', 'active' => 'admin.promethee.health'],
-                ['route' => 'promethee.safety', 'label' => 'flight_safety', 'active' => 'promethee.safety*'],
             ],
         ],
     ];
@@ -242,11 +241,11 @@ window.prometheeI18n = @json($prometheeI18n);
         </div>
     </details>
 @endforeach
-<details @class(['nav-group', 'selected' => !request()->routeIs('admin.promethee.dispatch*') && request()->routeIs('admin.promethee.*', 'admin.users.*', 'admin.ranks.*')]) data-workspace-group="staff">
+<details @class(['nav-group', 'selected' => !request()->routeIs('admin.promethee.dispatch*', 'admin.promethee.network*', 'admin.promethee.mailbox*', 'admin.promethee.health') && request()->routeIs('admin.promethee.*', 'admin.users.*', 'admin.ranks.*')]) data-workspace-group="staff">
     <summary>{{ __('promethee.navigation_private') }}<b aria-hidden="true">⌄</b></summary>
     <div class="nav-menu">
         @ability('admin','admin-access')
-        <a @class(['selected' => !request()->routeIs('admin.promethee.dispatch*') && request()->routeIs('admin.promethee.*')]) href="{{ route('admin.promethee.dashboard') }}">{{ __('promethee.administration') }}</a>
+        <a @class(['selected' => !request()->routeIs('admin.promethee.dispatch*', 'admin.promethee.network*', 'admin.promethee.mailbox*', 'admin.promethee.health') && request()->routeIs('admin.promethee.*')]) href="{{ route('admin.promethee.dashboard') }}">{{ __('promethee.administration') }}</a>
         @if(\Illuminate\Support\Facades\Route::has('admin.promethee.crm'))<a @class(['selected' => request()->routeIs('admin.promethee.crm*')]) href="{{ route('admin.promethee.crm') }}">CRM & communications</a>@endif
         @if(\Illuminate\Support\Facades\Route::has('admin.users.index'))<a @class(['selected' => request()->routeIs('admin.users.*')]) href="{{ route('admin.users.index') }}">{{ __('promethee.admin_pilots') }}</a>@endif
         @if(\Illuminate\Support\Facades\Route::has('admin.ranks.index'))<a @class(['selected' => request()->routeIs('admin.ranks.*')]) href="{{ route('admin.ranks.index') }}">{{ __('promethee.admin_ranks') }}</a>@endif
