@@ -426,3 +426,27 @@ html[data-appearance="dark"]:not([data-era="minitel"]) :focus-visible{
   outline:2px solid var(--color-primary-hover)!important;
   outline-offset:2px;
 }
+
+
+/* Navbar refactor: dark counterparts for the two-level modern shell. */
+html[data-era="modern"][data-appearance="dark"] .sidebar{background:#0d1b29;border-color:var(--color-border);box-shadow:0 2px 10px #02080e55}
+html[data-era="modern"][data-appearance="dark"] .shell-primary{background:#0d1b29}
+html[data-era="modern"][data-appearance="dark"] .system-name{border-color:var(--color-border)}
+html[data-era="modern"][data-appearance="dark"] .system-name strong{color:var(--color-text)}
+html[data-era="modern"][data-appearance="dark"] .system-name .eyebrow,
+html[data-era="modern"][data-appearance="dark"] .system-name small{color:var(--color-text-muted)}
+html[data-era="modern"][data-appearance="dark"] .workspace-switch{background:#101f2e;border-color:var(--color-border)}
+html[data-era="modern"][data-appearance="dark"] .workspace-switch button{color:var(--color-text-secondary)}
+html[data-era="modern"][data-appearance="dark"] .workspace-switch button:hover,
+html[data-era="modern"][data-appearance="dark"] .workspace-switch button.selected,
+html[data-era="modern"][data-appearance="dark"] .workspace-switch button[aria-pressed="true"]{background:#172c3e;border-color:#3c6079;color:var(--color-text)}
+html[data-era="modern"][data-appearance="dark"] .workspace-switch button small,
+html[data-era="modern"][data-appearance="dark"] .workspace-switch button.selected small,
+html[data-era="modern"][data-appearance="dark"] .workspace-switch button[aria-pressed="true"] small{color:var(--color-text-muted)}
+html[data-era="modern"][data-appearance="dark"] .sidebar nav.is-grouped{background:#101f2e;border-color:var(--color-border)}
+html[data-era="modern"][data-appearance="dark"] .nav-group summary{color:var(--color-text-secondary)}
+html[data-era="modern"][data-appearance="dark"] .nav-group:hover summary,
+html[data-era="modern"][data-appearance="dark"] .nav-group.selected summary,
+html[data-era="modern"][data-appearance="dark"] .nav-group[open] summary{background:#14283a;color:var(--color-primary-hover)}
+html[data-era="modern"][data-appearance="dark"] .shell-menu-toggle{background:#14283a;border-color:var(--color-border-strong);color:var(--color-text)}
+@media(max-width:900px){html[data-era="modern"][data-appearance="dark"] .sidebar.is-menu-open nav.is-grouped{background:#101f2e}}
