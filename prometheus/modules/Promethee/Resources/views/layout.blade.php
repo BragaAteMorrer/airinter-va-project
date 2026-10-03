@@ -86,6 +86,12 @@ window.prometheeI18n = @json($prometheeI18n);
 </script>
 @stack('styles')
 </head>
+@php
+    // Most Prométhée pages receive branding through PortalController::page().
+    // Dedicated controllers may render the shared layout directly, so keep the
+    // layout resilient instead of crashing on a missing view variable.
+    $branding ??= app(\Modules\Promethee\Services\BrandingService::class)->active();
+@endphp
 <body>
 <a class="skip" href="#main">{{ __('promethee.skip_to_content') }}</a>
 <aside class="sidebar">
