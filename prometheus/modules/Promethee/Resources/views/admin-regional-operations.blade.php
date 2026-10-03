@@ -107,7 +107,7 @@
   <p class="hint">Dernière exécution : {{ $rotationSettings['last_run_at'] ? \Carbon\Carbon::parse($rotationSettings['last_run_at'])->locale('fr')->diffForHumans() : 'jamais' }}. Une rotation ne crée jamais de mission de rapatriement : position et base attitrée sont permutées ensemble.</p>
 </section>
 
-<section class="panel table-wrap">
+<section class="panel table-wrap admin-table-scroll">
   <div class="panel-heading"><div><span class="eyebrow">RÉSEAU TECHNIQUE</span><h2>Sites opérationnels</h2></div></div>
   <table>
     <thead><tr><th>Aéroport</th><th>Rôles</th><th>A CHECK</th><th>B CHECK</th><th>C CHECK</th><th>Révision moteur</th><th>État</th></tr></thead>
@@ -134,7 +134,7 @@
   </table>
 </section>
 
-<section class="panel table-wrap admin-workspace-section" id="regional-fleet">
+<section class="panel table-wrap admin-workspace-section admin-table-scroll" id="regional-fleet">
   <div class="panel-heading regional-aircraft-heading">
     <div>
       <span class="eyebrow">AFFECTATION</span>
@@ -239,7 +239,7 @@
   </table>
 </section>
 
-<section class="panel table-wrap admin-workspace-section" id="regional-history">
+<section class="panel table-wrap admin-workspace-section admin-table-scroll" id="regional-history">
   <div class="panel-heading"><div><span class="eyebrow">HISTORIQUE ROTATION</span><h2>Dernières permutations automatiques</h2></div></div>
   <table>
     <thead><tr><th>Date</th><th>Appareil 1</th><th>Appareil 2</th><th>Permutation</th><th>Motif</th></tr></thead>
