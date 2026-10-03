@@ -1,6 +1,29 @@
 @extends('promethee::layout')
 @section('title','Maintenance cellule & moteurs')
 @section('content')
+@php
+  $requiredMaintenanceRoutes = [
+    'admin.promethee.maintenance.sync',
+    'admin.promethee.maintenance.airframe-settings.save',
+    'admin.promethee.maintenance.airframe.start',
+    'admin.promethee.maintenance.engine-profiles.save',
+    'admin.promethee.maintenance.engines.create',
+    'admin.promethee.maintenance.engines.overhaul',
+    'admin.promethee.maintenance.engines.install',
+  ];
+  $missingMaintenanceRoutes = collect($requiredMaintenanceRoutes)
+    ->reject(fn ($routeName) => \Illuminate\Support\Facades\Route::has($routeName))
+    ->values();
+  $maintenanceActionsReady = $missingMaintenanceRoutes->isEmpty();
+@endphp
+
+@if(!$maintenanceActionsReady)
+<section class="panel">
+  <strong>Actions de maintenance temporairement indisponibles.</strong>
+  <p>Le cache des routes Laravel est incomplet. La page reste consultable en lecture seule au lieu de provoquer une erreur 500.</p>
+  <small>Routes manquantes : {{ $missingMaintenanceRoutes->join(', ') }}</small>
+</section>
+@endif
 <div class="ops-header compact">
   <div>
     <span class="eyebrow">AIR INTER · DIRECTION TECHNIQUE</span>
@@ -10,9 +33,9 @@
   <div class="inline-form">
     <span class="tag">{{ $airframeSummary['total'] }} cellule(s)</span>
     <span class="tag">{{ $engineUnits->count() }} moteur(s)</span>
-    <form method="post" action="{{ route('admin.promethee.maintenance.sync') }}">
+    <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.sync') : '#' }}">
       @csrf
-      <button type="submit">Synchroniser toute la flotte</button>
+      <button type="submit" @disabled(!$maintenanceActionsReady)>Synchroniser toute la flotte</button>
     </form>
   </div>
 </div>
@@ -43,7 +66,7 @@
       <p>Un check devient exigible dès que la limite en heures <strong>ou</strong> la limite en cycles est atteinte. La durée correspond à l’immobilisation planifiée de l’appareil.</p>
     </div>
   </div>
-  <form method="post" action="{{ route('admin.promethee.maintenance.airframe-settings.save') }}" class="form-grid">
+  <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.airframe-settings.save') : '#' }}" class="form-grid">
     @csrf
     <label>A Check Time Limit
       <input type="number" name="a_time_limit_hours" min="0.1" max="100000" step="0.1" value="{{ $airframeSettings['checks']['a']['time_limit_hours'] }}" required>
@@ -88,7 +111,7 @@
       <input type="number" name="warning_percent" min="0" max="100" step="0.1" value="{{ $airframeSettings['warning_percent'] }}" required>
       <small>% de potentiel restant avant mise en évidence dans Prométhée</small>
     </label>
-    <button type="submit">Enregistrer les cycles / durées</button>
+    <button type="submit" @disabled(!$maintenanceActionsReady)>Enregistrer les cycles / durées</button>
   </form>
   <p class="hint">La fin d’un B Check remet aussi les compteurs A à zéro. La fin d’un C Check remet les compteurs A, B et C à zéro. Les PIREPs rejetés sont retirés des compteurs.</p>
 </section>
@@ -135,9 +158,9 @@
           @if($state->active_check)
             <strong>{{ strtoupper($state->active_check) }} Check</strong><br>
             <small>
-              {{ $state->active_started_at ? CarbonCarbon::parse($state->active_started_at)->locale('fr')->isoFormat('DD/MM HH:mm') : '—' }}
+              {{ $state->active_started_at ? \Carbon\Carbon::parse($state->active_started_at)->locale('fr')->isoFormat('DD/MM HH:mm') : '—' }}
               →
-              {{ $state->active_due_at ? CarbonCarbon::parse($state->active_due_at)->locale('fr')->isoFormat('DD/MM HH:mm') : '—' }}
+              {{ $state->active_due_at ? \Carbon\Carbon::parse($state->active_due_at)->locale('fr')->isoFormat('DD/MM HH:mm') : '—' }}
             </small>
           @else
             —
@@ -145,14 +168,14 @@
         </td>
         <td>
           @if(!$state->active_check)
-            <form method="post" action="{{ route('admin.promethee.maintenance.airframe.start', $state->aircraft_id) }}" class="inline-form" onsubmit="return confirm('Immobiliser cet appareil pour le check sélectionné ?');">
+            <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.airframe.start', $state->aircraft_id) : '#' }}" class="inline-form" onsubmit="return confirm('Immobiliser cet appareil pour le check sélectionné ?');">
               @csrf
               <select name="check" required>
                 <option value="a" @selected($state->next_check === 'a')>A Check</option>
                 <option value="b" @selected($state->next_check === 'b')>B Check</option>
                 <option value="c" @selected($state->next_check === 'c')>C Check</option>
               </select>
-              <button type="submit">Démarrer</button>
+              <button type="submit" @disabled(!$maintenanceActionsReady)>Démarrer</button>
             </form>
           @else
             <small>Remise en service automatique à l’échéance.</small>
@@ -173,7 +196,7 @@
     <tbody>
     @forelse($airframeEvents as $event)
       <tr>
-        <td>{{ CarbonCarbon::parse($event->occurred_at)->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') }}</td>
+        <td>{{ \Carbon\Carbon::parse($event->occurred_at)->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') }}</td>
         <td><strong>{{ $event->registration }}</strong></td>
         <td>{{ strtoupper($event->check_type) }} Check</td>
         <td>{{ $event->event_type === 'started' ? 'Début' : 'Terminé' }}</td>
@@ -191,7 +214,7 @@
 <div class="two-columns">
   <section class="panel">
     <div class="panel-heading"><div><span class="eyebrow">RÉFÉRENTIEL</span><h2>Profil moteur par sous-flotte</h2></div></div>
-    <form method="post" action="{{ route('admin.promethee.maintenance.engine-profiles.save') }}" class="form-grid">
+    <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.engine-profiles.save') : '#' }}" class="form-grid">
       @csrf
       <label>Sous-flotte
         <select name="subfleet_id" required>
@@ -207,7 +230,7 @@
       <label>Alerte avant TBO (h)<input type="number" name="warning_hours" min="0" max="10000" step="0.1" value="100" required></label>
       <label>Alerte avant TBO (cycles)<input type="number" name="warning_cycles" min="0" max="10000" placeholder="100"></label>
       <label><input type="checkbox" name="active" value="1" checked> Suivi actif</label>
-      <button>Enregistrer / synchroniser la flotte</button>
+      <button @disabled(!$maintenanceActionsReady)>Enregistrer / synchroniser la flotte</button>
     </form>
     <p class="hint">À la première synchronisation, Prométhée crée automatiquement des moteurs virtuels AUTO-* pour les appareils de la sous-flotte. Ils peuvent ensuite être remplacés par des moteurs de stock identifiés par numéro de série.</p>
     <p class="hint"><strong>Synchroniser toute la flotte</strong> complète aussi les profils moteurs manquants depuis le référentiel Air Inter VA embarqué, sans écraser les profils déjà personnalisés.</p>
@@ -215,7 +238,7 @@
 
   <section class="panel">
     <div class="panel-heading"><div><span class="eyebrow">STOCK</span><h2>Ajouter un moteur</h2></div></div>
-    <form method="post" action="{{ route('admin.promethee.maintenance.engines.create') }}" class="form-grid">
+    <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.engines.create') : '#' }}" class="form-grid">
       @csrf
       <label>Profil moteur
         <select name="engine_profile_id" required>
@@ -227,7 +250,7 @@
       <label>Numéro de série<input name="serial_number" maxlength="96" required placeholder="CF6-50-XXXX"></label>
       <label>Heures depuis révision<input type="number" name="hours_since_overhaul" min="0" max="100000" step="0.1" value="0"></label>
       <label>Cycles depuis révision<input type="number" name="cycles_since_overhaul" min="0" max="100000" value="0"></label>
-      <button>Ajouter au stock</button>
+      <button @disabled(!$maintenanceActionsReady)>Ajouter au stock</button>
     </form>
     <div class="hint">
       <strong>Sites capables de révision moteur :</strong>
@@ -302,13 +325,13 @@
         <td><span class="tag">{{ strtoupper($unit->status) }}</span></td>
         <td>
           @if($unit->aircraft_id)
-            <form method="post" action="{{ route('admin.promethee.maintenance.engines.overhaul', $unit->id) }}" class="inline-form" onsubmit="return confirm('Enregistrer la révision complète de ce moteur et remettre son TBO à zéro ?');">
+            <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.engines.overhaul', $unit->id) : '#' }}" class="inline-form" onsubmit="return confirm('Enregistrer la révision complète de ce moteur et remettre son TBO à zéro ?');">
               @csrf
               <input name="notes" maxlength="2000" placeholder="Note révision">
-              <button type="submit">Réviser</button>
+              <button type="submit" @disabled(!$maintenanceActionsReady)>Réviser</button>
             </form>
           @else
-            <form method="post" action="{{ route('admin.promethee.maintenance.engines.install', $unit->id) }}" class="inline-form">
+            <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.engines.install', $unit->id) : '#' }}" class="inline-form">
               @csrf
               <select name="aircraft_id" required>
                 <option value="">Appareil…</option>
@@ -319,7 +342,7 @@
               <select name="position" required>
                 @for($position=1;$position<=4;$position++)<option value="{{ $position }}">M{{ $position }}</option>@endfor
               </select>
-              <button type="submit">Installer</button>
+              <button type="submit" @disabled(!$maintenanceActionsReady)>Installer</button>
             </form>
           @endif
         </td>
