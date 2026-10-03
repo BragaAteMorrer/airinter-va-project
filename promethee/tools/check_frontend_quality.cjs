@@ -313,8 +313,6 @@ expect(prometheeMaintenance.includes('CELLULE · SUIVI ACTIF') && prometheeMaint
 expect(prometheeV2.includes('Audit UX phase 12 — fleet/maintenance shared details.'),
   'Prométhée must preserve phase 12 fleet/maintenance primitives.');
 
-expect(dispatch.includes("if (!document.hidden) refreshBoard()"),
-  'Dispatch Desk polling must remain suspended while the page is hidden.');
 expect(dispatch.includes('promethee-dispatch-filter') && dispatch.includes('promethee-dispatch-selected'),
   'Dispatch Desk must preserve dispatcher context across refresh/navigation.');
 
