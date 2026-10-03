@@ -2535,84 +2535,7 @@ async function refreshNetwork() {
 
 /* Flight map rendering lives in hermes-map.js. */
 
-const flightMap = $('#flightMap');
-if (flightMap) {
-  flightMap.addEventListener('pointerdown', event => {
-    if (event.button !== 0 || event.target.closest('.flight-map-controls')) return;
-    flightMapState.dragging = true;
-    flightMapState.pointerId = event.pointerId;
-    flightMapState.dragStart = { x: event.clientX, y: event.clientY };
-    flightMapState.dragCenterWorld = mapWorldPoint(flightMapState.centerLat, flightMapState.centerLon);
-    flightMapState.autoFit = false;
-    flightMap.setPointerCapture?.(event.pointerId);
-    flightMap.classList.add('dragging');
-    updateFlightMapControls();
-  });
-
-  flightMap.addEventListener('pointermove', event => {
-    if (!flightMapState.dragging || event.pointerId !== flightMapState.pointerId) return;
-    const deltaX = event.clientX - flightMapState.dragStart.x;
-    const deltaY = event.clientY - flightMapState.dragStart.y;
-    const center = mapGeoPoint(
-      flightMapState.dragCenterWorld.x - deltaX,
-      flightMapState.dragCenterWorld.y - deltaY
-    );
-    flightMapState.centerLat = center.lat;
-    flightMapState.centerLon = center.lon;
-    drawMap(flightMapState.lastTrack, lastStatus?.latest || {});
-  });
-
-  const stopDragging = event => {
-    if (!flightMapState.dragging || (event.pointerId != null && event.pointerId !== flightMapState.pointerId)) return;
-    flightMapState.dragging = false;
-    flightMap.classList.remove('dragging');
-    if (flightMapState.pointerId != null) {
-      try { flightMap.releasePointerCapture?.(flightMapState.pointerId); } catch {}
-    }
-    flightMapState.pointerId = null;
-  };
-  flightMap.addEventListener('pointerup', stopDragging);
-  flightMap.addEventListener('pointercancel', stopDragging);
-
-  flightMap.addEventListener('wheel', event => {
-    event.preventDefault();
-    flightMapState.autoFit = false;
-    flightMapState.zoom = Math.max(3, Math.min(15, flightMapState.zoom + (event.deltaY < 0 ? 1 : -1)));
-    updateFlightMapControls();
-    drawMap(flightMapState.lastTrack, lastStatus?.latest || {});
-  }, { passive: false });
-}
-
-$('#mapZoomInBtn')?.addEventListener('click', () => {
-  flightMapState.autoFit = false;
-  flightMapState.zoom = Math.min(15, flightMapState.zoom + 1);
-  drawMap(flightMapState.lastTrack, lastStatus?.latest || {});
-});
-
-$('#mapZoomOutBtn')?.addEventListener('click', () => {
-  flightMapState.autoFit = false;
-  flightMapState.zoom = Math.max(3, flightMapState.zoom - 1);
-  drawMap(flightMapState.lastTrack, lastStatus?.latest || {});
-});
-
-$('#mapFollowBtn')?.addEventListener('click', () => {
-  flightMapState.autoFit = !flightMapState.autoFit;
-  if (flightMapState.autoFit) {
-    const points = currentMapFitPoints();
-    if (points.length) fitFlightMap(points);
-  }
-  drawMap(flightMapState.lastTrack, lastStatus?.latest || {});
-});
-
-$('#mapFitBtn')?.addEventListener('click', () => {
-  const points = currentMapFitPoints();
-  if (!points.length) return;
-  flightMapState.autoFit = true;
-  fitFlightMap(points);
-  drawMap(flightMapState.lastTrack, lastStatus?.latest || {});
-});
-
-window.addEventListener('resize', () => drawMap(flightMapState.lastTrack, lastStatus?.latest || {}));
+initializeFlightMapControls();
 
 function renderTimeline(selector, entries) {
   const node = $(selector);
@@ -2724,20 +2647,7 @@ if (journalRefreshBtn) journalRefreshBtn.onclick = refreshJournal;
 
 /* Flight Review rendering lives in hermes-review.js. */
 
-$('#submitReviewBtn').onclick = async () => {
-  try {
-    const notes = $('#reviewComment')?.value?.trim() || '';
-    const result = await call('/api/file', { notes });
-    lastFiledReview = result.review || result.Review || lastStatus?.review || lastStatus?.Review || null;
-    showMessage('#reviewMessage', 'PIREP déposé. Flight Review archivé localement.');
-    renderReview(lastFiledReview);
-    await refreshStatus();
-    serverCompanyScoreKey = null;
-    await refreshCompanyScore(true);
-  } catch (error) {
-    showMessage('#reviewMessage', friendlyError(error), true);
-  }
-};
+initializeReviewActions();
 
 const capabilityLabels = {
   Position: 'Position', AltitudeMsl: 'Altitude MSL', AltitudeAgl: 'Altitude AGL',
