@@ -155,6 +155,12 @@ expect(regionalWorkspace.includes('id="regional-fleet"')
     && sopWorkspace.includes('id="sop-scoring"'),
   'Dense admin workspaces must preserve stable local navigation anchors.');
 
+expect(regionalWorkspace.includes('table-wrap admin-table-scroll')
+    && maintenanceWorkspace.includes('table-wrap admin-table-scroll')
+    && economyWorkspace.includes('href="#prix-vols"')
+    && economyWorkspace.includes('href="#prix-carburant"'),
+  'Responsive admin workspaces must keep dense tables scrollable and preserve economy deep links.');
+
 const inlineStyleFreeViews = [
   'prometheus/modules/Promethee/Resources/views/bookings.blade.php',
   'prometheus/modules/Promethee/Resources/views/flight.blade.php',
