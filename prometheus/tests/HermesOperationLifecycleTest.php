@@ -513,6 +513,32 @@ final class HermesOperationLifecycleTest extends TestCase
         $this->assertDatabaseHas('pireps', ['id' => $ghost->id]);
     }
 
+    public function test_pirep_journal_is_reconstructed_from_hermes_telemetry_when_acars_logs_are_missing(): void
+    {
+        $fx = $this->operationFixture();
+        $pirepId = $this->prefile($fx);
+        $at = now();
+
+        $this->telemetry($fx, 'BOARDING', $at);
+        $this->telemetry($fx, 'TAKEOFF', $at->copy()->addSeconds(30));
+        $this->telemetry($fx, 'IN', $at->copy()->addMinutes(2));
+
+        $pirep = Pirep::with('acars_logs')->findOrFail($pirepId);
+        $this->assertCount(0, $pirep->acars_logs);
+
+        $controller = app(\Modules\Promethee\Http\PortalController::class);
+        $method = new \ReflectionMethod($controller, 'pirepJournal');
+        $method->setAccessible(true);
+        $journal = $method->invoke($controller, $pirep);
+
+        $codes = $journal->pluck('code')->all();
+        $this->assertContains('BOARDING', $codes);
+        $this->assertContains('TAKEOFF', $codes);
+        $this->assertContains('IN', $codes);
+        $this->assertSame('TÉLÉMÉTRIE HERMÈS', $journal->firstWhere('code', 'TAKEOFF')['source']);
+        $this->assertSame('Décollage', $journal->firstWhere('code', 'TAKEOFF')['message']);
+    }
+
     private function operationFixture(bool $assignAircraft = true, bool $createOfp = true): array
     {
         $origin = Airport::factory()->create(['id' => 'H001', 'icao' => 'H001', 'iata' => 'H01']);

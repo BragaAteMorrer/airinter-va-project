@@ -43,9 +43,31 @@
   <article><span>État</span><strong>{{ $state }}</strong><small>{{ $status ?: 'Rapport de vol' }}</small></article><article><span>Temps de vol</span><strong>{{ $duration($pirep->flight_time) }}</strong><small>Bloc : {{ $duration($pirep->block_time) }}</small></article><article><span>Distance</span><strong>{{ $pirep->distance ? number_format($pirep->distance->toUnit('nmi'), 0, ',', ' ') : '—' }}</strong><small>milles nautiques</small></article><article><span>Atterrissage</span><strong>{{ $pirep->landing_rate !== null ? number_format($pirep->landing_rate, 0, ',', ' ') : '—' }}</strong><small>ft/min{{ $pirep->score !== null ? ' · score '.$pirep->score : '' }}</small></article>
 </section>
 <section class="panel route-summary"><div class="airport-card"><span class="eyebrow">DÉPART</span><strong>{{ $pirep->dpt_airport_id }}</strong><p>{{ $pirep->dpt_airport?->full_name ?: $pirep->dpt_airport?->name }}</p><small>{{ $pirep->block_off_time ? $pirep->block_off_time->setTimezone('Europe/Paris')->format('d/m/Y · H:i') : 'Heure non relevée' }}</small></div><div class="route-line"><i>✈</i><span>{{ $pirep->progress_percent }}% du trajet</span></div><div class="airport-card arrival"><span class="eyebrow">ARRIVÉE</span><strong>{{ $pirep->arr_airport_id }}</strong><p>{{ $pirep->arr_airport?->full_name ?: $pirep->arr_airport?->name }}</p><small>{{ $pirep->block_on_time ? $pirep->block_on_time->setTimezone('Europe/Paris')->format('d/m/Y · H:i') : 'Heure non relevée' }}</small></div></section>
-<div class="report-tabs" role="tablist"><button class="active" data-report-tab="map" role="tab">Carte et trace</button><button data-report-tab="log" role="tab">Journal de vol <span>{{ $pirep->acars_logs->count() }}</span></button><button data-report-tab="details" role="tab">Informations</button></div>
+<div class="report-tabs" role="tablist"><button class="active" data-report-tab="map" role="tab">Carte et trace</button><button data-report-tab="log" role="tab">Journal de vol <span>{{ $flightJournal->count() }}</span></button><button data-report-tab="details" role="tab">Informations</button></div>
 <section class="panel report-tab-panel" data-report-panel="map"><div class="panel-heading"><div><span class="eyebrow">TRAJECTOIRE</span><h2>Route effectuée</h2></div><small class="mono muted">{{ $actualPath->isNotEmpty() ? 'Trace ACARS' : ($plannedPath->isNotEmpty() ? 'Route planifiée' : 'Liaison aéroports') }}</small></div><div id="pirep-map" class="ops-leaflet-map"></div>@if($pirep->route)<p class="report-route mono">{{ $pirep->route }}</p>@endif</section>
-<section class="panel report-tab-panel" data-report-panel="log" hidden><div class="panel-heading"><div><span class="eyebrow">ACARS</span><h2>Journal chronologique</h2></div></div><div class="flight-log">@forelse($pirep->acars_logs->sortBy('created_at') as $log)<article><time>{{ optional($log->created_at)->setTimezone('Europe/Paris')->format('d/m/Y H:i:s') }}</time><p>{{ $log->log }}</p></article>@empty<p class="empty">Aucun journal ACARS n’a été enregistré pour ce rapport.</p>@endforelse</div></section>
+<section class="panel report-tab-panel" data-report-panel="log" hidden>
+  <div class="panel-heading">
+    <div><span class="eyebrow">ACARS · HERMÈS</span><h2>Journal chronologique</h2></div>
+    <small class="mono muted">{{ $flightJournal->count() }} événement{{ $flightJournal->count() > 1 ? 's' : '' }}</small>
+  </div>
+  <div class="flight-log">
+    @forelse($flightJournal as $entry)
+      <article class="pirep-journal-entry">
+        <time>{{ $entry['occurred_at']->setTimezone('Europe/Paris')->format('d/m/Y H:i:s') }}</time>
+        <div>
+          <div class="pirep-journal-meta">
+            <span>{{ $entry['source'] }}</span>
+            <code>{{ $entry['code'] }}</code>
+          </div>
+          <p>{{ $entry['message'] }}</p>
+          @if($entry['detail'])<small>{{ $entry['detail'] }}</small>@endif
+        </div>
+      </article>
+    @empty
+      <p class="empty">Aucun événement ACARS ou échantillon de télémétrie Hermès n’est disponible pour ce rapport.</p>
+    @endforelse
+  </div>
+</section>
 <section class="report-tab-panel" data-report-panel="details" hidden>
   <div class="two-columns report-details-grid"><section class="panel"><div class="panel-heading"><div><span class="eyebrow">VOL</span><h2>Informations de mission</h2></div></div><dl class="report-list"><div><dt>Pilote</dt><dd>{{ $pirep->user?->pilot_id }} · {{ $pirep->user?->name ?: '—' }}</dd></div><div><dt>Appareil</dt><dd>{{ $pirep->aircraft?->registration ?: '—' }} {{ $pirep->aircraft?->icao ? '· '.$pirep->aircraft->icao : '' }}</dd></div><div><dt>Source</dt><dd>{{ PirepSource::label($pirep->source) }}</dd></div><div><dt>Niveau / type</dt><dd>{{ $pirep->level ? 'FL'.$pirep->level : '—' }} · {{ \App\Models\Enums\FlightType::label($pirep->flight_type) }}</dd></div><div><dt>Route déposée</dt><dd class="mono">{{ $pirep->route ?: '—' }}</dd></div>
 @if($pirep->notes)<div><dt>Notes</dt><dd>{{ $pirep->notes }}</dd></div>@endif
