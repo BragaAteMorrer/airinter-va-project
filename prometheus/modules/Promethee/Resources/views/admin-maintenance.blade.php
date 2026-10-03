@@ -128,7 +128,7 @@
   <p class="hint">La fin d’un B Check remet aussi les compteurs A à zéro. La fin d’un C Check remet les compteurs A, B et C à zéro. Les PIREPs rejetés sont retirés des compteurs.</p>
 </section>
 
-<section class="panel table-wrap">
+<section class="panel table-wrap admin-table-scroll">
   <div class="panel-heading">
     <div>
       <span class="eyebrow">POTENTIEL CELLULE</span>
@@ -201,7 +201,7 @@
   </table>
 </section>
 
-<section class="panel table-wrap admin-workspace-section" id="maintenance-airframe-history">
+<section class="panel table-wrap admin-workspace-section admin-table-scroll" id="maintenance-airframe-history">
   <div class="panel-heading"><div><span class="eyebrow">JOURNAL CELLULE</span><h2>Derniers checks A / B / C</h2></div></div>
   <table>
     <thead><tr><th>Date</th><th>Appareil</th><th>Check</th><th>Événement</th><th>Site</th><th>Situation avant</th><th>Note</th></tr></thead>
@@ -271,7 +271,7 @@
   </section>
 </div>
 
-<section class="panel table-wrap">
+<section class="panel table-wrap admin-table-scroll">
   <div class="panel-heading"><div><span class="eyebrow">CONFIGURATION</span><h2>Profils moteurs</h2></div></div>
   <table>
     <thead><tr><th>Compagnie / sous-flotte</th><th>Moteur</th><th>Qté</th><th>TBO</th><th>Alerte</th><th>État</th></tr></thead>
@@ -292,7 +292,7 @@
   </table>
 </section>
 
-<section class="panel table-wrap admin-workspace-section" id="maintenance-engine-stock">
+<section class="panel table-wrap admin-workspace-section admin-table-scroll" id="maintenance-engine-stock">
   <div class="panel-heading"><div><span class="eyebrow">MOTEURS</span><h2>Unités installées & stock</h2></div></div>
   <table>
     <thead><tr><th>N° série</th><th>Type</th><th>Appareil</th><th>TBO nominal</th><th>Consommé depuis révision</th><th>Potentiel moteur</th><th>Dernière révision</th><th>État</th><th>Actions</th></tr></thead>
@@ -366,7 +366,7 @@
   </table>
 </section>
 
-<section class="panel table-wrap admin-workspace-section" id="maintenance-engine-history">
+<section class="panel table-wrap admin-workspace-section admin-table-scroll" id="maintenance-engine-history">
   <div class="panel-heading"><div><span class="eyebrow">JOURNAL TECHNIQUE</span><h2>Derniers événements moteurs</h2></div></div>
   <table>
     <thead><tr><th>Date</th><th>Moteur</th><th>Appareil</th><th>Événement</th><th>Site</th><th>Situation avant</th><th>Note</th></tr></thead>
