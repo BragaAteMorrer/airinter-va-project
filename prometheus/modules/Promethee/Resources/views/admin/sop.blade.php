@@ -1,5 +1,5 @@
 @extends('promethee::layout')
-@section('title','SOP Engine')
+@section('title','SOP & scoring Hermès')
 @section('content')
 <div class="ops-header compact">
     <div>
@@ -54,10 +54,13 @@
                         @if(!empty($rule['description']))
                             <div class="muted">{{ $rule['description'] }}</div>
                         @endif
+                        @if($rule['id'] === 'RUNWAY_OVERRUN')
+                            <div class="muted"><strong>Non appliquée actuellement :</strong> Hermès ne dispose pas encore d'une géométrie piste fiable.</div>
+                        @endif
                     </td>
                     <td>
                         @if($rule['has_parameter'])
-                            <input form="{{ $formId }}" name="parameter" type="number" step="1" value="{{ $rule['parameter'] }}" style="min-width:7rem">
+                            <input form="{{ $formId }}" name="parameter" type="number" step="1" value="{{ $rule['parameter'] }}" required style="min-width:7rem">
                         @else
                             <span class="muted">—</span>
                         @endif
