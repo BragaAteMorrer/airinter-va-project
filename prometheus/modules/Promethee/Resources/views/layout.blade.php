@@ -167,47 +167,72 @@ window.prometheeI18n = @json($prometheeI18n);
     // Each entry uses a registered, server-side route. Optional legacy modules
     // are intentionally absent: their module manifests currently mark them inactive.
     $navigationGroups = [
-        'navigation_welcome' => [
-            ['route' => 'promethee.dashboard', 'label' => 'dashboard', 'active' => 'promethee.dashboard'],
-            ['route' => 'promethee.occ', 'label' => 'public_home', 'active' => 'promethee.occ'],
-            ['route' => 'promethee.pilots', 'label' => 'community', 'active' => 'promethee.pilots*'],
-            ['route' => 'promethee.calendar', 'label' => 'calendar', 'active' => 'promethee.calendar*'],
+        'welcome' => [
+            'title' => __('promethee.navigation_welcome'),
+            'scope' => 'pilot',
+            'links' => [
+                ['route' => 'promethee.dashboard', 'label' => 'dashboard', 'active' => 'promethee.dashboard'],
+                ['route' => 'promethee.pilots', 'label' => 'community', 'active' => 'promethee.pilots*'],
+                ['route' => 'promethee.calendar', 'label' => 'calendar', 'active' => 'promethee.calendar*'],
+            ],
         ],
-        'navigation_pilot' => [
-            ['route' => 'promethee.profile', 'label' => 'open_profile', 'active' => 'promethee.profile'],
-            ['route' => 'promethee.profile', 'text' => 'Mes missions', 'active' => 'promethee.profile', 'fragment' => 'my-missions'],
-            ['route' => 'promethee.passport', 'label' => 'passport', 'active' => 'promethee.passport'],
-            ['route' => 'promethee.assignments', 'label' => 'assignments', 'active' => 'promethee.assignments'],
-            ['route' => 'promethee.bookings', 'label' => 'navigation_menu.bookings', 'active' => 'promethee.bookings'],
-            ['route' => 'promethee.public.pireps.mine', 'label' => 'navigation_menu.my_reports', 'active' => 'promethee.public.pireps.mine', 'emphasis' => true],
-            ['route' => 'promethee.public.pireps', 'label' => 'navigation_menu.all_reports', 'active' => 'promethee.public.pireps|promethee.pireps.*'],
-            ['route' => 'promethee.shop', 'label' => 'shop', 'active' => 'promethee.shop*'],
-            ['route' => 'promethee.jumpseat', 'label' => 'jumpseat', 'active' => 'promethee.jumpseat*'],
-            ['route' => 'promethee.acars', 'label' => 'acars', 'active' => 'promethee.acars'],
+        'pilot' => [
+            'title' => __('promethee.navigation_pilot'),
+            'scope' => 'pilot',
+            'links' => [
+                ['route' => 'promethee.profile', 'label' => 'open_profile', 'active' => 'promethee.profile'],
+                ['route' => 'promethee.bookings', 'label' => 'navigation_menu.bookings', 'active' => 'promethee.bookings'],
+                ['route' => 'promethee.public.pireps.mine', 'label' => 'navigation_menu.my_reports', 'active' => 'promethee.public.pireps.mine', 'emphasis' => true],
+                ['route' => 'promethee.public.pireps', 'label' => 'navigation_menu.all_reports', 'active' => 'promethee.public.pireps|promethee.pireps.*'],
+                ['route' => 'promethee.passport', 'label' => 'passport', 'active' => 'promethee.passport'],
+                ['route' => 'promethee.assignments', 'label' => 'assignments', 'active' => 'promethee.assignments'],
+                ['route' => 'promethee.shop', 'label' => 'shop', 'active' => 'promethee.shop*'],
+                ['route' => 'promethee.jumpseat', 'label' => 'jumpseat', 'active' => 'promethee.jumpseat*'],
+                ['route' => 'promethee.acars', 'label' => 'acars', 'active' => 'promethee.acars'],
+            ],
         ],
-        'navigation_company' => [
-            ['route' => 'promethee.finances', 'label' => 'company_finances', 'active' => 'promethee.finances'],
-            ['route' => 'promethee.airlines', 'label' => 'airlines', 'active' => 'promethee.airlines'],
-            ['route' => 'promethee.fleet', 'label' => 'fleet', 'active' => 'promethee.fleet'],
-            ['route' => 'promethee.maintenance', 'label' => 'maintenance', 'active' => 'promethee.maintenance'],
-            ['route' => 'promethee.documents.mine', 'text' => 'Ma documentation Air Inter', 'active' => 'promethee.documents.mine'],
-            ['route' => 'promethee.documents', 'text' => 'Documentation interne', 'active' => 'promethee.documents|promethee.documents.show|promethee.downloads.category'],
-            ['route' => 'promethee.downloads', 'label' => 'navigation_menu.downloads', 'active' => 'promethee.downloads'],
+        'operations' => [
+            'title' => __('promethee.navigation_operations'),
+            'scope' => 'pilot',
+            'links' => [
+                ['route' => 'promethee.flights', 'label' => 'flight_schedule', 'active' => 'promethee.flights*'],
+                ['route' => 'promethee.operations', 'label' => 'operations', 'active' => 'promethee.operations'],
+                ['route' => 'promethee.missions', 'label' => 'missions_circuits', 'active' => 'promethee.missions*'],
+                ['route' => 'promethee.live', 'label' => 'navigation_menu.live_flights', 'active' => 'promethee.live'],
+            ],
         ],
-        'navigation_operations' => [
-            ['route' => 'promethee.flights', 'label' => 'flight_schedule', 'active' => 'promethee.flights*'],
-            ['route' => 'promethee.operations', 'label' => 'operations', 'active' => 'promethee.operations'],
-            ['route' => 'admin.promethee.dispatch', 'label' => 'dispatch_desk', 'active' => 'admin.promethee.dispatch*'],
-            ['route' => 'promethee.missions', 'label' => 'missions_circuits', 'active' => 'promethee.missions'],
-            ['route' => 'promethee.live', 'label' => 'navigation_menu.live_flights', 'active' => 'promethee.live'],
-            ['route' => 'promethee.safety', 'label' => 'flight_safety', 'active' => 'promethee.safety*'],
+        'company' => [
+            'title' => __('promethee.navigation_company'),
+            'scope' => 'shared',
+            'links' => [
+                ['route' => 'promethee.airlines', 'label' => 'airlines', 'active' => 'promethee.airlines'],
+                ['route' => 'promethee.fleet', 'label' => 'fleet', 'active' => 'promethee.fleet'],
+                ['route' => 'promethee.maintenance', 'label' => 'maintenance', 'active' => 'promethee.maintenance'],
+                ['route' => 'promethee.finances', 'label' => 'company_finances', 'active' => 'promethee.finances'],
+                ['route' => 'promethee.documents.mine', 'text' => 'Documentation Air Inter', 'active' => 'promethee.documents.mine|promethee.documents|promethee.documents.show|promethee.downloads.category'],
+                ['route' => 'promethee.downloads', 'text' => 'Ressources techniques', 'active' => 'promethee.downloads'],
+                ['route' => 'promethee.safety', 'label' => 'flight_safety', 'active' => 'promethee.safety*'],
+            ],
+        ],
+        'occ' => [
+            'title' => 'OCC / EXPLOITATION',
+            'scope' => 'staff',
+            'links' => [
+                ['route' => 'admin.promethee.dispatch', 'label' => 'dispatch_desk', 'active' => 'admin.promethee.dispatch*', 'emphasis' => true],
+                ['route' => 'promethee.live', 'label' => 'navigation_menu.live_flights', 'active' => 'promethee.live'],
+                ['route' => 'admin.promethee.network', 'text' => 'Air Inter Network', 'active' => 'admin.promethee.network*'],
+                ['route' => 'admin.promethee.mailbox', 'text' => 'Boîte OCC', 'active' => 'admin.promethee.mailbox*'],
+                ['route' => 'admin.promethee.health', 'text' => 'État des services', 'active' => 'admin.promethee.health'],
+                ['route' => 'promethee.safety', 'label' => 'flight_safety', 'active' => 'promethee.safety*'],
+            ],
         ],
     ];
 @endphp
-@foreach($navigationGroups as $groupKey => $links)
+@foreach($navigationGroups as $groupKey => $group)
+    @php($links = $group['links'])
     @php($groupActive = collect($links)->contains(fn ($link) => request()->routeIs(...explode('|', $link['active']))))
-    <details @class(['nav-group', 'selected' => $groupActive]) data-workspace-group="{{ in_array($groupKey, ['navigation_welcome','navigation_pilot'], true) ? 'pilot' : 'shared' }}">
-        <summary>{{ __('promethee.'.$groupKey) }}<b aria-hidden="true">⌄</b></summary>
+    <details @class(['nav-group', 'selected' => $groupActive]) data-workspace-group="{{ $group['scope'] }}">
+        <summary>{{ $group['title'] }}<b aria-hidden="true">⌄</b></summary>
         <div class="nav-menu">
             @foreach($links as $link)
                 @if(\Illuminate\Support\Facades\Route::has($link['route']))
