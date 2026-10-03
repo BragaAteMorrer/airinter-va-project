@@ -8,11 +8,56 @@
     <p>Les missions de rapatriement remettent automatiquement les appareils sur leur plateforme attitrée.</p>
   </div>
 </div>
+@php
+  $myMissions = $missions->filter(fn ($mission) => $mission->booking && $mission->booking->status === 'reserved');
+  $otherMissions = $missions->reject(fn ($mission) => $mission->booking && $mission->booking->status === 'reserved');
+@endphp
+
+<nav class="pilot-hub-nav" aria-label="Navigation missions">
+  <a href="#my-missions">Mes missions <span>{{ $myMissions->count() }}</span></a>
+  <a href="#missions">Missions disponibles <span>{{ $otherMissions->count() }}</span></a>
+  <a href="#circuits">Circuits <span>{{ $circuits->count() }}</span></a>
+</nav>
+
+<section class="panel mission-personal" id="my-missions">
+  <div class="panel-heading">
+    <div>
+      <span class="eyebrow">MES MISSIONS</span>
+      <h2>Réservées pour moi</h2>
+      <p>Vos missions actives sont regroupées ici. Vous pouvez les abandonner avant le vol si nécessaire.</p>
+    </div>
+    <span class="tag">{{ $myMissions->count() }} active(s)</span>
+  </div>
+  <div class="mission-owned-list">
+    @forelse($myMissions as $mission)
+      <article class="mission-owned-row">
+        <div>
+          <span class="eyebrow">{{ $mission->mission_type === 'repatriation' ? 'RAPATRIEMENT' : 'MISSION' }}</span>
+          <strong>{{ $mission->mission_type === 'repatriation' && $mission->aircraft_registration ? $mission->aircraft_registration : $mission->title }}</strong>
+          <small>{{ $mission->dpt_airport_id ?: 'Libre' }} → {{ $mission->arr_airport_id ?: 'Libre' }}@if($mission->ends_on) · avant le {{ $mission->ends_on }}@endif</small>
+        </div>
+        <div class="mission-owned-actions">
+          @if($mission->mission_type === 'repatriation' && $mission->reward_multiplier)
+            <span class="tag">PRIME ×{{ number_format((float) $mission->reward_multiplier, 1, ',', ' ') }}</span>
+          @endif
+          <form method="post" action="{{ route('promethee.missions.cancel', $mission->id) }}" onsubmit="return confirm('Abandonner cette mission ? Elle redeviendra disponible pour les autres pilotes.');">
+            @csrf
+            @method('DELETE')
+            <button class="button outline" type="submit">Abandonner</button>
+          </form>
+        </div>
+      </article>
+    @empty
+      <p class="empty">Vous n’avez aucune mission réservée. Les missions disponibles sont juste en dessous.</p>
+    @endforelse
+  </div>
+</section>
+
 
 <section class="panel" id="missions">
-  <div class="panel-heading"><div><span class="eyebrow">MISSIONS</span><h2>À accomplir</h2></div></div>
+  <div class="panel-heading"><div><span class="eyebrow">MISSIONS</span><h2>Disponibles et en cours</h2><p>Les missions déjà réservées pour vous sont retirées de cette liste et affichées dans “Mes missions”.</p></div><span class="tag">{{ $otherMissions->count() }}</span></div>
   <div class="flight-cards">
-    @forelse($missions as $mission)
+    @forelse($otherMissions as $mission)
       <article class="panel line-card">
         <div class="line-card-head">
           <div>
@@ -50,14 +95,7 @@
             </article>
           </div>
 
-          @if($mission->booking && $mission->booking->status === 'reserved')
-            <span class="tag">MISSION RÉSERVÉE</span>
-            <form method="post" action="{{ route('promethee.missions.cancel', $mission->id) }}" onsubmit="return confirm('Abandonner cette mission ? Elle redeviendra disponible pour les autres pilotes.');">
-              @csrf
-              @method('DELETE')
-              <button class="button outline" type="submit">Abandonner la mission</button>
-            </form>
-          @elseif($mission->reserved_by_other)
+          @if($mission->reserved_by_other)
             <span class="tag">DÉJÀ PRISE</span>
           @else
             <form method="post" action="{{ route('promethee.missions.reserve', $mission->id) }}">
