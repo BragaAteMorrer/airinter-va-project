@@ -41,7 +41,7 @@
             <div class="next-operation-state">
                 <span>Prochaine action</span>
                 <strong>{{ $nextOperation->operation_next_action ?? $nextStatusLabel }}</strong>
-                <div class="next-operation-progress" role="progressbar" aria-label="Progression de la préparation" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ $nextOperation->operation_progress }}"><i style="width:{{ $nextOperation->operation_progress }}%"></i></div>
+                <progress class="operation-progress next-operation-progress" max="100" value="{{ $nextOperation->operation_progress }}" aria-label="Progression de la préparation">{{ $nextOperation->operation_progress }} %</progress>
                 <small>{{ $nextOperation->operation_progress }} % · {{ $nextOperation->operation_id }}</small>
             </div>
             <div class="next-operation-actions">
@@ -178,7 +178,7 @@
                         @forelse($board['rows'] as $row)
                             <tr>
                                 <td><strong>{{ $loop->iteration }}</strong></td>
-                                <td><a href="{{ route('promethee.pilots.show', $row->user_id) }}">{{ $row->name }}</a>@if($row->pilot_id)<small style="display:block">{{ $row->pilot_id }}</small>@endif</td>
+                                <td><a href="{{ route('promethee.pilots.show', $row->user_id) }}">{{ $row->name }}</a>@if($row->pilot_id)<br><small class="mono">{{ $row->pilot_id }}</small>@endif</td>
                                 <td><strong>{{ $row->display_value }}</strong></td>
                             </tr>
                         @empty

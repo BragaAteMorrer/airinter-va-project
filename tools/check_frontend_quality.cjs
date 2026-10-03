@@ -93,6 +93,18 @@ expect(prometheeV2.includes('Audit UX phase 11 — flight programme progressive 
     && prometheeV2.includes('Audit UX phase 11 — compact shell controls'),
   'Prométhée must preserve phase 11 shell and flight-programme primitives.');
 
+const prometheeDashboard = read('prometheus/modules/Promethee/Resources/views/dashboard.blade.php');
+const prometheeFleet = read('prometheus/modules/Promethee/Resources/views/fleet.blade.php');
+const prometheeMaintenance = read('prometheus/modules/Promethee/Resources/views/maintenance.blade.php');
+expect(prometheeDashboard.includes('<progress class="operation-progress next-operation-progress"'),
+  'Prométhée dashboard must use the shared semantic operation progress primitive.');
+expect(prometheeFleet.includes('class="airline-mark"') && prometheeFleet.includes('PARC ACTIF') && prometheeFleet.includes('table-sort-link'),
+  'Prométhée fleet must keep shared table, logo and sort primitives.');
+expect(prometheeMaintenance.includes('CELLULE · SUIVI ACTIF') && prometheeMaintenance.includes('Potentiel moteurs') && prometheeMaintenance.includes('<div class="table-wrap">'),
+  'Prométhée maintenance must preserve the structured technical workspace.');
+expect(prometheeV2.includes('Audit UX phase 12 — fleet/maintenance shared details.'),
+  'Prométhée must preserve phase 12 fleet/maintenance primitives.');
+
 expect(dispatch.includes("if (!document.hidden) refreshBoard()"),
   'Dispatch Desk polling must remain suspended while the page is hidden.');
 expect(dispatch.includes('promethee-dispatch-filter') && dispatch.includes('promethee-dispatch-selected'),
@@ -118,6 +130,8 @@ expect(prometheeV2.includes('.attention-inbox')
 const inlineStyleFreeViews = [
   'prometheus/modules/Promethee/Resources/views/bookings.blade.php',
   'prometheus/modules/Promethee/Resources/views/flight.blade.php',
+  'prometheus/modules/Promethee/Resources/views/fleet.blade.php',
+  'prometheus/modules/Promethee/Resources/views/maintenance.blade.php',
 ];
 for (const file of inlineStyleFreeViews) {
   expect(!/<[^>]+\sstyle\s*=/i.test(read(file)),
