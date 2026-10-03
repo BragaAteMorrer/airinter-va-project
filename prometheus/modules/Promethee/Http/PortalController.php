@@ -103,10 +103,10 @@ class PortalController extends Controller
     private function pirepJournal(Pirep $pirep)
     {
         $entries = collect();
-        $eventCodes = [];
+        $explicitEvents = [];
 
         $append = function ($occurredAt, string $code, string $message, string $source, ?string $detail = null)
-            use (&$entries, &$eventCodes): void {
+            use (&$entries): ?CarbonImmutable {
             if (!$occurredAt) return;
 
             try {
@@ -114,13 +114,10 @@ class PortalController extends Controller
                     ? CarbonImmutable::instance($occurredAt)
                     : CarbonImmutable::parse((string) $occurredAt);
             } catch (\Throwable) {
-                return;
+                return null;
             }
 
             $normalizedCode = strtoupper(trim($code));
-            if ($normalizedCode !== '' && isset($eventCodes[$normalizedCode])) return;
-            if ($normalizedCode !== '') $eventCodes[$normalizedCode] = true;
-
             $entries->push([
                 'occurred_at' => $date,
                 'code' => $normalizedCode ?: 'ACARS',
@@ -128,18 +125,39 @@ class PortalController extends Controller
                 'source' => $source,
                 'detail' => $detail,
             ]);
+
+            return $date;
+        };
+
+        $hasNearbyExplicitEvent = function (string $code, $occurredAt) use (&$explicitEvents): bool {
+            $code = strtoupper(trim($code));
+            if (!isset($explicitEvents[$code])) return false;
+            try {
+                $date = $occurredAt instanceof \DateTimeInterface
+                    ? CarbonImmutable::instance($occurredAt)
+                    : CarbonImmutable::parse((string) $occurredAt);
+            } catch (\Throwable) {
+                return false;
+            }
+
+            foreach ($explicitEvents[$code] as $explicitAt) {
+                if (abs($explicitAt->diffInSeconds($date, false)) <= 90) return true;
+            }
+
+            return false;
         };
 
         foreach ($pirep->acars_logs->sortBy(fn ($log) => $log->sim_time ?: $log->created_at) as $log) {
             $raw = trim((string) $log->log);
             if ($raw === '') continue;
             $code = preg_match('/^[A-Z0-9_\-]+$/i', $raw) ? strtoupper($raw) : 'ACARS_LOG_'.substr(sha1($raw), 0, 8);
-            $append(
+            $loggedAt = $append(
                 $log->sim_time ?: $log->created_at,
                 $code,
                 $this->pirepJournalLabel($raw),
                 'ACARS'
             );
+            if ($loggedAt) $explicitEvents[$code][] = $loggedAt;
         }
 
         if (Schema::hasTable('promethee_telemetry')) {
@@ -168,6 +186,8 @@ class PortalController extends Controller
                     $metrics[] = number_format((float) $payload['ias'], 0, ',', ' ').' kt IAS';
                 }
 
+                if ($hasNearbyExplicitEvent($phase, $row->recorded_at)) continue;
+
                 $append(
                     $row->recorded_at,
                     $phase,
@@ -181,8 +201,13 @@ class PortalController extends Controller
         // phpVMS always owns the authoritative block timestamps. They also
         // provide useful bookends for historical flights whose first/last
         // Hermès event was never uploaded.
-        $append($pirep->block_off_time, 'OUT', 'Départ du bloc (OUT)', 'PIREP');
-        $append($pirep->block_on_time, 'IN', 'Arrivée au bloc (IN)', 'PIREP');
+        if (!$hasNearbyExplicitEvent('OUT', $pirep->block_off_time)) {
+            $append($pirep->block_off_time, 'OUT', 'Départ du bloc (OUT)', 'PIREP');
+        }
+        if (!$hasNearbyExplicitEvent('IN', $pirep->block_on_time)
+            && !$entries->contains(fn (array $entry) => $entry['code'] === 'IN')) {
+            $append($pirep->block_on_time, 'IN', 'Arrivée au bloc (IN)', 'PIREP');
+        }
 
         return $entries
             ->sortBy(fn (array $entry) => $entry['occurred_at']->getTimestamp())
