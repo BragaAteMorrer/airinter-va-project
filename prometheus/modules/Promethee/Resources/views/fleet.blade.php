@@ -40,6 +40,15 @@
     </div>
 
     <section class="panel">
+        <div class="panel-heading">
+            <div>
+                <span class="eyebrow">RECHERCHE FLOTTE</span>
+                <h2>Filtrer le parc</h2>
+            </div>
+            @if(request('q') || request('airline'))
+                <span class="tag">Filtres actifs</span>
+            @endif
+        </div>
         <form method="get" class="flight-filter">
             <label class="filter-wide">
                 Rechercher
@@ -71,23 +80,31 @@
         </form>
     </section>
 
-    <section class="panel table-wrap">
+    <section class="panel">
+        <div class="panel-heading">
+            <div>
+                <span class="eyebrow">PARC ACTIF</span>
+                <h2>Situation des appareils</h2>
+            </div>
+            <span class="tag">{{ number_format($aircraft->total()) }} résultat(s)</span>
+        </div>
+        <div class="table-wrap">
         <table>
             <thead>
                 <tr>
                     <th>Compagnie</th>
                     <th>
-                        <a href="{{ $fleetSortUrl('registration') }}">
+                        <a class="table-sort-link" href="{{ $fleetSortUrl('registration') }}">
                             Immatriculation{{ $sortIndicator('registration') }}
                         </a>
                     </th>
                     <th>
-                        <a href="{{ $fleetSortUrl('icao') }}">
+                        <a class="table-sort-link" href="{{ $fleetSortUrl('icao') }}">
                             Code ICAO{{ $sortIndicator('icao') }}
                         </a>
                     </th>
                     <th>
-                        <a href="{{ $fleetSortUrl('subfleet') }}">
+                        <a class="table-sort-link" href="{{ $fleetSortUrl('subfleet') }}">
                             Flotte{{ $sortIndicator('subfleet') }}
                         </a>
                     </th>
@@ -95,28 +112,28 @@
                         Base opérationnelle
                     </th>
                     <th>
-                        <a href="{{ $fleetSortUrl('airport') }}">
+                        <a class="table-sort-link" href="{{ $fleetSortUrl('airport') }}">
                             Localisation{{ $sortIndicator('airport') }}
                         </a>
                     </th>
                     <th>
-                        <a href="{{ $fleetSortUrl('flight_time') }}">
+                        <a class="table-sort-link" href="{{ $fleetSortUrl('flight_time') }}">
                             Temps de vol{{ $sortIndicator('flight_time') }}
                         </a>
                     </th>
                     <th>Potentiel avant visite</th>
                     <th>
-                        <a href="{{ $fleetSortUrl('landing_time') }}">
+                        <a class="table-sort-link" href="{{ $fleetSortUrl('landing_time') }}">
                             Dernier vol{{ $sortIndicator('landing_time') }}
                         </a>
                     </th>
                     <th>
-                        <a href="{{ $fleetSortUrl('state') }}">
+                        <a class="table-sort-link" href="{{ $fleetSortUrl('state') }}">
                             Situation{{ $sortIndicator('state') }}
                         </a>
                     </th>
                     <th>
-                        <a href="{{ $fleetSortUrl('status') }}">
+                        <a class="table-sort-link" href="{{ $fleetSortUrl('status') }}">
                             Statut{{ $sortIndicator('status') }}
                         </a>
                     </th>
@@ -131,7 +148,7 @@
                                 <img
                                     src="{{ $plane->subfleet->airline->promethee_logo }}"
                                     alt="{{ $plane->subfleet->airline->name }}"
-                                    style="width:48px;max-height:28px;object-fit:contain"
+                                    class="airline-mark"
                                 >
                             @else
                                 {{ $plane->subfleet?->airline?->icao ?: '—' }}
@@ -205,6 +222,7 @@
                 @endforelse
             </tbody>
         </table>
+        </div>
     </section>
 
     {{ $aircraft->links('pagination::bootstrap-4') }}
