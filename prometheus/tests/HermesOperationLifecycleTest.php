@@ -146,12 +146,11 @@ final class HermesOperationLifecycleTest extends TestCase
             'type' => FareType::PASSENGER,
             'capacity' => 150,
         ]]);
-        $ofp->ofp_xml = <<<'XML'
-<ofp>
-  <general><route>DCT HERMES</route><initial_altitude>33000</initial_altitude></general>
-  <weights><pax_count>86</pax_count></weights>
-</ofp>
-XML;
+        $ofp->ofp_xml = str_replace(
+            '</general>',
+            '</general><weights><pax_count>86</pax_count></weights>',
+            $this->minimalSimBriefXml()
+        );
         $ofp->save();
 
         $pirepId = $this->prefile($fx);
