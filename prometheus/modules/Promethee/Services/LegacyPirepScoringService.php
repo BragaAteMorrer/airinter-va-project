@@ -424,23 +424,33 @@ final class LegacyPirepScoringService
     ): ?array {
         if (!$this->telemetryAvailable($samples, $requiredFields)) return null;
 
-        return $this->telemetryEpisodes($samples, $matches, $delay, $value);
+        // A PIREP can contain telemetry recorded by two Hermès versions (for
+        // example after an update/resume). Never let an older sample missing a
+        // newly introduced field reach a rule callback expecting that field.
+        return $this->telemetryEpisodes(
+            $samples,
+            fn ($sample) => $this->sampleHasFields($sample, $requiredFields) && $matches($sample),
+            $delay,
+            $value
+        );
     }
 
     private function telemetryAvailable(array $samples, array $requiredFields): bool
     {
         foreach ($samples as $sample) {
-            $complete = true;
-            foreach ($requiredFields as $field) {
-                if (!array_key_exists($field, $sample) || $sample[$field] === null) {
-                    $complete = false;
-                    break;
-                }
-            }
-            if ($complete) return true;
+            if ($this->sampleHasFields($sample, $requiredFields)) return true;
         }
 
         return false;
+    }
+
+    private function sampleHasFields(array $sample, array $requiredFields): bool
+    {
+        foreach ($requiredFields as $field) {
+            if (!array_key_exists($field, $sample) || $sample[$field] === null) return false;
+        }
+
+        return true;
     }
 
     private function simulationRateOccurrences(array $samples, array $facts, float $parameter, int $delay): array
