@@ -1767,11 +1767,24 @@ class PortalController extends Controller
             ->filter(fn ($route) => $route['from'] && $route['to'])
             ->values();
 
-        $reservedFlightIds = Bid::query()
+        $itineraryFlightIds = $itineraries
+            ->flatMap(fn ($itinerary) => collect($itinerary['legs'])->pluck('id'))
+            ->unique()
+            ->values()
+            ->all();
+        $reservedFlightIds = Bid::with(['flight', 'aircraft'])
             ->where('user_id', $r->user()->id)
-            ->whereIn('flight_id', $itineraries->flatMap(fn ($itinerary) => collect($itinerary['legs'])->pluck('id'))->all())
+            ->whereIn('flight_id', $itineraryFlightIds)
+            ->get()
+            ->filter(function (Bid $bid) {
+                $operation = $this->bookingOperation($bid);
+
+                return !in_array($operation->operation_status, ['COMPLETED', 'CANCELLED'], true);
+            })
             ->pluck('flight_id')
             ->map(fn ($id) => (string) $id)
+            ->unique()
+            ->values()
             ->all();
 
         return $this->page('flights', [
