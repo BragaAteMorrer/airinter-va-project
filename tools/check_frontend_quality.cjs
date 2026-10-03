@@ -34,7 +34,9 @@ const hermesIndex = read('acars/wwwroot/index.html');
 const hermesApp = read('acars/wwwroot/app.js');
 const hermesDesktop = read('acars/WebDesktop.cs');
 const hermesTheme = read('acars/wwwroot/hermes-themes.css');
+const prometheeBase = read('prometheus/public/promethee-assets/promethee.css');
 const prometheeV2 = read('prometheus/public/promethee-assets/promethee-v2.css');
+const prometheeAdmin = read('prometheus/public/promethee-assets/admin-promethee.css');
 const dispatch = read('prometheus/modules/Promethee/Resources/views/admin/dispatch.blade.php');
 const crm = read('prometheus/modules/Promethee/Resources/views/admin/crm.blade.php');
 const adminDashboard = read('prometheus/modules/Promethee/Resources/views/admin/dashboard.blade.php');
@@ -65,6 +67,18 @@ expect(prometheeV2.includes('prefers-reduced-motion'),
   'Prométhée v2 CSS must preserve prefers-reduced-motion handling.');
 expect(prometheeV2.includes('focus-visible'),
   'Prométhée v2 CSS must preserve visible keyboard focus handling.');
+
+expect(prometheeV2.includes('Audit UX phase 10 — modern operational visual system')
+    && prometheeV2.includes('--radius: 8px;')
+    && prometheeV2.includes('backdrop-filter: none'),
+  'Prométhée Modern must preserve the restrained operational visual system from audit phase 10.');
+expect(!prometheeV2.includes('box-shadow: 0 9px 18px rgb(21 94 239 / 28%)'),
+  'Prométhée Modern must not reintroduce SaaS-style floating button shadows.');
+expect(prometheeBase.includes('justify-content:center;gap:8px;'),
+  'Prométhée shared buttons must keep compact icon/text spacing.');
+expect(prometheeAdmin.includes('--admin-radius:7px;')
+    && prometheeAdmin.includes('--admin-shadow:0 2px 9px #162f460a;'),
+  'Prométhée admin must keep the compact visual tokens aligned with the portal.');
 
 expect(dispatch.includes("if (!document.hidden) refreshBoard()"),
   'Dispatch Desk polling must remain suspended while the page is hidden.');
