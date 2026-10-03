@@ -641,6 +641,24 @@ final class HermesOperationLifecycleTest extends TestCase
         $pirepId = $this->prefile($fx);
         $at = now();
 
+        DB::table('vmsacars_rules')->updateOrInsert(
+            ['id' => 'SIMRATE_INCREASED'],
+            [
+                'name' => 'Simulation Rate Increased',
+                'description' => 'Regression fixture for mixed Hermès telemetry versions',
+                'parameter' => 1,
+                'points' => 15,
+                'enabled' => true,
+                'has_parameter' => true,
+                'repeatable' => true,
+                'delay' => 10,
+                'cooldown' => 60,
+                'order' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
+
         // Legacy sample: recorded before the scoring telemetry fields existed.
         $this->post(
             '/api/v1/operations/'.$fx['operation_id'].'/telemetry',
