@@ -6,13 +6,13 @@ This document is the starting point for a developer taking over the project with
 
 | Component | Location | Responsibility |
 | --- | --- | --- |
-| phpVMS | `prometheus/` | Upstream VA engine, database models, finance, fleet and legacy administration |
-| Prométhée | `prometheus/modules/Promethee/` | Air Inter OCC/product layer, pilot portal, operations API, SimBrief bridge, safety, economy, dispatch |
+| phpVMS | `promethee/` | Upstream VA engine, database models, finance, fleet and legacy administration |
+| Prométhée | `promethee/modules/Promethee/` | Air Inter OCC/product layer, pilot portal, operations API, SimBrief bridge, safety, economy, dispatch |
 | Hermès | `acars/` | Official Air Inter desktop ACARS |
 | Hermès tests | `acars.tests/` | Desktop/telemetry/recovery/API contract regression tests |
-| Prométhée assets | `prometheus/public/promethee-assets/` | Air Inter visual system |
+| Prométhée assets | `promethee/public/promethee-assets/` | Air Inter visual system |
 | CI | `.github/workflows/` | Repository hygiene, build/tests, phpVMS upstream watch and Hermès release pipeline |
-| Maintenance docs | `docs/maintenance/` | Upgrade and handover procedures |
+| Maintenance docs | `promethee/docs/maintenance/` | Upgrade and handover procedures |
 
 ## Architecture rule
 
@@ -21,20 +21,20 @@ This document is the starting point for a developer taking over the project with
 New Air Inter behavior should be implemented in `modules/Promethee/` first. Avoid modifying phpVMS `app/`, `config/`, `resources/views/` or other upstream files unless there is no clean extension point.
 
 The authoritative list of unavoidable core overrides is:
-`prometheus/.phpvms-upstream.json`.
+`promethee/.phpvms-upstream.json`.
 
 A file missing from that manifest must not silently become a new core override. If one is unavoidable, document the reason in the manifest in the same pull request.
 
 ## phpVMS upgrades
 
-Read `docs/maintenance/PHPVMS_UPGRADES.md` before every upgrade.
+Read `promethee/docs/maintenance/PHPVMS_UPGRADES.md` before every upgrade.
 
 Useful commands:
 
 ```bash
-python tools/phpvms_upstream_audit.py --check-manifest
-python tools/phpvms_upstream_audit.py --latest
-python tools/phpvms_upstream_audit.py --target 7.0.11
+python promethee/tools/phpvms_upstream_audit.py --check-manifest
+python promethee/tools/phpvms_upstream_audit.py --latest
+python promethee/tools/phpvms_upstream_audit.py --target 7.0.11
 ```
 
 The audit is read-only. It classifies new upstream changes into direct/safe changes and manual merge collisions.
@@ -48,13 +48,13 @@ Hermès-specific HTTP endpoints belong to Prométhée.
 The authentication and SimBrief controllers live under:
 
 ```text
-prometheus/modules/Promethee/Http/Api/
+promethee/modules/Promethee/Http/Api/
 ```
 
 The routes are declared in:
 
 ```text
-prometheus/modules/Promethee/routes.php
+promethee/modules/Promethee/routes.php
 ```
 
 The stable desktop contract is `/api/v1`. Older `/api/acars` routes exist only as compatibility aliases and should not receive new product features.
@@ -66,7 +66,7 @@ Do not put Hermès controllers/routes back into phpVMS core.
 Prométhée migrations belong under:
 
 ```text
-prometheus/modules/Promethee/Database/migrations/
+promethee/modules/Promethee/Database/migrations/
 ```
 
 Never edit an already-deployed migration to change production state. Create a new forward-only migration.
@@ -77,7 +77,7 @@ The ACARS token migration was moved from phpVMS core into Prométhée without re
 
 ### Prométhée
 
-Prométhée uses the phpVMS/Laravel catalogues under `prometheus/resources/lang/`.
+Prométhée uses the phpVMS/Laravel catalogues under `promethee/resources/lang/`.
 Run:
 
 ```bash
@@ -101,7 +101,7 @@ fr, en, pt, es, it, ja, tr, de
 Run:
 
 ```bash
-node tools/check_hermes_i18n.cjs
+node promethee/tools/check_hermes_i18n.cjs
 ```
 
 When adding a new translatable static label:
@@ -119,12 +119,12 @@ At minimum:
 ```bash
 node --check acars/wwwroot/i18n.js
 node --check acars/wwwroot/app.js
-node tools/check_hermes_i18n.cjs
-python -m py_compile tools/phpvms_upstream_audit.py
-python tools/phpvms_upstream_audit.py --check-manifest
+node promethee/tools/check_hermes_i18n.cjs
+python -m py_compile promethee/tools/phpvms_upstream_audit.py
+python promethee/tools/phpvms_upstream_audit.py --check-manifest
 ```
 
-From `prometheus/`:
+From `promethee/`:
 
 ```bash
 composer validate --no-check-publish
