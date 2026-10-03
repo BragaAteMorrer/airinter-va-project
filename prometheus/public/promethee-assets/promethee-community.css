@@ -10,3 +10,32 @@
 .community-library{margin:0 0 22px;border-left:4px solid var(--blue)}
 @media(max-width:760px){.pilot-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:460px){.pilot-grid{grid-template-columns:1fr}}
+
+
+/* Audit UX step 5 — pilot information architecture. */
+.pilot-hub-nav{display:flex;align-items:center;gap:3px;min-width:0;margin:0 0 18px;padding:4px;overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:#f6f9fb;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+.pilot-hub-nav a{display:flex;align-items:center;gap:7px;flex:0 0 auto;padding:8px 11px;border-radius:4px;color:var(--muted);font-size:10px;font-weight:750;white-space:nowrap}
+.pilot-hub-nav a:hover,.pilot-hub-nav a:focus-visible{background:var(--paper);color:var(--ops-blue);text-decoration:none}
+.pilot-hub-nav a span{display:inline-grid;min-width:20px;place-items:center;padding:1px 5px;border:1px solid var(--line);border-radius:999px;background:var(--paper);color:var(--ops-dark);font:700 9px/1.5 Consolas,monospace}
+.mission-personal{border-left:4px solid var(--ops-blue)}
+.mission-owned-list{display:grid}
+.mission-owned-row{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:13px 0;border-bottom:1px solid var(--line)}
+.mission-owned-row:last-child{border-bottom:0}.mission-owned-row>div:first-child{display:grid;gap:3px;min-width:0}.mission-owned-row strong{color:var(--ops-dark);font-size:14px}.mission-owned-row small{color:var(--muted)}
+.mission-owned-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:0 0 auto}.mission-owned-actions form{margin:0}
+.documentation-header-actions{display:flex;gap:8px;flex-wrap:wrap}.documentation-rank{font-size:18px}.documentation-filter-action{align-self:end}
+.community-empty-state{grid-column:1/-1;text-align:center}.community-empty-state .button{margin-top:8px}
+html[data-era="2000"] .pilot-hub-nav{border-radius:0;background:#dfeaf2}html[data-era="2000"] .pilot-hub-nav a{border-radius:0}
+html[data-era="minitel"] .pilot-hub-nav{display:block;margin-bottom:8px;padding:0;border:0;border-block:1px solid var(--line);border-radius:0;background:transparent}
+html[data-era="minitel"] .pilot-hub-nav a{display:inline-flex;padding:3px 8px 3px 0;border-radius:0;color:var(--minitel-cyan);font:16px/1.25 var(--sans)}
+html[data-era="minitel"] .pilot-hub-nav a span{border:0;border-radius:0;background:transparent;color:var(--minitel-yellow);font:inherit}
+html[data-era="minitel"] .mission-personal{border-left:0}
+@media(max-width:760px){
+  .pilot-hub-nav{margin-inline:-16px;padding-inline:16px;border-inline:0;border-radius:0}
+  .mission-owned-row{display:grid;gap:10px}
+  .mission-owned-actions{justify-content:flex-start;flex-wrap:wrap}
+  .documentation-header-actions{width:100%}
+  .documentation-header-actions .button{flex:1 1 190px;text-align:center}
+  .documentation-filter-action{align-self:stretch}
+  .documentation-filter-action .button{width:100%}
+}
+@media(max-width:480px){.pilot-hub-nav{margin-inline:-12px;padding-inline:12px}}
