@@ -107,7 +107,7 @@ class PortalController extends Controller
 
         $append = function ($occurredAt, string $code, string $message, string $source, ?string $detail = null)
             use (&$entries): ?CarbonImmutable {
-            if (!$occurredAt) return;
+            if (!$occurredAt) return null;
 
             try {
                 $date = $occurredAt instanceof \DateTimeInterface
