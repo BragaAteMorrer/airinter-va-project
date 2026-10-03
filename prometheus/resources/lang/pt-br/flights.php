@@ -51,4 +51,16 @@ return array_replace_recursive([
     'dontbookaircraft' => 'Não Reservar Aeronave',
 ], [
     'type' => ['shuttle' => 'Ponte aéreo (programado)', 'addtl_shuttle' => 'Ponte aéreo (adicional)', 'cargo_in_cabin' => 'Passageiros/carga na cabine (programado)', 'addtl_cargo_in_cabin' => 'Passageiros/carga na cabine (adicional)', 'charter_cargo_in_cabin' => 'Passageiros/carga na cabine (fretado)', 'general_aviation' => 'Aviação geral', 'air_taxi' => 'Aviação executiva/táxi aéreo', 'company_specific' => 'Específico da companhia (não padrão)', 'other' => 'Outro (não padrão)'],
+    'no_direct_flight'          => 'Nenhum voo direto corresponde a esta rota.',
+    'alternative_itineraries'  => 'Itinerários com escala',
+    'alternative_explanation'  => 'Prométhée encontrou conexões com até :count escalas.',
+    'no_alternative_itinerary'  => 'Nenhum itinerário com no máximo :count escalas está disponível.',
+    'stopover'                  => ':count escala|:count escalas',
+    'segment'                   => 'Trecho :count',
+    'reserve_itinerary'         => 'Reservar :count voo|Reservar os :count voos',
+    'already_reserved'          => 'Já reservado',
+    'multiple_bids_required'    => 'A reserva em grupo exige que várias reservas estejam habilitadas.',
+    'itinerary_reserved'        => ':count voo reservado com sucesso.|:count voos reservados com sucesso.',
+    'itinerary_reserve_failed'  => 'Não foi possível reservar este itinerário: :message',
+    'itinerary_invalid'         => 'O itinerário proposto não está mais disponível.',
 ]);

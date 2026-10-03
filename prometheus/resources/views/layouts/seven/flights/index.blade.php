@@ -22,6 +22,7 @@
           </div>
         </div>
       </div>
+      @include('flights.itineraries')
       @include('flights.table')
     </div>
     <div class="col-xl-3 d-none d-xl-block">
