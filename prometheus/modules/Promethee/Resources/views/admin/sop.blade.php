@@ -4,16 +4,86 @@
 <div class="ops-header compact">
     <div>
         <span class="eyebrow">AIR INTER · FLIGHT STANDARDS</span>
-        <h1>SOP Engine.</h1>
-        <p>Hermès remonte des faits. Prométhée applique ici les règles compagnie, sans score ni pénalité automatique.</p>
+        <h1>SOP & scoring Hermès.</h1>
+        <p>Le barème PIREP ci-dessous est la configuration réellement utilisée pour le score Hermès. Les règles SOP restent un moteur de supervision séparé, sans retrait de points.</p>
     </div>
 </div>
 
 @if(session('success')) <div class="notice success">{{ session('success') }}</div> @endif
 @if($errors->any()) <div class="notice warning">{{ $errors->first() }}</div> @endif
 
+
 <section class="panel">
-    <div class="panel-heading"><div><span class="eyebrow">NOUVELLE RÈGLE</span><h2>Créer une règle SOP</h2></div></div>
+    <div class="panel-heading">
+        <div>
+            <span class="eyebrow">BARÈME HERMÈS · SOURCE AUTORITATIVE</span>
+            <h2>Score PIREP / vmsACARS</h2>
+        </div>
+        <span>{{ count($scoringRules) }} règle(s)</span>
+    </div>
+    <p class="muted">
+        Ces valeurs proviennent directement de <code>vmsacars_rules</code>, la table lue par
+        <code>LegacyPirepScoringService</code>. Toute modification s'applique aux prochains calculs
+        et dépôts Hermès. Les scores déjà enregistrés restent figés dans leur snapshot historique.
+    </p>
+
+    @if(!$scoringRules)
+        <div class="notice warning">Le barème vmsACARS est indisponible. Vérifiez les migrations du module VMSAcars.</div>
+    @else
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>Règle</th>
+                    <th>Seuil</th>
+                    <th>Points retirés</th>
+                    <th>Délai (s)</th>
+                    <th>Répétable</th>
+                    <th>Cooldown (s)</th>
+                    <th>Active</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach($scoringRules as $rule)
+                @php($formId = 'hermes-score-'.$rule['id'])
+                <tr>
+                    <td>
+                        <strong>{{ $rule['name'] }}</strong><br>
+                        <code>{{ $rule['id'] }}</code>
+                        @if(!empty($rule['description']))
+                            <div class="muted">{{ $rule['description'] }}</div>
+                        @endif
+                    </td>
+                    <td>
+                        @if($rule['has_parameter'])
+                            <input form="{{ $formId }}" name="parameter" type="number" step="1" value="{{ $rule['parameter'] }}" style="min-width:7rem">
+                        @else
+                            <span class="muted">—</span>
+                        @endif
+                    </td>
+                    <td><input form="{{ $formId }}" name="points" type="number" min="0" max="100" step="1" value="{{ $rule['points'] }}" required style="min-width:6rem"></td>
+                    <td><input form="{{ $formId }}" name="delay" type="number" min="0" max="3600" step="1" value="{{ $rule['delay'] }}" required style="min-width:6rem"></td>
+                    <td><input form="{{ $formId }}" name="repeatable" type="checkbox" value="1" @checked($rule['repeatable'])></td>
+                    <td><input form="{{ $formId }}" name="cooldown" type="number" min="0" max="86400" step="1" value="{{ $rule['cooldown'] }}" required style="min-width:6rem"></td>
+                    <td><input form="{{ $formId }}" name="enabled" type="checkbox" value="1" @checked($rule['enabled'])></td>
+                    <td>
+                        <form id="{{ $formId }}" method="post" action="{{ route('admin.promethee.sop.scoring.update', $rule['id']) }}">
+                            @csrf
+                            @method('PUT')
+                            <button class="button small" type="submit">Enregistrer</button>
+                        </form>
+                    </td>
+                </tr>
+            @endforeach
+            </tbody>
+        </table>
+    </div>
+    @endif
+</section>
+
+<section class="panel">
+    <div class="panel-heading"><div><span class="eyebrow">SUPERVISION SOP · SANS IMPACT SCORE</span><h2>Créer une règle SOP</h2></div></div>
     <form method="post" action="{{ route('admin.promethee.sop.rules.save') }}" class="form-grid">
         @csrf
         <label>Nom<input name="name" required maxlength="120" placeholder="Vitesse de roulage"></label>
@@ -36,7 +106,8 @@
 </section>
 
 <section class="panel">
-    <div class="panel-heading"><div><span class="eyebrow">POLITIQUE COMPAGNIE</span><h2>Règles actives</h2></div><span>{{ count($rules) }} règle(s)</span></div>
+    <div class="panel-heading"><div><span class="eyebrow">POLITIQUE COMPAGNIE · SUPERVISION</span><h2>Règles SOP / alertes</h2></div><span>{{ count($rules) }} règle(s)</span></div>
+    <p class="muted">Ces règles évaluent les faits remontés par Hermès pour la revue pilote et le Dispatch. Elles ne modifient pas le score PIREP.</p>
     <div class="route-list">
         @foreach($rules as $rule)
         <details class="sop-rule" @if(!$loop->first) @else open @endif>
