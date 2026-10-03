@@ -85,6 +85,7 @@ if (document.documentElement.dataset.era === 'minitel') window.ensurePrometheeMi
 window.prometheeI18n = @json($prometheeI18n);
 </script>
 @stack('styles')
+<link rel="stylesheet" href="{{ asset('promethee-assets/promethee-era-components.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-era-components.css')) }}">
 </head>
 @php
     // Most Prométhée pages receive branding through PortalController::page().

@@ -19,9 +19,11 @@ const budgets = {
   'acars/wwwroot/index.html': 50000,
   'acars/wwwroot/styles.css': 60000,
   'acars/wwwroot/hermes-themes.css': 35000,
+  'acars/wwwroot/hermes-era-components.css': 12000,
   'prometheus/public/promethee-assets/promethee-v2.css': 90000,
   'prometheus/public/promethee-assets/promethee-appearance.css': 40000,
   'prometheus/public/promethee-assets/promethee-admin-workspaces.css': 12000,
+  'prometheus/public/promethee-assets/promethee-era-components.css': 14000,
   'prometheus/modules/Promethee/Http/PortalController.php': 245000,
   'prometheus/modules/Promethee/Http/AutomationController.php': 14000,
   'prometheus/modules/Promethee/Resources/views/admin/dispatch.blade.php': 45000,
@@ -41,6 +43,7 @@ const hermesMap = read('acars/wwwroot/hermes-map.js');
 const hermesReview = read('acars/wwwroot/hermes-review.js');
 const hermesDesktop = read('acars/WebDesktop.cs');
 const hermesTheme = read('acars/wwwroot/hermes-themes.css');
+const hermesEraComponents = read('acars/wwwroot/hermes-era-components.css');
 const prometheeBase = read('prometheus/public/promethee-assets/promethee.css');
 const prometheeV2 = read('prometheus/public/promethee-assets/promethee-v2.css');
 const prometheeAdmin = read('prometheus/public/promethee-assets/admin-promethee.css');
@@ -53,6 +56,7 @@ const prometheeProfile = read('prometheus/modules/Promethee/Resources/views/prof
 const prometheeMissions = read('prometheus/modules/Promethee/Resources/views/missions.blade.php');
 const prometheeMyDocuments = read('prometheus/modules/Promethee/Resources/views/my-documents.blade.php');
 const prometheeCommunity = read('prometheus/public/promethee-assets/promethee-community.css');
+const prometheeEraComponents = read('prometheus/public/promethee-assets/promethee-era-components.css');
 const prometheeFlights = read('prometheus/modules/Promethee/Resources/views/flights.blade.php');
 const portalController = read('prometheus/modules/Promethee/Http/PortalController.php');
 const automationController = read('prometheus/modules/Promethee/Http/AutomationController.php');
@@ -117,7 +121,7 @@ expect(hermesTheme.includes('focus-visible'),
 const hermesOverrides = read('acars/wwwroot/layout-overrides.css');
 expect(hermesIndex.includes('class="rail-nav-label"')
     && hermesIndex.includes('class="display-settings"')
-    && hermesIndex.includes('20261003-ops-ui-phase2'),
+    && hermesIndex.includes('20261003-era-phase6'),
   'Hermès must preserve the grouped operational navigation and refreshed asset revision.');
 expect(hermesApp.includes('data-tab') || hermesIndex.includes('data-tab="flight"'),
   'Hermès navigation must keep data-tab based workspace routing.');
@@ -189,6 +193,36 @@ expect(prometheeCommunity.includes('Audit UX step 5 — pilot information archit
     && prometheeCommunity.includes('@media(max-width:760px)')
     && prometheeCommunity.includes('.mission-owned-row'),
   'Prométhée pilot information architecture must keep its responsive treatment.');
+
+expect(prometheeLayout.includes('promethee-era-components.css')
+    && prometheeLayout.indexOf("@stack('styles')") < prometheeLayout.indexOf('promethee-era-components.css'),
+  'Prométhée era component adapters must load after page-specific styles.');
+expect(prometheeEraComponents.includes('1999–2005')
+    && prometheeEraComponents.includes('Minitel fallback')
+    && prometheeEraComponents.includes('.pilot-hub-nav')
+    && prometheeEraComponents.includes('.admin-workspace-nav')
+    && prometheeEraComponents.includes('.next-operation')
+    && prometheeEraComponents.includes('.attention-inbox'),
+  'Prométhée historical adapter layer must cover shared pilot, admin and operational components.');
+expect(!/html\[data-era="(?:2000|minitel)"\]/.test(prometheeCommunity)
+    && !/html\[data-era="(?:2000|minitel)"\]/.test(adminWorkspaceCss),
+  'Prométhée feature stylesheets must remain era-neutral; historical presentation belongs to the adapter layer.');
+expect(hermesIndex.includes('/hermes-era-components.css')
+    && hermesIndex.indexOf('/hermes-themes.css') < hermesIndex.indexOf('/hermes-era-components.css')
+    && hermesIndex.indexOf('/hermes-era-components.css') < hermesIndex.indexOf('/layout-overrides.css'),
+  'Hermès historical component adapters must load after the base theme grammar.');
+expect(hermesEraComponents.includes('1999–2005')
+    && hermesEraComponents.includes('Minitel fallback')
+    && hermesEraComponents.includes('.workflow')
+    && hermesEraComponents.includes('.next-action')
+    && hermesEraComponents.includes('.rail-nav-label')
+    && hermesEraComponents.includes('.display-settings'),
+  'Hermès historical adapter layer must cover navigation and operational workflow components.');
+expect(!hermesTheme.includes('body[data-era="2000"] .rail-nav-label'),
+  'Hermès recent component-era overrides must not leak back into the base theme stylesheet.');
+expect(hermesIndex.includes('/hermes-minitel.css?rev=')
+    && hermesIndex.includes('window.loadHermesMinitel'),
+  'Hermès must preserve the native lazy-loaded Minitel runtime instead of reducing it to a DOM skin.');
 expect(prometheeNavigation.includes('setShellMenu')
     && prometheeNavigation.includes("aria-expanded")
     && prometheeNavigation.includes("event.key === 'Escape'"),

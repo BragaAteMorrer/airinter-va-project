@@ -1,0 +1,169 @@
+/* Hermès historical component adapters.
+   Core layout/components stay semantic; this layer defines period-specific
+   presentation. The native 40x25 Minitel overlay still loads lazily and wins. */
+
+/* --- 1999–2005: airline desktop/intranet client. --- */
+body[data-era="2000"] .rail-nav-label{
+  margin-top:8px;
+  color:#075d99;
+  font:700 10px Arial,sans-serif;
+  letter-spacing:.02em;
+  text-transform:uppercase;
+}
+body[data-era="2000"] .display-settings{border-top:1px solid #8ca8b9}
+body[data-era="2000"] .display-settings>summary{
+  padding:5px 7px;
+  color:#07518a;
+  font:700 11px Arial,sans-serif;
+}
+body[data-era="2000"] .display-controls{
+  padding:6px;
+  border:1px inset #91aebf;
+  border-radius:0;
+  background:#eaf4f8;
+}
+body[data-era="2000"] :where(.workspace-title,.next-action,.operations-browser,.operations-current,.source-panel,.plan-mode-card,.review-gates article,.observation,.datalink-message,.network-crew,.recovery-center,.error-center){
+  border-radius:0;
+  box-shadow:none;
+}
+body[data-era="2000"] .workspace-title{
+  padding:7px 9px;
+  border:1px solid #91aebf;
+  border-bottom:0;
+  background:#075d99;
+}
+body[data-era="2000"] .workspace-title :where(h2,.kicker){color:#fff}
+body[data-era="2000"] .ready-state{
+  border:2px outset #d8e5ee;
+  border-radius:0;
+  background:#eaf4f8;
+  color:#07518a;
+  font:700 11px Arial,sans-serif;
+}
+body[data-era="2000"] .workflow{
+  border:1px solid #91aebf;
+  border-radius:0;
+  background:#f4f8fb;
+}
+body[data-era="2000"] .workflow>div{
+  min-height:54px;
+  border-right:1px solid #b6cbd7;
+  background:#fff;
+}
+body[data-era="2000"] .workflow>div:last-child{border-right:0}
+body[data-era="2000"] .workflow span{
+  border:1px outset #9fb7df;
+  border-radius:0;
+  background:#075d99;
+  color:#fff;
+  font:700 11px Arial,sans-serif;
+}
+body[data-era="2000"] .workflow .done span{background:#2d7b48}
+body[data-era="2000"] .workflow .current{background:#fff8d8}
+body[data-era="2000"] .next-action{
+  border:1px solid #91aebf;
+  border-left:5px solid #075d99;
+  background:#f7fbfd;
+}
+body[data-era="2000"] .next-action strong{color:#07518a}
+body[data-era="2000"] :where(.operations-browser,.operations-current){
+  border:1px solid #91aebf;
+  background:#fff;
+}
+body[data-era="2000"] .source-tabs{
+  gap:0;
+  border-bottom:1px solid #075d99;
+}
+body[data-era="2000"] .source-tabs button{
+  border:1px solid #91aebf;
+  border-bottom:0;
+  border-radius:0;
+  background:#dfeaf2;
+  color:#07518a;
+}
+body[data-era="2000"] .source-tabs button.active{
+  background:#075d99;
+  color:#fff;
+}
+body[data-era="2000"] .status-chip{
+  border:1px inset #91aebf;
+  border-radius:0;
+  background:#eaf4f8;
+  color:#07518a;
+  font-family:Arial,sans-serif;
+}
+body[data-era="2000"] .error-center>summary{
+  border-radius:0;
+  background:#fff0c8;
+  color:#633f00;
+}
+
+/* --- Minitel fallback when the native 40x25 shell is unavailable.
+   The overlay stylesheet/runtime remains the primary implementation. --- */
+body[data-era="minitel"]{
+  --bg:#050706;
+  --paper:#07130c;
+  --ink:#99edb1;
+  --muted:#6fcf8a;
+  --line:#285e39;
+  --navy:#99edb1;
+  --blue:#58f7ff;
+  --red:#ff7878;
+  --shadow:none;
+  font-family:"Courier New",monospace;
+}
+body[data-era="minitel"] :where(.panel,.workflow,.next-action,.operations-browser,.operations-current,.source-panel,.plan-mode-card,.review-gates article,.observation,.datalink-message,.network-crew,.recovery-center,.error-center){
+  border-color:#285e39;
+  border-radius:0;
+  background:#07130c;
+  box-shadow:none;
+}
+body[data-era="minitel"] .rail{
+  background:#050706;
+  border-color:#285e39;
+  color:#99edb1;
+}
+body[data-era="minitel"] .rail-nav-label{
+  color:#58f7ff;
+  font:700 11px/1.2 "Courier New",monospace;
+  letter-spacing:.08em;
+}
+body[data-era="minitel"] .tab{
+  border-radius:0;
+  color:#99edb1;
+  font-family:"Courier New",monospace;
+}
+body[data-era="minitel"] .tab.active{
+  border-color:#58f7ff;
+  background:#102618;
+  color:#fff35a;
+}
+body[data-era="minitel"] .display-settings{border-color:#285e39}
+body[data-era="minitel"] .display-settings>summary{color:#58f7ff;font-family:"Courier New",monospace}
+body[data-era="minitel"] .display-controls{border-radius:0;background:#07130c;border-color:#285e39}
+body[data-era="minitel"] .workspace-title{border-bottom-color:#285e39}
+body[data-era="minitel"] .workspace-title :where(h2,.kicker){color:#99edb1}
+body[data-era="minitel"] .ready-state{border-radius:0;background:#102618;color:#fff35a;border-color:#285e39}
+body[data-era="minitel"] .workflow>div{background:#07130c;border-color:#285e39}
+body[data-era="minitel"] .workflow span{border-radius:0;background:#102618;color:#99edb1}
+body[data-era="minitel"] .workflow .current span{color:#fff35a;border-color:#fff35a}
+body[data-era="minitel"] .workflow .done span{color:#58f7ff}
+body[data-era="minitel"] .next-action{border-left-color:#58f7ff}
+body[data-era="minitel"] .source-tabs{border-color:#285e39}
+body[data-era="minitel"] .source-tabs button{border-radius:0;background:#07130c;color:#99edb1;border-color:#285e39}
+body[data-era="minitel"] .source-tabs button.active{background:#102618;color:#fff35a}
+body[data-era="minitel"] .status-chip{border-radius:0;background:#07130c;color:#99edb1;border-color:#285e39}
+body[data-era="minitel"] input,
+body[data-era="minitel"] select,
+body[data-era="minitel"] textarea{
+  border-radius:0;
+  background:#050706;
+  color:#99edb1;
+  border-color:#285e39;
+  font-family:"Courier New",monospace;
+}
+
+@media(max-width:920px),(pointer:coarse){
+  body[data-era="2000"] .workflow>div{min-width:0}
+  body[data-era="minitel"] .rail-nav-label{margin-top:6px}
+}
