@@ -501,6 +501,8 @@ html[data-era="2000"] .workspace-switch {
   }
   html[data-era="modern"] .sidebar.is-menu-open .nav-menu {
     position:static;
+    top:auto;
+    left:auto;
     min-width:0;
     max-width:none;
     margin:0 0 7px;
@@ -510,6 +512,7 @@ html[data-era="2000"] .workspace-switch {
     border-radius:0;
     background:transparent;
     box-shadow:none;
+    transform:none;
   }
   html[data-era="modern"] .sidebar.is-menu-open .nav-menu a { padding:8px 10px; }
   html[data-era="modern"] .topbar { min-height:36px;height:auto;padding:6px 16px; }
