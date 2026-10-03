@@ -85,6 +85,23 @@ expect(prometheeAdmin.includes('--admin-radius:7px;')
 expect(prometheeLayout.includes('class="topbar-controls"')
     && prometheeLayout.includes('theme-control-label'),
   'Prométhée shell must keep compact grouped display controls.');
+
+const prometheeNavigation = read('prometheus/public/promethee-assets/navigation-groups.js');
+const prometheeEras = read('prometheus/public/promethee-assets/airinter-eras.css');
+expect(prometheeLayout.includes('data-promethee-shell')
+    && prometheeLayout.includes('class="shell-primary"')
+    && prometheeLayout.includes('class="shell-branding"')
+    && prometheeLayout.includes('class="shell-menu-toggle"')
+    && prometheeLayout.includes('id="promethee-navigation"'),
+  'Prométhée shell must preserve the structured two-level navbar.');
+expect(prometheeNavigation.includes('setShellMenu')
+    && prometheeNavigation.includes("aria-expanded")
+    && prometheeNavigation.includes("event.key === 'Escape'"),
+  'Prométhée navbar must preserve responsive menu state and keyboard dismissal.');
+expect(prometheeEras.includes('Modern shell: a stable two-level airline navigation.')
+    && prometheeEras.includes('Prométhée shell navigation v2: mobile and compatibility adapters.')
+    && prometheeEras.includes('.sidebar.is-menu-open nav.is-grouped'),
+  'Prométhée era adapters must preserve the navbar refactor and mobile layout.');
 expect(prometheeFlights.includes('class="flight-filter-advanced"')
     && prometheeFlights.includes('<table class="flight-results">')
     && !prometheeFlights.includes('<section class="flight-cards">'),
