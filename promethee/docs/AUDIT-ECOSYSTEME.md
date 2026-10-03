@@ -13,7 +13,7 @@ dans le code. L'ordre de préférence est : **améliorer**, **étendre**,
 
 ### Périmètre effectivement inspecté
 
-- le socle Laravel/phpVMS contenu dans `prometheus/` : routes, contrôleurs,
+- le socle Laravel/phpVMS contenu dans `promethee/` : routes, contrôleurs,
   services, modèles, migrations, commandes, middleware, vues, traductions,
   configuration et tests ;
 - les extensions Prométhée visibles dans les ressources et dans
@@ -26,7 +26,7 @@ dans le code. L'ordre de préférence est : **améliorer**, **étendre**,
 ### Limites de preuve
 
 - aucun code séparé identifiable comme l'ancien OCC **Prometheus** n'est isolé
-  dans ce dépôt. Le répertoire `prometheus/` contient le socle phpVMS qui héberge
+  dans ce dépôt. Le répertoire `promethee/` contient le socle phpVMS qui héberge
   aussi le travail Prométhée actuel. Une comparaison historique stricte exige un
   tag, une branche, un dépôt ou un export de production antérieur clairement
   identifié ;
@@ -44,7 +44,7 @@ dans le code. L'ordre de préférence est : **améliorer**, **étendre**,
 
 | Nom fonctionnel | Emplacement actuel | Conclusion |
 | --- | --- | --- |
-| Prométhée | `prometheus/` | phpVMS et personnalisations Prométhée cohabitent ; ne pas renommer avant stabilisation. |
+| Prométhée | `promethee/` | phpVMS et personnalisations Prométhée cohabitent ; ne pas renommer avant stabilisation. |
 | Hermès | `acars/` | client nommé encore `Promethee.Acars` dans les namespaces, assemblages et distributions. |
 | Prometheus historique | non isolé | référence historique à documenter avec une source distincte. |
 | airinter-va.org | non isolé | audit de code non réalisable avec les seules données présentes. |
@@ -95,7 +95,7 @@ désigne le client `acars/`.
                                         │ lien/SSO à vérifier
                                         ▼
 ┌──────────────────────────────────────────────────────────────────┐
-│ prometheus/ : phpVMS + personnalisations Prométhée              │
+│ promethee/ : phpVMS + personnalisations Prométhée              │
 │                                                                  │
 │ sources de vérité : pilotes, droits, vols, bids, flotte, PIREP  │
 │ services : SimBrief, ACARS API, live map, notifications          │
