@@ -40,6 +40,8 @@ const prometheeAdmin = read('prometheus/public/promethee-assets/admin-promethee.
 const dispatch = read('prometheus/modules/Promethee/Resources/views/admin/dispatch.blade.php');
 const crm = read('prometheus/modules/Promethee/Resources/views/admin/crm.blade.php');
 const adminDashboard = read('prometheus/modules/Promethee/Resources/views/admin/dashboard.blade.php');
+const prometheeLayout = read('prometheus/modules/Promethee/Resources/views/layout.blade.php');
+const prometheeFlights = read('prometheus/modules/Promethee/Resources/views/flights.blade.php');
 
 const stylesheetHrefs = [...hermesIndex.matchAll(/<link\b[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["']/gi)]
   .map(match => match[1]);
@@ -79,6 +81,17 @@ expect(prometheeBase.includes('justify-content:center;gap:8px;'),
 expect(prometheeAdmin.includes('--admin-radius:7px;')
     && prometheeAdmin.includes('--admin-shadow:0 2px 9px #162f460a;'),
   'Prométhée admin must keep the compact visual tokens aligned with the portal.');
+
+expect(prometheeLayout.includes('class="topbar-controls"')
+    && prometheeLayout.includes('theme-control-label'),
+  'Prométhée shell must keep compact grouped display controls.');
+expect(prometheeFlights.includes('class="flight-filter-advanced"')
+    && prometheeFlights.includes('<table class="flight-results">')
+    && !prometheeFlights.includes('<section class="flight-cards">'),
+  'Prométhée flight programme must preserve progressive filters and scan-friendly tabular results.');
+expect(prometheeV2.includes('Audit UX phase 11 — flight programme progressive disclosure')
+    && prometheeV2.includes('Audit UX phase 11 — compact shell controls'),
+  'Prométhée must preserve phase 11 shell and flight-programme primitives.');
 
 expect(dispatch.includes("if (!document.hidden) refreshBoard()"),
   'Dispatch Desk polling must remain suspended while the page is hidden.');
