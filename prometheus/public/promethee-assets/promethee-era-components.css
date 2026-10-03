@@ -1,0 +1,160 @@
+/* Prométhée historical component adapters.
+   Semantic components live in their feature stylesheets; this file owns how
+   those components feel in the 1999–2005 and Minitel universes. */
+
+/* --- 1999–2005: compact airline intranet / Windows-era web portal. --- */
+html[data-era="2000"] :where(.pilot-hub-nav,.admin-workspace-nav){
+  padding:2px;
+  border:1px solid #91aebf;
+  border-radius:0;
+  background:#dfeaf2;
+  box-shadow:inset 1px 1px 0 #fff;
+}
+html[data-era="2000"] :where(.pilot-hub-nav,.admin-workspace-nav) a{
+  padding:5px 9px;
+  border:1px solid transparent;
+  border-radius:0;
+  color:#07518a;
+  font:700 11px Arial,sans-serif;
+}
+html[data-era="2000"] :where(.pilot-hub-nav,.admin-workspace-nav) a:hover,
+html[data-era="2000"] :where(.pilot-hub-nav,.admin-workspace-nav) a:focus-visible{
+  border-color:#075d99;
+  background:#075d99;
+  color:#fff;
+}
+html[data-era="2000"] .pilot-hub-nav a span{
+  border:1px inset #9db4c5;
+  border-radius:0;
+  background:#fff;
+  color:#07518a;
+  font:700 10px Arial,sans-serif;
+}
+html[data-era="2000"] .mission-personal{
+  border-left:0;
+  border-top:4px solid #075d99;
+}
+html[data-era="2000"] .mission-owned-row{
+  padding:9px 10px;
+  border-bottom:1px solid #b6cbd7;
+}
+html[data-era="2000"] .mission-owned-row:nth-child(even){background:#eaf4f8}
+html[data-era="2000"] .mission-owned-row strong{color:#074f86;font:700 12px Arial,sans-serif}
+html[data-era="2000"] .documentation-rank{font:700 16px Arial,sans-serif}
+html[data-era="2000"] .community-empty-state{border:1px solid #91aebf;background:#f4f8fb}
+html[data-era="2000"] .admin-workspace-page details.route-list,
+html[data-era="2000"] .admin-workspace-page details.sop-rule{
+  border:1px solid #91aebf;
+  border-radius:0;
+  background:#fff;
+}
+html[data-era="2000"] .admin-workspace-page details.route-list>summary,
+html[data-era="2000"] .admin-workspace-page details.sop-rule>summary{
+  background:#dfeaf2;
+  color:#07518a;
+  font:700 11px Arial,sans-serif;
+}
+html[data-era="2000"] .next-operation{
+  border:1px solid #91aebf;
+  border-top:4px solid #075d99;
+  border-radius:0;
+  background:#fff;
+  box-shadow:none;
+}
+html[data-era="2000"] .next-operation .eyebrow{color:#075d99}
+html[data-era="2000"] .next-operation-progress{
+  height:12px;
+  border:1px inset #91aebf;
+  border-radius:0;
+  background:#fff;
+}
+html[data-era="2000"] .next-operation-progress::-webkit-progress-bar{background:#fff}
+html[data-era="2000"] .next-operation-progress::-webkit-progress-value{background:#075d99}
+html[data-era="2000"] .next-operation-progress::-moz-progress-bar{background:#075d99}
+html[data-era="2000"] :where(.attention-inbox,.attention-item){
+  border-radius:0;
+  box-shadow:none;
+}
+html[data-era="2000"] .attention-inbox{border:1px solid #91aebf;background:#fff}
+html[data-era="2000"] .attention-item{border:1px solid #b6cbd7;background:#f7fbfd}
+html[data-era="2000"] .attention-item:hover{background:#eaf4f8}
+
+/* --- Minitel fallback: text-first Videotex grammar.
+   The real 40x25 runtime remains authoritative when available. --- */
+html[data-era="minitel"] :where(.pilot-hub-nav,.admin-workspace-nav){
+  display:block;
+  margin-bottom:8px;
+  padding:2px 0;
+  border:0;
+  border-block:1px solid #285e39;
+  border-radius:0;
+  background:transparent;
+  overflow:visible;
+}
+html[data-era="minitel"] :where(.pilot-hub-nav,.admin-workspace-nav) a{
+  display:inline-flex;
+  gap:0;
+  padding:2px 8px 2px 0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  color:var(--minitel-cyan,#58f7ff);
+  font:16px/1.25 "Courier New",monospace;
+}
+html[data-era="minitel"] :where(.pilot-hub-nav,.admin-workspace-nav) a::before{content:"[";color:var(--minitel-yellow,#fff35a)}
+html[data-era="minitel"] :where(.pilot-hub-nav,.admin-workspace-nav) a::after{content:"]";color:var(--minitel-yellow,#fff35a)}
+html[data-era="minitel"] .pilot-hub-nav a span{
+  min-width:0;
+  padding:0 0 0 4px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  color:var(--minitel-yellow,#fff35a);
+  font:inherit;
+}
+html[data-era="minitel"] .mission-personal{border-left:0}
+html[data-era="minitel"] .mission-owned-row{
+  display:grid;
+  gap:2px;
+  padding:5px 0;
+  border-color:#285e39;
+}
+html[data-era="minitel"] .mission-owned-row strong{color:#99edb1;font-family:"Courier New",monospace}
+html[data-era="minitel"] .mission-owned-row small{color:#6fcf8a}
+html[data-era="minitel"] .admin-workspace-grid{display:block}
+html[data-era="minitel"] .admin-workspace-page details.route-list,
+html[data-era="minitel"] .admin-workspace-page details.sop-rule{
+  border:1px solid #285e39;
+  border-radius:0;
+  background:transparent;
+}
+html[data-era="minitel"] .next-operation,
+html[data-era="minitel"] :where(.attention-inbox,.attention-item){
+  border:1px solid #285e39;
+  border-radius:0;
+  background:#07130c;
+  box-shadow:none;
+}
+html[data-era="minitel"] .next-operation .eyebrow,
+html[data-era="minitel"] .attention-inbox .eyebrow{color:var(--minitel-cyan,#58f7ff)}
+html[data-era="minitel"] .next-operation-progress{
+  height:1em;
+  border:1px solid #285e39;
+  border-radius:0;
+  background:#07130c;
+}
+html[data-era="minitel"] .next-operation-progress::-webkit-progress-bar{background:#07130c}
+html[data-era="minitel"] .next-operation-progress::-webkit-progress-value{background:#99edb1}
+html[data-era="minitel"] .next-operation-progress::-moz-progress-bar{background:#99edb1}
+html[data-era="minitel"] .documentation-header-actions .button{border-radius:0}
+
+@media(max-width:760px){
+  html[data-era="2000"] :where(.pilot-hub-nav,.admin-workspace-nav){
+    margin-inline:-16px;
+    border-inline:0;
+  }
+  html[data-era="minitel"] :where(.pilot-hub-nav,.admin-workspace-nav){
+    margin-inline:0;
+    padding-inline:0;
+  }
+}
