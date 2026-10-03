@@ -6,6 +6,23 @@
     const groups = [...nav.querySelectorAll(':scope > .nav-group')];
     const workspaceButtons = [...document.querySelectorAll('[data-workspace-choice]')];
     const staffAvailable = workspaceButtons.some(button => button.dataset.workspaceChoice === 'staff');
+    const shell = document.querySelector('[data-promethee-shell]');
+    const shellMenuToggle = shell?.querySelector('.shell-menu-toggle');
+    const shellMedia = window.matchMedia('(max-width: 900px)');
+
+    const setShellMenu = (open) => {
+      if (!shell || !shellMenuToggle) return;
+      const next = Boolean(open && shellMedia.matches);
+      shell.classList.toggle('is-menu-open', next);
+      shellMenuToggle.setAttribute('aria-expanded', String(next));
+      if (next) {
+        const activeGroup = groups.find(group => group.classList.contains('selected') && !group.hidden);
+        if (activeGroup) activeGroup.open = true;
+      }
+    };
+
+    shellMenuToggle?.addEventListener('click', () => setShellMenu(!shell?.classList.contains('is-menu-open')));
+    shellMedia.addEventListener('change', event => { if (!event.matches) setShellMenu(false); });
 
     const activeScopedGroup = groups.find(group => group.classList.contains('selected')
       && ['pilot','staff'].includes(group.dataset.workspaceGroup));
@@ -41,8 +58,17 @@
     groups.forEach((group) => group.addEventListener('toggle', () => {
       if (group.open) groups.forEach((other) => { if (other !== group && !other.hidden) other.open = false; });
     }));
+    nav.addEventListener('click', event => {
+      if (shellMedia.matches && event.target.closest?.('a')) setShellMenu(false);
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        groups.forEach(group => { group.open = false; });
+        setShellMenu(false);
+      }
+    });
     document.addEventListener('click', (event) => {
-      if (!nav.contains(event.target) && !event.target.closest?.('.workspace-switch')) {
+      if (!nav.contains(event.target) && !event.target.closest?.('.workspace-switch') && !event.target.closest?.('.shell-menu-toggle')) {
         groups.forEach((group) => group.open = false);
       }
     });

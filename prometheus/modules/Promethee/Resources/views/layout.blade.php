@@ -94,41 +94,74 @@ window.prometheeI18n = @json($prometheeI18n);
 @endphp
 <body>
 <a class="skip" href="#main">{{ __('promethee.skip_to_content') }}</a>
-<aside class="sidebar">
-<a class="brand" href="{{ route('promethee.dashboard') }}"><span class="brand-logo-shell"><img class="brand-logo" src="{{ $branding['url'] }}" alt="Air Inter"><img class="brand-logo-minitel" src="{{ asset('promethee-assets/logos/air-inter-minitel.png') }}" alt="Air Inter"></span><span class="brand-caption">{{ __('promethee.virtual_airline') }}<br>{{ __('promethee.french_domestic_network') }}</span></a>
-<div class="system-name"><span class="eyebrow">{{ __('promethee.operations_centre') }}</span><strong>Prométhée<span class="cursor">_</span></strong><small>{{ __('promethee.airline_slogan') }}</small></div>
-@auth
-@php
-    $sidebarPilot = Auth::user() ?: new \App\Models\User([
-        'name' => __('promethee.visitor_access'),
-        'pilot_id' => 'AIR INTER',
-    ]);
-@endphp
-<section class="pilot-space" aria-label="{{ __('promethee.pilot_area') }}">
-<span class="pilot-space-label"><i class="status-dot"></i> {{ __('promethee.pilot_area') }}</span>
-<a class="pilot-card-link" href="{{ route('promethee.profile') }}" aria-label="{{ __('promethee.open_profile') }}">
-<span class="pilot-avatar">
-@if($sidebarPilot?->avatar)<img src="{{ $sidebarPilot->avatar->url }}" alt="{{ __('promethee_accessibility.photo_of', ['name' => $sidebarPilot->name]) }}">
-@else<img src="{{ $sidebarPilot ? $sidebarPilot->gravatar(96) : asset('promethee-assets/logos/air-inter-1970s.png') }}" alt="{{ __('promethee_accessibility.air_inter_avatar') }}">
-@endif
-</span>
-<span class="pilot-identity"><strong>{{ $sidebarPilot->name }}</strong><small>{{ $sidebarPilot->pilot_id ?: 'ITF---' }}</small><em>{{ $sidebarPilot->rank?->name ?? 'Pilote Air Inter' }}@if($sidebarPilot->home_airport_id) · {{ $sidebarPilot->home_airport_id }}@endif</em></span>
-<b class="pilot-open">↗</b>
-</a>
-<div class="pilot-space-actions"><a href="{{ route('promethee.profile') }}">{{ __('promethee.view_my_profile') }}</a><a href="{{ url('/logout') }}">{{ __('promethee.logout') }}</a></div>
-</section>
-@else
-<section class="pilot-space" aria-label="{{ __('promethee.visitor_access') }}"><span class="pilot-space-label"><i class="status-dot"></i> {{ __('promethee.visitor_access') }}</span><span class="pilot-identity"><strong>{{ __('promethee.public_report') }}</strong><small>Air Inter VA</small><em>{{ __('promethee.read_only') }}</em></span><div class="pilot-space-actions"><a href="{{ route('login') }}">{{ __('promethee.login') }}</a><a href="{{ route('register') }}">{{ __('promethee.register') }}</a></div></section>
-@endauth
-@auth
-<div class="workspace-switch" role="group" aria-label="Espace Prométhée">
-    <button type="button" data-workspace-choice="pilot" aria-pressed="true"><span>PILOTE</span><small>Préparer & voler</small></button>
-    @ability('admin','admin-access')
-    <button type="button" data-workspace-choice="staff" aria-pressed="false"><span>OCC / HQ</span><small>Exploiter & administrer</small></button>
-    @endability
+<aside class="sidebar" data-promethee-shell>
+<div class="shell-primary">
+    <div class="shell-branding">
+        <a class="brand" href="{{ route('promethee.dashboard') }}">
+            <span class="brand-logo-shell">
+                <img class="brand-logo" src="{{ $branding['url'] }}" alt="Air Inter">
+                <img class="brand-logo-minitel" src="{{ asset('promethee-assets/logos/air-inter-minitel.png') }}" alt="Air Inter">
+            </span>
+            <span class="brand-caption">{{ __('promethee.virtual_airline') }}<br>{{ __('promethee.french_domestic_network') }}</span>
+        </a>
+        <div class="system-name">
+            <span class="eyebrow">{{ __('promethee.operations_centre') }}</span>
+            <strong>Prométhée<span class="cursor">_</span></strong>
+            <small>{{ __('promethee.airline_slogan') }}</small>
+        </div>
+    </div>
+
+    @auth
+    <div class="workspace-switch" role="group" aria-label="Espace Prométhée">
+        <button type="button" data-workspace-choice="pilot" aria-pressed="true"><span>PILOTE</span><small>Préparer & voler</small></button>
+        @ability('admin','admin-access')
+        <button type="button" data-workspace-choice="staff" aria-pressed="false"><span>OCC / HQ</span><small>Exploiter & administrer</small></button>
+        @endability
+    </div>
+    @endauth
+
+    <div class="shell-account">
+        @auth
+        @php
+            $sidebarPilot = Auth::user() ?: new \App\Models\User([
+                'name' => __('promethee.visitor_access'),
+                'pilot_id' => 'AIR INTER',
+            ]);
+        @endphp
+        <section class="pilot-space" aria-label="{{ __('promethee.pilot_area') }}">
+            <span class="pilot-space-label"><i class="status-dot"></i> {{ __('promethee.pilot_area') }}</span>
+            <a class="pilot-card-link" href="{{ route('promethee.profile') }}" aria-label="{{ __('promethee.open_profile') }}">
+                <span class="pilot-avatar">
+                    @if($sidebarPilot?->avatar)<img src="{{ $sidebarPilot->avatar->url }}" alt="{{ __('promethee_accessibility.photo_of', ['name' => $sidebarPilot->name]) }}">
+                    @else<img src="{{ $sidebarPilot ? $sidebarPilot->gravatar(96) : asset('promethee-assets/logos/air-inter-1970s.png') }}" alt="{{ __('promethee_accessibility.air_inter_avatar') }}">
+                    @endif
+                </span>
+                <span class="pilot-identity">
+                    <strong>{{ $sidebarPilot->name }}</strong>
+                    <small>{{ $sidebarPilot->pilot_id ?: 'ITF---' }}</small>
+                    <em>{{ $sidebarPilot->rank?->name ?? 'Pilote Air Inter' }}@if($sidebarPilot->home_airport_id) · {{ $sidebarPilot->home_airport_id }}@endif</em>
+                </span>
+                <b class="pilot-open">↗</b>
+            </a>
+            <div class="pilot-space-actions">
+                <a href="{{ route('promethee.profile') }}">{{ __('promethee.view_my_profile') }}</a>
+                <a href="{{ url('/logout') }}">{{ __('promethee.logout') }}</a>
+            </div>
+        </section>
+        @else
+        <section class="pilot-space" aria-label="{{ __('promethee.visitor_access') }}">
+            <span class="pilot-space-label"><i class="status-dot"></i> {{ __('promethee.visitor_access') }}</span>
+            <span class="pilot-identity"><strong>{{ __('promethee.public_report') }}</strong><small>Air Inter VA</small><em>{{ __('promethee.read_only') }}</em></span>
+            <div class="pilot-space-actions"><a href="{{ route('login') }}">{{ __('promethee.login') }}</a><a href="{{ route('register') }}">{{ __('promethee.register') }}</a></div>
+        </section>
+        @endauth
+    </div>
+
+    <button class="shell-menu-toggle" type="button" aria-expanded="false" aria-controls="promethee-navigation">
+        <span>{{ __('promethee.navigation') }}</span><b aria-hidden="true">☰</b>
+    </button>
 </div>
-@endauth
-<nav class="is-grouped" aria-label="{{ __('promethee.navigation') }}" data-default-workspace="{{ request()->routeIs('admin.promethee.*', 'admin.users.*', 'admin.ranks.*') ? 'staff' : 'pilot' }}">
+<nav id="promethee-navigation" class="is-grouped" aria-label="{{ __('promethee.navigation') }}" data-default-workspace="{{ request()->routeIs('admin.promethee.*', 'admin.users.*', 'admin.ranks.*') ? 'staff' : 'pilot' }}">
 @auth
 @php
     // Each entry uses a registered, server-side route. Optional legacy modules
