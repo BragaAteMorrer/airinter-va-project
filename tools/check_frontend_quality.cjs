@@ -22,6 +22,8 @@ const budgets = {
   'prometheus/public/promethee-assets/promethee-v2.css': 90000,
   'prometheus/public/promethee-assets/promethee-appearance.css': 40000,
   'prometheus/public/promethee-assets/promethee-admin-workspaces.css': 12000,
+  'prometheus/modules/Promethee/Http/PortalController.php': 245000,
+  'prometheus/modules/Promethee/Http/AutomationController.php': 14000,
   'prometheus/modules/Promethee/Resources/views/admin/dispatch.blade.php': 45000,
 };
 
@@ -80,14 +82,18 @@ expect(hermesIndex.indexOf('/hermes-map.js') < hermesIndex.indexOf('/app.js')
   'Hermès architecture modules must load before the orchestration script.');
 expect(hermesMap.includes('Object.assign(window')
     && hermesMap.includes('drawMap')
-    && hermesMap.includes('flightMapState'),
+    && hermesMap.includes('flightMapState')
+    && hermesMap.includes('initializeFlightMapControls'),
   'Hermès map rendering must remain isolated behind the compatibility global contract.');
 expect(hermesReview.includes('Object.assign(window')
     && hermesReview.includes('renderReview')
-    && hermesReview.includes('refreshCompanyScore'),
+    && hermesReview.includes('refreshCompanyScore')
+    && hermesReview.includes('initializeReviewActions'),
   'Hermès review rendering must remain isolated behind the compatibility global contract.');
 expect(!hermesApp.includes('function normalizeReviewProfile')
-    && !hermesApp.includes('function drawMap('),
+    && !hermesApp.includes('function drawMap(')
+    && hermesApp.includes('initializeFlightMapControls();')
+    && hermesApp.includes('initializeReviewActions();'),
   'Hermès app.js must not absorb map/review rendering again.');
 
 expect(hermesIndex.includes('reviewAltitudeChart') && hermesIndex.includes('reviewFuelChart'),
