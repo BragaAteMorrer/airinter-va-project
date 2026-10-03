@@ -16,8 +16,8 @@
     <div><a class="button outline" href="{{ route('admin.promethee.pricing-criteria') }}">Critères ITF</a> <a class="button outline" href="{{ route('admin.promethee.bbr') }}">Tarifs Bleu-Blanc-Rouge</a></div>
 </div>
 <nav class="admin-workspace-nav" aria-label="Navigation locale">
-  <a href="#economy-routes">Lignes</a>
-  <a href="#economy-territories">Pays & provinces</a>
+  <a href="#prix-vols">Lignes</a>
+  <a href="#prix-carburant">Pays & provinces</a>
 </nav>
 
 
