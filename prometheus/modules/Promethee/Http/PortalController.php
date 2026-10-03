@@ -130,6 +130,7 @@ class PortalController extends Controller
         };
 
         $hasNearbyExplicitEvent = function (string $code, $occurredAt) use (&$explicitEvents): bool {
+            if (!$occurredAt) return false;
             $code = strtoupper(trim($code));
             if (!isset($explicitEvents[$code])) return false;
             try {
