@@ -5,6 +5,7 @@ namespace Modules\Promethee\Services;
 use App\Models\Pirep;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -19,6 +20,74 @@ final class LegacyPirepScoringService
     public const STARTING_SCORE = 100;
 
     public function __construct(private readonly SopEngineService $sop) {}
+
+    /**
+     * Returns the exact vmsACARS rule set used as the authoritative Hermès
+     * scoring configuration. Disabled rules are included so administrators
+     * can re-enable them from the SOP backoffice.
+     */
+    public function configurationRules(): array
+    {
+        try {
+            return DB::table('vmsacars_rules')
+                ->orderBy('order')
+                ->get()
+                ->map(fn ($rule) => [
+                    'id' => (string) $rule->id,
+                    'name' => (string) $rule->name,
+                    'description' => (string) ($rule->description ?? ''),
+                    'parameter' => is_numeric($rule->parameter) ? (float) $rule->parameter : null,
+                    'points' => (int) $rule->points,
+                    'enabled' => (bool) $rule->enabled,
+                    'has_parameter' => (bool) $rule->has_parameter,
+                    'repeatable' => (bool) $rule->repeatable,
+                    'delay' => (int) $rule->delay,
+                    'cooldown' => (int) $rule->cooldown,
+                    'order' => (int) $rule->order,
+                ])->all();
+        } catch (Throwable $exception) {
+            logger()->warning('hermes_scoring_configuration_unavailable', ['error' => $exception->getMessage()]);
+            return [];
+        }
+    }
+
+    /**
+     * Updates the same database row consumed by Hermès PIREP scoring.
+     * Historical PIREP snapshots are intentionally left untouched.
+     */
+    public function updateRuleConfiguration(string $ruleId, array $input): array
+    {
+        $rule = DB::table('vmsacars_rules')->where('id', $ruleId)->first();
+        if (!$rule) {
+            throw new RuntimeException('Règle de scoring Hermès introuvable.');
+        }
+
+        $update = [
+            'points' => max(0, (int) ($input['points'] ?? $rule->points)),
+            'delay' => max(0, (int) ($input['delay'] ?? $rule->delay)),
+            'cooldown' => max(0, (int) ($input['cooldown'] ?? $rule->cooldown)),
+            'repeatable' => (bool) ($input['repeatable'] ?? false),
+            'enabled' => (bool) ($input['enabled'] ?? false),
+            'updated_at' => now(),
+        ];
+
+        if ((bool) $rule->has_parameter) {
+            $parameter = $input['parameter'] ?? null;
+            if ($parameter === null || $parameter === '') {
+                throw new RuntimeException('Un seuil est requis pour cette règle de scoring Hermès.');
+            }
+            $update['parameter'] = (int) $parameter;
+        }
+
+        DB::table('vmsacars_rules')->where('id', $ruleId)->update($update);
+
+        $updated = collect($this->configurationRules())->firstWhere('id', $ruleId);
+        if (!$updated) {
+            throw new RuntimeException('Impossible de relire la règle de scoring Hermès.');
+        }
+
+        return $updated;
+    }
 
     public function calculate(Pirep $pirep, ?string $operationId = null): array
     {
