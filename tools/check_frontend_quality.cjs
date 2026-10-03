@@ -275,6 +275,16 @@ expect(hermesMap.includes("event.key === 'Home'")
     && hermesMap.includes("const panKeys = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown']")
     && hermesMap.includes('let resizeFrame = 0'),
   'Hermès map must preserve keyboard pan/zoom/fit and resize-frame throttling.');
+
+expect(hermesIndex.includes('role="tabpanel"')
+    && hermesIndex.includes('aria-labelledby="tab-map"')
+    && hermesIndex.includes('tabindex="-1"'),
+  'Hermès tab interface must preserve tab/tabpanel relationships and roving tab stops.');
+expect(hermesApp.includes("button.dataset.tab === 'map'")
+    && hermesApp.includes('node.tabIndex = selected ? 0 : -1'),
+  'Hermès must redraw the map on activation and preserve roving keyboard focus.');
+expect(hermesMap.includes("!mapPanel?.classList.contains('active')"),
+  'Hermès must not render map tiles/canvas while the map workspace is hidden.');
 expect(prometheeNavigation.includes('setShellMenu')
     && prometheeNavigation.includes("aria-expanded")
     && prometheeNavigation.includes("event.key === 'Escape'"),
