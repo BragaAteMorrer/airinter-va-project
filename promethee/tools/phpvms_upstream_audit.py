@@ -6,9 +6,9 @@ and the requested target release, detects which upstream files changed, then
 checks whether Air Inter has locally modified those same files.
 
 Typical use:
-  python tools/phpvms_upstream_audit.py --latest
-  python tools/phpvms_upstream_audit.py --target 7.0.11
-  python tools/phpvms_upstream_audit.py --check-manifest
+  python promethee/tools/phpvms_upstream_audit.py --latest
+  python promethee/tools/phpvms_upstream_audit.py --target 7.0.11
+  python promethee/tools/phpvms_upstream_audit.py --check-manifest
 
 Set GITHUB_TOKEN to avoid anonymous GitHub API rate limits.
 """
@@ -28,7 +28,7 @@ import urllib.request
 import zipfile
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-MANIFEST_PATH = REPO_ROOT / "prometheus" / ".phpvms-upstream.json"
+MANIFEST_PATH = REPO_ROOT / ".phpvms-upstream.json"
 TEXT_SUFFIXES = {
     ".php", ".json", ".yml", ".yaml", ".xml", ".txt", ".md", ".blade.php",
     ".js", ".css", ".scss", ".html", ".htm", ".toml", ".lock", ".env",
