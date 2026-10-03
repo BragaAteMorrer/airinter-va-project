@@ -254,9 +254,14 @@ const enabledHermesTabs = () => hermesTabs.filter(button => !button.disabled && 
 const activateHermesTab = button => {
   if (!button || (button.classList.contains('protected-tab') && !connected)) return;
   $('.tab,.panel').forEach(node => node.classList.remove('active'));
-  hermesTabs.forEach(node => node.setAttribute('aria-selected', String(node === button)));
+  hermesTabs.forEach(node => {
+    const selected = node === button;
+    node.setAttribute('aria-selected', String(selected));
+    node.tabIndex = selected ? 0 : -1;
+  });
   button.classList.add('active');
   $('#' + button.dataset.tab)?.classList.add('active');
+  if (button.dataset.tab === 'map') drawMap(flightMapState.lastTrack, lastStatus?.latest || {});
   if (button.dataset.tab === 'journal') refreshJournal();
   if (button.dataset.tab === 'datalink') refreshDatalink();
   if (button.dataset.tab === 'network') refreshNetwork();
