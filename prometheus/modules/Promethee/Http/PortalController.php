@@ -86,7 +86,137 @@ class PortalController extends Controller
             'flight', 'simbrief', 'user.rank', 'comments.user',
         ])->findOrFail($id);
 
-        return $this->page('pirep', ['pirep' => $pirep]);
+        return $this->page('pirep', [
+            'pirep' => $pirep,
+            'flightJournal' => $this->pirepJournal($pirep),
+        ]);
+    }
+
+    /**
+     * Build the Prométhée logbook from every server-side trace Hermès leaves.
+     *
+     * New Hermès builds post explicit ACARS events, but older/rolling-upgrade
+     * flights can legitimately contain only Prométhée telemetry. Reconstruct
+     * the phase changes from that archive so a real flight never renders as
+     * "no journal" merely because the event channel was missing.
+     */
+    private function pirepJournal(Pirep $pirep)
+    {
+        $entries = collect();
+        $eventCodes = [];
+
+        $append = function ($occurredAt, string $code, string $message, string $source, ?string $detail = null)
+            use (&$entries, &$eventCodes): void {
+            if (!$occurredAt) return;
+
+            try {
+                $date = $occurredAt instanceof \DateTimeInterface
+                    ? CarbonImmutable::instance($occurredAt)
+                    : CarbonImmutable::parse((string) $occurredAt);
+            } catch (\Throwable) {
+                return;
+            }
+
+            $normalizedCode = strtoupper(trim($code));
+            if ($normalizedCode !== '' && isset($eventCodes[$normalizedCode])) return;
+            if ($normalizedCode !== '') $eventCodes[$normalizedCode] = true;
+
+            $entries->push([
+                'occurred_at' => $date,
+                'code' => $normalizedCode ?: 'ACARS',
+                'message' => $message,
+                'source' => $source,
+                'detail' => $detail,
+            ]);
+        };
+
+        foreach ($pirep->acars_logs->sortBy(fn ($log) => $log->sim_time ?: $log->created_at) as $log) {
+            $raw = trim((string) $log->log);
+            if ($raw === '') continue;
+            $code = preg_match('/^[A-Z0-9_\-]+$/i', $raw) ? strtoupper($raw) : 'ACARS_LOG_'.substr(sha1($raw), 0, 8);
+            $append(
+                $log->sim_time ?: $log->created_at,
+                $code,
+                $this->pirepJournalLabel($raw),
+                'ACARS'
+            );
+        }
+
+        if (Schema::hasTable('promethee_telemetry')) {
+            $previousPhase = null;
+            $telemetry = DB::table('promethee_telemetry')
+                ->where('pirep_id', $pirep->id)
+                ->orderBy('recorded_at')
+                ->get(['recorded_at', 'payload']);
+
+            foreach ($telemetry as $row) {
+                $payload = json_decode((string) $row->payload, true);
+                if (!is_array($payload)) continue;
+
+                $phase = strtoupper(trim((string) ($payload['phase'] ?? '')));
+                if ($phase === '' || $phase === $previousPhase) continue;
+                $previousPhase = $phase;
+
+                $metrics = [];
+                if (isset($payload['altitude_msl']) && is_numeric($payload['altitude_msl'])) {
+                    $metrics[] = number_format((float) $payload['altitude_msl'], 0, ',', ' ').' ft';
+                }
+                if (isset($payload['gs']) && is_numeric($payload['gs'])) {
+                    $metrics[] = number_format((float) $payload['gs'], 0, ',', ' ').' kt GS';
+                }
+                if (isset($payload['ias']) && is_numeric($payload['ias'])) {
+                    $metrics[] = number_format((float) $payload['ias'], 0, ',', ' ').' kt IAS';
+                }
+
+                $append(
+                    $row->recorded_at,
+                    $phase,
+                    $this->pirepJournalLabel($phase),
+                    'TÉLÉMÉTRIE HERMÈS',
+                    $metrics ? implode(' · ', $metrics) : null
+                );
+            }
+        }
+
+        // phpVMS always owns the authoritative block timestamps. They also
+        // provide useful bookends for historical flights whose first/last
+        // Hermès event was never uploaded.
+        $append($pirep->block_off_time, 'OUT', 'Départ du bloc (OUT)', 'PIREP');
+        $append($pirep->block_on_time, 'IN', 'Arrivée au bloc (IN)', 'PIREP');
+
+        return $entries
+            ->sortBy(fn (array $entry) => $entry['occurred_at']->getTimestamp())
+            ->values();
+    }
+
+    private function pirepJournalLabel(string $event): string
+    {
+        $code = strtoupper(trim($event));
+        $labels = [
+            'BOARDING' => 'Préparation et embarquement',
+            'OUT' => 'Départ du bloc (OUT)',
+            'PUSHBACK' => 'Repoussage',
+            'TAXI_OUT' => 'Roulage départ',
+            'TAKEOFF' => 'Décollage',
+            'OFF' => 'Décollage (OFF)',
+            'CLIMB' => 'Montée',
+            'CRUISE' => 'Croisière',
+            'ENROUTE' => 'En route',
+            'DESCENT' => 'Descente',
+            'APPROACH' => 'Approche',
+            'FINAL' => 'Finale',
+            'LANDING' => 'Atterrissage',
+            'ON' => 'Toucher des roues (ON)',
+            'TAXI_IN' => 'Roulage arrivée',
+            'IN' => 'Arrivée au bloc (IN)',
+            'GO_AROUND' => 'Remise de gaz',
+            'PAUSE_STARTED' => 'Pause simulateur',
+            'PAUSE_ENDED' => 'Reprise du simulateur',
+            'NETWORK_LOST' => 'Connexion Prométhée interrompue',
+            'NETWORK_RECOVERED' => 'Connexion Prométhée rétablie',
+        ];
+
+        return $labels[$code] ?? trim($event);
     }
 
     /**
