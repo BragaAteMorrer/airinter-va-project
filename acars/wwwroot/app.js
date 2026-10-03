@@ -2890,8 +2890,11 @@ const scheduleHermesPoller = poller => {
   poller.timer = null;
   if (document.hidden) return;
   poller.timer = setTimeout(async () => {
-    if (!document.hidden && poller.enabled()) await poller.run();
-    scheduleHermesPoller(poller);
+    try {
+      if (!document.hidden && poller.enabled()) await poller.run();
+    } finally {
+      scheduleHermesPoller(poller);
+    }
   }, poller.delay);
 };
 const startHermesPolling = () => {
