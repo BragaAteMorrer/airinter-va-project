@@ -90,7 +90,7 @@ class SopController extends Controller
         ]);
     }
 
-    public function saveScoringRule(string $rule, Request $request)
+    public function saveScoringRule(Request $request, string $rule)
     {
         $data = $request->validate([
             'parameter' => 'nullable|integer|min:-100000|max:100000',
