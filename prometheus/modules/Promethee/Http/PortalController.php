@@ -86,39 +86,15 @@ class PortalController extends Controller
             'flight', 'simbrief', 'user.rank', 'comments.user',
         ])->findOrFail($id);
 
-        $companyScore = [
-            'available' => false,
-            'score' => $pirep->score,
-            'starting_score' => 100,
-            'penalty_total' => $pirep->score === null ? 0 : max(0, 100 - (int) $pirep->score),
-            'items' => [],
-            'unavailable_rules' => [],
-        ];
-        if (str_starts_with((string) $pirep->source_name, 'Hermes ACARS [op_')) {
-            try {
-                $companyScore = app(LegacyPirepScoringService::class)->forPirep($pirep);
-            } catch (\Throwable $exception) {
-                logger()->warning('promethee_pirep_score_display_failed', [
-                    'pirep_id' => $pirep->id,
-                    'error' => $exception->getMessage(),
-                ]);
-            }
+        $companyScore=['available'=>false,'score'=>$pirep->score,'starting_score'=>100,'penalty_total'=>$pirep->score===null?0:max(0,100-(int)$pirep->score),'items'=>[],'unavailable_rules'=>[]];
+        if (str_starts_with((string)$pirep->source_name,'Hermes ACARS [op_')) {
+            try { $companyScore=app(LegacyPirepScoringService::class)->forPirep($pirep); }
+            catch (\Throwable $e) { logger()->warning('promethee_pirep_score_display_failed',['pirep_id'=>$pirep->id,'error'=>$e->getMessage()]); }
         }
-
-        $farePassengers = (int) $pirep->fares
-            ->filter(fn ($fare) => (int) $fare->type === FareType::PASSENGER)
-            ->sum('count');
-        $simbriefPassengers = null;
-        if ($pirep->simbrief?->xml) {
-            foreach ([
-                (string) ($pirep->simbrief->xml->weights->pax_count ?? ''),
-                (string) ($pirep->simbrief->xml->general->passengers ?? ''),
-            ] as $candidate) {
-                if ($candidate !== '' && is_numeric($candidate)) {
-                    $simbriefPassengers = max(0, (int) round((float) $candidate));
-                    break;
-                }
-            }
+        $farePassengers=(int)$pirep->fares->filter(fn($fare)=>(int)$fare->type===FareType::PASSENGER)->sum('count');
+        $simbriefPassengers=null;
+        if ($pirep->simbrief?->xml) foreach ([(string)($pirep->simbrief->xml->weights->pax_count??''),(string)($pirep->simbrief->xml->general->passengers??'')] as $candidate) {
+            if ($candidate!==''&&is_numeric($candidate)) { $simbriefPassengers=max(0,(int)round((float)$candidate)); break; }
         }
 
         return $this->page('pirep', [
@@ -1133,9 +1109,6 @@ class PortalController extends Controller
         $pireps = Pirep::whereIn('state', [PirepState::IN_PROGRESS, PirepState::PAUSED])
             ->with(['user', 'aircraft'])->orderByDesc('updated_at')->limit(50)->get();
 
-        // Load the recent Hermès archive once for the whole OCC instead of
-        // issuing one telemetry query per active flight. The archive remains
-        // attached to the phpVMS PIREP; operation_id is the stable public key.
         $telemetry = DB::table('promethee_telemetry')
             ->whereIn('pirep_id', $pireps->pluck('id'))
             ->orderBy('recorded_at')
@@ -1153,18 +1126,11 @@ class PortalController extends Controller
                 });
                 $data = $samples->last() ?? [];
 
-                // Keep a bounded history for the interactive /live trace. Hermès
-                // can record thousands of samples on a long sector, so return at
-                // most ~400 points while always preserving the latest position.
-                $track = $samples
-                    ->filter(fn (array $sample) => is_numeric($sample['lat'] ?? null) && is_numeric($sample['lon'] ?? null))
-                    ->map(fn (array $sample) => [(float) $sample['lat'], (float) $sample['lon']])
-                    ->values();
-                if ($track->count() > 400) {
-                    $stride = (int) ceil($track->count() / 400);
-                    $lastTrackPoint = $track->last();
-                    $track = $track->filter(fn ($point, int $index) => $index % $stride === 0)->values();
-                    if ($lastTrackPoint && $track->last() !== $lastTrackPoint) $track->push($lastTrackPoint);
+                $track=$samples->filter(fn(array $s)=>is_numeric($s['lat']??null)&&is_numeric($s['lon']??null))->map(fn(array $s)=>[(float)$s['lat'],(float)$s['lon']])->values();
+                if ($track->count()>400) {
+                    $stride=(int)ceil($track->count()/400); $last=$track->last();
+                    $track=$track->filter(fn($point,int $i)=>$i%$stride===0)->values();
+                    if ($last&&$track->last()!==$last) $track->push($last);
                 }
 
                 preg_match('/Hermes ACARS \\[(op_[^\\]]+)\\]/', (string) $p->source_name, $operationMatch);
@@ -2341,9 +2307,6 @@ class PortalController extends Controller
             if (is_array($decoded)) $fares=collect($decoded);
         }
 
-        // phpVMS clears simbrief.flight_id once the OFP is attached to a filed
-        // PIREP. Keep the native Prométhée OFP page usable afterwards by
-        // resolving the archived flight through the PIREP relation.
         $flight=$simbrief->flight ?: $simbrief->pirep?->flight;
 
         return $this->page('simbrief', ['simbrief'=>$simbrief,'ofp'=>$simbrief->xml,'flight'=>$flight,'aircraft'=>$simbrief->aircraft,'fares'=>$fares]);
