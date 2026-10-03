@@ -24,11 +24,6 @@
 .mission-owned-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:0 0 auto}.mission-owned-actions form{margin:0}
 .documentation-header-actions{display:flex;gap:8px;flex-wrap:wrap}.documentation-rank{font-size:18px}.documentation-filter-action{align-self:end}
 .community-empty-state{grid-column:1/-1;text-align:center}.community-empty-state .button{margin-top:8px}
-html[data-era="2000"] .pilot-hub-nav{border-radius:0;background:#dfeaf2}html[data-era="2000"] .pilot-hub-nav a{border-radius:0}
-html[data-era="minitel"] .pilot-hub-nav{display:block;margin-bottom:8px;padding:0;border:0;border-block:1px solid var(--line);border-radius:0;background:transparent}
-html[data-era="minitel"] .pilot-hub-nav a{display:inline-flex;padding:3px 8px 3px 0;border-radius:0;color:var(--minitel-cyan);font:16px/1.25 var(--sans)}
-html[data-era="minitel"] .pilot-hub-nav a span{border:0;border-radius:0;background:transparent;color:var(--minitel-yellow);font:inherit}
-html[data-era="minitel"] .mission-personal{border-left:0}
 @media(max-width:760px){
   .pilot-hub-nav{margin-inline:-16px;padding-inline:16px;border-inline:0;border-radius:0}
   .mission-owned-row{display:grid;gap:10px}
