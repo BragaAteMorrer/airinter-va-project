@@ -186,11 +186,13 @@ function updateFlightMapControls() {
 }
 
 function drawMap(track, latest = {}) {
+  flightMapState.lastTrack=track||[];
+  const mapPanel=$('#map');
+  if(document.hidden || !mapPanel?.classList.contains('active')) return;
   const map=$('#flightMap'), canvas=$('#flightMapOverlay'), empty=$('#flightMapEmpty'), aircraft=$('#flightMapAircraft');
   if(!map||!canvas)return;
   const width=Math.max(1,map.clientWidth), height=Math.max(1,map.clientHeight), context=resizeFlightMapCanvas(canvas,width,height);
   const points=(Array.isArray(track)?track:[]).map(normalizedTrackPoint).filter(Boolean), planned=currentPlannedRoute();
-  flightMapState.lastTrack=track||[];
   if(!points.length&&!planned.length){
     if(flightMapState.hadTrack){flightMapState.centerLat=46.5;flightMapState.centerLon=2.5;flightMapState.zoom=5;flightMapState.autoFit=true;}
     flightMapState.hadTrack=false;renderFlightMapTiles(width,height);context.clearRect(0,0,width,height);
