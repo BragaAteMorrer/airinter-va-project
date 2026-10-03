@@ -2,7 +2,11 @@
 
 @section('title', 'Économie')
 
+@push('styles')
+<link rel="stylesheet" href="{{ asset('promethee-assets/promethee-admin-workspaces.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-admin-workspaces.css')) }}">
+@endpush
 @section('content')
+<div class="admin-workspace-page">
 <div class="page-heading">
     <div>
         <span class="eyebrow">DIRECTION COMMERCIALE</span>
@@ -11,8 +15,13 @@
     </div>
     <div><a class="button outline" href="{{ route('admin.promethee.pricing-criteria') }}">Critères ITF</a> <a class="button outline" href="{{ route('admin.promethee.bbr') }}">Tarifs Bleu-Blanc-Rouge</a></div>
 </div>
+<nav class="admin-workspace-nav" aria-label="Navigation locale">
+  <a href="#prix-vols">Lignes</a>
+  <a href="#prix-carburant">Pays & provinces</a>
+</nav>
 
-<section class="panel" id="prix-vols">
+
+<section class="panel admin-workspace-section" id="prix-vols">
     <div class="panel-heading">
         <div>
             <span class="eyebrow">PRIX DES VOLS</span>
@@ -35,7 +44,7 @@
             <a class="button" href="{{ route('admin.promethee.economy.flight-prices.edit') }}">Ouvrir l’éditeur des prix</a>
     </form>
     <form method="get" action="{{ route('admin.promethee.economy.flight-prices.edit') }}" id="flight-scope-form">
-    <div class="table-wrap">
+    <div class="table-wrap admin-table-scroll">
         <table>
             <thead><tr><th><input type="checkbox" id="flight-main-select-all" aria-label="Tout sélectionner" @checked($flightSelectAll)></th><th>Compagnie</th><th>Ligne</th><th>Type réseau</th><th>Départ</th><th>Arrivée</th><th>Tarif</th><th>Prix actuel</th><th>Couleur</th><th>Édition</th></tr></thead>
             <tbody>
@@ -82,11 +91,11 @@
             </tbody>
         </table>
     </div>
-    <div class="panel-heading" style="margin-top:16px"><p id="flight-selection-count">Aucune ligne sélectionnée.</p><button type="submit">Modifier les lignes cochées</button></div>
+    <div class="panel-heading admin-workspace-spaced"><p id="flight-selection-count">Aucune ligne sélectionnée.</p><button type="submit">Modifier les lignes cochées</button></div>
     </form>
 </section>
 
-<section class="panel" id="prix-carburant">
+<section class="panel admin-workspace-section" id="prix-carburant">
     <div class="panel-heading">
         <div>
             <span class="eyebrow">PRIX DU CARBURANT</span>
@@ -103,7 +112,7 @@
         <a class="button outline" href="{{ route('admin.promethee.economy',array_filter(array_merge($fuelFilters,['fuel_select_all'=>1]))) }}#prix-carburant">Tout sélectionner les résultats</a>
     </form>
     <form method="get" action="{{ route('admin.promethee.economy.fuel-prices.editor') }}" id="fuel-scope-form">
-    <div class="table-wrap">
+    <div class="table-wrap admin-table-scroll">
         <table>
             <thead><tr><th><input type="checkbox" id="fuel-select-all" aria-label="Tout sélectionner" @checked($fuelSelectAll)></th><th>Pays</th><th>Province / région</th><th>Aéroports concernés</th><th>Jet A €/L</th><th>100LL €/L</th><th>Mogas €/L</th><th>Édition</th></tr></thead>
             <tbody>
@@ -115,9 +124,10 @@
             </tbody>
         </table>
     </div>
-    <div class="panel-heading" style="margin-top:16px"><p id="fuel-selection-count">Aucun périmètre sélectionné.</p><button type="submit">Modifier les périmètres cochés</button></div>
+    <div class="panel-heading admin-workspace-spaced"><p id="fuel-selection-count">Aucun périmètre sélectionné.</p><button type="submit">Modifier les périmètres cochés</button></div>
     </form>
 </section>
+</div>
 @endsection
 
 @push('scripts')

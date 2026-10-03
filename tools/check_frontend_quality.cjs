@@ -19,6 +19,7 @@ const budgets = {
   'acars/wwwroot/hermes-themes.css': 35000,
   'prometheus/public/promethee-assets/promethee-v2.css': 90000,
   'prometheus/public/promethee-assets/promethee-appearance.css': 40000,
+  'prometheus/public/promethee-assets/promethee-admin-workspaces.css': 12000,
   'prometheus/modules/Promethee/Resources/views/admin/dispatch.blade.php': 45000,
 };
 
@@ -42,6 +43,13 @@ const crm = read('prometheus/modules/Promethee/Resources/views/admin/crm.blade.p
 const adminDashboard = read('prometheus/modules/Promethee/Resources/views/admin/dashboard.blade.php');
 const prometheeLayout = read('prometheus/modules/Promethee/Resources/views/layout.blade.php');
 const prometheeFlights = read('prometheus/modules/Promethee/Resources/views/flights.blade.php');
+const adminWorkspaceCss = read('prometheus/public/promethee-assets/promethee-admin-workspaces.css');
+const automationWorkspace = read('prometheus/modules/Promethee/Resources/views/admin/automation.blade.php');
+const seasonsWorkspace = read('prometheus/modules/Promethee/Resources/views/seasons.blade.php');
+const economyWorkspace = read('prometheus/modules/Promethee/Resources/views/economy.blade.php');
+const regionalWorkspace = read('prometheus/modules/Promethee/Resources/views/admin-regional-operations.blade.php');
+const maintenanceWorkspace = read('prometheus/modules/Promethee/Resources/views/admin-maintenance.blade.php');
+const sopWorkspace = read('prometheus/modules/Promethee/Resources/views/admin/sop.blade.php');
 
 const stylesheetHrefs = [...hermesIndex.matchAll(/<link\b[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["']/gi)]
   .map(match => match[1]);
@@ -158,6 +166,32 @@ expect(adminDashboard.includes('Inbox d’exceptions')
 expect(prometheeV2.includes('.attention-inbox')
     && prometheeV2.includes('.attention-item'),
   'Prométhée must preserve shared OCC attention-inbox styling.');
+
+expect(adminWorkspaceCss.includes('.admin-workspace-nav')
+    && adminWorkspaceCss.includes('@media(max-width:980px)')
+    && adminWorkspaceCss.includes('@media(max-width:760px)')
+    && adminWorkspaceCss.includes('.admin-table-scroll'),
+  'Prométhée staff workspaces must preserve responsive local navigation, grid collapse and table scrolling.');
+for (const [name, source] of Object.entries({
+  automationWorkspace,seasonsWorkspace,economyWorkspace,regionalWorkspace,maintenanceWorkspace,sopWorkspace,
+})) {
+  expect(source.includes('class="admin-workspace-page"')
+      && source.includes('class="admin-workspace-nav"')
+      && source.includes('promethee-admin-workspaces.css'),
+    name + ' must use the shared responsive staff workspace shell.');
+  expect(!/<[^>]+\sstyle\s*=/i.test(source),
+    name + ' must not use inline style attributes.');
+}
+expect(regionalWorkspace.includes('id="regional-fleet"')
+    && maintenanceWorkspace.includes('id="maintenance-engines"')
+    && sopWorkspace.includes('id="sop-scoring"'),
+  'Dense admin workspaces must preserve stable local navigation anchors.');
+
+expect(regionalWorkspace.includes('table-wrap admin-table-scroll')
+    && maintenanceWorkspace.includes('table-wrap admin-table-scroll')
+    && economyWorkspace.includes('href="#prix-vols"')
+    && economyWorkspace.includes('href="#prix-carburant"'),
+  'Responsive admin workspaces must keep dense tables scrollable and preserve economy deep links.');
 
 const inlineStyleFreeViews = [
   'prometheus/modules/Promethee/Resources/views/bookings.blade.php',

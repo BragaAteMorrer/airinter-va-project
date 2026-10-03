@@ -1,6 +1,10 @@
 @extends('promethee::layout')
 @section('title','Maintenance cellule & moteurs')
+@push('styles')
+<link rel="stylesheet" href="{{ asset('promethee-assets/promethee-admin-workspaces.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-admin-workspaces.css')) }}">
+@endpush
 @section('content')
+<div class="admin-workspace-page">
 @php
   $requiredMaintenanceRoutes = [
     'admin.promethee.maintenance.sync',
@@ -39,6 +43,14 @@
     </form>
   </div>
 </div>
+<nav class="admin-workspace-nav" aria-label="Navigation locale">
+  <a href="#maintenance-airframe">Cellule</a>
+  <a href="#maintenance-airframe-history">Historique cellule</a>
+  <a href="#maintenance-engines">Moteurs</a>
+  <a href="#maintenance-engine-stock">Parc moteurs</a>
+  <a href="#maintenance-engine-history">Historique moteurs</a>
+</nav>
+
 
 <section class="control-strip">
   <article><span>Moteurs suivis</span><strong>{{ $engineSummary['total'] }}</strong><small>{{ $engineSummary['installed'] }} installés · {{ $engineSummary['stock'] }} en stock</small></article>
@@ -58,7 +70,7 @@
   <article><span>En maintenance</span><strong>{{ $airframeSummary['maintenance'] }}</strong><small>immobilisation en cours</small></article>
 </section>
 
-<section class="panel">
+<section class="panel admin-workspace-section" id="maintenance-airframe">
   <div class="panel-heading">
     <div>
       <span class="eyebrow">MAINTENANCE CELLULE</span>
@@ -116,7 +128,7 @@
   <p class="hint">La fin d’un B Check remet aussi les compteurs A à zéro. La fin d’un C Check remet les compteurs A, B et C à zéro. Les PIREPs rejetés sont retirés des compteurs.</p>
 </section>
 
-<section class="panel table-wrap">
+<section class="panel table-wrap admin-table-scroll">
   <div class="panel-heading">
     <div>
       <span class="eyebrow">POTENTIEL CELLULE</span>
@@ -189,7 +201,7 @@
   </table>
 </section>
 
-<section class="panel table-wrap">
+<section class="panel table-wrap admin-workspace-section admin-table-scroll" id="maintenance-airframe-history">
   <div class="panel-heading"><div><span class="eyebrow">JOURNAL CELLULE</span><h2>Derniers checks A / B / C</h2></div></div>
   <table>
     <thead><tr><th>Date</th><th>Appareil</th><th>Check</th><th>Événement</th><th>Site</th><th>Situation avant</th><th>Note</th></tr></thead>
@@ -211,8 +223,8 @@
   </table>
 </section>
 
-<div class="two-columns">
-  <section class="panel">
+<div class="two-columns admin-workspace-grid">
+  <section class="panel admin-workspace-section" id="maintenance-engines">
     <div class="panel-heading"><div><span class="eyebrow">RÉFÉRENTIEL</span><h2>Profil moteur par sous-flotte</h2></div></div>
     <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.engine-profiles.save') : '#' }}" class="form-grid">
       @csrf
@@ -259,7 +271,7 @@
   </section>
 </div>
 
-<section class="panel table-wrap">
+<section class="panel table-wrap admin-table-scroll">
   <div class="panel-heading"><div><span class="eyebrow">CONFIGURATION</span><h2>Profils moteurs</h2></div></div>
   <table>
     <thead><tr><th>Compagnie / sous-flotte</th><th>Moteur</th><th>Qté</th><th>TBO</th><th>Alerte</th><th>État</th></tr></thead>
@@ -280,7 +292,7 @@
   </table>
 </section>
 
-<section class="panel table-wrap">
+<section class="panel table-wrap admin-workspace-section admin-table-scroll" id="maintenance-engine-stock">
   <div class="panel-heading"><div><span class="eyebrow">MOTEURS</span><h2>Unités installées & stock</h2></div></div>
   <table>
     <thead><tr><th>N° série</th><th>Type</th><th>Appareil</th><th>TBO nominal</th><th>Consommé depuis révision</th><th>Potentiel moteur</th><th>Dernière révision</th><th>État</th><th>Actions</th></tr></thead>
@@ -354,7 +366,7 @@
   </table>
 </section>
 
-<section class="panel table-wrap">
+<section class="panel table-wrap admin-workspace-section admin-table-scroll" id="maintenance-engine-history">
   <div class="panel-heading"><div><span class="eyebrow">JOURNAL TECHNIQUE</span><h2>Derniers événements moteurs</h2></div></div>
   <table>
     <thead><tr><th>Date</th><th>Moteur</th><th>Appareil</th><th>Événement</th><th>Site</th><th>Situation avant</th><th>Note</th></tr></thead>
@@ -375,4 +387,5 @@
     </tbody>
   </table>
 </section>
+</div>
 @endsection
