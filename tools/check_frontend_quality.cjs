@@ -128,8 +128,9 @@ expect(hermesTheme.includes('focus-visible'),
 const hermesOverrides = read('acars/wwwroot/layout-overrides.css');
 expect(hermesIndex.includes('class="rail-nav-label"')
     && hermesIndex.includes('class="display-settings"')
-    && hermesIndex.includes('20261003-era-phase6'),
-  'Hermès must preserve the grouped operational navigation and refreshed asset revision.');
+    && hermesIndex.includes('/hermes-themes.css?rev=')
+    && hermesIndex.includes('/layout-overrides.css?rev='),
+  'Hermès must preserve the grouped operational navigation and versioned theme assets.');
 expect(hermesApp.includes('data-tab') || hermesIndex.includes('data-tab="flight"'),
   'Hermès navigation must keep data-tab based workspace routing.');
 expect(read('acars/wwwroot/styles.css').includes('Audit UX phase 2 — operational visual consolidation.')
