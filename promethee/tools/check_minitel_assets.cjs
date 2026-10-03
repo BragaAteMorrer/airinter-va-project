@@ -10,8 +10,8 @@ let failures = 0;
 for (const name of names) {
   const canonical = fs.readFileSync(path.join(root, 'shared', 'minitel', name), 'utf8').replace(/\r\n/g, '\n');
   for (const [label, target] of [
-    ['Prométhée', path.join(root, 'prometheus', 'public', 'promethee-assets', 'minitel', name)],
-    ['Hermès', path.join(root, 'acars', 'wwwroot', 'minitel', name)]
+    ['Prométhée', path.join(root, 'public', 'promethee-assets', 'minitel', name)],
+    ['Hermès', path.join(root, '..', 'acars', 'wwwroot', 'minitel', name)]
   ]) {
     const publicCopy = fs.readFileSync(target, 'utf8').replace(/\r\n/g, '\n');
     if (canonical !== publicCopy) {
@@ -23,7 +23,7 @@ for (const name of names) {
   }
 }
 
-const client = fs.readFileSync(path.join(root, 'prometheus', 'public', 'promethee-assets', 'promethee-minitel.js'), 'utf8');
+const client = fs.readFileSync(path.join(root, 'public', 'promethee-assets', 'promethee-minitel.js'), 'utf8');
 for (const contract of ['departures', 'flights', 'routes', 'fleet', 'pilots', 'calendar', 'profile', 'operations', 'operation_search']) {
   if (!client.includes(contract)) {
     failures += 1;
@@ -53,9 +53,9 @@ if (!client.includes('endpoints.operation_search')) {
   console.error('M3 reservable flight search must use Operations V1 projection.');
 }
 
-const hermesClient = fs.readFileSync(path.join(root, 'acars', 'wwwroot', 'hermes-minitel.js'), 'utf8');
-const hermesApp = fs.readFileSync(path.join(root, 'acars', 'wwwroot', 'app.js'), 'utf8');
-const hermesIndex = fs.readFileSync(path.join(root, 'acars', 'wwwroot', 'index.html'), 'utf8');
+const hermesClient = fs.readFileSync(path.join(root, '..', 'acars', 'wwwroot', 'hermes-minitel.js'), 'utf8');
+const hermesApp = fs.readFileSync(path.join(root, '..', 'acars', 'wwwroot', 'app.js'), 'utf8');
+const hermesIndex = fs.readFileSync(path.join(root, '..', 'acars', 'wwwroot', 'index.html'), 'utf8');
 
 for (const contract of [
   '/api/v1/operations',
@@ -143,8 +143,8 @@ for (const contract of ['mosaicMask', 'separatedMosaic', 'DISPLAY_MODES', 'MAX_I
 }
 
 const sharedRenderer = fs.readFileSync(path.join(root, 'shared', 'minitel', 'renderer.js'), 'utf8');
-const loginCss = fs.readFileSync(path.join(root, 'prometheus', 'public', 'promethee-assets', 'login.css'), 'utf8');
-const loginJs = fs.readFileSync(path.join(root, 'prometheus', 'public', 'promethee-assets', 'login.js'), 'utf8');
+const loginCss = fs.readFileSync(path.join(root, 'public', 'promethee-assets', 'login.css'), 'utf8');
+const loginJs = fs.readFileSync(path.join(root, 'public', 'promethee-assets', 'login.js'), 'utf8');
 
 for (const contract of [
   "setAttribute('tabindex', '0')",
