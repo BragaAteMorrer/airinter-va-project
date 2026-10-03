@@ -73,9 +73,10 @@ final class LegacyPirepScoringService
 
         if ((bool) $rule->has_parameter) {
             $parameter = $input['parameter'] ?? null;
-            $update['parameter'] = $parameter === null || $parameter === ''
-                ? null
-                : (int) $parameter;
+            if ($parameter === null || $parameter === '') {
+                throw new RuntimeException('Un seuil est requis pour cette règle de scoring Hermès.');
+            }
+            $update['parameter'] = (int) $parameter;
         }
 
         DB::table('vmsacars_rules')->where('id', $ruleId)->update($update);
