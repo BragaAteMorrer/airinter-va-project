@@ -1788,12 +1788,3 @@ html[data-appearance="dark"]:not([data-era="minitel"]) .admin-master-pane,html[d
 [data-era="2000"] .topbar-controls .theme-control{margin:0}[data-era="minitel"] .topbar-controls{display:contents}[data-era="minitel"] .theme-control-label{display:none}
 @media(max-width:1180px){[data-era="modern"] .theme-control-label{display:none}.flight-filter-primary{grid-template-columns:1fr 1fr}.flight-filter-primary .filter-wide{grid-column:1/-1}.flight-filter-actions{grid-column:1/-1}.flight-filter-advanced-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:620px){.topbar-controls{width:100%;flex-wrap:wrap}.flight-filter-primary,.flight-filter-advanced-grid{grid-template-columns:1fr}.flight-filter-primary .filter-wide{grid-column:auto}.flight-filter-primary{padding:15px}.flight-filter-advanced>summary,.flight-filter-advanced-grid,.flight-filter-advanced-actions{padding-inline:15px}.flight-filter-advanced>summary span{display:none}.flight-filter-advanced-actions{justify-content:flex-start}}
-
-
-/* PIREP Hermès journal */
-.pirep-journal-entry>div{min-width:0}
-.pirep-journal-meta{display:flex;align-items:center;gap:7px;margin-bottom:4px}
-.pirep-journal-meta span{display:inline-flex;align-items:center;min-height:20px;padding:2px 7px;border:1px solid var(--line);border-radius:999px;background:var(--paper);color:var(--muted);font-size:8px;font-weight:900;letter-spacing:.55px;text-transform:uppercase}
-.pirep-journal-meta code{font:9px/1.4 Consolas,monospace;color:var(--blue);background:transparent;padding:0}
-.pirep-journal-entry small{display:block;margin-top:4px;color:var(--muted);font-size:10px}
-[data-era="minitel"] .pirep-journal-meta span{border-radius:0}
