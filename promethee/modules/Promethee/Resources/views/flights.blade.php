@@ -4,7 +4,7 @@
 <div class="ops-header compact"><div><span class="eyebrow">LE RÉSEAU AIR INTER</span><h1>Programme des vols.</h1><p>Filtrer, comparer et préparer une rotation sans quitter Prométhée.</p></div><span class="tag metric-tag">@if($flights->total()>0){{ $flights->total() }} lignes publiées @elseif($itineraries->isNotEmpty()){{ $itineraries->count() }} itinéraire{{ $itineraries->count()>1?'s':'' }} proposé{{ $itineraries->count()>1?'s':'' }} @else 0 ligne publiée @endif</span></div>
 <form id="flight-filters" class="panel flight-filter" method="get">
 <div class="flight-filter-primary">
-<label class="filter-wide">Vol ou aéroport<input name="q" value="{{ request('q') }}" placeholder="IT123, LFPO, code ligne…"></label>
+<label class="filter-wide">Vol, aéroport ou ville<input name="q" value="{{ request('q') }}" list="flight-airports" placeholder="IT123, LFPO, ORY, Paris, Orly…" autocomplete="off"></label>
 <label>Départ<input name="departure" value="{{ request('departure') }}" list="flight-airports" placeholder="OACI, IATA ou ville" autocomplete="off"></label>
 <label>Arrivée<input name="arrival" value="{{ request('arrival') }}" list="flight-airports" placeholder="OACI, IATA ou ville" autocomplete="off"></label>
 <div class="flight-filter-actions"><button type="submit">Rechercher</button><a class="text-button" href="{{ route('promethee.flights') }}">Réinitialiser</a></div>
@@ -23,7 +23,14 @@
 </div>
 <div class="flight-filter-advanced-actions"><button type="submit">Appliquer tous les filtres</button></div>
 </details>
-<datalist id="flight-airports">@foreach($mapAirports as $airport)<option value="{{ $airport['code'] }}">{{ $airport['name'] }}@if($airport['location']) · {{ $airport['location'] }}@endif</option>@endforeach</datalist>
+<datalist id="flight-airports">
+@foreach($mapAirports as $airport)
+<option value="{{ $airport['code'] }}" label="{{ $airport['name'] }}@if($airport['iata']) · {{ $airport['iata'] }}@endif @if($airport['location']) · {{ $airport['location'] }}@endif"></option>
+@if($airport['iata'])<option value="{{ $airport['iata'] }}" label="{{ $airport['code'] }} · {{ $airport['name'] }}@if($airport['location']) · {{ $airport['location'] }}@endif"></option>@endif
+@if($airport['location'])<option value="{{ $airport['location'] }}" label="{{ $airport['code'] }}@if($airport['iata']) / {{ $airport['iata'] }}@endif · {{ $airport['name'] }}"></option>@endif
+@if($airport['name'] && $airport['name'] !== $airport['location'])<option value="{{ $airport['name'] }}" label="{{ $airport['code'] }}@if($airport['iata']) / {{ $airport['iata'] }}@endif@if($airport['location']) · {{ $airport['location'] }}@endif"></option>@endif
+@endforeach
+</datalist>
 </form>
 <section class="panel network-map-panel" aria-labelledby="network-map-title"><div class="panel-heading"><div><span class="eyebrow">SÉLECTION PAR CARTE</span><h2 id="network-map-title">Choisir l’itinéraire</h2></div><p class="map-help">Molette ou boutons +/− pour zoomer ; glissez pour vous déplacer. Cliquez un aéroport pour le départ, puis un second pour l’arrivée.</p></div><div class="map-selection" aria-live="polite"><span>Départ : <b>{{ $selectedDeparture ?: 'à sélectionner' }}</b></span><span>Arrivée : <b>{{ $selectedArrival ?: 'à sélectionner' }}</b></span>@if(request('departure')||request('arrival'))<a href="{{ route('promethee.flights',request()->except(['departure','arrival','page'])) }}">Effacer la sélection</a>@endif</div><div id="flight-network-map" class="network-map" aria-label="Carte interactive des aéroports desservis"></div><p class="map-legend"><i></i> Aéroport desservi <span class="route-legend air-inter"></span> Air Inter <span class="route-legend air-charter"></span> Air Charter <span class="route-legend ics"></span> Inter Cargo Services</p></section>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
