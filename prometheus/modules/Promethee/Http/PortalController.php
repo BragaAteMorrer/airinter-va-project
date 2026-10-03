@@ -2,7 +2,7 @@
 namespace Modules\Promethee\Http;
 use App\Contracts\Controller;
 use App\Models\{Aircraft,Airline,Airport,Bid,File,Flight,Pirep,SimBrief,User,Fare,Subfleet,Rank};
-use App\Models\Enums\{AircraftState,AircraftStatus,FlightType,PirepState,PirepStatus,UserState};
+use App\Models\Enums\{AircraftState,AircraftStatus,FareType,FlightType,PirepState,PirepStatus,UserState};
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +17,7 @@ use App\Services\FileService;
 use App\Services\UserService;
 use App\Support\Money;
 use App\Support\Countries;
-use Modules\Promethee\Services\{AirframeMaintenanceService,BrandingService,BulletinService,CompanyAccessService,DemandProfileService,EconomyFareResolver,EconomyService,EngineMaintenanceService,FleetRotationService,FlightOpsService,RegionalOperationsService,SafetyAnalyzer};
+use Modules\Promethee\Services\{AirframeMaintenanceService,BrandingService,BulletinService,CompanyAccessService,DemandProfileService,EconomyFareResolver,EconomyService,EngineMaintenanceService,FleetRotationService,FlightOpsService,LegacyPirepScoringService,RegionalOperationsService,SafetyAnalyzer};
 
 class PortalController extends Controller
 {
@@ -86,9 +86,47 @@ class PortalController extends Controller
             'flight', 'simbrief', 'user.rank', 'comments.user',
         ])->findOrFail($id);
 
+        $companyScore = [
+            'available' => false,
+            'score' => $pirep->score,
+            'starting_score' => 100,
+            'penalty_total' => $pirep->score === null ? 0 : max(0, 100 - (int) $pirep->score),
+            'items' => [],
+            'unavailable_rules' => [],
+        ];
+        if (str_starts_with((string) $pirep->source_name, 'Hermes ACARS [op_')) {
+            try {
+                $companyScore = app(LegacyPirepScoringService::class)->forPirep($pirep);
+            } catch (\Throwable $exception) {
+                logger()->warning('promethee_pirep_score_display_failed', [
+                    'pirep_id' => $pirep->id,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        $farePassengers = (int) $pirep->fares
+            ->filter(fn ($fare) => (int) $fare->type === FareType::PASSENGER)
+            ->sum('count');
+        $simbriefPassengers = null;
+        if ($pirep->simbrief?->xml) {
+            foreach ([
+                (string) ($pirep->simbrief->xml->weights->pax_count ?? ''),
+                (string) ($pirep->simbrief->xml->general->passengers ?? ''),
+            ] as $candidate) {
+                if ($candidate !== '' && is_numeric($candidate)) {
+                    $simbriefPassengers = max(0, (int) round((float) $candidate));
+                    break;
+                }
+            }
+        }
+
         return $this->page('pirep', [
             'pirep' => $pirep,
             'flightJournal' => $this->pirepJournal($pirep),
+            'companyScore' => $companyScore,
+            'passengerCount' => $farePassengers > 0 ? $farePassengers : $simbriefPassengers,
+            'passengerSource' => $farePassengers > 0 ? 'PIREP' : ($simbriefPassengers !== null ? 'OFP SimBrief' : null),
         ]);
     }
 
@@ -1114,6 +1152,21 @@ class PortalController extends Controller
                     return $payload;
                 });
                 $data = $samples->last() ?? [];
+
+                // Keep a bounded history for the interactive /live trace. Hermès
+                // can record thousands of samples on a long sector, so return at
+                // most ~400 points while always preserving the latest position.
+                $track = $samples
+                    ->filter(fn (array $sample) => is_numeric($sample['lat'] ?? null) && is_numeric($sample['lon'] ?? null))
+                    ->map(fn (array $sample) => [(float) $sample['lat'], (float) $sample['lon']])
+                    ->values();
+                if ($track->count() > 400) {
+                    $stride = (int) ceil($track->count() / 400);
+                    $lastTrackPoint = $track->last();
+                    $track = $track->filter(fn ($point, int $index) => $index % $stride === 0)->values();
+                    if ($lastTrackPoint && $track->last() !== $lastTrackPoint) $track->push($lastTrackPoint);
+                }
+
                 preg_match('/Hermes ACARS \\[(op_[^\\]]+)\\]/', (string) $p->source_name, $operationMatch);
 
                 $transitions = [];
@@ -1154,6 +1207,7 @@ class PortalController extends Controller
                         'in' => $firstAt(['IN']),
                     ],
                     'phase_history' => $transitions,
+                    'track' => $track->all(),
                     'lat' => $data['lat'] ?? null, 'lon' => $data['lon'] ?? null,
                     'altitude' => $data['altitude_msl'] ?? null, 'ias' => $data['ias'] ?? null,
                     'gs' => $data['gs'] ?? null, 'vs' => $data['vs'] ?? null,
@@ -2279,14 +2333,20 @@ class PortalController extends Controller
         ]);
     }
     public function simbrief(string $id, Request $r) {
-        $simbrief=SimBrief::with(['flight.airline','aircraft.subfleet','pirep'])->where('user_id',$r->user()->id)->findOrFail($id);
+        $simbrief=SimBrief::with(['flight.airline','aircraft.subfleet','pirep.flight.airline'])->where('user_id',$r->user()->id)->findOrFail($id);
         abort_unless($simbrief->xml, 404, 'OFP SimBrief indisponible.');
         $fares=collect();
         if (!empty($simbrief->fare_data)) {
             $decoded=json_decode($simbrief->fare_data, true);
             if (is_array($decoded)) $fares=collect($decoded);
         }
-        return $this->page('simbrief', ['simbrief'=>$simbrief,'ofp'=>$simbrief->xml,'flight'=>$simbrief->flight,'aircraft'=>$simbrief->aircraft,'fares'=>$fares]);
+
+        // phpVMS clears simbrief.flight_id once the OFP is attached to a filed
+        // PIREP. Keep the native Prométhée OFP page usable afterwards by
+        // resolving the archived flight through the PIREP relation.
+        $flight=$simbrief->flight ?: $simbrief->pirep?->flight;
+
+        return $this->page('simbrief', ['simbrief'=>$simbrief,'ofp'=>$simbrief->xml,'flight'=>$flight,'aircraft'=>$simbrief->aircraft,'fares'=>$fares]);
     }
 
     public function saveBriefing(string $id, Request $r) {
