@@ -30,6 +30,7 @@ use Modules\Promethee\Services\AircraftVariantService;
 use Modules\Promethee\Services\AircraftConfigurationResolver;
 use Modules\Promethee\Services\HermesPirepLifecycleService;
 use Modules\Promethee\Services\LegacyPirepScoringService;
+use Modules\Promethee\Services\PilotPirepDeletionService;
 use Modules\Promethee\Models\PirepAircraftProfile;
 
 /**
@@ -52,7 +53,8 @@ class OperationsV1Controller extends Controller
         private readonly AircraftVariantService $aircraftVariants,
         private readonly AircraftConfigurationResolver $aircraftConfigurations,
         private readonly HermesPirepLifecycleService $pirepLifecycle,
-        private readonly LegacyPirepScoringService $legacyScoring
+        private readonly LegacyPirepScoringService $legacyScoring,
+        private readonly PilotPirepDeletionService $pirepDeletion
     ) {}
 
     public function index(Request $request)
@@ -731,6 +733,18 @@ class OperationsV1Controller extends Controller
             'pirep' => $this->pirepDto($visiblePirep),
             'pirep_id' => $visiblePirep?->id,
             'legacy_pirep_repair_required' => $legacyGhost,
+        ]]);
+    }
+
+    public function deletePirep(string $pirepId, Request $request)
+    {
+        $pirep = Pirep::with(['user', 'aircraft', 'flight'])->findOrFail($pirepId);
+        $snapshot = $this->pirepDeletion->deleteOwn($pirep, $request->user(), 'hermes-api');
+
+        return response()->json(['data' => [
+            'deleted' => true,
+            'pirep_id' => $snapshot['id'],
+            'operation_id' => $snapshot['operation_id'],
         ]]);
     }
 

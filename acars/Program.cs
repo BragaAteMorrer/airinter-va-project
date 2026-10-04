@@ -111,9 +111,20 @@ app.MapPost("/api/recovery/resume", (PhpVmsClient client, SimConnectReader sim, 
     recorder.Resume(client.Server);
     return Results.Ok(new { flight = recorder.Flight });
 });
-app.MapPost("/api/recovery/abandon", (FlightRecorder recorder) => {
+app.MapPost("/api/recovery/abandon", async (PhpVmsClient client, FlightRecorder recorder) => {
+    if (!recorder.RecoveryAvailable) throw new InvalidOperationException("Aucun vol interrompu à abandonner.");
+    if (!client.Connected) throw new InvalidOperationException("Reconnectez-vous à votre compte Air Inter avant de supprimer ce PIREP de Prométhée.");
+    var flight = recorder.Flight ?? throw new InvalidOperationException("Aucun PIREP Hermès en cours à abandonner.");
+    await client.Delete("v1/pireps/" + Uri.EscapeDataString(flight.PirepId));
     recorder.AbandonRecovery();
-    return Results.Ok(new { archived = true });
+    return Results.Ok(new { archived = true, remoteDeleted = true, pirepId = flight.PirepId });
+});
+app.MapPost("/api/abandon-pirep", async (PhpVmsClient client, FlightRecorder recorder) => {
+    if (!client.Connected) throw new InvalidOperationException("Reconnectez-vous à votre compte Air Inter avant de supprimer ce PIREP de Prométhée.");
+    var flight = recorder.Flight ?? throw new InvalidOperationException("Aucun PIREP Hermès en cours à abandonner.");
+    await client.Delete("v1/pireps/" + Uri.EscapeDataString(flight.PirepId));
+    recorder.AbandonCurrent();
+    return Results.Ok(new { archived = true, remoteDeleted = true, pirepId = flight.PirepId });
 });
 
 app.MapPost("/api/sync", async (PhpVmsClient client, FlightRecorder recorder) =>

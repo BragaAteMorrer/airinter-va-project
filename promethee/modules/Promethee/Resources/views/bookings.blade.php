@@ -58,6 +58,12 @@
                     <button class="button button-secondary" type="submit">Annuler la réservation</button>
                 </form>
             @endif
+            @if($booking->operation_can_delete_pirep)
+                <form method="POST" action="{{ route('promethee.bookings.pirep.delete', $booking->id) }}" onsubmit="return confirm('Abandonner et supprimer votre PIREP {{ $booking->operation_pirep?->id }} ?\n\nLa télémétrie et les données liées à cette tentative seront supprimées. La réservation restera disponible pour recommencer. Cette action est irréversible.');">
+                    @csrf @method('DELETE')
+                    <button class="button danger" type="submit">Abandonner le PIREP</button>
+                </form>
+            @endif
         </div>
     </td>
 </tr>
@@ -68,5 +74,5 @@
 </table>
 </section>
 
-<p class="page-footnote"><small>Une réservation peut être annulée tant qu’aucun PIREP Hermès n’a été créé. Dès la préparation du PIREP, elle devient un enregistrement opérationnel conservé.</small></p>
+<p class="page-footnote"><small>Une réservation sans PIREP peut être annulée. En cas de crash ou d’abandon, le pilote peut aussi supprimer son propre PIREP tant qu’il est en préparation, en cours, en pause ou en attente de validation. Un PIREP accepté, rejeté ou annulé reste protégé et nécessite l’intervention d’un administrateur.</small></p>
 @endsection
