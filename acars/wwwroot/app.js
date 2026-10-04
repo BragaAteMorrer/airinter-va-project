@@ -1324,7 +1324,7 @@ async function loadRouteSuggestions(operationRef, initialRoute = '') {
       };
       renderOperationLoad(selectedAircraft, flightPlan);
       renderSimBriefPreparationSummary();
-      drawMap(flightMapState.lastTrack, lastStatus?.latest || {});
+      drawMap(lastStatus?.track || [], lastStatus?.latest || {});
     }
   } catch {
     renderRouteSuggestions({ route_options: [] }, initialRoute);
