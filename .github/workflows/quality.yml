@@ -272,6 +272,8 @@ jobs:
           php -l modules/Promethee/Database/migrations/2026_09_25_000014_repair_blank_bulk_bbr_references.php
           php -l modules/Promethee/Database/migrations/2026_09_25_000015_ensure_simbrief_api_key_setting.php
           php -l modules/Promethee/Database/migrations/2026_09_11_000000_create_acars_access_tokens_table.php
+          php -l modules/Promethee/Database/migrations/2026_10_05_000100_add_identity_context_to_acars_access_tokens.php
+          php -l tests/ArgosAcarsIdentityTest.php
           php -l tests/PrometheeDemandEconomyTest.php
           php -l modules/Promethee/routes.php
           php -l app/Http/Controllers/Frontend/FlightController.php
@@ -349,6 +351,8 @@ jobs:
         run: vendor/bin/phpunit tests/HermesOperationLifecycleTest.php
       - name: Run Weather / OPS regression tests
         run: vendor/bin/phpunit tests/OperationalWeatherServiceTest.php
+      - name: Run Air Inter identity / Argos regression tests
+        run: vendor/bin/phpunit tests/ArgosAcarsIdentityTest.php
       - name: Run Hermès scoring configuration tests
         run: vendor/bin/phpunit tests/LegacyPirepScoringConfigurationTest.php
       - name: Run sb-airframe historical configuration tests
