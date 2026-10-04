@@ -185,7 +185,8 @@ async function syncEfbContext() {
       ? Math.max(0, Math.round(Number(flightPlan.estimated_time_enroute)))
       : null,
     ofp_source: flightPlan?.source || null,
-    dispatch_status: serverDispatch?.status || null
+    dispatch_status: serverDispatch?.status || null,
+    weather: serverDispatch?.weather || null
   };
   try { await call('/api/efb/context', context); } catch {}
 }
@@ -1010,6 +1011,7 @@ async function cancelReservation(operation, flight, button) {
       linkedSimBrief = null;
       serverDispatch = null;
       lastDatalinkSnapshot = null;
+      clearOperationalWeather();
       $('#selectedOperation').hidden = true;
       $('#prefileForm').hidden = true;
       updateWorkflow();
@@ -1463,6 +1465,7 @@ async function selectOperation(operation) {
   // snapshot for even one refresh cycle (that used to show "Vol déjà terminé"
   // on a brand-new selection).
   serverDispatch = null;
+  clearOperationalWeather();
   serverCompanyScore = null;
   serverCompanyScoreKey = null;
   flightPlan = null;
@@ -1581,7 +1584,7 @@ async function selectOperation(operation) {
 
 async function refreshDispatch() {
   const operationRef = selectedOperation?.operation_id || selectedOperation?.id;
-  if (!operationRef) { serverDispatch = null; return null; }
+  if (!operationRef) { serverDispatch = null; clearOperationalWeather(); return null; }
 
   serverDispatch = unwrap(await call(`/api/v1/operations/${encodeURIComponent(operationRef)}/dispatch`));
 
@@ -1613,6 +1616,7 @@ async function refreshDispatch() {
 
   const labels = { PREPARATION_REQUIRED: 'PRÉPARATION REQUISE', READY: 'PRÊT POUR HERMÈS', IN_PROGRESS: 'VOL EN COURS', AWAITING_FILING: 'ARRIVÉ · PIREP À DÉPOSER', COMPLETED: 'VOL TERMINÉ', CANCELLED: 'OPÉRATION ANNULÉE' };
   setText($('#operationBrief'), `${labels[serverDispatch?.status] || serverDispatch?.status || 'DISPATCH'} · Dispatch Prométhée`);
+  renderOperationalWeather(serverDispatch?.weather || null);
   updateWorkflow();
   scheduleEfbContextSync();
   return serverDispatch;
@@ -3013,7 +3017,8 @@ async function refreshStatus() {
 const hermesPolling = {
   status: { timer: null, delay: 1000, enabled: () => true, run: refreshStatus },
   datalink: { timer: null, delay: 5000, enabled: () => $('#datalink')?.classList.contains('active'), run: refreshDatalink },
-  network: { timer: null, delay: 15000, enabled: () => $('#network')?.classList.contains('active'), run: refreshNetwork }
+  network: { timer: null, delay: 15000, enabled: () => $('#network')?.classList.contains('active'), run: refreshNetwork },
+  weather: { timer: null, delay: 300000, enabled: () => connected && Boolean(selectedOperation), run: refreshDispatch }
 };
 const stopHermesPolling = () => {
   Object.values(hermesPolling).forEach(poller => {
@@ -3038,6 +3043,7 @@ const startHermesPolling = () => {
   Object.values(hermesPolling).forEach(scheduleHermesPoller);
 };
 
+initializeOperationalWeather(() => refreshDispatch());
 updateWorkflow();
 drawMap([]);
 refreshStatus();
