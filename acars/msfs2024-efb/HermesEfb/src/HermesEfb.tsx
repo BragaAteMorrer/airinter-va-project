@@ -120,15 +120,18 @@ class HermesEfbView extends AppView<RequiredProps<AppViewProps, "bus">> {
   }
 
   public onResume(): void {
+    super.onResume();
     this.startPolling();
   }
 
   public onPause(): void {
     this.stopPolling();
+    super.onPause();
   }
 
   public onClose(): void {
     this.stopPolling();
+    super.onClose();
   }
 
   public destroy(): void {
