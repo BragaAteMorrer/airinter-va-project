@@ -37,6 +37,9 @@ function Assert-SafePackageTarget {
   param([string]$CommunityRoot, [string]$Target)
 
   $community = [IO.Path]::GetFullPath($CommunityRoot).TrimEnd('\')
+  if ([IO.Path]::GetFileName($community) -ne 'Community2024') {
+    throw "Refus de modifier un dossier qui n’est pas Community2024 : $community"
+  }
   $targetFull = [IO.Path]::GetFullPath($Target)
   $requiredPrefix = $community + '\'
   if (-not $targetFull.StartsWith($requiredPrefix, [StringComparison]::OrdinalIgnoreCase)) {
@@ -54,6 +57,11 @@ if ($Uninstall) {
   }
 
   if ([string]::IsNullOrWhiteSpace($target)) {
+    if ($StateFile) {
+      Write-Host 'Aucun état d’installation EFB Hermès : rien à désinstaller.'
+      exit 0
+    }
+
     $packages = Get-ConfiguredPackagesPath -ExplicitPath $InstalledPackagesPath
     if ($packages) {
       $target = Join-Path (Join-Path $packages 'Community2024') $packageName
