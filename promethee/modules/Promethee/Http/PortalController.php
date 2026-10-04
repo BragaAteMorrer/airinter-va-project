@@ -1669,12 +1669,9 @@ class PortalController extends Controller
        return back()->with('success', 'Téléchargement supprimé.');
    }
     /** Current missions and circuits. Completion is derived from accepted PIREPs. */
-    public function missions(Request $r, RegionalOperationsService $regionalOperations, UserService $userService) {
+    public function missions(Request $r, RegionalOperationsService $regionalOperations) {
         $regionalOperations->sync();
-        $today = today('Europe/Paris')->toDateString();
-        $user = $r->user();
-        $userId = $user->id;
-
+        $today = today('Europe/Paris')->toDateString(); $userId = $r->user()->id;
         $reports = Pirep::where('user_id',$userId)->where('state',PirepState::ACCEPTED)
             ->get(['id','flight_id','dpt_airport_id','arr_airport_id','submitted_at']);
         $matches = function ($item) use ($reports) {
@@ -1684,26 +1681,12 @@ class PortalController extends Controller
                 (!$item->arr_airport_id || $report->arr_airport_id === $item->arr_airport_id)
             );
         };
-
-        $missions = DB::table('promethee_missions')->where('active',true)
-            ->where(fn($q)=>$q->whereNull('starts_on')->orWhere('starts_on','<=',$today))
-            ->where(fn($q)=>$q->whereNull('ends_on')->orWhere('ends_on','>=',$today))
-            ->orderBy('ends_on')
-            ->get();
-
-        $aircraftById = Aircraft::with('subfleet:id,type,name')
-            ->whereIn('id', $missions->pluck('aircraft_id')->filter()->unique()->values())
-            ->get(['id','registration','icao','name','subfleet_id'])
-            ->keyBy('id');
-
-        // Keep the mission screen aligned with phpVMS' own rank/type-rating
-        // restrictions instead of inventing a second authorization rule here.
-        $allowedSubfleetIds = $userService->getAllowableSubfleets($user)
-            ->pluck('id')
-            ->map(fn ($id) => (int) $id)
-            ->all();
-
-        $missions = $missions->map(function ($mission) use ($matches, $userId, $aircraftById, $allowedSubfleetIds) {
+        $missions = $regionalOperations->decorateMissionsForPilot(
+            DB::table('promethee_missions')->where('active',true)
+                ->where(fn($q)=>$q->whereNull('starts_on')->orWhere('starts_on','<=',$today))
+                ->where(fn($q)=>$q->whereNull('ends_on')->orWhere('ends_on','>=',$today))->orderBy('ends_on')->get(),
+            $r->user()
+        )->map(function ($mission) use ($matches, $userId) {
             $mission->completion = $matches($mission);
             $mission->booking = DB::table('promethee_mission_bookings')
                 ->where('mission_id', $mission->id)
@@ -1713,27 +1696,12 @@ class PortalController extends Controller
                 ->where('mission_id', $mission->id)
                 ->where('user_id', '!=', $userId)
                 ->where('status', 'reserved')->exists();
-
-            $aircraft = $mission->aircraft_id
-                ? $aircraftById->get((int) $mission->aircraft_id)
-                : null;
-
-            $mission->aircraft_registration = $aircraft?->registration;
-            $mission->aircraft_icao = $aircraft?->icao;
-            $mission->aircraft_type = $aircraft?->subfleet?->type ?: $aircraft?->icao;
-            $mission->aircraft_type_name = $aircraft?->subfleet?->name ?: $aircraft?->name;
-            $mission->aircraft_allowed = $aircraft
-                ? in_array((int) $aircraft->subfleet_id, $allowedSubfleetIds, true)
-                : false;
-
             return $mission;
         });
-
         $circuits = DB::table('promethee_circuits')->where('active',true)
             ->where(fn($q)=>$q->whereNull('starts_on')->orWhere('starts_on','<=',$today))
             ->where(fn($q)=>$q->whereNull('ends_on')->orWhere('ends_on','>=',$today))->orderBy('ends_on')->get()
             ->map(function ($circuit) use ($matches) { $circuit->legs=DB::table('promethee_circuit_legs')->where('circuit_id',$circuit->id)->orderBy('position')->get()->map(function($leg) use($matches){ $leg->completion=$matches($leg); return $leg; }); $circuit->completed=$circuit->legs->isNotEmpty() && $circuit->legs->every(fn($leg)=>$leg->completion); return $circuit; });
-
         return $this->page('missions', compact('missions','circuits'));
     }
 
