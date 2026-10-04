@@ -419,14 +419,6 @@ final class HermesOperationLifecycleTest extends TestCase
         $pirepId = $this->prefile($fx);
         $this->telemetry($fx, 'CLIMB');
 
-        DB::table('promethee_pirep_aircraft_profiles')->insert([
-            'pirep_id' => $pirepId,
-            'aircraft_id' => $fx['aircraft']->id,
-            'snapshot' => json_encode(['type' => 'A320']),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
         $this->delete('/api/v1/pireps/'.$pirepId, [], [], $fx['user'])
             ->assertOk()
             ->assertJsonPath('data.deleted', true)
