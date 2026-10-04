@@ -80,10 +80,30 @@ class PortalController extends Controller
     }
     /** The branded, public replacement for /legacy/pireps/{id}. */
     public function pirep(string $id, Request $r) {
+        // Historical PIREPs may reference soft-deleted fleet, airport, airline,
+        // pilot or rank rows. The legacy phpVMS report controller already
+        // restores those relations for display; Promethee must do the same or
+        // old reports can explode with null relationships and return HTTP 500.
         $pirep = Pirep::with([
-            'acars', 'acars_logs', 'acars_route', 'aircraft.airline', 'airline.journal',
-            'arr_airport', 'dpt_airport', 'alt_airport', 'fares', 'field_values',
-            'flight', 'simbrief', 'user.rank', 'user.journal', 'comments.user',
+            'acars',
+            'acars_logs',
+            'acars_route',
+            'aircraft' => fn ($query) => $query->withTrashed()->with([
+                'airline' => fn ($airline) => $airline->withTrashed(),
+            ]),
+            'airline' => fn ($query) => $query->withTrashed()->with('journal'),
+            'arr_airport' => fn ($query) => $query->withTrashed(),
+            'dpt_airport' => fn ($query) => $query->withTrashed(),
+            'alt_airport' => fn ($query) => $query->withTrashed(),
+            'fares',
+            'field_values',
+            'flight',
+            'simbrief',
+            'user' => fn ($query) => $query->withTrashed()->with([
+                'rank' => fn ($rank) => $rank->withTrashed(),
+                'journal',
+            ]),
+            'comments.user',
         ])->findOrFail($id);
 
         $companyScore=['available'=>false,'score'=>$pirep->score,'starting_score'=>100,'penalty_total'=>$pirep->score===null?0:max(0,100-(int)$pirep->score),'items'=>[],'unavailable_rules'=>[]];
