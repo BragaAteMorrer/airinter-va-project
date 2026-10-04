@@ -150,7 +150,7 @@ public sealed class PrometheeWindow : Window
         }
 
         return route switch {
-            "/api/status" => Status(), "/api/about" => About(), "/api/login" => await Login(body), "/api/login/argos" => await LoginWithArgos(),
+            "/api/status" => Status(), "/api/about" => About(), "/api/login" => await Login(body), "/api/login/argos" => await LoginWithArgos(), "/api/logout" => await Logout(),
             "/api/start" => Start(body), "/api/pause" => Pause(), "/api/resume" => Resume(),
             "/api/recovery" => Recovery(), "/api/recovery/resume" => ResumeRecovery(), "/api/recovery/abandon" => await AbandonPirep(true), "/api/abandon-pirep" => await AbandonPirep(false),
             "/api/sync" => new { sent=await telemetry.SyncNow() }, "/api/report" => Report(), "/api/review" => recorder.GetReview() ?? throw new InvalidOperationException("Aucun vol en cours."), "/api/capabilities" => sim.AircraftCapabilities ?? throw new InvalidOperationException("Aucun profil de capacités avion disponible."), "/api/file" => await File(body),
@@ -340,7 +340,8 @@ public sealed class PrometheeWindow : Window
             || (uri.Host != "www.simbrief.com"
                 && uri.Host != "dispatch.simbrief.com"
                 && uri.Host != "my.vatsim.net"
-                && uri.Host != "fpl.ivao.aero"))
+                && uri.Host != "fpl.ivao.aero"
+                && uri.Host != "argos.airinter-va.org"))
             throw new InvalidOperationException("Hermès refuse d’ouvrir cette URL externe.");
         Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
         return new { ok = true };
@@ -424,6 +425,16 @@ public sealed class PrometheeWindow : Window
 
         var user = await argos.SignInAsync(client, server);
         return new { user, configuration = await LoadRemoteConfiguration(), provider = "argos" };
+    }
+
+    private async Task<object> Logout()
+    {
+        if (recorder.Flight is not null || recorder.RecoveryAvailable)
+            throw new InvalidOperationException("Déconnexion refusée : terminez, déposez ou abandonnez le vol Hermès en cours avant de changer de compte.");
+
+        await client.SignOut();
+        argos.ForgetSession();
+        return new { ok = true };
     }
     private async Task<RemoteAcarsConfiguration> LoadRemoteConfiguration()
     {

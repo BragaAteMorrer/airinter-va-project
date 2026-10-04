@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Issues a narrowly-scoped, short-lived credential for the desktop ACARS.
@@ -34,7 +35,7 @@ class AcarsSessionController extends Controller
             ], 401);
         }
 
-        return $this->issueSession($user);
+        return $this->issueSession($user, 'promethee');
     }
 
     public function storeFromArgos(Request $request): JsonResponse
@@ -88,21 +89,52 @@ class AcarsSessionController extends Controller
             ], 502);
         }
 
-        $email = mb_strtolower(trim((string) $response->json('email')));
-        if ($email === '') {
+        $subject = trim((string) $response->json('sub'));
+        if ($subject === '') {
             return response()->json([
-                'error' => ['code' => '422', 'message' => 'Argos n’a pas renvoyé l’adresse e-mail du pilote.'],
+                'error' => ['code' => '422', 'message' => 'Argos n’a pas renvoyé le sujet OIDC attendu.'],
             ], 422);
         }
 
-        $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
+        $argosState = mb_strtolower(trim((string) $response->json('state')));
+        if ($argosState !== '' && !in_array($argosState, ['active', 'on_leave'], true)) {
+            return response()->json([
+                'error' => ['code' => '403', 'message' => 'Cette identité Argos ne peut pas actuellement utiliser Hermès.'],
+            ], 403);
+        }
+
+        // Argos is the identity authority. Resolve the immutable Prométhée
+        // identity link first; e-mail is only a compatibility fallback for an
+        // older Argos deployment that does not yet expose linked identities.
+        $linkedIdentity = collect((array) $response->json('identities', []))
+            ->first(fn ($identity) => is_array($identity)
+                && ($identity['provider'] ?? null) === 'promethee'
+                && !empty($identity['id']));
+
+        if ($linkedIdentity) {
+            $user = User::query()->find($linkedIdentity['id']);
+            if ($user === null) {
+                return response()->json([
+                    'error' => ['code' => '403', 'message' => 'Le compte Prométhée lié à cette identité Argos est introuvable.'],
+                ], 403);
+            }
+        } else {
+            $email = mb_strtolower(trim((string) $response->json('email')));
+            if ($email === '') {
+                return response()->json([
+                    'error' => ['code' => '422', 'message' => 'Argos n’a renvoyé ni identité Prométhée liée ni adresse e-mail exploitable.'],
+                ], 422);
+            }
+            $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
+        }
+
         if ($user === null || !in_array($user->state, [UserState::ACTIVE, UserState::ON_LEAVE], true)) {
             return response()->json([
                 'error' => ['code' => '403', 'message' => 'Aucun compte pilote Prométhée actif ne correspond à cette identité Argos.'],
             ], 403);
         }
 
-        return $this->issueSession($user);
+        return $this->issueSession($user, 'argos', $subject);
     }
 
     private function verifyArgosSession(string $issuer, string $accessToken): \Illuminate\Http\Client\Response
@@ -146,7 +178,7 @@ class AcarsSessionController extends Controller
         return $lastResponse ?? throw new \RuntimeException('Argos session verification returned no response.');
     }
 
-    private function issueSession(User $user): JsonResponse
+    private function issueSession(User $user, string $authProvider = 'promethee', ?string $identitySubject = null): JsonResponse
     {
         $expiresAt = now()->addHours(12);
         $plainToken = bin2hex(random_bytes(32));
@@ -154,19 +186,31 @@ class AcarsSessionController extends Controller
         DB::table('acars_access_tokens')->where('user_id', $user->id)->whereNull('revoked_at')
             ->where('expires_at', '<=', now())->delete();
 
-        DB::table('acars_access_tokens')->insert([
+        $row = [
             'user_id'      => $user->id,
             'token_hash'   => hash('sha256', $plainToken),
             'expires_at'   => $expiresAt,
             'last_used_at' => now(),
             'created_at'   => now(),
             'updated_at'   => now(),
-        ]);
+        ];
+
+        // Keep rolling deployments safe: new application code may briefly run
+        // before the migration has reached every node.
+        if (Schema::hasColumn('acars_access_tokens', 'auth_provider')) {
+            $row['auth_provider'] = $authProvider;
+        }
+        if (Schema::hasColumn('acars_access_tokens', 'identity_subject')) {
+            $row['identity_subject'] = $identitySubject;
+        }
+
+        DB::table('acars_access_tokens')->insert($row);
 
         return response()->json(['data' => [
             'access_token' => $plainToken,
             'token_type'   => 'Bearer',
             'expires_at'   => $expiresAt->toIso8601String(),
+            'auth_provider'=> $authProvider,
         ]]);
     }
 

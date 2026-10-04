@@ -195,6 +195,7 @@ function setAuthenticated(value) {
   connected = Boolean(value);
   document.body.classList.toggle('auth-locked', !connected);
   document.querySelectorAll('.protected-tab').forEach(tab => { tab.disabled = !connected; });
+  if (!connected) window.HermesIdentity?.clear?.();
   window.dispatchEvent(new CustomEvent('hermes:auth-changed', { detail: { authenticated: connected } }));
 }
 setAuthenticated(false);
@@ -328,12 +329,7 @@ $$('.message').forEach(node => {
 });
 
 function pilotIdentity(value) {
-  const user = unwrap(value)?.user ?? unwrap(value) ?? {};
-  const first = user.first_name || user.firstname || user.firstName || '';
-  const last = user.last_name || user.lastname || user.lastName || '';
-  const name = [first, last].filter(Boolean).join(' ') || user.name || user.name_private || '';
-  const callsign = user.ident || user.pilot_id || user.pilotId || '';
-  setText($('#serverState'), name && callsign ? `${name} · ${callsign}` : name || callsign || 'Pilote connecté');
+  window.HermesIdentity?.apply?.(value);
 }
 
 async function login(form) {
@@ -377,6 +373,43 @@ async function loginWithArgos() {
 
 const argosLoginBtn = $('#argosLoginBtn');
 if (argosLoginBtn) argosLoginBtn.onclick = loginWithArgos;
+
+window.HermesIdentity?.initialize?.(call, registerHermesError);
+
+const logoutBtn = $('#logoutBtn');
+if (logoutBtn) {
+  logoutBtn.onclick = async () => {
+    if (!confirm('Se déconnecter d’Hermès ?\n\nLa session ACARS sera révoquée et la connexion Argos mémorisée sur ce PC sera oubliée.')) return;
+    logoutBtn.disabled = true;
+    try {
+      await call('/api/logout', {});
+      selectedOperation = null;
+      selectedAircraft = null;
+      selectedVariant = null;
+      aircraftVariantState = null;
+      aircraftEligibility = null;
+      pirepId = null;
+      flightPlan = null;
+      linkedSimBrief = null;
+      serverDispatch = null;
+      lastDatalinkSnapshot = null;
+      readiness = { operation: false, aircraft: false, ofp: false, pirep: false, simulator: Boolean(lastStatus?.latest) };
+      clearOperationalWeather();
+      $('#flightList')?.replaceChildren();
+      const selected = $('#selectedOperation');
+      if (selected) selected.hidden = true;
+      try { await call('/api/efb/context', null); } catch {}
+      setText($('#serverState'), 'Identité pilote à venir');
+      setAuthenticated(false);
+      document.querySelector('[data-tab="connect"]')?.click();
+      showMessage('#loginMessage', 'Déconnexion terminée. La prochaine connexion Argos redemandera votre identité.');
+    } catch (error) {
+      showMessage('#loginMessage', friendlyError(error, 'Impossible de terminer la déconnexion.', 'Déconnexion'), true);
+    } finally {
+      logoutBtn.disabled = false;
+    }
+  };
+}
 
 function setIndicator(selector, state, label) {
   const node = $(selector);

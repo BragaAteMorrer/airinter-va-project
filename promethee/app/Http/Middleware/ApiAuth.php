@@ -30,6 +30,7 @@ class ApiAuth implements Middleware
         $api_key = $request->header('x-api-key', null);
         $authorization = $request->header('Authorization', '');
         $user = null;
+        $authContext = ['provider' => 'api_key', 'sso' => false];
 
         if (Str::startsWith($authorization, 'Bearer ')) {
             $token = trim(Str::after($authorization, 'Bearer '));
@@ -42,6 +43,16 @@ class ApiAuth implements Middleware
 
                 if ($tokenRecord !== null) {
                     $user = User::find($tokenRecord->user_id);
+                    $provider = property_exists($tokenRecord, 'auth_provider') && filled($tokenRecord->auth_provider)
+                        ? (string) $tokenRecord->auth_provider
+                        : 'promethee';
+                    $authContext = [
+                        'provider' => $provider,
+                        'sso' => $provider === 'argos',
+                    ];
+                    if (property_exists($tokenRecord, 'identity_subject') && filled($tokenRecord->identity_subject)) {
+                        $authContext['identity_subject'] = (string) $tokenRecord->identity_subject;
+                    }
                     DB::table('acars_access_tokens')->where('id', $tokenRecord->id)->update([
                         'last_used_at' => now(),
                     ]);
@@ -70,6 +81,7 @@ class ApiAuth implements Middleware
         $request->setUserResolver(function () use ($user) {
             return $user;
         });
+        $request->attributes->set('airinter_auth', $authContext);
 
         // Force english locale for API
         app()->setLocale('en');

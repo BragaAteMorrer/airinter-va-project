@@ -147,7 +147,11 @@ body.auth-locked .rail .theme{display:none}
 
 /* Hermès operational workspace: keep the pilot focused on the next action. */
 .header-status { display:flex; flex-direction:column; align-items:flex-end; gap:.55rem; min-width:min(520px,48vw); }
-.pilot-state { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:.55rem 1rem; font-size:.86rem; opacity:.88; }
+.pilot-state { display:flex; flex-wrap:wrap; justify-content:flex-end; align-items:center; gap:.45rem .8rem; font-size:.86rem; opacity:.92; }
+.identity-provider{display:inline-flex;align-items:center;padding:.2rem .42rem;border:1px solid var(--line);border-radius:4px;color:var(--muted);font:800 9px/1.2 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.06em}
+.identity-provider.sso{border-color:color-mix(in srgb,var(--blue) 42%,var(--line));color:var(--blue);background:color-mix(in srgb,var(--blue) 7%,transparent)}
+.identity-account-link{padding:.18rem .38rem;border:0;background:transparent;color:var(--blue);font-size:10px;font-weight:800;text-decoration:underline;text-underline-offset:2px;box-shadow:none}
+.identity-account-link:hover{background:transparent;color:var(--ink)}
 .ops-status { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:.42rem; }
 .status-chip { display:inline-flex; align-items:center; gap:.42rem; padding:.36rem .62rem; border:1px solid var(--line); border-radius:999px; font-size:.71rem; font-weight:800; letter-spacing:.055em; white-space:nowrap; }
 .status-chip b { font-size:.72rem; line-height:1; }

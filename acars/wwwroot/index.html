@@ -40,7 +40,7 @@
     <header>
       <div><p class="kicker" data-i18n="header.direction">DIRECTION DE L’EXPLOITATION AÉRIENNE</p><h1>Hermès</h1><p class="header-subtitle" data-i18n="header.subtitle">Le client ACARS officiel d’Air Inter VA.</p></div>
       <div class="header-status">
-        <div class="pilot-state"><span id="serverState">Identité pilote à venir</span><span id="simState">Simulateur non détecté</span></div>
+        <div class="pilot-state"><span id="serverState">Identité pilote à venir</span><span id="identityProvider" class="identity-provider" hidden></span><button id="argosAccountBtn" class="identity-account-link" type="button" hidden>Compte Air Inter</button><button id="logoutBtn" class="identity-account-link" type="button" hidden>Déconnexion</button><span id="simState">Simulateur non détecté</span></div>
         <div class="ops-status" aria-label="État opérationnel Hermès">
           <span id="prometheeIndicator" class="status-chip pending">PROMÉTHÉE <b>●</b></span>
           <span id="simIndicator" class="status-chip pending">SIM <b>●</b></span>
@@ -524,7 +524,7 @@
         <article><span class="kicker">COMPAGNIE</span><h3>Politique Prométhée</h3><p class="hint">Cadence live, règles de vol, versions minimales et dépôt PIREP sont imposés par Air Inter et affichés en lecture seule.</p></article>
         <article class="settings-addons"><span class="kicker">MES ADD-ONS</span><h3>Variantes d’appareils</h3><p class="hint">Cochez les add-ons que vous possédez. Hermès les proposera en priorité pour les types compatibles.</p><div id="aircraftVariantLibrary" class="observation-list"><p class="empty">Connectez-vous pour charger votre bibliothèque.</p></div><button type="button" id="saveAircraftVariantsBtn">Enregistrer mes add-ons</button><p id="aircraftVariantLibraryMessage" class="hint"></p></article>
         <article><span class="kicker">INSTALLATION</span><h3>Compatibilité & version</h3><p class="hint">MSFS 2020/2024 via SimConnect · FS2004/FSX/P3D via FSUIPC · X-Plane 11/12 via UDP expérimental.</p><button type="button" id="checkUpdateBtn">Rechercher une mise à jour</button><p id="updateMessage" class="hint"></p></article>
-        <article><span class="kicker">IDENTITÉ</span><h3>Air Inter ID</h3><p class="hint">Le flux OAuth2 Authorization Code + PKCE remplacera la saisie du mot de passe dans une prochaine étape. Aucun secret client ne sera embarqué.</p></article>
+        <article><span class="kicker">IDENTITÉ AIR INTER</span><h3>Argos</h3><p class="hint">Connexion SSO active via OAuth 2.0 / OpenID Connect + PKCE. Hermès ne reçoit jamais votre mot de passe Argos ; la connexion Prométhée locale reste uniquement un secours.</p></article>
       </div>
       <p id="remotePolicy" class="message" hidden></p><p id="settingsMessage" class="message" hidden></p>
     </section>
@@ -589,5 +589,6 @@ try {
 <script src="/hermes-map.js?rev=20261003-architecture-phase4"></script>
   <script src="/hermes-review.js?rev=20261003-architecture-phase4"></script>
   <script src="/hermes-weather.js?rev=20261005-audit-lot11"></script>
-  <script src="/app.js?rev=20261005-audit-lot11"></script>
+  <script src="/hermes-identity.js?rev=20261005-audit-lot12"></script>
+  <script src="/app.js?rev=20261005-audit-lot12"></script>
 </body></html>

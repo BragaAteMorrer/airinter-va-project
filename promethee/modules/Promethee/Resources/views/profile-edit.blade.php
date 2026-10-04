@@ -4,7 +4,8 @@
 <div class="page-heading"><div><span class="eyebrow">ESPACE PILOTE</span><h1>Modifier mon profil.</h1><p>Ces informations sont utilisées pour votre compte et votre carnet de vol.</p></div><a class="button outline" href="{{ route('promethee.profile') }}">Annuler</a></div>
 <form class="panel profile-form" method="post" action="{{ route('promethee.profile.update') }}" enctype="multipart/form-data">
 @csrf @method('PATCH')
-<div class="panel-heading"><div><span class="eyebrow">IDENTITÉ</span><h2>Informations personnelles</h2></div></div>
+<div class="panel-heading"><div><span class="eyebrow">IDENTITÉ</span><h2>Informations personnelles</h2></div>@if(config('services.airinter_id.enabled'))<a class="button outline" href="{{ rtrim(config('services.airinter_id.base_url'), '/') }}/account">Sécurité & compte Air Inter</a>@endif</div>
+@if(config('services.airinter_id.enabled'))<p class="notice">Argos est l’identité Air Inter commune à Prométhée et Hermès. Utilisez le compte Air Inter pour gérer mot de passe, MFA, passkeys et sessions. Les champs ci-dessous restent les données opérationnelles de votre profil Prométhée.</p>@endif
 <div class="form-grid">
 <label>Nom affiché<input name="name" value="{{ old('name', $pilot->name) }}" required autocomplete="name"></label>
 <label>E-mail<input type="email" name="email" value="{{ old('email', $pilot->email) }}" required autocomplete="email"><small>Une modification demandera une nouvelle vérification.</small></label>
@@ -17,7 +18,7 @@
 <label>Identifiant IVAO<input name="ivao_id" value="{{ old('ivao_id', $pilot->ivao_id) }}"></label>
 <label class="full">Photo de profil<input type="file" name="avatar" accept="image/jpeg,image/png,image/webp"><small>JPEG, PNG ou WebP, 2 Mo maximum.</small></label>
 </div>
-<div class="panel-heading profile-password-heading"><div><span class="eyebrow">SÉCURITÉ</span><h2>Changer le mot de passe</h2><p>Laissez ces deux champs vides pour conserver votre mot de passe actuel.</p></div></div>
+<div class="panel-heading profile-password-heading"><div><span class="eyebrow">CONNEXION DE SECOURS</span><h2>Mot de passe Prométhée</h2><p>@if(config('services.airinter_id.enabled'))Ce mot de passe sert uniquement à la connexion Prométhée de secours. Le mot de passe principal Air Inter se gère dans Argos.@else Laissez ces deux champs vides pour conserver votre mot de passe actuel.@endif</p></div></div>
 <div class="form-grid"><label>Nouveau mot de passe<input type="password" name="password" autocomplete="new-password"></label><label>Confirmer le mot de passe<input type="password" name="password_confirmation" autocomplete="new-password"></label></div>
 <div class="profile-form-actions"><button type="submit">Enregistrer les modifications</button></div>
 </form>

@@ -101,6 +101,29 @@ public sealed class PhpVmsClient
     public Task<JsonElement> Delete(string path) =>
         SendRequest(HttpMethod.Delete, path);
 
+    public async Task SignOut()
+    {
+        var token = credential;
+        credential = "";
+
+        if (string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(Server))
+            return;
+
+        try {
+            using var request = new HttpRequestMessage(HttpMethod.Delete, Server + "/api/acars/session");
+            request.Headers.Authorization = new("Bearer", token);
+            request.Headers.Add("Accept", "application/json");
+            using var response = await http.SendAsync(request);
+            if (!response.IsSuccessStatusCode) {
+                System.Diagnostics.Trace.WriteLine($"ACARS logout {Server}/api/acars/session returned {(int)response.StatusCode}.");
+            }
+        } catch (Exception exception) {
+            // Local logout must always win. The token is short-lived server-side
+            // and will expire even when the explicit revocation cannot be sent.
+            System.Diagnostics.Trace.WriteLine($"ACARS logout transport failure: {exception}");
+        }
+    }
+
     private async Task<JsonElement> SendRequest(HttpMethod method, string path, object? body = null)
     {
         if (!Connected) throw new InvalidOperationException("Connectez-vous à votre compte pilote.");
