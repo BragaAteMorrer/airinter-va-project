@@ -181,8 +181,10 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
         var eventId = (uint)Marshal.ReadInt32(data, 28);
         if (eventId != EfbRequestEventId) return;
 
-        var bytes = new byte[length - 32];
-        Marshal.Copy(IntPtr.Add(data, 32), bytes, 0, bytes.Length);
+        var payloadLength = checked((int)length - 32);
+        if (payloadLength <= 0) return;
+        var bytes = new byte[payloadLength];
+        Marshal.Copy(IntPtr.Add(data, 32), bytes, 0, payloadLength);
         var zero = Array.IndexOf(bytes, (byte)0);
         var payload = Encoding.UTF8.GetString(bytes, 0, zero >= 0 ? zero : bytes.Length);
 
