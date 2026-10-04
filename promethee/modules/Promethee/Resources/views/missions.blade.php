@@ -89,6 +89,16 @@
               <small>Retour vers sa base attitrée</small>
             </article>
             <article>
+              <span>Type d’appareil</span>
+              <strong>{{ $mission->aircraft_type ?: '—' }}</strong>
+              <small>
+                @if($mission->aircraft_type_name)
+                  {{ $mission->aircraft_type_name }} ·
+                @endif
+                {{ $mission->aircraft_allowed ? 'Autorisé pour votre grade' : 'Non autorisé pour votre grade' }}
+              </small>
+            </article>
+            <article>
               <span>Rémunération</span>
               <strong>×{{ number_format((float) $mission->reward_multiplier, 1, ',', ' ') }}</strong>
               <small>par rapport au vol normal</small>
@@ -97,6 +107,12 @@
 
           @if($mission->reserved_by_other)
             <span class="tag">DÉJÀ PRISE</span>
+          @elseif(!$mission->aircraft_registration)
+            <span class="tag">APPAREIL INDISPONIBLE</span>
+            <small>Impossible de réserver cette mission tant que l’appareil imposé n’est pas disponible.</small>
+          @elseif(!$mission->aircraft_allowed)
+            <span class="tag">GRADE INCOMPATIBLE</span>
+            <small>Votre grade ou qualification ne permet pas de piloter ce type d’appareil.</small>
           @else
             <form method="post" action="{{ route('promethee.missions.reserve', $mission->id) }}">
               @csrf
