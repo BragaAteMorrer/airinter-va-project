@@ -144,8 +144,11 @@ expect(hermesApp.includes('scheduleEfbContextSync')
 expect(hermesEfbApp.includes('Efb.use(AirInterHermesApp)')
     && hermesEfbApp.includes('Efb.loadJs("/JS/Services/CommBus.js")')
     && hermesEfbApp.includes('callSimConnect')
-    && hermesEfbApp.includes('Lecture seule'),
-  'MSFS 2024 EFB app must use the native EFB/CommBus surface and remain read-only.');
+    && hermesEfbApp.includes('Lecture seule')
+    && hermesEfbApp.includes('OFP / SIMBRIEF')
+    && hermesEfbApp.includes('BLOCK FUEL')
+    && hermesEfbApp.includes('grossWeight'),
+  'MSFS 2024 EFB app must use native CommBus, remain read-only and preserve its OFP/live-flight surface.');
 expect(hermesEfbBuild.includes('coui://html_ui/efb_ui/efb_apps/AirInterHermes')
     && hermesEfbPackage.includes('"@efb/efb-api"')
     && hermesEfbPackage.includes('"@microsoft/msfs-sdk"'),
