@@ -7,11 +7,14 @@ use App\Models\Airport;
 use App\Models\User;
 use App\Services\AirportService;
 use App\Services\FinanceService;
+use App\Services\UserService;
 use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 
 class RegionalOperationsService
 {
+    public function __construct(private readonly UserService $userService) {}
+
     public function settings(): array
     {
         $values = DB::table('promethee_settings')
@@ -155,7 +158,20 @@ class RegionalOperationsService
 
             abort_if($alreadyReserved, 409, 'Cette mission de rapatriement est déjà réservée.');
 
-            $freshUser = User::with(['journal', 'airline.journal'])->findOrFail($user->id);
+            $freshUser = User::with(['journal', 'airline.journal', 'rank'])->findOrFail($user->id);
+            $aircraft = $mission->aircraft_id
+                ? Aircraft::with('subfleet')->find($mission->aircraft_id)
+                : null;
+
+            abort_unless($aircraft, 422, 'L’appareil affecté à cette mission est introuvable.');
+            abort_unless(
+                $this->userService->aircraftAllowed($freshUser, $aircraft->id),
+                403,
+                'Votre grade ou qualification ne vous autorise pas à piloter cet appareil ('.($aircraft->subfleet?->name ?: $aircraft->icao).').'
+            );
+
+            // Authorization must happen before any jumpseat debit: a pilot who
+            // cannot fly the imposed aircraft must never be charged to reach it.
             $journal = $freshUser->journal ?: $freshUser->initJournal();
             $currentAirportId = $freshUser->curr_airport_id ?: $freshUser->home_airport_id;
             $jumpseatAmount = new Money(0);
