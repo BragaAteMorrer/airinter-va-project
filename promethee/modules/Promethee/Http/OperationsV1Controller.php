@@ -242,12 +242,22 @@ class OperationsV1Controller extends Controller
     public function me(Request $request)
     {
         $user = $request->user();
+        $auth = (array) $request->attributes->get('airinter_auth', [
+            'provider' => 'api_key',
+            'sso' => false,
+        ]);
+        $argosBase = rtrim((string) config('services.airinter_id.base_url', 'https://argos.airinter-va.org'), '/');
 
         return response()->json(['data' => [
             'id' => $user->id,
             'ident' => $user->ident,
             'name' => trim(($user->name_private ?? $user->name ?? '')),
-            'contract_version' => '1.0',
+            'contract_version' => '1.1',
+            'auth' => [
+                'provider' => (string) ($auth['provider'] ?? 'api_key'),
+                'sso' => (bool) ($auth['sso'] ?? false),
+                'account_url' => $argosBase !== '' ? $argosBase.'/account' : null,
+            ],
         ]]);
     }
 
