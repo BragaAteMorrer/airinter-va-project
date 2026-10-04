@@ -44,21 +44,41 @@ Aucun token Argos, cookie, mot de passe ou action de dépôt PIREP n'est envoyé
 - messages de pause / recovery / synchronisation ;
 - disponibilité du dépôt final.
 
-## Prérequis SDK
+## Build
 
-Le dossier `efb_api` est fourni par le SDK MSFS 2024 et **n'est pas versionné dans ce dépôt**.
+Le build de release utilise désormais les packages npm publics Microsoft :
 
-À partir du sample EFB officiel du SDK :
+- `@microsoft/msfs-efb-api`
+- `@microsoft/msfs-sdk`
+- `@microsoft/msfs-types`
 
-1. copier `PackageSources/efb_api` dans `acars/msfs2024-efb/efb_api` ;
-2. exécuter `npm install` dans ce dossier, comme demandé par le SDK ;
-3. exécuter `npm install` dans `HermesEfb` ;
-4. copier `.env.example` vers `.env` si nécessaire ;
-5. lancer `npm run typecheck`, puis `npm run build`.
+Le **SDK MSFS 2024 n’est plus requis pour compiler ou publier l’EFB**.
+
+Prérequis de build :
+
+- Node.js 18+ ;
+- npm.
+
+Depuis le dépôt :
+
+```powershell
+cd acars\msfs2024-efb\HermesEfb
+npm install
+npm run typecheck
+npm run build
+```
+
+ou simplement :
+
+```powershell
+.\acars\msfs2024-efb\build-efb-app.ps1
+```
 
 Le résultat est produit dans :
 
-`acars/msfs2024-efb/HermesEfb/dist`
+`acars\msfs2024-efb\HermesEfb\dist`
+
+Le SDK MSFS 2024 reste utile pour ouvrir un projet en DevMode et effectuer des validations in-sim, mais il n’est pas une dépendance de la chaîne de release.
 
 ## Packaging MSFS 2024
 
@@ -97,15 +117,14 @@ L'EFB doit rester utilisable si Prométhée est temporairement hors ligne : il a
 
 ## Distribution aux pilotes
 
-Le SDK est un prérequis **de build**, pas un prérequis utilisateur.
+Le pilote n’a aucun prérequis de développement. La chaîne de release compile l’EFB directement depuis les packages npm publics Microsoft.
 
 Pour produire une release distribuable :
 
 ```powershell
 .\acars\build-installer.ps1 `
   -Version 1.0.0 `
-  -IncludeMsfs2024Efb `
-  -Msfs2024SdkRoot 'C:\MSFS 2024 SDK'
+  -IncludeMsfs2024Efb
 ```
 
 Cela produit :
