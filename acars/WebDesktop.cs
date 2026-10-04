@@ -201,6 +201,7 @@ public sealed class PrometheeWindow : Window
                     heading = latest.HeadingDegrees,
                     vs = latest.VerticalSpeedFeetPerMinute,
                     fuel = latest.FuelWeight,
+                    grossWeight = latest.GrossWeight,
                     onGround = latest.OnGround,
                     paused = latest.Paused
                 },
