@@ -15,6 +15,7 @@ use Modules\Promethee\Services\DatalinkService;
 use Modules\Promethee\Services\DispatchDeskService;
 use Modules\Promethee\Services\FlightOpsService;
 use Modules\Promethee\Services\OperationIdentityService;
+use Modules\Promethee\Services\OperationalWeatherService;
 use Modules\Promethee\Services\SafetyAnalyzer;
 
 final class DispatchDeskTest extends TestCase
@@ -165,11 +166,24 @@ final class DispatchDeskTest extends TestCase
 
     private function dispatch(?DatalinkService $datalink = null): DispatchDeskService
     {
+        $weather = \Mockery::mock(OperationalWeatherService::class);
+        $weather->shouldReceive('forFlight')->zeroOrMoreTimes()->andReturn([
+            'contract_version' => '1.0',
+            'provider' => 'AviationWeather.gov',
+            'status' => 'AVAILABLE',
+            'stations' => [],
+            'sigmet_status' => 'AVAILABLE',
+            'sigmets' => [],
+            'summary' => ['worst_category' => 'VFR', 'sigmet_count' => 0, 'arrival_runway' => null],
+            'note' => 'Test weather payload.',
+        ]);
+
         return new DispatchDeskService(
             app(OperationIdentityService::class),
             $datalink ?? new DatalinkService($this->datalinkFolder),
             app(FlightOpsService::class),
             app(SafetyAnalyzer::class),
+            $weather,
         );
     }
 
