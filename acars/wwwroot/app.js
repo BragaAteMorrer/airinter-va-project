@@ -1580,13 +1580,17 @@ async function selectOperation(operation) {
 
   try { await refreshDispatch(); }
   catch (error) { showMessage('#pirepMessage', 'Dispatch indisponible : ' + friendlyError(error), true); }
+  try { await refreshOperationalWeather(); }
+  catch (error) { setText($('#weatherOpsState'), 'MÉTÉO INDISPONIBLE'); }
 }
 
 async function refreshDispatch() {
   const operationRef = selectedOperation?.operation_id || selectedOperation?.id;
   if (!operationRef) { serverDispatch = null; clearOperationalWeather(); return null; }
 
+  const currentWeather = serverDispatch?.weather || null;
   serverDispatch = unwrap(await call(`/api/v1/operations/${encodeURIComponent(operationRef)}/dispatch`));
+  if (currentWeather) serverDispatch.weather = currentWeather;
 
   // A dispatch refresh is the canonical recovery path for Hermès. Hydrate all
   // identifiers that may have been lost when the desktop app was restarted.
@@ -1616,10 +1620,25 @@ async function refreshDispatch() {
 
   const labels = { PREPARATION_REQUIRED: 'PRÉPARATION REQUISE', READY: 'PRÊT POUR HERMÈS', IN_PROGRESS: 'VOL EN COURS', AWAITING_FILING: 'ARRIVÉ · PIREP À DÉPOSER', COMPLETED: 'VOL TERMINÉ', CANCELLED: 'OPÉRATION ANNULÉE' };
   setText($('#operationBrief'), `${labels[serverDispatch?.status] || serverDispatch?.status || 'DISPATCH'} · Dispatch Prométhée`);
-  renderOperationalWeather(serverDispatch?.weather || null);
   updateWorkflow();
   scheduleEfbContextSync();
   return serverDispatch;
+}
+
+async function refreshOperationalWeather() {
+  const operationRef = selectedOperation?.operation_id || selectedOperation?.id || selectedOperation?.bid_id;
+  if (!operationRef || !connected) {
+    clearOperationalWeather();
+    if (serverDispatch) serverDispatch.weather = null;
+    scheduleEfbContextSync();
+    return null;
+  }
+
+  const weather = unwrap(await call(`/api/v1/operations/${encodeURIComponent(operationRef)}/weather`));
+  if (serverDispatch) serverDispatch.weather = weather;
+  renderOperationalWeather(weather);
+  scheduleEfbContextSync();
+  return weather;
 }
 
 async function assertDispatchCanStart() {
@@ -3018,7 +3037,7 @@ const hermesPolling = {
   status: { timer: null, delay: 1000, enabled: () => true, run: refreshStatus },
   datalink: { timer: null, delay: 5000, enabled: () => $('#datalink')?.classList.contains('active'), run: refreshDatalink },
   network: { timer: null, delay: 15000, enabled: () => $('#network')?.classList.contains('active'), run: refreshNetwork },
-  weather: { timer: null, delay: 300000, enabled: () => connected && Boolean(selectedOperation), run: refreshDispatch }
+  weather: { timer: null, delay: 300000, enabled: () => connected && Boolean(selectedOperation), run: refreshOperationalWeather }
 };
 const stopHermesPolling = () => {
   Object.values(hermesPolling).forEach(poller => {
@@ -3043,7 +3062,7 @@ const startHermesPolling = () => {
   Object.values(hermesPolling).forEach(scheduleHermesPoller);
 };
 
-initializeOperationalWeather(() => refreshDispatch());
+initializeOperationalWeather(() => refreshOperationalWeather());
 updateWorkflow();
 drawMap([]);
 refreshStatus();
