@@ -276,7 +276,7 @@ Pour produire l’installateur Hermès classique :
 Pour la **release publique recommandée**, avec l’application EFB native MSFS 2024 embarquée :
 
 ```powershell
-.\acars\build-installer.ps1 -Version 1.0.0 -IncludeMsfs2024Efb -Msfs2024SdkRoot 'C:\MSFS 2024 SDK'
+.\acars\build-installer.ps1 -Version 1.0.0 -IncludeMsfs2024Efb
 ```
 
 Le setup universel :
@@ -296,7 +296,7 @@ Le même build produit aussi :
 pour les pilotes qui préfèrent une installation manuelle dans `Community2024`.
 
 **Les pilotes finaux n’ont besoin ni du SDK MSFS 2024, ni de Node.js, ni de npm.**
-Ces dépendances sont uniquement requises sur la machine qui fabrique la release publique.
+La workflow GitHub officielle compile l’EFB avec les packages npm Microsoft puis l’embarque automatiquement dans le Setup.
 
 Le setup est créé dans `dist\Hermes-ACARS-Setup-1.0.0.exe`.
 
