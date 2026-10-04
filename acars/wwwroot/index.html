@@ -178,6 +178,20 @@
 
         <p id="simbriefState" class="plan-state">Sélectionnez un vol et un appareil.</p>
       </section>
+      <section id="operationalWeather" class="flightplan-source operational-weather" hidden aria-labelledby="operationalWeatherTitle">
+        <div class="draft-heading weather-ops-heading">
+          <div><span class="kicker">WEATHER / OPS</span><h3 id="operationalWeatherTitle">Météo opérationnelle</h3><p>Départ, destination, dégagement, SIGMET et piste probable selon le vent observé.</p></div>
+          <div class="weather-ops-actions"><strong id="weatherOpsState" class="ready-state">STANDBY</strong><button id="weatherRefreshBtn" type="button">Actualiser</button></div>
+        </div>
+        <div class="cards weather-ops-summary">
+          <div><span>Situation</span><strong id="weatherWorst">—</strong></div>
+          <div><span>SIGMET corridor</span><strong id="weatherSigmetCount">0</strong></div>
+          <div><span>Piste probable arrivée</span><strong id="weatherArrivalRunway">—</strong></div>
+        </div>
+        <div id="weatherOpsStations" class="weather-station-grid"></div>
+        <div class="weather-sigmet-panel"><div><span class="kicker">ROUTE</span><h4>SIGMET</h4></div><div id="weatherOpsSigmets" class="observation-list"></div></div>
+        <p id="weatherOpsNote" class="hint">Météo opérationnelle indicative.</p>
+      </section>
       <pre id="planBox" hidden>Aucun plan chargé.</pre>
       <section id="networkPrefilePanel" class="flightplan-source" hidden>
         <div class="draft-heading">
@@ -574,5 +588,6 @@ try {
 </script>
 <script src="/hermes-map.js?rev=20261003-architecture-phase4"></script>
   <script src="/hermes-review.js?rev=20261003-architecture-phase4"></script>
-  <script src="/app.js?rev=20261003-architecture-phase4"></script>
+  <script src="/hermes-weather.js?rev=20261005-audit-lot11"></script>
+  <script src="/app.js?rev=20261005-audit-lot11"></script>
 </body></html>

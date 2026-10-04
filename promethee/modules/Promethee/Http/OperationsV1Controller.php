@@ -31,6 +31,7 @@ use Modules\Promethee\Services\AircraftConfigurationResolver;
 use Modules\Promethee\Services\HermesPirepLifecycleService;
 use Modules\Promethee\Services\LegacyPirepScoringService;
 use Modules\Promethee\Services\PilotPirepDeletionService;
+use Modules\Promethee\Services\OperationalWeatherService;
 use Modules\Promethee\Models\PirepAircraftProfile;
 
 /**
@@ -54,7 +55,8 @@ class OperationsV1Controller extends Controller
         private readonly AircraftConfigurationResolver $aircraftConfigurations,
         private readonly HermesPirepLifecycleService $pirepLifecycle,
         private readonly LegacyPirepScoringService $legacyScoring,
-        private readonly PilotPirepDeletionService $pirepDeletion
+        private readonly PilotPirepDeletionService $pirepDeletion,
+        private readonly OperationalWeatherService $weather
     ) {}
 
     public function index(Request $request)
@@ -593,7 +595,6 @@ class OperationsV1Controller extends Controller
         $serverReady = collect($checks)->every(fn ($check) => $check['ready']);
         $status = $this->dispatchStatus($bid, $visiblePirep, $serverReady);
         $workflowState = $this->workflowState($bid, $visiblePirep, $serverReady, $checks);
-
         return response()->json(['data' => [
             'contract_version' => '1.0',
             'workflow_contract_version' => '2.0',
@@ -614,6 +615,25 @@ class OperationsV1Controller extends Controller
                 : [],
             'terminal' => in_array($status, ['COMPLETED', 'CANCELLED'], true),
         ]]);
+    }
+
+    public function operationWeather(string $bidId, Request $request)
+    {
+        $bid = $this->bid($bidId, $request);
+        $pirep = $this->operationPirep($bid);
+        $legacyGhost = $pirep && $this->isLegacyHermesGhostPirep($pirep);
+        $visiblePirep = $legacyGhost ? null : $pirep;
+
+        return response()->json(['data' => $bid->flight
+            ? $this->weather->forFlight($bid->flight, $visiblePirep?->alt_airport_id)
+            : [
+                'contract_version' => OperationalWeatherService::CONTRACT_VERSION,
+                'status' => 'DEGRADED',
+                'stations' => [],
+                'sigmets' => [],
+                'summary' => [],
+            ],
+        ]);
     }
 
     public function readiness(string $bidId, Request $request)

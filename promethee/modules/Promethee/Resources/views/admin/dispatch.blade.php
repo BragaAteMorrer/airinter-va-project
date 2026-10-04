@@ -455,14 +455,69 @@
         ]);
     }
 
+    function weatherStationCard(role, station) {
+        if (!station) return '';
+        const labels = {departure:'DÉPART', arrival:'DESTINATION', alternate:'DÉGAGEMENT'};
+        const metar = station.metar || {};
+        const wind = metar.wind || {};
+        const runway = station.recommended_runway || null;
+        const windDirection = wind.variable ? 'VRB' : (wind.direction == null ? '—' : String(Math.round(Number(wind.direction))).padStart(3, '0') + '°');
+        const windText = wind.speed_kt == null
+            ? windDirection
+            : windDirection + ' / ' + number(wind.speed_kt, ' kt') + (wind.gust_kt == null ? '' : ' G' + number(wind.gust_kt, ' kt'));
+        const runwayText = runway
+            ? 'RWY ' + esc(runway.ident) + ' · ' + number(runway.headwind_kt, ' kt face') + ' · ' + number(runway.crosswind_kt, ' kt travers')
+            : 'Non déterminée';
+
+        return '<article class="dispatch-card dispatch-weather-station">' +
+            '<span>' + esc(labels[role] || role.toUpperCase()) + ' · ' + esc(station.icao) + '</span>' +
+            '<strong>' + esc(metar.category || 'N/D') + '</strong>' +
+            '<small>Vent ' + esc(windText) + '</small>' +
+            '<small>Vis ' + number(metar.visibility_km, ' km') + ' · plafond ' + number(metar.ceiling_ft, ' ft') + ' · QNH ' + number(metar.qnh_hpa, ' hPa') + '</small>' +
+            '<small>Piste probable : ' + runwayText + '</small>' +
+            '<details><summary>METAR / TAF bruts</summary>' +
+                '<p><code class="dispatch-route-code">' + esc(metar.raw || 'METAR indisponible') + '</code></p>' +
+                '<p><code class="dispatch-route-code">' + esc(station.taf?.raw || 'TAF indisponible') + '</code></p>' +
+            '</details>' +
+        '</article>';
+    }
+
     function renderWeather() {
         const w = state.detail?.weather || {};
+        const stations = w.stations || {};
+        const sigmets = w.sigmets || [];
         const messages = w.messages || [];
+        const summary = w.summary || {};
+        const stationCards = ['departure','arrival','alternate']
+            .map(role => weatherStationCard(role, stations[role]))
+            .filter(Boolean)
+            .join('');
+        const sigmetHtml = sigmets.length
+            ? '<div class="dispatch-alert-list">' + sigmets.map(sigmet =>
+                '<div class="dispatch-alert warning"><strong>' + esc(sigmet.hazard || 'SIGMET') + (sigmet.fir ? ' · ' + esc(sigmet.fir) : '') + '</strong>' +
+                '<p>' + esc(sigmet.valid_from || 'Validité non renseignée') + ' → ' + esc(sigmet.valid_to || '—') + '</p>' +
+                (sigmet.raw ? '<p><code class="dispatch-route-code">' + esc(sigmet.raw) + '</code></p>' : '') +
+                '</div>'
+            ).join('') + '</div>'
+            : '<div class="dispatch-empty-inline">' + (w.sigmet_status === 'AVAILABLE' ? 'Aucun SIGMET ne recoupe le corridor élargi.' : 'Flux SIGMET temporairement indisponible.') + '</div>';
+        const atis = w.atis?.body
+            ? '<div class="dispatch-alert info"><strong>ATIS / INFO OPS via Datalink</strong><p>' + esc(w.atis.body) + '</p></div>'
+            : '';
+
         return (canDispatchActions ? '<div class="dispatch-action-bar">' +
             '<button type="button" class="button secondary" data-quick="weather">Préparer météo</button>' +
-            '<button type="button" class="button secondary" data-quick="runway">Préparer piste</button>' +
+            '<button type="button" class="button secondary" data-quick="runway">Préparer piste / ATIS</button>' +
         '</div>' : '<div class="notice">Consultation pilote : les commandes OPS sont disponibles à partir du grade Captain ou pour les administrateurs.</div>') +
-        '<p class="muted">' + esc(w.note) + '</p>' +
+        '<div class="dispatch-card-grid">' +
+            '<article class="dispatch-card"><span>Pire catégorie</span><strong>' + esc(summary.worst_category || '—') + '</strong><small>METAR disponibles</small></article>' +
+            '<article class="dispatch-card"><span>SIGMET corridor</span><strong>' + esc(summary.sigmet_count ?? sigmets.length) + '</strong><small>' + esc(w.sigmet_status || 'UNAVAILABLE') + '</small></article>' +
+            '<article class="dispatch-card"><span>Piste arrivée</span><strong>' + esc(summary.arrival_runway || '—') + '</strong><small>vent METAR uniquement</small></article>' +
+        '</div>' +
+        '<div class="dispatch-card-grid">' + (stationCards || '<div class="dispatch-empty-inline">Aucune station météo disponible.</div>') + '</div>' +
+        '<h3>SIGMET route</h3>' + sigmetHtml +
+        atis +
+        '<p class="muted">' + esc(w.note || 'Météo opérationnelle indicative.') + '</p>' +
+        '<h3>Messages WEATHER cockpit / OPS</h3>' +
         '<div class="dispatch-message-list">' +
             (messages.length ? messages.map(renderMessage).join('') : '<div class="dispatch-empty-inline">Aucun message WEATHER sur cette opération.</div>') +
         '</div>';
