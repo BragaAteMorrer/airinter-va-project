@@ -6,7 +6,7 @@ $ErrorActionPreference = 'Stop'
 $appRoot = Join-Path $PSScriptRoot 'HermesEfb'
 
 if (-not (Get-Command npm.cmd -ErrorAction SilentlyContinue)) {
-  throw 'Node.js / npm est requis pour compiler l’EFB Hermès.'
+  throw "Node.js / npm est requis pour compiler l’EFB Hermès."
 }
 
 if ($Clean) {
