@@ -249,11 +249,11 @@ settingsForm.onsubmit = async event => {
   }
 };
 
-const hermesTabs = $('.tab');
+const hermesTabs = $$('.tab');
 const enabledHermesTabs = () => hermesTabs.filter(button => !button.disabled && !button.hidden);
 const activateHermesTab = button => {
   if (!button || (button.classList.contains('protected-tab') && !connected)) return;
-  $('.tab,.panel').forEach(node => node.classList.remove('active'));
+  $$('.tab,.panel').forEach(node => node.classList.remove('active'));
   hermesTabs.forEach(node => {
     const selected = node === button;
     node.setAttribute('aria-selected', String(selected));
@@ -280,7 +280,7 @@ hermesTabs.forEach(button => {
     tabs[next]?.focus();
   };
 });
-$('.message').forEach(node => {
+$$('.message').forEach(node => {
   if (!node.hasAttribute('role')) node.setAttribute('role', 'status');
   if (!node.hasAttribute('aria-live')) node.setAttribute('aria-live', 'polite');
 });
