@@ -1308,23 +1308,9 @@ async function loadRouteSuggestions(operationRef, initialRoute = '') {
     const briefing = unwrap(await call('/api/v1/operations/' + encodeURIComponent(operationRef) + '/briefing'));
     renderRouteSuggestions(briefing, initialRoute);
 
-    const recoveredOfp = briefing?.ofp;
-    if (recoveredOfp?.available) {
-      flightPlan = {
-        ...(flightPlan || {}),
-        id: recoveredOfp.id ?? flightPlan?.id ?? null,
-        source: flightPlan?.source || 'promethee_recovery',
-        route: recoveredOfp.route || briefing?.route || initialRoute || null,
-        initial_altitude: recoveredOfp.initial_altitude ?? briefing?.level ?? null,
-        level: recoveredOfp.initial_altitude ?? briefing?.level ?? null,
-        cost_index: recoveredOfp.cost_index ?? null,
-        block_fuel: recoveredOfp.block_fuel ?? null,
-        estimated_time_enroute: recoveredOfp.estimated_time_enroute ?? null,
-        route_points: Array.isArray(recoveredOfp.route_points) ? recoveredOfp.route_points : []
-      };
+    if (restorePlannedRouteFromBriefing(briefing, initialRoute)) {
       renderOperationLoad(selectedAircraft, flightPlan);
       renderSimBriefPreparationSummary();
-      drawMap(lastStatus?.track || [], lastStatus?.latest || {});
     }
   } catch {
     renderRouteSuggestions({ route_options: [] }, initialRoute);
