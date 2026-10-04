@@ -87,9 +87,27 @@ $muted: #687986;
     strong { display: block; margin-top: 8px; color: $blue; font: 800 21px/1.1 Consolas, monospace; }
   }
 
+  .briefing-panel {
+    max-width: 960px;
+    margin: 14px auto 0;
+    border: 1px solid $line;
+    background: #fff;
+  }
+
+  .briefing-title {
+    display: grid;
+    grid-template-columns: minmax(150px, .35fr) 1fr;
+    gap: 16px;
+    padding: 14px 16px;
+
+    .eyebrow { display: block; color: $blue; font-size: 10px; font-weight: 800; letter-spacing: .08em; }
+    strong { display: block; margin-top: 3px; }
+    p { margin: 0; color: $navy; font: 700 12px/1.5 Consolas, monospace; overflow-wrap: anywhere; }
+  }
+
   .ofp-strip {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     margin-top: 14px;
     border: 1px solid $navy;
     background: $navy;
@@ -126,5 +144,7 @@ $muted: #687986;
     .bridge-status { justify-items: start; }
     .flight-hero { grid-template-columns: 1fr; }
     .metric-grid { grid-template-columns: repeat(2, 1fr); }
+    .ofp-strip { grid-template-columns: repeat(2, 1fr); }
+    .ofp-strip > div { border-bottom: 1px solid rgba(255,255,255,.18); }
   }
 }
