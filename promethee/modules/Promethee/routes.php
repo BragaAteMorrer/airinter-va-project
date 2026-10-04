@@ -31,6 +31,11 @@ Route::get('/occ', [PortalController::class, 'occ'])->middleware('web')->name('p
 // Public flight reports replace the legacy phpVMS report screen. The report
 // remains readable without an account, just as the former public URL was.
 Route::get('/pireps/{id}', [PortalController::class, 'pirep'])->middleware(['web','auth'])->name('promethee.pireps.show');
+// Historical bookmarks must never fall back to the legacy phpVMS/SPTheme screen.
+// Render the same hardened Promethee report directly so archived PIREPs remain readable.
+Route::get('/legacy/pireps/{id}', [PortalController::class, 'pirep'])
+    ->middleware(['web','auth'])
+    ->name('promethee.pireps.legacy');
 Route::delete('/pireps/{id}', [PortalController::class, 'deleteOwnPirep'])->middleware(['web','auth'])->name('promethee.pireps.delete');
 Route::post('/pireps/{id}/repeat', [PortalController::class, 'repeatPirep'])->middleware(['web','auth'])->name('promethee.pireps.repeat');
 // Backward-compatible name used by the aircraft history view.
