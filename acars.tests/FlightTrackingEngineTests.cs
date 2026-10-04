@@ -188,15 +188,35 @@ public sealed class FlightTrackingEngineTests
         var start = DateTimeOffset.Parse("2026-09-21T12:00:00Z");
 
         engine.Process(new AircraftSnapshot(
-            Guid.NewGuid(), start, FuelWeight: 1_000, SlewActive: false, SimulationRate: 1));
+            Guid.NewGuid(), start, GroundSpeedKnots: 1, FuelWeight: 1_000, SlewActive: false, SimulationRate: 1));
 
         var decision = engine.Process(new AircraftSnapshot(
-            Guid.NewGuid(), start.AddSeconds(5), FuelWeight: 1_301, SlewActive: true, SimulationRate: 2));
+            Guid.NewGuid(), start.AddSeconds(5), GroundSpeedKnots: 1, FuelWeight: 1_301, SlewActive: true, SimulationRate: 2));
 
         Assert.Contains(decision.Events, x => x.Type == "SLEW_ACTIVE");
         Assert.Contains(decision.Events, x => x.Type == "SIM_RATE_INCREASED" && x.Value == 2);
         Assert.Contains(decision.Events, x => x.Type == "FUEL_INCREASED" && x.Value == 301);
         Assert.DoesNotContain(decision.Events, x => x.Type.Contains("PENALTY", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Fuel_increase_while_stationary_is_not_reported()
+    {
+        var engine = new FlightTrackingEngine();
+        var start = DateTimeOffset.Parse("2026-10-04T18:00:00Z");
+
+        engine.Process(new AircraftSnapshot(
+            Guid.NewGuid(), start, GroundSpeedKnots: 0, FuelWeight: 1_000));
+
+        var stationary = engine.Process(new AircraftSnapshot(
+            Guid.NewGuid(), start.AddSeconds(5), GroundSpeedKnots: 0, FuelWeight: 1_500));
+
+        Assert.DoesNotContain(stationary.Events, x => x.Type == "FUEL_INCREASED");
+
+        var moving = engine.Process(new AircraftSnapshot(
+            Guid.NewGuid(), start.AddSeconds(10), GroundSpeedKnots: 0.1, FuelWeight: 1_801));
+
+        Assert.Contains(moving.Events, x => x.Type == "FUEL_INCREASED" && x.Value == 301);
     }
 
     [Fact]
