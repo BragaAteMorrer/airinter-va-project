@@ -8,7 +8,7 @@ import {
   Efb,
   RequiredProps,
   TVNode,
-} from "@efb/efb-api";
+} from "@microsoft/msfs-efb-api";
 import { FSComponent, VNode } from "@microsoft/msfs-sdk";
 
 import "./HermesEfb.scss";
