@@ -130,7 +130,7 @@
     <article><span>Dépenses</span><strong>{{ (string) $finance['debits'] }}</strong><small>journal compagnie</small></article>
     <article><span>Résultat</span><strong>{{ (string) $finance['net'] }}</strong><small>recettes − dépenses</small></article>
     <article><span>Rémunération pilote</span><strong>{{ (string) $finance['pilot_net'] }}</strong><small>journal pilote lié au PIREP</small></article>
-    <article><span>Comptabilisation</span><strong>{{ $finance['company_transactions']->isNotEmpty() ? 'Traitée' : 'En attente' }}</strong><small>{{ $finance['company_transactions']->isNotEmpty() ? 'écritures phpVMS rattachées' : 'traitée au dépôt / à l’acceptation du PIREP' }}</small></article>
+    <article><span>Comptabilisation</span><strong>{{ $finance['company_transactions']->isNotEmpty() ? 'Traitée' : 'En attente' }}</strong><small>{{ $finance['company_transactions']->isNotEmpty() ? 'écritures phpVMS rattachées' : 'traitée à l’acceptation du PIREP' }}</small></article>
   </section>
 
   @if($finance['company_transactions']->isNotEmpty())
