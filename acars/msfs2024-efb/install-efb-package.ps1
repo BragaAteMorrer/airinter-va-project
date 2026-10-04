@@ -58,7 +58,7 @@ if ($Uninstall) {
 
   if ([string]::IsNullOrWhiteSpace($target)) {
     if ($StateFile) {
-      Write-Host 'Aucun état d’installation EFB Hermès : rien à désinstaller.'
+      Write-Host "Aucun état d’installation EFB Hermès : rien à désinstaller."
       exit 0
     }
 
@@ -83,7 +83,7 @@ if ($Uninstall) {
 }
 
 if ([string]::IsNullOrWhiteSpace($PackageSource)) {
-  throw 'PackageSource est requis pour l’installation.'
+  throw "PackageSource est requis pour l’installation."
 }
 $source = [IO.Path]::GetFullPath($PackageSource)
 if (-not (Test-Path -LiteralPath (Join-Path $source 'manifest.json'))) {
@@ -119,4 +119,4 @@ if ($StateFile) {
 }
 
 Write-Host "EFB Hermès installé : $target"
-Write-Host 'Redémarrez MSFS 2024 pour charger ou mettre à jour l’application EFB.'
+Write-Host "Redémarrez MSFS 2024 pour charger ou mettre à jour l’application EFB."
