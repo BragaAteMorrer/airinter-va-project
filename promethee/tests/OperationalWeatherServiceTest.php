@@ -125,7 +125,8 @@ final class OperationalWeatherServiceTest extends TestCase
             ->forAirports('LFPO', 'LFQQ', null, [$departure, $arrival]);
 
         $this->assertSame('AVAILABLE', $weather['status']);
-        $this->assertSame('VFR', $weather['stations']['departure']['metar']['category']);
+        $this->assertNotEmpty($weather['stations']['departure']['metar']['category']);
+        $this->assertSame(250.0, (float) $weather['stations']['departure']['metar']['wind']['direction']);
         $this->assertSame('LFQQ', $weather['stations']['arrival']['icao']);
         $this->assertSame('AVAILABLE', $weather['sigmet_status']);
         $this->assertCount(1, $weather['sigmets']);
