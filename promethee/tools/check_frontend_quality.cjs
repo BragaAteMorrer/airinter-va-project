@@ -130,6 +130,14 @@ expect(hermesIndex.indexOf('/hermes-weather.js') < hermesIndex.indexOf('/app.js'
     && hermesApp.includes('refreshOperationalWeather')
     && hermesApp.includes('/weather'),
   'Hermès Weather / OPS must stay modular, lazy-refreshed and backed by Prométhée.');
+expect(hermesIndex.includes('id="identityProvider"')
+    && hermesIndex.includes('id="argosAccountBtn"')
+    && hermesIndex.includes('id="logoutBtn"')
+    && hermesApp.includes("auth.account_url")
+    && hermesApp.includes("call('/api/logout'")
+    && hermesDesktop.includes('argos.airinter-va.org')
+    && hermesDesktop.includes('await Logout()'),
+  'Hermès must keep Argos identity nearly invisible while exposing trusted account management and explicit logout.');
 expect(hermesEfbBridge.includes('AIRINTER_HERMES_EFB_REQUEST')
     && hermesEfbBridge.includes('AIRINTER_HERMES_EFB_STATE')
     && hermesEfbBridge.includes('READ_ONLY_BRIDGE')
@@ -439,3 +447,7 @@ if (failures.length) {
 }
 
 console.log('\nFrontend quality gate passed.');
+
+expect(prometheeProfile.includes('Compte Argos')
+    && prometheeProfile.includes('Gérer mon compte Air Inter'),
+  'Prométhée pilot profile must keep Argos as the shared Air Inter identity surface.');
