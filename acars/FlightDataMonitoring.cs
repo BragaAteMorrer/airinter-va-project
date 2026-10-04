@@ -297,14 +297,15 @@ public sealed class FlightDataMonitor
         FlightPhase phase,
         List<FdmObservation> result)
     {
+        var agl = current.AltitudeAglFeet;
+        var verticalSpeed = current.VerticalSpeedFeetPerMinute;
         var inApproachWindow = phase is FlightPhase.Approach or FlightPhase.Final or FlightPhase.Landing
             && current.OnGround == false
-            && current.AltitudeAglFeet is { } agl
-            && agl > 0
-            && agl <= StabilizedApproachGateFeet
-            && current.VerticalSpeedFeetPerMinute is { } verticalSpeed;
+            && agl is > 0 and <= StabilizedApproachGateFeet
+            && verticalSpeed is not null;
 
-        var violating = inApproachWindow && verticalSpeed < StabilizedApproachMaxDescentRate;
+        var violating = inApproachWindow
+            && verticalSpeed!.Value < StabilizedApproachMaxDescentRate;
         if (!violating)
         {
             if (approachDescentSegment)
@@ -317,12 +318,12 @@ public sealed class FlightDataMonitor
             approachDescentSegment = true;
             approachDescentReported = false;
             approachDescentStartedAt = current.RecordedAt;
-            approachDescentPeakRate = verticalSpeed;
+            approachDescentPeakRate = verticalSpeed!.Value;
             approachDescentPhase = FlightTrackingEngine.ToExternalPhase(phase);
             return;
         }
 
-        approachDescentPeakRate = Math.Min(approachDescentPeakRate, verticalSpeed);
+        approachDescentPeakRate = Math.Min(approachDescentPeakRate, verticalSpeed!.Value);
         if (!approachDescentReported
             && current.RecordedAt - approachDescentStartedAt >= StabilizedApproachViolationDuration)
         {
