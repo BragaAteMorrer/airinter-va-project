@@ -147,6 +147,7 @@ let serverCompanyScoreKey = null;
 let lastDatalinkSnapshot = null;
 let datalinkRefreshing = false;
 let recoveryWasVisible = false;
+let identityAccountUrl = null;
 let readiness = { operation: false, aircraft: false, ofp: false, pirep: false, simulator: false };
 
 let efbContextSyncTimer = null;
@@ -195,6 +196,13 @@ function setAuthenticated(value) {
   connected = Boolean(value);
   document.body.classList.toggle('auth-locked', !connected);
   document.querySelectorAll('.protected-tab').forEach(tab => { tab.disabled = !connected; });
+  if (!connected) {
+    identityAccountUrl = null;
+    const provider = $('#identityProvider');
+    const account = $('#argosAccountBtn');
+    if (provider) provider.hidden = true;
+    if (account) account.hidden = true;
+  }
   window.dispatchEvent(new CustomEvent('hermes:auth-changed', { detail: { authenticated: connected } }));
 }
 setAuthenticated(false);
@@ -328,12 +336,32 @@ $$('.message').forEach(node => {
 });
 
 function pilotIdentity(value) {
-  const user = unwrap(value)?.user ?? unwrap(value) ?? {};
+  const root = unwrap(value) ?? {};
+  const user = root?.user ?? root ?? {};
   const first = user.first_name || user.firstname || user.firstName || '';
   const last = user.last_name || user.lastname || user.lastName || '';
   const name = [first, last].filter(Boolean).join(' ') || user.name || user.name_private || '';
   const callsign = user.ident || user.pilot_id || user.pilotId || '';
   setText($('#serverState'), name && callsign ? `${name} · ${callsign}` : name || callsign || 'Pilote connecté');
+
+  const auth = user.auth || root.auth || {};
+  const providerName = String(auth.provider || root.provider || '').toLowerCase();
+  const provider = $('#identityProvider');
+  if (provider) {
+    provider.textContent = providerName === 'argos'
+      ? 'ARGOS · SSO'
+      : (providerName === 'promethee' ? 'PROMÉTHÉE · SECOURS' : 'AIR INTER');
+    provider.classList.toggle('sso', providerName === 'argos');
+    provider.hidden = false;
+  }
+
+  const rawAccountUrl = auth.account_url || auth.accountUrl || null;
+  identityAccountUrl = typeof rawAccountUrl === 'string'
+    && /^https:\/\/argos\.airinter-va\.org\/account(?:[/?#]|$)/i.test(rawAccountUrl)
+      ? rawAccountUrl
+      : null;
+  const account = $('#argosAccountBtn');
+  if (account) account.hidden = !identityAccountUrl;
 }
 
 async function login(form) {
@@ -377,6 +405,18 @@ async function loginWithArgos() {
 
 const argosLoginBtn = $('#argosLoginBtn');
 if (argosLoginBtn) argosLoginBtn.onclick = loginWithArgos;
+
+const argosAccountBtn = $('#argosAccountBtn');
+if (argosAccountBtn) {
+  argosAccountBtn.onclick = async () => {
+    if (!identityAccountUrl) return;
+    try {
+      await call('/api/open-external', { url: identityAccountUrl });
+    } catch (error) {
+      registerHermesError(error, 'Impossible d’ouvrir votre compte Air Inter.', 'Compte Argos');
+    }
+  };
+}
 
 function setIndicator(selector, state, label) {
   const node = $(selector);
