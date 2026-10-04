@@ -19,6 +19,7 @@ class DispatchDeskService
         private readonly DatalinkService $datalink,
         private readonly FlightOpsService $flightOps,
         private readonly SafetyAnalyzer $safetyAnalyzer,
+        private readonly OperationalWeatherService $weather,
     ) {}
 
     public function board(): array
@@ -122,6 +123,23 @@ class DispatchDeskService
                 ->first()
             : null;
 
+        $weather = $bid->flight
+            ? $this->weather->forFlight(
+                $bid->flight,
+                $pirep?->alt_airport_id ?: ($briefing?->alternate ?: $bid->flight?->alt_airport_id)
+            )
+            : ['status' => 'DEGRADED', 'stations' => [], 'sigmets' => [], 'summary' => []];
+
+        $weatherMessages = collect($messages['messages'] ?? [])
+            ->filter(fn (array $message) => strtoupper((string) ($message['category'] ?? '')) === 'WEATHER')
+            ->take(-10)
+            ->values();
+        $atisMessage = $weatherMessages
+            ->reverse()
+            ->first(fn (array $message) => str_contains(strtoupper((string) ($message['body'] ?? '')), 'ATIS'));
+        $weather['messages'] = $weatherMessages->all();
+        $weather['atis'] = $atisMessage ?: null;
+
         $maintenance = null;
         if ($bid->aircraft_id && Schema::hasTable('disposable_maintenance')) {
             $maintenance = DB::table('disposable_maintenance')
@@ -192,18 +210,7 @@ class DispatchDeskService
                 'remaining_nm' => $summary['live']['remaining_nm'] ?? null,
                 'eta' => $summary['live']['eta'] ?? null,
             ],
-            'weather' => [
-                'provider' => null,
-                'status' => 'DATALINK_ONLY',
-                'departure' => $bid->flight?->dpt_airport_id,
-                'arrival' => $bid->flight?->arr_airport_id,
-                'messages' => collect($messages['messages'] ?? [])
-                    ->where('category', 'WEATHER')
-                    ->take(-10)
-                    ->values()
-                    ->all(),
-                'note' => 'Aucun fournisseur météo serveur n’est configuré : le dispatcher peut transmettre METAR, piste et informations météo via Datalink.',
-            ],
+            'weather' => $weather,
             'track' => [
                 'points' => $this->trackPoints($samples),
                 'sample_count' => $samples->count(),
