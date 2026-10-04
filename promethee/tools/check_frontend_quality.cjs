@@ -16,6 +16,7 @@ const budgets = {
   '../acars/wwwroot/app.js': 145000,
   '../acars/wwwroot/hermes-map.js': 21000,
   '../acars/wwwroot/hermes-review.js': 20000,
+  '../acars/wwwroot/hermes-weather.js': 12000,
   '../acars/wwwroot/index.html': 50000,
   '../acars/wwwroot/styles.css': 60000,
   '../acars/wwwroot/hermes-themes.css': 35000,
@@ -50,6 +51,7 @@ const hermesIndex = read('../acars/wwwroot/index.html');
 const hermesApp = read('../acars/wwwroot/app.js');
 const hermesMap = read('../acars/wwwroot/hermes-map.js');
 const hermesReview = read('../acars/wwwroot/hermes-review.js');
+const hermesWeather = read('../acars/wwwroot/hermes-weather.js');
 const hermesDesktop = read('../acars/WebDesktop.cs');
 const hermesTheme = read('../acars/wwwroot/hermes-themes.css');
 const hermesEraComponents = read('../acars/wwwroot/hermes-era-components.css');
@@ -122,6 +124,12 @@ expect(!hermesApp.includes('function normalizeReviewProfile')
     && hermesApp.includes('initializeFlightMapControls();')
     && hermesApp.includes('initializeReviewActions();'),
   'Hermès app.js must not absorb map/review rendering again.');
+expect(hermesIndex.indexOf('/hermes-weather.js') < hermesIndex.indexOf('/app.js')
+    && hermesWeather.includes('renderOperationalWeather')
+    && hermesWeather.includes('initializeOperationalWeather')
+    && hermesApp.includes('refreshOperationalWeather')
+    && hermesApp.includes('/weather'),
+  'Hermès Weather / OPS must stay modular, lazy-refreshed and backed by Prométhée.');
 expect(hermesEfbBridge.includes('AIRINTER_HERMES_EFB_REQUEST')
     && hermesEfbBridge.includes('AIRINTER_HERMES_EFB_STATE')
     && hermesEfbBridge.includes('READ_ONLY_BRIDGE')
@@ -139,7 +147,8 @@ expect(hermesDesktop.includes('/api/efb/context')
 expect(hermesApp.includes('scheduleEfbContextSync')
     && hermesApp.includes("call('/api/efb/context'")
     && hermesApp.includes('cost_index')
-    && hermesApp.includes('estimated_time_enroute'),
+    && hermesApp.includes('estimated_time_enroute')
+    && hermesApp.includes('weather: serverDispatch?.weather || null'),
   'Hermès web UI must keep OFP and operation context synchronized with the EFB bridge.');
 expect(hermesEfbApp.includes('Efb.use(AirInterHermesApp)')
     && hermesEfbApp.includes('Efb.loadJs("/JS/Services/CommBus.js")')
@@ -147,7 +156,9 @@ expect(hermesEfbApp.includes('Efb.use(AirInterHermesApp)')
     && hermesEfbApp.includes('Lecture seule')
     && hermesEfbApp.includes('OFP / SIMBRIEF')
     && hermesEfbApp.includes('BLOCK FUEL')
-    && hermesEfbApp.includes('grossWeight'),
+    && hermesEfbApp.includes('grossWeight')
+    && hermesEfbApp.includes('WEATHER / OPS')
+    && hermesEfbApp.includes('SIGMET corridor'),
   'MSFS 2024 EFB app must use native CommBus, remain read-only and preserve its OFP/live-flight surface.');
 expect(hermesEfbBuild.includes('coui://html_ui/efb_ui/efb_apps/AirInterHermes')
     && hermesEfbPackage.includes('"@efb/efb-api"')
