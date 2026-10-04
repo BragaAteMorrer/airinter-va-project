@@ -110,6 +110,7 @@ final class SimBriefTest extends TestCase
 
         $level = $briefing->xml->getFlightLevel();
         $this->assertEquals('380', $level);
+        $this->assertSame(5, $briefing->xml->getCostIndex());
 
         // Read the flight route
         $routeStr = $briefing->xml->getRouteString();
