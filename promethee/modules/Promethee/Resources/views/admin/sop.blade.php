@@ -70,16 +70,31 @@
                         @endif
                     </td>
                     <td>
-                        @if($rule['has_parameter'])
+                        @if($rule['id'] === 'STABILIZED_APPROACH')
+                            <strong>1 000 ft AGL → toucher</strong>
+                            <div class="muted">VS ≥ −1 000 ft/min</div>
+                        @elseif($rule['has_parameter'])
                             <input form="{{ $formId }}" name="parameter" type="number" step="1" value="{{ $rule['parameter'] }}" required class="admin-field-lg">
                         @else
                             <span class="muted">—</span>
                         @endif
                     </td>
                     <td><input form="{{ $formId }}" name="points" type="number" min="0" max="100" step="1" value="{{ $rule['points'] }}" required class="admin-field-md"></td>
-                    <td><input form="{{ $formId }}" name="delay" type="number" min="0" max="3600" step="1" value="{{ $rule['delay'] }}" required class="admin-field-md"></td>
-                    <td><input form="{{ $formId }}" name="repeatable" type="checkbox" value="1" @checked($rule['repeatable'])></td>
-                    <td><input form="{{ $formId }}" name="cooldown" type="number" min="0" max="86400" step="1" value="{{ $rule['cooldown'] }}" required class="admin-field-md"></td>
+                    @if($rule['id'] === 'STABILIZED_APPROACH')
+                        <td>
+                            <input form="{{ $formId }}" name="delay" type="hidden" value="4">
+                            <strong>4 s continus</strong>
+                        </td>
+                        <td><span class="muted">Non</span></td>
+                        <td>
+                            <input form="{{ $formId }}" name="cooldown" type="hidden" value="0">
+                            <span class="muted">—</span>
+                        </td>
+                    @else
+                        <td><input form="{{ $formId }}" name="delay" type="number" min="0" max="3600" step="1" value="{{ $rule['delay'] }}" required class="admin-field-md"></td>
+                        <td><input form="{{ $formId }}" name="repeatable" type="checkbox" value="1" @checked($rule['repeatable'])></td>
+                        <td><input form="{{ $formId }}" name="cooldown" type="number" min="0" max="86400" step="1" value="{{ $rule['cooldown'] }}" required class="admin-field-md"></td>
+                    @endif
                     <td><input form="{{ $formId }}" name="enabled" type="checkbox" value="1" @checked($rule['enabled'])></td>
                     <td>
                         <form id="{{ $formId }}" method="post" action="{{ route('admin.promethee.sop.scoring.update', $rule['id']) }}">
