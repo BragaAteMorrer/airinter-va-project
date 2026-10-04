@@ -69,7 +69,10 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
         ("TOTAL WEIGHT","pounds"),("CABIN SEATBELTS ALERT SWITCH","bool"),("EXIT OPEN:0","percent"),("EXIT OPEN:1","percent"),("EXIT OPEN:2","percent"),("EXIT OPEN:3","percent"),("TRANSPONDER CODE:1","number"),("AUTOPILOT MASTER","bool"),("IS PAUSED","bool"),("GENERAL ENG THROTTLE LEVER POSITION:1","percent"),("GENERAL ENG THROTTLE LEVER POSITION:2","percent"),
         ("G FORCE","GForce"),("OVERSPEED WARNING","bool"),("STALL WARNING","bool"),
         ("TURB ENG REVERSE NOZZLE PERCENT:1","percent"),("TURB ENG REVERSE NOZZLE PERCENT:2","percent"),
-        ("TURB ENG REVERSE NOZZLE PERCENT:3","percent"),("TURB ENG REVERSE NOZZLE PERCENT:4","percent")];
+        ("TURB ENG REVERSE NOZZLE PERCENT:3","percent"),("TURB ENG REVERSE NOZZLE PERCENT:4","percent"),
+        ("LIGHT NAV","bool"),("LIGHT STROBE","bool"),("LIGHT TAXI","bool"),("LIGHT LOGO","bool"),("LIGHT WING","bool"),
+        ("SPOILERS ARMED","bool"),("APU PCT RPM","percent"),("ELECTRICAL MASTER BATTERY","bool"),("EXTERNAL POWER ON","bool"),
+        ("SEA LEVEL PRESSURE","millibars"),("AMBIENT TEMPERATURE","celsius"),("AMBIENT WIND VELOCITY","knots"),("AMBIENT WIND DIRECTION","degrees")];
     public SimConnectReader()
     {
         callback=Receive; var dll=Environment.GetEnvironmentVariable("PROMETHEE_SIMCONNECT_DLL");
@@ -146,6 +149,21 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
             Paused=ResolvePaused(simVarPaused = v[35] != 0),
             PauseKind=ResolvePauseKind(simVarPaused),
             ThrustStable=thrustStable,
+            NavigationLight=v[45] != 0,
+            StrobeLight=v[46] != 0,
+            TaxiLight=v[47] != 0,
+            LogoLight=v[48] != 0,
+            WingLight=v[49] != 0,
+            SpoilersArmed=v[50] != 0,
+            ApuRpmPercent=v[51] >= 0 ? v[51] : null,
+            ApuRunning=v[51] >= 5,
+            BatteryOn=v[52] != 0,
+            ExternalPowerOn=v[53] != 0,
+            QnhHpa=v[54] > 0 ? v[54] : null,
+            OutsideAirTemperatureCelsius=v[55],
+            WindSpeedKnots=v[56] >= 0 ? v[56] : null,
+            WindDirectionDegrees=v[57],
+            AutothrottleArmed=v[14] != 0,
             AircraftTitle=aircraftTitle,
             AircraftIcao=LooksLikeIcao(aircraftModel) ? aircraftModel : null,
             AircraftModel=aircraftType ?? aircraftModel
