@@ -16,7 +16,7 @@
     <article><span>{{ __('promethee_briefing.suggested_fuel') }}</span><strong>{{ number_format($suggestedFuel, 0, ',', ' ') }} {{ strtoupper($fuelUnit) }}</strong><small>{{ __('promethee_briefing.fuel_hint') }}</small></article>
     <article><span>{{ __('promethee_briefing.published_alternate') }}</span><strong>{{ $flight->alt_airport_id ?: '—' }}</strong><small>{{ __('promethee_briefing.weather_check') }}</small></article>
     <article><span>{{ __('promethee_briefing.compatible_fleets') }}</span><strong>{{ $compatibleSubfleetCount }}</strong><small>{{ $lineFleetRestricted ? __('promethee_briefing.aircraft_required') : 'Aucune restriction de sous-flotte publiée' }} · {{ $compatibleAircraftCount }} appareil(s) actif(s)</small></article>
-    <article><span>{{ __('promethee_briefing.weather') }}</span><strong>{{ count(array_filter($weather, fn ($report) => !empty($report['metar']))) }}</strong><small>{{ __('promethee_briefing.metar_received') }}</small></article>
+    <article><span>{{ __('promethee_briefing.weather') }}</span><strong>{{ collect($weather['stations'] ?? [])->filter(fn ($station) => !empty($station['metar']['raw']))->count() }}</strong><small>METAR reçus · {{ (int) ($weather['summary']['sigmet_count'] ?? 0) }} SIGMET corridor</small></article>
 </section>
 
 <section class="panel">
@@ -62,19 +62,8 @@
 
 <div class="two-columns">
     <section class="panel">
-        <div class="panel-heading"><div><span class="eyebrow">{{ __('promethee_briefing.weather_route') }}</span><h2>{{ __('promethee_briefing.available_information') }}</h2></div></div>
-        @foreach($weather as $airport => $report)
-            <article class="event">
-                <h3>{{ $airport }}</h3>
-                <p><strong>METAR</strong></p>
-                <p class="mono preserve">{{ is_string($report['metar'] ?? null) ? $report['metar'] : __('promethee_briefing.metar_unavailable') }}</p>
-                <p><strong>TAF</strong></p>
-                <p class="mono preserve">{{ is_string($report['taf'] ?? null) ? $report['taf'] : __('promethee_briefing.taf_unavailable') }}</p>
-            </article>
-        @endforeach
-        @if($weather === [])
-            <p class="empty">{{ __('promethee_briefing.weather_unavailable') }}</p>
-        @endif
+        <div class="panel-heading"><div><span class="eyebrow">WEATHER / OPS</span><h2>Situation route et aérodromes</h2></div><span>{{ $weather['provider'] ?? 'AviationWeather.gov' }}</span></div>
+        @include('promethee::partials.operational-weather', ['weather' => $weather])
         @if($flight->route)
             <article class="event"><h3>{{ __('promethee_briefing.published_route') }}</h3><p class="mono preserve">{{ $flight->route }}</p></article>
         @endif
