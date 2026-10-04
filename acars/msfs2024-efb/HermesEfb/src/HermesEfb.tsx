@@ -21,6 +21,41 @@ interface CommBusListener {
 }
 declare function RegisterCommBusListener(callback?: () => void): CommBusListener;
 
+type WeatherStation = {
+  icao?: string | null;
+  metar?: {
+    category?: string | null;
+    wind?: {
+      direction?: number | null;
+      variable?: boolean;
+      speed_kt?: number | null;
+      gust_kt?: number | null;
+    } | null;
+    qnh_hpa?: number | null;
+  } | null;
+  recommended_runway?: {
+    ident?: string | null;
+    headwind_kt?: number | null;
+    crosswind_kt?: number | null;
+  } | null;
+};
+
+type OperationalWeather = {
+  status?: string | null;
+  sigmet_status?: string | null;
+  stations?: {
+    departure?: WeatherStation | null;
+    arrival?: WeatherStation | null;
+    alternate?: WeatherStation | null;
+  } | null;
+  summary?: {
+    worst_category?: string | null;
+    sigmet_count?: number | null;
+    arrival_runway?: string | null;
+  } | null;
+  sigmets?: Array<{ hazard?: string | null; fir?: string | null; raw?: string | null }> | null;
+};
+
 type HermesEnvelope = {
   version?: number;
   requestId?: string;
@@ -45,6 +80,7 @@ type HermesEnvelope = {
     estimatedTimeEnroute?: number | null;
     ofpSource?: string | null;
     dispatchStatus?: string | null;
+    weather?: OperationalWeather | null;
   } | null;
   state?: {
     hermesConnected?: boolean;
@@ -114,6 +150,11 @@ class HermesEfbView extends AppView<RequiredProps<AppViewProps, "bus">> {
   private readonly ofpSource = FSComponent.createRef<HTMLSpanElement>();
   private readonly ofpRoute = FSComponent.createRef<HTMLParagraphElement>();
   private readonly pending = FSComponent.createRef<HTMLSpanElement>();
+  private readonly wxState = FSComponent.createRef<HTMLSpanElement>();
+  private readonly wxDeparture = FSComponent.createRef<HTMLSpanElement>();
+  private readonly wxArrival = FSComponent.createRef<HTMLSpanElement>();
+  private readonly wxAlternate = FSComponent.createRef<HTMLSpanElement>();
+  private readonly wxSigmet = FSComponent.createRef<HTMLSpanElement>();
   private readonly warning = FSComponent.createRef<HTMLDivElement>();
   private readonly syncTime = FSComponent.createRef<HTMLSpanElement>();
 
@@ -224,6 +265,17 @@ class HermesEfbView extends AppView<RequiredProps<AppViewProps, "bus">> {
     this.set(this.ofpRoute, context.route || "Aucune route OFP chargée.");
     this.set(this.pending, String(state.pending ?? 0));
 
+    const weather = context.weather || {};
+    this.set(this.wxState, weather.status
+      ? `${weather.status} · ${weather.summary?.worst_category || "N/D"}`
+      : "Météo non chargée");
+    this.set(this.wxDeparture, this.weatherStation(weather.stations?.departure));
+    this.set(this.wxArrival, this.weatherStation(weather.stations?.arrival));
+    this.set(this.wxAlternate, this.weatherStation(weather.stations?.alternate));
+    this.set(this.wxSigmet, weather.sigmet_status === "AVAILABLE"
+      ? `${weather.summary?.sigmet_count ?? weather.sigmets?.length ?? 0} SIGMET corridor`
+      : "SIGMET indisponibles");
+
     const messages: string[] = [];
     if (simulator.linkState && simulator.linkState !== "CONNECTED") messages.push("SIM " + simulator.linkState);
     if (state.recoveryAvailable) messages.push("RECOVERY DISPONIBLE");
@@ -257,6 +309,21 @@ class HermesEfbView extends AppView<RequiredProps<AppViewProps, "bus">> {
   private duration(seconds: number | null | undefined): string {
     if (seconds === null || seconds === undefined || !Number.isFinite(seconds) || seconds <= 0) return "—";
     return this.minutes(seconds / 60);
+  }
+
+  private weatherStation(station: WeatherStation | null | undefined): string {
+    if (!station) return "—";
+    const wind = station.metar?.wind || {};
+    const direction = wind.variable
+      ? "VRB"
+      : (wind.direction === null || wind.direction === undefined
+          ? "—"
+          : String(Math.round(wind.direction)).padStart(3, "0") + "°");
+    const speed = wind.speed_kt === null || wind.speed_kt === undefined
+      ? ""
+      : "/" + Math.round(wind.speed_kt) + (wind.gust_kt ? "G" + Math.round(wind.gust_kt) : "") + "KT";
+    const runway = station.recommended_runway?.ident ? " · RWY " + station.recommended_runway.ident : "";
+    return `${station.icao || "—"} · ${station.metar?.category || "N/D"} · ${direction}${speed}${runway}`;
   }
 
   public render(): VNode {
@@ -314,6 +381,19 @@ class HermesEfbView extends AppView<RequiredProps<AppViewProps, "bus">> {
             <div><span>BLOCK FUEL</span><strong ref={this.blockFuel}>—</strong></div>
             <div><span>EET</span><strong ref={this.eet}>—</strong></div>
           </div>
+        </section>
+
+        <section class="weather-panel">
+          <div class="weather-title">
+            <div><span class="eyebrow">WEATHER / OPS</span><strong ref={this.wxState}>Météo non chargée</strong></div>
+            <span ref={this.wxSigmet}>SIGMET indisponibles</span>
+          </div>
+          <div class="weather-grid">
+            <article><span>DÉPART</span><strong ref={this.wxDeparture}>—</strong></article>
+            <article><span>DESTINATION</span><strong ref={this.wxArrival}>—</strong></article>
+            <article><span>DÉGAGEMENT</span><strong ref={this.wxAlternate}>—</strong></article>
+          </div>
+          <p>METAR/TAF via Prométhée · piste indicative selon le vent · l’ATIS et les instructions ATC restent prioritaires.</p>
         </section>
 
         <footer>
