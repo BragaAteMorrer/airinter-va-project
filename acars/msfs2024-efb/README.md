@@ -93,3 +93,41 @@ Pour tester le transport :
 7. démarrer le tracking et contrôler la mise à jour de la phase et de la télémétrie.
 
 L'EFB doit rester utilisable si Prométhée est temporairement hors ligne : il affiche alors le dernier contexte local connu par Hermès et l'état de synchronisation.
+
+
+## Distribution aux pilotes
+
+Le SDK est un prérequis **de build**, pas un prérequis utilisateur.
+
+Pour produire une release distribuable :
+
+```powershell
+.\acars\build-installer.ps1 `
+  -Version 1.0.0 `
+  -IncludeMsfs2024Efb `
+  -Msfs2024SdkRoot 'C:\MSFS 2024 SDK'
+```
+
+Cela produit :
+
+- `dist\Hermes-ACARS-Setup-1.0.0.exe` — installateur Hermès + EFB ;
+- `dist\AirInter-Hermes-EFB-MSFS2024-1.0.0.zip` — package EFB manuel ;
+- leurs checksums SHA-256.
+
+### Expérience pilote
+
+Le pilote télécharge uniquement le Setup Hermès.
+
+Si MSFS 2024 est détecté, l’assistant propose par défaut l’installation de l’EFB. Le chemin est résolu depuis `InstalledPackagesPath` dans `UserCfg.opt`, puis le package est copié sous :
+
+`Community2024\airinter-hermes-efb`
+
+Après installation ou mise à jour, MSFS 2024 doit être redémarré pour remonter le package dans son VFS.
+
+Le désinstallateur Hermès ne retire l’EFB que lorsqu’un fichier d’état prouve que ce Setup l’a lui-même installé.
+
+### Installation manuelle
+
+Extraire le dossier `airinter-hermes-efb` contenu dans le ZIP vers le dossier **Community2024** de MSFS 2024, puis redémarrer le simulateur.
+
+Le ZIP est un package Community complet et contient déjà `manifest.json` et `layout.json`.
