@@ -138,7 +138,7 @@ public sealed class PrometheeWindow : Window
         return route switch {
             "/api/status" => Status(), "/api/about" => About(), "/api/login" => await Login(body), "/api/login/argos" => await LoginWithArgos(),
             "/api/start" => Start(body), "/api/pause" => Pause(), "/api/resume" => Resume(),
-            "/api/recovery" => Recovery(), "/api/recovery/resume" => ResumeRecovery(), "/api/recovery/abandon" => AbandonRecovery(),
+            "/api/recovery" => Recovery(), "/api/recovery/resume" => ResumeRecovery(), "/api/recovery/abandon" => await AbandonPirep(true), "/api/abandon-pirep" => await AbandonPirep(false),
             "/api/sync" => new { sent=await telemetry.SyncNow() }, "/api/report" => Report(), "/api/review" => recorder.GetReview() ?? throw new InvalidOperationException("Aucun vol en cours."), "/api/capabilities" => sim.AircraftCapabilities ?? throw new InvalidOperationException("Aucun profil de capacités avion disponible."), "/api/file" => await File(body),
             "/api/history" => recorder.History, "/api/diagnostics" => Diagnostics(), "/api/update/check" => await CheckUpdateStatusAsync(), "/api/open-external" => OpenExternal(body),
             _ => throw new InvalidOperationException("Commande ACARS inconnue.") };
@@ -437,10 +437,23 @@ public sealed class PrometheeWindow : Window
         return new { ok = true, flight = recorder.Flight, simulator = sim.Status };
     }
 
-    private object AbandonRecovery()
+    private async Task<object> AbandonPirep(bool recoveryOnly)
     {
-        recorder.AbandonRecovery();
-        return new { ok = true, archived = true };
+        if (recoveryOnly && !recorder.RecoveryAvailable)
+            throw new InvalidOperationException("Aucun vol interrompu à abandonner.");
+        if (!client.Connected)
+            throw new InvalidOperationException("Reconnectez-vous à votre compte Air Inter avant de supprimer ce PIREP de Prométhée.");
+
+        var flight = recorder.Flight ?? throw new InvalidOperationException("Aucun PIREP Hermès en cours à abandonner.");
+        var pirepId = flight.PirepId;
+        await client.Delete("v1/pireps/" + Uri.EscapeDataString(pirepId));
+
+        // The server delete is authoritative. Only clear the local recorder
+        // after Prométhée confirms deletion, otherwise recovery stays possible.
+        if (recoveryOnly) recorder.AbandonRecovery();
+        else recorder.AbandonCurrent();
+
+        return new { ok = true, archived = true, remoteDeleted = true, pirepId };
     }
 
     private object Report() => recorder.GetReview() ?? throw new InvalidOperationException("Aucun vol en cours.");
