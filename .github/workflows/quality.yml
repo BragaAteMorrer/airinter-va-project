@@ -48,6 +48,13 @@ jobs:
           node --check promethee/public/promethee-assets/promethee.js
           node --check promethee/public/promethee-assets/navigation-groups.js
           node promethee/tools/check_hermes_i18n.cjs
+      - name: Build and typecheck MSFS 2024 Hermès EFB
+        working-directory: acars/msfs2024-efb/HermesEfb
+        run: |
+          npm install --no-audit --no-fund
+          npm run typecheck
+          npm run build
+
       - name: Validate Minitel M0 runtime
         run: |
           node --check promethee/shared/minitel/runtime.js
