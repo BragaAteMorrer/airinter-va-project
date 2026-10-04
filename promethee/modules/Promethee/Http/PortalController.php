@@ -17,7 +17,7 @@ use App\Services\FileService;
 use App\Services\UserService;
 use App\Support\Money;
 use App\Support\Countries;
-use Modules\Promethee\Services\{AirframeMaintenanceService,BrandingService,BulletinService,CompanyAccessService,DemandProfileService,EconomyFareResolver,EconomyService,EngineMaintenanceService,FleetRotationService,FlightOpsService,LegacyPirepScoringService,PirepJournalService,RegionalOperationsService,SafetyAnalyzer};
+use Modules\Promethee\Services\{AirframeMaintenanceService,BrandingService,BulletinService,CompanyAccessService,DemandProfileService,EconomyFareResolver,EconomyService,EngineMaintenanceService,FleetRotationService,FlightOpsService,LegacyPirepScoringService,PilotPirepDeletionService,PirepJournalService,RegionalOperationsService,SafetyAnalyzer};
 
 class PortalController extends Controller
 {
@@ -79,7 +79,7 @@ class PortalController extends Controller
         return $this->page('public-pireps', compact('pireps', 'mine'));
     }
     /** The branded, public replacement for /legacy/pireps/{id}. */
-    public function pirep(string $id) {
+    public function pirep(string $id, Request $r) {
         $pirep = Pirep::with([
             'acars', 'acars_logs', 'acars_route', 'aircraft.airline', 'airline.journal',
             'arr_airport', 'dpt_airport', 'alt_airport', 'fares', 'field_values',
@@ -106,6 +106,7 @@ class PortalController extends Controller
             'finance' => $finance,
             'passengerCount' => $farePassengers > 0 ? $farePassengers : $simbriefPassengers,
             'passengerSource' => $farePassengers > 0 ? 'PIREP' : ($simbriefPassengers !== null ? 'OFP SimBrief' : null),
+            'canDeletePirep' => app(PilotPirepDeletionService::class)->canDelete($pirep, $r->user()),
         ]);
     }
 
@@ -1184,6 +1185,29 @@ class PortalController extends Controller
        return redirect()->route('promethee.bookings')->with('success', 'Réservation '.$ident.' supprimée.');
    }
 
+   public function deleteBookingPirep(string $bid, Request $r)
+   {
+       $booking = Bid::with(['flight', 'aircraft'])->where('user_id', $r->user()->id)->findOrFail($bid);
+       $booking = $this->bookingOperation($booking);
+       $pirep = $booking->operation_pirep;
+
+       abort_if(!$pirep, 404, 'Aucun PIREP n’est lié à cette opération.');
+       app(PilotPirepDeletionService::class)->deleteOwn($pirep, $r->user(), 'promethee-booking');
+
+       return redirect()->route('promethee.bookings')
+           ->with('success', 'PIREP '.$pirep->id.' abandonné. La réservation reste disponible pour recommencer la préparation.');
+   }
+
+   public function deleteOwnPirep(string $id, Request $r)
+   {
+       $pirep = Pirep::with(['user', 'aircraft', 'flight'])->findOrFail($id);
+       $ident = $pirep->ident;
+       app(PilotPirepDeletionService::class)->deleteOwn($pirep, $r->user(), 'promethee-pirep');
+
+       return redirect()->route('promethee.bookings')
+           ->with('success', 'PIREP '.$ident.' supprimé. Vous pouvez préparer une nouvelle tentative.');
+   }
+
    private function bookingOperation(Bid $booking): Bid
    {
        $operationId = 'op_'.$booking->id;
@@ -1244,6 +1268,10 @@ class PortalController extends Controller
        $booking->setAttribute('operation_status', $status);
        $booking->setAttribute('operation_progress', $progress);
        $booking->setAttribute('operation_can_delete', $pirep === null);
+       $booking->setAttribute(
+           'operation_can_delete_pirep',
+           $pirep !== null && app(PilotPirepDeletionService::class)->isDeletableState($pirep)
+       );
        $booking->setAttribute('operation_legacy_ghost', $legacyGhost);
        $booking->setAttribute('operation_next_action', $legacyGhost
            ? 'Réparer l’ancien PIREP dans Hermès'
