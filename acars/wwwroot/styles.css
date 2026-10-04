@@ -872,3 +872,32 @@ body.auth-locked .display-settings{display:none}
   h1{font-size:34px}
 }
 
+
+
+/* Audit UX lot 11 — weather / operational briefing */
+.operational-weather{display:grid;gap:14px}
+.weather-ops-heading{align-items:flex-start}
+.weather-ops-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.weather-ops-summary{grid-template-columns:repeat(3,minmax(0,1fr))}
+.weather-station-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.weather-station-card{min-width:0;padding:14px;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel)}
+.weather-station-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.weather-station-heading .kicker{display:block;margin-bottom:3px}
+.weather-station-heading strong{font-size:18px}
+.weather-category{display:inline-flex;align-items:center;justify-content:center;min-width:48px;padding:5px 7px;border:1px solid var(--line);border-radius:4px;font:800 12px/1 ui-monospace,SFMono-Regular,Consolas,monospace}
+.weather-station-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.weather-station-metrics>div{min-width:0;padding:8px;border:1px solid color-mix(in srgb,var(--line) 70%,transparent);border-radius:4px}
+.weather-station-metrics span{display:block;color:var(--muted);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.weather-station-metrics strong{display:block;margin-top:2px;font:700 13px/1.25 ui-monospace,SFMono-Regular,Consolas,monospace}
+.weather-runway-line{margin:10px 0 0;font-size:12px;font-weight:700}
+.weather-station-alert{margin:8px 0 0;padding:8px;border-left:3px solid var(--warning,#b97900);background:color-mix(in srgb,var(--warning,#b97900) 10%,transparent);font-size:12px;font-weight:700}
+.weather-station-card details{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+.weather-station-card summary{cursor:pointer;color:var(--muted);font-size:11px;font-weight:800}
+.weather-station-card pre{margin:8px 0 0;max-height:120px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px}
+.weather-sigmet-panel{display:grid;grid-template-columns:minmax(110px,.22fr) 1fr;gap:14px;padding-top:12px;border-top:1px solid var(--line)}
+.weather-sigmet-panel h4{margin:2px 0 0}
+.weather-sigmet{display:grid;gap:4px;padding:9px 10px;border-left:3px solid var(--warning,#b97900);background:color-mix(in srgb,var(--warning,#b97900) 8%,transparent)}
+.weather-sigmet span{color:var(--muted);font-size:11px}
+.weather-sigmet p{margin:2px 0 0;font:600 11px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere}
+@media(max-width:980px){.weather-station-grid{grid-template-columns:1fr}.weather-ops-summary{grid-template-columns:1fr 1fr}.weather-sigmet-panel{grid-template-columns:1fr}}
+@media(max-width:620px){.weather-ops-summary{grid-template-columns:1fr}.weather-ops-actions{justify-content:flex-start}.weather-station-metrics{grid-template-columns:1fr}}
