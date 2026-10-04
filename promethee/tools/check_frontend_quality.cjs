@@ -17,6 +17,7 @@ const budgets = {
   '../acars/wwwroot/hermes-map.js': 21000,
   '../acars/wwwroot/hermes-review.js': 20000,
   '../acars/wwwroot/hermes-weather.js': 12000,
+  '../acars/wwwroot/hermes-identity.js': 8000,
   '../acars/wwwroot/index.html': 50000,
   '../acars/wwwroot/styles.css': 60000,
   '../acars/wwwroot/hermes-themes.css': 35000,
@@ -52,6 +53,7 @@ const hermesApp = read('../acars/wwwroot/app.js');
 const hermesMap = read('../acars/wwwroot/hermes-map.js');
 const hermesReview = read('../acars/wwwroot/hermes-review.js');
 const hermesWeather = read('../acars/wwwroot/hermes-weather.js');
+const hermesIdentity = read('../acars/wwwroot/hermes-identity.js');
 const hermesDesktop = read('../acars/WebDesktop.cs');
 const hermesTheme = read('../acars/wwwroot/hermes-themes.css');
 const hermesEraComponents = read('../acars/wwwroot/hermes-era-components.css');
@@ -133,11 +135,13 @@ expect(hermesIndex.indexOf('/hermes-weather.js') < hermesIndex.indexOf('/app.js'
 expect(hermesIndex.includes('id="identityProvider"')
     && hermesIndex.includes('id="argosAccountBtn"')
     && hermesIndex.includes('id="logoutBtn"')
-    && hermesApp.includes("auth.account_url")
+    && hermesIndex.indexOf('/hermes-identity.js') < hermesIndex.indexOf('/app.js')
+    && hermesIdentity.includes('auth.account_url')
+    && hermesIdentity.includes('ARGOS · SSO')
     && hermesApp.includes("call('/api/logout'")
     && hermesDesktop.includes('argos.airinter-va.org')
     && hermesDesktop.includes('await Logout()'),
-  'Hermès must keep Argos identity nearly invisible while exposing trusted account management and explicit logout.');
+  'Hermès must keep Argos identity modular and nearly invisible while exposing trusted account management and explicit logout.');
 expect(hermesEfbBridge.includes('AIRINTER_HERMES_EFB_REQUEST')
     && hermesEfbBridge.includes('AIRINTER_HERMES_EFB_STATE')
     && hermesEfbBridge.includes('READ_ONLY_BRIDGE')
