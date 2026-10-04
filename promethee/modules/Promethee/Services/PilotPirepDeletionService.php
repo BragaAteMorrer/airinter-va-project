@@ -27,10 +27,15 @@ class PilotPirepDeletionService
 
     public function __construct(private readonly PirepService $pireps) {}
 
+    public function isDeletableState(Pirep $pirep): bool
+    {
+        return in_array((int) $pirep->state, self::SELF_DELETABLE_STATES, true);
+    }
+
     public function canDelete(Pirep $pirep, User $user): bool
     {
         return (string) $pirep->user_id === (string) $user->id
-            && in_array((int) $pirep->state, self::SELF_DELETABLE_STATES, true);
+            && $this->isDeletableState($pirep);
     }
 
     public function deleteOwn(Pirep $pirep, User $user, string $origin = 'promethee'): array
@@ -42,7 +47,7 @@ class PilotPirepDeletionService
         );
 
         abort_unless(
-            in_array((int) $pirep->state, self::SELF_DELETABLE_STATES, true),
+            $this->isDeletableState($pirep),
             409,
             'Ce PIREP est déjà validé, rejeté ou annulé et ne peut plus être supprimé par le pilote. Contactez un administrateur si une remise à zéro est nécessaire.'
         );
