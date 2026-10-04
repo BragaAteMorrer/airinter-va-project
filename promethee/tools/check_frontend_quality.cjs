@@ -21,6 +21,10 @@ const budgets = {
   '../acars/wwwroot/hermes-themes.css': 35000,
   '../acars/wwwroot/hermes-era-components.css': 12000,
   '../acars/wwwroot/hermes-accessibility.css': 6000,
+  '../acars/HermesEfbBridge.cs': 16000,
+  '../acars/msfs2024-efb/HermesEfb/src/HermesEfb.tsx': 18000,
+  '../acars/msfs2024-efb/HermesEfb/src/HermesEfb.scss': 8000,
+  '../acars/msfs2024-efb/HermesEfb/build.js': 5000,
   'public/promethee-assets/promethee-v2.css': 90000,
   'public/promethee-assets/promethee-appearance.css': 40000,
   'public/promethee-assets/promethee-admin-workspaces.css': 12000,
@@ -50,6 +54,11 @@ const hermesDesktop = read('../acars/WebDesktop.cs');
 const hermesTheme = read('../acars/wwwroot/hermes-themes.css');
 const hermesEraComponents = read('../acars/wwwroot/hermes-era-components.css');
 const hermesAccessibility = read('../acars/wwwroot/hermes-accessibility.css');
+const hermesEfbBridge = read('../acars/HermesEfbBridge.cs');
+const hermesSimConnect = read('../acars/SimConnectReader.cs');
+const hermesEfbApp = read('../acars/msfs2024-efb/HermesEfb/src/HermesEfb.tsx');
+const hermesEfbBuild = read('../acars/msfs2024-efb/HermesEfb/build.js');
+const hermesEfbPackage = read('../acars/msfs2024-efb/HermesEfb/package.json');
 const prometheeBase = read('public/promethee-assets/promethee.css');
 const prometheeV2 = read('public/promethee-assets/promethee-v2.css');
 const prometheeAdmin = read('public/promethee-assets/admin-promethee.css');
@@ -113,6 +122,34 @@ expect(!hermesApp.includes('function normalizeReviewProfile')
     && hermesApp.includes('initializeFlightMapControls();')
     && hermesApp.includes('initializeReviewActions();'),
   'Hermès app.js must not absorb map/review rendering again.');
+expect(hermesEfbBridge.includes('AIRINTER_HERMES_EFB_REQUEST')
+    && hermesEfbBridge.includes('AIRINTER_HERMES_EFB_STATE')
+    && hermesEfbBridge.includes('READ_ONLY_BRIDGE')
+    && hermesEfbBridge.includes('JsonSerializerDefaults.Web'),
+  'Hermès EFB bridge must preserve its versioned read-only camelCase protocol.');
+expect(hermesSimConnect.includes('SimConnect_SubscribeToCommBusEvent')
+    && hermesSimConnect.includes('SimConnect_CallCommBusEvent')
+    && hermesSimConnect.includes('catch (EntryPointNotFoundException)')
+    && hermesSimConnect.includes('CommBusAvailable = false'),
+  'Hermès MSFS connector must keep CommBus optional so MSFS 2020 remains compatible.');
+expect(hermesDesktop.includes('/api/efb/context')
+    && hermesDesktop.includes('BuildEfbState')
+    && hermesDesktop.includes('efb.Diagnostics()'),
+  'Hermès desktop must expose only local operational context to the MSFS 2024 EFB bridge.');
+expect(hermesApp.includes('scheduleEfbContextSync')
+    && hermesApp.includes("call('/api/efb/context'")
+    && hermesApp.includes('cost_index')
+    && hermesApp.includes('estimated_time_enroute'),
+  'Hermès web UI must keep OFP and operation context synchronized with the EFB bridge.');
+expect(hermesEfbApp.includes('Efb.use(AirInterHermesApp)')
+    && hermesEfbApp.includes('Efb.loadJs("/JS/Services/CommBus.js")')
+    && hermesEfbApp.includes('callSimConnect')
+    && hermesEfbApp.includes('Lecture seule'),
+  'MSFS 2024 EFB app must use the native EFB/CommBus surface and remain read-only.');
+expect(hermesEfbBuild.includes('coui://html_ui/efb_ui/efb_apps/AirInterHermes')
+    && hermesEfbPackage.includes('"@efb/efb-api"')
+    && hermesEfbPackage.includes('"@microsoft/msfs-sdk"'),
+  'Hermès EFB build must target the native MSFS 2024 EFB VFS path and SDK packages.');
 
 expect(hermesIndex.includes('reviewAltitudeChart') && hermesIndex.includes('reviewFuelChart'),
   'Hermès Flight Review must preserve altitude and fuel chart surfaces.');
