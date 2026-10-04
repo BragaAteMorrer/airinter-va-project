@@ -32,6 +32,7 @@ public sealed record HermesEfbContext(
     int? EstimatedTimeEnroute,
     string? OfpSource,
     string? DispatchStatus,
+    JsonElement? Weather,
     DateTimeOffset UpdatedAt);
 
 /// <summary>
@@ -93,6 +94,7 @@ public sealed class HermesEfbBridge : IDisposable
                 Integer(value, "estimated_time_enroute", 0, 24 * 60 * 60),
                 Text(value, "ofp_source", 48),
                 Upper(value, "dispatch_status", 48),
+                Object(value, "weather", 32768),
                 DateTimeOffset.UtcNow);
 
             return Diagnostics();
@@ -251,5 +253,17 @@ public sealed class HermesEfbBridge : IDisposable
             || number > max)
             throw new InvalidOperationException($"Champ EFB {name} invalide.");
         return number;
+    }
+
+    private static JsonElement? Object(JsonElement value, string name, int maxBytes)
+    {
+        if (!value.TryGetProperty(name, out var property)
+            || property.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+            return null;
+        if (property.ValueKind != JsonValueKind.Object)
+            throw new InvalidOperationException($"Champ EFB {name} invalide.");
+        if (property.GetRawText().Length > maxBytes)
+            throw new InvalidOperationException($"Champ EFB {name} trop volumineux.");
+        return property.Clone();
     }
 }
