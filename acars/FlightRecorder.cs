@@ -362,20 +362,41 @@ public sealed class FlightRecorder
             if (!recoveryRequired || Flight is null || Flight.Recording)
                 throw new InvalidOperationException("Aucun vol interrompu à abandonner.");
 
-            ArchiveRecoveryState();
-            Flight = null;
-            previous = null;
-            previousSnapshot = null;
-            lastQueuedAt = null;
-            Pending = [];
-            PendingEvents = [];
-            PendingFacts = [];
-            Track = [];
-            Profile = [];
-            recoveryRequired = false;
-            Warning = null;
-            Save();
+            AbandonCurrentLocked();
         }
+    }
+
+    public void AbandonCurrent()
+    {
+        lock (Gate) {
+            if (Flight is null)
+                throw new InvalidOperationException("Aucun PIREP Hermès en cours à abandonner.");
+
+            AbandonCurrentLocked();
+        }
+    }
+
+    private void AbandonCurrentLocked()
+    {
+        // Persist one final non-recording snapshot before archiving it so a
+        // pilot can still provide the local recovery file to support if needed.
+        if (Flight is not null && Flight.Recording)
+            Flight = Flight with { Recording = false };
+
+        Save();
+        ArchiveRecoveryState();
+        Flight = null;
+        previous = null;
+        previousSnapshot = null;
+        lastQueuedAt = null;
+        Pending = [];
+        PendingEvents = [];
+        PendingFacts = [];
+        Track = [];
+        Profile = [];
+        recoveryRequired = false;
+        Warning = null;
+        Save();
     }
 
     private void ArchiveRecoveryState()
