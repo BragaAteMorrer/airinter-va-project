@@ -147,7 +147,6 @@ public sealed class TelemetryService(ISimulatorConnector sim, FlightRecorder rec
                             taxi_light=raw?.TaxiLight,
                             logo_light=raw?.LogoLight,
                             wing_light=raw?.WingLight,
-                            spoilers_armed=raw?.SpoilersArmed,
                             apu_running=raw?.ApuRunning,
                             apu_rpm_percent=raw?.ApuRpmPercent,
                             battery_on=raw?.BatteryOn,
