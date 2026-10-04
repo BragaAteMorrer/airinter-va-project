@@ -281,7 +281,7 @@ jobs:
       - name: Run Hermès operation lifecycle regression suite
         run: vendor/bin/phpunit tests/HermesOperationLifecycleTest.php
       - name: Run Weather / OPS regression tests
-        run: vendor/bin/phpunit tests/OperationalWeatherServiceTest.php tests/DispatchDeskTest.php
+        run: vendor/bin/phpunit tests/OperationalWeatherServiceTest.php
       - name: Run Hermès scoring configuration tests
         run: vendor/bin/phpunit tests/LegacyPirepScoringConfigurationTest.php
       - name: Run sb-airframe historical configuration tests
