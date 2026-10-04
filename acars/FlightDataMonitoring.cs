@@ -51,6 +51,7 @@ public sealed class FlightDataMonitor
     private const double StabilizedApproachGateFeet = 1000;
     private const double StabilizedApproachMaxDescentRate = -1000;
     private static readonly TimeSpan StabilizedApproachViolationDuration = TimeSpan.FromSeconds(4);
+    private static readonly TimeSpan StabilizedApproachMaxSampleGap = TimeSpan.FromSeconds(2.5);
 
     private AircraftSnapshot? previous;
     private bool approach1000Recorded;
@@ -297,10 +298,16 @@ public sealed class FlightDataMonitor
         FlightPhase phase,
         List<FdmObservation> result)
     {
+        if (approachDescentSegment
+            && previous is not null
+            && current.RecordedAt - previous.RecordedAt > StabilizedApproachMaxSampleGap)
+            ResetStabilizedApproachDescentRate();
+
         var agl = current.AltitudeAglFeet;
         var verticalSpeed = current.VerticalSpeedFeetPerMinute;
         var inApproachWindow = phase is FlightPhase.Approach or FlightPhase.Final or FlightPhase.Landing
             && current.OnGround == false
+            && current.Paused != true
             && agl is > 0 and <= StabilizedApproachGateFeet
             && verticalSpeed is not null;
 
@@ -338,6 +345,11 @@ public sealed class FlightDataMonitor
             && current.RecordedAt - approachDescentStartedAt >= StabilizedApproachViolationDuration)
             AddStabilizedApproachDescentObservation(result);
 
+        ResetStabilizedApproachDescentRate();
+    }
+
+    private void ResetStabilizedApproachDescentRate()
+    {
         approachDescentSegment = false;
         approachDescentReported = false;
         approachDescentStartedAt = default;
