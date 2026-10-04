@@ -1365,12 +1365,65 @@ class OperationsV1Controller extends Controller
 
     private function ofpDto(?SimBrief $ofp): array
     {
-        return $ofp ? [
+        if (!$ofp) {
+            return [
+                'id' => null,
+                'available' => false,
+                'aircraft_id' => null,
+                'updated_at' => null,
+                'route' => null,
+                'initial_altitude' => null,
+                'cost_index' => null,
+                'block_fuel' => null,
+                'estimated_time_enroute' => null,
+                'route_points' => [],
+            ];
+        }
+
+        $xml = $ofp->xml;
+
+        return [
             'id' => $ofp->id,
             'available' => true,
             'aircraft_id' => $ofp->aircraft_id,
             'updated_at' => optional($ofp->updated_at)?->toIso8601String(),
-        ] : ['id' => null, 'available' => false, 'aircraft_id' => null, 'updated_at' => null];
+            // Keep enough of the authoritative SimBrief OFP in Dispatch/Briefing
+            // for Hermès to redraw the planned route after a desktop/simulator CTD.
+            'route' => $xml ? trim((string) ($xml->general->route ?? '')) : null,
+            'initial_altitude' => $xml?->getFlightLevel(),
+            'cost_index' => $xml?->getCostIndex(),
+            'block_fuel' => $xml && is_numeric((string) ($xml->fuel->plan_ramp ?? ''))
+                ? (float) $xml->fuel->plan_ramp
+                : null,
+            'estimated_time_enroute' => $xml && is_numeric((string) ($xml->times->est_time_enroute ?? ''))
+                ? (int) $xml->times->est_time_enroute
+                : null,
+            'route_points' => $xml ? $this->simBriefRoutePoints($xml) : [],
+        ];
+    }
+
+    private function simBriefRoutePoints(\SimpleXMLElement $xml): array
+    {
+        $points = [];
+        if (!isset($xml->navlog)) return $points;
+
+        foreach ($xml->navlog->children()->fix as $fix) {
+            $lat = (float) ($fix->pos_lat ?? 0);
+            $lon = (float) ($fix->pos_long ?? 0);
+            if (!is_finite($lat) || !is_finite($lon) || abs($lat) > 90 || abs($lon) > 180) continue;
+            if ($lat === 0.0 && $lon === 0.0) continue;
+
+            $points[] = [
+                'ident' => trim((string) ($fix->ident ?? '')),
+                'type' => trim((string) ($fix->type ?? '')),
+                'lat' => round($lat, 6),
+                'lon' => round($lon, 6),
+                'altitude' => is_numeric((string) ($fix->altitude_feet ?? '')) ? (int) $fix->altitude_feet : null,
+            ];
+            if (count($points) >= 400) break;
+        }
+
+        return $points;
     }
 
     private function pirepDto(?Pirep $pirep): array
