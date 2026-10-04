@@ -213,7 +213,7 @@ class HermesEfbView extends AppView<RequiredProps<AppViewProps, "bus">> {
     this.set(this.syncTime, stamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
   }
 
-  private set(ref: ReturnType<typeof FSComponent.createRef<HTMLElement>>, value: string): void {
+  private set(ref: { instance: HTMLElement }, value: string): void {
     if (ref.instance) ref.instance.textContent = value;
   }
 
