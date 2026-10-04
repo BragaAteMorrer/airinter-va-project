@@ -101,6 +101,65 @@ jobs:
             $parseErrors | ForEach-Object { Write-Error $_.Message }
             exit 1
           }
+      - name: Validate Hermès release PowerShell syntax
+        shell: pwsh
+        run: |
+          $scripts = @(
+            'acars/build-installer.ps1',
+            'acars/msfs2024-efb/build-efb-app.ps1',
+            'acars/msfs2024-efb/build-efb-package.ps1',
+            'acars/msfs2024-efb/install-efb-package.ps1'
+          )
+          foreach ($script in $scripts) {
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $script),
+              [ref] $tokens,
+              [ref] $parseErrors
+            ) | Out-Null
+            if ($parseErrors.Count -gt 0) {
+              $parseErrors | ForEach-Object { Write-Error "$script : $($_.Message)" }
+              exit 1
+            }
+          }
+
+      - name: Test MSFS 2024 EFB Community package installer
+        shell: pwsh
+        run: |
+          $fakeDist = Join-Path $env:RUNNER_TEMP 'hermes-efb-dist'
+          $fakePackages = Join-Path $env:RUNNER_TEMP 'msfs2024-packages'
+          $stateFile = Join-Path $env:RUNNER_TEMP 'hermes-efb-install.txt'
+          New-Item -ItemType Directory -Force -Path (Join-Path $fakeDist 'Assets') | Out-Null
+          Set-Content -LiteralPath (Join-Path $fakeDist 'HermesEfb.js') -Value '/* CI fixture */' -Encoding utf8
+          Set-Content -LiteralPath (Join-Path $fakeDist 'HermesEfb.css') -Value '/* CI fixture */' -Encoding utf8
+          Set-Content -LiteralPath (Join-Path $fakeDist 'Assets\hermes-efb.svg') -Value '<svg xmlns="http://www.w3.org/2000/svg"/>' -Encoding utf8
+          New-Item -ItemType Directory -Force -Path $fakePackages | Out-Null
+
+          ./acars/msfs2024-efb/build-efb-package.ps1 `
+            -Version '9.9.9' `
+            -SkipAppBuild `
+            -EfbDistPath $fakeDist
+
+          $package = Join-Path $PWD 'dist\AirInter-Hermes-EFB-MSFS2024-9.9.9\airinter-hermes-efb'
+          if (-not (Test-Path (Join-Path $package 'manifest.json'))) { throw 'manifest.json missing' }
+          if (-not (Test-Path (Join-Path $package 'layout.json'))) { throw 'layout.json missing' }
+          $manifest = Get-Content (Join-Path $package 'manifest.json') -Raw | ConvertFrom-Json
+          if ($manifest.title -ne 'Air Inter Hermès EFB') { throw 'unexpected EFB manifest title' }
+
+          ./acars/msfs2024-efb/install-efb-package.ps1 `
+            -PackageSource $package `
+            -InstalledPackagesPath $fakePackages `
+            -StateFile $stateFile
+
+          $installed = Join-Path $fakePackages 'Community2024\airinter-hermes-efb'
+          if (-not (Test-Path (Join-Path $installed 'html_ui\efb_ui\efb_apps\AirInterHermes\HermesEfb.js'))) {
+            throw 'EFB package was not installed in Community2024'
+          }
+
+          ./acars/msfs2024-efb/install-efb-package.ps1 -Uninstall -StateFile $stateFile
+          if (Test-Path $installed) { throw 'EFB package was not removed by uninstall' }
+
       - name: Install .NET
         uses: actions/setup-dotnet@v4
         with:
