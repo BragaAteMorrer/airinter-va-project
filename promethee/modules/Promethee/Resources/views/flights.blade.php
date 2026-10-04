@@ -28,10 +28,28 @@
 </details>
 <datalist id="flight-airports">
 @foreach($mapAirports as $airport)
-<option value="{{ $airport['code'] }}" label="{{ $airport['name'] }}@if($airport['iata']) · {{ $airport['iata'] }}@endif @if($airport['location']) · {{ $airport['location'] }}@endif"></option>
-@if($airport['iata'])<option value="{{ $airport['iata'] }}" label="{{ $airport['code'] }} · {{ $airport['name'] }}@if($airport['location']) · {{ $airport['location'] }}@endif"></option>@endif
-@if($airport['location'])<option value="{{ $airport['location'] }}" label="{{ $airport['code'] }}@if($airport['iata']) / {{ $airport['iata'] }}@endif · {{ $airport['name'] }}"></option>@endif
-@if($airport['name'] && $airport['name'] !== $airport['location'])<option value="{{ $airport['name'] }}" label="{{ $airport['code'] }}@if($airport['iata']) / {{ $airport['iata'] }}@endif@if($airport['location']) · {{ $airport['location'] }}@endif"></option>@endif
+@php
+    $airportCode = (string) ($airport['code'] ?? '');
+    $airportIata = trim((string) ($airport['iata'] ?? ''));
+    $airportName = trim((string) ($airport['name'] ?? ''));
+    $airportLocation = trim((string) ($airport['location'] ?? ''));
+    $primaryLabel = collect([$airportName, $airportIata, $airportLocation])->filter()->implode(' · ');
+    $iataLabel = collect([$airportCode, $airportName, $airportLocation])->filter()->implode(' · ');
+    $locationPrefix = $airportIata !== '' ? $airportCode.' / '.$airportIata : $airportCode;
+    $locationLabel = collect([$locationPrefix, $airportName])->filter()->implode(' · ');
+    $namePrefix = $airportIata !== '' ? $airportCode.' / '.$airportIata : $airportCode;
+    $nameLabel = collect([$namePrefix, $airportLocation])->filter()->implode(' · ');
+@endphp
+<option value="{{ $airportCode }}" label="{{ $primaryLabel }}"></option>
+@if($airportIata !== '')
+<option value="{{ $airportIata }}" label="{{ $iataLabel }}"></option>
+@endif
+@if($airportLocation !== '')
+<option value="{{ $airportLocation }}" label="{{ $locationLabel }}"></option>
+@endif
+@if($airportName !== '' && $airportName !== $airportLocation)
+<option value="{{ $airportName }}" label="{{ $nameLabel }}"></option>
+@endif
 @endforeach
 </datalist>
 </form>
