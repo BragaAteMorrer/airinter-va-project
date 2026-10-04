@@ -1,7 +1,6 @@
 param(
   [ValidatePattern('^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$')]
   [string]$Version = '1.0.0',
-  [string]$SdkRoot = $(if ($env:MSFS2024_SDK) { $env:MSFS2024_SDK } else { 'C:\MSFS 2024 SDK' }),
   [string]$EfbDistPath,
   [switch]$SkipAppBuild
 )
@@ -16,7 +15,7 @@ $appTarget = Join-Path $packageRoot 'html_ui\efb_ui\efb_apps\AirInterHermes'
 $zipPath = Join-Path $repoRoot "dist\AirInter-Hermes-EFB-MSFS2024-$Version.zip"
 
 if (-not $SkipAppBuild) {
-  & (Join-Path $PSScriptRoot 'build-efb-app.ps1') -SdkRoot $SdkRoot
+  & (Join-Path $PSScriptRoot 'build-efb-app.ps1')
   if ($LASTEXITCODE -ne 0) { throw 'Compilation EFB échouée.' }
 }
 
