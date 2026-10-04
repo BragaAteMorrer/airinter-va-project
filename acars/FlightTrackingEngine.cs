@@ -326,7 +326,13 @@ public sealed class FlightTrackingEngine
             events.Add(new("SLEW_ACTIVE", after.RecordedAt, after));
         if (before.SimulationRate is not null && after.SimulationRate is > 1 && after.SimulationRate > before.SimulationRate)
             events.Add(new("SIM_RATE_INCREASED", after.RecordedAt, after, after.SimulationRate));
-        if (before.FuelWeight is not null && after.FuelWeight is not null && after.FuelWeight > before.FuelWeight + 250)
+        // Refuelling at the stand is normal and must never become a flight
+        // anomaly. Air Inter's rule only considers a fuel increase once the
+        // aircraft is actually moving (strictly above 0 kt groundspeed).
+        if (before.FuelWeight is not null
+            && after.FuelWeight is not null
+            && (after.GroundSpeedKnots ?? 0) > 0
+            && after.FuelWeight > before.FuelWeight + 250)
             events.Add(new("FUEL_INCREASED", after.RecordedAt, after, after.FuelWeight - before.FuelWeight));
 
         if (before.EnginesRunning is not null && after.EnginesRunning is not null)

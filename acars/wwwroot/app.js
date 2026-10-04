@@ -382,6 +382,14 @@ function simBriefPreparationData(resolved = null) {
   const plannedPax = paxOverride !== ''
     ? Number(paxOverride)
     : Number(params.pax ?? demand.passengers ?? aircraft.passengers);
+  const rawCostIndex = flightPlan?.cost_index
+    ?? authoritative.cost_index
+    ?? params.civalue
+    ?? form?.elements?.civalue?.value
+    ?? null;
+  const costIndex = rawCostIndex === null || rawCostIndex === undefined || String(rawCostIndex).trim() === ''
+    ? null
+    : String(rawCostIndex).trim().toUpperCase();
   return {
     ident: authoritative.flight?.ident || displayFlightIdent(flight),
     departure: authoritative.origin?.icao || flight.departure || '—',
@@ -403,7 +411,8 @@ function simBriefPreparationData(resolved = null) {
     pax: Number.isFinite(plannedPax) ? plannedPax : null,
     capacity: Number(demand.capacity ?? aircraft.capacity) || null,
     loadFactor: Number(demand.load_factor_percent ?? aircraft.load_factor_percent),
-    level: params.fl || normalizeFlightLevel(form?.elements?.level?.value || flight.level) || null
+    level: params.fl || normalizeFlightLevel(form?.elements?.level?.value || flight.level) || null,
+    costIndex
   };
 }
 
@@ -424,7 +433,8 @@ function renderSimBriefPreparationSummary(resolved = null) {
       ['ADD-ON', data.addon || 'AUTO / générique'],
       ['PAX ENVOYÉS', data.pax === null ? 'AUTO' : String(data.pax) + (data.capacity ? ' / ' + data.capacity : '')],
       ['REMPLISSAGE', Number.isFinite(data.loadFactor) ? data.loadFactor.toFixed(1).replace('.0','') + ' %' : '—'],
-      ['NIVEAU', data.level ? 'FL' + String(data.level).padStart(3, '0') : 'AUTO']
+      ['NIVEAU', data.level ? 'FL' + String(data.level).padStart(3, '0') : 'AUTO'],
+      ['CI', data.costIndex ?? 'AUTO']
     ];
 
     node.replaceChildren();
@@ -1685,6 +1695,10 @@ async function applyBriefing(briefing, sourceLabel) {
     ?? briefing.weights?.passengers
     ?? briefing.general?.passengers
     ?? undefined;
+  const importedCostIndex = briefing.cost_index
+    ?? briefing.general?.costindex
+    ?? briefing.general?.cost_index
+    ?? undefined;
   flightPlan = {
     source: briefing.source || sourceLabel,
     simbrief_id: briefing.id,
@@ -1692,6 +1706,9 @@ async function applyBriefing(briefing, sourceLabel) {
     level: flightLevel,
     block_fuel: briefing.block_fuel || undefined,
     passengers: Number.isFinite(Number(importedPax)) ? Number(importedPax) : undefined,
+    cost_index: importedCostIndex === undefined || importedCostIndex === null || String(importedCostIndex).trim() === ''
+      ? undefined
+      : String(importedCostIndex).trim(),
     estimated_time_enroute: Number(briefing.estimated_time_enroute || 0) || null,
     route_points: Array.isArray(briefing.route_points) ? briefing.route_points : [],
     network_prefiles: briefing.network_prefiles || null
@@ -1699,6 +1716,7 @@ async function applyBriefing(briefing, sourceLabel) {
   if (briefing.block_fuel) form.elements.block_fuel.value = Math.round(briefing.block_fuel);
   if (briefing.route) form.elements.route.value = briefing.route;
   if (flightLevel) form.elements.level.value = flightLevel;
+  if (flightPlan.cost_index !== undefined && form.elements.civalue) form.elements.civalue.value = String(flightPlan.cost_index);
   if (briefing.alternate) form.elements.alt_airport_id.value = briefing.alternate;
   $('#planBox').textContent = JSON.stringify(briefing, null, 2);
   renderNetworkPrefiles(flightPlan.network_prefiles);

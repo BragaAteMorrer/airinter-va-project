@@ -44,6 +44,22 @@ class SimBriefXML extends SimpleXMLElement
     }
 
     /**
+     * Return the Cost Index used by the generated OFP.
+     */
+    public function getCostIndex(): ?int
+    {
+        $value = trim((string) ($this->general->costindex ?? ''));
+
+        if ($value === '' || !is_numeric($value)) {
+            return null;
+        }
+
+        $costIndex = (int) round((float) $value);
+
+        return $costIndex >= 0 && $costIndex <= 999 ? $costIndex : null;
+    }
+
+    /**
      * Return the URL to the vmsACARS flight plan file
      *
      * @return string|null
