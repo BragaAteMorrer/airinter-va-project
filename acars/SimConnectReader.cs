@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.IO;
+using System.Text;
 
 namespace Promethee;
 public record Sample(Guid SampleId, DateTimeOffset RecordedAt, double Lat, double Lon, double Altitude, double Agl, double Ias, double Gs, double Vs, double Heading, double Fuel, bool OnGround, double Bank, bool GearDown, double TouchdownVelocity, double Flaps, bool ThrustStable, double LocalizerDots, double GlideslopeDots, bool ParkingBrake,
@@ -13,7 +14,7 @@ public record Sample(Guid SampleId, DateTimeOffset RecordedAt, double Lat, doubl
 /// family. It intentionally reports the generic family until an SDK-supported
 /// version probe is implemented; it must not guess 2020 versus 2024.
 /// </summary>
-public sealed class SimConnectReader : ISimulatorConnector
+public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
 {
     private const uint MainDefinitionId = 1;
     private const uint MainRequestId = 1;
@@ -31,6 +32,10 @@ public sealed class SimConnectReader : ISimulatorConnector
     private const uint SimStartEventId = 1003;
     private const int RecvIdEvent = 4;
     private const int RecvIdSimObjectData = 8;
+    // MSFS 2024 SDK SIMCONNECT_RECV_ID enum: COMM_BUS is entry 43.
+    private const int RecvIdCommBus = 43;
+    private const uint EfbRequestEventId = 2001;
+    private const uint CommBusBroadcastJs = 1 << 0;
 
     private IntPtr handle; private readonly Dispatch callback;
     private string? aircraftTitle;
@@ -41,10 +46,14 @@ public sealed class SimConnectReader : ISimulatorConnector
     private uint pauseFlags;
     private bool simStopped;
     private bool simVarPaused;
+    private readonly Dictionary<uint, StringBuilder> commBusBuffers = [];
     public Sample? Latest { get; private set; }
     public string Status { get; private set; } = "Simulateur non détecté";
     public event Action<Sample>? Received;
     public event Action<AircraftSnapshot>? SnapshotReceived;
+    public event Action<string>? CommBusMessageReceived;
+    public bool CommBusAvailable { get; private set; }
+    public DateTimeOffset? LastCommBusRequestAt { get; private set; }
     public AircraftSnapshot? LatestSnapshot { get; private set; }
     public SimulatorConnectionState ConnectionState => handle != IntPtr.Zero
         ? (Latest is null ? SimulatorConnectionState.Detected : SimulatorConnectionState.Connected)
@@ -86,6 +95,7 @@ public sealed class SimConnectReader : ISimulatorConnector
                 TrySubscribeSystemEvent(PauseEventId, "Pause_EX1");
                 TrySubscribeSystemEvent(SimStopEventId, "SimStop");
                 TrySubscribeSystemEvent(SimStartEventId, "SimStart");
+                TryEnableCommBus();
                 Status="MSFS détecté";
             }
             Marshal.ThrowExceptionForHR(SimConnect_CallDispatch(handle,callback,IntPtr.Zero));
@@ -100,6 +110,7 @@ public sealed class SimConnectReader : ISimulatorConnector
     {
         var id=Marshal.ReadInt32(data,8); if(id==3){Status="Simulateur non détecté";Close();return;} if(id==1){Status="Connexion au simulateur interrompue";return;}
         if(id==RecvIdEvent){ReceiveSystemEvent(data,length);return;}
+        if(id==RecvIdCommBus){ReceiveCommBus(data,length);return;}
         if(id!=RecvIdSimObjectData)return;
         var requestId=Marshal.ReadInt32(data,12);
         if(requestId==TitleRequestId){
@@ -144,6 +155,72 @@ public sealed class SimConnectReader : ISimulatorConnector
             : "Connecté à MSFS";
         Received?.Invoke(Latest); SnapshotReceived?.Invoke(LatestSnapshot);
     }
+
+    private void TryEnableCommBus()
+    {
+        try {
+            var result = SimConnect_SubscribeToCommBusEvent(handle, EfbRequestEventId, HermesEfbBridge.RequestEvent);
+            if (result < 0) Marshal.ThrowExceptionForHR(result);
+            CommBusAvailable = true;
+        } catch (EntryPointNotFoundException) {
+            // MSFS 2020 SimConnect does not expose the MSFS 2024 CommBus API.
+            CommBusAvailable = false;
+        } catch (Exception exception) {
+            System.Diagnostics.Trace.WriteLine($"MSFS 2024 EFB CommBus unavailable: {exception}");
+            CommBusAvailable = false;
+        }
+    }
+
+    private void ReceiveCommBus(IntPtr data, uint length)
+    {
+        // SIMCONNECT_RECV (12 bytes) + LIST_TEMPLATE (16 bytes) +
+        // uEventID (4 bytes), followed by the variable payload.
+        if (length <= 32) return;
+        var entryNumber = (uint)Marshal.ReadInt32(data, 20);
+        var outOf = (uint)Marshal.ReadInt32(data, 24);
+        var eventId = (uint)Marshal.ReadInt32(data, 28);
+        if (eventId != EfbRequestEventId) return;
+
+        var payloadLength = checked((int)length - 32);
+        if (payloadLength <= 0) return;
+        var bytes = new byte[payloadLength];
+        Marshal.Copy(IntPtr.Add(data, 32), bytes, 0, payloadLength);
+        var zero = Array.IndexOf(bytes, (byte)0);
+        var payload = Encoding.UTF8.GetString(bytes, 0, zero >= 0 ? zero : bytes.Length);
+
+        if (outOf <= 1) {
+            LastCommBusRequestAt = DateTimeOffset.UtcNow;
+            CommBusMessageReceived?.Invoke(payload);
+            return;
+        }
+
+        if (!commBusBuffers.TryGetValue(eventId, out var buffer)) {
+            buffer = new StringBuilder();
+            commBusBuffers[eventId] = buffer;
+        }
+        buffer.Append(payload);
+        if (entryNumber + 1 < outOf) return;
+
+        commBusBuffers.Remove(eventId);
+        LastCommBusRequestAt = DateTimeOffset.UtcNow;
+        CommBusMessageReceived?.Invoke(buffer.ToString());
+    }
+
+    public bool TrySendCommBus(string eventName, string payload)
+    {
+        if (!CommBusAvailable || handle == IntPtr.Zero || string.IsNullOrWhiteSpace(eventName)) return false;
+        try {
+            var bytes = (uint)(Encoding.UTF8.GetByteCount(payload) + 1);
+            var result = SimConnect_CallCommBusEvent(handle, eventName, CommBusBroadcastJs, bytes, payload);
+            if (result < 0) Marshal.ThrowExceptionForHR(result);
+            return true;
+        } catch (Exception exception) when (exception is COMException or EntryPointNotFoundException) {
+            System.Diagnostics.Trace.WriteLine($"MSFS 2024 EFB response failed: {exception}");
+            CommBusAvailable = false;
+            return false;
+        }
+    }
+
     private void ReceiveSystemEvent(IntPtr data, uint length)
     {
         if (length < 24) return;
@@ -221,6 +298,7 @@ public sealed class SimConnectReader : ISimulatorConnector
         if(handle!=IntPtr.Zero){SimConnect_Close(handle);handle=IntPtr.Zero;}
         Latest=null;LatestSnapshot=null;aircraftTitle=null;aircraftModel=null;aircraftType=null;
         previousThrottle1=null;previousThrottle2=null;pauseFlags=0;simStopped=false;simVarPaused=false;
+        CommBusAvailable=false;LastCommBusRequestAt=null;commBusBuffers.Clear();
     } public void Dispose()=>Close();
     [UnmanagedFunctionPointer(CallingConvention.StdCall)] private delegate void Dispatch(IntPtr data,uint length,IntPtr context);
     [DllImport("SimConnect.dll",CharSet=CharSet.Ansi)] private static extern int SimConnect_Open(out IntPtr handle,string name,IntPtr window,uint message,IntPtr signal,uint index);
@@ -229,4 +307,6 @@ public sealed class SimConnectReader : ISimulatorConnector
     [DllImport("SimConnect.dll")] private static extern int SimConnect_RequestDataOnSimObject(IntPtr handle,uint request,uint definition,uint objectId,uint period,uint flags,uint origin,uint interval,uint limit);
     [DllImport("SimConnect.dll")] private static extern int SimConnect_CallDispatch(IntPtr handle,Dispatch callback,IntPtr context);
     [DllImport("SimConnect.dll",CharSet=CharSet.Ansi)] private static extern int SimConnect_SubscribeToSystemEvent(IntPtr handle,uint eventId,string systemEventName);
+    [DllImport("SimConnect.dll",CharSet=CharSet.Ansi)] private static extern int SimConnect_SubscribeToCommBusEvent(IntPtr handle,uint eventId,string eventName);
+    [DllImport("SimConnect.dll",CharSet=CharSet.Ansi)] private static extern int SimConnect_CallCommBusEvent(IntPtr handle,string eventName,uint broadcastTo,uint bufferSize,string data);
 }

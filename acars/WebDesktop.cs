@@ -19,24 +19,34 @@ public static class WebDesktop
 
 public sealed class PrometheeWindow : Window
 {
-    private readonly PhpVmsClient client = new(); private readonly SimulatorConnectorHub sim = new(
-        new SimConnectReader(),
-        // Prefer native SimConnect for MSFS, but keep FSUIPC7 as a real
-        // telemetry fallback. The hub only activates a connector after it has
-        // produced a fresh validated snapshot.
-        new FsuipcConnector(SimulatorKind.MicrosoftFlightSimulator, "Microsoft Flight Simulator 2020/2024 (FSUIPC7)"),
-        new XPlaneUdpConnector(),
-        new FsuipcConnector(SimulatorKind.FlightSimulator2004, "Microsoft Flight Simulator 2004"),
-        new FsuipcConnector(SimulatorKind.FlightSimulatorX, "Microsoft Flight Simulator X"),
-        new FsuipcConnector(SimulatorKind.Prepar3D, "Prepar3D")); private readonly FlightRecorder recorder = new();
-    private readonly TelemetryService telemetry; private readonly HermesDatalink datalink; private readonly HermesPresence presence; private readonly ArgosDesktopAuth argos = new(); private readonly WebView2 web = new();
+    private readonly PhpVmsClient client = new();
+    private readonly SimConnectReader msfs = new();
+    private readonly SimulatorConnectorHub sim;
+    private readonly FlightRecorder recorder = new();
+    private readonly TelemetryService telemetry;
+    private readonly HermesDatalink datalink;
+    private readonly HermesPresence presence;
+    private readonly HermesEfbBridge efb;
+    private readonly ArgosDesktopAuth argos = new();
+    private readonly WebView2 web = new();
     private bool ticking; private DateTimeOffset nextDatalinkPollAt = DateTimeOffset.MinValue;
     public PrometheeWindow()
     {
-        telemetry = new(sim, recorder, client); datalink = new(client); presence = new(client); Title = "Hermès ACARS — Air Inter";
+        sim = new(
+            msfs,
+            new FsuipcConnector(SimulatorKind.MicrosoftFlightSimulator, "Microsoft Flight Simulator 2020/2024 (FSUIPC7)"),
+            new XPlaneUdpConnector(),
+            new FsuipcConnector(SimulatorKind.FlightSimulator2004, "Microsoft Flight Simulator 2004"),
+            new FsuipcConnector(SimulatorKind.FlightSimulatorX, "Microsoft Flight Simulator X"),
+            new FsuipcConnector(SimulatorKind.Prepar3D, "Prepar3D"));
+        telemetry = new(sim, recorder, client);
+        datalink = new(client);
+        presence = new(client);
+        efb = new(msfs, BuildEfbState);
+        Title = "Hermès ACARS — Air Inter";
         Icon = BitmapFrame.Create(new Uri("pack://application:,,,/assets/hermes.ico", UriKind.Absolute));
         Width=1280; Height=840; MinWidth=900; MinHeight=620; WindowStartupLocation=WindowStartupLocation.CenterScreen; WindowState=WindowState.Maximized; Content=web;
-        Loaded += async (_, _) => { await StartAsync(); await CheckForUpdatesAsync(); }; Closed += (_, _) => sim.Dispose();
+        Loaded += async (_, _) => { await StartAsync(); await CheckForUpdatesAsync(); }; Closed += (_, _) => { efb.Dispose(); sim.Dispose(); };
         var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(1) }; timer.Tick += async (_, _) => await Tick(); timer.Start();
     }
     private async Task StartAsync()
@@ -109,6 +119,8 @@ public sealed class PrometheeWindow : Window
     private async Task<object> Route(string path, JsonElement? body)
     {
         var uri = new Uri("https://promethee.local" + path); var route = uri.AbsolutePath;
+        if (route == "/api/efb/context")
+            return efb.UpdateContext(body);
         if (route == "/api/network")
             return await Network(uri);
         if (route == "/api/datalink")
@@ -157,6 +169,58 @@ public sealed class PrometheeWindow : Window
             if (roster.HasValue) return roster.Value;
         }
         return await presence.RefreshNetworkAsync();
+    }
+
+    private object BuildEfbState(HermesEfbContext? context)
+    {
+        lock (recorder.Gate)
+        {
+            var latest = sim.LatestSnapshot;
+            var review = recorder.GetReview();
+            return new
+            {
+                hermesConnected = client.Connected,
+                simulator = new
+                {
+                    id = HermesPresence.SimulatorId(sim),
+                    linkState = sim.LinkState,
+                    connector = sim.Active?.Descriptor.ConnectorId,
+                    name = sim.Active?.Descriptor.DisplayName,
+                    commBusAvailable = msfs.CommBusAvailable
+                },
+                flight = recorder.Flight,
+                telemetry = latest is null ? null : new
+                {
+                    recordedAt = latest.RecordedAt,
+                    latitude = latest.Latitude,
+                    longitude = latest.Longitude,
+                    altitude = latest.AltitudeMslFeet,
+                    agl = latest.AltitudeAglFeet,
+                    ias = latest.IndicatedAirspeedKnots,
+                    gs = latest.GroundSpeedKnots,
+                    heading = latest.HeadingDegrees,
+                    vs = latest.VerticalSpeedFeetPerMinute,
+                    fuel = latest.FuelWeight,
+                    grossWeight = latest.GrossWeight,
+                    onGround = latest.OnGround,
+                    paused = latest.Paused
+                },
+                review = review is null ? null : new
+                {
+                    review.ReadyToFile,
+                    review.Distance,
+                    review.AirborneMinutes,
+                    review.BlockMinutes,
+                    review.FuelUsed,
+                    review.LandingRate,
+                    review.PauseCount,
+                    review.PausedSeconds
+                },
+                pending = recorder.Pending.Count + recorder.PendingEvents.Count + recorder.PendingFacts.Count,
+                recoveryAvailable = recorder.RecoveryAvailable,
+                warning = recorder.Warning
+            };
+        }
     }
 
     private PresenceHeartbeat BuildPresenceHeartbeat()
@@ -309,7 +373,8 @@ public sealed class PrometheeWindow : Window
             datalinkError=datalink.LastError,
             presenceLastHeartbeatAt=presence.LastHeartbeatAt,
             presenceError=presence.LastError,
-            warning=recorder.Warning
+            warning=recorder.Warning,
+            efb=efb.Diagnostics()
         };
     }
     private object About() => new {
@@ -332,7 +397,8 @@ public sealed class PrometheeWindow : Window
         datalinkError=datalink.LastError,
         presenceLastHeartbeatAt=presence.LastHeartbeatAt,
         presenceError=presence.LastError,
-        warning=recorder.Warning
+        warning=recorder.Warning,
+        efb=efb.Diagnostics()
     };
     private async Task<object> Login(JsonElement? body)
     {

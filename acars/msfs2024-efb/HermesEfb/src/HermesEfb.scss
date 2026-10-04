@@ -1,0 +1,150 @@
+$blue: #0b5cad;
+$navy: #102d47;
+$paper: #f2f4f3;
+$line: #cad5dc;
+$muted: #687986;
+
+.airinter-hermes-efb {
+  min-height: 100%;
+  box-sizing: border-box;
+  padding: 24px;
+  background: $paper;
+  color: $navy;
+  font-family: Arial, Helvetica, sans-serif;
+
+  * { box-sizing: border-box; }
+
+  .efb-header,
+  .flight-hero,
+  .metric-grid,
+  .ofp-strip,
+  footer {
+    max-width: 960px;
+    margin-inline: auto;
+  }
+
+  .efb-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    align-items: end;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 4px solid $blue;
+
+    h1 { margin: 2px 0 0; font-size: 28px; }
+    .eyebrow { font-size: 12px; font-weight: 800; letter-spacing: .12em; color: $blue; }
+  }
+
+  .bridge-status {
+    display: grid;
+    justify-items: end;
+    gap: 2px;
+    strong { color: $blue; }
+    small { color: $muted; }
+  }
+
+  .efb-warning {
+    max-width: 960px;
+    margin: 0 auto 14px;
+    padding: 10px 12px;
+    border-left: 5px solid #c48713;
+    background: #fff4d6;
+    font-weight: 700;
+  }
+
+  .flight-hero {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr 1fr;
+    gap: 1px;
+    border: 1px solid $line;
+    background: $line;
+
+    > div {
+      min-width: 0;
+      padding: 16px;
+      background: #fff;
+    }
+
+    .label { display: block; margin-bottom: 4px; color: $muted; font-size: 11px; font-weight: 800; }
+    strong { display: block; overflow: hidden; text-overflow: ellipsis; font-size: 18px; white-space: nowrap; }
+  }
+
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 14px;
+
+    article {
+      min-height: 92px;
+      padding: 15px;
+      border: 1px solid $line;
+      background: #fff;
+    }
+
+    span { display: block; color: $muted; font-size: 10px; font-weight: 800; letter-spacing: .06em; }
+    strong { display: block; margin-top: 8px; color: $blue; font: 800 21px/1.1 Consolas, monospace; }
+  }
+
+  .briefing-panel {
+    max-width: 960px;
+    margin: 14px auto 0;
+    border: 1px solid $line;
+    background: #fff;
+  }
+
+  .briefing-title {
+    display: grid;
+    grid-template-columns: minmax(150px, .35fr) 1fr;
+    gap: 16px;
+    padding: 14px 16px;
+
+    .eyebrow { display: block; color: $blue; font-size: 10px; font-weight: 800; letter-spacing: .08em; }
+    strong { display: block; margin-top: 3px; }
+    p { margin: 0; color: $navy; font: 700 12px/1.5 Consolas, monospace; overflow-wrap: anywhere; }
+  }
+
+  .ofp-strip {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    margin-top: 14px;
+    border: 1px solid $navy;
+    background: $navy;
+    color: white;
+
+    > div { padding: 13px 16px; border-right: 1px solid rgba(255,255,255,.18); }
+    > div:last-child { border-right: 0; }
+    span { display: block; font-size: 10px; opacity: .7; }
+    strong { display: block; margin-top: 3px; font: 800 18px/1.2 Consolas, monospace; }
+  }
+
+  footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    margin-top: 16px;
+    color: $muted;
+    font-size: 11px;
+
+    button {
+      padding: 9px 14px;
+      border: 1px solid $blue;
+      background: $blue;
+      color: #fff;
+      font-weight: 800;
+    }
+  }
+
+  @media (max-width: 720px) {
+    padding: 14px;
+
+    .efb-header { align-items: start; }
+    .bridge-status { justify-items: start; }
+    .flight-hero { grid-template-columns: 1fr; }
+    .metric-grid { grid-template-columns: repeat(2, 1fr); }
+    .ofp-strip { grid-template-columns: repeat(2, 1fr); }
+    .ofp-strip > div { border-bottom: 1px solid rgba(255,255,255,.18); }
+  }
+}

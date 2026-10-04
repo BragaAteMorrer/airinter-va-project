@@ -43,6 +43,8 @@ jobs:
           node --check acars/wwwroot/hermes-map.js
           node --check acars/wwwroot/hermes-review.js
           node --check acars/wwwroot/app.js
+          node --check acars/msfs2024-efb/HermesEfb/build.js
+          node -e "JSON.parse(require('fs').readFileSync('acars/msfs2024-efb/HermesEfb/package.json','utf8')); JSON.parse(require('fs').readFileSync('acars/msfs2024-efb/HermesEfb/tsconfig.json','utf8'));"
           node --check promethee/public/promethee-assets/promethee.js
           node --check promethee/public/promethee-assets/navigation-groups.js
           node promethee/tools/check_hermes_i18n.cjs
