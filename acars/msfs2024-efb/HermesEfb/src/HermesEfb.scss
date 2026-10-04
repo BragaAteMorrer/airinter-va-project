@@ -119,6 +119,39 @@ $muted: #687986;
     strong { display: block; margin-top: 3px; font: 800 18px/1.2 Consolas, monospace; }
   }
 
+  .weather-panel {
+    max-width: 960px;
+    margin: 14px auto 0;
+    border: 1px solid $line;
+    background: #fff;
+
+    .weather-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 13px 16px;
+      border-bottom: 1px solid $line;
+
+      .eyebrow { display: block; color: $blue; font-size: 10px; font-weight: 800; letter-spacing: .08em; }
+      strong { display: block; margin-top: 3px; }
+      > span { color: $muted; font-size: 11px; font-weight: 800; }
+    }
+
+    .weather-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: $line;
+
+      article { min-width: 0; padding: 13px 16px; background: #fff; }
+      span { display: block; color: $muted; font-size: 10px; font-weight: 800; }
+      strong { display: block; margin-top: 5px; font: 800 12px/1.45 Consolas, monospace; overflow-wrap: anywhere; }
+    }
+
+    > p { margin: 0; padding: 10px 16px; color: $muted; font-size: 10px; border-top: 1px solid $line; }
+  }
+
   footer {
     display: flex;
     justify-content: space-between;
@@ -144,6 +177,8 @@ $muted: #687986;
     .bridge-status { justify-items: start; }
     .flight-hero { grid-template-columns: 1fr; }
     .metric-grid { grid-template-columns: repeat(2, 1fr); }
+    .weather-panel .weather-title { align-items: start; flex-direction: column; }
+    .weather-panel .weather-grid { grid-template-columns: 1fr; }
     .ofp-strip { grid-template-columns: repeat(2, 1fr); }
     .ofp-strip > div { border-bottom: 1px solid rgba(255,255,255,.18); }
   }
