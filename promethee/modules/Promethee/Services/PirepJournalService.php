@@ -231,18 +231,18 @@ final class PirepJournalService
                             'TÉLÉMÉTRIE HERMÈS',
                             $metrics ? implode(' · ', $metrics) : null
                         );
+                    }
 
-                        if (in_array($phase, ['TAKEOFF', 'LANDING'], true)) {
-                            $snapshotDetail = $describeSnapshot($payload);
-                            if ($snapshotDetail) {
-                                $append(
-                                    $date,
-                                    $phase.'_DATA',
-                                    $phase === 'TAKEOFF' ? 'Paramètres au décollage' : 'Paramètres à l’atterrissage',
-                                    'TÉLÉMÉTRIE HERMÈS',
-                                    $snapshotDetail
-                                );
-                            }
+                    if (in_array($phase, ['TAKEOFF', 'LANDING'], true)) {
+                        $snapshotDetail = $describeSnapshot($payload);
+                        if ($snapshotDetail) {
+                            $append(
+                                $date,
+                                $phase.'_DATA',
+                                $phase === 'TAKEOFF' ? 'Paramètres au décollage' : 'Paramètres à l’atterrissage',
+                                'TÉLÉMÉTRIE HERMÈS',
+                                $snapshotDetail
+                            );
                         }
                     }
 
