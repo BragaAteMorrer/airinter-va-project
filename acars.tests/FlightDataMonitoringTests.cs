@@ -49,6 +49,8 @@ public sealed class FlightDataMonitoringTests
         var t = DateTimeOffset.Parse("2026-10-05T00:10:00Z");
 
         Assert.Empty(monitor.Process(Snapshot(t, 900, -1100, 5, true, 30), FlightPhase.Final, []));
+        Assert.Empty(monitor.Process(Snapshot(t.AddSeconds(1), 885, -1150, 5, true, 30), FlightPhase.Final, []));
+        Assert.Empty(monitor.Process(Snapshot(t.AddSeconds(2), 870, -1200, 5, true, 30), FlightPhase.Final, []));
         Assert.Empty(monitor.Process(Snapshot(t.AddSeconds(3), 850, -1250, 5, true, 30), FlightPhase.Final, []));
 
         var recovered = monitor.Process(Snapshot(t.AddSeconds(3.5), 840, -900, 5, true, 30), FlightPhase.Final, []);
@@ -62,6 +64,9 @@ public sealed class FlightDataMonitoringTests
         var t = DateTimeOffset.Parse("2026-10-05T00:20:00Z");
 
         monitor.Process(Snapshot(t, 980, -1100, 5, true, 30), FlightPhase.Final, []);
+        monitor.Process(Snapshot(t.AddSeconds(1), 960, -1150, 5, true, 30), FlightPhase.Final, []);
+        monitor.Process(Snapshot(t.AddSeconds(2), 940, -1200, 5, true, 30), FlightPhase.Final, []);
+        monitor.Process(Snapshot(t.AddSeconds(3), 920, -1300, 5, true, 30), FlightPhase.Final, []);
         var observations = monitor.Process(Snapshot(t.AddSeconds(4), 900, -1450, 5, true, 30), FlightPhase.Final, []);
 
         var unstable = Assert.Single(observations, x => x.Code == "APPROACH_DESCENT_RATE_UNSTABLE");
