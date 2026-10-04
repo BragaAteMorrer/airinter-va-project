@@ -42,6 +42,7 @@ jobs:
           node --check acars/wwwroot/i18n.js
           node --check acars/wwwroot/hermes-map.js
           node --check acars/wwwroot/hermes-review.js
+          node --check acars/wwwroot/hermes-weather.js
           node --check acars/wwwroot/app.js
           node --check acars/msfs2024-efb/HermesEfb/build.js
           node -e "JSON.parse(require('fs').readFileSync('acars/msfs2024-efb/HermesEfb/package.json','utf8')); JSON.parse(require('fs').readFileSync('acars/msfs2024-efb/HermesEfb/tsconfig.json','utf8'));"
@@ -161,8 +162,11 @@ jobs:
           php -l modules/Promethee/Http/OperationsV1Controller.php
           php -l modules/Promethee/Http/TelemetryController.php
           php -l modules/Promethee/Services/HermesPirepLifecycleService.php
+          php -l modules/Promethee/Services/OperationalWeatherService.php
           php -l modules/Promethee/Console/RepairHermesPirepCommand.php
           php -l tests/HermesOperationLifecycleTest.php
+          php -l tests/OperationalWeatherServiceTest.php
+          php -l tests/DispatchDeskTest.php
           php -l app/Http/Controllers/Api/PirepController.php
           php -l app/Models/Casts/CarbonCast.php
           php -l app/Database/migrations/2026_10_02_190300_add_block_time_to_pireps.php
@@ -276,6 +280,8 @@ jobs:
         run: composer install --no-interaction --prefer-dist --no-progress
       - name: Run Hermès operation lifecycle regression suite
         run: vendor/bin/phpunit tests/HermesOperationLifecycleTest.php
+      - name: Run Weather / OPS regression tests
+        run: vendor/bin/phpunit tests/OperationalWeatherServiceTest.php tests/DispatchDeskTest.php
       - name: Run Hermès scoring configuration tests
         run: vendor/bin/phpunit tests/LegacyPirepScoringConfigurationTest.php
       - name: Run sb-airframe historical configuration tests
