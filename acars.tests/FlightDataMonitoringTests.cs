@@ -43,6 +43,36 @@ public sealed class FlightDataMonitoringTests
     }
 
     [Fact]
+    public void Stabilized_approach_descent_rate_requires_four_continuous_seconds()
+    {
+        var monitor = new FlightDataMonitor();
+        var t = DateTimeOffset.Parse("2026-10-05T00:10:00Z");
+
+        Assert.Empty(monitor.Process(Snapshot(t, 900, -1100, 5, true, 30), FlightPhase.Final, []));
+        Assert.Empty(monitor.Process(Snapshot(t.AddSeconds(3), 850, -1250, 5, true, 30), FlightPhase.Final, []));
+
+        var recovered = monitor.Process(Snapshot(t.AddSeconds(3.5), 840, -900, 5, true, 30), FlightPhase.Final, []);
+        Assert.DoesNotContain(recovered, x => x.Code == "APPROACH_DESCENT_RATE_UNSTABLE");
+    }
+
+    [Fact]
+    public void Stabilized_approach_descent_rate_is_reported_from_1000_agl_to_touchdown()
+    {
+        var monitor = new FlightDataMonitor();
+        var t = DateTimeOffset.Parse("2026-10-05T00:20:00Z");
+
+        monitor.Process(Snapshot(t, 980, -1100, 5, true, 30), FlightPhase.Final, []);
+        var observations = monitor.Process(Snapshot(t.AddSeconds(4), 900, -1450, 5, true, 30), FlightPhase.Final, []);
+
+        var unstable = Assert.Single(observations, x => x.Code == "APPROACH_DESCENT_RATE_UNSTABLE");
+        Assert.Equal("UNSTABLE", unstable.Status);
+        Assert.Equal(-1450, unstable.Value);
+        Assert.Equal("ft/min", unstable.Unit);
+        Assert.Contains("4 s", unstable.Message);
+        Assert.Contains("1000 ft AGL", unstable.Message);
+    }
+
+    [Fact]
     public void Bank_excursion_is_closed_with_peak_and_duration()
     {
         var monitor = new FlightDataMonitor();
