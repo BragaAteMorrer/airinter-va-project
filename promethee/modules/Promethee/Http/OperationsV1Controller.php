@@ -595,10 +595,6 @@ class OperationsV1Controller extends Controller
         $serverReady = collect($checks)->every(fn ($check) => $check['ready']);
         $status = $this->dispatchStatus($bid, $visiblePirep, $serverReady);
         $workflowState = $this->workflowState($bid, $visiblePirep, $serverReady, $checks);
-        $weather = $bid->flight
-            ? $this->weather->forFlight($bid->flight, $visiblePirep?->alt_airport_id)
-            : null;
-
         return response()->json(['data' => [
             'contract_version' => '1.0',
             'workflow_contract_version' => '2.0',
@@ -606,7 +602,6 @@ class OperationsV1Controller extends Controller
             'operation_id' => $this->operationIdentity->id($bid),
             'operation' => $this->operationDto($bid),
             'ofp' => $this->ofpDto($ofp),
-            'weather' => $weather,
             'status' => $status,
             'ready' => $status === 'READY',
             'can_start' => $status === 'READY',
@@ -620,6 +615,25 @@ class OperationsV1Controller extends Controller
                 : [],
             'terminal' => in_array($status, ['COMPLETED', 'CANCELLED'], true),
         ]]);
+    }
+
+    public function operationWeather(string $bidId, Request $request)
+    {
+        $bid = $this->bid($bidId, $request);
+        $pirep = $this->operationPirep($bid);
+        $legacyGhost = $pirep && $this->isLegacyHermesGhostPirep($pirep);
+        $visiblePirep = $legacyGhost ? null : $pirep;
+
+        return response()->json(['data' => $bid->flight
+            ? $this->weather->forFlight($bid->flight, $visiblePirep?->alt_airport_id)
+            : [
+                'contract_version' => OperationalWeatherService::CONTRACT_VERSION,
+                'status' => 'DEGRADED',
+                'stations' => [],
+                'sigmets' => [],
+                'summary' => [],
+            ],
+        ]);
     }
 
     public function readiness(string $bidId, Request $request)
