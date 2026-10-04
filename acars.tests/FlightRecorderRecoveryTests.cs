@@ -113,6 +113,24 @@ public sealed class FlightRecorderRecoveryTests
     }
 
     [Fact]
+    public void Abandon_current_archives_state_before_clearing_active_session()
+    {
+        var folder = NewFolder();
+        var recorder = new FlightRecorder(folder);
+        recorder.Start("https://promethee.example", "pirep-active-abandon", Ground(DateTimeOffset.Parse("2026-10-04T21:15:00Z")), "op-active-abandon");
+
+        Assert.True(recorder.Flight?.Recording);
+
+        recorder.AbandonCurrent();
+
+        Assert.Null(recorder.Flight);
+        Assert.Empty(recorder.Pending);
+        Assert.Empty(recorder.PendingEvents);
+        Assert.Empty(recorder.PendingFacts);
+        Assert.Single(Directory.GetFiles(Path.Combine(folder, "recovery-archive"), "abandoned-*.json"));
+    }
+
+    [Fact]
     public void Abandon_recovery_archives_state_before_clearing_session()
     {
         var folder = NewFolder();
