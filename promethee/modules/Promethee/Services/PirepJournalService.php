@@ -83,6 +83,8 @@ final class PirepJournalService
             $touchdownAt = null;
             $aircraftIdentified = false;
             $weatherCaptured = false;
+            $arrivalWeatherCaptured = false;
+            $initialSystemsCaptured = false;
 
             $booleanEvents = [
                 'parking_brake' => [
@@ -117,6 +119,26 @@ final class PirepJournalService
                     true => ['TAXI_LIGHTS_ON', 'Feux de roulage allumés'],
                     false => ['TAXI_LIGHTS_OFF', 'Feux de roulage éteints'],
                 ],
+                'logo_light' => [
+                    true => ['LOGO_LIGHT_ON', 'Éclairage logo allumé'],
+                    false => ['LOGO_LIGHT_OFF', 'Éclairage logo éteint'],
+                ],
+                'wing_light' => [
+                    true => ['WING_LIGHTS_ON', 'Feux d’aile allumés'],
+                    false => ['WING_LIGHTS_OFF', 'Feux d’aile éteints'],
+                ],
+                'apu_running' => [
+                    true => ['APU_ON', 'APU en fonctionnement'],
+                    false => ['APU_OFF', 'APU arrêté'],
+                ],
+                'battery_on' => [
+                    true => ['BATTERY_ON', 'Batterie avion connectée'],
+                    false => ['BATTERY_OFF', 'Batterie avion coupée'],
+                ],
+                'external_power_on' => [
+                    true => ['EXTERNAL_POWER_ON', 'Alimentation externe connectée'],
+                    false => ['EXTERNAL_POWER_OFF', 'Alimentation externe déconnectée'],
+                ],
                 'seatbelt_sign' => [
                     true => ['SEATBELTS_ON', 'Consigne ceintures allumée'],
                     false => ['SEATBELTS_OFF', 'Consigne ceintures éteinte'],
@@ -128,6 +150,10 @@ final class PirepJournalService
                 'autopilot_enabled' => [
                     true => ['AUTOPILOT_ON', 'Pilote automatique activé'],
                     false => ['AUTOPILOT_OFF', 'Pilote automatique désactivé'],
+                ],
+                'autothrottle_armed' => [
+                    true => ['AUTOTHROTTLE_ARMED', 'Automanette armée'],
+                    false => ['AUTOTHROTTLE_DISARMED', 'Automanette désarmée'],
                 ],
                 'slew_active' => [
                     true => ['SLEW_STARTED', 'Mode Slew activé'],
@@ -142,6 +168,38 @@ final class PirepJournalService
                     false => ['STALL_CLEAR', 'Alerte décrochage terminée'],
                 ],
             ];
+
+            $initialSystemFields = [
+                'parking_brake', 'gear_down', 'spoilers_armed',
+                'beacon_light', 'navigation_light', 'strobe_light', 'landing_light', 'taxi_light',
+                'logo_light', 'wing_light', 'apu_running', 'battery_on', 'external_power_on',
+                'seatbelt_sign', 'doors_open', 'autopilot_enabled', 'autothrottle_armed',
+            ];
+
+            $describeSnapshot = function (array $payload): ?string {
+                $detail = [];
+                $numeric = [
+                    'altitude_msl' => ['ft MSL', 0],
+                    'agl' => ['ft AGL', 0],
+                    'ias' => ['kt IAS', 0],
+                    'gs' => ['kt GS', 0],
+                    'vs' => ['ft/min VS', 0],
+                    'heading' => ['° HDG', 0],
+                    'pitch' => ['° pitch', 1],
+                    'bank' => ['° bank', 1],
+                    'g_force' => ['G', 2],
+                    'fuel' => ['fuel', 0],
+                    'gross_weight' => ['gross', 0],
+                    'flaps_percent' => ['% flaps', 0],
+                    'touchdown_rate' => ['ft/min touchdown', 0],
+                ];
+                foreach ($numeric as $field => [$unit, $precision]) {
+                    if (!isset($payload[$field]) || !is_numeric($payload[$field])) continue;
+                    $detail[] = number_format((float) $payload[$field], $precision, ',', ' ').' '.$unit;
+                }
+
+                return $detail ? implode(' · ', $detail) : null;
+            };
 
             foreach ($rows as $row) {
                 $payload = json_decode((string) $row->payload, true);
@@ -173,6 +231,19 @@ final class PirepJournalService
                             'TÉLÉMÉTRIE HERMÈS',
                             $metrics ? implode(' · ', $metrics) : null
                         );
+
+                        if (in_array($phase, ['TAKEOFF', 'LANDING'], true)) {
+                            $snapshotDetail = $describeSnapshot($payload);
+                            if ($snapshotDetail) {
+                                $append(
+                                    $date,
+                                    $phase.'_DATA',
+                                    $phase === 'TAKEOFF' ? 'Paramètres au décollage' : 'Paramètres à l’atterrissage',
+                                    'TÉLÉMÉTRIE HERMÈS',
+                                    $snapshotDetail
+                                );
+                            }
+                        }
                     }
 
                     if (in_array($previousPhase, ['APPROACH', 'FINAL', 'LANDING'], true)
@@ -196,24 +267,92 @@ final class PirepJournalService
                     }
                 }
 
-                if (!$weatherCaptured) {
-                    $weather = [];
-                    if (isset($payload['qnh_hpa']) && is_numeric($payload['qnh_hpa'])) {
-                        $weather[] = 'QNH '.number_format((float) $payload['qnh_hpa'], 0, ',', ' ').' hPa';
-                    }
-                    if (isset($payload['oat_c']) && is_numeric($payload['oat_c'])) {
-                        $weather[] = 'OAT '.number_format((float) $payload['oat_c'], 0, ',', ' ').' °C';
-                    }
-                    if (isset($payload['wind_direction'], $payload['wind_speed'])
-                        && is_numeric($payload['wind_direction']) && is_numeric($payload['wind_speed'])) {
-                        $weather[] = 'Vent '.str_pad((string) ((int) round((float) $payload['wind_direction'])), 3, '0', STR_PAD_LEFT)
-                            .'° / '.number_format((float) $payload['wind_speed'], 0, ',', ' ').' kt';
+                $weather = [];
+                if (isset($payload['qnh_hpa']) && is_numeric($payload['qnh_hpa'])) {
+                    $weather[] = 'QNH '.number_format((float) $payload['qnh_hpa'], 0, ',', ' ').' hPa';
+                }
+                if (isset($payload['oat_c']) && is_numeric($payload['oat_c'])) {
+                    $weather[] = 'OAT '.number_format((float) $payload['oat_c'], 0, ',', ' ').' °C';
+                }
+                if (isset($payload['wind_direction'], $payload['wind_speed'])
+                    && is_numeric($payload['wind_direction']) && is_numeric($payload['wind_speed'])) {
+                    $weather[] = 'Vent '.str_pad((string) ((int) round((float) $payload['wind_direction'])), 3, '0', STR_PAD_LEFT)
+                        .'° / '.number_format((float) $payload['wind_speed'], 0, ',', ' ').' kt';
+                }
+
+                if (!$weatherCaptured && $weather) {
+                    $append($date, 'WEATHER_INITIAL', 'Conditions météo départ (simulateur)', 'TÉLÉMÉTRIE HERMÈS', implode(' · ', $weather));
+                    $weatherCaptured = true;
+                }
+
+                if (!$arrivalWeatherCaptured && $weather && in_array($phase, ['APPROACH', 'FINAL', 'LANDING', 'TAXI_IN', 'IN'], true)) {
+                    $append($date, 'WEATHER_ARRIVAL', 'Conditions météo arrivée (simulateur)', 'TÉLÉMÉTRIE HERMÈS', implode(' · ', $weather));
+                    $arrivalWeatherCaptured = true;
+                }
+
+                if (!$initialSystemsCaptured) {
+                    foreach ($initialSystemFields as $field) {
+                        if (!array_key_exists($field, $payload) || !is_bool($payload[$field])) continue;
+                        [$code, $message] = $booleanEvents[$field][$payload[$field]];
+                        $append($date, $code, $message, 'TÉLÉMÉTRIE HERMÈS', 'État initial');
                     }
 
-                    if ($weather) {
-                        $append($date, 'WEATHER_INITIAL', 'Conditions météo simulateur', 'TÉLÉMÉTRIE HERMÈS', implode(' · ', $weather));
-                        $weatherCaptured = true;
+                    if (isset($payload['engines_running']) && is_array($payload['engines_running'])) {
+                        foreach ($payload['engines_running'] as $index => $running) {
+                            if (!is_bool($running)) continue;
+                            $engine = $index + 1;
+                            $append(
+                                $date,
+                                'ENGINE_'.$engine.'_'.($running ? 'ON' : 'OFF'),
+                                'Moteur '.$engine.($running ? ' en fonctionnement' : ' arrêté'),
+                                'TÉLÉMÉTRIE HERMÈS',
+                                'État initial'
+                            );
+                        }
                     }
+
+                    if (isset($payload['flaps_percent']) && is_numeric($payload['flaps_percent'])) {
+                        $flaps = max(0, min(100, (float) $payload['flaps_percent']));
+                        $append(
+                            $date,
+                            $flaps <= 0.5 ? 'FLAPS_UP' : 'FLAPS_SET',
+                            $flaps <= 0.5 ? 'Volets rentrés' : 'Volets réglés à '.number_format($flaps, 0, ',', ' ').' %',
+                            'TÉLÉMÉTRIE HERMÈS',
+                            'État initial'
+                        );
+                    }
+
+                    if (isset($payload['transponder_code']) && is_numeric($payload['transponder_code'])) {
+                        $append(
+                            $date,
+                            'TRANSPONDER_SET',
+                            'Transpondeur réglé sur '.str_pad((string) ((int) $payload['transponder_code']), 4, '0', STR_PAD_LEFT),
+                            'TÉLÉMÉTRIE HERMÈS',
+                            'État initial'
+                        );
+                    }
+
+                    if (isset($payload['simulation_rate']) && is_numeric($payload['simulation_rate'])) {
+                        $append(
+                            $date,
+                            'SIM_RATE_INITIAL',
+                            'Vitesse simulation x'.rtrim(rtrim(number_format((float) $payload['simulation_rate'], 2, '.', ''), '0'), '.'),
+                            'TÉLÉMÉTRIE HERMÈS',
+                            'État initial'
+                        );
+                    }
+
+                    if (isset($payload['apu_rpm_percent']) && is_numeric($payload['apu_rpm_percent'])) {
+                        $append(
+                            $date,
+                            'APU_RPM',
+                            'APU '.number_format((float) $payload['apu_rpm_percent'], 0, ',', ' ').' %',
+                            'TÉLÉMÉTRIE HERMÈS',
+                            'État initial'
+                        );
+                    }
+
+                    $initialSystemsCaptured = true;
                 }
 
                 if (is_array($previous)) {
