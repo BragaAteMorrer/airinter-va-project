@@ -149,6 +149,47 @@ let datalinkRefreshing = false;
 let recoveryWasVisible = false;
 let readiness = { operation: false, aircraft: false, ofp: false, pirep: false, simulator: false };
 
+let efbContextSyncTimer = null;
+function scheduleEfbContextSync() {
+  clearTimeout(efbContextSyncTimer);
+  efbContextSyncTimer = setTimeout(syncEfbContext, 120);
+}
+async function syncEfbContext() {
+  const operationRef = selectedOperation?.operation_id || selectedOperation?.id || selectedOperation?.bid_id || null;
+  if (!operationRef) {
+    try { await call('/api/efb/context', null); } catch {}
+    return;
+  }
+  const flight = normalizeFlight(selectedOperation?.flight || selectedOperation || {});
+  const form = $('#prefileForm');
+  const context = {
+    operation_id: String(operationRef),
+    pirep_id: pirepId ? String(pirepId) : null,
+    flight_ident: displayFlightIdent(flight),
+    departure: flight.departure || null,
+    arrival: flight.arrival || null,
+    alternate: form?.elements?.alt_airport_id?.value || flight.alternate || null,
+    route: flightPlan?.route || form?.elements?.route?.value || flight.route || null,
+    aircraft_registration: selectedAircraft?.registration || null,
+    aircraft_icao: selectedAircraft?.icao || selectedAircraft?.type || null,
+    aircraft_model: selectedAircraft?.type_label || selectedAircraft?.subfleet || selectedAircraft?.model || null,
+    passengers: Number.isFinite(Number(flightPlan?.passengers ?? selectedAircraft?.passengers))
+      ? Math.max(0, Math.round(Number(flightPlan?.passengers ?? selectedAircraft?.passengers)))
+      : null,
+    flight_level: normalizeFlightLevel(flightPlan?.level || form?.elements?.level?.value || flight.level) || null,
+    cost_index: flightPlan?.cost_index ?? form?.elements?.civalue?.value ?? null,
+    block_fuel: Number.isFinite(Number(flightPlan?.block_fuel ?? form?.elements?.block_fuel?.value))
+      ? Number(flightPlan?.block_fuel ?? form?.elements?.block_fuel?.value)
+      : null,
+    estimated_time_enroute: Number.isFinite(Number(flightPlan?.estimated_time_enroute))
+      ? Math.max(0, Math.round(Number(flightPlan.estimated_time_enroute)))
+      : null,
+    ofp_source: flightPlan?.source || null,
+    dispatch_status: serverDispatch?.status || null
+  };
+  try { await call('/api/efb/context', context); } catch {}
+}
+
 function setAuthenticated(value) {
   connected = Boolean(value);
   document.body.classList.toggle('auth-locked', !connected);
@@ -962,6 +1003,7 @@ async function cancelReservation(operation, flight, button) {
       $('#selectedOperation').hidden = true;
       $('#prefileForm').hidden = true;
       updateWorkflow();
+      scheduleEfbContextSync();
     }
 
     showMessage('#flightMessage', `Réservation ${ident} annulée.`);
@@ -1421,6 +1463,7 @@ async function selectOperation(operation) {
   readiness.pirep = false;
 
   selectedOperation = operation;
+  scheduleEfbContextSync();
   // Rehydrate an already-prefiled operation after a restart/reselection. The
   // server is authoritative; never keep a stale PIREP id from another flight.
   pirepId = operation.pirep_id || operation.pirep?.id || null;
@@ -1561,6 +1604,7 @@ async function refreshDispatch() {
   const labels = { PREPARATION_REQUIRED: 'PRÉPARATION REQUISE', READY: 'PRÊT POUR HERMÈS', IN_PROGRESS: 'VOL EN COURS', AWAITING_FILING: 'ARRIVÉ · PIREP À DÉPOSER', COMPLETED: 'VOL TERMINÉ', CANCELLED: 'OPÉRATION ANNULÉE' };
   setText($('#operationBrief'), `${labels[serverDispatch?.status] || serverDispatch?.status || 'DISPATCH'} · Dispatch Prométhée`);
   updateWorkflow();
+  scheduleEfbContextSync();
   return serverDispatch;
 }
 
@@ -1746,6 +1790,7 @@ async function applyBriefing(briefing, sourceLabel) {
   renderNetworkPrefiles(flightPlan.network_prefiles);
   renderOperationLoad(selectedAircraft, flightPlan);
   renderSimBriefPreparationSummary(briefing.resolved || null);
+  scheduleEfbContextSync();
 
   const commercialPax = Number(selectedAircraft?.passengers);
   const actualPax = Number(flightPlan.passengers);
@@ -2001,6 +2046,7 @@ $('#aircraftId').onchange = async event => {
     }));
 
     selectedAircraft = assignment?.aircraft || nextAircraft;
+    scheduleEfbContextSync();
     if (!selectedAircraft?.id) throw new Error('Prométhée n’a pas retourné l’appareil affecté.');
     if (selectedOperation) selectedOperation.aircraft = selectedAircraft;
 
