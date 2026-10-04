@@ -1,7 +1,6 @@
 param(
   [ValidatePattern('^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$')]
   [string]$Version,
-  [string]$SdkRoot = $(if ($env:MSFS2024_SDK) { $env:MSFS2024_SDK } else { 'C:\MSFS 2024 SDK' }),
   [string]$CertificatePath = $env:HERMES_SIGNING_CERTIFICATE,
   [string]$CertificatePassword = $env:HERMES_SIGNING_CERTIFICATE_PASSWORD,
   [switch]$Publish
@@ -13,7 +12,6 @@ if ([string]::IsNullOrWhiteSpace($Version)) { throw '-Version est requis.' }
 $installerArgs = @{
   Version = $Version
   IncludeMsfs2024Efb = $true
-  Msfs2024SdkRoot = $SdkRoot
 }
 if ($CertificatePath) { $installerArgs.CertificatePath = $CertificatePath }
 if ($CertificatePassword) { $installerArgs.CertificatePassword = $CertificatePassword }
