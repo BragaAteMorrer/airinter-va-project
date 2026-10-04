@@ -10,7 +10,7 @@
     $status = $pirep->status ? PirepStatus::label($pirep->status) : null;
     $actualPath = $pirep->acars->filter(fn ($point) => is_numeric($point->lat) && is_numeric($point->lon))->map(fn ($point) => [(float) $point->lat, (float) $point->lon])->values();
     $plannedPath = $pirep->acars_route->filter(fn ($point) => is_numeric($point->lat) && is_numeric($point->lon))->map(fn ($point) => [(float) $point->lat, (float) $point->lon])->values();
-    $airportPath = collect([$pirep->dpt_airport, $pirep->arr_airport])->filter(fn ($airport) => is_numeric($airport->lat) && is_numeric($airport->lon))->map(fn ($airport) => [(float) $airport->lat, (float) $airport->lon])->values();
+    $airportPath = collect([$pirep->dpt_airport, $pirep->arr_airport])->filter(fn ($airport) => $airport && is_numeric($airport->lat) && is_numeric($airport->lon))->map(fn ($airport) => [(float) $airport->lat, (float) $airport->lon])->values();
     $mapPath = $actualPath->isNotEmpty() ? $actualPath : ($plannedPath->isNotEmpty() ? $plannedPath : $airportPath);
     $isOwner = auth()->check() && auth()->id() === $pirep->user_id;
     $canRepeat = $isOwner && $pirep->flight && ($pirep->submitted_at !== null
