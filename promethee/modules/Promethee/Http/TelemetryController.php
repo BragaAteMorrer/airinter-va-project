@@ -44,6 +44,7 @@ class TelemetryController extends Controller
             'samples.*.pitch'=>'nullable|numeric|between:-90,90',
             'samples.*.g_force'=>'nullable|numeric|between:-10,20',
             'samples.*.simulation_rate'=>'nullable|numeric|between:0.1,128',
+            'samples.*.apu_rpm_percent'=>'nullable|numeric|between:0,200',
             'samples.*.engines_running'=>'nullable|array|max:4',
             'samples.*.engines_running.*'=>'boolean',
             'samples.*.flaps_percent'=>'nullable|numeric|between:0,100',
@@ -60,8 +61,9 @@ class TelemetryController extends Controller
             'samples.*.pause_kind'=>'nullable|string|max:32'];
         foreach ([
             'on_ground','parking_brake','gear_down','spoilers_armed','landing_flaps','thrust_stable','checklist_complete',
-            'beacon_light','navigation_light','strobe_light','landing_light','taxi_light','seatbelt_sign','doors_open',
-            'autopilot_enabled','slew_active','overspeed_warning','stall_warning',
+            'beacon_light','navigation_light','strobe_light','landing_light','taxi_light','logo_light','wing_light',
+            'apu_running','battery_on','external_power_on','seatbelt_sign','doors_open',
+            'autopilot_enabled','autothrottle_armed','slew_active','overspeed_warning','stall_warning',
         ] as $field) $rules['samples.*.'.$field]='nullable|boolean';
         $data = $request->validate($rules);
         $inserted = 0;
