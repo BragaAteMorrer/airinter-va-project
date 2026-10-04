@@ -340,7 +340,8 @@ public sealed class PrometheeWindow : Window
             || (uri.Host != "www.simbrief.com"
                 && uri.Host != "dispatch.simbrief.com"
                 && uri.Host != "my.vatsim.net"
-                && uri.Host != "fpl.ivao.aero"))
+                && uri.Host != "fpl.ivao.aero"
+                && uri.Host != "argos.airinter-va.org"))
             throw new InvalidOperationException("Hermès refuse d’ouvrir cette URL externe.");
         Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
         return new { ok = true };
