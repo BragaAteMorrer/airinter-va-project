@@ -17,7 +17,7 @@ use App\Services\FileService;
 use App\Services\UserService;
 use App\Support\Money;
 use App\Support\Countries;
-use Modules\Promethee\Services\{AirframeMaintenanceService,BrandingService,BulletinService,CompanyAccessService,DemandProfileService,EconomyFareResolver,EconomyService,EngineMaintenanceService,FleetRotationService,FlightOpsService,LegacyPirepScoringService,PilotPirepDeletionService,PirepJournalService,RegionalOperationsService,SafetyAnalyzer};
+use Modules\Promethee\Services\{AirframeMaintenanceService,BrandingService,BulletinService,CompanyAccessService,DemandProfileService,EconomyFareResolver,EconomyService,EngineMaintenanceService,FleetRotationService,FlightOpsService,LegacyPirepScoringService,OperationalWeatherService,PilotPirepDeletionService,PirepJournalService,RegionalOperationsService,SafetyAnalyzer};
 
 class PortalController extends Controller
 {
@@ -2162,13 +2162,11 @@ class PortalController extends Controller
         ];
         $history=Pirep::where('flight_id',$flight->id)->where('state',PirepState::ACCEPTED);
         $routeHistory=['flights'=>(clone $history)->count(),'average_time'=>(int) (clone $history)->avg('flight_time'),'best_time'=>(int) (clone $history)->min('flight_time')];
-        $weather=[];
         try {
-            $service=app(\App\Services\AirportService::class);
-            foreach (array_filter([$flight->dpt_airport_id,$flight->arr_airport_id,$flight->alt_airport_id]) as $icao) {
-                $weather[$icao]=['metar'=>$service->getMetar($icao)?->raw,'taf'=>$service->getTaf($icao)?->raw];
-            }
-        } catch (\Throwable) { }
+            $weather = app(OperationalWeatherService::class)->forFlight($flight);
+        } catch (\Throwable) {
+            $weather = ['status' => 'DEGRADED', 'stations' => [], 'sigmets' => [], 'summary' => [], 'note' => 'Météo opérationnelle temporairement indisponible.'];
+        }
         $reservation = Bid::with(['flight','aircraft'])
             ->where(['flight_id'=>$flight->id,'user_id'=>auth()->id()])
             ->latest()
@@ -2207,19 +2205,17 @@ class PortalController extends Controller
     }
     public function briefing(string $id, Request $r, DemandProfileService $demand) {
         $flight=Flight::with(['airline','dpt_airport','arr_airport','alt_airport','subfleets'])->findOrFail($id);
-        $weather=[];
-        try {
-            $service=app(\App\Services\AirportService::class);
-            foreach (array_filter([$flight->dpt_airport_id,$flight->arr_airport_id,$flight->alt_airport_id]) as $icao) {
-                $weather[$icao]=['metar'=>$service->getMetar($icao)?->raw,'taf'=>$service->getTaf($icao)?->raw];
-            }
-        } catch (\Throwable) { }
         $distance=(float) $flight->distance->toUnit('nmi');
         $fuelUnit=setting('units.fuel', 'kg');
         // The dispatch rule is calculated in kilograms, then converted to the
         // unit selected for this installation before it is shown to the pilot.
         $suggestedFuel=(int) round(\App\Support\Units\Fuel::make(ceil(max(250,$distance*3.2)), 'kg')->toUnit($fuelUnit));
         $briefing=DB::table('promethee_briefings')->where(['user_id'=>$r->user()->id,'flight_id'=>$flight->id])->first();
+        try {
+            $weather = app(OperationalWeatherService::class)->forFlight($flight, $briefing?->alternate);
+        } catch (\Throwable) {
+            $weather = ['status' => 'DEGRADED', 'stations' => [], 'sigmets' => [], 'summary' => [], 'note' => 'Météo opérationnelle temporairement indisponible.'];
+        }
         $bid=Bid::with(['aircraft.subfleet'])->where(['user_id'=>$r->user()->id,'flight_id'=>$flight->id])->latest()->first();
         $loadProfile = $bid?->aircraft
             ? $demand->profile(
