@@ -267,13 +267,38 @@ Ne pas ajouter le cache local au ZIP : les sessions et positions en attente sont
 
 ### Installateur Windows
 
-Pour produire un `Setup.exe` avec raccourcis Bureau et menu Démarrer, installer une fois [Inno Setup 6](https://jrsoftware.org/isdl.php), puis lancer :
+Pour produire l’installateur Hermès classique :
 
 ```powershell
 .\acars\build-installer.ps1 -Version 1.0.0
 ```
 
-Le setup est créé dans `dist\Promethee-ACARS-Setup-1.0.0.exe`.
+Pour la **release publique recommandée**, avec l’application EFB native MSFS 2024 embarquée :
+
+```powershell
+.\acars\build-installer.ps1 -Version 1.0.0 -IncludeMsfs2024Efb
+```
+
+Le setup universel :
+
+- installe Hermès dans `%LOCALAPPDATA%\AirInter\Hermes` ;
+- détecte MSFS 2024 via son `UserCfg.opt` ;
+- lit `InstalledPackagesPath` au lieu de supposer Steam ou Microsoft Store ;
+- propose automatiquement **Installer l’application EFB Hermès dans Microsoft Flight Simulator 2024** ;
+- installe le package sous `Community2024\airinter-hermes-efb` ;
+- remplace proprement une ancienne version lors d’une mise à jour ;
+- retire uniquement le package qu’il a lui-même installé lors de la désinstallation d’Hermès.
+
+Le même build produit aussi :
+
+`dist\AirInter-Hermes-EFB-MSFS2024-1.0.0.zip`
+
+pour les pilotes qui préfèrent une installation manuelle dans `Community2024`.
+
+**Les pilotes finaux n’ont besoin ni du SDK MSFS 2024, ni de Node.js, ni de npm.**
+La workflow GitHub officielle compile l’EFB avec les packages npm Microsoft puis l’embarque automatiquement dans le Setup.
+
+Le setup est créé dans `dist\Hermes-ACARS-Setup-1.0.0.exe`.
 
 ### Verrouiller le serveur phpVMS (administrateur)
 

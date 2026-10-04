@@ -161,7 +161,7 @@ expect(hermesEfbApp.includes('Efb.use(AirInterHermesApp)')
     && hermesEfbApp.includes('SIGMET corridor'),
   'MSFS 2024 EFB app must use native CommBus, remain read-only and preserve its OFP/live-flight surface.');
 expect(hermesEfbBuild.includes('coui://html_ui/efb_ui/efb_apps/AirInterHermes')
-    && hermesEfbPackage.includes('"@efb/efb-api"')
+    && hermesEfbPackage.includes('"@microsoft/msfs-efb-api"')
     && hermesEfbPackage.includes('"@microsoft/msfs-sdk"'),
   'Hermès EFB build must target the native MSFS 2024 EFB VFS path and SDK packages.');
 

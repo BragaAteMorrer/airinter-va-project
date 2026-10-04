@@ -2,11 +2,25 @@ param(
   [ValidatePattern('^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$')]
   [string]$Version = '1.0.0',
   [string]$CertificatePath = $env:HERMES_SIGNING_CERTIFICATE,
-  [string]$CertificatePassword = $env:HERMES_SIGNING_CERTIFICATE_PASSWORD
+  [string]$CertificatePassword = $env:HERMES_SIGNING_CERTIFICATE_PASSWORD,
+  [switch]$IncludeMsfs2024Efb,
+  [string]$EfbDistPath
 )
 $ErrorActionPreference = 'Stop'
 
 & (Join-Path $PSScriptRoot 'build-release.ps1') -Version $Version
+
+if ($IncludeMsfs2024Efb) {
+  $efbArgs = @{
+    Version = $Version
+  }
+  if ($EfbDistPath) {
+    $efbArgs.EfbDistPath = $EfbDistPath
+    $efbArgs.SkipAppBuild = $true
+  }
+  & (Join-Path $PSScriptRoot 'msfs2024-efb\build-efb-package.ps1') @efbArgs
+  if ($LASTEXITCODE -ne 0) { throw 'La création du package EFB MSFS 2024 a échoué.' }
+}
 
 $candidates = @(
   (Get-Command ISCC.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue),
@@ -19,7 +33,10 @@ if (-not $iscc) {
   throw "Inno Setup 6 est requis - installez-le avec Chocolatey (choco install innosetup)."
 }
 
-& $iscc "/DMyAppVersion=$Version" (Join-Path $PSScriptRoot 'installer.iss')
+$isccArgs = @("/DMyAppVersion=$Version")
+if ($IncludeMsfs2024Efb) { $isccArgs += '/DIncludeMsfs2024Efb=1' }
+$isccArgs += (Join-Path $PSScriptRoot 'installer.iss')
+& $iscc @isccArgs
 if ($LASTEXITCODE -ne 0) { throw "La creation de l'installateur Hermes a echoue." }
 
 $dist = Join-Path (Split-Path $PSScriptRoot -Parent) 'dist'
@@ -107,3 +124,8 @@ $hash = Get-FileHash -Algorithm SHA256 -LiteralPath $setup
   Set-Content -LiteralPath "$setup.sha256" -Encoding ascii
 Write-Host "Installateur cree: $setup"
 Write-Host "SHA-256: $($hash.Hash)"
+if ($IncludeMsfs2024Efb) {
+  $efbZip = Join-Path $dist "AirInter-Hermes-EFB-MSFS2024-$Version.zip"
+  if (-not (Test-Path -LiteralPath $efbZip)) { throw "ZIP EFB introuvable: $efbZip" }
+  Write-Host "EFB MSFS 2024 inclus dans le Setup : $efbZip"
+}

@@ -29,6 +29,11 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      - name: Install Node.js for MSFS 2024 EFB
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Resolve version
         id: version
         shell: pwsh
@@ -92,6 +97,7 @@ jobs:
         run: |
           ./acars/build-installer.ps1 `
             -Version '${{ steps.version.outputs.value }}' `
+            -IncludeMsfs2024Efb `
             -CertificatePath '${{ steps.selfsign.outputs.pfx }}' `
             -CertificatePassword '${{ steps.selfsign.outputs.password }}'
 
@@ -117,9 +123,13 @@ jobs:
           path: |
             dist/Hermes-ACARS-Setup-${{ steps.version.outputs.value }}.exe
             dist/Hermes-ACARS-Setup-${{ steps.version.outputs.value }}.exe.sha256
+            dist/AirInter-Hermes-EFB-MSFS2024-${{ steps.version.outputs.value }}.zip
+            dist/AirInter-Hermes-EFB-MSFS2024-${{ steps.version.outputs.value }}.zip.sha256
             dist/Hermes-Development-Signing.cer
             dist/Promethee-ACARS-win-x64-${{ steps.version.outputs.value }}.zip
             dist/Promethee-ACARS-win-x64-${{ steps.version.outputs.value }}.zip.sha256
+            dist/AirInter-Hermes-EFB-MSFS2024-${{ steps.version.outputs.value }}.zip
+            dist/AirInter-Hermes-EFB-MSFS2024-${{ steps.version.outputs.value }}.zip.sha256
             dist/Hermes-Development-Signing.cer
 
       - name: Publish GitHub release

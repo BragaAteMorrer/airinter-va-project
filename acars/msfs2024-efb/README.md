@@ -44,21 +44,41 @@ Aucun token Argos, cookie, mot de passe ou action de dépôt PIREP n'est envoyé
 - messages de pause / recovery / synchronisation ;
 - disponibilité du dépôt final.
 
-## Prérequis SDK
+## Build
 
-Le dossier `efb_api` est fourni par le SDK MSFS 2024 et **n'est pas versionné dans ce dépôt**.
+Le build de release utilise désormais les packages npm publics Microsoft :
 
-À partir du sample EFB officiel du SDK :
+- `@microsoft/msfs-efb-api`
+- `@microsoft/msfs-sdk`
+- `@microsoft/msfs-types`
 
-1. copier `PackageSources/efb_api` dans `acars/msfs2024-efb/efb_api` ;
-2. exécuter `npm install` dans ce dossier, comme demandé par le SDK ;
-3. exécuter `npm install` dans `HermesEfb` ;
-4. copier `.env.example` vers `.env` si nécessaire ;
-5. lancer `npm run typecheck`, puis `npm run build`.
+Le **SDK MSFS 2024 n’est plus requis pour compiler ou publier l’EFB**.
+
+Prérequis de build :
+
+- Node.js 18+ ;
+- npm.
+
+Depuis le dépôt :
+
+```powershell
+cd acars\msfs2024-efb\HermesEfb
+npm install
+npm run typecheck
+npm run build
+```
+
+ou simplement :
+
+```powershell
+.\acars\msfs2024-efb\build-efb-app.ps1
+```
 
 Le résultat est produit dans :
 
-`acars/msfs2024-efb/HermesEfb/dist`
+`acars\msfs2024-efb\HermesEfb\dist`
+
+Le SDK MSFS 2024 reste utile pour ouvrir un projet en DevMode et effectuer des validations in-sim, mais il n’est pas une dépendance de la chaîne de release.
 
 ## Packaging MSFS 2024
 
@@ -93,3 +113,40 @@ Pour tester le transport :
 7. démarrer le tracking et contrôler la mise à jour de la phase et de la télémétrie.
 
 L'EFB doit rester utilisable si Prométhée est temporairement hors ligne : il affiche alors le dernier contexte local connu par Hermès et l'état de synchronisation.
+
+
+## Distribution aux pilotes
+
+Le pilote n’a aucun prérequis de développement. La chaîne de release compile l’EFB directement depuis les packages npm publics Microsoft.
+
+Pour produire une release distribuable :
+
+```powershell
+.\acars\build-installer.ps1 `
+  -Version 1.0.0 `
+  -IncludeMsfs2024Efb
+```
+
+Cela produit :
+
+- `dist\Hermes-ACARS-Setup-1.0.0.exe` — installateur Hermès + EFB ;
+- `dist\AirInter-Hermes-EFB-MSFS2024-1.0.0.zip` — package EFB manuel ;
+- leurs checksums SHA-256.
+
+### Expérience pilote
+
+Le pilote télécharge uniquement le Setup Hermès.
+
+Si MSFS 2024 est détecté, l’assistant propose par défaut l’installation de l’EFB. Le chemin est résolu depuis `InstalledPackagesPath` dans `UserCfg.opt`, puis le package est copié sous :
+
+`Community2024\airinter-hermes-efb`
+
+Après installation ou mise à jour, MSFS 2024 doit être redémarré pour remonter le package dans son VFS.
+
+Le désinstallateur Hermès ne retire l’EFB que lorsqu’un fichier d’état prouve que ce Setup l’a lui-même installé.
+
+### Installation manuelle
+
+Extraire le dossier `airinter-hermes-efb` contenu dans le ZIP vers le dossier **Community2024** de MSFS 2024, puis redémarrer le simulateur.
+
+Le ZIP est un package Community complet et contient déjà `manifest.json` et `layout.json`.
