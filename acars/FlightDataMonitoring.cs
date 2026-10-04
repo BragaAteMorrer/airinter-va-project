@@ -48,6 +48,9 @@ public sealed class FlightDataMonitor
 {
     private const double BankEnterDegrees = 35;
     private const double BankExitDegrees = 30;
+    private const double StabilizedApproachGateFeet = 1000;
+    private const double StabilizedApproachMaxDescentRate = -1000;
+    private static readonly TimeSpan StabilizedApproachViolationDuration = TimeSpan.FromSeconds(4);
 
     private AircraftSnapshot? previous;
     private bool approach1000Recorded;
@@ -63,6 +66,11 @@ public sealed class FlightDataMonitor
     private DateTimeOffset pauseStartedAt;
     private string? pauseKind;
     private string? pausePhase;
+    private bool approachDescentSegment;
+    private bool approachDescentReported;
+    private DateTimeOffset approachDescentStartedAt;
+    private double approachDescentPeakRate;
+    private string? approachDescentPhase;
 
     public void Reset()
     {
@@ -80,6 +88,11 @@ public sealed class FlightDataMonitor
         pauseStartedAt = default;
         pauseKind = null;
         pausePhase = null;
+        approachDescentSegment = false;
+        approachDescentReported = false;
+        approachDescentStartedAt = default;
+        approachDescentPeakRate = 0;
+        approachDescentPhase = null;
     }
 
     public void Restore(IEnumerable<FdmObservation>? existing)
@@ -102,6 +115,7 @@ public sealed class FlightDataMonitor
         RecordTaxiSpeed(current, phase, result);
         RecordApproachGate(current, phase, 1000, 1200, ref approach1000Recorded, result);
         RecordApproachGate(current, phase, 500, 1000, ref approach500Recorded, result);
+        RecordStabilizedApproachDescentRate(current, phase, result);
         RecordBankExcursion(current, phase, result);
         RecordFlightEvents(flightEvents, phase, result);
 
@@ -118,6 +132,8 @@ public sealed class FlightDataMonitor
             CloseTaxiSegment(current, result);
         if (pauseSegment && current is not null)
             ClosePause(current, result);
+        if (approachDescentSegment && current is not null)
+            CloseStabilizedApproachDescentRate(current, result);
         return result;
     }
 
@@ -274,6 +290,72 @@ public sealed class FlightDataMonitor
             "ft/min",
             FlightTrackingEngine.ToExternalPhase(phase),
             stable ? "STABLE" : "UNSTABLE"));
+    }
+
+    private void RecordStabilizedApproachDescentRate(
+        AircraftSnapshot current,
+        FlightPhase phase,
+        List<FdmObservation> result)
+    {
+        var inApproachWindow = phase is FlightPhase.Approach or FlightPhase.Final or FlightPhase.Landing
+            && current.OnGround == false
+            && current.AltitudeAglFeet is { } agl
+            && agl > 0
+            && agl <= StabilizedApproachGateFeet
+            && current.VerticalSpeedFeetPerMinute is { } verticalSpeed;
+
+        var violating = inApproachWindow && verticalSpeed < StabilizedApproachMaxDescentRate;
+        if (!violating)
+        {
+            if (approachDescentSegment)
+                CloseStabilizedApproachDescentRate(current, result);
+            return;
+        }
+
+        if (!approachDescentSegment)
+        {
+            approachDescentSegment = true;
+            approachDescentReported = false;
+            approachDescentStartedAt = current.RecordedAt;
+            approachDescentPeakRate = verticalSpeed;
+            approachDescentPhase = FlightTrackingEngine.ToExternalPhase(phase);
+            return;
+        }
+
+        approachDescentPeakRate = Math.Min(approachDescentPeakRate, verticalSpeed);
+        if (!approachDescentReported
+            && current.RecordedAt - approachDescentStartedAt >= StabilizedApproachViolationDuration)
+        {
+            AddStabilizedApproachDescentObservation(result);
+            approachDescentReported = true;
+        }
+    }
+
+    private void CloseStabilizedApproachDescentRate(AircraftSnapshot current, List<FdmObservation> result)
+    {
+        if (!approachDescentReported
+            && current.RecordedAt - approachDescentStartedAt >= StabilizedApproachViolationDuration)
+            AddStabilizedApproachDescentObservation(result);
+
+        approachDescentSegment = false;
+        approachDescentReported = false;
+        approachDescentStartedAt = default;
+        approachDescentPeakRate = 0;
+        approachDescentPhase = null;
+    }
+
+    private void AddStabilizedApproachDescentObservation(List<FdmObservation> result)
+    {
+        result.Add(new(
+            "APPROACH_DESCENT_RATE_UNSTABLE",
+            "approach",
+            approachDescentStartedAt,
+            $"Approche non stabilisée : VS inférieure à {StabilizedApproachMaxDescentRate:0} ft/min pendant au moins {StabilizedApproachViolationDuration.TotalSeconds:0} s entre {StabilizedApproachGateFeet:0} ft AGL et le toucher (pic {approachDescentPeakRate:0} ft/min).",
+            "warning",
+            Math.Round(approachDescentPeakRate),
+            "ft/min",
+            approachDescentPhase,
+            "UNSTABLE"));
     }
 
     private void RecordBankExcursion(AircraftSnapshot current, FlightPhase phase, List<FdmObservation> result)
