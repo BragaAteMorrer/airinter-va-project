@@ -42,7 +42,7 @@ $gh = Get-Command gh.exe -ErrorAction SilentlyContinue
 if (-not $gh) { throw 'GitHub CLI (gh.exe) est requis avec -Publish.' }
 
 & $gh.Source auth status
-if ($LASTEXITCODE -ne 0) { throw 'GitHub CLI n’est pas authentifié.' }
+if ($LASTEXITCODE -ne 0) { throw "GitHub CLI n’est pas authentifié." }
 
 $tag = "hermes-v$Version"
 & $gh.Source release view $tag *> $null
