@@ -5,6 +5,7 @@
     use App\Models\Enums\PirepState;
     use App\Models\Enums\PirepStatus;
     use App\Models\Enums\PirepSource;
+    use App\Support\Money;
     $duration = fn ($minutes) => $minutes === null ? '—' : floor($minutes / 60).' h '.str_pad($minutes % 60, 2, '0', STR_PAD_LEFT).' min';
     $state = PirepState::label($pirep->state);
     $status = $pirep->status ? PirepStatus::label($pirep->status) : null;
@@ -57,7 +58,7 @@
   <article><span>Score compagnie</span><strong>{{ $displayScore !== null ? $displayScore.'/100' : '—' }}</strong><small>{{ ($companyScore['available'] ?? false) ? '−'.(int) ($companyScore['penalty_total'] ?? 0).' pts appliqués' : 'barème indisponible' }}</small></article>
 </section>
 <section class="panel route-summary"><div class="airport-card"><span class="eyebrow">DÉPART</span><strong>{{ $pirep->dpt_airport_id }}</strong><p>{{ $pirep->dpt_airport?->full_name ?: $pirep->dpt_airport?->name }}</p><small>{{ $pirep->block_off_time ? $pirep->block_off_time->setTimezone('Europe/Paris')->format('d/m/Y · H:i') : 'Heure non relevée' }}</small></div><div class="route-line"><i>✈</i><span>{{ $pirep->progress_percent }}% du trajet</span></div><div class="airport-card arrival"><span class="eyebrow">ARRIVÉE</span><strong>{{ $pirep->arr_airport_id }}</strong><p>{{ $pirep->arr_airport?->full_name ?: $pirep->arr_airport?->name }}</p><small>{{ $pirep->block_on_time ? $pirep->block_on_time->setTimezone('Europe/Paris')->format('d/m/Y · H:i') : 'Heure non relevée' }}</small></div></section>
-<div class="report-tabs" role="tablist"><button class="active" data-report-tab="map" role="tab">Carte et trace</button><button data-report-tab="log" role="tab">Journal de vol <span>{{ $flightJournal->count() }}</span></button><button data-report-tab="score" role="tab">Score compagnie <span>{{ $scoreItems->count() }}</span></button><button data-report-tab="finance" role="tab">Financier <span>{{ $finance['company_transactions']->count() }}</span></button><button data-report-tab="details" role="tab">Informations</button></div>
+<div class="report-tabs" role="tablist"><button class="active" data-report-tab="map" role="tab">Carte et trace</button><button data-report-tab="log" role="tab">Journal de vol <span>{{ $flightJournal->count() }}</span></button><button data-report-tab="score" role="tab">Score compagnie <span>{{ $scoreItems->count() }}</span></button><button data-report-tab="finance" role="tab">Finances <span>{{ $finance['company_transactions']->count() }}</span></button><button data-report-tab="details" role="tab">Informations</button></div>
 <section class="panel report-tab-panel" data-report-panel="map"><div class="panel-heading"><div><span class="eyebrow">TRAJECTOIRE</span><h2>Route effectuée</h2></div><small class="mono muted">{{ $actualPath->isNotEmpty() ? 'Trace ACARS' : ($plannedPath->isNotEmpty() ? 'Route planifiée' : 'Liaison aéroports') }}</small></div><div id="pirep-map" class="ops-leaflet-map"></div>@if($pirep->route)<p class="report-route mono">{{ $pirep->route }}</p>@endif</section>
 <section class="panel report-tab-panel" data-report-panel="log" hidden>
   <div class="panel-heading">
@@ -129,6 +130,7 @@
     <article><span>Dépenses</span><strong>{{ (string) $finance['debits'] }}</strong><small>journal compagnie</small></article>
     <article><span>Résultat</span><strong>{{ (string) $finance['net'] }}</strong><small>recettes − dépenses</small></article>
     <article><span>Rémunération pilote</span><strong>{{ (string) $finance['pilot_net'] }}</strong><small>journal pilote lié au PIREP</small></article>
+    <article><span>Comptabilisation</span><strong>{{ $finance['company_transactions']->isNotEmpty() ? 'Traitée' : 'En attente' }}</strong><small>{{ $finance['company_transactions']->isNotEmpty() ? 'écritures phpVMS rattachées' : 'traitée au dépôt / à l’acceptation du PIREP' }}</small></article>
   </section>
 
   @if($finance['company_transactions']->isNotEmpty())
