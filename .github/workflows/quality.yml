@@ -40,7 +40,11 @@ jobs:
       - name: Validate Hermes interface JavaScript
         run: |
           node --check acars/wwwroot/i18n.js
+          node --check acars/wwwroot/hermes-map.js
+          node --check acars/wwwroot/hermes-review.js
           node --check acars/wwwroot/app.js
+          node --check promethee/public/promethee-assets/promethee.js
+          node --check promethee/public/promethee-assets/navigation-groups.js
           node promethee/tools/check_hermes_i18n.cjs
       - name: Validate Minitel M0 runtime
         run: |
@@ -143,6 +147,7 @@ jobs:
         shell: bash
         run: |
           php -l modules/Promethee/Http/PortalController.php
+          php -l modules/Promethee/Http/AutomationController.php
           php -l modules/Promethee/Services/EngineMaintenanceService.php
           php -l modules/Promethee/Services/FleetRotationService.php
           php -l modules/Promethee/Listeners/EngineMaintenanceEventListener.php

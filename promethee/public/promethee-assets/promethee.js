@@ -66,7 +66,7 @@
   };
   const setAppearance = (appearance, persist = true) => {
     if (!appearances.includes(appearance)) appearance = 'light';
-    if (persist) {
+    if (persist && !reduceMotion) {
       document.documentElement.dataset.appearanceTransition = 'true';
       window.setTimeout(() => delete document.documentElement.dataset.appearanceTransition, 230);
     }
@@ -119,7 +119,26 @@
       } catch { node.querySelector('strong').textContent = '—'; }
     });
   };
-  tick(); setInterval(tick,1000);
+  let clockTimer = null;
+  const stopClock = () => {
+    if (clockTimer) window.clearTimeout(clockTimer);
+    clockTimer = null;
+  };
+  const scheduleClock = () => {
+    stopClock();
+    if (document.hidden) return;
+    clockTimer = window.setTimeout(() => {
+      tick();
+      scheduleClock();
+    }, 1000);
+  };
+  tick();
+  scheduleClock();
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return stopClock();
+    tick();
+    scheduleClock();
+  });
 
   // A small, framework-free split-flap renderer. Fields retain their semantic
   // Blade elements, while each visible glyph becomes an independent palette.
@@ -231,7 +250,10 @@
       changes.forEach((change) => {
         if (change.type === 'attributes' && change.attributeName === 'data-flap-value') dirtyFlapFields.add(change.target);
       });
-      if (!flapFrame && dirtyFlapFields.size) flapFrame = requestAnimationFrame(flushFlapFields);
+      if (!flapFrame && dirtyFlapFields.size) {
+        if (flapReduced || document.hidden) flushFlapFields();
+        else flapFrame = requestAnimationFrame(flushFlapFields);
+      }
     }).observe(board, {subtree: true, attributes: true, attributeFilter: ['data-flap-value']});
 
     if (!board.dataset.boardUrl) return;
@@ -298,18 +320,20 @@
     let lastRevision = null;
     const scheduleRefresh = (seconds) => {
       window.clearTimeout(refreshTimer);
+      refreshTimer = null;
+      if (document.hidden) return;
       const delay = Math.max(10, Number(seconds) || Number(board.dataset.boardRefresh) || 30);
       refreshTimer = window.setTimeout(refresh, delay * 1000);
     };
     const flashBoardUpdate = () => {
+      if (flapReduced || document.hidden) return;
       board.classList.remove('board-updated');
       void board.offsetWidth;
       board.classList.add('board-updated');
       window.setTimeout(() => board.classList.remove('board-updated'), 1200);
     };
     const refresh = async () => {
-      if (refreshing) return;
-      if (document.hidden) { scheduleRefresh(60); return; }
+      if (refreshing || document.hidden) return;
       refreshing = true;
       let next = Number(board.dataset.boardRefresh) || 30;
       try {
@@ -337,7 +361,7 @@
       } catch { /* Leave the last valid mechanical display in place. */ }
       finally {
         refreshing = false;
-        scheduleRefresh(next);
+        if (!document.hidden) scheduleRefresh(next);
       }
     };
     const onVisibility = () => {

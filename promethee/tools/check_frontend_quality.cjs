@@ -14,16 +14,20 @@ const expect = (condition, message) => { if (!condition) fail(message); };
 
 const budgets = {
   '../acars/wwwroot/app.js': 145000,
-  '../acars/wwwroot/hermes-map.js': 18000,
+  '../acars/wwwroot/hermes-map.js': 21000,
   '../acars/wwwroot/hermes-review.js': 20000,
   '../acars/wwwroot/index.html': 50000,
   '../acars/wwwroot/styles.css': 60000,
   '../acars/wwwroot/hermes-themes.css': 35000,
   '../acars/wwwroot/hermes-era-components.css': 12000,
+  '../acars/wwwroot/hermes-accessibility.css': 6000,
   'public/promethee-assets/promethee-v2.css': 90000,
   'public/promethee-assets/promethee-appearance.css': 40000,
   'public/promethee-assets/promethee-admin-workspaces.css': 12000,
   'public/promethee-assets/promethee-era-components.css': 14000,
+  'public/promethee-assets/promethee-accessibility.css': 6000,
+  'public/promethee-assets/promethee.js': 24000,
+  'public/promethee-assets/navigation-groups.js': 8000,
   'modules/Promethee/Http/PortalController.php': 245000,
   'modules/Promethee/Http/AutomationController.php': 14000,
   'modules/Promethee/Resources/views/admin/dispatch.blade.php': 45000,
@@ -44,6 +48,7 @@ const hermesReview = read('../acars/wwwroot/hermes-review.js');
 const hermesDesktop = read('../acars/WebDesktop.cs');
 const hermesTheme = read('../acars/wwwroot/hermes-themes.css');
 const hermesEraComponents = read('../acars/wwwroot/hermes-era-components.css');
+const hermesAccessibility = read('../acars/wwwroot/hermes-accessibility.css');
 const prometheeBase = read('public/promethee-assets/promethee.css');
 const prometheeV2 = read('public/promethee-assets/promethee-v2.css');
 const prometheeAdmin = read('public/promethee-assets/admin-promethee.css');
@@ -57,6 +62,8 @@ const prometheeMissions = read('modules/Promethee/Resources/views/missions.blade
 const prometheeMyDocuments = read('modules/Promethee/Resources/views/my-documents.blade.php');
 const prometheeCommunity = read('public/promethee-assets/promethee-community.css');
 const prometheeEraComponents = read('public/promethee-assets/promethee-era-components.css');
+const prometheeAccessibility = read('public/promethee-assets/promethee-accessibility.css');
+const prometheeRuntime = read('public/promethee-assets/promethee.js');
 const prometheeFlights = read('modules/Promethee/Resources/views/flights.blade.php');
 const portalController = read('modules/Promethee/Http/PortalController.php');
 const automationController = read('modules/Promethee/Http/AutomationController.php');
@@ -121,8 +128,9 @@ expect(hermesTheme.includes('focus-visible'),
 const hermesOverrides = read('../acars/wwwroot/layout-overrides.css');
 expect(hermesIndex.includes('class="rail-nav-label"')
     && hermesIndex.includes('class="display-settings"')
-    && hermesIndex.includes('20261003-era-phase6'),
-  'Hermès must preserve the grouped operational navigation and refreshed asset revision.');
+    && hermesIndex.includes('/hermes-themes.css?rev=')
+    && hermesIndex.includes('/layout-overrides.css?rev='),
+  'Hermès must preserve the grouped operational navigation and versioned theme assets.');
 expect(hermesApp.includes('data-tab') || hermesIndex.includes('data-tab="flight"'),
   'Hermès navigation must keep data-tab based workspace routing.');
 expect(read('../acars/wwwroot/styles.css').includes('Audit UX phase 2 — operational visual consolidation.')
@@ -223,6 +231,60 @@ expect(!hermesTheme.includes('body[data-era="2000"] .rail-nav-label'),
 expect(hermesIndex.includes('/hermes-minitel.css?rev=')
     && hermesIndex.includes('window.loadHermesMinitel'),
   'Hermès must preserve the native lazy-loaded Minitel runtime instead of reducing it to a DOM skin.');
+
+expect(prometheeLayout.includes('promethee-accessibility.css')
+    && prometheeLayout.includes('<main id="main" tabindex="-1">')
+    && prometheeLayout.includes('aria-current="page"')
+    && prometheeLayout.includes('aria-live="polite"')
+    && prometheeLayout.includes('aria-live="assertive"'),
+  'Prométhée must preserve skip-target focus, current-page semantics and live feedback.');
+expect(prometheeAccessibility.includes('prefers-reduced-motion:reduce')
+    && prometheeAccessibility.includes('forced-colors:active')
+    && prometheeAccessibility.includes(':focus-visible'),
+  'Prométhée must preserve global reduced-motion, forced-colors and keyboard focus treatment.');
+expect(prometheeNavigation.includes('ArrowDown')
+    && prometheeNavigation.includes('ArrowUp')
+    && prometheeNavigation.includes("event.key === 'Escape'"),
+  'Prométhée grouped navigation must remain keyboard navigable.');
+expect(prometheeRuntime.includes('const stopClock')
+    && prometheeRuntime.includes('if (document.hidden) return stopClock()')
+    && prometheeRuntime.includes('if (flapReduced || document.hidden) flushFlapFields()')
+    && !prometheeRuntime.includes('tick(); setInterval(tick,1000);'),
+  'Prométhée must suspend clock/render work while hidden and respect reduced motion.');
+expect(dispatch.includes('const stopPolling')
+    && dispatch.includes('const schedulePolling')
+    && dispatch.includes('if (document.hidden) return stopPolling()')
+    && !dispatch.includes('state.timer = setInterval'),
+  'Dispatch Desk must fully suspend its polling timer while hidden.');
+expect(hermesIndex.includes('/hermes-accessibility.css')
+    && hermesIndex.includes('role="tablist"')
+    && hermesIndex.includes('aria-orientation="vertical"')
+    && hermesIndex.includes('aria-controls="flight"'),
+  'Hermès must preserve semantic tab navigation and its accessibility layer.');
+expect(hermesAccessibility.includes('prefers-reduced-motion:reduce')
+    && hermesAccessibility.includes('forced-colors:active')
+    && hermesAccessibility.includes(':focus-visible'),
+  'Hermès must preserve reduced-motion, forced-colors and focus treatment.');
+expect(hermesApp.includes('const stopHermesPolling')
+    && hermesApp.includes('const startHermesPolling')
+    && hermesApp.includes("['ArrowDown','ArrowUp','Home','End']")
+    && !hermesApp.includes("setInterval(() => {\n  if (!document.hidden) refreshStatus()"),
+  'Hermès must fully suspend background pollers and keep keyboard tab navigation.');
+expect(hermesMap.includes("event.key === 'Home'")
+    && hermesMap.includes("event.key === '+'")
+    && hermesMap.includes("const panKeys = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown']")
+    && hermesMap.includes('let resizeFrame = 0'),
+  'Hermès map must preserve keyboard pan/zoom/fit and resize-frame throttling.');
+
+expect(hermesIndex.includes('role="tabpanel"')
+    && hermesIndex.includes('aria-labelledby="tab-map"')
+    && hermesIndex.includes('tabindex="-1"'),
+  'Hermès tab interface must preserve tab/tabpanel relationships and roving tab stops.');
+expect(hermesApp.includes("button.dataset.tab === 'map'")
+    && hermesApp.includes('node.tabIndex = selected ? 0 : -1'),
+  'Hermès must redraw the map on activation and preserve roving keyboard focus.');
+expect(hermesMap.includes("!mapPanel?.classList.contains('active')"),
+  'Hermès must not render map tiles/canvas while the map workspace is hidden.');
 expect(prometheeNavigation.includes('setShellMenu')
     && prometheeNavigation.includes("aria-expanded")
     && prometheeNavigation.includes("event.key === 'Escape'"),
@@ -251,8 +313,6 @@ expect(prometheeMaintenance.includes('CELLULE · SUIVI ACTIF') && prometheeMaint
 expect(prometheeV2.includes('Audit UX phase 12 — fleet/maintenance shared details.'),
   'Prométhée must preserve phase 12 fleet/maintenance primitives.');
 
-expect(dispatch.includes("if (!document.hidden) refreshBoard()"),
-  'Dispatch Desk polling must remain suspended while the page is hidden.');
 expect(dispatch.includes('promethee-dispatch-filter') && dispatch.includes('promethee-dispatch-selected'),
   'Dispatch Desk must preserve dispatcher context across refresh/navigation.');
 

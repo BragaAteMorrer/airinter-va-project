@@ -186,11 +186,13 @@ function updateFlightMapControls() {
 }
 
 function drawMap(track, latest = {}) {
+  flightMapState.lastTrack=track||[];
+  const mapPanel=$('#map');
+  if(document.hidden || !mapPanel?.classList.contains('active')) return;
   const map=$('#flightMap'), canvas=$('#flightMapOverlay'), empty=$('#flightMapEmpty'), aircraft=$('#flightMapAircraft');
   if(!map||!canvas)return;
   const width=Math.max(1,map.clientWidth), height=Math.max(1,map.clientHeight), context=resizeFlightMapCanvas(canvas,width,height);
   const points=(Array.isArray(track)?track:[]).map(normalizedTrackPoint).filter(Boolean), planned=currentPlannedRoute();
-  flightMapState.lastTrack=track||[];
   if(!points.length&&!planned.length){
     if(flightMapState.hadTrack){flightMapState.centerLat=46.5;flightMapState.centerLon=2.5;flightMapState.zoom=5;flightMapState.autoFit=true;}
     flightMapState.hadTrack=false;renderFlightMapTiles(width,height);context.clearRect(0,0,width,height);
@@ -268,6 +270,40 @@ function drawMap(track, latest = {}) {
         updateFlightMapControls();
         drawMap(flightMapState.lastTrack, lastStatus?.latest || {});
       }, { passive: false });
+
+      flightMap.addEventListener('keydown', event => {
+        const panKeys = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'];
+        if (panKeys.includes(event.key)) {
+          event.preventDefault();
+          flightMapState.autoFit = false;
+          const center = mapWorldPoint(flightMapState.centerLat, flightMapState.centerLon);
+          const step = event.shiftKey ? 128 : 64;
+          const dx = event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0;
+          const dy = event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0;
+          const geo = mapGeoPoint(center.x + dx, center.y + dy);
+          flightMapState.centerLat = geo.lat;
+          flightMapState.centerLon = geo.lon;
+          drawMap(flightMapState.lastTrack, lastStatus?.latest || {});
+          return;
+        }
+        if (event.key === '+' || event.key === '=') {
+          event.preventDefault();
+          flightMapState.autoFit = false;
+          flightMapState.zoom = Math.min(15, flightMapState.zoom + 1);
+          drawMap(flightMapState.lastTrack, lastStatus?.latest || {});
+        } else if (event.key === '-' || event.key === '_') {
+          event.preventDefault();
+          flightMapState.autoFit = false;
+          flightMapState.zoom = Math.max(3, flightMapState.zoom - 1);
+          drawMap(flightMapState.lastTrack, lastStatus?.latest || {});
+        } else if (event.key === 'Home') {
+          event.preventDefault();
+          const points = currentMapFitPoints();
+          if (points.length) fitFlightMap(points);
+          flightMapState.autoFit = true;
+          drawMap(flightMapState.lastTrack, lastStatus?.latest || {});
+        }
+      });
     }
     
     $('#mapZoomInBtn')?.addEventListener('click', () => {
@@ -299,7 +335,14 @@ function drawMap(track, latest = {}) {
       drawMap(flightMapState.lastTrack, lastStatus?.latest || {});
     });
     
-    window.addEventListener('resize', () => drawMap(flightMapState.lastTrack, lastStatus?.latest || {}));
+    let resizeFrame = 0;
+    window.addEventListener('resize', () => {
+      if (document.hidden || resizeFrame) return;
+      resizeFrame = requestAnimationFrame(() => {
+        resizeFrame = 0;
+        drawMap(flightMapState.lastTrack, lastStatus?.latest || {});
+      });
+    });
   }
 
   Object.assign(window, {

@@ -86,6 +86,7 @@ window.prometheeI18n = @json($prometheeI18n);
 </script>
 @stack('styles')
 <link rel="stylesheet" href="{{ asset('promethee-assets/promethee-era-components.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-era-components.css')) }}">
+<link rel="stylesheet" href="{{ asset('promethee-assets/promethee-accessibility.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-accessibility.css')) }}">
 </head>
 @php
     // Most Prométhée pages receive branding through PortalController::page().
@@ -236,7 +237,8 @@ window.prometheeI18n = @json($prometheeI18n);
         <div class="nav-menu">
             @foreach($links as $link)
                 @if(\Illuminate\Support\Facades\Route::has($link['route']))
-                <a @class(['selected' => request()->routeIs(...explode('|', $link['active'])), 'nav-emphasis' => ($link['emphasis'] ?? false)]) href="{{ route($link['route']).(isset($link['fragment']) ? '#'.$link['fragment'] : '') }}">{{ $link['text'] ?? __('promethee.'.$link['label']) }}</a>
+                @php($linkActive = request()->routeIs(...explode('|', $link['active'])))
+                <a @class(['selected' => $linkActive, 'nav-emphasis' => ($link['emphasis'] ?? false)]) @if($linkActive) aria-current="page" @endif href="{{ route($link['route']).(isset($link['fragment']) ? '#'.$link['fragment'] : '') }}">{{ $link['text'] ?? __('promethee.'.$link['label']) }}</a>
                 @endif
             @endforeach
         </div>
@@ -246,10 +248,10 @@ window.prometheeI18n = @json($prometheeI18n);
     <summary>{{ __('promethee.navigation_private') }}<b aria-hidden="true">⌄</b></summary>
     <div class="nav-menu">
         @ability('admin','admin-access')
-        <a @class(['selected' => !request()->routeIs('admin.promethee.dispatch*', 'admin.promethee.network*', 'admin.promethee.mailbox*', 'admin.promethee.health') && request()->routeIs('admin.promethee.*')]) href="{{ route('admin.promethee.dashboard') }}">{{ __('promethee.administration') }}</a>
-        @if(\Illuminate\Support\Facades\Route::has('admin.promethee.crm'))<a @class(['selected' => request()->routeIs('admin.promethee.crm*')]) href="{{ route('admin.promethee.crm') }}">CRM & communications</a>@endif
-        @if(\Illuminate\Support\Facades\Route::has('admin.users.index'))<a @class(['selected' => request()->routeIs('admin.users.*')]) href="{{ route('admin.users.index') }}">{{ __('promethee.admin_pilots') }}</a>@endif
-        @if(\Illuminate\Support\Facades\Route::has('admin.ranks.index'))<a @class(['selected' => request()->routeIs('admin.ranks.*')]) href="{{ route('admin.ranks.index') }}">{{ __('promethee.admin_ranks') }}</a>@endif
+        <a @class(['selected' => !request()->routeIs('admin.promethee.dispatch*', 'admin.promethee.network*', 'admin.promethee.mailbox*', 'admin.promethee.health') && request()->routeIs('admin.promethee.*')]) @if(!request()->routeIs('admin.promethee.dispatch*', 'admin.promethee.network*', 'admin.promethee.mailbox*', 'admin.promethee.health') && request()->routeIs('admin.promethee.*')) aria-current="page" @endif href="{{ route('admin.promethee.dashboard') }}">{{ __('promethee.administration') }}</a>
+        @if(\Illuminate\Support\Facades\Route::has('admin.promethee.crm'))<a @class(['selected' => request()->routeIs('admin.promethee.crm*')]) @if(request()->routeIs('admin.promethee.crm*')) aria-current="page" @endif href="{{ route('admin.promethee.crm') }}">CRM & communications</a>@endif
+        @if(\Illuminate\Support\Facades\Route::has('admin.users.index'))<a @class(['selected' => request()->routeIs('admin.users.*')]) @if(request()->routeIs('admin.users.*')) aria-current="page" @endif href="{{ route('admin.users.index') }}">{{ __('promethee.admin_pilots') }}</a>@endif
+        @if(\Illuminate\Support\Facades\Route::has('admin.ranks.index'))<a @class(['selected' => request()->routeIs('admin.ranks.*')]) @if(request()->routeIs('admin.ranks.*')) aria-current="page" @endif href="{{ route('admin.ranks.index') }}">{{ __('promethee.admin_ranks') }}</a>@endif
         @endability
         <a href="{{ url('/logout') }}">{{ __('promethee.logout') }}</a>
     </div>
@@ -269,9 +271,9 @@ window.prometheeI18n = @json($prometheeI18n);
 <label class="theme-control appearance-control"><span class="theme-control-label">{{ __('promethee.appearance') }}</span><select id="appearance" aria-label="{{ __('promethee.appearance_style') }}"><option value="light">{{ __('promethee.appearance_light') }}</option><option value="dark">{{ __('promethee.appearance_dark') }}</option></select></label>
 </div>
 <time id="utc-clock">UTC</time></header>
-<main id="main">
-@if(session('success'))<div class="notice success" role="status">{{ session('success') }}</div>@endif
-@if($errors->any())<div class="notice error" role="alert"><strong>{{ __('promethee.input_error') }}</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
+<main id="main" tabindex="-1">
+@if(session('success'))<div class="notice success" role="status" aria-live="polite">{{ session('success') }}</div>@endif
+@if($errors->any())<div class="notice error" role="alert" aria-live="assertive"><strong>{{ __('promethee.input_error') }}</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
 @yield('content')
 </main>
 <footer class="footer"><span>AIR INTER · PROMÉTHÉE</span><span>{{ __('promethee.airline_simulation') }} · {{ date('Y') }}</span><span class="tricolor"><i></i><i></i><i></i></span></footer>
