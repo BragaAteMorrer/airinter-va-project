@@ -71,7 +71,7 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
         ("TURB ENG REVERSE NOZZLE PERCENT:1","percent"),("TURB ENG REVERSE NOZZLE PERCENT:2","percent"),
         ("TURB ENG REVERSE NOZZLE PERCENT:3","percent"),("TURB ENG REVERSE NOZZLE PERCENT:4","percent"),
         ("LIGHT NAV","bool"),("LIGHT STROBE","bool"),("LIGHT TAXI","bool"),("LIGHT LOGO","bool"),("LIGHT WING","bool"),
-        ("SPOILERS ARMED","bool"),("APU PCT RPM","percent"),("ELECTRICAL MASTER BATTERY","bool"),("EXTERNAL POWER ON","bool"),
+        ("SPOILERS ARMED","bool"),("APU PCT RPM","Percent Over 100"),("ELECTRICAL MASTER BATTERY:0","bool"),("EXTERNAL POWER ON:1","bool"),
         ("SEA LEVEL PRESSURE","millibars"),("AMBIENT TEMPERATURE","celsius"),("AMBIENT WIND VELOCITY","knots"),("AMBIENT WIND DIRECTION","degrees")];
     public SimConnectReader()
     {
