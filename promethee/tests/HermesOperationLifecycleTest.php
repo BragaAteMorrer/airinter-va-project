@@ -673,6 +673,25 @@ final class HermesOperationLifecycleTest extends TestCase
             'engines_running' => [false, false],
             'beacon_light' => false,
             'navigation_light' => false,
+            'strobe_light' => false,
+            'landing_light' => false,
+            'taxi_light' => false,
+            'logo_light' => false,
+            'wing_light' => false,
+            'spoilers_armed' => false,
+            'apu_running' => false,
+            'apu_rpm_percent' => 0,
+            'battery_on' => true,
+            'external_power_on' => true,
+            'seatbelt_sign' => false,
+            'doors_open' => true,
+            'autopilot_enabled' => false,
+            'autothrottle_armed' => false,
+            'simulation_rate' => 1,
+            'qnh_hpa' => 1018,
+            'oat_c' => 17,
+            'wind_speed' => 4,
+            'wind_direction' => 260,
             'transponder_code' => 1200,
             'aircraft_icao' => 'A320',
             'aircraft_model' => 'FenixA320 CFM WF',
@@ -687,6 +706,20 @@ final class HermesOperationLifecycleTest extends TestCase
             'engines_running' => [true, true],
             'beacon_light' => true,
             'navigation_light' => true,
+            'strobe_light' => false,
+            'landing_light' => false,
+            'taxi_light' => true,
+            'logo_light' => true,
+            'wing_light' => false,
+            'spoilers_armed' => false,
+            'apu_running' => true,
+            'apu_rpm_percent' => 100,
+            'battery_on' => true,
+            'external_power_on' => false,
+            'seatbelt_sign' => true,
+            'doors_open' => false,
+            'autopilot_enabled' => false,
+            'autothrottle_armed' => true,
             'transponder_code' => 5723,
         ]);
         $this->telemetry($fx, 'TAKEOFF', $at->copy()->addSeconds(40), [
@@ -717,6 +750,14 @@ final class HermesOperationLifecycleTest extends TestCase
         $codes = $journal->pluck('code')->all();
 
         $this->assertContains('AIRCRAFT_IDENTIFIED', $codes);
+        $this->assertContains('ENGINE_1_OFF', $codes);
+        $this->assertContains('ENGINE_2_OFF', $codes);
+        $this->assertContains('BATTERY_ON', $codes);
+        $this->assertContains('EXTERNAL_POWER_ON', $codes);
+        $this->assertContains('APU_OFF', $codes);
+        $this->assertContains('TRANSPONDER_SET', $codes);
+        $this->assertContains('SIM_RATE_INITIAL', $codes);
+        $this->assertContains('WEATHER_INITIAL', $codes);
         $this->assertContains('PARKING_BRAKE_RELEASED', $codes);
         $this->assertContains('ENGINE_1_ON', $codes);
         $this->assertContains('ENGINE_2_ON', $codes);
@@ -726,6 +767,7 @@ final class HermesOperationLifecycleTest extends TestCase
         $this->assertContains('GEAR_UP', $codes);
         $this->assertContains('FLAPS_UP', $codes);
         $this->assertContains('CROSS_10000_UP', $codes);
+        $this->assertContains('TAKEOFF_DATA', $codes);
         $this->assertContains('TAXI_OUT_TIME', $codes);
     }
 
@@ -838,6 +880,13 @@ final class HermesOperationLifecycleTest extends TestCase
                 'strobe_light' => true,
                 'landing_light' => true,
                 'taxi_light' => false,
+                'logo_light' => true,
+                'wing_light' => false,
+                'apu_running' => true,
+                'apu_rpm_percent' => 96,
+                'battery_on' => true,
+                'external_power_on' => false,
+                'autothrottle_armed' => false,
                 'seatbelt_sign' => true,
                 'doors_open' => false,
                 'transponder_code' => 5723,
@@ -873,6 +922,13 @@ final class HermesOperationLifecycleTest extends TestCase
         $this->assertTrue($payload['strobe_light']);
         $this->assertTrue($payload['landing_light']);
         $this->assertFalse($payload['taxi_light']);
+        $this->assertTrue($payload['logo_light']);
+        $this->assertFalse($payload['wing_light']);
+        $this->assertTrue($payload['apu_running']);
+        $this->assertSame(96.0, (float) $payload['apu_rpm_percent']);
+        $this->assertTrue($payload['battery_on']);
+        $this->assertFalse($payload['external_power_on']);
+        $this->assertFalse($payload['autothrottle_armed']);
         $this->assertTrue($payload['seatbelt_sign']);
         $this->assertFalse($payload['doors_open']);
         $this->assertSame(5723, (int) $payload['transponder_code']);
