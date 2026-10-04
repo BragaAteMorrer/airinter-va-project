@@ -74,6 +74,8 @@ promethee/public/storage
 dist/
 release/
 acars/release/
+acars/msfs2024-efb/efb_api/
+acars/msfs2024-efb/**/node_modules/
 *.trx
 coverage/
 coverage.*
