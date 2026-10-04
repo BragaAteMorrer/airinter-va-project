@@ -45,6 +45,7 @@ public sealed class HermesEfbBridge : IDisposable
     public const string RequestEvent = "AIRINTER_HERMES_EFB_REQUEST";
     public const string StateEvent = "AIRINTER_HERMES_EFB_STATE";
 
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private readonly IHermesEfbTransport transport;
     private readonly Func<HermesEfbContext?, object> stateFactory;
     private readonly object gate = new();
@@ -200,7 +201,7 @@ public sealed class HermesEfbBridge : IDisposable
 
     private void Send(object envelope)
     {
-        var json = JsonSerializer.Serialize(envelope);
+        var json = JsonSerializer.Serialize(envelope, JsonOptions);
         if (!transport.TrySendCommBus(StateEvent, json)) return;
 
         lock (gate)
