@@ -31,6 +31,7 @@ Route::get('/occ', [PortalController::class, 'occ'])->middleware('web')->name('p
 // Public flight reports replace the legacy phpVMS report screen. The report
 // remains readable without an account, just as the former public URL was.
 Route::get('/pireps/{id}', [PortalController::class, 'pirep'])->middleware(['web','auth'])->name('promethee.pireps.show');
+Route::delete('/pireps/{id}', [PortalController::class, 'deleteOwnPirep'])->middleware(['web','auth'])->name('promethee.pireps.delete');
 Route::post('/pireps/{id}/repeat', [PortalController::class, 'repeatPirep'])->middleware(['web','auth'])->name('promethee.pireps.repeat');
 // Backward-compatible name used by the aircraft history view.
 Route::get('/pirep/{id}', [PortalController::class, 'pirep'])->middleware(['web','auth'])->name('promethee.pirep');
@@ -79,6 +80,7 @@ Route::middleware(['web','auth'])->name('promethee.')->group(function () {
     Route::get('/passport', [PortalController::class,'passport'])->name('passport');
     Route::get('/bookings', [PortalController::class,'bookings'])->name('bookings');
     Route::delete('/bookings/{bid}', [PortalController::class,'cancelBooking'])->name('bookings.cancel');
+    Route::delete('/bookings/{bid}/pirep', [PortalController::class,'deleteBookingPirep'])->name('bookings.pirep.delete');
     Route::get('/downloads', [PortalController::class,'downloads'])->name('downloads');
     Route::get('/downloads/categories/{category}', [PortalController::class,'downloadCategoryPage'])->where('category','acars|fleet|airports|documents')->name('downloads.category');
     Route::get('/downloads/{file}', [PortalController::class,'download'])->name('downloads.download');
@@ -287,6 +289,7 @@ Route::middleware('api')->get('/api/v1/hermes/releases/latest', [HermesReleaseCo
 
 Route::middleware(['api','api.auth'])->prefix('api/v1')->group(function () {
     Route::get('/me', [OperationsV1Controller::class, 'me']);
+    Route::delete('/pireps/{pirep}', [OperationsV1Controller::class, 'deletePirep']);
     Route::get('/aircraft/{registration}/resolved-profile', [AircraftConfigurationController::class, 'show']);
     Route::get('/me/aircraft-variants', [OperationsV1Controller::class, 'myAircraftVariants']);
     Route::put('/me/aircraft-variants', [OperationsV1Controller::class, 'saveMyAircraftVariants']);
