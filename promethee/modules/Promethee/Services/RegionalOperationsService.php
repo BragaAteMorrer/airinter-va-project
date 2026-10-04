@@ -9,6 +9,7 @@ use App\Services\AirportService;
 use App\Services\FinanceService;
 use App\Services\UserService;
 use App\Support\Money;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class RegionalOperationsService
@@ -137,6 +138,29 @@ class RegionalOperationsService
         }
 
         return compact('created', 'returned', 'cleared');
+    }
+
+    public function decorateMissionsForPilot(Collection $missions, User $user): Collection
+    {
+        $aircraftById = Aircraft::with('subfleet:id,type,name')
+            ->whereIn('id', $missions->pluck('aircraft_id')->filter()->unique()->values())
+            ->get(['id','registration','icao','name','subfleet_id'])
+            ->keyBy('id');
+        $allowedSubfleetIds = $this->userService->getAllowableSubfleets($user)
+            ->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        return $missions->map(function ($mission) use ($aircraftById, $allowedSubfleetIds) {
+            $aircraft = $mission->aircraft_id ? $aircraftById->get((int) $mission->aircraft_id) : null;
+            $mission->aircraft_registration = $aircraft?->registration;
+            $mission->aircraft_icao = $aircraft?->icao;
+            $mission->aircraft_type = $aircraft?->subfleet?->type ?: $aircraft?->icao;
+            $mission->aircraft_type_name = $aircraft?->subfleet?->name ?: $aircraft?->name;
+            $mission->aircraft_allowed = $aircraft
+                ? in_array((int) $aircraft->subfleet_id, $allowedSubfleetIds, true)
+                : false;
+
+            return $mission;
+        });
     }
 
     public function reserveRepatriationMission(int $missionId, User $user, FinanceService $finance): void
