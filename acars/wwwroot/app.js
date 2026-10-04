@@ -200,8 +200,10 @@ function setAuthenticated(value) {
     identityAccountUrl = null;
     const provider = $('#identityProvider');
     const account = $('#argosAccountBtn');
+    const logout = $('#logoutBtn');
     if (provider) provider.hidden = true;
     if (account) account.hidden = true;
+    if (logout) logout.hidden = true;
   }
   window.dispatchEvent(new CustomEvent('hermes:auth-changed', { detail: { authenticated: connected } }));
 }
@@ -362,6 +364,8 @@ function pilotIdentity(value) {
       : null;
   const account = $('#argosAccountBtn');
   if (account) account.hidden = !identityAccountUrl;
+  const logout = $('#logoutBtn');
+  if (logout) logout.hidden = false;
 }
 
 async function login(form) {
@@ -414,6 +418,41 @@ if (argosAccountBtn) {
       await call('/api/open-external', { url: identityAccountUrl });
     } catch (error) {
       registerHermesError(error, 'Impossible d’ouvrir votre compte Air Inter.', 'Compte Argos');
+    }
+  };
+}
+
+const logoutBtn = $('#logoutBtn');
+if (logoutBtn) {
+  logoutBtn.onclick = async () => {
+    if (!confirm('Se déconnecter d’Hermès ?\n\nLa session ACARS sera révoquée et la connexion Argos mémorisée sur ce PC sera oubliée.')) return;
+    logoutBtn.disabled = true;
+    try {
+      await call('/api/logout', {});
+      selectedOperation = null;
+      selectedAircraft = null;
+      selectedVariant = null;
+      aircraftVariantState = null;
+      aircraftEligibility = null;
+      pirepId = null;
+      flightPlan = null;
+      linkedSimBrief = null;
+      serverDispatch = null;
+      lastDatalinkSnapshot = null;
+      readiness = { operation: false, aircraft: false, ofp: false, pirep: false, simulator: Boolean(lastStatus?.latest) };
+      clearOperationalWeather();
+      $('#flightList')?.replaceChildren();
+      const selected = $('#selectedOperation');
+      if (selected) selected.hidden = true;
+      try { await call('/api/efb/context', null); } catch {}
+      setText($('#serverState'), 'Identité pilote à venir');
+      setAuthenticated(false);
+      document.querySelector('[data-tab="connect"]')?.click();
+      showMessage('#loginMessage', 'Déconnexion terminée. La prochaine connexion Argos redemandera votre identité.');
+    } catch (error) {
+      showMessage('#loginMessage', friendlyError(error, 'Impossible de terminer la déconnexion.', 'Déconnexion'), true);
+    } finally {
+      logoutBtn.disabled = false;
     }
   };
 }
