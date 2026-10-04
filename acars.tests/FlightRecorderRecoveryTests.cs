@@ -104,12 +104,15 @@ public sealed class FlightRecorderRecoveryTests
         Assert.Equal("pirep-recovery", info!.PirepId);
         Assert.Equal("op-recovery", info.OperationId);
         Assert.True(info.PendingMessages > 0);
+        Assert.Equal(2, recovered.Track.Count);
+        Assert.Equal(first.Track.Select(point => point.RecordedAt), recovered.Track.Select(point => point.RecordedAt));
 
         recovered.Resume("https://promethee.example");
 
         Assert.False(recovered.RecoveryAvailable);
         Assert.True(recovered.Flight?.Recording);
         Assert.Equal("pirep-recovery", recovered.Flight?.PirepId);
+        Assert.Equal(2, recovered.Track.Count);
     }
 
     [Fact]
