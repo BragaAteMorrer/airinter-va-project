@@ -1681,24 +1681,23 @@ class PortalController extends Controller
                 (!$item->arr_airport_id || $report->arr_airport_id === $item->arr_airport_id)
             );
         };
-        $missions = DB::table('promethee_missions')->where('active',true)
-            ->where(fn($q)=>$q->whereNull('starts_on')->orWhere('starts_on','<=',$today))
-            ->where(fn($q)=>$q->whereNull('ends_on')->orWhere('ends_on','>=',$today))->orderBy('ends_on')->get()
-            ->map(function ($mission) use ($matches, $userId) {
-                $mission->completion = $matches($mission);
-                $mission->booking = DB::table('promethee_mission_bookings')
-                    ->where('mission_id', $mission->id)
-                    ->where('user_id', $userId)
-                    ->latest('created_at')->first();
-                $mission->reserved_by_other = DB::table('promethee_mission_bookings')
-                    ->where('mission_id', $mission->id)
-                    ->where('user_id', '!=', $userId)
-                    ->where('status', 'reserved')->exists();
-                if ($mission->aircraft_id) {
-                    $mission->aircraft_registration = Aircraft::where('id', $mission->aircraft_id)->value('registration');
-                }
-                return $mission;
-            });
+        $missions = $regionalOperations->decorateMissionsForPilot(
+            DB::table('promethee_missions')->where('active',true)
+                ->where(fn($q)=>$q->whereNull('starts_on')->orWhere('starts_on','<=',$today))
+                ->where(fn($q)=>$q->whereNull('ends_on')->orWhere('ends_on','>=',$today))->orderBy('ends_on')->get(),
+            $r->user()
+        )->map(function ($mission) use ($matches, $userId) {
+            $mission->completion = $matches($mission);
+            $mission->booking = DB::table('promethee_mission_bookings')
+                ->where('mission_id', $mission->id)
+                ->where('user_id', $userId)
+                ->latest('created_at')->first();
+            $mission->reserved_by_other = DB::table('promethee_mission_bookings')
+                ->where('mission_id', $mission->id)
+                ->where('user_id', '!=', $userId)
+                ->where('status', 'reserved')->exists();
+            return $mission;
+        });
         $circuits = DB::table('promethee_circuits')->where('active',true)
             ->where(fn($q)=>$q->whereNull('starts_on')->orWhere('starts_on','<=',$today))
             ->where(fn($q)=>$q->whereNull('ends_on')->orWhere('ends_on','>=',$today))->orderBy('ends_on')->get()

@@ -7,11 +7,15 @@ use App\Models\Airport;
 use App\Models\User;
 use App\Services\AirportService;
 use App\Services\FinanceService;
+use App\Services\UserService;
 use App\Support\Money;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class RegionalOperationsService
 {
+    public function __construct(private readonly UserService $userService) {}
+
     public function settings(): array
     {
         $values = DB::table('promethee_settings')
@@ -136,6 +140,29 @@ class RegionalOperationsService
         return compact('created', 'returned', 'cleared');
     }
 
+    public function decorateMissionsForPilot(Collection $missions, User $user): Collection
+    {
+        $aircraftById = Aircraft::with('subfleet:id,type,name')
+            ->whereIn('id', $missions->pluck('aircraft_id')->filter()->unique()->values())
+            ->get(['id','registration','icao','name','subfleet_id'])
+            ->keyBy('id');
+        $allowedSubfleetIds = $this->userService->getAllowableSubfleets($user)
+            ->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        return $missions->map(function ($mission) use ($aircraftById, $allowedSubfleetIds) {
+            $aircraft = $mission->aircraft_id ? $aircraftById->get((int) $mission->aircraft_id) : null;
+            $mission->aircraft_registration = $aircraft?->registration;
+            $mission->aircraft_icao = $aircraft?->icao;
+            $mission->aircraft_type = $aircraft?->subfleet?->type ?: $aircraft?->icao;
+            $mission->aircraft_type_name = $aircraft?->subfleet?->name ?: $aircraft?->name;
+            $mission->aircraft_allowed = $aircraft
+                ? in_array((int) $aircraft->subfleet_id, $allowedSubfleetIds, true)
+                : false;
+
+            return $mission;
+        });
+    }
+
     public function reserveRepatriationMission(int $missionId, User $user, FinanceService $finance): void
     {
         DB::transaction(function () use ($missionId, $user, $finance) {
@@ -155,7 +182,20 @@ class RegionalOperationsService
 
             abort_if($alreadyReserved, 409, 'Cette mission de rapatriement est déjà réservée.');
 
-            $freshUser = User::with(['journal', 'airline.journal'])->findOrFail($user->id);
+            $freshUser = User::with(['journal', 'airline.journal', 'rank'])->findOrFail($user->id);
+            $aircraft = $mission->aircraft_id
+                ? Aircraft::with('subfleet')->find($mission->aircraft_id)
+                : null;
+
+            abort_unless($aircraft, 422, 'L’appareil affecté à cette mission est introuvable.');
+            abort_unless(
+                $this->userService->aircraftAllowed($freshUser, $aircraft->id),
+                403,
+                'Votre grade ou qualification ne vous autorise pas à piloter cet appareil ('.($aircraft->subfleet?->name ?: $aircraft->icao).').'
+            );
+
+            // Authorization must happen before any jumpseat debit: a pilot who
+            // cannot fly the imposed aircraft must never be charged to reach it.
             $journal = $freshUser->journal ?: $freshUser->initJournal();
             $currentAirportId = $freshUser->curr_airport_id ?: $freshUser->home_airport_id;
             $jumpseatAmount = new Money(0);
