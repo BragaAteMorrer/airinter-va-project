@@ -70,6 +70,7 @@ type HermesEnvelope = {
       heading?: number | null;
       vs?: number | null;
       fuel?: number | null;
+      grossWeight?: number | null;
       onGround?: boolean | null;
       paused?: boolean | null;
     } | null;
@@ -102,9 +103,16 @@ class HermesEfbView extends AppView<RequiredProps<AppViewProps, "bus">> {
   private readonly altitude = FSComponent.createRef<HTMLSpanElement>();
   private readonly speed = FSComponent.createRef<HTMLSpanElement>();
   private readonly fuel = FSComponent.createRef<HTMLSpanElement>();
+  private readonly grossWeight = FSComponent.createRef<HTMLSpanElement>();
+  private readonly travelled = FSComponent.createRef<HTMLSpanElement>();
+  private readonly airborne = FSComponent.createRef<HTMLSpanElement>();
   private readonly pax = FSComponent.createRef<HTMLSpanElement>();
   private readonly flightLevel = FSComponent.createRef<HTMLSpanElement>();
   private readonly costIndex = FSComponent.createRef<HTMLSpanElement>();
+  private readonly blockFuel = FSComponent.createRef<HTMLSpanElement>();
+  private readonly eet = FSComponent.createRef<HTMLSpanElement>();
+  private readonly ofpSource = FSComponent.createRef<HTMLSpanElement>();
+  private readonly ofpRoute = FSComponent.createRef<HTMLParagraphElement>();
   private readonly pending = FSComponent.createRef<HTMLSpanElement>();
   private readonly warning = FSComponent.createRef<HTMLDivElement>();
   private readonly syncTime = FSComponent.createRef<HTMLSpanElement>();
@@ -204,9 +212,16 @@ class HermesEfbView extends AppView<RequiredProps<AppViewProps, "bus">> {
     this.set(this.altitude, this.number(telemetry.altitude, 0, " ft"));
     this.set(this.speed, this.number(telemetry.gs ?? telemetry.ias, 0, " kt"));
     this.set(this.fuel, this.number(telemetry.fuel, 0, " lb"));
+    this.set(this.grossWeight, this.number(telemetry.grossWeight, 0, " lb"));
+    this.set(this.travelled, this.number(live.distance, 0, " NM"));
+    this.set(this.airborne, this.minutes(Number(review.airborneMinutes ?? 0)));
     this.set(this.pax, context.passengers === null || context.passengers === undefined ? "—" : String(context.passengers));
     this.set(this.flightLevel, context.flightLevel ? `FL${String(context.flightLevel).padStart(3, "0")}` : "—");
     this.set(this.costIndex, context.costIndex || "—");
+    this.set(this.blockFuel, this.number(context.blockFuel, 0, ""));
+    this.set(this.eet, this.duration(context.estimatedTimeEnroute));
+    this.set(this.ofpSource, context.ofpSource || "—");
+    this.set(this.ofpRoute, context.route || "Aucune route OFP chargée.");
     this.set(this.pending, String(state.pending ?? 0));
 
     const messages: string[] = [];
@@ -230,6 +245,18 @@ class HermesEfbView extends AppView<RequiredProps<AppViewProps, "bus">> {
     return value === null || value === undefined || !Number.isFinite(value)
       ? "—"
       : `${value.toFixed(digits)}${suffix}`;
+  }
+
+  private minutes(value: number): string {
+    if (!Number.isFinite(value) || value <= 0) return "—";
+    const hours = Math.floor(value / 60);
+    const minutes = Math.round(value % 60);
+    return hours > 0 ? `${hours} h ${String(minutes).padStart(2, "0")}` : `${minutes} min`;
+  }
+
+  private duration(seconds: number | null | undefined): string {
+    if (seconds === null || seconds === undefined || !Number.isFinite(seconds) || seconds <= 0) return "—";
+    return this.minutes(seconds / 60);
   }
 
   public render(): VNode {
@@ -268,14 +295,25 @@ class HermesEfbView extends AppView<RequiredProps<AppViewProps, "bus">> {
           <article><span>DISPATCH</span><strong ref={this.dispatch}>—</strong></article>
           <article><span>ALTITUDE</span><strong ref={this.altitude}>—</strong></article>
           <article><span>VITESSE SOL</span><strong ref={this.speed}>—</strong></article>
-          <article><span>CARBURANT</span><strong ref={this.fuel}>—</strong></article>
+          <article><span>CARBURANT ACTUEL</span><strong ref={this.fuel}>—</strong></article>
+          <article><span>MASSE</span><strong ref={this.grossWeight}>—</strong></article>
+          <article><span>DISTANCE</span><strong ref={this.travelled}>—</strong></article>
+          <article><span>TEMPS EN VOL</span><strong ref={this.airborne}>—</strong></article>
           <article><span>SYNC EN ATTENTE</span><strong ref={this.pending}>0</strong></article>
         </section>
 
-        <section class="ofp-strip">
-          <div><span>PAX</span><strong ref={this.pax}>—</strong></div>
-          <div><span>NIVEAU</span><strong ref={this.flightLevel}>—</strong></div>
-          <div><span>CI</span><strong ref={this.costIndex}>—</strong></div>
+        <section class="briefing-panel">
+          <div class="briefing-title">
+            <div><span class="eyebrow">OFP / SIMBRIEF</span><strong ref={this.ofpSource}>—</strong></div>
+            <p ref={this.ofpRoute}>Aucune route OFP chargée.</p>
+          </div>
+          <div class="ofp-strip">
+            <div><span>PAX</span><strong ref={this.pax}>—</strong></div>
+            <div><span>NIVEAU</span><strong ref={this.flightLevel}>—</strong></div>
+            <div><span>CI</span><strong ref={this.costIndex}>—</strong></div>
+            <div><span>BLOCK FUEL</span><strong ref={this.blockFuel}>—</strong></div>
+            <div><span>EET</span><strong ref={this.eet}>—</strong></div>
+          </div>
         </section>
 
         <footer>
