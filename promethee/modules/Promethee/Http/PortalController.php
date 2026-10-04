@@ -1752,6 +1752,49 @@ class PortalController extends Controller
 
         $flights = $q->paginate(24)->withQueryString();
 
+        // Show the next real timetable occurrence directly in search results.
+        // phpVMS stores recurring schedules, so reuse the departure-board
+        // occurrence logic instead of comparing raw HH:MM values.
+        $parisNow = CarbonImmutable::now('Europe/Paris');
+        $flights->getCollection()->each(function (Flight $flight) use ($parisNow) {
+            $departure = $this->nextDeparture($flight);
+            $arrival = null;
+            if ($departure && trim((string) $flight->arr_time) !== '') {
+                $arrival = $this->scheduledDateTime((string) $flight->arr_time, $departure);
+                if ($arrival && $arrival->lte($departure)) $arrival = $arrival->addDay();
+                $arrival = $arrival?->setTimezone('Europe/Paris');
+            }
+
+            $secondsUntil = $departure ? max(0, $parisNow->diffInSeconds($departure, false)) : null;
+            $minutesUntil = $secondsUntil === null ? null : (int) ceil($secondsUntil / 60);
+            $relative = null;
+
+            if ($departure) {
+                if ($minutesUntil <= 1) {
+                    $relative = 'Départ imminent';
+                } elseif ($minutesUntil < 60) {
+                    $relative = 'Dans '.$minutesUntil.' min';
+                } elseif ($minutesUntil < 180) {
+                    $hours = intdiv($minutesUntil, 60);
+                    $minutes = $minutesUntil % 60;
+                    $relative = 'Dans '.$hours.' h'.($minutes ? ' '.str_pad((string) $minutes, 2, '0', STR_PAD_LEFT) : '');
+                } elseif ($departure->isSameDay($parisNow)) {
+                    $relative = 'Aujourd’hui';
+                } elseif ($departure->isSameDay($parisNow->addDay())) {
+                    $relative = 'Demain';
+                } else {
+                    $relative = 'Le '.$departure->format('d/m');
+                }
+            }
+
+            $flight->setAttribute('next_departure_time', $departure?->format('H:i') ?: trim((string) $flight->dpt_time));
+            $flight->setAttribute('next_arrival_time', $arrival?->format('H:i') ?: trim((string) $flight->arr_time));
+            $flight->setAttribute('next_departure_iso', $departure?->toIso8601String());
+            $flight->setAttribute('next_arrival_iso', $arrival?->toIso8601String());
+            $flight->setAttribute('next_departure_relative', $relative);
+            $flight->setAttribute('next_departure_soon', $minutesUntil !== null && $minutesUntil <= 90);
+        });
+
         // The public programme is not the legacy phpVMS flight screen. When a
         // real origin/destination search returns no direct line, build possible
         // connections from the same Prométhée catalogue instead of stopping at

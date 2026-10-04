@@ -1,5 +1,8 @@
 @extends('promethee::layout')
 @section('title','Programme des vols')
+@push('styles')
+<link rel="stylesheet" href="{{ asset('promethee-assets/promethee-flight-results.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-flight-results.css')) }}">
+@endpush
 @section('content')
 <div class="ops-header compact"><div><span class="eyebrow">LE RÉSEAU AIR INTER</span><h1>Programme des vols.</h1><p>Filtrer, comparer et préparer une rotation sans quitter Prométhée.</p></div><span class="tag metric-tag">@if($flights->total()>0){{ $flights->total() }} lignes publiées @elseif($itineraries->isNotEmpty()){{ $itineraries->count() }} itinéraire{{ $itineraries->count()>1?'s':'' }} proposé{{ $itineraries->count()>1?'s':'' }} @else 0 ligne publiée @endif</span></div>
 <form id="flight-filters" class="panel flight-filter" method="get">
@@ -133,14 +136,26 @@
 @if($flights->count())
 <div class="table-wrap">
 <table class="flight-results">
-<thead><tr><th>Vol</th><th>Itinéraire</th><th>Départ</th><th>Arrivée</th><th>Distance</th><th>Flotte</th><th>Action</th></tr></thead>
+<thead><tr><th>Vol</th><th>Itinéraire</th><th>Horaire</th><th>Distance</th><th>Flotte</th><th>Action</th></tr></thead>
 <tbody>
 @foreach($flights as $flight)
 <tr>
 <td data-label="Vol"><a class="flight-result-ident" href="{{ route('promethee.flights.show',$flight->id) }}">{{ $flight->ident }}</a><small>{{ $flight->airline?->name ?? 'Air Inter' }}</small></td>
 <td data-label="Itinéraire"><div class="flight-result-route"><strong title="{{ $flight->dpt_airport?->name }}">{{ $flight->dpt_airport_id }}</strong><span>→</span><strong title="{{ $flight->arr_airport?->name }}">{{ $flight->arr_airport_id }}</strong></div><small>{{ $flight->dpt_airport?->location ?: $flight->dpt_airport_id }} → {{ $flight->arr_airport?->location ?: $flight->arr_airport_id }}</small></td>
-<td data-label="Départ" class="mono">{{ $flight->dpt_time ?: '—' }}</td>
-<td data-label="Arrivée" class="mono">{{ $flight->arr_time ?: '—' }}</td>
+<td data-label="Horaire">
+  <div @class(['flight-result-schedule', 'is-soon' => $flight->next_departure_soon])>
+    <strong>
+      <time @if($flight->next_departure_iso) datetime="{{ $flight->next_departure_iso }}" @endif>{{ $flight->next_departure_time ?: '—' }}</time>
+      <span aria-hidden="true">→</span>
+      <time @if($flight->next_arrival_iso) datetime="{{ $flight->next_arrival_iso }}" @endif>{{ $flight->next_arrival_time ?: '—' }}</time>
+    </strong>
+    @if($flight->next_departure_relative)
+      <small>{{ $flight->next_departure_relative }}</small>
+    @else
+      <small>Horaire publié</small>
+    @endif
+  </div>
+</td>
 <td data-label="Distance" class="mono">{{ number_format($flight->distance->toUnit('nmi'),0,',',' ') }} NM</td>
 <td data-label="Flotte"><span class="flight-equipment-list">@forelse($flight->subfleets as $subfleet)<span>{{ $subfleet->type }}</span>@empty<em>À confirmer</em>@endforelse</span></td>
 <td data-label="Action" class="flight-result-action-cell"><a class="round-link" aria-label="Préparer {{ $flight->ident }}" href="{{ route('promethee.flights.show',$flight->id) }}">→</a></td>

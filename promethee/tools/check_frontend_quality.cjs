@@ -26,6 +26,7 @@ const budgets = {
   'public/promethee-assets/promethee-admin-workspaces.css': 12000,
   'public/promethee-assets/promethee-era-components.css': 14000,
   'public/promethee-assets/promethee-accessibility.css': 6000,
+  'public/promethee-assets/promethee-flight-results.css': 5000,
   'public/promethee-assets/promethee.js': 24000,
   'public/promethee-assets/navigation-groups.js': 8000,
   'modules/Promethee/Http/PortalController.php': 245000,
@@ -65,6 +66,7 @@ const prometheeEraComponents = read('public/promethee-assets/promethee-era-compo
 const prometheeAccessibility = read('public/promethee-assets/promethee-accessibility.css');
 const prometheeRuntime = read('public/promethee-assets/promethee.js');
 const prometheeFlights = read('modules/Promethee/Resources/views/flights.blade.php');
+const prometheeFlightResults = read('public/promethee-assets/promethee-flight-results.css');
 const portalController = read('modules/Promethee/Http/PortalController.php');
 const automationController = read('modules/Promethee/Http/AutomationController.php');
 const prometheeRoutes = read('modules/Promethee/routes.php');
@@ -297,6 +299,15 @@ expect(prometheeFlights.includes('class="flight-filter-advanced"')
     && prometheeFlights.includes('<table class="flight-results">')
     && !prometheeFlights.includes('<section class="flight-cards">'),
   'Prométhée flight programme must preserve progressive filters and scan-friendly tabular results.');
+expect(prometheeFlights.includes('data-label="Horaire"')
+    && prometheeFlights.includes('flight-result-schedule')
+    && prometheeFlights.includes('next_departure_relative')
+    && prometheeFlights.includes('next_departure_iso'),
+  'Prométhée flight search results must expose the next real timetable occurrence directly in each result.');
+expect(prometheeFlightResults.includes('.flight-result-schedule')
+    && prometheeFlightResults.includes('.is-soon')
+    && prometheeFlightResults.includes('@media(max-width:760px)'),
+  'Prométhée flight schedule presentation must preserve proximity emphasis and responsive treatment.');
 expect(prometheeV2.includes('Audit UX phase 11 — flight programme progressive disclosure')
     && prometheeV2.includes('Audit UX phase 11 — compact shell controls'),
   'Prométhée must preserve phase 11 shell and flight-programme primitives.');

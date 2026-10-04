@@ -1,0 +1,20 @@
+/* Flight programme timetable proximity.
+   Kept separate because promethee-v2.css is intentionally at its budget ceiling. */
+.flight-result-schedule{display:grid;gap:3px;min-width:108px}
+.flight-result-schedule strong{display:flex;align-items:center;gap:5px;color:var(--ops-dark);font:700 12px/1.25 Consolas,monospace;white-space:nowrap}
+.flight-result-schedule strong span{color:var(--muted);font-weight:500}
+.flight-result-schedule small{display:inline-flex;width:max-content;max-width:100%;padding:2px 6px;border:1px solid var(--line);border-radius:999px;background:#f6f9fb;color:var(--muted);font-size:9px;font-weight:700;white-space:nowrap}
+.flight-result-schedule.is-soon small{border-color:#87b6d5;background:#eaf5fb;color:#0b5cad}
+html[data-era="2000"] .flight-result-schedule strong{color:#07518a;font-family:Arial,sans-serif}
+html[data-era="2000"] .flight-result-schedule small{border-radius:0;border:1px inset #91aebf;background:#eaf4f8;color:#07518a}
+html[data-era="2000"] .flight-result-schedule.is-soon small{border:1px outset #075d99;background:#075d99;color:#fff}
+html[data-era="minitel"] .flight-result-schedule{gap:0}
+html[data-era="minitel"] .flight-result-schedule strong{color:#99edb1;font-family:"Courier New",monospace}
+html[data-era="minitel"] .flight-result-schedule strong span{color:#58f7ff}
+html[data-era="minitel"] .flight-result-schedule small{padding:0;border:0;border-radius:0;background:transparent;color:#6fcf8a;font-family:"Courier New",monospace}
+html[data-era="minitel"] .flight-result-schedule.is-soon small{color:#fff35a}
+@media(max-width:760px){
+  .flight-result-schedule{min-width:0}
+  .flight-result-schedule strong{font-size:13px}
+  .flight-result-schedule small{white-space:normal}
+}
