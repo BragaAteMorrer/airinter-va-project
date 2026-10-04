@@ -121,6 +121,8 @@ public sealed class PrometheeWindow : Window
             return await DatalinkAck(uri, body);
         if (route == "/api/cancel-operation")
             return await CancelOperation(uri);
+        if (route == "/api/delete-pirep")
+            return await DeletePirep(uri);
         // Compatibility with pre-1.0.1 web assets which queried /api/flights.
         // Keep this alias so a stale WebView2 cache cannot fall through to
         // "Commande ACARS inconnue." after the backend gained /api/v1/flights.
@@ -147,6 +149,14 @@ public sealed class PrometheeWindow : Window
     {
         var operationId = QueryParameter(uri, "operation");
         return await client.Delete("v1/operations/" + Uri.EscapeDataString(operationId));
+    }
+
+    private async Task<object> DeletePirep(Uri uri)
+    {
+        if (!client.Connected)
+            throw new InvalidOperationException("Reconnectez-vous à votre compte Air Inter avant de supprimer ce PIREP de Prométhée.");
+        var pirepId = QueryParameter(uri, "pirep");
+        return await client.Delete("v1/pireps/" + Uri.EscapeDataString(pirepId));
     }
 
     private async Task<object> Network(Uri uri)
