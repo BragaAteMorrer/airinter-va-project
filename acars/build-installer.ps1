@@ -4,7 +4,6 @@ param(
   [string]$CertificatePath = $env:HERMES_SIGNING_CERTIFICATE,
   [string]$CertificatePassword = $env:HERMES_SIGNING_CERTIFICATE_PASSWORD,
   [switch]$IncludeMsfs2024Efb,
-  [string]$Msfs2024SdkRoot = $(if ($env:MSFS2024_SDK) { $env:MSFS2024_SDK } else { 'C:\MSFS 2024 SDK' }),
   [string]$EfbDistPath
 )
 $ErrorActionPreference = 'Stop'
@@ -14,7 +13,6 @@ $ErrorActionPreference = 'Stop'
 if ($IncludeMsfs2024Efb) {
   $efbArgs = @{
     Version = $Version
-    SdkRoot = $Msfs2024SdkRoot
   }
   if ($EfbDistPath) {
     $efbArgs.EfbDistPath = $EfbDistPath
