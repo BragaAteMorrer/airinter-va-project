@@ -113,7 +113,8 @@ class HermesEfbView extends AppView<RequiredProps<AppViewProps, "bus">> {
   private timer?: number;
   private lastStateAt = 0;
 
-  public onAfterRender(): void {
+  public onAfterRender(node: VNode): void {
+    super.onAfterRender(node);
     this.connectBridge();
     this.startPolling();
   }
@@ -128,6 +129,11 @@ class HermesEfbView extends AppView<RequiredProps<AppViewProps, "bus">> {
 
   public onClose(): void {
     this.stopPolling();
+  }
+
+  public destroy(): void {
+    this.stopPolling();
+    super.destroy();
   }
 
   private connectBridge(): void {
