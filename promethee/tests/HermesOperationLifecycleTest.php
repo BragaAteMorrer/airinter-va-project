@@ -413,6 +413,78 @@ final class HermesOperationLifecycleTest extends TestCase
         )->assertStatus(409);
     }
 
+    public function test_pilot_can_abandon_own_active_pirep_and_keep_reservation(): void
+    {
+        $fx = $this->operationFixture();
+        $pirepId = $this->prefile($fx);
+        $this->telemetry($fx, 'CLIMB');
+
+        $this->delete('/api/v1/pireps/'.$pirepId, [], [], $fx['user'])
+            ->assertOk()
+            ->assertJsonPath('data.deleted', true)
+            ->assertJsonPath('data.pirep_id', $pirepId)
+            ->assertJsonPath('data.operation_id', $fx['operation_id']);
+
+        $this->assertDatabaseMissing('pireps', ['id' => $pirepId]);
+        $this->assertDatabaseMissing('promethee_telemetry', ['pirep_id' => $pirepId]);
+        $this->assertDatabaseMissing('promethee_pirep_aircraft_profiles', ['pirep_id' => $pirepId]);
+        $this->assertDatabaseHas('bids', ['id' => $fx['bid']->id, 'user_id' => $fx['user']->id]);
+
+        $dispatch = $this->dispatch($fx);
+        $this->assertFalse((bool) $dispatch['server_checks']['pirep']);
+        $this->assertNotSame('COMPLETED', $dispatch['status']);
+    }
+
+    public function test_pilot_can_delete_own_pending_pirep_before_acceptance(): void
+    {
+        $fx = $this->operationFixture();
+        $pirepId = $this->prefile($fx);
+        $pirep = Pirep::findOrFail($pirepId);
+        $pirep->state = PirepState::PENDING;
+        $pirep->status = PirepStatus::ARRIVED;
+        $pirep->submitted_at = now();
+        $pirep->save();
+
+        $this->delete('/api/v1/pireps/'.$pirepId, [], [], $fx['user'])
+            ->assertOk();
+
+        $this->assertDatabaseMissing('pireps', ['id' => $pirepId]);
+    }
+
+    public function test_pilot_cannot_delete_another_users_pirep(): void
+    {
+        $fx = $this->operationFixture();
+        $pirepId = $this->prefile($fx);
+        $other = User::factory()->create([
+            'airline_id' => $fx['user']->airline_id,
+            'rank_id' => $fx['user']->rank_id,
+            'state' => \App\Models\Enums\UserState::ACTIVE,
+            'curr_airport_id' => $fx['origin']->id,
+            'home_airport_id' => $fx['origin']->id,
+        ]);
+
+        $this->delete('/api/v1/pireps/'.$pirepId, [], [], $other)
+            ->assertStatus(403);
+
+        $this->assertDatabaseHas('pireps', ['id' => $pirepId]);
+    }
+
+    public function test_pilot_cannot_delete_accepted_pirep(): void
+    {
+        $fx = $this->operationFixture();
+        $pirepId = $this->prefile($fx);
+        $pirep = Pirep::findOrFail($pirepId);
+        $pirep->state = PirepState::ACCEPTED;
+        $pirep->status = PirepStatus::ARRIVED;
+        $pirep->submitted_at = now();
+        $pirep->save();
+
+        $this->delete('/api/v1/pireps/'.$pirepId, [], [], $fx['user'])
+            ->assertStatus(409);
+
+        $this->assertDatabaseHas('pireps', ['id' => $pirepId, 'state' => PirepState::ACCEPTED]);
+    }
+
     public function test_arrived_without_final_filing_is_explicitly_non_terminal(): void
     {
         $fx = $this->operationFixture();

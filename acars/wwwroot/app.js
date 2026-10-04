@@ -812,6 +812,7 @@ function updateWorkflow() {
   const localRecovery = Boolean(lastStatus?.recoveryAvailable);
   const pauseButton = $('#pauseBtn');
   const resumeButton = $('#resumeBtn');
+  const abortPirepButton = $('#abortPirepBtn');
 
   if (pauseButton) {
     pauseButton.disabled = !localRecording;
@@ -827,6 +828,15 @@ function updateWorkflow() {
       : (localRecovery
           ? 'Utilisez le Recovery Center pour un vol interrompu.'
           : 'Aucun vol local en pause. Utilisez « Démarrer l’enregistrement » pour cette nouvelle opération.');
+  }
+
+  if (abortPirepButton) {
+    const canAbandon = connected && Boolean(pirepId) && !localRecovery && !terminal;
+    abortPirepButton.hidden = !pirepId || localRecovery || terminal;
+    abortPirepButton.disabled = !canAbandon;
+    abortPirepButton.title = canAbandon
+      ? 'Supprimer ce PIREP de Prométhée et abandonner cette tentative.'
+      : 'Connectez-vous à Prométhée pour abandonner ce PIREP.';
   }
 
   updateAircraftSelectionStatus();
@@ -2336,6 +2346,43 @@ $('#fileBtn').onclick = () => {
   renderReview(lastStatus?.review || lastStatus?.Review || lastFiledReview);
 };
 
+$('#abortPirepBtn').onclick = async () => {
+  const activeLocalFlight = lastStatus?.flight || lastStatus?.Flight || null;
+  const currentPirepId = activeLocalFlight?.pirepId || activeLocalFlight?.PirepId || pirepId;
+  if (!currentPirepId) return showMessage('#recordMessage', 'Aucun PIREP à abandonner.', true);
+
+  if (!confirm(
+    `Abandonner et supprimer le PIREP ${currentPirepId} ?\n\n`
+    + 'Prométhée supprimera cette tentative et sa télémétrie. Hermès archivera son état local avant nettoyage. '
+    + 'Cette action est irréversible.'
+  )) return;
+
+  const button = $('#abortPirepBtn');
+  if (button) button.disabled = true;
+  try {
+    if (activeLocalFlight) await call('/api/abandon-pirep', {});
+    else await call('/api/delete-pirep?pirep=' + encodeURIComponent(currentPirepId));
+
+    pirepId = null;
+    readiness.pirep = false;
+    serverDispatch = null;
+    lastFiledReview = null;
+    serverCompanyScore = null;
+    serverCompanyScoreKey = null;
+    scheduleEfbContextSync();
+    showMessage('#recordMessage', 'PIREP abandonné et supprimé de Prométhée. Vous pouvez recommencer cette opération.');
+
+    try { await refreshDispatch(); } catch {}
+    await refreshStatus();
+    await refreshOperations();
+    updateWorkflow();
+  } catch (error) {
+    showMessage('#recordMessage', friendlyError(error, 'Impossible d’abandonner ce PIREP.', 'Abandon PIREP'), true);
+  } finally {
+    if (button) button.disabled = false;
+  }
+};
+
 function currentDatalinkOperation() {
   const activeFlight = lastStatus?.flight || lastStatus?.Flight;
   return selectedOperation?.operation_id || selectedOperation?.operationId || selectedOperation?.id
@@ -2819,8 +2866,15 @@ function renderRecovery(status) {
     : `Hermès a retrouvé le vol ${pirep} enregistré localement.`);
 
   const resume = $('#recoveryResumeBtn');
+  const abandon = $('#recoveryAbandonBtn');
   const simReady = Boolean(status.latest);
   resume.disabled = !connected || !simReady;
+  if (abandon) {
+    abandon.disabled = !connected;
+    abandon.title = connected
+      ? 'Supprimer ce PIREP de Prométhée et archiver la récupération locale.'
+      : 'Reconnectez-vous à votre compte Air Inter avant de supprimer le PIREP.';
+  }
   if (!connected) setText($('#recoveryHint'), 'Connectez-vous à votre compte Air Inter pour reprendre ce vol.');
   else if (!simReady) setText($('#recoveryHint'), status.simLinkState === 'RECONNECTING'
     ? 'Le simulateur a été perdu. Hermès attend sa reconnexion avant de reprendre.'
@@ -2862,14 +2916,26 @@ $('#recoveryResumeBtn').onclick = async () => {
 
 $('#recoveryAbandonBtn').onclick = async () => {
   const pirep = lastStatus?.recovery?.pirepId ?? lastStatus?.recovery?.PirepId ?? 'ce vol';
-  if (!confirm(`Abandonner ${pirep} ? L’état sera archivé localement avant nettoyage.`)) return;
+  if (!confirm(
+    `Abandonner ${pirep} ?\n\n`
+    + 'Le PIREP sera supprimé de Prométhée et son état local sera archivé dans Hermès avant nettoyage. '
+    + 'Cette action est irréversible.'
+  )) return;
   try {
     await call('/api/recovery/abandon', {});
+    pirepId = null;
+    readiness.pirep = false;
+    serverDispatch = null;
+    scheduleEfbContextSync();
     $('#recoveryCenter').hidden = true;
-    showMessage(connected ? '#recordMessage' : '#loginMessage', 'Vol interrompu abandonné. Une copie de récupération a été archivée localement.');
+    showMessage('#recordMessage', 'Vol interrompu abandonné : PIREP supprimé de Prométhée et récupération locale archivée.');
     await refreshStatus();
+    await refreshOperations();
+    if (selectedOperation) {
+      try { await refreshDispatch(); } catch {}
+    }
   } catch (error) {
-    showMessage('#recoveryMessage', friendlyError(error), true);
+    showMessage('#recoveryMessage', friendlyError(error, 'Impossible d’abandonner ce PIREP.', 'Recovery Center'), true);
   }
 };
 

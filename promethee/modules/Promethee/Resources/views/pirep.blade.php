@@ -37,6 +37,12 @@
         <button class="button outline" type="submit">Refaire ce vol</button>
       </form>
     @endif
+    @if($canDeletePirep ?? false)
+      <form method="post" action="{{ route('promethee.pireps.delete', $pirep->id) }}" onsubmit="return confirm('Supprimer définitivement ce PIREP ?\n\nCette tentative, sa télémétrie et ses données Hermès seront supprimées. Cette action est irréversible.');">
+        @csrf @method('DELETE')
+        <button class="button danger" type="submit">Abandonner le PIREP</button>
+      </form>
+    @endif
   </div>
 </div>
 @if($errors->has('reservation'))
