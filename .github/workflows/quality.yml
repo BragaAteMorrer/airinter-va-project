@@ -106,6 +106,7 @@ jobs:
         run: |
           $scripts = @(
             'acars/build-installer.ps1',
+            'acars/build-public-release.ps1',
             'acars/msfs2024-efb/build-efb-app.ps1',
             'acars/msfs2024-efb/build-efb-package.ps1',
             'acars/msfs2024-efb/install-efb-package.ps1'
