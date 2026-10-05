@@ -5,12 +5,17 @@ namespace Modules\Promethee\Services;
 use App\Models\Enums\UserState;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class CrmMailTemplateService
 {
     public function resolve(string $key, User $user): array
     {
+        if (!Schema::hasTable('promethee_crm_mail_templates')) {
+            return ['active' => false, 'subject' => '', 'body' => '', 'body_html' => ''];
+        }
+
         $template = DB::table('promethee_crm_mail_templates')->where('key', $key)->first();
 
         if (!$template || !$template->active) {
