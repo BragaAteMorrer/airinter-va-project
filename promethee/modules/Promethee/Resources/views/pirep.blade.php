@@ -29,7 +29,7 @@
     @if($isHermesPirep)
       <div class="pirep-made-by" aria-label="Made by Hermès">
         <span>Made by</span>
-        <img src="{{ asset('promethee-assets/logos/hermes-mark.svg') }}" alt="Hermès">
+        <img src="{{ asset('promethee-assets/logos/hermes-logo.png') }}" alt="Hermès">
       </div>
     @endif
   </div>
