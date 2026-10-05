@@ -1328,6 +1328,34 @@ class PortalController extends PrometheeWebController
         ]);
     }
 
+    public function createAdminRank() {
+        return $this->page('admin-rank-create', [
+            'subfleets' => Subfleet::with('airline')->orderBy('name')->get(),
+        ]);
+    }
+
+    public function storeAdminRank(Request $r) {
+        $data=$r->validate([
+            'name'=>'required|string|max:191',
+            'hours'=>'required|integer|min:0',
+            'acars_base_pay_rate'=>'nullable|numeric|min:0',
+            'manual_base_pay_rate'=>'nullable|numeric|min:0',
+            'auto_promote'=>'nullable|boolean',
+            'auto_approve_acars'=>'nullable|boolean',
+            'auto_approve_manual'=>'nullable|boolean',
+            'subfleet_ids'=>'nullable|array',
+            'subfleet_ids.*'=>'string|exists:subfleets,id',
+        ]);
+        $rank = Rank::create(collect($data)->except('subfleet_ids')->merge([
+            'auto_promote'=>$r->boolean('auto_promote'),
+            'auto_approve_acars'=>$r->boolean('auto_approve_acars'),
+            'auto_approve_manual'=>$r->boolean('auto_approve_manual'),
+        ])->all());
+        $rank->subfleets()->sync($data['subfleet_ids'] ?? []);
+        Cache::forget(config('cache.keys.RANKS_PILOT_LIST.key'));
+        return redirect()->route('admin.promethee.ranks.edit',$rank)->with('success','Grade créé dans Prométhée.');
+    }
+
     public function editAdminRank(Rank $rank) {
         $rank->load('subfleets');
         return $this->page('admin-rank-edit', ['rank'=>$rank,'subfleets'=>Subfleet::with('airline')->orderBy('name')->get()]);
