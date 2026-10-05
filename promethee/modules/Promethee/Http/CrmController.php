@@ -42,6 +42,7 @@ class CrmController extends Controller
             'bases' => $pilots->pluck('home_airport_id')->filter()->unique()->sort()->values(),
             'senders' => DB::table('promethee_crm_senders')->orderByDesc('is_default')->orderBy('name')->get(),
             'campaigns' => $campaigns,
+            'mailTemplates' => DB::table('promethee_crm_mail_templates')->orderBy('id')->get(),
         ]);
     }
 
@@ -76,6 +77,39 @@ class CrmController extends Controller
         }
 
         return back()->with('success', 'Adresse expéditrice CRM enregistrée.');
+    }
+
+    public function saveMailTemplate(Request $request, string $key)
+    {
+        $template = DB::table('promethee_crm_mail_templates')->where('key', $key)->first();
+        abort_unless($template, 404);
+
+        $data = $request->validate([
+            'subject' => 'required|string|max:191',
+            'body' => 'required|string|max:30000',
+            'active' => 'nullable|boolean',
+        ]);
+
+        DB::table('promethee_crm_mail_templates')
+            ->where('key', $key)
+            ->update([
+                'subject' => trim($data['subject']),
+                'body' => trim($data['body']),
+                'active' => $request->boolean('active'),
+                'updated_at' => now(),
+            ]);
+
+        DB::table('promethee_audit_logs')->insert([
+            'actor_id' => $request->user()->id,
+            'action' => 'crm.system_template.updated',
+            'subject_type' => 'crm_mail_template',
+            'subject_id' => $key,
+            'context' => json_encode(['active' => $request->boolean('active')]),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return back()->with('success', 'Modèle système « '.$template->label.' » enregistré.');
     }
 
     public function deleteSender(int $id)
