@@ -6,11 +6,15 @@ use App\Contracts\Controller;
 use App\Models\Airline;
 use App\Models\Enums\UserState;
 use App\Models\User;
+use App\Notifications\Messages\AdminUserRegistered;
+use App\Notifications\Messages\UserPending;
 use App\Services\UserService;
 use App\Support\Utils;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 
 class ArgosProvisionController extends Controller
@@ -82,6 +86,22 @@ class ArgosProvisionController extends Controller
 
         $users->calculatePilotRank($user);
         $user->refresh();
+
+        try {
+            $user->notify(new UserPending($user));
+
+            $admins = User::query()->whereHasRole('admin')->whereNotNull('email')->get();
+            if ($admins->isNotEmpty()) {
+                Notification::send($admins, new AdminUserRegistered($user));
+            }
+        } catch (\Throwable $exception) {
+            // Mail must never turn a valid pilot provisioning into an HTTP 500.
+            Log::error('Argos provisioning mail notification failed', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'error' => $exception->getMessage(),
+            ]);
+        }
 
         return response()->json($this->payload($user), 201);
     }
