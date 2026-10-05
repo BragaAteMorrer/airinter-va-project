@@ -10,7 +10,7 @@
 
   const readMinitelPreferences = () => {
     let speed = 'fast';
-    let displayMode = 'color';
+    let displayMode = 'monochrome';
     try {
       const storedSpeed = localStorage.getItem(MINITEL_SPEED_KEY);
       const storedDisplay = localStorage.getItem(MINITEL_DISPLAY_KEY);
@@ -117,11 +117,11 @@
   };
 
   const footer = (screen, paging = false) => {
-    writeBand(screen, 22, paging ? 'PAGE : RETOUR - / SUITE +' : 'COMMANDES VIDEOTEX', 'blue', 'white');
-    fillRow(screen, 23, 'green', 'black');
-    screen.write(23, 1, fit('ESC ANNUL  BKSP CORR  F2 REPETITION', 38), { background: 'green', foreground: 'black' });
-    fillRow(screen, 24, 'green', 'black');
-    screen.write(24, 1, fit('HOME SOMM PGUP RET PGDN SUI ENT ENVOI', 38), { background: 'green', foreground: 'black' });
+    // Commands belong to the Minitel keyboard, not to a permanent web-style toolbar.
+    if (paging) {
+      screen.write(24, 1, 'RETOUR', { foreground: 'cyan' });
+      screen.write(24, 32, 'SUITE', { foreground: 'cyan' });
+    }
   };
 
   const setAction = (type, payload = {}) => {
@@ -1324,7 +1324,7 @@
       identity: '',
       speed: terminalPreferences.speed,
       displayMode: terminalPreferences.displayMode,
-      bootFrameDelay: 120,
+      bootFrameDelay: terminalPreferences.speed === 'authentic' ? 260 : 120,
       onPreferencesChange: persistMinitelPreferences,
       onExit: () => {
         try { localStorage.hermesEra = 'modern'; } catch {}
@@ -1342,7 +1342,7 @@
     renderer = new mt.MinitelDomRenderer(shell.terminalNode, {
       speed: terminalPreferences.speed,
       displayMode: terminalPreferences.displayMode,
-      maxProgressiveDurationMs: 2600,
+      maxProgressiveDurationMs: terminalPreferences.speed === 'authentic' ? 0 : 2600,
       transmissionTickMs: 16
     });
     await refreshStatus();
