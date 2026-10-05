@@ -128,4 +128,39 @@ final class ArgosAcarsIdentityTest extends TestCase
             'identity_subject' => 'argos-subject-legacy',
         ]);
     }
+
+    public function test_argos_bridge_rejects_expired_or_invalid_session_without_issuing_hermes_token(): void
+    {
+        Http::fake([
+            'https://argos.airinter-va.org/api/v1/hermes/session' => Http::response([], 401),
+        ]);
+
+        parent::postJson('/api/acars/argos', [
+            'access_token' => 'expired-argos-token',
+        ])
+            ->assertStatus(401)
+            ->assertJsonPath('error.message', 'La session Argos est invalide ou expirée. Reconnectez-vous avec Argos.');
+
+        $this->assertSame(0, DB::table('acars_access_tokens')
+            ->where('auth_provider', 'argos')
+            ->count());
+    }
+
+    public function test_argos_bridge_rejects_missing_hermes_scope_without_issuing_hermes_token(): void
+    {
+        Http::fake([
+            'https://argos.airinter-va.org/api/v1/hermes/session' => Http::response([], 403),
+        ]);
+
+        parent::postJson('/api/acars/argos', [
+            'access_token' => 'argos-token-without-hermes-scope',
+        ])
+            ->assertStatus(403)
+            ->assertJsonPath('error.message', 'Cette session Argos ne possède pas le droit hermes:operate.');
+
+        $this->assertSame(0, DB::table('acars_access_tokens')
+            ->where('auth_provider', 'argos')
+            ->count());
+    }
+
 }
