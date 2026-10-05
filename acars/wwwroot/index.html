@@ -547,16 +547,16 @@ window.addEventListener('error', event => {
 window.loadHermesMinitel = (() => {
   let promise;
   const styles = [
-    '/minitel/minitel-runtime.css',
-    '/minitel/minitel-shell.css',
-    '/hermes-minitel.css?rev=20261002-audit-phase2'
+    '/minitel/minitel-runtime.css?rev=20261005-m9',
+    '/minitel/minitel-shell.css?rev=20261005-m9',
+    '/hermes-minitel.css?rev=20261005-m9'
   ];
   const scripts = [
-    '/minitel/runtime.js',
-    '/minitel/renderer.js',
-    '/minitel/shell.js',
-    '/hermes-minitel-core.js?rev=20260930-videotex-r2',
-    '/hermes-minitel.js?rev=20261002-audit-lazy'
+    '/minitel/runtime.js?rev=20261005-m9',
+    '/minitel/renderer.js?rev=20261005-m9',
+    '/minitel/shell.js?rev=20261005-m9',
+    '/hermes-minitel-core.js?rev=20261005-m9',
+    '/hermes-minitel.js?rev=20261005-m9'
   ];
   const loadStyle = href => new Promise((resolve, reject) => {
     const existing = document.querySelector('link[data-hermes-minitel-style="' + href + '"]');
