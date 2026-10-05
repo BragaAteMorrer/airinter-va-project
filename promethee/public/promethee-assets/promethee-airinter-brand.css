@@ -1,0 +1,175 @@
+/* Air Inter identity accents — modern Prométhée.
+   The operational UI stays blue-led, but the historic four-band signature
+   (three blues + one red) is now present on non-semantic brand surfaces.
+   Solid red remains available for warnings/destructive states. */
+
+html[data-era="modern"] {
+  --airinter-band-blue-1: #8eb3c7;
+  --airinter-band-blue-2: #2089b2;
+  --airinter-band-blue-3: #0d5f8f;
+  --airinter-band-red: #d73346;
+  --airinter-band-gradient: linear-gradient(
+    90deg,
+    var(--airinter-band-blue-1) 0 25%,
+    var(--airinter-band-blue-2) 25% 50%,
+    var(--airinter-band-blue-3) 50% 75%,
+    var(--airinter-band-red) 75% 100%
+  );
+}
+
+/* Keep the airline signature visible in the shell without turning the whole
+   navigation red. */
+html[data-era="modern"] .shell-primary {
+  position: relative;
+}
+
+html[data-era="modern"] .shell-primary::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: min(230px, 28vw);
+  height: 4px;
+  background: var(--airinter-band-gradient);
+  pointer-events: none;
+}
+
+html[data-era="modern"] .workspace-switch button.selected,
+html[data-era="modern"] .workspace-switch button[aria-pressed="true"] {
+  box-shadow: inset 0 -3px 0 var(--airinter-band-red);
+}
+
+html[data-era="modern"] #promethee-navigation .nav-group.selected > summary {
+  position: relative;
+}
+
+html[data-era="modern"] #promethee-navigation .nav-group.selected > summary::after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  bottom: -1px;
+  left: 12px;
+  height: 3px;
+  background: var(--airinter-band-gradient);
+  pointer-events: none;
+}
+
+html[data-era="modern"] #promethee-navigation .nav-menu a.selected {
+  box-shadow: inset 3px 0 0 var(--airinter-band-red);
+}
+
+/* Dashboard: reuse the exact Air Inter rhythm on the main operational cards. */
+html[data-era="modern"] .ops-header .occ-title {
+  color: var(--airinter-band-red);
+}
+
+html[data-era="modern"] .next-operation-panel {
+  position: relative;
+  overflow: hidden;
+  border-top-color: transparent;
+}
+
+html[data-era="modern"] .next-operation-panel::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0 0 auto;
+  height: 4px;
+  background: var(--airinter-band-gradient);
+  pointer-events: none;
+}
+
+html[data-era="modern"] .next-operation-identity > strong,
+html[data-era="modern"] .next-operation-identity i {
+  color: var(--airinter-band-red);
+}
+
+html[data-era="modern"] .next-operation-progress {
+  color: var(--airinter-band-blue-3);
+  accent-color: var(--airinter-band-blue-3);
+}
+
+html[data-era="modern"] .next-operation-progress::-webkit-progress-value {
+  background: linear-gradient(
+    90deg,
+    var(--airinter-band-blue-3),
+    var(--airinter-band-blue-2) 72%,
+    var(--airinter-band-red)
+  );
+}
+
+html[data-era="modern"] .next-operation-progress::-moz-progress-bar {
+  background: linear-gradient(
+    90deg,
+    var(--airinter-band-blue-3),
+    var(--airinter-band-blue-2) 72%,
+    var(--airinter-band-red)
+  );
+}
+
+/* Five KPI cards: 3 blues, red, then repeat the deep blue instead of the old
+   unrelated yellow accent. */
+html[data-era="modern"] .control-strip article:nth-child(1) {
+  border-left-color: var(--airinter-band-blue-1);
+}
+
+html[data-era="modern"] .control-strip article:nth-child(2) {
+  border-left-color: var(--airinter-band-blue-2);
+}
+
+html[data-era="modern"] .control-strip article:nth-child(3) {
+  border-left-color: var(--airinter-band-blue-3);
+}
+
+html[data-era="modern"] .control-strip article:nth-child(4) {
+  border-left-color: var(--airinter-band-red);
+}
+
+html[data-era="modern"] .control-strip article:nth-child(5) {
+  border-left-color: var(--airinter-band-blue-3);
+}
+
+/* A restrained red marker gives generic panels some Air Inter character while
+   preserving blue for links, actions and focus states. */
+html[data-era="modern"] .panel-heading .eyebrow {
+  position: relative;
+  padding-left: 11px;
+}
+
+html[data-era="modern"] .panel-heading .eyebrow::before {
+  content: "";
+  position: absolute;
+  top: .15em;
+  bottom: .15em;
+  left: 0;
+  width: 3px;
+  background: var(--airinter-band-red);
+}
+
+/* Night mode gets a brighter red so the fourth band remains visible against
+   the navy shell. */
+html[data-era="modern"][data-appearance="dark"] {
+  --airinter-band-blue-1: #79a9c2;
+  --airinter-band-blue-2: #2c9dca;
+  --airinter-band-blue-3: #1375a8;
+  --airinter-band-red: #ef5360;
+}
+
+@media (max-width: 760px) {
+  html[data-era="modern"] .shell-primary::before {
+    width: 150px;
+  }
+
+  html[data-era="modern"] #promethee-navigation .nav-group.selected > summary::after {
+    right: 8px;
+    left: 8px;
+  }
+}
+
+@media (forced-colors: active) {
+  html[data-era="modern"] .shell-primary::before,
+  html[data-era="modern"] #promethee-navigation .nav-group.selected > summary::after,
+  html[data-era="modern"] .next-operation-panel::before,
+  html[data-era="modern"] .panel-heading .eyebrow::before {
+    background: Highlight;
+  }
+}
