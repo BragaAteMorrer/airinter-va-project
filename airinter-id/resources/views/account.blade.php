@@ -18,6 +18,7 @@
     <a href="#profile">Profil</a>
     <a href="#apps">Applications</a>
     <a href="#security">Sécurité</a>
+    <a href="#recovery">Récupération</a>
     <a href="#activity">Activité</a>
     <a href="#preferences">Préférences</a>
 </nav>
@@ -75,16 +76,17 @@
                 </label>
                 @error('email')<p class="error">{{ $message }}</p>@enderror
 
-                <label>Pays
-                    <input name="country" value="{{ old('country', $user->country) }}" maxlength="2" placeholder="FR" autocomplete="country">
-                </label>
-                @error('country')<p class="error">{{ $message }}</p>@enderror
-
-                <label>Base d’attache
-                    <input name="home_airport_id" value="{{ old('home_airport_id', $user->home_airport_id) }}" maxlength="10" placeholder="LFPO" autocapitalize="characters">
-                    <small>Code aéroport utilisé par Prométhée pour votre base pilote.</small>
-                </label>
-                @error('home_airport_id')<p class="error">{{ $message }}</p>@enderror
+                <div class="readonly-profile">
+                    <div>
+                        <span>Pays</span>
+                        <strong>{{ $user->country ?: '—' }}</strong>
+                    </div>
+                    <div>
+                        <span>Base d’attache</span>
+                        <strong>{{ $user->home_airport_id ?: '—' }}</strong>
+                    </div>
+                    <small>Informations opérationnelles attribuées par le staff. Elles ne sont pas modifiables par le pilote.</small>
+                </div>
 
                 <label>Identifiant VATSIM
                     <input name="vatsim_id" value="{{ old('vatsim_id', $user->vatsim_id) }}" inputmode="numeric" maxlength="32">
@@ -115,13 +117,15 @@
             <p>Argos est désormais la référence pour les données modifiables par le pilote. Prométhée et Hermès les consomment mais ne proposent plus leur propre édition.</p>
             <dl>
                 <div><dt>Identité</dt><dd>Nom, e-mail, avatar</dd></div>
-                <div><dt>Profil pilote</dt><dd>Pays, base, VATSIM, IVAO</dd></div>
+                <div><dt>Profil pilote</dt><dd>VATSIM, IVAO</dd></div>
+                <div><dt>Affectation</dt><dd>Pays et base · lecture seule</dd></div>
                 <div><dt>Préférences</dt><dd>Langue, fuseau horaire</dd></div>
                 <div><dt>Sécurité</dt><dd>Mot de passe, MFA, passkeys, sessions</dd></div>
             </dl>
-            <p class="muted">Le grade, la compagnie affectée, les qualifications, les heures, les soldes et les données de vol restent des données opérationnelles gérées par Prométhée ou le staff.</p>
+            <p class="muted">La base, le pays, le grade, la compagnie affectée, les qualifications, les heures, les soldes et les données de vol restent des données opérationnelles gérées par Prométhée ou le staff.</p>
         </article>
     </div>
+</section>
 
 <section id="apps" class="section-block">
     <div class="section-head"><div><span class="kicker">ÉCOSYSTÈME</span><h2>Mes applications</h2></div><p>Les services Air Inter reliés à votre identité Argos.</p></div>
@@ -193,6 +197,46 @@
                     <small>{{ $device->last_ip_address ?: 'IP inconnue' }} · {{ $device->last_used_at?->diffForHumans() ?: 'jamais utilisé' }}</small>
                 </div>
             @empty<div class="empty-state">Aucun appareil de confiance actif.</div>@endforelse
+        </article>
+    </div>
+</section>
+
+<section id="recovery" class="section-block">
+    <div class="section-head">
+        <div><span class="kicker">RÉCUPÉRATION</span><h2>Centre de récupération</h2></div>
+        <p>Vérifiez que vous pouvez reprendre le contrôle du compte même si un appareil ou une méthode d’authentification devient indisponible.</p>
+    </div>
+    <div class="recovery-grid">
+        <article class="card recovery-card {{ $recoveryReadiness['email'] ? 'ready' : 'attention' }}">
+            <span class="recovery-state">{{ $recoveryReadiness['email'] ? 'PRÊT' : 'À FAIRE' }}</span>
+            <h3>E-mail de récupération</h3>
+            <p>{{ $recoveryReadiness['email'] ? 'Adresse vérifiée et utilisable pour récupérer le compte.' : 'Vérifiez votre adresse e-mail pour sécuriser la récupération.' }}</p>
+            @unless($recoveryReadiness['email'])
+                <form method="post" action="{{ route('verification.send') }}">@csrf<button class="button secondary small">Vérifier</button></form>
+            @endunless
+        </article>
+
+        <article class="card recovery-card {{ $recoveryReadiness['mfa'] ? 'ready' : 'attention' }}">
+            <span class="recovery-state">{{ $recoveryReadiness['mfa'] ? 'PRÊT' : 'À FAIRE' }}</span>
+            <h3>MFA</h3>
+            <p>{{ $recoveryReadiness['mfa'] ? 'Une seconde preuve protège le compte.' : 'Activez le MFA pour réduire le risque de compromission.' }}</p>
+            <a class="button secondary small" href="{{ route('account.mfa') }}">{{ $recoveryReadiness['mfa'] ? 'Gérer' : 'Activer' }}</a>
+        </article>
+
+        <article class="card recovery-card {{ $recoveryReadiness['recovery_codes'] ? 'ready' : 'attention' }}">
+            <span class="recovery-state">{{ $recoveryReadiness['recovery_codes'] ? 'PRÊT' : 'À FAIRE' }}</span>
+            <h3>Codes de secours</h3>
+            <p>{{ $recoveryReadiness['recovery_codes'] ? 'Des codes de récupération sont disponibles.' : 'Générez des codes utilisables si votre second facteur est perdu.' }}</p>
+            @if($recoveryReadiness['mfa'])
+                <a class="button secondary small" href="{{ route('account.mfa.recovery-codes') }}">Voir les codes</a>
+            @endif
+        </article>
+
+        <article class="card recovery-card {{ $recoveryReadiness['passkey'] ? 'ready' : '' }}">
+            <span class="recovery-state">{{ $recoveryReadiness['passkey'] ? 'PRÊT' : 'OPTIONNEL' }}</span>
+            <h3>Passkey de secours</h3>
+            <p>{{ $recoveryReadiness['passkey'] ? 'Au moins une passkey est enregistrée.' : 'Ajoutez une passkey sur un appareil fiable pour disposer d’une autre voie de connexion.' }}</p>
+            <button type="button" class="button secondary small" data-passkey-register>Ajouter une passkey</button>
         </article>
     </div>
 </section>
