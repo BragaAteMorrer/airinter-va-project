@@ -43,14 +43,6 @@
     </form>
   </div>
 </div>
-<nav class="admin-workspace-nav" aria-label="Navigation locale">
-  <a href="#maintenance-airframe">Cellule</a>
-  <a href="#maintenance-airframe-history">Historique cellule</a>
-  <a href="#maintenance-engines">Moteurs</a>
-  <a href="#maintenance-engine-stock">Parc moteurs</a>
-  <a href="#maintenance-engine-history">Historique moteurs</a>
-</nav>
-
 
 <section class="control-strip">
   <article><span>Moteurs suivis</span><strong>{{ $engineSummary['total'] }}</strong><small>{{ $engineSummary['installed'] }} installés · {{ $engineSummary['stock'] }} en stock</small></article>
@@ -70,7 +62,64 @@
   <article><span>En maintenance</span><strong>{{ $airframeSummary['maintenance'] }}</strong><small>immobilisation en cours</small></article>
 </section>
 
-<section class="panel admin-workspace-section" id="maintenance-airframe">
+
+<div class="admin-master-detail"
+     id="maintenance-workspace"
+     data-admin-master-detail
+     data-workspace-key="maintenance"
+     data-master-default="maintenance-cell">
+  <aside class="admin-master-pane" aria-label="Domaines de maintenance">
+    <div class="admin-master-toolbar">
+      <label>Rechercher
+        <input type="search" data-master-filter placeholder="Cellule, moteur, historique…">
+      </label>
+    </div>
+    <div class="admin-master-list" role="tablist" aria-orientation="vertical">
+      <div class="admin-master-section-label">Cellule</div>
+      <button type="button" class="admin-master-row" data-master-target="maintenance-cell" data-master-search="cellule checks a b c potentiel flotte">
+        <span class="admin-master-row-main">
+          <strong>Cellule</strong>
+          <small>{{ $airframeSummary['total'] }} appareil(s) suivi(s)</small>
+        </span>
+        <span class="tag">{{ $airframeSummary['due'] }} dû</span>
+      </button>
+      <button type="button" class="admin-master-row" data-master-target="maintenance-cell-history" data-master-search="historique cellule checks journal">
+        <span class="admin-master-row-main">
+          <strong>Historique cellule</strong>
+          <small>Derniers checks A / B / C</small>
+        </span>
+      </button>
+
+      <div class="admin-master-section-label">Moteurs</div>
+      <button type="button" class="admin-master-row" data-master-target="maintenance-engines-config" data-master-search="moteurs profils referentiel configuration itva">
+        <span class="admin-master-row-main">
+          <strong>Référentiel moteurs</strong>
+          <small>{{ $profiles->count() }} profil(s)</small>
+        </span>
+        <span class="tag">ITVA</span>
+      </button>
+      <button type="button" class="admin-master-row" data-master-target="maintenance-engine-stock-panel" data-master-search="parc moteurs stock installes potentiel">
+        <span class="admin-master-row-main">
+          <strong>Parc moteurs</strong>
+          <small>{{ $engineUnits->count() }} unité(s)</small>
+        </span>
+        <span class="tag">{{ $engineSummary['stock'] }} stock</span>
+      </button>
+      <button type="button" class="admin-master-row" data-master-target="maintenance-engine-history-panel" data-master-search="historique moteurs journal technique revision installation">
+        <span class="admin-master-row-main">
+          <strong>Historique moteurs</strong>
+          <small>Révisions, poses et mouvements</small>
+        </span>
+      </button>
+      <div class="admin-master-empty" data-master-empty hidden>Aucun domaine ne correspond.</div>
+    </div>
+  </aside>
+
+  <div class="admin-detail-pane">
+    <button type="button" class="button outline admin-master-back" data-master-back>← Retour à la liste</button>
+
+    <div class="admin-detail-panel" data-detail-panel="maintenance-cell">
+      <section class="panel admin-workspace-section" id="maintenance-airframe">
   <div class="panel-heading">
     <div>
       <span class="eyebrow">MAINTENANCE CELLULE</span>
@@ -200,8 +249,10 @@
     </tbody>
   </table>
 </section>
+    </div>
 
-<section class="panel table-wrap admin-workspace-section admin-table-scroll" id="maintenance-airframe-history">
+    <div class="admin-detail-panel" data-detail-panel="maintenance-cell-history" hidden>
+      <section class="panel table-wrap admin-workspace-section admin-table-scroll" id="maintenance-airframe-history">
   <div class="panel-heading"><div><span class="eyebrow">JOURNAL CELLULE</span><h2>Derniers checks A / B / C</h2></div></div>
   <table>
     <thead><tr><th>Date</th><th>Appareil</th><th>Check</th><th>Événement</th><th>Site</th><th>Situation avant</th><th>Note</th></tr></thead>
@@ -222,8 +273,10 @@
     </tbody>
   </table>
 </section>
+    </div>
 
-<div class="two-columns admin-workspace-grid">
+    <div class="admin-detail-panel" data-detail-panel="maintenance-engines-config" hidden>
+      <div class="two-columns admin-workspace-grid">
   <section class="panel admin-workspace-section" id="maintenance-engines">
     <div class="panel-heading"><div><span class="eyebrow">RÉFÉRENTIEL</span><h2>Profil moteur par sous-flotte</h2></div></div>
     <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.engine-profiles.save') : '#' }}" class="form-grid">
@@ -299,8 +352,10 @@
     </tbody>
   </table>
 </section>
+    </div>
 
-<section class="panel table-wrap admin-workspace-section admin-table-scroll" id="maintenance-engine-stock">
+    <div class="admin-detail-panel" data-detail-panel="maintenance-engine-stock-panel" hidden>
+      <section class="panel table-wrap admin-workspace-section admin-table-scroll" id="maintenance-engine-stock">
   <div class="panel-heading"><div><span class="eyebrow">MOTEURS</span><h2>Unités installées & stock</h2></div></div>
   <table>
     <thead><tr><th>N° série</th><th>Type</th><th>Appareil</th><th>Potentiel ITVA initial</th><th>Consommé depuis révision</th><th>Potentiel moteur</th><th>Dernière révision</th><th>État</th><th>Actions</th></tr></thead>
@@ -373,8 +428,10 @@
     </tbody>
   </table>
 </section>
+    </div>
 
-<section class="panel table-wrap admin-workspace-section admin-table-scroll" id="maintenance-engine-history">
+    <div class="admin-detail-panel" data-detail-panel="maintenance-engine-history-panel" hidden>
+      <section class="panel table-wrap admin-workspace-section admin-table-scroll" id="maintenance-engine-history">
   <div class="panel-heading"><div><span class="eyebrow">JOURNAL TECHNIQUE</span><h2>Derniers événements moteurs</h2></div></div>
   <table>
     <thead><tr><th>Date</th><th>Moteur</th><th>Appareil</th><th>Événement</th><th>Site</th><th>Situation avant</th><th>Note</th></tr></thead>
@@ -395,5 +452,13 @@
     </tbody>
   </table>
 </section>
+    </div>
+  </div>
+</div>
+
 </div>
 @endsection
+
+@push('scripts')
+<script src="{{ asset('promethee-assets/promethee-admin-workspaces.js') }}?v={{ filemtime(public_path('promethee-assets/promethee-admin-workspaces.js')) }}"></script>
+@endpush

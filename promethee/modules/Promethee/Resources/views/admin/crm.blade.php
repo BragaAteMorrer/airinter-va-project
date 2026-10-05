@@ -1,5 +1,8 @@
 @extends('promethee::layout')
 @section('title','CRM & communications')
+@push('styles')
+<link rel="stylesheet" href="{{ asset('promethee-assets/promethee-admin-workspaces.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-admin-workspaces.css')) }}">
+@endpush
 @section('content')
 <div class="ops-header compact">
   <div>

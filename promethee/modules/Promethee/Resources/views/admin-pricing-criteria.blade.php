@@ -1,6 +1,10 @@
 @extends('promethee::layout')
 @section('title','Critères tarifaires ITF')
 
+@push('styles')
+<link rel="stylesheet" href="{{ asset('promethee-assets/promethee-admin-workspaces.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-admin-workspaces.css')) }}">
+@endpush
+
 @section('content')
 <div class="page-heading">
   <div>
@@ -24,7 +28,50 @@
   <article><span>Périodes</span><strong>{{ $seasons->count() }}</strong><small>saisons tarifaires disponibles</small></article>
 </section>
 
-<section class="panel">
+
+<div class="admin-master-detail"
+     id="pricing-criteria-workspace"
+     data-admin-master-detail
+     data-workspace-key="pricing-criteria"
+     data-master-default="pricing-network">
+  <aside class="admin-master-pane" aria-label="Gestion tarifaire">
+    <div class="admin-master-toolbar">
+      <label>Rechercher une section
+        <input type="search" data-master-filter placeholder="Réseau, saisons…">
+      </label>
+    </div>
+    <div class="admin-master-list" role="tablist" aria-orientation="vertical">
+      <button type="button" class="admin-master-row" data-master-target="pricing-network" data-master-search="typologie réseau principales diagonales lignes classement">
+        <span class="admin-master-row-main">
+          <strong>Typologie du réseau</strong>
+          <small>{{ $counts['principal'] }} principale(s) · {{ $counts['diagonal'] }} diagonale(s)</small>
+        </span>
+        @if($counts['unclassified'] > 0)
+          <span class="tag">{{ $counts['unclassified'] }} à classer</span>
+        @endif
+      </button>
+      <button type="button" class="admin-master-row" data-master-target="pricing-seasons" data-master-search="saisons périodes année tarifs">
+        <span class="admin-master-row-main">
+          <strong>Saisons tarifaires</strong>
+          <small>{{ $seasons->count() }} période(s) disponible(s)</small>
+        </span>
+        <span class="tag">PÉRIODES</span>
+      </button>
+      <button type="button" class="admin-master-row" data-master-target="pricing-evolution" data-master-search="évolution décote diagonales règles futures">
+        <span class="admin-master-row-main">
+          <strong>Évolution des règles</strong>
+          <small>Décote et automatisations prévues</small>
+        </span>
+      </button>
+      <div class="admin-master-empty" data-master-empty hidden>Aucune section ne correspond.</div>
+    </div>
+  </aside>
+
+  <div class="admin-detail-pane">
+    <button type="button" class="button outline admin-master-back" data-master-back>← Retour à la liste</button>
+
+    <div class="admin-detail-panel" data-detail-panel="pricing-network">
+      <section class="panel">
   <div class="panel-heading">
     <div>
       <span class="eyebrow">TYPOLOGIE DU RÉSEAU</span>
@@ -137,8 +184,10 @@
     </div>
   </div>
 </section>
+    </div>
 
-<section class="panel">
+    <div class="admin-detail-panel" data-detail-panel="pricing-seasons" hidden>
+      <section class="panel">
   <div class="panel-heading">
     <div>
       <span class="eyebrow">PÉRIODES DE L’ANNÉE</span>
@@ -171,11 +220,16 @@
     </table>
   </div>
 </section>
+    </div>
 
-<section class="panel">
+    <div class="admin-detail-panel" data-detail-panel="pricing-evolution" hidden>
+      <section class="panel">
   <div class="panel-heading"><div><span class="eyebrow">ÉVOLUTION PRÉVUE</span><h2>Décote des diagonales</h2></div></div>
   <p>La classification est prête pour appliquer plus tard une décote automatique aux diagonales (par exemple un cran tarifaire ou un pourcentage inférieur). Aucune décote automatique n’est activée pour l’instant : le niveau reste volontairement à définir.</p>
 </section>
+    </div>
+  </div>
+</div>
 @endif
 @endsection
 
@@ -288,4 +342,5 @@ document.addEventListener('DOMContentLoaded', () => {
   applyFilters();
 });
 </script>
+<script src="{{ asset('promethee-assets/promethee-admin-workspaces.js') }}?v={{ filemtime(public_path('promethee-assets/promethee-admin-workspaces.js')) }}"></script>
 @endpush
