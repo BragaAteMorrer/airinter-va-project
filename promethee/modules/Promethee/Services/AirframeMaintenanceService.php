@@ -15,37 +15,80 @@ class AirframeMaintenanceService
 {
     public const CHECKS = ['a', 'b', 'c'];
 
+    /**
+     * Maintenance policy shown by Prométhée.
+     *
+     * The historical aircraft maintenance subsystem already owns the A/B/C
+     * limits through disposable_settings, with optional ICAO overrides in
+     * disposable_tech_details. Prométhée must therefore read/write the same
+     * values instead of maintaining a second, divergent set of limits.
+     */
     public function settings(): array
     {
-        $keys = ['maintenance.airframe.warning_percent'];
-        foreach (self::CHECKS as $check) {
-            $keys[] = 'maintenance.airframe.'.$check.'.time_limit_hours';
-            $keys[] = 'maintenance.airframe.'.$check.'.cycle_limit';
-            $keys[] = 'maintenance.airframe.'.$check.'.duration_hours';
-        }
-
-        $values = Schema::hasTable('promethee_settings')
-            ? DB::table('promethee_settings')->whereIn('key', $keys)->pluck('value', 'key')
+        $prometheeValues = Schema::hasTable('promethee_settings')
+            ? DB::table('promethee_settings')
+                ->whereIn('key', [
+                    'maintenance.airframe.warning_percent',
+                    'maintenance.airframe.a.time_limit_hours',
+                    'maintenance.airframe.a.cycle_limit',
+                    'maintenance.airframe.a.duration_hours',
+                    'maintenance.airframe.b.time_limit_hours',
+                    'maintenance.airframe.b.cycle_limit',
+                    'maintenance.airframe.b.duration_hours',
+                    'maintenance.airframe.c.time_limit_hours',
+                    'maintenance.airframe.c.cycle_limit',
+                    'maintenance.airframe.c.duration_hours',
+                ])
+                ->pluck('value', 'key')
             : collect();
 
+        // Keep the historical module fallbacks exactly aligned with
+        // DS_Maintenance::getLimitsAttribute().
         $fallback = [
-            'a' => ['time_limit_hours' => 20.0, 'cycle_limit' => 20, 'duration_hours' => 20.0],
-            'b' => ['time_limit_hours' => 60.0, 'cycle_limit' => 60, 'duration_hours' => 96.0],
-            'c' => ['time_limit_hours' => 180.0, 'cycle_limit' => 180, 'duration_hours' => 120.0],
+            'a' => ['time_limit_hours' => 500.0, 'cycle_limit' => 250, 'duration_hours' => 10.0],
+            'b' => ['time_limit_hours' => 1000.0, 'cycle_limit' => 500, 'duration_hours' => 48.0],
+            'c' => ['time_limit_hours' => 5000.0, 'cycle_limit' => 2500, 'duration_hours' => 120.0],
+        ];
+
+        $legacyKeys = [
+            'a' => [
+                'time_limit_hours' => 'turksim.maint_lim_at',
+                'cycle_limit' => 'turksim.maint_lim_ac',
+                'duration_hours' => 'turksim.maint_hours_a',
+            ],
+            'b' => [
+                'time_limit_hours' => 'turksim.maint_lim_bt',
+                'cycle_limit' => 'turksim.maint_lim_bc',
+                'duration_hours' => 'turksim.maint_hours_b',
+            ],
+            'c' => [
+                'time_limit_hours' => 'turksim.maint_lim_ct',
+                'cycle_limit' => 'turksim.maint_lim_cc',
+                'duration_hours' => 'turksim.maint_hours_c',
+            ],
         ];
 
         $checks = [];
         foreach (self::CHECKS as $check) {
-            $checks[$check] = [
-                'time_limit_hours' => max(0.1, (float) ($values['maintenance.airframe.'.$check.'.time_limit_hours'] ?? $fallback[$check]['time_limit_hours'])),
-                'cycle_limit' => max(1, (int) ($values['maintenance.airframe.'.$check.'.cycle_limit'] ?? $fallback[$check]['cycle_limit'])),
-                'duration_hours' => max(0, (float) ($values['maintenance.airframe.'.$check.'.duration_hours'] ?? $fallback[$check]['duration_hours'])),
-            ];
+            $checks[$check] = [];
+            foreach ($legacyKeys[$check] as $field => $legacyKey) {
+                $prometheeKey = 'maintenance.airframe.'.$check.'.'.$field;
+                $value = $this->disposableSetting(
+                    $legacyKey,
+                    $prometheeValues[$prometheeKey] ?? $fallback[$check][$field]
+                );
+
+                $checks[$check][$field] = $field === 'cycle_limit'
+                    ? max(1, (int) round($value))
+                    : max($field === 'time_limit_hours' ? 0.1 : 0, (float) $value);
+            }
         }
 
         return [
             'checks' => $checks,
-            'warning_percent' => max(0, min(100, (float) ($values['maintenance.airframe.warning_percent'] ?? 10))),
+            'warning_percent' => max(0, min(100, (float) ($prometheeValues['maintenance.airframe.warning_percent'] ?? 10))),
+            'source' => Schema::hasTable('disposable_settings') ? 'disposable_settings' : 'promethee_fallback',
+            'per_type_overrides' => Schema::hasTable('disposable_tech_details'),
         ];
     }
 
@@ -55,7 +98,7 @@ class AirframeMaintenanceService
             throw new RuntimeException('La table de paramètres Prométhée n’est pas disponible.');
         }
 
-        $map = [
+        $prometheeMap = [
             'a_time_limit_hours' => 'maintenance.airframe.a.time_limit_hours',
             'a_cycle_limit' => 'maintenance.airframe.a.cycle_limit',
             'a_duration_hours' => 'maintenance.airframe.a.duration_hours',
@@ -68,12 +111,50 @@ class AirframeMaintenanceService
             'warning_percent' => 'maintenance.airframe.warning_percent',
         ];
 
-        foreach ($map as $field => $key) {
-            DB::table('promethee_settings')->updateOrInsert(
-                ['key' => $key],
-                ['value' => (string) $values[$field], 'created_at' => now(), 'updated_at' => now()]
-            );
-        }
+        $disposableMap = [
+            'a_time_limit_hours' => ['turksim.maint_lim_at', 'A Check Time Limit'],
+            'a_cycle_limit' => ['turksim.maint_lim_ac', 'A Check Cycle Limit'],
+            'a_duration_hours' => ['turksim.maint_hours_a', 'A Check Duration'],
+            'b_time_limit_hours' => ['turksim.maint_lim_bt', 'B Check Time Limit'],
+            'b_cycle_limit' => ['turksim.maint_lim_bc', 'B Check Cycle Limit'],
+            'b_duration_hours' => ['turksim.maint_hours_b', 'B Check Duration'],
+            'c_time_limit_hours' => ['turksim.maint_lim_ct', 'C Check Time Limit'],
+            'c_cycle_limit' => ['turksim.maint_lim_cc', 'C Check Cycle Limit'],
+            'c_duration_hours' => ['turksim.maint_hours_c', 'C Check Duration'],
+        ];
+
+        DB::transaction(function () use ($values, $prometheeMap, $disposableMap) {
+            // Mirror the values in Prométhée for backwards compatibility, but
+            // disposable_settings remains the operational source used by the
+            // aircraft maintenance records.
+            foreach ($prometheeMap as $field => $key) {
+                DB::table('promethee_settings')->updateOrInsert(
+                    ['key' => $key],
+                    ['value' => (string) $values[$field], 'created_at' => now(), 'updated_at' => now()]
+                );
+            }
+
+            if (Schema::hasTable('disposable_settings')) {
+                foreach ($disposableMap as $field => [$key, $name]) {
+                    DB::table('disposable_settings')->updateOrInsert(
+                        ['key' => $key],
+                        [
+                            'name' => $name,
+                            'value' => (string) $values[$field],
+                            'default' => (string) $values[$field],
+                            'group' => 'Maintenance',
+                            'field_type' => str_contains($field, 'duration') ? 'decimal' : 'numeric',
+                            'updated_at' => now(),
+                            'created_at' => now(),
+                        ]
+                    );
+                }
+
+                // Recalculate existing remaining values from their consumed
+                // counters. ICAO-specific overrides stay authoritative.
+                $this->recalculateLegacyRemaining();
+            }
+        });
     }
 
     public function syncFleet(): int
