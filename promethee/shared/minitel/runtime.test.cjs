@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const {
   WIDTH, HEIGHT, ACTIONS, DISPLAY_MODES, MinitelScreenBuffer, MinitelInputBuffer,
   MinitelPage, MinitelSession, mapKeyboardEvent, normalizeMosaicMask, mosaicBits,
-  transmissionOperations, transmissionDelay, minitelCapability
+  transmissionOperations, videotexTransmissionUnits, transmissionDuration, transmissionDelay, minitelCapability
 } = require('./runtime.js');
 
 const tests = [];
@@ -125,6 +125,21 @@ test('unchanged snapshots do not retransmit unchanged cells', () => {
 test('speed profiles remain bounded', () => {
   assert.equal(transmissionDelay('instant'), 0);
   assert.ok(transmissionDelay('authentic') > transmissionDelay('fast'));
+});
+
+test('M8 authentic transmission accounts for Videotex control overhead', () => {
+  const plain = new MinitelScreenBuffer();
+  plain.write(1, 1, 'AB');
+  const plainOps = transmissionOperations(plain.snapshot(), null, { skipDefaultBlank: true });
+
+  const styled = new MinitelScreenBuffer();
+  styled.write(1, 1, 'A', { foreground: 'yellow' });
+  styled.write(1, 2, 'B', { foreground: 'cyan', doubleWidth: true });
+  const styledOps = transmissionOperations(styled.snapshot(), null, { skipDefaultBlank: true });
+
+  assert.ok(videotexTransmissionUnits(styledOps) > videotexTransmissionUnits(plainOps));
+  assert.ok(transmissionDuration(styledOps, 'authentic') > transmissionDuration(plainOps, 'authentic'));
+  assert.equal(transmissionDuration(styledOps, 'instant'), 0);
 });
 
 test('mobile/coarse environments are rejected without changing preferences', () => {
