@@ -556,42 +556,15 @@ class PortalController extends PrometheeWebController
         return $this->pilot($r->user()->id);
     }
     public function editProfile(Request $r) {
-        $pilot = $r->user()->load(['airline','home_airport']);
-        return $this->page('profile-edit', [
-            'pilot' => $pilot,
-            'airlines' => Airline::where('active', true)->orderBy('name')->get(['id','name','icao']),
-            'airports' => Airport::orderBy('icao')->get(['id','icao','name','location']),
-            'countries' => Countries::getSelectList(),
-            'timezones' => \DateTimeZone::listIdentifiers(),
-        ]);
+        abort_unless(config('services.airinter_id.enabled'), 503, 'Argos doit être activé pour modifier un profil.');
+        return redirect()->away(rtrim((string) config('services.airinter_id.base_url'), '/').'/account#profile');
     }
+
     public function updateProfile(Request $r) {
-        $pilot = $r->user();
-        $data = $r->validate([
-            'name' => 'required|string|max:191',
-            'email' => 'required|email|max:191|unique:users,email,'.$pilot->id,
-            'airline_id' => 'required|integer|exists:airlines,id',
-            'home_airport_id' => 'nullable|string|max:10|exists:airports,id',
-            'country' => 'nullable|string|size:2',
-            'timezone' => 'required|timezone',
-            'vatsim_id' => 'nullable|string|max:32',
-            'ivao_id' => 'nullable|string|max:32',
-            'password' => 'nullable|string|min:8|confirmed',
-            'avatar' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:2048',
-        ]);
-        $emailChanged = $pilot->email !== $data['email'];
-        if (blank($data['password'] ?? null)) unset($data['password']);
-        else $data['password'] = Hash::make($data['password']);
-        unset($data['avatar']);
-        if ($r->hasFile('avatar')) {
-            $file = $r->file('avatar');
-            $data['avatar'] = $file->storeAs('avatars', $pilot->ident.'.'.$file->extension(), config('filesystems.public_files'));
-        }
-        if ($emailChanged) $data['email_verified_at'] = null;
-        $pilot->fill($data)->save();
-        if ($emailChanged) $pilot->sendEmailVerificationNotification();
-        return redirect()->route('promethee.profile')->with('success', 'Profil mis à jour.');
+        abort_unless(config('services.airinter_id.enabled'), 503, 'Argos doit être activé pour modifier un profil.');
+        return redirect()->away(rtrim((string) config('services.airinter_id.base_url'), '/').'/account#profile');
     }
+
     /**
      * Pilot passport. A country is stamped after an accepted flight touching
      * one of its airports; no editable or duplicate passport data is stored.
