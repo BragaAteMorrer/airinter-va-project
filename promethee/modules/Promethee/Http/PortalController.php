@@ -1304,6 +1304,30 @@ class PortalController extends PrometheeWebController
             ->select('assignment.*','users.name as user_name','users.pilot_id','flights.route_code','flights.flight_number','flights.dpt_airport_id','flights.arr_airport_id')->orderBy('users.pilot_id')->get();
         return $this->page('admin-assignments',['month'=>$month,'assignments'=>$assignments,'pilots'=>User::where('state',UserState::ACTIVE)->orderBy('pilot_id')->get(['id','pilot_id','name']),'flights'=>Flight::where('active',true)->where('visible',true)->orderBy('dpt_airport_id')->get(['id','route_code','flight_number','dpt_airport_id','arr_airport_id'])]);
     }
+    /** Prométhée-native read surface over phpVMS ranks. Mutations stay on core routes. */
+    public function adminRanks(Request $r) {
+        $term = trim((string) $r->query('q'));
+        $ranks = Rank::query()->withCount(['users','subfleets'])
+            ->when($term !== '', fn ($query) => $query->where('name','like','%'.$term.'%'))
+            ->orderBy('hours')->get();
+        return $this->page('admin-ranks', compact('ranks'));
+    }
+
+    /** Prométhée-native read surface over phpVMS users. Mutations stay on core routes. */
+    public function adminUsers(Request $r) {
+        $filters = $r->validate(['q'=>'nullable|string|max:100','rank'=>'nullable|integer|exists:ranks,id','airline'=>'nullable|integer|exists:airlines,id']);
+        $users = User::query()->with(['rank','airline','home_airport'])
+            ->when($filters['q'] ?? null, fn ($query,$q) => $query->where(fn ($nested) => $nested->where('name','like','%'.$q.'%')->orWhere('pilot_id','like','%'.$q.'%')->orWhere('email','like','%'.$q.'%')))
+            ->when($filters['rank'] ?? null, fn ($query,$id) => $query->where('rank_id',$id))
+            ->when($filters['airline'] ?? null, fn ($query,$id) => $query->where('airline_id',$id))
+            ->orderBy('pilot_id')->paginate(40)->withQueryString();
+        return $this->page('admin-users', [
+            'users'=>$users,
+            'ranks'=>Rank::orderBy('hours')->get(['id','name']),
+            'airlines'=>Airline::orderBy('name')->get(['id','name','icao']),
+        ]);
+    }
+
     /** Prométhée-native airline catalogue; legacy phpVMS URLs remain valid. */
     public function adminAirlines(Request $r) {
         $filters=$r->validate(['q'=>'nullable|string|max:80','active'=>'nullable|in:all,active,inactive']);
