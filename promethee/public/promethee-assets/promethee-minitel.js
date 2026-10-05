@@ -151,7 +151,7 @@
   const updateCursor = () => {
     if (!renderer || !session) return;
     const page = session.currentPageId;
-    if (page === 'home') return renderer.showCursor(20, Math.min(39, 16 + session.input.value.length), true);
+    if (page === 'home') return renderer.showCursor(19, Math.min(39, 20 + session.input.value.length), true);
     if (['flight-search', 'fleet-search', 'pilot-search'].includes(page)) {
       return renderer.showCursor(9, Math.min(39, 4 + session.input.value.length), true);
     }
