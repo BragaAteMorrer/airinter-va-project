@@ -79,7 +79,7 @@
                   <h2 data-detail-focus>{{ $pirep->ident ?: ($pirep->flight?->ident ?? $pirep->id) }}</h2>
                   <p>{{ $pirep->user?->pilot_id ?? '—' }} · {{ $pirep->user?->name ?? 'Pilote inconnu' }}</p>
                 </div>
-                <span class="tag">{{ strtoupper($pirep->state) }} · {{ strtoupper($pirep->status) }}</span>
+                <span class="tag">{{ strtoupper((string) $pirep->state) ?: '—' }} · {{ strtoupper((string) $pirep->status) ?: '—' }}</span>
               </div>
 
               <div class="admin-detail-metrics admin-workspace-spaced">
