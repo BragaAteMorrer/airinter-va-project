@@ -48,6 +48,7 @@
             <span>⌁</span> Utiliser une passkey
         </button>
         <p class="error" data-passkey-error></p>
+        <p class="privacy-note">Pas encore de compte ? <a href="{{ route('register') }}">Rejoindre Air Inter</a>.</p>
         <p class="privacy-note">Argos ne partage que les informations nécessaires à l’application demandée.</p>
     </section>
 </section>

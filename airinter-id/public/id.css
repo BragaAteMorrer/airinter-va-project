@@ -321,3 +321,29 @@ html[data-theme="dark"] .recovery-card.attention .recovery-state{background:#3b3
     .recovery-grid,.readonly-profile{grid-template-columns:1fr}
     .readonly-profile small{grid-column:1}
 }
+
+
+/* Centralized Argos registration */
+.registration-identifiers{align-items:stretch}
+.registration-identifiers>label{flex:1}
+.registration-staff-note{
+    position:relative;
+    display:grid;
+    gap:5px;
+    padding:14px 15px 14px 18px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:var(--panel-2);
+    overflow:hidden;
+}
+.registration-staff-note:before{
+    content:"";
+    position:absolute;
+    left:0;
+    top:0;
+    bottom:0;
+    width:4px;
+    background:linear-gradient(to bottom,#0d66b5 0 25%,#1685dc 25% 50%,#72c7ff 50% 75%,#d92d3a 75% 100%);
+}
+.registration-staff-note strong{font-size:11px;color:var(--ink)}
+.registration-staff-note span{font-size:11px;color:var(--muted)}

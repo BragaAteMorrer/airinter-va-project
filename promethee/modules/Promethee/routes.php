@@ -1,6 +1,7 @@
 <?php
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Frontend\LanguageController;
+use App\Http\Controllers\Auth\ArgosProvisionController;
 use Modules\Promethee\Http\PortalController;
 use Modules\Promethee\Http\PirepController;
 use Modules\Promethee\Http\FlightProgrammeController;
@@ -31,6 +32,9 @@ use Modules\Promethee\Http\RealSimulatorCertificationController;
 use Modules\Promethee\Http\Api\AircraftConfigurationController;
 use Modules\Promethee\Http\Api\AcarsSimBriefController;
 use Modules\Promethee\Http\Api\AcarsSessionController;
+
+Route::middleware('api')->post('/api/internal/argos/provision', ArgosProvisionController::class)
+    ->middleware('throttle:20,1');
 
 // Browsers request this conventional path even though the branded icon lives
 // with the static Promethee assets.

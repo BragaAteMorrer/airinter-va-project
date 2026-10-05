@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\ConfirmPasswordController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\PasswordSecurityController;
+use App\Http\Controllers\Auth\RegistrationController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\Auth\TwoFactorSettingsController;
 use App\Http\Controllers\Oidc\ProviderController;
@@ -25,6 +26,8 @@ Route::middleware('auth:api')->get('/oauth/userinfo', [ProviderController::class
 Route::middleware('auth:api')->get('/oauth/hermes/userinfo', [ProviderController::class, 'hermesUserinfo'])->name('oidc.hermes-userinfo');
 
 Route::middleware('guest')->group(function () {
+    Route::get('/register', [RegistrationController::class, 'create'])->name('register');
+    Route::post('/register', [RegistrationController::class, 'store'])->middleware('throttle:5,1')->name('register.store');
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])->middleware('throttle:10,1');
     Route::get('/two-factor-challenge', [TwoFactorChallengeController::class, 'create'])->name('two-factor.login');

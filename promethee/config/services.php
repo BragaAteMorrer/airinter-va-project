@@ -36,6 +36,7 @@ return [
         'client_id'     => env('AIRINTER_ID_CLIENT_ID'),
         'client_secret' => env('AIRINTER_ID_CLIENT_SECRET'),
         'redirect'      => env('AIRINTER_ID_REDIRECT_URI', rtrim(env('APP_URL', ''), '/').'/auth/airinter-id/callback'),
+        'provisioning_token' => env('ARGOS_PROVISIONING_TOKEN'),
     ],
 
     'discord' => [
