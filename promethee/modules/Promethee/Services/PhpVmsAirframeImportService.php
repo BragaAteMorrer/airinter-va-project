@@ -127,11 +127,14 @@ final class PhpVmsAirframeImportService
 
                         $type = AircraftTypeProfile::query()->firstOrNew(['type_key' => $typeKey]);
                         $typeWasNew = !$type->exists;
+                        $typeOwned = $typeWasNew || $this->isOwnedByImport($type->source, $type->notes);
                         $type->name = (string) ($subfleet->name ?: $subfleet->type ?: $typeKey);
-                        $type->data = $this->mergeForOwnedRecord($type->data ?? [], $typeImportedData, $type->source);
-                        $type->simbrief_strategy = filled($simbriefType) ? 'native' : ($type->simbrief_strategy ?: null);
-                        $type->simbrief_type = $simbriefType ?: $type->simbrief_type;
-                        $type->source = $typeWasNew || $type->source === self::SOURCE ? self::SOURCE : $type->source;
+                        $type->data = $typeOwned
+                            ? $this->deepMerge($type->data ?? [], $typeImportedData)
+                            : $this->deepMerge($typeImportedData, $type->data ?? []);
+                        $type->simbrief_strategy = filled($simbriefType) && $typeOwned ? 'native' : ($type->simbrief_strategy ?: null);
+                        $type->simbrief_type = filled($simbriefType) && $typeOwned ? $simbriefType : ($type->simbrief_type ?: $simbriefType);
+                        $type->source = $typeOwned ? self::SOURCE : $type->source;
                         $type->notes = $this->appendMarker($type->notes, 'Import des paramètres du subfleet #'.$subfleet->id.', capacités lues dans fares.');
                         $type->historical_confidence = $type->historical_confidence ?: 'VA_configuration';
                         $type->save();
@@ -140,6 +143,7 @@ final class PhpVmsAirframeImportService
                         $variant = AircraftHistoricalVariant::query()
                             ->firstOrNew(['type_key' => $typeKey, 'code' => $variantCode]);
                         $variantWasNew = !$variant->exists;
+                        $variantOwned = $variantWasNew || $this->isOwnedByImport($variant->source, $variant->notes);
                         $variantImportedData = $this->deepMerge(
                             $commonWeights,
                             [
@@ -159,12 +163,14 @@ final class PhpVmsAirframeImportService
 
                         $variant->name = (string) ($subfleet->name ?: $subfleet->type ?: $variantCode);
                         $variant->short_name = $variant->short_name ?: substr((string) ($subfleet->name ?: $subfleet->type), 0, 80);
-                        $variant->icao_type = $icaoType ?: $variant->icao_type;
-                        $variant->data = $this->mergeForOwnedRecord($variant->data ?? [], $variantImportedData, $variant->source);
-                        $variant->simbrief_strategy = filled($simbriefType) ? 'native' : ($variant->simbrief_strategy ?: null);
-                        $variant->simbrief_type = $simbriefType ?: $variant->simbrief_type;
+                        $variant->icao_type = $variantOwned ? ($icaoType ?: $variant->icao_type) : ($variant->icao_type ?: $icaoType);
+                        $variant->data = $variantOwned
+                            ? $this->deepMerge($variant->data ?? [], $variantImportedData)
+                            : $this->deepMerge($variantImportedData, $variant->data ?? []);
+                        $variant->simbrief_strategy = filled($simbriefType) && $variantOwned ? 'native' : ($variant->simbrief_strategy ?: null);
+                        $variant->simbrief_type = filled($simbriefType) && $variantOwned ? $simbriefType : ($variant->simbrief_type ?: $simbriefType);
                         $variant->active = true;
-                        $variant->source = $variantWasNew || $variant->source === self::SOURCE ? self::SOURCE : $variant->source;
+                        $variant->source = $variantOwned ? self::SOURCE : $variant->source;
                         $variant->notes = $this->appendMarker($variant->notes, 'Variante issue du subfleet phpVMS #'.$subfleet->id.'.');
                         $variant->historical_confidence = $variant->historical_confidence ?: 'VA_configuration';
                         $variant->save();
@@ -514,13 +520,19 @@ final class PhpVmsAirframeImportService
         return trim($notes.($notes === '' ? '' : "\n").$line);
     }
 
+    private function isOwnedByImport(?string $source, ?string $notes): bool
+    {
+        return $source === self::SOURCE
+            || str_contains((string) $notes, self::NOTE_MARKER);
+    }
+
     /**
-     * Imported records are refreshed from phpVMS. Manually-owned records keep
-     * their explicit values while still receiving missing legacy fields.
+     * Imported assignments are refreshed from phpVMS. Manually-owned
+     * assignments keep their explicit values.
      */
     private function mergeForOwnedRecord(array $existing, array $imported, ?string $source): array
     {
-        if ($source !== null && $source !== '' && $source !== self::SOURCE) {
+        if ($source !== self::SOURCE) {
             return $this->deepMerge($imported, $existing);
         }
 
