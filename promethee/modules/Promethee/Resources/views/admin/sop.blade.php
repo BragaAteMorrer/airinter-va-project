@@ -100,7 +100,13 @@
                     <td>
                         @if($rule['id'] === 'STABILIZED_APPROACH')
                             <strong>1 000 ft AGL → toucher</strong>
-                            <div class="muted">VS ≥ −1 000 ft/min</div>
+                            <div class="muted">VS ≥ −1 000 ft/min · 4 s continus</div>
+                        @elseif($rule['id'] === 'EXCESS_GFORCE')
+                            <strong>+2,5 g / −1,0 g</strong>
+                            <div class="muted">Hors seuil structurel ; une seule pénalité par vol.</div>
+                        @elseif($rule['id'] === 'EXCESS_GFORCE_MAINTENANCE')
+                            <strong>≥ +2,9 g / ≤ −1,2 g</strong>
+                            <div class="muted"><strong>Mise en maintenance automatique.</strong> Ce seuil remplace la pénalité −15 pts.</div>
                         @elseif($rule['has_parameter'])
                             <input form="{{ $formId }}" name="parameter" type="number" step="1" value="{{ $rule['parameter'] }}" required class="admin-field-lg">
                         @else
