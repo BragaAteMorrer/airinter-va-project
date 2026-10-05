@@ -218,17 +218,6 @@ class AirInterIdController extends Controller
             abort(409, 'Cette adresse e-mail Argos est déjà utilisée par un autre compte Prométhée.');
         }
 
-        $homeAirport = filled($pilotProfile['home_airport_id'] ?? null)
-            ? strtoupper(trim((string) $pilotProfile['home_airport_id']))
-            : null;
-
-        if (
-            $homeAirport !== null
-            && !\App\Models\Airport::query()->whereKey($homeAirport)->exists()
-        ) {
-            abort(409, 'La base définie dans Argos n’existe pas dans Prométhée : '.$homeAirport);
-        }
-
         $sync = [
             'name' => trim((string) ($profile['name'] ?? $user->name)),
             'email' => $argosEmail,
@@ -241,10 +230,6 @@ class AirInterIdController extends Controller
             'locale' => filled($profile['locale'] ?? null)
                 ? (string) $profile['locale']
                 : ($user->locale ?? null),
-            'country' => filled($pilotProfile['country'] ?? null)
-                ? strtoupper(trim((string) $pilotProfile['country']))
-                : null,
-            'home_airport_id' => $homeAirport,
             'vatsim_id' => filled($pilotProfile['vatsim_id'] ?? null)
                 ? trim((string) $pilotProfile['vatsim_id'])
                 : null,
