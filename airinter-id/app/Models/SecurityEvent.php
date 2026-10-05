@@ -38,6 +38,8 @@ class SecurityEvent extends Model
         'ip_address',
         'user_agent',
         'metadata',
+        'reported_at',
+        'resolved_at',
         'created_at',
     ];
 
@@ -45,6 +47,8 @@ class SecurityEvent extends Model
     {
         return [
             'metadata' => 'array',
+            'reported_at' => 'datetime',
+            'resolved_at' => 'datetime',
             'created_at' => 'datetime',
         ];
     }
