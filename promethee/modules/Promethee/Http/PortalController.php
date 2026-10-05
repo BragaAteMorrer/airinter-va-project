@@ -917,11 +917,11 @@ class PortalController extends PrometheeWebController
     
     public function mailbox(Request $r) {
         $messages=DB::table('promethee_messages')->where(function ($query) use ($r) {$query->where('recipient_id',$r->user()->id)->orWhere('sender_id',$r->user()->id)->orWhere('shared_staff',true);})->latest()->paginate(30);
-        return $this->page('mailbox',['messages'=>$messages,'pilots'=>User::whereIn('state',[UserState::ACTIVE,UserState::ON_LEAVE])->orderBy('pilot_id')->get(['id','name','email','pilot_id']),'activeCount'=>User::where('state',UserState::ACTIVE)->count(),'staffCount'=>User::whereRoleIs('admin')->count()]);
+        return $this->page('mailbox',['messages'=>$messages,'pilots'=>User::whereIn('state',[UserState::ACTIVE,UserState::ON_LEAVE])->orderBy('pilot_id')->get(['id','name','email','pilot_id']),'activeCount'=>User::where('state',UserState::ACTIVE)->count(),'staffCount'=>User::query()->whereHas('roles', fn ($query) => $query->where('name', 'admin'))->count()]);
     }
     public function sendMessage(Request $r) {
         $data=$r->validate(['audience'=>'required|in:user,active,staff','user_id'=>'required_if:audience,user|nullable|exists:users,id','subject'=>'required|string|max:191','body'=>'required|string|max:10000','shared_staff'=>'nullable|boolean']);
-        $recipients=match($data['audience']) { 'user'=>User::whereKey($data['user_id'])->get(), 'active'=>User::where('state',UserState::ACTIVE)->get(), 'staff'=>User::whereRoleIs('admin')->get() };
+        $recipients=match($data['audience']) { 'user'=>User::whereKey($data['user_id'])->get(), 'active'=>User::where('state',UserState::ACTIVE)->get(), 'staff'=>User::query()->whereHas('roles', fn ($query) => $query->where('name', 'admin'))->get() };
         abort_if($recipients->isEmpty(),422,'Aucun destinataire pour ce groupe.');
         foreach ($recipients as $recipient) { $id=DB::table('promethee_messages')->insertGetId(['sender_id'=>$r->user()->id,'recipient_id'=>$recipient->id,'recipient_email'=>$recipient->email,'audience'=>$data['audience'],'subject'=>$data['subject'],'body'=>$data['body'],'shared_staff'=>$r->boolean('shared_staff') || $data['audience']==='staff','direction'=>'outbound','status'=>'queued','created_at'=>now(),'updated_at'=>now()]); try { Mail::raw($data['body'],fn($mail)=>$mail->to($recipient->email,$recipient->name)->subject($data['subject'])); DB::table('promethee_messages')->where('id',$id)->update(['status'=>'sent','sent_at'=>now(),'updated_at'=>now()]); } catch (\Throwable) { DB::table('promethee_messages')->where('id',$id)->update(['status'=>'failed','updated_at'=>now()]); } }
         return back()->with('success',$recipients->count().' message(s) préparé(s) pour envoi. Consultez le statut dans la boîte partagée.');
