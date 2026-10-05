@@ -87,7 +87,7 @@
       <button type="button" class="admin-master-row" data-master-target="maintenance-cell-history" data-master-search="historique cellule checks journal">
         <span class="admin-master-row-main">
           <strong>Historique cellule</strong>
-          <small>Derniers checks A / B / C</small>
+          <small>Checks A / B / C et immobilisations FDM</small>
         </span>
       </button>
 
@@ -268,7 +268,7 @@
 
     <div class="admin-detail-panel" data-detail-panel="maintenance-cell-history" hidden>
       <section class="panel table-wrap admin-workspace-section admin-table-scroll" id="maintenance-airframe-history">
-  <div class="panel-heading"><div><span class="eyebrow">JOURNAL CELLULE</span><h2>Derniers checks A / B / C</h2></div></div>
+  <div class="panel-heading"><div><span class="eyebrow">JOURNAL CELLULE</span><h2>Checks et immobilisations FDM</h2></div></div>
   <table>
     <thead><tr><th>Date</th><th>Appareil</th><th>Check</th><th>Événement</th><th>Site</th><th>Situation avant</th><th>Note</th></tr></thead>
     <tbody>
