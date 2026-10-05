@@ -132,6 +132,16 @@
     screen.write(row, 2, 'PAGE ' + page + '/' + pages, { foreground: 'cyan' });
   };
 
+  const sectionLabel = (screen, row, label) => {
+    screen.write(row, 2, fit(label, 36), { foreground: 'yellow', underline: true });
+  };
+
+  const checkLine = (screen, row, label, ready, detail = '') => {
+    screen.write(row, 2, ready ? 'O ' : 'X ', { foreground: ready ? 'green' : 'yellow' });
+    screen.write(row, 4, fit(label, 11), { foreground: 'cyan' });
+    screen.write(row, 16, fit(detail || (ready ? 'OK' : 'A FAIRE'), 22), { foreground: ready ? 'green' : 'white' });
+  };
+
   const setAction = (type, payload = {}) => {
     if (!terminalSession) return;
     terminalSession.context.__hermesMinitelAction = { type, ...payload };
@@ -180,12 +190,13 @@
     if (page === 'search') return renderer.showCursor(10, Math.min(39, 6 + value), true);
     if (['operations', 'search-results'].includes(page)) return renderer.showCursor(21, Math.min(39, 21 + value), true);
     if (page === 'aircraft') return renderer.showCursor(21, Math.min(39, 21 + value), true);
-    if (page === 'preparation') return renderer.showCursor(21, Math.min(39, 21 + value), true);
-    if (['simbrief', 'simbrief-account', 'simbrief-api', 'simbrief-local', 'parameters'].includes(page)) return renderer.showCursor(20, Math.min(39, 10 + value), true);
-    if (page === 'simbrief-pilot') return renderer.showCursor(10, Math.min(39, 4 + value), true);
+    if (page === 'preparation') return renderer.showCursor(22, Math.min(39, 21 + value), true);
+    if (['simbrief', 'simbrief-account', 'simbrief-api', 'simbrief-local'].includes(page)) return renderer.showCursor(22, Math.min(39, 21 + value), true);
+    if (page === 'parameters') return renderer.showCursor(20, Math.min(39, 10 + value), true);
+    if (page === 'simbrief-pilot') return renderer.showCursor(11, Math.min(39, 6 + value), true);
     if (page === 'flight-live') return renderer.showCursor(21, Math.min(39, 21 + value), true);
     if (page === 'datalink') return renderer.showCursor(21, Math.min(39, 21 + value), true);
-    if (page === 'datalink-message') return renderer.showCursor(20, Math.min(39, 9 + value), true);
+    if (page === 'datalink-message') return renderer.showCursor(22, Math.min(39, 21 + value), true);
     if (page === 'datalink-compose') {
       const row = 12 + Math.min(3, Math.floor(value / 36));
       const column = 2 + (value % 36);
@@ -193,9 +204,9 @@
     }
     if (page === 'journal') return renderer.showCursor(21, Math.min(39, 21 + value), true);
     if (page === 'network') return renderer.showCursor(20, Math.min(39, 9 + value), true);
-    if (page === 'review') return renderer.showCursor(20, Math.min(39, 9 + value), true);
-    if (page === 'review-list') return renderer.showCursor(20, Math.min(39, 9 + value), true);
-    if (page === 'recovery') return renderer.showCursor(20, Math.min(39, 9 + value), true);
+    if (page === 'review') return renderer.showCursor(22, Math.min(39, 21 + value), true);
+    if (page === 'review-list') return renderer.showCursor(0, 0, false);
+    if (page === 'recovery') return renderer.showCursor(22, Math.min(39, 21 + value), true);
     renderer.showCursor(0, 0, false);
   };
 
@@ -359,14 +370,14 @@
     terminalSession.register(new mt.MinitelPage('search-results', {
       onRender: (_ctx, screen, current) => {
         serviceLine(screen);
-        screen.write(2, 1, 'VOLS RESERVABLES', { foreground: 'yellow' });
+        titleBand(screen, 'VOLS RESERVABLES', 'PROGRAMME AIR INTER');
         if (hm.error) return showError(screen);
         const pages = Math.max(1, Math.ceil(hm.searchResults.length / 7));
         hm.searchPage = Math.max(1, Math.min(pages, hm.searchPage));
         const items = hm.searchResults.slice((hm.searchPage - 1) * 7, hm.searchPage * 7);
-        screen.write(4, 1, 'N VOL      DEPART  ARRIVEE', { foreground: 'cyan' });
+        screen.write(6, 1, 'N VOL      DEPART  ARRIVEE', { foreground: 'cyan' });
         items.forEach((flight, index) => {
-          const row = 6 + index * 2;
+          const row = 7 + index * 2;
           const normalized = core.operationFlight(flight);
           screen.write(row, 1, String(index + 1) + ' ' + fit(normalized.ident, 8) + ' ' + fit(normalized.departure, 7) + ' ' + fit(normalized.arrival, 7));
           screen.write(row + 1, 3, fit(normalized.route || 'ROUTE PROGRAMMEE', 35), { foreground: 'cyan' });
@@ -403,18 +414,16 @@
         }
         const flight = core.operationFlight(op);
         const checks = core.operationChecks(op, hm.dispatch, hm.status);
-        screen.write(5, 2, fit(flight.ident, 9) + fit(flight.departure + '>' + flight.arrival, 12) + fit(op.aircraft?.registration || '---', 12), { foreground: 'yellow' });
-        checks.forEach((check, index) => {
-          const row = 7 + index;
-          screen.write(row, 2, (check[1] ? '[OK] ' : '[--] ') + fit(check[0], 10) + fit(check[2], 18), { foreground: check[1] ? 'green' : 'yellow' });
-        });
-        sectionBand(screen, 13, 'ACTIONS DE PREPARATION', 'blue', 'white');
-        menuLine(screen, 14, 1, 'CHOISIR APPAREIL');
-        menuLine(screen, 15, 2, 'PREPARER PLAN / SIMBRIEF', true);
-        menuLine(screen, 16, 3, 'PRE-DEPOSER PIREP');
-        menuLine(screen, 17, 4, 'ETAT DISPATCH');
-        menuLine(screen, 18, 5, 'DEMARRER ENREGISTREMENT');
-        promptLine(screen, 21, current.input.value);
+        screen.write(6, 2, fit(flight.ident, 8) + ' ' + fit(flight.departure, 4) + '>' + fit(flight.arrival, 4) + ' ' + fit(op.aircraft?.registration || 'APPAREIL --', 12), { foreground: 'yellow' });
+        sectionLabel(screen, 8, 'CONTROLES AVANT DEPART');
+        checks.forEach((check, index) => checkLine(screen, 9 + index, check[0], check[1], check[2]));
+        sectionLabel(screen, 15, 'ACTIONS');
+        menuLine(screen, 16, 1, 'CHOISIR APPAREIL');
+        menuLine(screen, 17, 2, 'PLAN DE VOL / SIMBRIEF', true);
+        menuLine(screen, 18, 3, 'PRE-DEPOSER PIREP');
+        menuLine(screen, 19, 4, 'CONTROLE DISPATCH');
+        menuLine(screen, 20, 5, 'DEMARRER ENREGISTREMENT');
+        promptLine(screen, 22, current.input.value);
         footer(screen);
       },
       acceptInput: key => /^[1-5]$/.test(key),
@@ -458,12 +467,14 @@
           screen.write(11, 3, 'RETOUR > CHOISIR APPAREIL', { foreground: 'cyan' });
           return footer(screen);
         }
-        menuLine(screen, 7, 1, 'COMPTE SIMBRIEF', true);
-        menuLine(screen, 9, 2, 'API SIMBRIEF / COMPAGNIE');
-        menuLine(screen, 11, 3, 'PLAN LOCAL PLN / XML');
-        statusLine(screen, 15, 'OFP', hm.operation?.simbrief?.available ? 'DISPONIBLE' : 'ABSENT', hm.operation?.simbrief?.available ? 'green' : 'yellow');
-        statusLine(screen, 16, 'API COMPAGNIE', hm.operation?.simbrief?.company_api_available ? 'DISPONIBLE' : 'NON CONFIGUREE', hm.operation?.simbrief?.company_api_available ? 'green' : 'yellow');
-        promptLine(screen, 21, current.input.value);
+        sectionLabel(screen, 7, 'SOURCE DU PLAN');
+        menuLine(screen, 9, 1, 'COMPTE PILOTE SIMBRIEF', true);
+        menuLine(screen, 11, 2, 'API COMPAGNIE AIR INTER');
+        menuLine(screen, 13, 3, 'FICHIER LOCAL PLN / XML');
+        sectionLabel(screen, 16, 'ETAT');
+        statusLine(screen, 17, 'OFP', hm.operation?.simbrief?.available ? 'DISPONIBLE' : 'A GENERER', hm.operation?.simbrief?.available ? 'green' : 'yellow');
+        statusLine(screen, 18, 'API AIR INTER', hm.operation?.simbrief?.company_api_available ? 'DISPONIBLE' : 'NON CONFIGUREE', hm.operation?.simbrief?.company_api_available ? 'green' : 'yellow');
+        promptLine(screen, 22, current.input.value);
         footer(screen);
       },
       acceptInput: key => /^[1-3]$/.test(key),
@@ -479,13 +490,13 @@
       onRender: (_ctx, screen, current) => {
         serviceLine(screen);
         titleBand(screen, 'COMPTE SIMBRIEF', 'WORKFLOW PILOTE');
-        screen.write(6, 2, '1 ENVOYER VOL VERS SIMBRIEF', { foreground: 'cyan' });
-        screen.write(8, 2, '2 RECUPERER OFP GENERE', { foreground: 'cyan' });
-        screen.write(10, 2, '3 RETOUR SOURCES', { foreground: 'white' });
-        screen.write(13, 2, 'ETAPES :', { foreground: 'yellow' });
-        screen.write(14, 4, 'ENVOI > GENERATION > RECUPERATION');
-        statusLine(screen, 17, 'OFP', hm.operation?.simbrief?.available ? 'DISPONIBLE' : 'A GENERER', hm.operation?.simbrief?.available ? 'green' : 'yellow');
-        promptLine(screen, 21, current.input.value);
+        sectionLabel(screen, 7, 'PROCEDURE COMPTE PILOTE');
+        screen.write(9, 2, '1 ENVOYER VOL VERS SIMBRIEF', { foreground: 'cyan' });
+        screen.write(11, 2, '2 RECUPERER OFP GENERE', { foreground: 'cyan' });
+        screen.write(13, 2, '3 RETOUR SOURCES', { foreground: 'white' });
+        screen.write(16, 4, 'ENVOI > GENERATION > RECUPERATION', { foreground: 'white' });
+        statusLine(screen, 18, 'OFP', hm.operation?.simbrief?.available ? 'DISPONIBLE' : 'A GENERER', hm.operation?.simbrief?.available ? 'green' : 'yellow');
+        promptLine(screen, 22, current.input.value);
         footer(screen);
       },
       acceptInput: key => /^[1-3]$/.test(key),
@@ -502,12 +513,13 @@
         serviceLine(screen);
         titleBand(screen, 'API SIMBRIEF', 'GENERATION COMPAGNIE');
         const available = Boolean(hm.operation?.simbrief?.company_api_available);
-        statusLine(screen, 6, 'API', available ? 'DISPONIBLE' : 'NON CONFIGUREE', available ? 'green' : 'red');
-        screen.write(9, 2, '1 GENERER OFP SUR SIMBRIEF', { foreground: available ? 'cyan' : 'yellow' });
-        screen.write(11, 2, '2 RECUPERER GENERATION', { foreground: 'cyan' });
-        screen.write(13, 2, '3 RETOUR SOURCES', { foreground: 'white' });
-        screen.write(16, 2, 'RECUPERATION LIEE A LA SESSION', { foreground: 'yellow' });
-        screen.write(20, 2, 'CHOIX : ' + current.input.value, { foreground: 'yellow' });
+        statusLine(screen, 7, 'API AIR INTER', available ? 'DISPONIBLE' : 'NON CONFIGUREE', available ? 'green' : 'red');
+        sectionLabel(screen, 10, 'GENERATION');
+        screen.write(12, 2, '1 GENERER OFP SUR SIMBRIEF', { foreground: available ? 'cyan' : 'yellow' });
+        screen.write(14, 2, '2 RECUPERER GENERATION', { foreground: 'cyan' });
+        screen.write(16, 2, '3 RETOUR SOURCES', { foreground: 'white' });
+        screen.write(19, 2, 'SESSION HERMES LIEE A PROMETHEE', { foreground: 'cyan' });
+        promptLine(screen, 22, current.input.value);
         footer(screen);
       },
       acceptInput: key => /^[1-3]$/.test(key),
@@ -523,13 +535,14 @@
       onRender: (_ctx, screen, current) => {
         serviceLine(screen);
         titleBand(screen, 'PLAN LOCAL', 'FICHIER PLN / XML');
-        statusLine(screen, 6, 'FICHIER', hm.localPlan?.name || 'AUCUN', hm.localPlan ? 'green' : 'yellow');
-        if (hm.localPlan) statusLine(screen, 7, 'TAILLE', Math.max(1, Math.round((hm.localPlan.size || 0) / 1024)) + ' KO');
-        screen.write(10, 2, '1 IMPORTER FICHIER', { foreground: 'cyan' });
-        screen.write(12, 2, '2 EFFACER PLAN LOCAL', { foreground: 'cyan' });
-        screen.write(14, 2, '3 RETOUR SOURCES', { foreground: 'white' });
-        screen.write(17, 2, 'LE FICHIER RESTE LOCAL AU PC', { foreground: 'yellow' });
-        screen.write(20, 2, 'CHOIX : ' + current.input.value, { foreground: 'yellow' });
+        sectionLabel(screen, 7, 'FICHIER LOCAL');
+        statusLine(screen, 9, 'FICHIER', hm.localPlan?.name || 'AUCUN', hm.localPlan ? 'green' : 'yellow');
+        if (hm.localPlan) statusLine(screen, 10, 'TAILLE', Math.max(1, Math.round((hm.localPlan.size || 0) / 1024)) + ' KO');
+        screen.write(13, 2, '1 IMPORTER FICHIER', { foreground: 'cyan' });
+        screen.write(15, 2, '2 EFFACER PLAN LOCAL', { foreground: 'cyan' });
+        screen.write(17, 2, '3 RETOUR SOURCES', { foreground: 'white' });
+        screen.write(20, 2, 'DONNEES CONSERVEES SUR CE POSTE', { foreground: 'yellow' });
+        promptLine(screen, 22, current.input.value);
         footer(screen);
       },
       acceptInput: key => /^[1-3]$/.test(key),
@@ -550,7 +563,7 @@
         menuLine(screen, 11, 3, 'SIMBRIEF / PLANIFICATION');
         menuLine(screen, 13, 4, 'RESEAUX / EQUIPAGES');
         menuLine(screen, 15, 5, 'GUIDE CLAVIER');
-        screen.write(20, 2, 'CHOIX : ' + current.input.value, { foreground: 'yellow' });
+        promptLine(screen, 22, current.input.value);
         footer(screen);
       },
       acceptInput: key => /^[1-5]$/.test(key),
@@ -570,10 +583,10 @@
     terminalSession.register(new mt.MinitelPage('simbrief-pilot', {
       onRender: (_ctx, screen, current) => {
         serviceLine(screen);
-        screen.write(3, 2, 'IMPORT SIMBRIEF / PILOT ID', { foreground: 'yellow' });
-        screen.write(6, 2, 'PILOT ID NUMERIQUE');
-        screen.write(10, 2, '> ' + current.input.value, { foreground: 'cyan' });
-        screen.write(14, 2, 'ENVOI : IMPORTER DERNIER OFP');
+        titleBand(screen, 'IMPORT SIMBRIEF', 'IDENTIFIANT PILOTE');
+        screen.write(8, 2, 'PILOT ID NUMERIQUE', { foreground: 'white' });
+        screen.write(11, 4, '> ' + current.input.value, { foreground: 'cyan' });
+        screen.write(15, 4, 'ENVOI POUR IMPORTER LE DERNIER OFP', { foreground: 'yellow' });
         footer(screen);
       },
       acceptInput: key => /^\d$/.test(key),
@@ -585,17 +598,17 @@
     terminalSession.register(new mt.MinitelPage('dispatch', {
       onRender: (_ctx, screen) => {
         serviceLine(screen);
-        screen.write(2, 1, 'ETAT DISPATCH / READY', { foreground: 'yellow' });
+        titleBand(screen, 'CONTROLE DISPATCH', 'AUTORISATION DE DEPART');
         if (hm.error) return showError(screen);
         const dispatch = hm.dispatch || {};
-        screen.write(4, 2, 'STATUT....... ' + fit(dispatch.status || 'INCONNU', 20), { foreground: dispatch.ready ? 'green' : 'yellow' });
-        (dispatch.checks || []).slice(0, 4).forEach((check, index) => {
-          const row = 7 + index * 3;
-          screen.write(row, 2, (check.ready ? '[OK] ' : '[--] ') + fit(check.code, 10), { foreground: check.ready ? 'green' : 'yellow' });
-          screen.write(row + 1, 4, fit(check.label, 34));
-        });
         const preflight = core.preflightState(hm.status, dispatch);
-        screen.write(20, 2, 'LOCAL READY... ' + (preflight.ready ? 'OUI' : 'NON'), { foreground: preflight.ready ? 'green' : 'yellow' });
+        statusLine(screen, 6, 'ETAT SERVEUR', dispatch.status || 'INCONNU', dispatch.ready ? 'green' : 'yellow');
+        sectionLabel(screen, 8, 'CONTROLES PROMETHEE');
+        (dispatch.checks || []).slice(0, 5).forEach((check, index) => {
+          checkLine(screen, 9 + index * 2, check.code || 'CHECK', Boolean(check.ready), check.label || '');
+        });
+        sectionLabel(screen, 19, 'AUTORISATION LOCALE');
+        screen.write(21, 4, preflight.ready ? 'DEPART AUTORISE' : 'DEPART NON AUTORISE', { foreground: preflight.ready ? 'green' : 'red', blink: !preflight.ready });
         footer(screen);
       }
     }));
@@ -603,7 +616,7 @@
     terminalSession.register(new mt.MinitelPage('simulator', {
       onRender: (_ctx, screen) => {
         serviceLine(screen);
-        screen.write(2, 1, 'ETAT SIMULATEUR', { foreground: 'yellow' });
+        titleBand(screen, 'SIMULATEUR', 'DIAGNOSTIC LIAISON');
         const status = hm.status || {};
         const latest = status.latest || status.Latest || {};
         const value = (camel, pascal = camel) => core.snapshotValue(latest, camel, pascal);
@@ -704,21 +717,22 @@
         serviceLine(screen);
         const m = hm.selectedMessage || {};
         const incoming = m.direction === 'OPS_TO_COCKPIT';
-        screen.write(2, 1, 'MESSAGE DATALINK', { foreground: 'yellow' });
-        screen.write(4, 2, 'DE : ' + fit(incoming ? (m.sender || 'AIR INTER OPS') : 'COCKPIT', 30));
-        screen.write(5, 2, 'TYPE ' + fit(m.category, 8) + ' PRIORITE ' + fit(m.priority, 10));
-        screen.write(6, 2, 'HEURE ' + core.timeLabel(m.createdAt) + '  ETAT ' + fit(m.status, 12));
+        titleBand(screen, 'MESSAGE DATALINK', incoming ? 'RECU DE AIR INTER OPS' : 'EMIS PAR COCKPIT');
+        screen.write(6, 2, 'DE : ' + fit(incoming ? (m.sender || 'AIR INTER OPS') : 'COCKPIT', 30));
+        screen.write(7, 2, 'TYPE ' + fit(m.category, 8) + ' PRIORITE ' + fit(m.priority, 10));
+        screen.write(8, 2, 'HEURE ' + core.timeLabel(m.createdAt) + '  ETAT ' + fit(m.status, 12));
         const body = core.normalise(m.body || '');
         const chunkSize = 180;
         const pages = Math.max(1, Math.ceil(body.length / chunkSize));
         hm.messagePage = Math.max(1, Math.min(pages, hm.messagePage));
         const chunk = body.slice((hm.messagePage - 1) * chunkSize, hm.messagePage * chunkSize);
-        for (let i = 0; i < 5; i += 1) screen.write(9 + i, 2, fit(chunk.slice(i * 36, (i + 1) * 36), 36));
-        screen.write(15, 2, 'PAGE MESSAGE ' + hm.messagePage + '/' + pages, { foreground: 'cyan' });
-        if (incoming && !m.readAt && !m.acknowledgedAt) screen.write(16, 2, '1 MARQUER LU', { foreground: 'cyan' });
-        if (incoming && m.requiresAck && !m.acknowledgedAt) screen.write(17, 2, '2 ACK', { foreground: 'cyan' });
-        if (incoming && !m.localPending) screen.write(18, 2, '3 REPONDRE', { foreground: 'cyan' });
-        screen.write(20, 2, 'CHOIX : ' + current.input.value, { foreground: 'yellow' });
+        sectionLabel(screen, 10, 'TEXTE');
+        for (let i = 0; i < 5; i += 1) screen.write(11 + i, 2, fit(chunk.slice(i * 36, (i + 1) * 36), 36));
+        pageLine(screen, 17, hm.messagePage, pages);
+        if (incoming && !m.readAt && !m.acknowledgedAt) screen.write(18, 2, '1 MARQUER LU', { foreground: 'cyan' });
+        if (incoming && m.requiresAck && !m.acknowledgedAt) screen.write(19, 2, '2 ACCUSER RECEPTION', { foreground: 'cyan' });
+        if (incoming && !m.localPending) screen.write(20, 2, '3 REPONDRE', { foreground: 'cyan' });
+        promptLine(screen, 22, current.input.value);
         footer(screen, pages > 1);
       },
       acceptInput: key => /^[1-3]$/.test(key),
@@ -742,15 +756,15 @@
     terminalSession.register(new mt.MinitelPage('datalink-compose', {
       onRender: (_ctx, screen, current) => {
         serviceLine(screen);
-        screen.write(2, 1, hm.replyTo ? 'REPONSE DATALINK' : 'NOUVEAU MESSAGE DATALINK', { foreground: 'yellow' });
-        screen.write(5, 2, 'DEST : AIR INTER OPS');
-        screen.write(6, 2, 'TYPE : CREW    PRIORITE : ROUTINE');
-        if (hm.replyTo) screen.write(7, 2, 'REPONSE A : ' + fit(hm.replyTo, 24));
-        screen.write(10, 2, 'MESSAGE (MAX 160 CAR.)');
+        titleBand(screen, hm.replyTo ? 'REPONSE DATALINK' : 'NOUVEAU MESSAGE', 'AIR INTER OPS');
+        screen.write(6, 2, 'DEST : AIR INTER OPS');
+        screen.write(7, 2, 'TYPE : CREW    PRIORITE : ROUTINE');
+        if (hm.replyTo) screen.write(8, 2, 'REPONSE A : ' + fit(hm.replyTo, 24));
+        sectionLabel(screen, 10, 'MESSAGE / 160 CARACTERES');
         const body = core.normalise(current.input.value);
         for (let i = 0; i < 4; i += 1) screen.write(12 + i, 2, fit(body.slice(i * 36, (i + 1) * 36), 36), { foreground: 'cyan' });
-        screen.write(17, 2, 'CARACTERES : ' + body.length + '/160');
-        screen.write(19, 2, 'ENVOI : TRANSMETTRE');
+        screen.write(17, 2, 'CARACTERES : ' + body.length + '/160', { foreground: body.length >= 150 ? 'yellow' : 'cyan' });
+        screen.write(20, 4, 'ENVOI POUR TRANSMETTRE', { foreground: 'yellow' });
         footer(screen);
       },
       acceptInput: key => key.length === 1 && terminalSession.input.value.length < 160,
@@ -847,10 +861,11 @@
         screen.write(14, 2, 'MAX BANK...... ' + fit(review.maxBank == null ? '---' : Number(review.maxBank).toFixed(1) + ' DEG', 18));
         screen.write(15, 2, 'SIM RATE MAX.. ' + fit(review.maxSimulationRate == null ? 'X1' : 'X' + Number(review.maxSimulationRate).toFixed(2), 18));
         screen.write(16, 2, 'OBSERVATIONS.. ' + fit(review.observations.length, 5) + ' ANOM. ' + fit(review.issues.length, 4));
+        sectionLabel(screen, 18, 'ACTIONS COMPTE RENDU');
         if (review.readyToFile && !hm.filedReview) screen.write(19, 2, '1 DEPOSER PIREP  2 OBS.  3 ANOM.', { foreground: 'green' });
         else if (hm.filedReview) screen.write(19, 2, '2 OBSERVATIONS   3 ANOMALIES', { foreground: 'green' });
         else screen.write(19, 2, '2 OBSERVATIONS   3 ANOMALIES');
-        screen.write(20, 2, 'CHOIX : ' + current.input.value, { foreground: 'yellow' });
+        promptLine(screen, 22, current.input.value);
         footer(screen);
       },
       acceptInput: key => /^[1-3]$/.test(key),
@@ -873,11 +888,11 @@
         const entries = hm.reviewListMode === 'issues' ? review.issues : review.observations;
         const title = hm.reviewListMode === 'issues' ? 'ANOMALIES / REGLES' : 'OBSERVATIONS FDM';
         titleBand(screen, title, 'CONTROLE FDM');
-        const pages = Math.max(1, Math.ceil(entries.length / 5));
+        const pages = Math.max(1, Math.ceil(entries.length / 4));
         hm.reviewListPage = Math.max(1, Math.min(pages, hm.reviewListPage));
-        const items = entries.slice((hm.reviewListPage - 1) * 5, hm.reviewListPage * 5);
+        const items = entries.slice((hm.reviewListPage - 1) * 4, hm.reviewListPage * 4);
         items.forEach((entry, index) => {
-          const row = 5 + index * 3;
+          const row = 7 + index * 3;
           const at = entry.occurredAt || entry.OccurredAt;
           const code = entry.code || entry.Code || 'OBS';
           const message = entry.message || entry.Message || '';
@@ -896,7 +911,7 @@
       next: () => {
         const review = core.reviewSummary(hm.review || hm.filedReview || hm.status?.review || {});
         const entries = hm.reviewListMode === 'issues' ? review.issues : review.observations;
-        hm.reviewListPage = Math.min(Math.max(1, Math.ceil(entries.length / 5)), hm.reviewListPage + 1);
+        hm.reviewListPage = Math.min(Math.max(1, Math.ceil(entries.length / 4)), hm.reviewListPage + 1);
       },
       previous: () => {
         if (hm.reviewListPage > 1) { hm.reviewListPage -= 1; return null; }
@@ -919,7 +934,7 @@
         menuLine(screen, 15, 1, 'REPRENDRE LE VOL', true);
         menuLine(screen, 16, 2, 'CONSULTER FLIGHT REVIEW');
         menuLine(screen, 17, 3, 'ABANDONNER ET ARCHIVER');
-        screen.write(20, 2, 'CHOIX : ' + current.input.value, { foreground: 'yellow' });
+        promptLine(screen, 22, current.input.value);
         footer(screen);
       },
       acceptInput: key => /^[1-3]$/.test(key),
