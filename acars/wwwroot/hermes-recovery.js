@@ -1,5 +1,5 @@
 // Hermès modularization phase 2 — recovery domain.
-// Kept as a classic script to preserve the existing shared runtime contract.
+// Classic script: preserves the existing shared runtime/global handler contract.
 
 function renderTimeline(selector, entries) {
   const node = $(selector);
@@ -95,7 +95,7 @@ function renderJournalHistory(entries) {
   });
 }
 
-function refreshJournal() {
+async function refreshJournal() {
   try {
     const history = await call('/api/history');
     renderJournalHistory(history);
