@@ -744,8 +744,9 @@ class PortalController extends Controller
                 for ($offset = -1; $offset <= 7; $offset++) {
                     $date = $now->addDays($offset);
                     $departure = $this->scheduledDateTime((string) $flight->dpt_time, $date);
-                    $dayBit = 1 << ($departure?->isoWeekday() - 1);
-                    if (!$departure || (($flight->days ?? 0) !== 0 && !($flight->days & $dayBit))) continue;
+                    if (!$departure) continue;
+                    $dayBit = 1 << ($departure->isoWeekday() - 1);
+                    if (($flight->days ?? 0) !== 0 && !($flight->days & $dayBit)) continue;
 
                     $arrival = $this->scheduledDateTime((string) $flight->arr_time, $date);
                     if ($arrival && $arrival->lte($departure)) $arrival = $arrival->addDay();
