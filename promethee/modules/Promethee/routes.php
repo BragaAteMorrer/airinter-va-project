@@ -18,6 +18,7 @@ use Modules\Promethee\Http\DispatchDeskController;
 use Modules\Promethee\Http\CrmController;
 use Modules\Promethee\Http\AircraftConfigurationAdminController;
 use Modules\Promethee\Http\EngineMaintenanceAdminController;
+use Modules\Promethee\Http\RealSimulatorCertificationController;
 use Modules\Promethee\Http\Api\AircraftConfigurationController;
 use Modules\Promethee\Http\Api\AcarsSimBriefController;
 use Modules\Promethee\Http\Api\AcarsSessionController;
@@ -155,6 +156,10 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::post('/airframes/assign', [AircraftConfigurationAdminController::class, 'assign'])->name('airframes.assign');
         Route::post('/airframes/simulator-profiles', [AircraftConfigurationAdminController::class, 'storeSimulatorProfile'])->name('airframes.simulator-profiles.save');
         Route::post('/airframes/modifications', [AircraftConfigurationAdminController::class, 'storeModification'])->name('airframes.modifications.save');
+        Route::get('/real-simulator-certifications', [RealSimulatorCertificationController::class, 'index'])->name('real-simulator-certifications');
+        Route::post('/real-simulator-certifications', [RealSimulatorCertificationController::class, 'store'])->name('real-simulator-certifications.store');
+        Route::put('/real-simulator-certifications/{certification}', [RealSimulatorCertificationController::class, 'update'])->name('real-simulator-certifications.update');
+        Route::delete('/real-simulator-certifications/{certification}', [RealSimulatorCertificationController::class, 'destroy'])->name('real-simulator-certifications.destroy');
         Route::get('/pireps-emergency', [PortalController::class,'emergencyPireps'])->name('pireps-emergency');
         Route::delete('/pireps-emergency/{id}', [PortalController::class,'emergencyDeletePirep'])->name('pireps-emergency.delete');
         Route::post('/simbrief/api-key', [PortalController::class, 'saveSimbriefApiKey'])->name('simbrief.api-key.save');
