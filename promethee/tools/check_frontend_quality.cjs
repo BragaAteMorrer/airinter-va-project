@@ -370,7 +370,9 @@ expect(prometheeFlights.includes('flight-result-schedule')
 expect(prometheeFlightResults.includes('.flight-result-schedule')
     && prometheeFlightResults.includes('.is-soon')
     && prometheeFlightResults.includes('.flight-cards')
-    && prometheeFlightResults.includes('.airline-air-inter::before')
+    && prometheeFlightResults.includes('.line-card::before')
+    && prometheeFlightResults.includes('.airline-air-charter::before')
+    && prometheeFlightResults.includes('.airline-ics::before')
     && prometheeFlightResults.includes('@media(max-width:760px)'),
   'Prométhée flight cards must preserve timetable proximity, airline accents and responsive treatment.');
 expect(portalController.includes('$personalizedDefault')
