@@ -160,7 +160,7 @@ class AccountController extends Controller
             $user->sendEmailVerificationNotification();
         }
 
-        return redirect()->route('account', ['#' => 'profile'])
+        return redirect(route('account').'#profile')
             ->with('status', 'Profil Argos mis à jour. Les applications Air Inter utiliseront ces données à la prochaine synchronisation.');
     }
 
