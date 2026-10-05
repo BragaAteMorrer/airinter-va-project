@@ -170,6 +170,45 @@ final class PrometheeAirframeMaintenanceTest extends TestCase
         ]);
     }
 
+    public function test_runway_overrun_places_aircraft_on_mandatory_maintenance_hold(): void
+    {
+        $fleet = $this->createSubfleetWithAircraft(1, 'LFPO');
+        $aircraft = $fleet['aircraft']->first();
+        $aircraft->update(['status' => AircraftStatus::ACTIVE, 'state' => AircraftState::PARKED]);
+        $pirep = Pirep::factory()->create(['aircraft_id' => $aircraft->id]);
+
+        /** @var AirframeMaintenanceService $service */
+        $service = app(AirframeMaintenanceService::class);
+        $service->syncFleet();
+
+        $placed = $service->placeRunwayOverrunHold($pirep, 143, '36', '2026-10-05T20:00:00Z');
+
+        $this->assertSame(1, $placed['updated']);
+        $this->assertSame('SAFETY_HOLD', $placed['reason']);
+        $this->assertSame('r', $placed['trigger']);
+        $this->assertSame(AircraftStatus::MAINTENANCE, $aircraft->fresh()->status);
+
+        $state = DB::table('promethee_airframe_maintenance')->where('aircraft_id', $aircraft->id)->first();
+        $this->assertNotNull($state->safety_hold_at);
+        $this->assertSame((string) $pirep->id, (string) $state->safety_hold_pirep_id);
+        $this->assertStringContainsString('Runway overrun', (string) $state->safety_hold_reason);
+        $this->assertStringContainsString('piste 36', (string) $state->safety_hold_reason);
+        $this->assertStringContainsString('143 m', (string) $state->safety_hold_reason);
+
+        $this->assertDatabaseHas('promethee_airframe_maintenance_events', [
+            'aircraft_id' => $aircraft->id,
+            'check_type' => 'r',
+            'event_type' => 'safety_hold',
+        ]);
+
+        $this->assertTrue($service->releaseSafetyHold(
+            (int) $aircraft->id,
+            null,
+            'Inspection après sortie de piste OK.'
+        ));
+        $this->assertSame(AircraftStatus::ACTIVE, $aircraft->fresh()->status);
+    }
+
     public function test_rotation_priority_uses_cycle_limit_as_well_as_time(): void
     {
         $fleet = $this->createSubfleetWithAircraft(1, 'LFPO');
