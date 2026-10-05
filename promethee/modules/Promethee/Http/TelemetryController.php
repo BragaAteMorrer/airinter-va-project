@@ -5,10 +5,14 @@ use App\Models\Pirep;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Modules\Promethee\Services\AirframeMaintenanceService;
 use Modules\Promethee\Services\OperationIdentityService;
 class TelemetryController extends Controller
 {
-    public function __construct(private readonly OperationIdentityService $operationIdentity) {}
+    public function __construct(
+        private readonly OperationIdentityService $operationIdentity,
+        private readonly AirframeMaintenanceService $airframeMaintenance
+    ) {}
 
     public function storeOperation(string $operation, Request $request)
     {
@@ -88,6 +92,35 @@ class TelemetryController extends Controller
             }
         });
 
+        $maintenanceHold = null;
+        $severeLoadSample = collect($data['samples'])
+            ->filter(fn ($sample) =>
+                ($sample['on_ground'] ?? null) === false
+                && is_numeric($sample['g_force'] ?? null)
+            )
+            ->sortByDesc(fn ($sample) => abs((float) $sample['g_force']))
+            ->first(fn ($sample) =>
+                (float) $sample['g_force'] >= 2.9
+                || (float) $sample['g_force'] <= -1.2
+            );
+
+        if ($severeLoadSample) {
+            try {
+                $maintenanceHold = $this->airframeMaintenance->placeSafetyHold(
+                    $pirep,
+                    (float) $severeLoadSample['g_force'],
+                    (string) ($severeLoadSample['recorded_at'] ?? '')
+                );
+            } catch (\Throwable $exception) {
+                logger()->error('hermes_gforce_maintenance_hold_failed', [
+                    'pirep_id' => $pirep->id,
+                    'aircraft_id' => $pirep->aircraft_id,
+                    'g_force' => $severeLoadSample['g_force'] ?? null,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        }
+
         $resolvedOperationId = $operationId;
         if (!$resolvedOperationId && preg_match('/Hermes ACARS \[(op_[^\]]+)\]/', (string) $pirep->source_name, $matches)) {
             $resolvedOperationId = $matches[1];
@@ -126,6 +159,7 @@ class TelemetryController extends Controller
             'pirep_id' => $pirep->id,
             'inserted' => $inserted,
             'received' => count($data['samples']),
+            'maintenance_hold' => $maintenanceHold,
             'live' => true,
         ]]);
     }
