@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\SecurityEvent;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -162,6 +163,15 @@ class AccountController extends Controller
         $user->save();
 
         if ($emailChanged) {
+            SecurityEvent::create([
+                'user_id' => $user->id,
+                'type' => 'profile.email_changed',
+                'severity' => 'medium',
+                'ip_address' => $request->ip(),
+                'user_agent' => mb_substr((string) $request->userAgent(), 0, 1000),
+                'metadata' => ['verification_required' => true],
+                'created_at' => now(),
+            ]);
             $user->sendEmailVerificationNotification();
         }
 

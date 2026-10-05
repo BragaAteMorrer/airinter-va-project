@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\AccountActivityController;
 use App\Http\Controllers\AccountSecurityController;
 use App\Http\Controllers\Admin\SecurityAdminController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -45,6 +46,8 @@ Route::middleware('auth')->get('/auth/passkey/complete', function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/account', AccountController::class)->name('account');
+    Route::get('/account/activity', [AccountActivityController::class, 'index'])->name('account.activity');
+    Route::post('/account/activity/{event}/report', [AccountActivityController::class, 'report'])->middleware('throttle:5,1')->name('account.activity.report');
     Route::put('/account/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');
     Route::put('/account/preferences', [AccountController::class, 'updatePreferences'])->name('account.preferences.update');
 
