@@ -52,6 +52,10 @@ public sealed class FlightDataMonitor
     private const double StabilizedApproachMaxDescentRate = -1000;
     private static readonly TimeSpan StabilizedApproachViolationDuration = TimeSpan.FromSeconds(4);
     private static readonly TimeSpan StabilizedApproachMaxSampleGap = TimeSpan.FromSeconds(2.5);
+    private const double LoadFactorPositiveLimit = 2.5;
+    private const double LoadFactorNegativeLimit = -1.0;
+    private const double LoadFactorMaintenancePositiveLimit = 2.9;
+    private const double LoadFactorMaintenanceNegativeLimit = -1.2;
 
     private AircraftSnapshot? previous;
     private bool approach1000Recorded;
@@ -72,6 +76,8 @@ public sealed class FlightDataMonitor
     private DateTimeOffset approachDescentStartedAt;
     private double approachDescentPeakRate;
     private string? approachDescentPhase;
+    private bool loadFactorExceededReported;
+    private bool loadFactorMaintenanceReported;
 
     public void Reset()
     {
@@ -94,6 +100,8 @@ public sealed class FlightDataMonitor
         approachDescentStartedAt = default;
         approachDescentPeakRate = 0;
         approachDescentPhase = null;
+        loadFactorExceededReported = false;
+        loadFactorMaintenanceReported = false;
     }
 
     public void Restore(IEnumerable<FdmObservation>? existing)
@@ -103,6 +111,8 @@ public sealed class FlightDataMonitor
         var codes = existing.Select(x => x.Code).ToHashSet(StringComparer.Ordinal);
         approach1000Recorded = codes.Any(x => x.StartsWith("APPROACH_1000_", StringComparison.Ordinal));
         approach500Recorded = codes.Any(x => x.StartsWith("APPROACH_500_", StringComparison.Ordinal));
+        loadFactorExceededReported = codes.Contains("LOAD_FACTOR_EXCEEDED");
+        loadFactorMaintenanceReported = codes.Contains("LOAD_FACTOR_MAINTENANCE");
     }
 
     public IReadOnlyList<FdmObservation> Process(
@@ -117,6 +127,7 @@ public sealed class FlightDataMonitor
         RecordApproachGate(current, phase, 1000, 1200, ref approach1000Recorded, result);
         RecordApproachGate(current, phase, 500, 1000, ref approach500Recorded, result);
         RecordStabilizedApproachDescentRate(current, phase, result);
+        RecordLoadFactor(current, phase, result);
         RecordBankExcursion(current, phase, result);
         RecordFlightEvents(flightEvents, phase, result);
 
@@ -369,6 +380,46 @@ public sealed class FlightDataMonitor
             "ft/min",
             approachDescentPhase,
             "UNSTABLE"));
+    }
+
+
+    private void RecordLoadFactor(AircraftSnapshot current, FlightPhase phase, List<FdmObservation> result)
+    {
+        if (current.OnGround != false || current.GForce is not { } g) return;
+
+        var severe = g >= LoadFactorMaintenancePositiveLimit || g <= LoadFactorMaintenanceNegativeLimit;
+        if (severe && !loadFactorMaintenanceReported)
+        {
+            result.Add(new(
+                "LOAD_FACTOR_MAINTENANCE",
+                "flight_dynamics",
+                current.RecordedAt,
+                $"Facteur de charge structurel : {g:0.00} g. Mise en maintenance requise.",
+                "warning",
+                Math.Round(g, 2),
+                "g",
+                FlightTrackingEngine.ToExternalPhase(phase),
+                "MAINTENANCE_REQUIRED"));
+
+            loadFactorMaintenanceReported = true;
+            loadFactorExceededReported = true;
+            return;
+        }
+
+        var exceeded = g >= LoadFactorPositiveLimit || g <= LoadFactorNegativeLimit;
+        if (!exceeded || loadFactorExceededReported) return;
+
+        result.Add(new(
+            "LOAD_FACTOR_EXCEEDED",
+            "flight_dynamics",
+            current.RecordedAt,
+            $"Facteur de charge hors enveloppe : {g:0.00} g.",
+            "attention",
+            Math.Round(g, 2),
+            "g",
+            FlightTrackingEngine.ToExternalPhase(phase),
+            "EXCEEDED"));
+        loadFactorExceededReported = true;
     }
 
     private void RecordBankExcursion(AircraftSnapshot current, FlightPhase phase, List<FdmObservation> result)
