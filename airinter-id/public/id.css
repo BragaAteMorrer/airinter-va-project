@@ -80,3 +80,244 @@ dl{display:grid;margin:20px 0}dl div{display:flex;justify-content:space-between;
     .form-row{align-items:flex-start;flex-direction:column}.product-card .app-status{position:static;grid-column:2}.hero-actions{flex-direction:column}.hero-actions .button{width:100%}
     footer{flex-direction:column}.account-hero h1,.admin-hero h1{font-size:36px}
 }
+
+/* --------------------------------------------------------------------------
+   Argos account console — shared visual language with Hermès
+   Identity remains an Argos product, while the authenticated workspace uses
+   the denser Air Inter operational grammar: rail, panels and four-band mark.
+   -------------------------------------------------------------------------- */
+main:has(.account-hero){
+    width:min(1480px,100%);
+    display:grid;
+    grid-template-columns:220px minmax(0,1fr);
+    column-gap:26px;
+    row-gap:0;
+    align-items:start;
+}
+main:has(.account-hero) .account-hero{
+    grid-column:1/-1;
+    position:relative;
+    overflow:hidden;
+    min-height:132px;
+    margin-bottom:22px;
+    padding:24px 28px;
+    background:linear-gradient(115deg,#0b2943 0%,#103f68 68%,#0b2943 100%);
+    border:1px solid #163f62;
+    border-radius:8px;
+    color:#fff;
+    box-shadow:0 8px 28px rgba(7,26,43,.14);
+}
+main:has(.account-hero) .account-hero:before{
+    content:"";
+    position:absolute;
+    inset:0 auto 0 0;
+    width:8px;
+    background:linear-gradient(
+        to bottom,
+        #0d66b5 0 25%,
+        #1685dc 25% 50%,
+        #72c7ff 50% 75%,
+        #d92d3a 75% 100%
+    );
+}
+main:has(.account-hero) .account-hero:after{
+    content:"ARGOS";
+    position:absolute;
+    right:24px;
+    bottom:-34px;
+    font-size:112px;
+    line-height:1;
+    font-weight:900;
+    letter-spacing:-5px;
+    color:rgba(255,255,255,.045);
+    pointer-events:none;
+}
+main:has(.account-hero) .account-hero h1{color:#fff;font-size:38px;letter-spacing:-1px}
+main:has(.account-hero) .account-hero .muted{color:#c7d8e6}
+main:has(.account-hero) .account-hero .eyebrow{color:#8ed0ff}
+main:has(.account-hero) .security-meter{position:relative;z-index:1}
+main:has(.account-hero) .security-meter small,
+main:has(.account-hero) .security-meter span{color:#c7d8e6}
+main:has(.account-hero) .security-meter>div:last-child>strong{color:#fff}
+main:has(.account-hero) .security-ring:before{background:#0d2f4d}
+
+main:has(.account-hero) .account-tabs{
+    grid-column:1;
+    grid-row:2;
+    position:sticky;
+    top:98px;
+    z-index:10;
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    gap:5px;
+    margin:0;
+    padding:13px 10px 16px;
+    overflow:visible;
+    background:linear-gradient(180deg,#0e2a44 0%,#0a2034 100%);
+    border:1px solid #173b59;
+    border-radius:8px;
+    box-shadow:0 8px 24px rgba(7,26,43,.13);
+}
+main:has(.account-hero) .account-tabs:before{
+    content:"ARGOS · IDENTITY";
+    display:block;
+    padding:5px 10px 12px;
+    margin-bottom:3px;
+    border-bottom:1px solid rgba(255,255,255,.12);
+    color:#8fc0ea;
+    font:800 9px/1.2 ui-monospace,SFMono-Regular,Consolas,monospace;
+    letter-spacing:1.4px;
+}
+main:has(.account-hero) .account-tabs a{
+    position:relative;
+    padding:10px 11px 10px 15px;
+    border:1px solid transparent;
+    border-radius:6px;
+    color:#c4d3df;
+    font-size:11px;
+    letter-spacing:.15px;
+}
+main:has(.account-hero) .account-tabs a:hover,
+main:has(.account-hero) .account-tabs a:focus-visible{
+    background:#173149;
+    border-color:#294c68;
+    color:#fff;
+}
+main:has(.account-hero) .account-tabs a:hover:before,
+main:has(.account-hero) .account-tabs a:focus-visible:before{
+    content:"";
+    position:absolute;
+    left:4px;
+    top:9px;
+    bottom:9px;
+    width:3px;
+    border-radius:3px;
+    background:#d92d3a;
+}
+
+main:has(.account-hero) #overview{
+    grid-column:2;
+    grid-row:2;
+}
+main:has(.account-hero) .section-block,
+main:has(.account-hero) .account-footer-actions{
+    grid-column:2;
+}
+main:has(.account-hero) .section-block{margin-top:27px}
+main:has(.account-hero) .section-head{margin-bottom:12px}
+main:has(.account-hero) .section-head h2{font-size:24px;letter-spacing:-.45px}
+main:has(.account-hero) .card{
+    border-radius:7px;
+    padding:21px;
+    box-shadow:0 4px 16px rgba(16,43,67,.07);
+}
+main:has(.account-hero) .card,
+main:has(.account-hero) .product-card{
+    position:relative;
+    overflow:hidden;
+}
+main:has(.account-hero) .card:before,
+main:has(.account-hero) .product-card:before{
+    content:"";
+    position:absolute;
+    left:0;
+    right:0;
+    top:0;
+    height:3px;
+    background:#0d66b5;
+}
+main:has(.account-hero) .card:nth-child(4n+2):before,
+main:has(.account-hero) .product-card:nth-child(4n+2):before{background:#1685dc}
+main:has(.account-hero) .card:nth-child(4n+3):before,
+main:has(.account-hero) .product-card:nth-child(4n+3):before{background:#72c7ff}
+main:has(.account-hero) .card:nth-child(4n):before,
+main:has(.account-hero) .product-card:nth-child(4n):before{background:#d92d3a}
+main:has(.account-hero) .product-card{border-radius:7px}
+main:has(.account-hero) .product-icon,
+main:has(.account-hero) .security-icon{border-radius:6px}
+
+.readonly-profile{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin:2px 0 4px;
+    padding:12px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    background:var(--panel-2);
+}
+.readonly-profile>div{display:grid;gap:2px}
+.readonly-profile span{
+    color:var(--muted);
+    font-size:9px;
+    font-weight:800;
+    letter-spacing:1px;
+    text-transform:uppercase
+}
+.readonly-profile strong{font:800 16px/1.2 ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--ink)}
+.readonly-profile small{grid-column:1/-1;color:var(--muted);font-size:10px}
+
+.recovery-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.recovery-card{min-height:190px;display:flex;flex-direction:column;align-items:flex-start}
+.recovery-card h3{margin:12px 0 4px}
+.recovery-card p{margin:0 0 16px;color:var(--muted);font-size:12px}
+.recovery-card .button,.recovery-card form{margin-top:auto}
+.recovery-state{
+    display:inline-flex;
+    padding:4px 7px;
+    border:1px solid var(--line);
+    border-radius:4px;
+    color:var(--muted);
+    background:var(--panel-2);
+    font:900 9px/1 ui-monospace,SFMono-Regular,Consolas,monospace;
+    letter-spacing:1px;
+}
+.recovery-card.ready .recovery-state{border-color:#9ed6bf;background:#e9f7f1;color:#126545}
+.recovery-card.attention .recovery-state{border-color:#efc78f;background:#fff4e4;color:#915408}
+
+html[data-theme="dark"] main:has(.account-hero) .card,
+html[data-theme="dark"] main:has(.account-hero) .product-card{
+    box-shadow:none;
+    border-color:#36546c;
+}
+html[data-theme="dark"] .readonly-profile{border-color:#36546c}
+html[data-theme="dark"] .recovery-card.ready .recovery-state{background:#123326;border-color:#3e8063;color:#c9f4df}
+html[data-theme="dark"] .recovery-card.attention .recovery-state{background:#3b301c;border-color:#8d7137;color:#ffe2a1}
+
+@media(prefers-color-scheme:dark){
+    html[data-theme="system"] main:has(.account-hero) .card,
+    html[data-theme="system"] main:has(.account-hero) .product-card{box-shadow:none;border-color:#36546c}
+    html[data-theme="system"] .readonly-profile{border-color:#36546c}
+    html[data-theme="system"] .recovery-card.ready .recovery-state{background:#123326;border-color:#3e8063;color:#c9f4df}
+    html[data-theme="system"] .recovery-card.attention .recovery-state{background:#3b301c;border-color:#8d7137;color:#ffe2a1}
+}
+
+@media(max-width:1120px){
+    .recovery-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:960px){
+    main:has(.account-hero){display:block;width:min(1240px,100%)}
+    main:has(.account-hero) .account-hero{min-height:0;margin-bottom:14px}
+    main:has(.account-hero) .account-tabs{
+        position:sticky;
+        top:80px;
+        display:flex;
+        flex-direction:row;
+        overflow:auto;
+        padding:8px;
+        margin-bottom:20px;
+        background:#0e2a44;
+    }
+    main:has(.account-hero) .account-tabs:before{display:none}
+    main:has(.account-hero) .account-tabs a{white-space:nowrap;padding:8px 10px}
+    main:has(.account-hero) .account-tabs a:hover:before,
+    main:has(.account-hero) .account-tabs a:focus-visible:before{display:none}
+}
+@media(max-width:720px){
+    main:has(.account-hero) .account-hero{padding:20px 18px 22px;border-radius:6px}
+    main:has(.account-hero) .account-hero:after{font-size:72px;right:10px;bottom:-22px}
+    main:has(.account-hero) .card{padding:18px}
+    .recovery-grid,.readonly-profile{grid-template-columns:1fr}
+    .readonly-profile small{grid-column:1}
+}
