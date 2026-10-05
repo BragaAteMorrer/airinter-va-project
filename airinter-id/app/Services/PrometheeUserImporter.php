@@ -51,6 +51,10 @@ class PrometheeUserImporter
                         $user->display_name = (string) $legacy->name;
                         $user->preferred_locale ??= 'fr';
                         $user->timezone = filled($legacy->timezone ?? null) ? (string) $legacy->timezone : 'Europe/Paris';
+                        $user->country = filled($legacy->country ?? null) ? strtoupper((string) $legacy->country) : null;
+                        $user->home_airport_id = filled($legacy->home_airport_id ?? null) ? strtoupper((string) $legacy->home_airport_id) : null;
+                        $user->vatsim_id = filled($legacy->vatsim_id ?? null) ? (string) $legacy->vatsim_id : null;
+                        $user->ivao_id = filled($legacy->ivao_id ?? null) ? (string) $legacy->ivao_id : null;
                         $user->state = $state;
                         $user->email_verified_at = $legacy->email_verified_at ?? null;
 
