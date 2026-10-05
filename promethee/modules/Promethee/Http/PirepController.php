@@ -16,7 +16,7 @@ use App\Services\FileService;
 use App\Services\UserService;
 use App\Support\Money;
 use App\Support\Countries;
-use Modules\Promethee\Services\{AirframeMaintenanceService,BrandingService,BulletinService,CompanyAccessService,DemandProfileService,EconomyFareResolver,EconomyService,EngineMaintenanceService,FleetRotationService,FlightOpsService,LegacyPirepScoringService,OperationalWeatherService,PilotPirepDeletionService,PirepJournalService,RegionalOperationsService,SafetyAnalyzer};
+use Modules\Promethee\Services\{AirframeMaintenanceService,BrandingService,BulletinService,CompanyAccessService,DemandProfileService,EconomyFareResolver,EconomyService,EngineMaintenanceService,FleetRotationService,FlightOpsService,LegacyPirepScoringService,OperationalWeatherService,PilotPirepDeletionService,PirepFinancePresentationService,PirepJournalService,RegionalOperationsService,SafetyAnalyzer};
 
 
 class PirepController extends PrometheeWebController
@@ -75,14 +75,15 @@ public function pirep(string $id, Request $r) {
             if ($candidate!==''&&is_numeric($candidate)) { $simbriefPassengers=max(0,(int)round((float)$candidate)); break; }
         }
 
-        $finance = $this->pirepFinance($pirep);
+        $passengerCount = $farePassengers > 0 ? $farePassengers : $simbriefPassengers;
+        $finance = app(PirepFinancePresentationService::class)->build($pirep, $passengerCount);
 
         return $this->page('pirep', [
             'pirep' => $pirep,
             'flightJournal' => $this->pirepJournal($pirep, $companyScore),
             'companyScore' => $companyScore,
             'finance' => $finance,
-            'passengerCount' => $farePassengers > 0 ? $farePassengers : $simbriefPassengers,
+            'passengerCount' => $passengerCount,
             'passengerSource' => $farePassengers > 0 ? 'PIREP' : ($simbriefPassengers !== null ? 'OFP SimBrief' : null),
             'canDeletePirep' => app(PilotPirepDeletionService::class)->canDelete($pirep, $r->user()),
         ]);
@@ -93,35 +94,6 @@ private function pirepJournal(Pirep $pirep, array $companyScore = [])
         return app(PirepJournalService::class)->build($pirep, $companyScore);
     }
 
-private function pirepFinance(Pirep $pirep): array
-    {
-        $companyTransactions = $pirep->airline?->journal
-            ? $pirep->airline->journal
-                ->transactionsReferencingObjectQuery($pirep)
-                ->orderBy('post_date')
-                ->get()
-            : collect();
-
-        $pilotTransactions = $pirep->user?->journal
-            ? $pirep->user->journal
-                ->transactionsReferencingObjectQuery($pirep)
-                ->orderBy('post_date')
-                ->get()
-            : collect();
-
-        $credits = (int) $companyTransactions->sum('credit');
-        $debits = (int) $companyTransactions->sum('debit');
-        $pilotNet = (int) $pilotTransactions->sum('credit') - (int) $pilotTransactions->sum('debit');
-
-        return [
-            'company_transactions' => $companyTransactions,
-            'pilot_transactions' => $pilotTransactions,
-            'credits' => new Money($credits),
-            'debits' => new Money($debits),
-            'net' => new Money($credits - $debits),
-            'pilot_net' => new Money($pilotNet),
-        ];
-    }
 
 public function repeatPirep(string $id, Request $r, \App\Services\BidService $bids) {
         $pirep = Pirep::with('flight')
