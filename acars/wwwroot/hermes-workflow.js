@@ -1,5 +1,5 @@
 // Hermès modularization phase 2 — workflow domain.
-// Kept as a classic script to preserve the existing shared runtime contract.
+// Classic script: preserves the existing shared runtime/global handler contract.
 
 function snapshotValue(snapshot, camel, pascal = camel) {
   return snapshot?.[camel] ?? snapshot?.[pascal] ?? null;
