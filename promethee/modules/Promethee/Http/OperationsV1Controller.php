@@ -318,7 +318,10 @@ class OperationsV1Controller extends Controller
     {
         $bid = $this->bid($bidId, $request);
         $flight = $bid->flight;
-        $allowed = $this->userSvc->getAllowableSubfleets($request->user())->pluck('id')->all();
+        $allowed = array_values(array_unique(array_merge(
+            $this->userSvc->getAllowableSubfleets($request->user())->pluck('id')->all(),
+            app(\Modules\Promethee\Services\ShopEntitlementService::class)->subfleetIds($request->user())
+        )));
         $flightAllowed = $flight->subfleets->pluck('id')->all();
 
         $operationId = $this->operationIdentity->id($bid);
