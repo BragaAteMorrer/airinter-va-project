@@ -33,6 +33,8 @@ public record FlightRecoveryInfo(
 public sealed class FlightRecorder
 {
     private TimeSpan positionInterval = TimeSpan.FromSeconds(15);
+    private static readonly TimeSpan TrackPersistenceInterval = TimeSpan.FromSeconds(15);
+    private const int MaxTrackPoints = 2880; // 12 h at 15 s: enough to redraw the whole route after a CTD.
     public readonly object Gate = new();
     public readonly SemaphoreSlim NetworkGate = new(1, 1);
     private readonly string folder;
@@ -151,7 +153,7 @@ public sealed class FlightRecorder
             Pending = [];
             PendingEvents = [];
             PendingFacts = [];
-            Track = [];
+            Track = [new(sample.RecordedAt, sample.Lat, sample.Lon, sample.Altitude)];
             Profile = [new(sample.RecordedAt, sample.Altitude, sample.Fuel, sample.Gs)];
             tracking.Process(snapshot);
             fdm.Process(snapshot, FlightPhase.Boarding, []);
@@ -223,14 +225,23 @@ public sealed class FlightRecorder
         ApplyTrackingDecision(decision, s);
         AddObservations(fdm.Process(snapshot, decision.Phase, decision.Events));
 
-        Track.Add(new(s.RecordedAt, s.Lat, s.Lon, s.Altitude));
-        if (Track.Count > 720) Track.RemoveRange(0, Track.Count - 720);
+        // Persist a decimated, full-flight map trace instead of the previous
+        // one-point-per-capture ring buffer (720 points could be only ~12 min).
+        // This state is serialized locally, so the route can be redrawn after
+        // a simulator/app CTD and recovery.
+        var phaseChanged = Flight.Phase != phaseBefore;
+        var trackChanged = Track.Count == 0
+            || s.RecordedAt - Track[^1].RecordedAt >= TrackPersistenceInterval
+            || phaseChanged;
+        if (trackChanged) {
+            Track.Add(new(s.RecordedAt, s.Lat, s.Lon, s.Altitude));
+            if (Track.Count > MaxTrackPoints) Track.RemoveRange(0, Track.Count - MaxTrackPoints);
+        }
 
         // Keep a lightweight, full-flight series for Flight Review. This is
         // deliberately separate from the live-map track and network queue:
         // one point every 30 seconds plus phase transitions gives several
         // hours of profile history without growing the local state endlessly.
-        var phaseChanged = Flight.Phase != phaseBefore;
         var profileChanged = Profile.Count == 0
             || s.RecordedAt - Profile[^1].RecordedAt >= TimeSpan.FromSeconds(30)
             || phaseChanged;
@@ -239,7 +250,7 @@ public sealed class FlightRecorder
             if (Profile.Count > 720) Profile.RemoveRange(0, Profile.Count - 720);
         }
 
-        var changed = phaseChanged || profileChanged;
+        var changed = phaseChanged || profileChanged || trackChanged;
         if (previous is not null) {
             var dt = (s.RecordedAt - previous.RecordedAt).TotalSeconds;
             if (dt > 0 && dt <= 10) {

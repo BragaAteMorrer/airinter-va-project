@@ -47,6 +47,24 @@ final class LegacyPirepScoringConfigurationTest extends TestCase
                 'updated_at' => now(),
             ]
         );
+
+        DB::table('vmsacars_rules')->updateOrInsert(
+            ['id' => 'STABILIZED_APPROACH'],
+            [
+                'name' => 'Approche stabilisée · taux de descente',
+                'description' => 'Entre 1000 ft AGL et le toucher : VS >= -1000 ft/min pendant 4 s.',
+                'parameter' => null,
+                'points' => 10,
+                'enabled' => true,
+                'has_parameter' => false,
+                'repeatable' => false,
+                'delay' => 4,
+                'cooldown' => 0,
+                'order' => 170,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
     }
 
     public function test_admin_configuration_exposes_authoritative_vmsacars_profile(): void
@@ -62,6 +80,55 @@ final class LegacyPirepScoringConfigurationTest extends TestCase
         $this->assertSame(60, $taxi['cooldown']);
         $this->assertTrue($taxi['repeatable']);
         $this->assertTrue($taxi['enabled']);
+    }
+
+    public function test_stabilized_approach_rule_keeps_points_configurable_with_fixed_criterion(): void
+    {
+        $service = app(LegacyPirepScoringService::class);
+
+        $rule = collect($service->configurationRules())->firstWhere('id', 'STABILIZED_APPROACH');
+        $this->assertNotNull($rule);
+        $this->assertFalse($rule['has_parameter']);
+        $this->assertNull($rule['parameter']);
+        $this->assertSame(4, $rule['delay']);
+        $this->assertSame(10, $rule['points']);
+
+        $updated = $service->updateRuleConfiguration('STABILIZED_APPROACH', [
+            'points' => 12,
+            'delay' => 4,
+            'cooldown' => 0,
+            'repeatable' => false,
+            'enabled' => true,
+        ]);
+
+        $this->assertSame(12, $updated['points']);
+        $this->assertNull($updated['parameter']);
+        $this->assertSame(4, $updated['delay']);
+    }
+
+    public function test_stabilized_approach_scoring_uses_only_sustained_descent_rate_fact(): void
+    {
+        $service = app(LegacyPirepScoringService::class);
+        $facts = [
+            [
+                'code' => 'APPROACH_1000_UNSTABLE',
+                'occurred_at' => '2026-10-05T00:10:00Z',
+                'value' => -800,
+                'unit' => 'ft/min',
+            ],
+            [
+                'code' => 'APPROACH_DESCENT_RATE_UNSTABLE',
+                'occurred_at' => '2026-10-05T00:10:10Z',
+                'value' => -1450,
+                'unit' => 'ft/min',
+            ],
+        ];
+
+        $occurrences = $this->invokeMethod($service, 'stabilizedApproach', [$facts]);
+
+        $this->assertCount(1, $occurrences);
+        $this->assertSame('APPROACH_DESCENT_RATE_UNSTABLE', $occurrences[0]['code']);
+        $this->assertSame(-1450, $occurrences[0]['value']);
     }
 
     public function test_admin_update_changes_the_same_rule_consumed_by_hermes_scoring(): void

@@ -53,6 +53,25 @@ function currentPlannedRoute() {
 function currentMapFitPoints() {
   return [...currentPlannedRoute(), ...(Array.isArray(flightMapState.lastTrack) ? flightMapState.lastTrack.map(normalizedTrackPoint).filter(Boolean) : [])];
 }
+function restorePlannedRouteFromBriefing(briefing, initialRoute = '') {
+  const ofp = briefing?.ofp;
+  if (!ofp?.available) return false;
+  flightPlan = {
+    ...(flightPlan || {}),
+    id: ofp.id ?? flightPlan?.id ?? null,
+    source: flightPlan?.source || 'promethee_recovery',
+    route: ofp.route || briefing?.route || initialRoute || null,
+    initial_altitude: ofp.initial_altitude ?? briefing?.level ?? null,
+    level: ofp.initial_altitude ?? briefing?.level ?? null,
+    cost_index: ofp.cost_index ?? null,
+    block_fuel: ofp.block_fuel ?? null,
+    estimated_time_enroute: ofp.estimated_time_enroute ?? null,
+    route_points: Array.isArray(ofp.route_points) ? ofp.route_points : []
+  };
+  drawMap(lastStatus?.track || [], lastStatus?.latest || {});
+  return true;
+}
+window.restorePlannedRouteFromBriefing = restorePlannedRouteFromBriefing;
 function plannedProgress(planned, current) {
   if (!current || planned.length < 2) return null;
   let best=0, bestDistance=Infinity;

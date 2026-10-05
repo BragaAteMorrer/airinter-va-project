@@ -120,6 +120,28 @@ public sealed class FlightTrackingEngineTests
     }
 
     [Fact]
+    public void Landing_roll_does_not_become_taxi_in_above_twenty_knots()
+    {
+        var engine = new FlightTrackingEngine();
+        engine.Restore(FlightPhase.Final);
+        var t = DateTimeOffset.Parse("2026-10-05T00:00:00Z");
+
+        engine.Process(Snapshot(t, false, 135, 20, -200, false, gearDown: true, flaps: 30));
+        engine.Process(Snapshot(t.AddSeconds(1), true, 120, 0, -180, false, touchdownRate: -180));
+
+        var rollout = engine.Process(Snapshot(t.AddSeconds(10), true, 29.5, 0, 0, false));
+        Assert.Equal(FlightPhase.Landing, rollout.Phase);
+        Assert.DoesNotContain(rollout.Events, x => x.Type == "TAXI_IN");
+
+        var stillRolling = engine.Process(Snapshot(t.AddSeconds(15), true, 23, 0, 0, false));
+        Assert.Equal(FlightPhase.Landing, stillRolling.Phase);
+
+        var taxi = engine.Process(Snapshot(t.AddSeconds(20), true, 20, 0, 0, false));
+        Assert.Equal(FlightPhase.TaxiIn, taxi.Phase);
+        Assert.Contains(taxi.Events, x => x.Type == "TAXI_IN");
+    }
+
+    [Fact]
     public void Bounced_landing_confirms_only_final_touchdown()
     {
         var engine = new FlightTrackingEngine();

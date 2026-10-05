@@ -1115,10 +1115,22 @@ async function refreshOperations() {
     const operations = Array.isArray(payload) ? payload : (payload?.operations || payload?.data || []);
     renderOperations(operations, 'reservations');
 
+    const localFlight = lastStatus?.flight || lastStatus?.Flight || {};
+    const recoveryOperationId = localFlight.operationId || localFlight.OperationId
+      || lastStatus?.recovery?.operationId || lastStatus?.recovery?.OperationId || null;
+    const recoveryOperation = !selectedOperation && recoveryOperationId
+      ? operations.find(operation => String(operation.operation_id || operation.operationId || '') === String(recoveryOperationId))
+      : null;
     const canAutoSelect = operations.length === 1
       && !selectedOperation
       && !lastStatus?.recoveryAvailable;
-    if (canAutoSelect) {
+
+    if (recoveryOperation) {
+      const flight = normalizeFlight(recoveryOperation.flight || recoveryOperation);
+      showMessage('#flightMessage', 'Vol interrompu détecté : ' + displayFlightIdent(flight) + '. Restauration du Dispatch et de la route…');
+      await selectOperation(recoveryOperation);
+      showMessage('#flightMessage', 'Vol interrompu restauré. Reprenez-le depuis le Recovery Center.');
+    } else if (canAutoSelect) {
       const flight = normalizeFlight(operations[0].flight || operations[0]);
       showMessage('#flightMessage', 'Réservation active détectée : ' + displayFlightIdent(flight) + '. Chargement automatique…');
       await selectOperation(operations[0]);
@@ -1295,6 +1307,11 @@ async function loadRouteSuggestions(operationRef, initialRoute = '') {
   try {
     const briefing = unwrap(await call('/api/v1/operations/' + encodeURIComponent(operationRef) + '/briefing'));
     renderRouteSuggestions(briefing, initialRoute);
+
+    if (restorePlannedRouteFromBriefing(briefing, initialRoute)) {
+      renderOperationLoad(selectedAircraft, flightPlan);
+      renderSimBriefPreparationSummary();
+    }
   } catch {
     renderRouteSuggestions({ route_options: [] }, initialRoute);
   }
@@ -2965,6 +2982,9 @@ $('#recoveryResumeBtn').onclick = async () => {
     $('#recoveryCenter').hidden = true;
     document.querySelector('[data-tab="record"]')?.click();
     await refreshStatus();
+    // Rehydrate the exact Prométhée operation/OFP after recovery. This restores
+    // the planned route even when the desktop state was lost with the CTD.
+    await refreshOperations();
   } catch (error) {
     showMessage('#recoveryMessage', friendlyError(error), true);
   }

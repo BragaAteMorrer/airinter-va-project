@@ -32,6 +32,9 @@ public sealed class FlightTrackingEngine
     private static readonly TimeSpan TouchdownConfirmation = TimeSpan.FromSeconds(8);
     private static readonly TimeSpan BlockOnConfirmation = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan TouchAndGoConfirmation = TimeSpan.FromSeconds(8);
+    // Keep the landing roll out of TAXI_IN/FDM. The former 30 kt switch made
+    // rollout speeds (for example 29.5 kt) become the recorded taxi peak.
+    private const double TaxiInEntrySpeedKnots = 20;
 
     private AircraftSnapshot? previous;
     private DateTimeOffset? parkedSince;
@@ -287,7 +290,8 @@ public sealed class FlightTrackingEngine
         if (Phase == FlightPhase.Landing
             && landingConfirmed
             && current.OnGround == true
-            && (current.GroundSpeedKnots ?? 0) < 30)
+            && current.GroundSpeedKnots is { } groundSpeed
+            && groundSpeed <= TaxiInEntrySpeedKnots)
             Transition(FlightPhase.TaxiIn, "TAXI_IN", current, events);
     }
 

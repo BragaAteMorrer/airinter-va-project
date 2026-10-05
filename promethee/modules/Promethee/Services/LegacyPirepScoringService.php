@@ -382,7 +382,7 @@ final class LegacyPirepScoringService
                 ['PAUSE'],
                 fn ($fact) => (float) ($fact['value'] ?? 0) >= max(1, $delay)
             ),
-            'STABILIZED_APPROACH' => $this->stabilizedApproach($facts, $parameter),
+            'STABILIZED_APPROACH' => $this->stabilizedApproach($facts),
             'STALL_WARNING' => $this->telemetryEpisodesIfAvailable(
                 $samples,
                 ['stall_warning'],
@@ -483,12 +483,12 @@ final class LegacyPirepScoringService
         return $telemetry ?? $this->factOccurrences($facts, ['SLEW']);
     }
 
-    private function stabilizedApproach(array $facts, float $parameter): array
+    private function stabilizedApproach(array $facts): array
     {
-        $gate = (int) round($parameter);
-        if (!in_array($gate, [500, 1000], true)) return [];
-
-        return $this->factOccurrences($facts, ['APPROACH_'.$gate.'_UNSTABLE']);
+        // Hermès evaluates this at simulator sampling rate so "4 continuous
+        // seconds" is real continuity, not an inference from the 15 s network
+        // position interval. Prométhée remains authoritative only for points.
+        return $this->factOccurrences($facts, ['APPROACH_DESCENT_RATE_UNSTABLE']);
     }
 
     private function reversersActive(array $sample): bool
