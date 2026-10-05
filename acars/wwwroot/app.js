@@ -211,7 +211,58 @@ const appearance = $('#appearance');
 const language = $('#language');
 const hermesI18n = window.HermesI18n || { defaultLanguage: 'fr', supportedLanguages: ['fr'], normalize: () => 'fr', messages: { fr: {} } };
 const allowedLanguages = hermesI18n.supportedLanguages;
-const allowedEras = ['modern', '2000', 'minitel'];
+const baseEras = ['modern', '2000', 'minitel'];
+let allowedEras = [...baseEras];
+let hermesEntitlements = [];
+
+const entitlementAssetKey = entitlement => entitlement?.metadata?.asset_key || entitlement?.metadata?.assetKey || entitlement?.target_id || entitlement?.targetId || '';
+const hasHermesEntitlement = key => hermesEntitlements.some(item => entitlementAssetKey(item) === key);
+const entitlementLabels = { hermes_theme:'Thème', hermes_sound_pack:'Pack sons', hermes_efb_skin:'Skin EFB', livery:'Livrée' };
+
+function applyHermesEntitlements(configuration) {
+  hermesEntitlements = Array.isArray(configuration?.entitlements ?? configuration?.Entitlements)
+    ? (configuration.entitlements ?? configuration.Entitlements) : [];
+  const premiumEraMap = { 'theme.airinter-1978':'airinter-1978', 'theme.minitel-ambre':'minitel-ambre' };
+  allowedEras = [...baseEras, ...Object.entries(premiumEraMap).filter(([key]) => hasHermesEntitlement(key)).map(([,era]) => era)];
+
+  document.querySelectorAll('[data-premium-key]').forEach(option => {
+    const owned = hasHermesEntitlement(option.dataset.premiumKey);
+    option.disabled = !owned;
+    const raw = option.textContent.replace(/^🔒\s*/, '').replace(/^✓\s*/, '');
+    option.textContent = owned ? '✓ ' + raw : '🔒 ' + raw;
+    option.title = owned ? 'Débloqué dans la boutique Air Inter' : 'À débloquer dans la boutique Prométhée';
+  });
+
+  const library = $('#hermesEntitlementLibrary');
+  if (library) {
+    const assets = hermesEntitlements.filter(item => ['hermes_theme','hermes_sound_pack','hermes_efb_skin','livery'].includes(item.type ?? item.Type));
+    library.innerHTML = assets.length ? assets.map(item => {
+      const type = item.type ?? item.Type;
+      const key = entitlementAssetKey(item);
+      const expires = item.expires_at ?? item.expiresAt ?? item.ExpiresAt;
+      return `<article class="observation shop-entitlement"><strong>${escapeHtml(entitlementLabels[type] || type)}</strong><span>${escapeHtml(key || 'Contenu Air Inter')}</span><small>${expires ? 'Jusqu’au ' + new Date(expires).toLocaleString() : 'Permanent'}</small></article>`;
+    }).join('') : '<p class="empty">Aucun contenu boutique Hermès débloqué.</p>';
+  }
+
+  const savedEra = localStorage.hermesEra;
+  if (savedEra && !allowedEras.includes(savedEra)) applyDisplay('modern', document.body.dataset.appearance || 'light');
+
+  const sound = $('#hermesSoundPack');
+  const efb = $('#hermesEfbSkin');
+  if (sound) {
+    const saved = localStorage.hermesSoundPack || 'default';
+    sound.value = [...sound.options].some(o => o.value === saved && !o.disabled) ? saved : 'default';
+    localStorage.hermesSoundPack = sound.value;
+  }
+  if (efb) {
+    const saved = localStorage.hermesEfbSkin || 'default';
+    efb.value = [...efb.options].some(o => o.value === saved && !o.disabled) ? saved : 'default';
+    localStorage.hermesEfbSkin = efb.value;
+    document.body.dataset.efbSkin = efb.value;
+  }
+}
+
+window.applyHermesEntitlements = applyHermesEntitlements;
 const allowedAppearances = ['light', 'dark'];
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -250,6 +301,7 @@ function applyDisplay(eraValue, appearanceValue, persist = true) {
   era.value = nextEra;
   appearance.value = nextAppearance;
   if (persist) {
+    if (!allowedEras.includes(nextEra)) return;
     localStorage.hermesEra = nextEra;
     localStorage.hermesAppearance = nextAppearance;
     if (!reduceMotion) {
@@ -274,6 +326,18 @@ era.onchange = () => {
   }
 };
 appearance.onchange = () => applyDisplay(document.body.dataset.era, appearance.value);
+const hermesSoundPack = $('#hermesSoundPack');
+const hermesEfbSkin = $('#hermesEfbSkin');
+if (hermesSoundPack) hermesSoundPack.onchange = () => {
+  if (hermesSoundPack.selectedOptions[0]?.disabled) { hermesSoundPack.value='default'; return; }
+  localStorage.hermesSoundPack = hermesSoundPack.value;
+  document.body.dataset.soundPack = hermesSoundPack.value;
+};
+if (hermesEfbSkin) hermesEfbSkin.onchange = () => {
+  if (hermesEfbSkin.selectedOptions[0]?.disabled) { hermesEfbSkin.value='default'; return; }
+  localStorage.hermesEfbSkin = hermesEfbSkin.value;
+  document.body.dataset.efbSkin = hermesEfbSkin.value;
+};
 const storedLanguage = localStorage.hermesLanguage || navigator.language || hermesI18n.defaultLanguage;
 applyLanguage(storedLanguage, false);
 if (language) language.onchange = () => applyLanguage(language.value);
@@ -337,6 +401,7 @@ async function login(form) {
   try {
     const response = await call('/api/login', body);
     pilotIdentity(response);
+    applyHermesEntitlements(response.configuration || response.Configuration || {});
     setAuthenticated(true);
     showMessage('#loginMessage', 'Connexion réussie. Chargement de vos opérations…');
     await refreshOperations();
@@ -357,6 +422,7 @@ async function loginWithArgos() {
   try {
     const response = await call('/api/login/argos');
     pilotIdentity(response);
+    applyHermesEntitlements(response.configuration || response.Configuration || {});
     setAuthenticated(true);
     showMessage('#loginMessage', 'Connexion Argos réussie. Chargement de vos opérations…');
     await refreshOperations();

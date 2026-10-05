@@ -75,7 +75,7 @@
     screen.write(4, 12, fit(subtitle || 'SERVICE TELEMATIQUE', 27), { foreground: 'white' });
   };
 
-  const noticeBand = (screen, row, text, background = 'red', foreground = 'white') => {
+  const noticeBand = (screen, row, text, background = 'green', foreground = 'black') => {
     writeBand(screen, row, text, background, foreground);
   };
 
