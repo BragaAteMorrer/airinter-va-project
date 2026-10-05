@@ -1337,8 +1337,13 @@ class PortalController extends PrometheeWebController
         return $this->page('admin-airlines', ['airlines'=>$airlines,'countries'=>Countries::getSelectList()]);
     }
     public function saveAdminAirline(Request $r) {
-        $data=$r->validate(['id'=>'nullable|integer|exists:airlines,id','icao'=>'required|string|max:5','iata'=>'nullable|string|max:5','name'=>'required|string|max:191','callsign'=>'nullable|string|max:191','logo'=>'nullable|url|max:2000','country'=>'nullable|string|size:2','active'=>'nullable|boolean','min_flight_hours'=>'nullable|integer|min:0|max:100000']);
-        $attributes=collect($data)->except(['id','min_flight_hours'])->all(); $attributes['active']=$r->boolean('active');
+        $data=$r->validate(['id'=>'nullable|integer|exists:airlines,id','icao'=>'required|string|max:5','iata'=>'nullable|string|max:5','name'=>'required|string|max:191','callsign'=>'nullable|string|max:191','logo'=>'nullable|string|max:2000','logo_upload'=>'nullable|image|mimes:png,jpg,jpeg,webp|max:2048','country'=>'nullable|string|size:2','active'=>'nullable|boolean','min_flight_hours'=>'nullable|integer|min:0|max:100000']);
+        $attributes=collect($data)->except(['id','min_flight_hours','logo_upload'])->all();
+        if ($r->hasFile('logo_upload')) {
+            $filename = strtolower(preg_replace('/[^A-Za-z0-9_-]+/', '-', (string) $data['icao'])).'-'.now()->format('YmdHis').'.'.$r->file('logo_upload')->extension();
+            $attributes['logo'] = $r->file('logo_upload')->storeAs('airline-logos', $filename, config('filesystems.public_files'));
+        }
+        $attributes['active']=$r->boolean('active');
         if (!empty($data['id'])) {
             $airline = Airline::findOrFail($data['id']); $airline->update($attributes);
         } else {
