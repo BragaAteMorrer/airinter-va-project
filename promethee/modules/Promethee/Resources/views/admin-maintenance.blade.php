@@ -221,7 +221,7 @@
         @endforeach
         <td>
           @if($state->safety_hold_at)
-            <strong>Inspection facteur de charge</strong><br>
+            <strong>Inspection FDM obligatoire</strong><br>
             <small>{{ \Carbon\Carbon::parse($state->safety_hold_at)->locale('fr')->isoFormat('DD/MM HH:mm') }} · PIREP {{ $state->safety_hold_pirep_id ?: '—' }}</small>
             @if($state->active_check)<br><strong>{{ strtoupper($state->active_check) }} Check en parallèle</strong>@endif
           @elseif($state->active_check)
@@ -276,7 +276,12 @@
       <tr>
         <td>{{ \Carbon\Carbon::parse($event->occurred_at)->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') }}</td>
         <td><strong>{{ $event->registration }}</strong></td>
-        <td>{{ $event->check_type === 'g' ? 'FDM / facteur de charge' : strtoupper($event->check_type).' Check' }}</td>
+        <td>
+          @if($event->check_type === 'g') FDM / facteur de charge
+          @elseif($event->check_type === 'r') FDM / sortie de piste
+          @else {{ strtoupper($event->check_type).' Check' }}
+          @endif
+        </td>
         <td>
           @if($event->event_type === 'safety_hold') Immobilisation sécurité
           @elseif($event->event_type === 'safety_release') Remise en service
