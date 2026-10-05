@@ -162,12 +162,12 @@
   const updateCursor = () => {
     if (!renderer || !session) return;
     const page = session.currentPageId;
-    if (page === 'home') return renderer.showCursor(19, Math.min(39, 20 + session.input.value.length), true);
+    if (page === 'home') return renderer.showCursor(19, Math.min(39, 21 + session.input.value.length), true);
     if (['flight-search', 'fleet-search', 'pilot-search'].includes(page)) {
-      return renderer.showCursor(9, Math.min(39, 4 + session.input.value.length), true);
+      return renderer.showCursor(10, Math.min(39, 6 + session.input.value.length), true);
     }
-    if (page === 'flights') return renderer.showCursor(21, Math.min(39, 9 + session.input.value.length), true);
-    if (page === 'operations') return renderer.showCursor(20, Math.min(39, 9 + session.input.value.length), true);
+    if (page === 'flights') return renderer.showCursor(21, Math.min(39, 21 + session.input.value.length), true);
+    if (page === 'operations') return renderer.showCursor(21, Math.min(39, 21 + session.input.value.length), true);
     if (page === 'aircraft-select') return renderer.showCursor(20, Math.min(39, 9 + session.input.value.length), true);
     if (page === 'operation') return renderer.showCursor(19, Math.min(39, 9 + session.input.value.length), true);
     if (page === 'simbrief') return renderer.showCursor(19, Math.min(39, 9 + session.input.value.length), true);
@@ -261,9 +261,9 @@
         writeStatus(screen);
         titleBand(screen, 'DEPARTS', 'MOUVEMENTS AIR INTER');
         if (renderLoadingOrError(screen)) return;
-        screen.write(4, 1, 'VOL      DEP   H.    DEST   H.   ETAT', { foreground: 'cyan' });
+        screen.write(6, 1, 'VOL      DEP   H.    DEST   H.   ETAT', { foreground: 'cyan' });
         (state.collection?.items || []).slice(0, 7).forEach((flight, index) => {
-          const row = 6 + index * 2;
+          const row = 7 + index * 2;
           screen.write(row, 1, fit(flight.flight, 8) + ' ' + fit(flight.departure, 4) + ' ' + fit(flight.departure_time, 5) + ' ' + fit(flight.destination, 6) + ' ' + fit(flight.arrival_time, 5));
           screen.write(row + 1, 10, fit(flight.status_label, 28), { foreground: statusColour(flight.status) });
         });
@@ -281,7 +281,7 @@
         writeStatus(screen);
         titleBand(screen, 'PROGRAMME DES VOLS', 'SERVICE RESERVATIONS');
         if (renderLoadingOrError(screen)) return;
-        screen.write(4, 1, 'N VOL      DEP   H.    ARR   H.', { foreground: 'cyan' });
+        screen.write(6, 1, 'N VOL      DEP        ARR', { foreground: 'cyan' });
         const items = state.collection?.items || [];
         items.slice(0, 7).forEach((item, index) => {
           const row = 6 + index * 2;
@@ -307,7 +307,7 @@
         writeStatus(screen);
         titleBand(screen, 'MES OPERATIONS', 'RESERVATIONS ACTIVES');
         if (renderLoadingOrError(screen)) return;
-        screen.write(4, 1, 'N VOL      TRAJET       ETAT', { foreground: 'cyan' });
+        screen.write(6, 1, 'N VOL      TRAJET       ETAT', { foreground: 'cyan' });
         const allItems = state.collection?.operations || [];
         const operationPages = Math.max(1, Math.ceil(allItems.length / 7));
         state.operationPage = Math.max(1, Math.min(operationPages, state.operationPage));
