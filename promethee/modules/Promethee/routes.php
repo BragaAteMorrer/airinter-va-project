@@ -159,7 +159,6 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::get('/real-simulator-certifications', [RealSimulatorCertificationController::class, 'index'])->name('real-simulator-certifications');
         Route::post('/real-simulator-certifications', [RealSimulatorCertificationController::class, 'store'])->name('real-simulator-certifications.store');
         Route::put('/real-simulator-certifications/{certification}', [RealSimulatorCertificationController::class, 'update'])->name('real-simulator-certifications.update');
-        Route::delete('/real-simulator-certifications/{certification}', [RealSimulatorCertificationController::class, 'destroy'])->name('real-simulator-certifications.destroy');
         Route::get('/pireps-emergency', [PortalController::class,'emergencyPireps'])->name('pireps-emergency');
         Route::delete('/pireps-emergency/{id}', [PortalController::class,'emergencyDeletePirep'])->name('pireps-emergency.delete');
         Route::post('/simbrief/api-key', [PortalController::class, 'saveSimbriefApiKey'])->name('simbrief.api-key.save');
