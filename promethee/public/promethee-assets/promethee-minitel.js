@@ -91,19 +91,12 @@
   };
 
   const writeFooter = (screen, pagination = false) => {
-    writeBand(screen, 22, pagination ? 'RETOUR PAGE -     SUITE PAGE +' : 'F1 GUIDE     HOME SOMMAIRE', 'blue', 'white');
-    fillRow(screen, 23, 'green', 'black');
-    screen.write(23, 1, 'Guide', { background: 'green', foreground: 'black' });
-    screen.write(23, 9, 'Sommaire', { background: 'green', foreground: 'black' });
-    screen.write(23, 20, 'Retour', { background: 'green', foreground: 'black' });
-    screen.write(23, 29, 'Suite', { background: 'green', foreground: 'black' });
-    screen.write(23, 35, 'Envoi', { background: 'green', foreground: 'black' });
-    fillRow(screen, 24, 'green', 'black');
-    screen.write(24, 1, 'F1', { background: 'green', foreground: 'black' });
-    screen.write(24, 9, 'HOME', { background: 'green', foreground: 'black' });
-    screen.write(24, 20, 'PgUp', { background: 'green', foreground: 'black' });
-    screen.write(24, 29, 'PgDn', { background: 'green', foreground: 'black' });
-    screen.write(24, 35, 'ENT', { background: 'green', foreground: 'black' });
+    // The virtual Minitel keyboard already carries the historical command labels.
+    // Keep the 40x25 raster focused on the Télétel service itself.
+    if (pagination) {
+      screen.write(24, 1, 'RETOUR', { foreground: 'cyan' });
+      screen.write(24, 32, 'SUITE', { foreground: 'cyan' });
+    }
   };
 
   const action = (type, payload = {}) => {
