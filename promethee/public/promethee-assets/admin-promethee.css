@@ -1,5 +1,5 @@
 /* Prométhée command centre — a visual layer for phpVMS' legacy back-office. */
-:root { --admin-navy:#092044; --admin-navy-soft:#123a73; --admin-blue:#155eef; --admin-red:#e5484d; --admin-ink:#172b4d; --admin-muted:#64748b; --admin-paper:#f4f7fb; --admin-panel:#fff; --admin-line:#dce5f2; --admin-radius:14px; }
+:root { --admin-navy:var(--ds-brand-navy,#112d48); --admin-navy-soft:#123a73; --admin-blue:var(--ds-action,#155cb8); --admin-red:var(--ds-brand-red,#d43640); --admin-ink:var(--ds-text,#1c3043); --admin-muted:var(--ds-text-muted,#6d7d8b); --admin-paper:var(--ds-bg,#f4f5f3); --admin-panel:var(--ds-surface,#fff); --admin-line:var(--ds-border,#dde4e9); --admin-radius:var(--ds-radius-md,8px); }
 body.admin-promethee { background:var(--admin-paper); color:var(--admin-ink); font-family:Inter,"Segoe UI",Roboto,Arial,sans-serif; }
 body.admin-promethee .wrapper { min-height:100vh; background:var(--admin-paper); }
 
@@ -92,16 +92,16 @@ body.admin-promethee .cke_top,body.admin-promethee .cke_bottom { border-color:va
    Core phpVMS admin screens (users, SimBrief airframes, etc.) keep their
    controllers/forms, but no longer look like a separate product. */
 body.admin-promethee {
-  --admin-navy:#112d48;
-  --admin-blue:#155cb8;
-  --admin-red:#d43640;
-  --admin-ink:#1c3043;
-  --admin-muted:#6d7d8b;
-  --admin-paper:#f4f5f3;
-  --admin-panel:#fff;
-  --admin-line:#dde4e9;
-  --admin-radius:7px;
-  --admin-shadow:0 2px 9px #162f460a;
+  --admin-navy:var(--ds-brand-navy,#112d48);
+  --admin-blue:var(--ds-action,#155cb8);
+  --admin-red:var(--ds-brand-red,#d43640);
+  --admin-ink:var(--ds-text,#1c3043);
+  --admin-muted:var(--ds-text-muted,#6d7d8b);
+  --admin-paper:var(--ds-bg,#f4f5f3);
+  --admin-panel:var(--ds-surface,#fff);
+  --admin-line:var(--ds-border,#dde4e9);
+  --admin-radius:var(--ds-radius-md,8px);
+  --admin-shadow:var(--ds-shadow-sm,0 2px 9px #162f460a);
 }
 body.admin-promethee .sidebar { width:258px; background:var(--admin-navy)!important; box-shadow:none; }
 body.admin-promethee .sidebar .logo { min-height:112px!important; padding:26px 22px 21px; }
