@@ -281,7 +281,7 @@
 <section class="panel table-wrap admin-table-scroll">
   <div class="panel-heading"><div><span class="eyebrow">CONFIGURATION</span><h2>Profils moteurs</h2></div></div>
   <table>
-    <thead><tr><th>Compagnie / sous-flotte</th><th>Moteur</th><th>Qté</th><th>Potentiel ITVA</th><th>Alerte</th><th>État</th></tr></thead>
+    <thead><tr><th>Compagnie / sous-flotte</th><th>Moteur</th><th>Qté</th><th>Potentiel ITVA</th><th>Coût révision ITVA</th><th>Alerte</th><th>État</th></tr></thead>
     <tbody>
     @forelse($profiles as $profile)
       <tr>
@@ -289,11 +289,12 @@
         <td>{{ $profile->engine_type }}</td>
         <td>{{ $profile->engine_count }}</td>
         <td>{{ $profile->tbo_hours !== null ? number_format($profile->tbo_hours,1,',',' ') . ' h' : '—' }} / {{ $profile->tbo_cycles !== null ? number_format($profile->tbo_cycles) . ' cycles' : '—' }}</td>
+        <td>{{ $profile->itva_overhaul_cost !== null ? number_format($profile->itva_overhaul_cost,2,',',' ') . ' €' : '—' }}</td>
         <td>{{ number_format($profile->warning_hours,1,',',' ') }} h / {{ $profile->warning_cycles !== null ? number_format($profile->warning_cycles) . ' cycles' : '—' }}</td>
         <td><span class="tag">{{ $profile->active ? 'ACTIF' : 'INACTIF' }}</span></td>
       </tr>
     @empty
-      <tr><td colspan="6">Aucun profil moteur. Synchronisez le référentiel ITVA ou créez un profil pour commencer.</td></tr>
+      <tr><td colspan="7">Aucun profil moteur. Synchronisez le référentiel ITVA ou créez un profil pour commencer.</td></tr>
     @endforelse
     </tbody>
   </table>
