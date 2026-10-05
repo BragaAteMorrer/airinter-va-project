@@ -359,18 +359,27 @@ expect(prometheeEras.includes('Modern shell: a stable two-level airline navigati
     && prometheeEras.includes('.sidebar.is-menu-open nav.is-grouped'),
   'Prométhée era adapters must preserve the navbar refactor and mobile layout.');
 expect(prometheeFlights.includes('class="flight-filter-advanced"')
-    && prometheeFlights.includes('<table class="flight-results">')
-    && !prometheeFlights.includes('<section class="flight-cards">'),
-  'Prométhée flight programme must preserve progressive filters and scan-friendly tabular results.');
-expect(prometheeFlights.includes('data-label="Horaire"')
-    && prometheeFlights.includes('flight-result-schedule')
+    && prometheeFlights.includes('<section class="flight-cards"')
+    && prometheeFlights.includes('class="panel line-card')
+    && !prometheeFlights.includes('<table class="flight-results">'),
+  'Prométhée flight programme must preserve progressive filters and responsive card-based results.');
+expect(prometheeFlights.includes('flight-result-schedule')
     && prometheeFlights.includes('next_departure_relative')
     && prometheeFlights.includes('next_departure_iso'),
-  'Prométhée flight search results must expose the next real timetable occurrence directly in each result.');
+  'Prométhée flight cards must expose the next real timetable occurrence directly in each result.');
 expect(prometheeFlightResults.includes('.flight-result-schedule')
     && prometheeFlightResults.includes('.is-soon')
+    && prometheeFlightResults.includes('.flight-cards')
+    && prometheeFlightResults.includes('.line-card::before')
+    && prometheeFlightResults.includes('.airline-air-charter::before')
+    && prometheeFlightResults.includes('.airline-ics::before')
     && prometheeFlightResults.includes('@media(max-width:760px)'),
-  'Prométhée flight schedule presentation must preserve proximity emphasis and responsive treatment.');
+  'Prométhée flight cards must preserve timetable proximity, airline accents and responsive treatment.');
+expect(portalController.includes('$personalizedDefault')
+    && portalController.includes('home_airport_id')
+    && portalController.includes('->take(10)')
+    && portalController.includes('next_departure_sort'),
+  'Prométhée unfiltered flight programme must show the next ten dated departures from the pilot base.');
 expect(prometheeV2.includes('Audit UX phase 11 — flight programme progressive disclosure')
     && prometheeV2.includes('Audit UX phase 11 — compact shell controls'),
   'Prométhée must preserve phase 11 shell and flight-programme primitives.');

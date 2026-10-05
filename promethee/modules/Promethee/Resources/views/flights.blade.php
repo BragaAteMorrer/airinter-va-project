@@ -4,7 +4,24 @@
 <link rel="stylesheet" href="{{ asset('promethee-assets/promethee-flight-results.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-flight-results.css')) }}">
 @endpush
 @section('content')
-<div class="ops-header compact"><div><span class="eyebrow">LE RÉSEAU AIR INTER</span><h1>Programme des vols.</h1><p>Filtrer, comparer et préparer une rotation sans quitter Prométhée.</p></div><span class="tag metric-tag">@if($flights->total()>0){{ $flights->total() }} lignes publiées @elseif($itineraries->isNotEmpty()){{ $itineraries->count() }} itinéraire{{ $itineraries->count()>1?'s':'' }} proposé{{ $itineraries->count()>1?'s':'' }} @else 0 ligne publiée @endif</span></div>
+<div class="ops-header compact">
+  <div>
+    <span class="eyebrow">LE RÉSEAU AIR INTER</span>
+    <h1>Programme des vols.</h1>
+    <p>@if($personalizedDefault)Les prochains départs utiles depuis votre base, puis la recherche complète à la demande.@else Filtrer, comparer et préparer une rotation sans quitter Prométhée.@endif</p>
+  </div>
+  <span class="tag metric-tag">
+    @if($personalizedDefault)
+      {{ $flights->count() }} prochain{{ $flights->count()>1?'s':'' }} · {{ $programmeBase?->iata ?: ($programmeBase?->icao ?: ($programmeBase?->id ?: 'base non définie')) }}
+    @elseif($flights->total()>0)
+      {{ $flights->total() }} lignes publiées
+    @elseif($itineraries->isNotEmpty())
+      {{ $itineraries->count() }} itinéraire{{ $itineraries->count()>1?'s':'' }} proposé{{ $itineraries->count()>1?'s':'' }}
+    @else
+      0 ligne publiée
+    @endif
+  </span>
+</div>
 <form id="flight-filters" class="panel flight-filter" method="get">
 <div class="flight-filter-primary">
 <label class="filter-wide">Vol, aéroport ou ville<input name="q" value="{{ request('q') }}" list="flight-airports" placeholder="IT123, LFPO, ORY, Paris, Orly…" autocomplete="off"></label>
@@ -149,46 +166,107 @@
   </div>
 </section>
 @endif
-<section class="panel flight-results-panel" aria-labelledby="flight-results-title">
-<div class="panel-heading"><div><span class="eyebrow">VOLS DIRECTS</span><h2 id="flight-results-title">Lignes publiées</h2></div><span class="tag">{{ $flights->total() }} résultat{{ $flights->total()>1?'s':'' }}</span></div>
-@if($flights->count())
-<div class="table-wrap">
-<table class="flight-results">
-<thead><tr><th>Vol</th><th>Itinéraire</th><th>Horaire</th><th>Distance</th><th>Flotte</th><th>Action</th></tr></thead>
-<tbody>
-@foreach($flights as $flight)
-<tr>
-<td data-label="Vol"><a class="flight-result-ident" href="{{ route('promethee.flights.show',$flight->id) }}">{{ $flight->ident }}</a><small>{{ $flight->airline?->name ?? 'Air Inter' }}</small></td>
-<td data-label="Itinéraire"><div class="flight-result-route"><strong title="{{ $flight->dpt_airport?->name }}">{{ $flight->dpt_airport_id }}</strong><span>→</span><strong title="{{ $flight->arr_airport?->name }}">{{ $flight->arr_airport_id }}</strong></div><small>{{ $flight->dpt_airport?->location ?: $flight->dpt_airport_id }} → {{ $flight->arr_airport?->location ?: $flight->arr_airport_id }}</small></td>
-<td data-label="Horaire">
-  <div @class(['flight-result-schedule', 'is-soon' => $flight->next_departure_soon])>
-    <strong>
-      <time @if($flight->next_departure_iso) datetime="{{ $flight->next_departure_iso }}" @endif>{{ $flight->next_departure_time ?: '—' }}</time>
-      <span aria-hidden="true">→</span>
-      <time @if($flight->next_arrival_iso) datetime="{{ $flight->next_arrival_iso }}" @endif>{{ $flight->next_arrival_time ?: '—' }}</time>
-    </strong>
-    @if($flight->next_departure_relative)
-      <small>{{ $flight->next_departure_relative }}</small>
-    @else
-      <small>Horaire publié</small>
-    @endif
+<section class="panel flight-results-heading" aria-labelledby="flight-results-title">
+  <div class="panel-heading">
+    <div>
+      <span class="eyebrow">{{ $personalizedDefault ? 'PROCHAINS DÉPARTS DE VOTRE BASE' : 'VOLS DIRECTS' }}</span>
+      <h2 id="flight-results-title">
+        @if($personalizedDefault)
+          @if($programmeBase)
+            Les 10 prochains vols depuis {{ $programmeBase->iata ?: ($programmeBase->icao ?: $programmeBase->id) }}.
+          @else
+            Prochains vols depuis votre base.
+          @endif
+        @else
+          Lignes publiées
+        @endif
+      </h2>
+      @if($personalizedDefault && $programmeBase)
+        <p class="muted">{{ $programmeBase->name }}@if($programmeBase->location) · {{ $programmeBase->location }}@endif · triés par prochain départ réel.</p>
+      @endif
+    </div>
+    <span class="tag">{{ $personalizedDefault ? $flights->count().' / 10' : $flights->total().' résultat'.($flights->total()>1?'s':'') }}</span>
   </div>
-</td>
-<td data-label="Distance" class="mono">{{ number_format($flight->distance->toUnit('nmi'),0,',',' ') }} NM</td>
-<td data-label="Flotte"><span class="flight-equipment-list">@forelse($flight->subfleets as $subfleet)<span>{{ $subfleet->type }}</span>@empty<em>À confirmer</em>@endforelse</span></td>
-<td data-label="Action" class="flight-result-action-cell"><a class="round-link" aria-label="Préparer {{ $flight->ident }}" href="{{ route('promethee.flights.show',$flight->id) }}">→</a></td>
-</tr>
-@endforeach
-</tbody>
-</table>
-</div>
-@else
-<div class="empty flight-results-empty">
-@if($itineraries->isNotEmpty())<h2>Aucun vol direct ne correspond à la recherche.</h2><p>Des correspondances réalisables sont proposées juste au-dessus.</p>
-@elseif($selectedDeparture && $selectedArrival)<h2>Aucun vol direct ni itinéraire avec jusqu’à {{ $maxItineraryStops }} escales.</h2><p>Élargissez un filtre, changez de compagnie/appareil ou réinitialisez la recherche.</p>
-@else<h2>Aucun vol ne correspond à la recherche.</h2><p>Élargissez un filtre ou réinitialisez la recherche.</p>@endif
-</div>
-@endif
 </section>
+
+@if($flights->count())
+<section class="flight-cards" aria-label="{{ $personalizedDefault ? 'Dix prochains départs depuis votre base' : 'Résultats de la recherche de vols' }}">
+  @foreach($flights as $flight)
+    @php
+      $airlineName = strtolower($flight->airline?->name ?? 'Air Inter');
+      $airlineClass = str_contains($airlineName, 'air charter')
+          ? 'airline-air-charter'
+          : (str_contains($airlineName, 'inter cargo') ? 'airline-ics' : 'airline-air-inter');
+    @endphp
+    <article class="panel line-card {{ $airlineClass }}">
+      <div class="line-card-head">
+        <div>
+          <span class="eyebrow">{{ $flight->airline?->name ?? 'Air Inter' }}</span>
+          <h2><a href="{{ route('promethee.flights.show',$flight->id) }}">{{ $flight->ident }}</a></h2>
+        </div>
+        <a class="round-link" aria-label="Préparer {{ $flight->ident }}" href="{{ route('promethee.flights.show',$flight->id) }}">→</a>
+      </div>
+
+      <div class="airport-pair">
+        <strong title="{{ $flight->dpt_airport?->name }}">{{ $flight->dpt_airport_id }}</strong>
+        <i aria-hidden="true"></i>
+        <strong title="{{ $flight->arr_airport?->name }}">{{ $flight->arr_airport_id }}</strong>
+      </div>
+      <p class="muted flight-card-route-label">{{ $flight->dpt_airport?->location ?: $flight->dpt_airport_id }} → {{ $flight->arr_airport?->location ?: $flight->arr_airport_id }}</p>
+
+      <dl class="line-meta">
+        <div class="line-meta-schedule">
+          <dt>Horaire</dt>
+          <dd>
+            <div @class(['flight-result-schedule', 'is-soon' => $flight->next_departure_soon])>
+              <strong>
+                <time @if($flight->next_departure_iso) datetime="{{ $flight->next_departure_iso }}" @endif>{{ $flight->next_departure_time ?: '—' }}</time>
+                <span aria-hidden="true">→</span>
+                <time @if($flight->next_arrival_iso) datetime="{{ $flight->next_arrival_iso }}" @endif>{{ $flight->next_arrival_time ?: '—' }}</time>
+              </strong>
+              <small>{{ $flight->next_departure_relative ?: 'Horaire publié' }}</small>
+            </div>
+          </dd>
+        </div>
+        <div>
+          <dt>Distance</dt>
+          <dd>{{ number_format($flight->distance->toUnit('nmi'),0,',',' ') }} NM</dd>
+        </div>
+        <div>
+          <dt>Appareil</dt>
+          <dd>{{ $flight->subfleets->first()?->type ?: 'À confirmer' }}@if($flight->subfleets->count()>1) +{{ $flight->subfleets->count()-1 }}@endif</dd>
+        </div>
+      </dl>
+
+      <div class="fare-chips" aria-label="Flottes compatibles">
+        @forelse($flight->subfleets as $subfleet)
+          <span>{{ $subfleet->type }}</span>
+        @empty
+          <span>Flotte à confirmer</span>
+        @endforelse
+      </div>
+    </article>
+  @endforeach
+</section>
+@else
+<section class="panel empty flight-results-empty">
+  @if($personalizedDefault && !$programmeBase)
+    <h2>Aucune base pilote n’est définie.</h2>
+    <p>Renseignez votre base pour afficher automatiquement vos 10 prochains départs.</p>
+  @elseif($personalizedDefault)
+    <h2>Aucun prochain vol publié depuis {{ $programmeBase?->iata ?: ($programmeBase?->icao ?: $programmeBase?->id) }}.</h2>
+    <p>La recherche ci-dessus reste disponible pour parcourir tout le réseau.</p>
+  @elseif($itineraries->isNotEmpty())
+    <h2>Aucun vol direct ne correspond à la recherche.</h2><p>Des correspondances réalisables sont proposées juste au-dessus.</p>
+  @elseif($selectedDeparture && $selectedArrival)
+    <h2>Aucun vol direct ni itinéraire avec jusqu’à {{ $maxItineraryStops }} escales.</h2><p>Élargissez un filtre, changez de compagnie/appareil ou réinitialisez la recherche.</p>
+  @else
+    <h2>Aucun vol ne correspond à la recherche.</h2><p>Élargissez un filtre ou réinitialisez la recherche.</p>
+  @endif
+</section>
+@endif
+
+@unless($personalizedDefault)
 {{ $flights->links('pagination::bootstrap-4') }}
+@endunless
 @endsection
