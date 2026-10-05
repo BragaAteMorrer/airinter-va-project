@@ -6,9 +6,12 @@ use App\Contracts\Notification;
 use App\Models\User;
 use App\Notifications\Channels\MailChannel;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Modules\Promethee\Services\CrmMailTemplateService;
 
 class UserPending extends Notification implements ShouldQueue
 {
+    private bool $mailEnabled = true;
+
     use MailChannel;
 
     public function __construct(
@@ -16,16 +19,20 @@ class UserPending extends Notification implements ShouldQueue
     ) {
         parent::__construct();
 
-        $this->setMailable(
-            'Air Inter · Candidature pilote reçue',
-            'notifications.mail.user.pending',
-            ['user' => $this->user]
-        );
+        $template = app(CrmMailTemplateService::class)->resolve('pilot.pending', $this->user);
+        $this->mailEnabled = $template['active'];
+        if ($this->mailEnabled) {
+            $this->setMailable(
+                $template['subject'],
+                'notifications.mail.user.crm-template',
+                ['bodyHtml' => $template['body_html']]
+            );
+        }
     }
 
     public function via($notifiable)
     {
-        return ['mail'];
+        return $this->mailEnabled ? ['mail'] : [];
     }
 
     /**
