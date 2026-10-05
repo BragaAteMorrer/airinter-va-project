@@ -187,8 +187,14 @@ class AirframeMaintenanceService
                 return ['updated' => 0, 'reason' => 'AIRCRAFT_NOT_FOUND'];
             }
 
-            if ((string) ($state->safety_hold_pirep_id ?? '') === (string) $pirep->id) {
-                return ['updated' => 0, 'reason' => 'ALREADY_HELD'];
+            if ($state->safety_hold_at ?? null) {
+                return [
+                    'updated' => 0,
+                    'reason' => 'ALREADY_HELD',
+                    'aircraft_id' => $aircraftId,
+                    'g_force' => $gForce,
+                    'existing_pirep_id' => $state->safety_hold_pirep_id ?? null,
+                ];
             }
 
             DB::table('promethee_airframe_maintenance')->where('id', $state->id)->update([
