@@ -154,12 +154,7 @@
             @if($certification->evidence_url)<a class="button outline" href="{{ $certification->evidence_url }}" target="_blank" rel="noopener noreferrer">Ouvrir le justificatif</a>@endif
           </div>
         </form>
-        <form method="post" action="{{ route('admin.promethee.real-simulator-certifications.destroy', $certification) }}" onsubmit="return confirm('Supprimer définitivement cette certification ?')">
-          @csrf
-          @method('DELETE')
-          <button class="button outline" type="submit">Supprimer</button>
-        </form>
-        <p class="muted">Vérifiée par {{ $certification->verifier?->name ?? '—' }} · {{ optional($certification->verified_at)->setTimezone('Europe/Paris')->format('d/m/Y H:i') ?? '—' }}</p>
+        <p class="muted">Vérifiée par {{ $certification->verifier?->name ?? '—' }} · {{ $certification->verified_at?->setTimezone('Europe/Paris')->format('d/m/Y H:i') ?? '—' }}</p>
       </details>
     @empty
       <p class="empty">Aucune certification enregistrée.</p>
