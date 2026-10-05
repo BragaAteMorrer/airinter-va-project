@@ -297,6 +297,7 @@ class AirframeMaintenanceService
 
             $previousReason = (string) ($state->safety_hold_reason ?? '');
             $previousStatus = (string) ($state->safety_hold_previous_status ?? AircraftStatus::ACTIVE);
+            $releaseCheckType = str_contains(strtolower($previousReason), 'runway overrun') ? 'r' : 'g';
             DB::table('promethee_airframe_maintenance')->where('id', $state->id)->update([
                 'safety_hold_reason' => null,
                 'safety_hold_at' => null,
@@ -308,7 +309,7 @@ class AirframeMaintenanceService
             if (Schema::hasTable('promethee_airframe_maintenance_events')) {
                 DB::table('promethee_airframe_maintenance_events')->insert([
                     'aircraft_id' => $aircraftId,
-                    'check_type' => 'g',
+                    'check_type' => $releaseCheckType,
                     'event_type' => 'safety_release',
                     'airport_id' => $aircraft->airport_id,
                     'minutes_before' => null,
