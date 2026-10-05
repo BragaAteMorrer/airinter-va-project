@@ -207,6 +207,11 @@ final class PrometheeAirframeMaintenanceTest extends TestCase
             'Inspection après sortie de piste OK.'
         ));
         $this->assertSame(AircraftStatus::ACTIVE, $aircraft->fresh()->status);
+        $this->assertDatabaseHas('promethee_airframe_maintenance_events', [
+            'aircraft_id' => $aircraft->id,
+            'check_type' => 'r',
+            'event_type' => 'safety_release',
+        ]);
     }
 
     public function test_rotation_priority_uses_cycle_limit_as_well_as_time(): void
