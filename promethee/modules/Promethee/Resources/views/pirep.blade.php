@@ -19,9 +19,20 @@
     $displayScore = $companyScore['score'] ?? $pirep->score;
     $scoreItems = collect($companyScore['items'] ?? []);
     $unavailableScoreRules = collect($companyScore['unavailable_rules'] ?? []);
+    $isHermesPirep = str_starts_with((string) $pirep->source_name, 'Hermes ACARS [op_');
 @endphp
 <div class="ops-header compact report-heading">
-  <div><span class="eyebrow">RAPPORT DE VOL · AIR INTER</span><h1>{{ $pirep->ident }}</h1><p>{{ $pirep->dpt_airport_id }} → {{ $pirep->arr_airport_id }} · {{ optional($pirep->submitted_at)->setTimezone('Europe/Paris')->format('d/m/Y') ?? 'En préparation' }}</p></div>
+  <div>
+    <span class="eyebrow">RAPPORT DE VOL · AIR INTER</span>
+    <h1>{{ $pirep->ident }}</h1>
+    <p>{{ $pirep->dpt_airport_id }} → {{ $pirep->arr_airport_id }} · {{ optional($pirep->submitted_at)->setTimezone('Europe/Paris')->format('d/m/Y') ?? 'En préparation' }}</p>
+    @if($isHermesPirep)
+      <div class="pirep-made-by" aria-label="Made by Hermès">
+        <span>Made by</span>
+        <img src="{{ asset('promethee-assets/logos/hermes-mark.svg') }}" alt="Hermès">
+      </div>
+    @endif
+  </div>
   <div class="toolbar no-print">
     @if($isOwner && !$pirep->read_only)
       <a class="button outline" href="{{ route('frontend.pireps.edit', $pirep->id) }}">Modifier le rapport</a>
