@@ -1328,6 +1328,28 @@ class PortalController extends PrometheeWebController
         ]);
     }
 
+    public function editAdminRank(Rank $rank) {
+        $rank->load('subfleets');
+        return $this->page('admin-rank-edit', ['rank'=>$rank,'subfleets'=>Subfleet::with('airline')->orderBy('name')->get()]);
+    }
+    public function updateAdminRank(Rank $rank, Request $r) {
+        $data=$r->validate(['name'=>'required|string|max:191','hours'=>'required|integer|min:0','acars_base_pay_rate'=>'nullable|numeric|min:0','manual_base_pay_rate'=>'nullable|numeric|min:0','auto_promote'=>'nullable|boolean','auto_approve_acars'=>'nullable|boolean','auto_approve_manual'=>'nullable|boolean','subfleet_ids'=>'nullable|array','subfleet_ids.*'=>'string|exists:subfleets,id']);
+        $rank->update(collect($data)->except('subfleet_ids')->merge(['auto_promote'=>$r->boolean('auto_promote'),'auto_approve_acars'=>$r->boolean('auto_approve_acars'),'auto_approve_manual'=>$r->boolean('auto_approve_manual')])->all());
+        $rank->subfleets()->sync($data['subfleet_ids'] ?? []);
+        Cache::forget(config('cache.keys.RANKS_PILOT_LIST.key'));
+        return redirect()->route('admin.promethee.ranks')->with('success','Grade mis à jour dans phpVMS.');
+    }
+    public function editAdminUser(User $user) {
+        $user->load(['rank','airline','home_airport']);
+        return $this->page('admin-user-edit',['pilot'=>$user,'ranks'=>Rank::orderBy('hours')->get(),'airlines'=>Airline::orderBy('name')->get(),'airports'=>Airport::orderBy('name')->get(['id','name','icao','iata'])]);
+    }
+    public function updateAdminUser(User $user, Request $r) {
+        $data=$r->validate(['name'=>'required|string|max:191','email'=>'required|email|max:191|unique:users,email,'.$user->id,'pilot_id'=>'required|integer|unique:users,pilot_id,'.$user->id,'callsign'=>'nullable|string|max:4','airline_id'=>'required|integer|exists:airlines,id','rank_id'=>'nullable|integer|exists:ranks,id','home_airport_id'=>'nullable|string|exists:airports,id']);
+        $oldRank=$user->rank_id; $user->update($data);
+        if ((string)$oldRank !== (string)$user->rank_id) event(new \App\Events\UserStatsChanged($user,'rank',$user->rank_id));
+        return redirect()->route('admin.promethee.users')->with('success','Pilote mis à jour dans phpVMS.');
+    }
+
     /** Prométhée-native airline catalogue; legacy phpVMS URLs remain valid. */
     public function adminAirlines(Request $r) {
         $filters=$r->validate(['q'=>'nullable|string|max:80','active'=>'nullable|in:all,active,inactive']);
