@@ -1,5 +1,5 @@
-// Hermès Datalink / Air Inter Network extracted from app.js.
-// Classic script on purpose: existing inline handlers keep the same global names.
+// Hermès modularization phase 2 — communications domain.
+// Classic script: preserves the existing shared runtime/global handler contract.
 
 function currentDatalinkOperation() {
   const activeFlight = lastStatus?.flight || lastStatus?.Flight;
@@ -119,7 +119,7 @@ function renderDatalink(snapshot) {
   showMessage('#datalinkMessage', error || '', Boolean(error && syncState !== 'OFFLINE'));
 }
 
-function refreshDatalink() {
+async function refreshDatalink() {
   const operationId = currentDatalinkOperation();
   if (!connected || !operationId || datalinkRefreshing) {
     if (!operationId) renderDatalink(null);
@@ -136,7 +136,7 @@ function refreshDatalink() {
   }
 }
 
-function readDatalink(messageId) {
+async function readDatalink(messageId) {
   const operationId = currentDatalinkOperation();
   if (!operationId) return;
   try {
@@ -147,7 +147,7 @@ function readDatalink(messageId) {
   }
 }
 
-function acknowledgeDatalink(messageId) {
+async function acknowledgeDatalink(messageId) {
   const operationId = currentDatalinkOperation();
   if (!operationId) return;
   try {
@@ -235,7 +235,7 @@ function renderNetwork(payload) {
   });
 }
 
-function refreshNetwork() {
+async function refreshNetwork() {
   if (!connected || networkRefreshing) return;
   networkRefreshing = true;
   try {
