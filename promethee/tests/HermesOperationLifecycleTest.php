@@ -771,6 +771,77 @@ final class HermesOperationLifecycleTest extends TestCase
         $this->assertContains('TAXI_OUT_TIME', $codes);
     }
 
+    public function test_15_reference_pilot_journey_crosses_the_full_operation_contract(): void
+    {
+        $fx = $this->operationFixture();
+
+        $operation = $this->get(
+            '/api/v1/operations/'.$fx['operation_id'],
+            [],
+            $fx['user']
+        )->assertOk()->json('data');
+
+        $this->assertSame($fx['operation_id'], $operation['operation_id']);
+        $this->assertSame('planned', $operation['status']);
+        $this->assertTrue((bool) $operation['simbrief']['available']);
+        $this->assertSame($fx['aircraft']->id, $operation['aircraft']['id']);
+
+        $pirepId = $this->prefile($fx);
+        $ready = $this->dispatch($fx);
+        $this->assertSame('READY', $ready['status']);
+        $this->assertSame('START_RECORDING', $ready['workflow_state']['next_action']['code']);
+        $this->assertSame($pirepId, $ready['pirep']['id']);
+
+        $at = now();
+        $phases = [
+            'BOARDING',
+            'TAXI_OUT',
+            'TAKEOFF',
+            'CLIMB',
+            'CRUISE',
+            'DESCENT',
+            'APPROACH',
+            'FINAL',
+            'LANDING',
+            'TAXI_IN',
+            'IN',
+        ];
+
+        foreach ($phases as $index => $phase) {
+            $this->telemetry($fx, $phase, $at->copy()->addSeconds($index + 1));
+        }
+
+        $active = $this->dispatch($fx);
+        $this->assertNotSame('COMPLETED', $active['status']);
+        $this->assertSame($pirepId, $active['pirep']['id']);
+        $this->assertDatabaseHas('bids', ['id' => $fx['bid']->id]);
+        $this->assertContains($fx['operation_id'], array_column($this->operations($fx['user']), 'operation_id'));
+
+        $rehydrated = $this->get(
+            '/api/v1/operations/'.$fx['operation_id'].'/pirep',
+            [],
+            $fx['user']
+        )->assertOk()->json('data');
+        $this->assertSame($pirepId, $rehydrated['pirep_id']);
+
+        $this->assertGreaterThanOrEqual(
+            count($phases),
+            DB::table('promethee_telemetry')->where('pirep_id', $pirepId)->count()
+        );
+        $this->assertSame(
+            1,
+            Pirep::where('source_name', 'Hermes ACARS ['.$fx['operation_id'].']')->count()
+        );
+
+        $this->filePirep($fx['user'], $pirepId)->assertOk();
+
+        $pirep = Pirep::findOrFail($pirepId);
+        $this->assertNotNull($pirep->submitted_at);
+        $this->assertTrue(app(HermesPirepLifecycleService::class)->isFiled($pirep));
+        $this->assertDatabaseMissing('bids', ['id' => $fx['bid']->id]);
+        $this->assertNotContains($fx['operation_id'], array_column($this->operations($fx['user']), 'operation_id'));
+    }
+
     private function operationFixture(bool $assignAircraft = true, bool $createOfp = true): array
     {
         $origin = Airport::factory()->create(['id' => 'H001', 'icao' => 'H001', 'iata' => 'H01']);
