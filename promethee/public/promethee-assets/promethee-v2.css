@@ -32,11 +32,11 @@
 [data-era="2000"] .pilot-card-link:hover { border-color: #dceafb; background: linear-gradient(#628cc4,#315e9e); transform: none; }
 [data-era="2000"] .pilot-avatar { border-color: #dceafb; border-radius: 2px; box-shadow: 1px 1px 0 #071a3d; }
 [data-era="2000"] .pilot-space-actions a, [data-era="2000"] .pilot-space { color: #e3ecfa; }
-[data-era="minitel"] .pilot-space { border-color: var(--line); color: var(--muted); }
-[data-era="minitel"] .pilot-card-link { border-color: var(--line); border-radius: 0; background: #0b1d12; }
-[data-era="minitel"] .pilot-avatar { border-color: var(--minitel-green); border-radius: 0; box-shadow: none; filter: grayscale(1) sepia(.5) hue-rotate(65deg); }
-[data-era="minitel"] .pilot-identity strong, [data-era="minitel"] .pilot-space-actions a { color: var(--ink); }
-[data-era="minitel"] .pilot-identity small, [data-era="minitel"] .pilot-open { color: var(--minitel-green); }
+[data-era="minitel-legacy"] .pilot-space { border-color: var(--line); color: var(--muted); }
+[data-era="minitel-legacy"] .pilot-card-link { border-color: var(--line); border-radius: 0; background: #0b1d12; }
+[data-era="minitel-legacy"] .pilot-avatar { border-color: var(--minitel-green); border-radius: 0; box-shadow: none; filter: grayscale(1) sepia(.5) hue-rotate(65deg); }
+[data-era="minitel-legacy"] .pilot-identity strong, [data-era="minitel-legacy"] .pilot-space-actions a { color: var(--ink); }
+[data-era="minitel-legacy"] .pilot-identity small, [data-era="minitel-legacy"] .pilot-open { color: var(--minitel-green); }
 main { max-width: 1680px; }
 .sidebar { background: #0e2a44; }
 .system-name { padding-top: 28px; }
@@ -104,14 +104,14 @@ main { max-width: 1680px; }
   90% { filter: brightness(1.75); }
   94% { filter: brightness(.7); }
 }
-html:not([data-era="minitel"]) .departure-board .flight-stack { isolation: isolate; }
-html:not([data-era="minitel"]) .departure-board .flight-stack::after { content: ""; position: absolute; z-index: 0; inset: 0 auto 0 0; width: 34%; pointer-events: none; background: linear-gradient(90deg,transparent,#f6cf2d12,transparent); animation: airport-board-scan 5.8s ease-in-out infinite; }
-html:not([data-era="minitel"]) .departure-board .dispatch-flight { position: relative; z-index: 1; animation: airport-board-row-arrival 520ms cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--board-row, 0) * 55ms + 110ms); transition: transform 180ms ease, filter 180ms ease, background 180ms ease; }
-html:not([data-era="minitel"]) .departure-board .dispatch-flight:hover { transform: translateX(5px); filter: brightness(1.14); }
-html:not([data-era="minitel"]) .departure-board .dispatch-flight .board-cell { position: relative; transition: color 140ms ease, box-shadow 140ms ease, transform 140ms ease; animation: airport-board-cell-flip 6.5s steps(1,end) infinite; animation-delay: calc(var(--board-row, 0) * 140ms); }
-html:not([data-era="minitel"]) .departure-board .dispatch-flight:hover .board-cell { box-shadow: inset 0 1px #85898c, inset 0 -1px #000, 0 0 12px #f1c92830; transform: translateY(-1px); }
-html:not([data-era="minitel"]) .departure-board .dispatch-flight .destination { letter-spacing: .1em; }
-html:not([data-era="minitel"]) .departure-board .dispatch-flight .duration { letter-spacing: .08em; text-align: center; }
+html:not([data-era="minitel-legacy"]) .departure-board .flight-stack { isolation: isolate; }
+html:not([data-era="minitel-legacy"]) .departure-board .flight-stack::after { content: ""; position: absolute; z-index: 0; inset: 0 auto 0 0; width: 34%; pointer-events: none; background: linear-gradient(90deg,transparent,#f6cf2d12,transparent); animation: airport-board-scan 5.8s ease-in-out infinite; }
+html:not([data-era="minitel-legacy"]) .departure-board .dispatch-flight { position: relative; z-index: 1; animation: airport-board-row-arrival 520ms cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--board-row, 0) * 55ms + 110ms); transition: transform 180ms ease, filter 180ms ease, background 180ms ease; }
+html:not([data-era="minitel-legacy"]) .departure-board .dispatch-flight:hover { transform: translateX(5px); filter: brightness(1.14); }
+html:not([data-era="minitel-legacy"]) .departure-board .dispatch-flight .board-cell { position: relative; transition: color 140ms ease, box-shadow 140ms ease, transform 140ms ease; animation: airport-board-cell-flip 6.5s steps(1,end) infinite; animation-delay: calc(var(--board-row, 0) * 140ms); }
+html:not([data-era="minitel-legacy"]) .departure-board .dispatch-flight:hover .board-cell { box-shadow: inset 0 1px #85898c, inset 0 -1px #000, 0 0 12px #f1c92830; transform: translateY(-1px); }
+html:not([data-era="minitel-legacy"]) .departure-board .dispatch-flight .destination { letter-spacing: .1em; }
+html:not([data-era="minitel-legacy"]) .departure-board .dispatch-flight .duration { letter-spacing: .08em; text-align: center; }
 .signal-panel { display: flex; flex-direction: column; gap: 10px; }
 .signal-panel h2 { margin: 2px 0 8px; }
 .signal { display: grid; grid-template-columns: 54px 1fr; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--line); background: #f7f9fb; border-radius: var(--radius); color: var(--ink); }
@@ -179,11 +179,11 @@ html:not([data-era="minitel"]) .departure-board .dispatch-flight .duration { let
 .itinerary-reserve input[type="hidden"] { display: none; }
 html[data-era="2000"] .itinerary-card,
 html[data-era="2000"] .itinerary-leg { border-radius: 0; box-shadow: 2px 2px 0 #7f93b3; }
-html[data-era="minitel"] .itinerary-panel { border-left-color: #99edb1; }
-html[data-era="minitel"] .itinerary-card,
-html[data-era="minitel"] .itinerary-leg { background: #07130c; border-color: #285e39; border-radius: 0; box-shadow: none; }
-html[data-era="minitel"] .itinerary-leg-index { background: #99edb1; color: #07130c; }
-html[data-era="minitel"] .itinerary-summary span { border-color: #285e39; color: #99edb1; }
+html[data-era="minitel-legacy"] .itinerary-panel { border-left-color: #99edb1; }
+html[data-era="minitel-legacy"] .itinerary-card,
+html[data-era="minitel-legacy"] .itinerary-leg { background: #07130c; border-color: #285e39; border-radius: 0; box-shadow: none; }
+html[data-era="minitel-legacy"] .itinerary-leg-index { background: #99edb1; color: #07130c; }
+html[data-era="minitel-legacy"] .itinerary-summary span { border-color: #285e39; color: #99edb1; }
 @media (max-width:760px) {
   .itinerary-leg { grid-template-columns: 28px 1fr auto; }
   .itinerary-leg-time { grid-column: 2 / -1; text-align: left; }
@@ -200,20 +200,20 @@ html[data-era="2000"] .control-strip article { background: linear-gradient(#fff,
 html[data-era="2000"] .signal b { background: #003399; border: 2px outset #9fb7df; }
 html[data-era="2000"] .route-board i { background: #003399; border: 0; height: 4px; }
 
-html[data-era="minitel"] .ops-clock,
-html[data-era="minitel"] .control-strip article,
-html[data-era="minitel"] .signal,
-html[data-era="minitel"] .route-board article { background: #07130c; border-color: #285e39; border-radius: 0; box-shadow: none; }
-html[data-era="minitel"] .ops-clock strong,
-html[data-era="minitel"] .dispatch-flight time { color: #99edb1; }
-html[data-era="minitel"] .signal b { background: #99edb1; color: #07130c; border-radius: 0; }
-html[data-era="minitel"] .dispatch-flight .load { background: #102618; border-color: #285e39; color: #99edb1; }
-html[data-era="minitel"] .route-board i { background: #99edb1; border: 0; }
-html[data-era="minitel"] .map-background, html[data-era="minitel"] .map-selection { background: #07130c; }
-html[data-era="minitel"] .map-grid { stroke: #285e39; }
-html[data-era="minitel"] .map-route { stroke: #99edb1; }
-html[data-era="minitel"] .map-airport { fill: #99edb1; stroke: #07130c; }
-html[data-era="minitel"] .map-airport.selected-arrival { fill: #ffbb57; }
+html[data-era="minitel-legacy"] .ops-clock,
+html[data-era="minitel-legacy"] .control-strip article,
+html[data-era="minitel-legacy"] .signal,
+html[data-era="minitel-legacy"] .route-board article { background: #07130c; border-color: #285e39; border-radius: 0; box-shadow: none; }
+html[data-era="minitel-legacy"] .ops-clock strong,
+html[data-era="minitel-legacy"] .dispatch-flight time { color: #99edb1; }
+html[data-era="minitel-legacy"] .signal b { background: #99edb1; color: #07130c; border-radius: 0; }
+html[data-era="minitel-legacy"] .dispatch-flight .load { background: #102618; border-color: #285e39; color: #99edb1; }
+html[data-era="minitel-legacy"] .route-board i { background: #99edb1; border: 0; }
+html[data-era="minitel-legacy"] .map-background, html[data-era="minitel-legacy"] .map-selection { background: #07130c; }
+html[data-era="minitel-legacy"] .map-grid { stroke: #285e39; }
+html[data-era="minitel-legacy"] .map-route { stroke: #99edb1; }
+html[data-era="minitel-legacy"] .map-airport { fill: #99edb1; stroke: #07130c; }
+html[data-era="minitel-legacy"] .map-airport.selected-arrival { fill: #ffbb57; }
 
 @media (max-width:1100px) {
   .control-strip { grid-template-columns: repeat(3,1fr); }
@@ -621,7 +621,7 @@ html[data-era="2000"] {
 }
 
 /* Minitel: a clear but faithful 40-column Videotex-inspired terminal. */
-html[data-era="minitel"] {
+html[data-era="minitel-legacy"] {
   --minitel-green: #f6f1c1;
   --minitel-cyan: #68e3d0;
   --minitel-yellow: #fff25b;
@@ -636,7 +636,7 @@ html[data-era="minitel"] {
   --sans: "Minitel", "Courier New", monospace;
 }
 
-[data-era="minitel"] body {
+[data-era="minitel-legacy"] body {
   overflow-x: hidden;
   background-color: #010301;
   background-image:
@@ -650,8 +650,8 @@ html[data-era="minitel"] {
   text-shadow: 0 0 5px rgb(246 241 193 / 20%);
 }
 
-[data-era="minitel"] .sidebar,
-[data-era="minitel"] .workspace {
+[data-era="minitel-legacy"] .sidebar,
+[data-era="minitel-legacy"] .workspace {
   position: relative;
   width: min(100%, 42rem);
   margin: 0 auto;
@@ -661,14 +661,14 @@ html[data-era="minitel"] {
   box-shadow: 0 0 0 4px #182218, 0 0 42px rgb(246 241 193 / 16%);
 }
 
-[data-era="minitel"] .sidebar {
+[data-era="minitel-legacy"] .sidebar {
   display: block;
   min-height: auto;
   color: var(--minitel-green);
   border-bottom: 0;
 }
 
-[data-era="minitel"] .brand {
+[data-era="minitel-legacy"] .brand {
   display: grid;
   grid-template-columns: 1fr;
   gap: 0;
@@ -677,7 +677,7 @@ html[data-era="minitel"] {
   text-decoration: none;
 }
 
-[data-era="minitel"] .brand-mark {
+[data-era="minitel-legacy"] .brand-mark {
   width: auto;
   padding: 0;
   border: 0;
@@ -688,9 +688,9 @@ html[data-era="minitel"] {
   transform: none;
 }
 
-[data-era="minitel"] .brand-mark br { display: none; }
-[data-era="minitel"] .brand-mark::before { content: "3615 "; color: var(--minitel-cyan); }
-[data-era="minitel"] .brand-logo-shell {
+[data-era="minitel-legacy"] .brand-mark br { display: none; }
+[data-era="minitel-legacy"] .brand-mark::before { content: "3615 "; color: var(--minitel-cyan); }
+[data-era="minitel-legacy"] .brand-logo-shell {
   display: block;
   width: auto;
   height: auto;
@@ -698,42 +698,42 @@ html[data-era="minitel"] {
   background: transparent;
   box-shadow: none;
 }
-[data-era="minitel"] .brand-logo { display: none; }
-[data-era="minitel"] .brand-logo-minitel {
+[data-era="minitel-legacy"] .brand-logo { display: none; }
+[data-era="minitel-legacy"] .brand-logo-minitel {
   display: block;
   color: var(--minitel-yellow);
   font: 16px/1.25 var(--sans);
   letter-spacing: .1em;
 }
-[data-era="minitel"] .brand-logo-minitel::before { content: "3615 "; color: var(--minitel-cyan); }
-[data-era="minitel"] .brand-caption { display: none; }
+[data-era="minitel-legacy"] .brand-logo-minitel::before { content: "3615 "; color: var(--minitel-cyan); }
+[data-era="minitel-legacy"] .brand-caption { display: none; }
 
-[data-era="minitel"] .system-name {
+[data-era="minitel-legacy"] .system-name {
   margin: 0;
   padding: 0 16px 10px;
   border-bottom: 1px solid var(--minitel-green);
 }
 
-[data-era="minitel"] .system-name .eyebrow,
-[data-era="minitel"] .system-name small { display: none; }
+[data-era="minitel-legacy"] .system-name .eyebrow,
+[data-era="minitel-legacy"] .system-name small { display: none; }
 
-[data-era="minitel"] .system-name strong {
+[data-era="minitel-legacy"] .system-name strong {
   margin: 0;
   color: var(--minitel-green);
   font: 16px/1.25 var(--sans);
   letter-spacing: 0;
 }
 
-[data-era="minitel"] .system-name strong::before { content: "* "; color: var(--minitel-red); }
+[data-era="minitel-legacy"] .system-name strong::before { content: "* "; color: var(--minitel-red); }
 
-[data-era="minitel"] .sidebar nav {
+[data-era="minitel-legacy"] .sidebar nav {
   display: grid;
   grid-template-columns: 1fr 1fr;
   padding: 6px 16px 10px;
   gap: 0;
 }
 
-[data-era="minitel"] .nav-link {
+[data-era="minitel-legacy"] .nav-link {
   display: block;
   min-width: 0;
   margin: 0;
@@ -745,17 +745,17 @@ html[data-era="minitel"] {
   text-transform: uppercase;
 }
 
-[data-era="minitel"] .nav-link span { display: none; }
-[data-era="minitel"] .nav-link b { display: none; }
-[data-era="minitel"] .nav-link::before { content: "> "; color: var(--minitel-cyan); }
-[data-era="minitel"] .nav-link:hover,
-[data-era="minitel"] .nav-link:focus { background: transparent; color: var(--minitel-yellow); text-decoration: none; }
-[data-era="minitel"] .nav-link.selected { background: transparent; color: var(--minitel-yellow); box-shadow: none; }
-[data-era="minitel"] .nav-link.selected::before { content: ">*"; color: var(--minitel-red); }
+[data-era="minitel-legacy"] .nav-link span { display: none; }
+[data-era="minitel-legacy"] .nav-link b { display: none; }
+[data-era="minitel-legacy"] .nav-link::before { content: "> "; color: var(--minitel-cyan); }
+[data-era="minitel-legacy"] .nav-link:hover,
+[data-era="minitel-legacy"] .nav-link:focus { background: transparent; color: var(--minitel-yellow); text-decoration: none; }
+[data-era="minitel-legacy"] .nav-link.selected { background: transparent; color: var(--minitel-yellow); box-shadow: none; }
+[data-era="minitel-legacy"] .nav-link.selected::before { content: ">*"; color: var(--minitel-red); }
 
-[data-era="minitel"] .sidebar-bottom { display: none; }
+[data-era="minitel-legacy"] .sidebar-bottom { display: none; }
 
-[data-era="minitel"] .topbar {
+[data-era="minitel-legacy"] .topbar {
   height: auto;
   min-height: 0;
   padding: 8px 16px;
@@ -763,65 +763,65 @@ html[data-era="minitel"] {
   background: #060b08;
 }
 
-[data-era="minitel"] .breadcrumb,
-[data-era="minitel"] .topbar time { display: none; }
+[data-era="minitel-legacy"] .breadcrumb,
+[data-era="minitel-legacy"] .topbar time { display: none; }
 
-[data-era="minitel"] .theme-control { width: 100%; color: var(--minitel-cyan); font: 16px/1.25 var(--sans); }
-[data-era="minitel"] .theme-control::before { content: "MODE : "; }
-[data-era="minitel"] .theme-control select { margin: 0; padding: 0; width: auto; min-height: 20px; }
+[data-era="minitel-legacy"] .theme-control { width: 100%; color: var(--minitel-cyan); font: 16px/1.25 var(--sans); }
+[data-era="minitel-legacy"] .theme-control::before { content: "MODE : "; }
+[data-era="minitel-legacy"] .theme-control select { margin: 0; padding: 0; width: auto; min-height: 20px; }
 
-[data-era="minitel"] main {
+[data-era="minitel-legacy"] main {
   max-width: 40rem;
   padding: 12px 16px 18px;
 }
 
-[data-era="minitel"] h1,
-[data-era="minitel"] h2,
-[data-era="minitel"] h3,
-[data-era="minitel"] p,
-[data-era="minitel"] .eyebrow,
-[data-era="minitel"] .date-stamp,
-[data-era="minitel"] label,
-[data-era="minitel"] .muted {
+[data-era="minitel-legacy"] h1,
+[data-era="minitel-legacy"] h2,
+[data-era="minitel-legacy"] h3,
+[data-era="minitel-legacy"] p,
+[data-era="minitel-legacy"] .eyebrow,
+[data-era="minitel-legacy"] .date-stamp,
+[data-era="minitel-legacy"] label,
+[data-era="minitel-legacy"] .muted {
   font-family: var(--sans);
   letter-spacing: 0;
 }
 
-[data-era="minitel"] h1,
-[data-era="minitel"] h2,
-[data-era="minitel"] h3 {
+[data-era="minitel-legacy"] h1,
+[data-era="minitel-legacy"] h2,
+[data-era="minitel-legacy"] h3 {
   color: var(--minitel-yellow);
   font-weight: 400;
   text-transform: uppercase;
 }
 
-[data-era="minitel"] h1 { font-size: 16px; line-height: 1.25; margin: 0 0 8px; }
-[data-era="minitel"] h1::before { content: "* "; color: var(--minitel-red); }
-[data-era="minitel"] h2 { font-size: 16px; line-height: 1.25; }
-[data-era="minitel"] h3 { font-size: 16px; }
-[data-era="minitel"] p { color: var(--minitel-green); font-size: 16px; line-height: 1.25; }
-[data-era="minitel"] .eyebrow,
-[data-era="minitel"] .date-stamp { color: var(--minitel-cyan); font-size: 16px; line-height: 1.25; }
+[data-era="minitel-legacy"] h1 { font-size: 16px; line-height: 1.25; margin: 0 0 8px; }
+[data-era="minitel-legacy"] h1::before { content: "* "; color: var(--minitel-red); }
+[data-era="minitel-legacy"] h2 { font-size: 16px; line-height: 1.25; }
+[data-era="minitel-legacy"] h3 { font-size: 16px; }
+[data-era="minitel-legacy"] p { color: var(--minitel-green); font-size: 16px; line-height: 1.25; }
+[data-era="minitel-legacy"] .eyebrow,
+[data-era="minitel-legacy"] .date-stamp { color: var(--minitel-cyan); font-size: 16px; line-height: 1.25; }
 
-[data-era="minitel"] .page-heading,
-[data-era="minitel"] .ops-header,
-[data-era="minitel"] .ops-header.compact {
+[data-era="minitel-legacy"] .page-heading,
+[data-era="minitel-legacy"] .ops-header,
+[data-era="minitel-legacy"] .ops-header.compact {
   display: block;
   margin: 0 0 10px;
 }
 
-[data-era="minitel"] .date-stamp { margin-top: 4px; white-space: normal; }
+[data-era="minitel-legacy"] .date-stamp { margin-top: 4px; white-space: normal; }
 
-[data-era="minitel"] .hero,
-[data-era="minitel"] .panel,
-[data-era="minitel"] .stat,
-[data-era="minitel"] .ops-clock,
-[data-era="minitel"] .control-strip article,
-[data-era="minitel"] .signal,
-[data-era="minitel"] .route-board article,
-[data-era="minitel"] .line-meta div,
-[data-era="minitel"] .callout,
-[data-era="minitel"] .fare-bands article {
+[data-era="minitel-legacy"] .hero,
+[data-era="minitel-legacy"] .panel,
+[data-era="minitel-legacy"] .stat,
+[data-era="minitel-legacy"] .ops-clock,
+[data-era="minitel-legacy"] .control-strip article,
+[data-era="minitel-legacy"] .signal,
+[data-era="minitel-legacy"] .route-board article,
+[data-era="minitel-legacy"] .line-meta div,
+[data-era="minitel-legacy"] .callout,
+[data-era="minitel-legacy"] .fare-bands article {
   padding: 8px 0;
   border: 0;
   border-bottom: 1px solid #6e866f;
@@ -830,105 +830,105 @@ html[data-era="minitel"] {
   box-shadow: none;
 }
 
-[data-era="minitel"] .hero {
+[data-era="minitel-legacy"] .hero {
   display: block;
   min-height: 0;
   margin-bottom: 10px;
   color: var(--minitel-green);
 }
 
-[data-era="minitel"] .hero h2 { font-size: 16px; margin: 5px 0; }
-[data-era="minitel"] .hero p { color: var(--minitel-green); }
-[data-era="minitel"] .hero .tag { margin-bottom: 4px; }
-[data-era="minitel"] .network-art { display: none; }
+[data-era="minitel-legacy"] .hero h2 { font-size: 16px; margin: 5px 0; }
+[data-era="minitel-legacy"] .hero p { color: var(--minitel-green); }
+[data-era="minitel-legacy"] .hero .tag { margin-bottom: 4px; }
+[data-era="minitel-legacy"] .network-art { display: none; }
 
-[data-era="minitel"] .stats-grid,
-[data-era="minitel"] .control-strip,
-[data-era="minitel"] .three-columns,
-[data-era="minitel"] .two-columns,
-[data-era="minitel"] .dispatch-grid,
-[data-era="minitel"] .ops-layout,
-[data-era="minitel"] .pilot-grid,
-[data-era="minitel"] .fare-bands,
-[data-era="minitel"] .route-board,
-[data-era="minitel"] .flight-cards {
+[data-era="minitel-legacy"] .stats-grid,
+[data-era="minitel-legacy"] .control-strip,
+[data-era="minitel-legacy"] .three-columns,
+[data-era="minitel-legacy"] .two-columns,
+[data-era="minitel-legacy"] .dispatch-grid,
+[data-era="minitel-legacy"] .ops-layout,
+[data-era="minitel-legacy"] .pilot-grid,
+[data-era="minitel-legacy"] .fare-bands,
+[data-era="minitel-legacy"] .route-board,
+[data-era="minitel-legacy"] .flight-cards {
   display: block;
   margin: 0;
 }
 
-[data-era="minitel"] .stat,
-[data-era="minitel"] .control-strip article,
-[data-era="minitel"] .panel,
-[data-era="minitel"] .fare-bands article { margin: 0; }
+[data-era="minitel-legacy"] .stat,
+[data-era="minitel-legacy"] .control-strip article,
+[data-era="minitel-legacy"] .panel,
+[data-era="minitel-legacy"] .fare-bands article { margin: 0; }
 
-[data-era="minitel"] .stat > span,
-[data-era="minitel"] .control-strip span,
-[data-era="minitel"] .control-strip small,
-[data-era="minitel"] .route-list span,
-[data-era="minitel"] .mini-bulletin span { color: var(--minitel-cyan); font-size: 16px; }
+[data-era="minitel-legacy"] .stat > span,
+[data-era="minitel-legacy"] .control-strip span,
+[data-era="minitel-legacy"] .control-strip small,
+[data-era="minitel-legacy"] .route-list span,
+[data-era="minitel-legacy"] .mini-bulletin span { color: var(--minitel-cyan); font-size: 16px; }
 
-[data-era="minitel"] .stat strong,
-[data-era="minitel"] .control-strip strong,
-[data-era="minitel"] .mini-bulletin strong,
-[data-era="minitel"] .ops-clock strong {
+[data-era="minitel-legacy"] .stat strong,
+[data-era="minitel-legacy"] .control-strip strong,
+[data-era="minitel-legacy"] .mini-bulletin strong,
+[data-era="minitel-legacy"] .ops-clock strong {
   color: var(--minitel-yellow);
   font: 16px/1.25 var(--sans);
   letter-spacing: 0;
 }
 
-[data-era="minitel"] .panel-heading { display: block; margin: 0 0 4px; }
-[data-era="minitel"] .panel-heading a { white-space: normal; }
-[data-era="minitel"] .signal { display: block; color: var(--minitel-green); }
-[data-era="minitel"] .signal b { display: inline; height: auto; padding: 0; background: transparent; color: var(--minitel-red); font: 16px/1.25 var(--sans); }
-[data-era="minitel"] .signal b::after { content: " - "; color: var(--minitel-green); }
-[data-era="minitel"] .signal span { display: inline; font-weight: 400; }
+[data-era="minitel-legacy"] .panel-heading { display: block; margin: 0 0 4px; }
+[data-era="minitel-legacy"] .panel-heading a { white-space: normal; }
+[data-era="minitel-legacy"] .signal { display: block; color: var(--minitel-green); }
+[data-era="minitel-legacy"] .signal b { display: inline; height: auto; padding: 0; background: transparent; color: var(--minitel-red); font: 16px/1.25 var(--sans); }
+[data-era="minitel-legacy"] .signal b::after { content: " - "; color: var(--minitel-green); }
+[data-era="minitel-legacy"] .signal span { display: inline; font-weight: 400; }
 
-[data-era="minitel"] .dispatch-flight,
-[data-era="minitel"] .ops-timeline article,
-[data-era="minitel"] .report-feed article,
-[data-era="minitel"] .route-list div {
+[data-era="minitel-legacy"] .dispatch-flight,
+[data-era="minitel-legacy"] .ops-timeline article,
+[data-era="minitel-legacy"] .report-feed article,
+[data-era="minitel-legacy"] .route-list div {
   display: block;
   padding: 5px 0;
   border-bottom: 1px dotted #526a54;
 }
 
-[data-era="minitel"] .dispatch-flight time,
-[data-era="minitel"] .airport-pair,
-[data-era="minitel"] .ops-timeline time { color: var(--minitel-cyan); font: 16px/1.25 var(--sans); }
-[data-era="minitel"] .dispatch-flight .load { width: auto; height: auto; margin-left: 8px; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--minitel-yellow); font: 16px/1.25 var(--sans); }
+[data-era="minitel-legacy"] .dispatch-flight time,
+[data-era="minitel-legacy"] .airport-pair,
+[data-era="minitel-legacy"] .ops-timeline time { color: var(--minitel-cyan); font: 16px/1.25 var(--sans); }
+[data-era="minitel-legacy"] .dispatch-flight .load { width: auto; height: auto; margin-left: 8px; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--minitel-yellow); font: 16px/1.25 var(--sans); }
 
-[data-era="minitel"] .line-card,
-[data-era="minitel"] .line-card-head,
-[data-era="minitel"] .airport-pair,
-[data-era="minitel"] .line-meta,
-[data-era="minitel"] .pilot-numbers,
-[data-era="minitel"] .member-form,
-[data-era="minitel"] .report-summary,
-[data-era="minitel"] .bulletin-header,
-[data-era="minitel"] .bulletin-footer {
+[data-era="minitel-legacy"] .line-card,
+[data-era="minitel-legacy"] .line-card-head,
+[data-era="minitel-legacy"] .airport-pair,
+[data-era="minitel-legacy"] .line-meta,
+[data-era="minitel-legacy"] .pilot-numbers,
+[data-era="minitel-legacy"] .member-form,
+[data-era="minitel-legacy"] .report-summary,
+[data-era="minitel-legacy"] .bulletin-header,
+[data-era="minitel-legacy"] .bulletin-footer {
   display: block;
 }
 
-[data-era="minitel"] .airport-pair i,
-[data-era="minitel"] .route-board i { display: inline; height: auto; border: 0; background: transparent; }
-[data-era="minitel"] .airport-pair i::after { content: " -> "; color: var(--minitel-yellow); }
-[data-era="minitel"] [data-era="minitel"] .line-meta dt,
-[data-era="minitel"] [data-era="minitel"] [data-era="minitel"] .line-meta dt::after { content: " : "; }
+[data-era="minitel-legacy"] .airport-pair i,
+[data-era="minitel-legacy"] .route-board i { display: inline; height: auto; border: 0; background: transparent; }
+[data-era="minitel-legacy"] .airport-pair i::after { content: " -> "; color: var(--minitel-yellow); }
+[data-era="minitel-legacy"] [data-era="minitel-legacy"] .line-meta dt,
+[data-era="minitel-legacy"] [data-era="minitel-legacy"] [data-era="minitel-legacy"] .line-meta dt::after { content: " : "; }
 
-[data-era="minitel"] a { color: var(--minitel-cyan); }
-[data-era="minitel"] a:hover,
-[data-era="minitel"] a:focus { color: var(--minitel-yellow); text-decoration: none; }
-[data-era="minitel"] a:focus-visible,
-[data-era="minitel"] button:focus-visible,
-[data-era="minitel"] input:focus-visible,
-[data-era="minitel"] select:focus-visible,
-[data-era="minitel"] textarea:focus-visible { outline: 2px solid var(--minitel-red); outline-offset: 2px; }
+[data-era="minitel-legacy"] a { color: var(--minitel-cyan); }
+[data-era="minitel-legacy"] a:hover,
+[data-era="minitel-legacy"] a:focus { color: var(--minitel-yellow); text-decoration: none; }
+[data-era="minitel-legacy"] a:focus-visible,
+[data-era="minitel-legacy"] button:focus-visible,
+[data-era="minitel-legacy"] input:focus-visible,
+[data-era="minitel-legacy"] select:focus-visible,
+[data-era="minitel-legacy"] textarea:focus-visible { outline: 2px solid var(--minitel-red); outline-offset: 2px; }
 
-[data-era="minitel"] button,
-[data-era="minitel"] .button,
-[data-era="minitel"] input,
-[data-era="minitel"] select,
-[data-era="minitel"] textarea {
+[data-era="minitel-legacy"] button,
+[data-era="minitel-legacy"] .button,
+[data-era="minitel-legacy"] input,
+[data-era="minitel-legacy"] select,
+[data-era="minitel-legacy"] textarea {
   min-height: 20px;
   margin: 0;
   padding: 1px 3px;
@@ -941,17 +941,17 @@ html[data-era="minitel"] {
   text-transform: uppercase;
 }
 
-[data-era="minitel"] button:hover,
-[data-era="minitel"] .button:hover { background: var(--minitel-green); color: #060b08; filter: none; }
-[data-era="minitel"] .button::before { content: "ENVOI "; color: var(--minitel-yellow); }
-[data-era="minitel"] .button:hover::before { color: #060b08; }
-[data-era="minitel"] .button.outline::before { content: "SOMMAIRE "; }
+[data-era="minitel-legacy"] button:hover,
+[data-era="minitel-legacy"] .button:hover { background: var(--minitel-green); color: #060b08; filter: none; }
+[data-era="minitel-legacy"] .button::before { content: "ENVOI "; color: var(--minitel-yellow); }
+[data-era="minitel-legacy"] .button:hover::before { color: #060b08; }
+[data-era="minitel-legacy"] .button.outline::before { content: "SOMMAIRE "; }
 
-[data-era="minitel"] .tag,
-[data-era="minitel"] .fare-chips span,
-[data-era="minitel"] .calendar-event,
-[data-era="minitel"] .round-link,
-[data-era="minitel"] .avatar-text {
+[data-era="minitel-legacy"] .tag,
+[data-era="minitel-legacy"] .fare-chips span,
+[data-era="minitel-legacy"] .calendar-event,
+[data-era="minitel-legacy"] .round-link,
+[data-era="minitel-legacy"] .avatar-text {
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -959,22 +959,22 @@ html[data-era="minitel"] {
   font: 16px/1.25 var(--sans);
 }
 
-[data-era="minitel"] .table-wrap { border-block: 1px solid #6e866f; }
-[data-era="minitel"] table { font: 16px/1.25 var(--sans); white-space: normal; }
-[data-era="minitel"] th,
-[data-era="minitel"] td { padding: 3px 2px; border-bottom: 1px dotted #526a54; background: transparent; color: var(--minitel-green); font: inherit; text-transform: uppercase; }
-[data-era="minitel"] th { color: var(--minitel-yellow); font-weight: 400; }
-[data-era="minitel"] .calendar { display: block; border: 0; }
-[data-era="minitel"] .weekday { display: none; }
-[data-era="minitel"] .calendar-day { height: auto; min-height: 0; padding: 4px 0; border: 0; border-bottom: 1px dotted #526a54; }
-[data-era="minitel"] .calendar-day.outside { color: var(--muted); background: transparent; }
-[data-era="minitel"] .calendar-day.today > span { width: auto; height: auto; border-radius: 0; background: transparent; color: var(--minitel-red); }
-[data-era="minitel"] .avatar-text { width: auto; height: auto; margin: 0; text-align: left; }
-[data-era="minitel"] .bulletin { max-width: none; margin: 0; padding: 0; border: 0; background: transparent; color: var(--minitel-green); }
-[data-era="minitel"] .bulletin * { color: inherit; font-family: var(--sans); }
-[data-era="minitel"] .bulletin > h1,
-[data-era="minitel"] .bulletin-header,
-[data-era="minitel"] .bulletin-footer { border-color: var(--minitel-green); }
+[data-era="minitel-legacy"] .table-wrap { border-block: 1px solid #6e866f; }
+[data-era="minitel-legacy"] table { font: 16px/1.25 var(--sans); white-space: normal; }
+[data-era="minitel-legacy"] th,
+[data-era="minitel-legacy"] td { padding: 3px 2px; border-bottom: 1px dotted #526a54; background: transparent; color: var(--minitel-green); font: inherit; text-transform: uppercase; }
+[data-era="minitel-legacy"] th { color: var(--minitel-yellow); font-weight: 400; }
+[data-era="minitel-legacy"] .calendar { display: block; border: 0; }
+[data-era="minitel-legacy"] .weekday { display: none; }
+[data-era="minitel-legacy"] .calendar-day { height: auto; min-height: 0; padding: 4px 0; border: 0; border-bottom: 1px dotted #526a54; }
+[data-era="minitel-legacy"] .calendar-day.outside { color: var(--muted); background: transparent; }
+[data-era="minitel-legacy"] .calendar-day.today > span { width: auto; height: auto; border-radius: 0; background: transparent; color: var(--minitel-red); }
+[data-era="minitel-legacy"] .avatar-text { width: auto; height: auto; margin: 0; text-align: left; }
+[data-era="minitel-legacy"] .bulletin { max-width: none; margin: 0; padding: 0; border: 0; background: transparent; color: var(--minitel-green); }
+[data-era="minitel-legacy"] .bulletin * { color: inherit; font-family: var(--sans); }
+[data-era="minitel-legacy"] .bulletin > h1,
+[data-era="minitel-legacy"] .bulletin-header,
+[data-era="minitel-legacy"] .bulletin-footer { border-color: var(--minitel-green); }
 
 /* Fast row-by-row arrival gives the terminal an immediate Videotex feel. */
 @keyframes minitel-line-arrival {
@@ -982,14 +982,14 @@ html[data-era="minitel"] {
   to { opacity: 1; transform: translateY(0); }
 }
 
-[data-era="minitel"] body.minitel-enter .page-heading,
-[data-era="minitel"] body.minitel-enter .hero,
-[data-era="minitel"] body.minitel-enter .stats-grid > *,
-[data-era="minitel"] body.minitel-enter .control-strip > *,
-[data-era="minitel"] body.minitel-enter .panel,
-[data-era="minitel"] body.minitel-enter .signal,
-[data-era="minitel"] body.minitel-enter .dispatch-flight,
-[data-era="minitel"] body.minitel-enter .route-board article {
+[data-era="minitel-legacy"] body.minitel-enter .page-heading,
+[data-era="minitel-legacy"] body.minitel-enter .hero,
+[data-era="minitel-legacy"] body.minitel-enter .stats-grid > *,
+[data-era="minitel-legacy"] body.minitel-enter .control-strip > *,
+[data-era="minitel-legacy"] body.minitel-enter .panel,
+[data-era="minitel-legacy"] body.minitel-enter .signal,
+[data-era="minitel-legacy"] body.minitel-enter .dispatch-flight,
+[data-era="minitel-legacy"] body.minitel-enter .route-board article {
   animation: minitel-line-arrival 90ms steps(2, end) both;
   animation-delay: calc(var(--minitel-line, 0) * 38ms);
 }
@@ -997,42 +997,42 @@ html[data-era="minitel"] {
 @media (prefers-reduced-motion: reduce) {
   [data-era="modern"] *,
   [data-era="2000"] *,
-  [data-era="minitel"] * { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+  [data-era="minitel-legacy"] * { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
 }
 
 @media (max-width: 760px) {
-  [data-era="minitel"] .sidebar,
-  [data-era="minitel"] .workspace { width: 100%; border-inline-width: 1px; }
-  [data-era="minitel"] .sidebar nav { grid-template-columns: 1fr; }
-  [data-era="minitel"] main { padding-inline: 10px; }
+  [data-era="minitel-legacy"] .sidebar,
+  [data-era="minitel-legacy"] .workspace { width: 100%; border-inline-width: 1px; }
+  [data-era="minitel-legacy"] .sidebar nav { grid-template-columns: 1fr; }
+  [data-era="minitel-legacy"] main { padding-inline: 10px; }
   [data-era="2000"] main { padding-inline: 16px; }
 }
 
 /* Physical split-flap modules. They intentionally do not inherit the site's eras. */
-html:not([data-era="minitel"]) .departure-board {
+html:not([data-era="minitel-legacy"]) .departure-board {
   border: 8px solid #303234;
   border-radius: 4px;
   background: linear-gradient(145deg, #45484a, #151617 10%, #26282a 100%);
   box-shadow: inset 0 0 0 2px #090a0a, inset 0 0 18px #000, 0 14px 28px #09131c42;
 }
-html:not([data-era="minitel"]) .departure-board .panel-heading {
+html:not([data-era="minitel-legacy"]) .departure-board .panel-heading {
   min-height: 68px;
   padding: 14px 20px;
   border-bottom: 2px solid #101111;
   background: linear-gradient(#4b4e4f, #27292a 45%, #171819 52%, #282a2b);
   box-shadow: inset 0 1px #686b6b, inset 0 -1px #070808;
 }
-html:not([data-era="minitel"]) .departure-board .panel-heading h2 {
+html:not([data-era="minitel-legacy"]) .departure-board .panel-heading h2 {
   color: #eee9d8;
   font-family: "Arial Narrow", "Roboto Condensed", sans-serif;
   font-size: 25px;
   font-weight: 700;
   letter-spacing: .16em;
 }
-html:not([data-era="minitel"]) .departure-board .panel-heading h2::before { display: none; }
-html:not([data-era="minitel"]) .departure-board .panel-heading .eyebrow,
-html:not([data-era="minitel"]) .departure-board .panel-heading a { color: #d8d1ba; }
-html:not([data-era="minitel"]) .departure-board .flight-stack {
+html:not([data-era="minitel-legacy"]) .departure-board .panel-heading h2::before { display: none; }
+html:not([data-era="minitel-legacy"]) .departure-board .panel-heading .eyebrow,
+html:not([data-era="minitel-legacy"]) .departure-board .panel-heading a { color: #d8d1ba; }
+html:not([data-era="minitel-legacy"]) .departure-board .flight-stack {
   gap: 3px;
   padding: 13px 12px 14px;
   background: linear-gradient(90deg, #101111, #1c1d1d 4%, #111212 96%, #080909);
@@ -1045,25 +1045,25 @@ html:not([data-era="minitel"]) .departure-board .flight-stack {
 .profile-password-heading { margin: 32px 0 20px; padding-top: 24px; border-top: 1px solid var(--line); }
 .profile-password-heading p { margin: 6px 0 0; }
 .profile-form-actions { display: flex; justify-content: flex-end; margin-top: 28px; }
-html:not([data-era="minitel"]) .departure-board .flight-stack::before,
-html:not([data-era="minitel"]) .departure-board .flight-stack::after { display: none; }
+html:not([data-era="minitel-legacy"]) .departure-board .flight-stack::before,
+html:not([data-era="minitel-legacy"]) .departure-board .flight-stack::after { display: none; }
 /* One shared seven-column track definition for headings and flight rows. */
-html:not([data-era="minitel"]) .departure-board .split-flap-grid {
+html:not([data-era="minitel-legacy"]) .departure-board .split-flap-grid {
   display: grid;
   grid-template-columns: 64px minmax(138px, 1fr) 70px 84px minmax(418px, 1.7fr) 84px minmax(240px, 1.3fr);
   column-gap: 7px;
   box-sizing: border-box;
 }
-html:not([data-era="minitel"]) .split-flap-head { padding: 0 2px 5px; color: #bdb8a8; font: 700 10px/1 Arial, sans-serif; letter-spacing: .12em; }
-html:not([data-era="minitel"]) .departure-board .dispatch-flight {
+html:not([data-era="minitel-legacy"]) .split-flap-head { padding: 0 2px 5px; color: #bdb8a8; font: 700 10px/1 Arial, sans-serif; letter-spacing: .12em; }
+html:not([data-era="minitel-legacy"]) .departure-board .dispatch-flight {
   min-height: 39px;
   contain: layout paint style;
   padding: 0;
   border: 0;
   background: transparent;
 }
-html:not([data-era="minitel"]) .departure-board .dispatch-flight > :not(.board-cell) { display: none; }
-html:not([data-era="minitel"]) .departure-board .dispatch-flight .board-cell {
+html:not([data-era="minitel-legacy"]) .departure-board .dispatch-flight > :not(.board-cell) { display: none; }
+html:not([data-era="minitel-legacy"]) .departure-board .dispatch-flight .board-cell {
   display: flex;
   min-width: 0;
   box-sizing: border-box;
@@ -1080,7 +1080,7 @@ html:not([data-era="minitel"]) .departure-board .dispatch-flight .board-cell {
   text-decoration: none;
 }
 .split-flap-field,
-html:not([data-era="minitel"]) .departure-board .dispatch-flight .board-cell,
+html:not([data-era="minitel-legacy"]) .departure-board .dispatch-flight .board-cell,
 .airline-logo-fallback { gap: 2px; align-items: stretch; flex-wrap: nowrap; }
 .split-flap-plain { display: block; overflow: visible; font-family: system-ui, sans-serif; letter-spacing: 0; text-transform: none; white-space: normal; }
 .split-flap-char {
@@ -1118,8 +1118,8 @@ html:not([data-era="minitel"]) .departure-board .dispatch-flight .board-cell,
 @keyframes flap-top { to { transform: rotateX(-90deg); filter: brightness(.55); } }
 @keyframes flap-bottom { from { transform: rotateX(90deg); filter: brightness(.5); } to { transform: rotateX(0); } }
 @media (max-width: 760px) {
-  html:not([data-era="minitel"]) .departure-board { border-width: 5px; }
-  html:not([data-era="minitel"]) .departure-board .split-flap-grid { column-gap: 4px; }
+  html:not([data-era="minitel-legacy"]) .departure-board { border-width: 5px; }
+  html:not([data-era="minitel-legacy"]) .departure-board .split-flap-grid { column-gap: 4px; }
   .split-flap-field { gap: 1px; }
   .split-flap-char { height: 31px; font-size: 13px; line-height: 31px; }
   .flap-face { height: 31px; line-height: 31px; }
@@ -1128,19 +1128,19 @@ html:not([data-era="minitel"]) .departure-board .dispatch-flight .board-cell,
 @media (prefers-reduced-motion: reduce) { .split-flap-char *, .split-flap-char { animation: none !important; } }
 
 /* Airport movements layout: the logo is a dedicated physical cell, not a glyph palette. */
-html:not([data-era="minitel"]) .departure-board-scroll { width: 100%; max-width: 100%; overflow-x: auto; }
-html:not([data-era="minitel"]) .departure-board .flight-stack { width: max-content; min-width: 100%; }
-html:not([data-era="minitel"]) .departure-board .split-flap-grid { min-width: 1140px; }
-html:not([data-era="minitel"]) .departure-board .airline-logo-cell {
+html:not([data-era="minitel-legacy"]) .departure-board-scroll { width: 100%; max-width: 100%; overflow-x: auto; }
+html:not([data-era="minitel-legacy"]) .departure-board .flight-stack { width: max-content; min-width: 100%; }
+html:not([data-era="minitel-legacy"]) .departure-board .split-flap-grid { min-width: 1140px; }
+html:not([data-era="minitel-legacy"]) .departure-board .airline-logo-cell {
   display: grid; place-items: center; min-height: 38px; padding: 3px !important;
   background: #181918 !important; border: 1px solid #080909 !important;
   border-radius: 2px !important; box-shadow: inset 0 1px #484a48, inset 0 -1px #050505, 0 1px #272827 !important;
 }
 .airline-logo-cell img { display: block; max-width: 100%; max-height: 28px; object-fit: contain; }
-html:not([data-era="minitel"]) .departure-board .airline-logo-fallback { display: flex; color: #f1eddf; font: 700 10px/1 "Arial Narrow", Arial, sans-serif; letter-spacing: .08em; text-align: center; }
-html:not([data-era="minitel"]) .departure-board .status .split-flap-char { color: #f1c928; }
+html:not([data-era="minitel-legacy"]) .departure-board .airline-logo-fallback { display: flex; color: #f1eddf; font: 700 10px/1 "Arial Narrow", Arial, sans-serif; letter-spacing: .08em; text-align: center; }
+html:not([data-era="minitel-legacy"]) .departure-board .status .split-flap-char { color: #f1c928; }
 @media (max-width: 760px) {
-  html:not([data-era="minitel"]) .departure-board .split-flap-grid { min-width: 1140px; }
+  html:not([data-era="minitel-legacy"]) .departure-board .split-flap-grid { min-width: 1140px; }
 }
 
 /*
@@ -1148,11 +1148,11 @@ html:not([data-era="minitel"]) .departure-board .status .split-flap-char { color
    Videotex grid remains text-led inside it; long operational pages scroll in
    the lower screen rather than changing the terminal proportions.
 */
-html[data-era="minitel"] {
+html[data-era="minitel-legacy"] {
   background: #010301;
 }
 
-[data-era="minitel"] body {
+[data-era="minitel-legacy"] body {
   --minitel-terminal-size: min(42rem, calc(100vw - 2rem), calc(100vh - 2rem));
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -1167,8 +1167,8 @@ html[data-era="minitel"] {
   box-shadow: 0 0 0 5px #182218, 0 0 46px rgb(246 241 193 / 18%);
 }
 
-[data-era="minitel"] .sidebar,
-[data-era="minitel"] .workspace {
+[data-era="minitel-legacy"] .sidebar,
+[data-era="minitel-legacy"] .workspace {
   width: 100%;
   height: auto;
   min-width: 0;
@@ -1177,43 +1177,43 @@ html[data-era="minitel"] {
   box-shadow: none;
 }
 
-[data-era="minitel"] .sidebar {
+[data-era="minitel-legacy"] .sidebar {
   grid-row: 1;
   overflow: hidden;
   border-bottom: 1px solid var(--minitel-green);
 }
 
-[data-era="minitel"] .brand {
+[data-era="minitel-legacy"] .brand {
   padding: 7px 12px 2px;
 }
 
-[data-era="minitel"] .system-name {
+[data-era="minitel-legacy"] .system-name {
   padding: 0 12px 3px;
 }
 
-[data-era="minitel"] .sidebar nav {
+[data-era="minitel-legacy"] .sidebar nav {
   grid-template-columns: 1fr 1fr;
   padding: 2px 12px 4px;
 }
 
-[data-era="minitel"] .nav-link { padding-block: 1px; }
+[data-era="minitel-legacy"] .nav-link { padding-block: 1px; }
 
-[data-era="minitel"] .workspace {
+[data-era="minitel-legacy"] .workspace {
   grid-row: 2;
   display: flex;
   min-height: 0;
   flex-direction: column;
 }
 
-[data-era="minitel"] .topbar,
-[data-era="minitel"] .footer { flex: 0 0 auto; }
+[data-era="minitel-legacy"] .topbar,
+[data-era="minitel-legacy"] .footer { flex: 0 0 auto; }
 
-[data-era="minitel"] .topbar {
+[data-era="minitel-legacy"] .topbar {
   padding: 4px 12px;
   border-top: 0;
 }
 
-[data-era="minitel"] main {
+[data-era="minitel-legacy"] main {
   min-height: 0;
   flex: 1 1 auto;
   overflow: auto;
@@ -1223,35 +1223,35 @@ html[data-era="minitel"] {
   scrollbar-width: thin;
 }
 
-[data-era="minitel"] main::-webkit-scrollbar { width: 8px; }
-[data-era="minitel"] main::-webkit-scrollbar-track { background: #060b08; }
-[data-era="minitel"] main::-webkit-scrollbar-thumb { background: var(--minitel-green); }
+[data-era="minitel-legacy"] main::-webkit-scrollbar { width: 8px; }
+[data-era="minitel-legacy"] main::-webkit-scrollbar-track { background: #060b08; }
+[data-era="minitel-legacy"] main::-webkit-scrollbar-thumb { background: var(--minitel-green); }
 
-[data-era="minitel"] .footer {
+[data-era="minitel-legacy"] .footer {
   padding: 4px 12px;
   border-top-color: var(--minitel-green);
 }
 
-[data-era="minitel"] .footer span:not(:first-child),
-[data-era="minitel"] .tricolor { display: none; }
+[data-era="minitel-legacy"] .footer span:not(:first-child),
+[data-era="minitel-legacy"] .tricolor { display: none; }
 
 @media (max-width: 760px) {
-  [data-era="minitel"] body {
+  [data-era="minitel-legacy"] body {
     --minitel-terminal-size: min(calc(100vw - 1rem), calc(100vh - 1rem));
     grid-template-rows: 9rem minmax(0, 1fr);
     margin: .5rem auto;
   }
 
-  [data-era="minitel"] .sidebar nav { grid-template-columns: 1fr 1fr; }
-  [data-era="minitel"] .nav-link { font-size: 12px; }
-  [data-era="minitel"] .brand-logo-minitel,
-  [data-era="minitel"] .system-name strong,
-  [data-era="minitel"] .theme-control,
-  [data-era="minitel"] .theme-control select { font-size: 12px; }
+  [data-era="minitel-legacy"] .sidebar nav { grid-template-columns: 1fr 1fr; }
+  [data-era="minitel-legacy"] .nav-link { font-size: 12px; }
+  [data-era="minitel-legacy"] .brand-logo-minitel,
+  [data-era="minitel-legacy"] .system-name strong,
+  [data-era="minitel-legacy"] .theme-control,
+  [data-era="minitel-legacy"] .theme-control select { font-size: 12px; }
 }
 
 /* The eight saturated Videotex colours, used as colours—not as a neon theme. */
-[data-era="minitel"] body {
+[data-era="minitel-legacy"] body {
   --minitel-black: #000000;
   --minitel-blue: #0000ff;
   --minitel-red: #ff0000;
@@ -1273,92 +1273,92 @@ html[data-era="minitel"] {
   box-shadow: 0 0 0 5px #6f6f6f, 0 0 0 10px #111;
 }
 
-[data-era="minitel"] .sidebar,
-[data-era="minitel"] .workspace,
-[data-era="minitel"] .topbar,
-[data-era="minitel"] .hero,
-[data-era="minitel"] .panel,
-[data-era="minitel"] .stat,
-[data-era="minitel"] .control-strip article,
-[data-era="minitel"] .signal,
-[data-era="minitel"] .route-board article,
-[data-era="minitel"] .line-meta div,
-[data-era="minitel"] .callout,
-[data-era="minitel"] .fare-bands article {
+[data-era="minitel-legacy"] .sidebar,
+[data-era="minitel-legacy"] .workspace,
+[data-era="minitel-legacy"] .topbar,
+[data-era="minitel-legacy"] .hero,
+[data-era="minitel-legacy"] .panel,
+[data-era="minitel-legacy"] .stat,
+[data-era="minitel-legacy"] .control-strip article,
+[data-era="minitel-legacy"] .signal,
+[data-era="minitel-legacy"] .route-board article,
+[data-era="minitel-legacy"] .line-meta div,
+[data-era="minitel-legacy"] .callout,
+[data-era="minitel-legacy"] .fare-bands article {
   background: var(--minitel-black);
 }
 
-[data-era="minitel"] .brand-logo-shell { padding: 0; }
-[data-era="minitel"] .brand-logo-minitel {
+[data-era="minitel-legacy"] .brand-logo-shell { padding: 0; }
+[data-era="minitel-legacy"] .brand-logo-minitel {
   padding: 3px 8px;
   background: var(--minitel-blue);
   color: var(--minitel-white);
   font-weight: 400;
   letter-spacing: .16em;
 }
-[data-era="minitel"] .brand-logo-minitel::before { color: var(--minitel-yellow); }
+[data-era="minitel-legacy"] .brand-logo-minitel::before { color: var(--minitel-yellow); }
 
-[data-era="minitel"] .topbar,
-[data-era="minitel"] .tag,
-[data-era="minitel"] .panel-heading h2 {
+[data-era="minitel-legacy"] .topbar,
+[data-era="minitel-legacy"] .tag,
+[data-era="minitel-legacy"] .panel-heading h2 {
   background: var(--minitel-blue);
   color: var(--minitel-white);
 }
 
-[data-era="minitel"] .panel-heading h2 { display: inline-block; padding-inline: 4px; }
-[data-era="minitel"] .system-name strong,
-[data-era="minitel"] h1,
-[data-era="minitel"] h2,
-[data-era="minitel"] h3,
-[data-era="minitel"] th { color: var(--minitel-yellow); }
-[data-era="minitel"] h1::before,
-[data-era="minitel"] .system-name strong::before { color: var(--minitel-red); }
-[data-era="minitel"] .eyebrow,
-[data-era="minitel"] .date-stamp,
-[data-era="minitel"] .theme-control,
-[data-era="minitel"] .stat > span,
-[data-era="minitel"] .control-strip span,
-[data-era="minitel"] .control-strip small,
-[data-era="minitel"] .route-list span,
-[data-era="minitel"] .mini-bulletin span { color: var(--minitel-cyan); }
-[data-era="minitel"] p,
-[data-era="minitel"] td,
-[data-era="minitel"] .signal,
-[data-era="minitel"] .signal span { color: var(--minitel-white); }
-[data-era="minitel"] a,
-[data-era="minitel"] .dispatch-flight time,
-[data-era="minitel"] .airport-pair,
-[data-era="minitel"] .ops-timeline time { color: var(--minitel-cyan); }
-[data-era="minitel"] a:hover,
-[data-era="minitel"] a:focus { color: var(--minitel-yellow); }
+[data-era="minitel-legacy"] .panel-heading h2 { display: inline-block; padding-inline: 4px; }
+[data-era="minitel-legacy"] .system-name strong,
+[data-era="minitel-legacy"] h1,
+[data-era="minitel-legacy"] h2,
+[data-era="minitel-legacy"] h3,
+[data-era="minitel-legacy"] th { color: var(--minitel-yellow); }
+[data-era="minitel-legacy"] h1::before,
+[data-era="minitel-legacy"] .system-name strong::before { color: var(--minitel-red); }
+[data-era="minitel-legacy"] .eyebrow,
+[data-era="minitel-legacy"] .date-stamp,
+[data-era="minitel-legacy"] .theme-control,
+[data-era="minitel-legacy"] .stat > span,
+[data-era="minitel-legacy"] .control-strip span,
+[data-era="minitel-legacy"] .control-strip small,
+[data-era="minitel-legacy"] .route-list span,
+[data-era="minitel-legacy"] .mini-bulletin span { color: var(--minitel-cyan); }
+[data-era="minitel-legacy"] p,
+[data-era="minitel-legacy"] td,
+[data-era="minitel-legacy"] .signal,
+[data-era="minitel-legacy"] .signal span { color: var(--minitel-white); }
+[data-era="minitel-legacy"] a,
+[data-era="minitel-legacy"] .dispatch-flight time,
+[data-era="minitel-legacy"] .airport-pair,
+[data-era="minitel-legacy"] .ops-timeline time { color: var(--minitel-cyan); }
+[data-era="minitel-legacy"] a:hover,
+[data-era="minitel-legacy"] a:focus { color: var(--minitel-yellow); }
 
-[data-era="minitel"] button,
-[data-era="minitel"] .button,
-[data-era="minitel"] input,
-[data-era="minitel"] select,
-[data-era="minitel"] textarea {
+[data-era="minitel-legacy"] button,
+[data-era="minitel-legacy"] .button,
+[data-era="minitel-legacy"] input,
+[data-era="minitel-legacy"] select,
+[data-era="minitel-legacy"] textarea {
   border-color: var(--minitel-green);
   background: var(--minitel-green);
   color: var(--minitel-black);
 }
-[data-era="minitel"] button:hover,
-[data-era="minitel"] .button:hover {
+[data-era="minitel-legacy"] button:hover,
+[data-era="minitel-legacy"] .button:hover {
   background: var(--minitel-yellow);
   border-color: var(--minitel-yellow);
   color: var(--minitel-black);
 }
-[data-era="minitel"] .button::before,
-[data-era="minitel"] .button:hover::before { color: inherit; }
-[data-era="minitel"] .signal b { color: var(--minitel-magenta); }
-[data-era="minitel"] .nav-link::before { color: var(--minitel-cyan); }
-[data-era="minitel"] .nav-link.selected,
-[data-era="minitel"] .nav-link:hover,
-[data-era="minitel"] .nav-link:focus { color: var(--minitel-yellow); }
-[data-era="minitel"] .nav-link.selected::before { color: var(--minitel-magenta); }
-[data-era="minitel"] .footer { color: var(--minitel-white); }
+[data-era="minitel-legacy"] .button::before,
+[data-era="minitel-legacy"] .button:hover::before { color: inherit; }
+[data-era="minitel-legacy"] .signal b { color: var(--minitel-magenta); }
+[data-era="minitel-legacy"] .nav-link::before { color: var(--minitel-cyan); }
+[data-era="minitel-legacy"] .nav-link.selected,
+[data-era="minitel-legacy"] .nav-link:hover,
+[data-era="minitel-legacy"] .nav-link:focus { color: var(--minitel-yellow); }
+[data-era="minitel-legacy"] .nav-link.selected::before { color: var(--minitel-magenta); }
+[data-era="minitel-legacy"] .footer { color: var(--minitel-white); }
 
 /* Boot page: it is a real <pre>, filled line after line by promethee.js. */
-[data-era="minitel"] #minitel-screen {
+[data-era="minitel-legacy"] #minitel-screen {
   position: absolute;
   z-index: 20;
   inset: 0;
@@ -1378,10 +1378,10 @@ html[data-era="minitel"] {
   transition: opacity 90ms steps(2, end);
 }
 
-[data-era="minitel"] #minitel-screen.is-complete { opacity: 0; }
+[data-era="minitel-legacy"] #minitel-screen.is-complete { opacity: 0; }
 
 @media (max-width: 760px) {
-  [data-era="minitel"] #minitel-screen { font-size: 12px; padding: 16px; }
+  [data-era="minitel-legacy"] #minitel-screen { font-size: 12px; padding: 16px; }
 }
 
 /* Navigation stays reachable in every era, including long admin menus. */
@@ -1392,16 +1392,16 @@ html[data-era="2000"] .sidebar {
   scrollbar-width: thin;
 }
 
-[data-era="minitel"] .sidebar {
+[data-era="minitel-legacy"] .sidebar {
   display: flex;
   flex-direction: column;
   min-height: 0;
 }
 
-[data-era="minitel"] .brand,
-[data-era="minitel"] .system-name { flex: 0 0 auto; }
+[data-era="minitel-legacy"] .brand,
+[data-era="minitel-legacy"] .system-name { flex: 0 0 auto; }
 
-[data-era="minitel"] .sidebar nav {
+[data-era="minitel-legacy"] .sidebar nav {
   min-height: 0;
   flex: 1 1 auto;
   overflow-y: auto;
@@ -1410,19 +1410,19 @@ html[data-era="2000"] .sidebar {
   scrollbar-width: thin;
 }
 
-[data-era="minitel"] .sidebar nav::-webkit-scrollbar { width: 7px; }
-[data-era="minitel"] .sidebar nav::-webkit-scrollbar-track { background: var(--minitel-black); }
-[data-era="minitel"] .sidebar nav::-webkit-scrollbar-thumb { background: var(--minitel-green); }
+[data-era="minitel-legacy"] .sidebar nav::-webkit-scrollbar { width: 7px; }
+[data-era="minitel-legacy"] .sidebar nav::-webkit-scrollbar-track { background: var(--minitel-black); }
+[data-era="minitel-legacy"] .sidebar nav::-webkit-scrollbar-thumb { background: var(--minitel-green); }
 
 /* The historic Air Inter mark is a bitmap-like service logo, not terminal text. */
-[data-era="minitel"] .brand {
+[data-era="minitel-legacy"] .brand {
   justify-content: center;
   align-items: end;
   min-height: 39px;
   padding: 3px 12px 0;
 }
 
-[data-era="minitel"] .brand-logo-shell {
+[data-era="minitel-legacy"] .brand-logo-shell {
   display: flex;
   align-items: end;
   justify-content: center;
@@ -1430,7 +1430,7 @@ html[data-era="2000"] .sidebar {
   height: 35px;
 }
 
-[data-era="minitel"] .brand-logo-minitel {
+[data-era="minitel-legacy"] .brand-logo-minitel {
   display: block;
   width: min(100%, 235px);
   height: 32px;
@@ -1443,14 +1443,14 @@ html[data-era="2000"] .sidebar {
   object-position: center bottom;
 }
 
-[data-era="minitel"] .brand-logo-minitel::before { content: none; }
+[data-era="minitel-legacy"] .brand-logo-minitel::before { content: none; }
 
 /* Geospatial operational views share one real map surface. */
 .ops-leaflet-map { height: clamp(360px, 58vh, 620px); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #dfe9f0; }
 .ops-leaflet-map.leaflet-container { font: inherit; }
 .pirep-made-by{display:flex;align-items:center;gap:8px;margin-top:10px;color:var(--muted);font-size:10px;line-height:1;text-transform:uppercase;letter-spacing:.08em}.pirep-made-by img{display:block;width:auto;height:30px;max-width:104px;object-fit:contain;border-radius:4px}.report-heading{align-items:flex-start}.report-heading .toolbar{justify-content:flex-end;margin:0}.report-heading form{margin:0}.report-strip{grid-template-columns:repeat(4,1fr)}.route-summary{display:grid;grid-template-columns:1fr minmax(130px,.55fr) 1fr;align-items:center;gap:20px}.airport-card strong{display:block;font-size:29px;line-height:1.1;margin:8px 0}.airport-card p{margin:0 0 7px}.airport-card small{color:var(--muted);font-size:11px}.airport-card.arrival{text-align:right}.route-line{display:grid;place-items:center;text-align:center;color:var(--muted);font-size:10px}.route-line:before,.route-line:after{content:"";display:block;width:100%;height:1px;background:var(--line)}.route-line i{font-size:24px;color:var(--blue);padding:7px;transform:rotate(90deg)}.report-tabs{display:flex;gap:5px;border-bottom:1px solid var(--line);margin:28px 0 22px}.report-tabs button{appearance:none;background:transparent;color:var(--muted);border:0;border-radius:0;padding:12px 17px;font-size:12px}.report-tabs button.active{color:var(--ink);border-bottom:3px solid var(--red)}.report-tabs span{font:10px Consolas,monospace;background:#e8eef5;color:var(--ink);border-radius:9px;padding:2px 5px}.report-tab-panel[hidden]{display:none}.report-route{margin:18px 0 0;padding:13px;background:var(--paper);border-radius:5px;white-space:pre-wrap}.flight-log{max-height:620px;overflow:auto}.flight-log article{display:grid;grid-template-columns:155px 1fr;gap:15px;padding:12px 0;border-bottom:1px solid var(--line)}.flight-log article:last-child{border:0}.flight-log time{font:10px/1.6 Consolas,monospace;color:var(--blue)}.flight-log p{margin:0;color:var(--ink)}.report-details-grid{grid-template-columns:1fr 1fr}.report-list{margin:0}.report-list>div{display:grid;grid-template-columns:minmax(110px,.7fr) 1.3fr;gap:18px;padding:11px 0;border-bottom:1px solid var(--line)}.report-list>div:last-child{border-bottom:0}.report-list dt{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}.report-list dd{margin:0;overflow-wrap:anywhere}.report-list.two-up{display:grid;grid-template-columns:1fr 1fr;gap:0 25px}.report-list.two-up>div:nth-last-child(2){border-bottom:0}@media(max-width:760px){.report-strip{grid-template-columns:1fr 1fr}.route-summary{grid-template-columns:1fr;gap:14px}.airport-card.arrival{text-align:left}.route-line{display:none}.report-tabs{overflow:auto}.report-tabs button{white-space:nowrap}.flight-log article{grid-template-columns:1fr;gap:4px}.report-details-grid{grid-template-columns:1fr}.report-list.two-up{grid-template-columns:1fr}.report-list.two-up>div:nth-last-child(2){border-bottom:1px solid var(--line)}}
 .aircraft-marker { display: grid; place-items: center; width: 28px !important; height: 28px !important; color: var(--ops-red); font-size: 25px; line-height: 1; text-shadow: 0 1px 2px #fff; transform: rotate(35deg); }
-[data-era="minitel"] .ops-leaflet-map { height: 280px; border-color: var(--minitel-green); border-radius: 0; filter: grayscale(1) contrast(1.2) brightness(.62) sepia(.45) hue-rotate(62deg); }
+[data-era="minitel-legacy"] .ops-leaflet-map { height: 280px; border-color: var(--minitel-green); border-radius: 0; filter: grayscale(1) contrast(1.2) brightness(.62) sepia(.45) hue-rotate(62deg); }
 
 /* The split-flap departure board keeps its physical-board appearance in every display era. */
 html[data-era] .departure-board { margin-bottom: 22px; background: #202224; border-color: #45484b; }
@@ -1471,26 +1471,26 @@ html[data-era] .departure-board .dispatch-flight .load { color: #f1c928; }
   .departure-board .dispatch-flight > div, .departure-board .dispatch-flight time, .departure-board .dispatch-flight .load { font-size: 14px; }
   .departure-board .dispatch-flight .load, .departure-board .dispatch-flight > a { grid-row: 2; }
   .departure-board .dispatch-flight > a { align-self: center; }
-  [data-era="minitel"] .brand-logo-shell { height: 28px; }
-  [data-era="minitel"] .brand-logo-minitel { width: min(100%, 190px); height: 25px; }
+  [data-era="minitel-legacy"] .brand-logo-shell { height: 28px; }
+  [data-era="minitel-legacy"] .brand-logo-minitel { width: min(100%, 190px); height: 25px; }
 }
 
 /* Keep the mechanical cabinet above generic era and small-screen board rules. */
-html:not([data-era="minitel"]) .departure-board { background: linear-gradient(145deg, #45484a, #151617 10%, #26282a 100%); border-color: #303234; border-width: 8px; border-radius: 4px; }
-html:not([data-era="minitel"]) .departure-board .panel-heading { padding: 14px 20px; background: linear-gradient(#4b4e4f, #27292a 45%, #171819 52%, #282a2b); }
-html:not([data-era="minitel"]) .departure-board .panel-heading h2 { color: #eee9d8; }
-html:not([data-era="minitel"]) .departure-board .flight-stack { padding: 13px 12px 14px; }
-html:not([data-era="minitel"]) .departure-board .dispatch-flight .board-cell { font-size: inherit; }
+html:not([data-era="minitel-legacy"]) .departure-board { background: linear-gradient(145deg, #45484a, #151617 10%, #26282a 100%); border-color: #303234; border-width: 8px; border-radius: 4px; }
+html:not([data-era="minitel-legacy"]) .departure-board .panel-heading { padding: 14px 20px; background: linear-gradient(#4b4e4f, #27292a 45%, #171819 52%, #282a2b); }
+html:not([data-era="minitel-legacy"]) .departure-board .panel-heading h2 { color: #eee9d8; }
+html:not([data-era="minitel-legacy"]) .departure-board .flight-stack { padding: 13px 12px 14px; }
+html:not([data-era="minitel-legacy"]) .departure-board .dispatch-flight .board-cell { font-size: inherit; }
 @media (max-width: 760px) {
-  html:not([data-era="minitel"]) .departure-board { border-width: 5px; border-radius: 4px; }
-  html:not([data-era="minitel"]) .departure-board .flight-stack { padding: 13px 9px 10px; }
-  html:not([data-era="minitel"]) .departure-board .dispatch-flight > a { align-self: stretch; }
+  html:not([data-era="minitel-legacy"]) .departure-board { border-width: 5px; border-radius: 4px; }
+  html:not([data-era="minitel-legacy"]) .departure-board .flight-stack { padding: 13px 9px 10px; }
+  html:not([data-era="minitel-legacy"]) .departure-board .dispatch-flight > a { align-self: stretch; }
 }
 
 /* Minitel keeps the same data order; narrow screens scroll the board instead of reflowing a flight. */
-html[data-era="minitel"] .departure-board-scroll { width: 100%; max-width: 100%; overflow-x: auto; }
-html[data-era="minitel"] .departure-board .flight-stack { width: max-content; min-width: 100%; }
-html[data-era="minitel"] .departure-board .split-flap-grid {
+html[data-era="minitel-legacy"] .departure-board-scroll { width: 100%; max-width: 100%; overflow-x: auto; }
+html[data-era="minitel-legacy"] .departure-board .flight-stack { width: max-content; min-width: 100%; }
+html[data-era="minitel-legacy"] .departure-board .split-flap-grid {
   display: grid;
   grid-template-columns: 64px minmax(138px, 1fr) 70px 84px minmax(418px, 1.7fr) 84px minmax(240px, 1.3fr);
   column-gap: 7px;
@@ -1499,11 +1499,11 @@ html[data-era="minitel"] .departure-board .split-flap-grid {
 
 /* Beta board: city labels stay on one mechanical row. */
 .occ-title small{display:inline-block;margin-top:4px;font-size:9px;letter-spacing:1.25px;color:inherit}
-html:not([data-era="minitel"]) .departure-board .split-flap-grid{
+html:not([data-era="minitel-legacy"]) .departure-board .split-flap-grid{
   grid-template-columns:64px minmax(138px,.8fr) minmax(310px,1.35fr) 84px minmax(360px,1.55fr) 84px minmax(220px,1fr);
   min-width:1450px;
 }
-html[data-era="minitel"] .departure-board .split-flap-grid{
+html[data-era="minitel-legacy"] .departure-board .split-flap-grid{
   grid-template-columns:64px minmax(138px,.8fr) minmax(310px,1.35fr) 84px minmax(360px,1.55fr) 84px minmax(220px,1fr);
   min-width:1450px;
 }
@@ -1527,7 +1527,7 @@ html[data-era="minitel"] .departure-board .split-flap-grid{
  * The former fixed-pixel tracks only occupied ~55% of a wide OCC panel.
  * Keep the historical palette counts, but let every palette share the
  * available width so the physical board fills the cabinet proportionally. */
-html:not([data-era="minitel"]) .departure-board .split-flap-grid {
+html:not([data-era="minitel-legacy"]) .departure-board .split-flap-grid {
   grid-template-columns:
     58px
     minmax(112px, 7fr)
@@ -1540,35 +1540,35 @@ html:not([data-era="minitel"]) .departure-board .split-flap-grid {
   width: 100%;
   min-width: 0;
 }
-html:not([data-era="minitel"]) .departure-board .flight-stack {
+html:not([data-era="minitel-legacy"]) .departure-board .flight-stack {
   width: 100%;
   min-width: 0;
 }
-html:not([data-era="minitel"]) .departure-board-scroll {
+html:not([data-era="minitel-legacy"]) .departure-board-scroll {
   overflow-x: hidden;
 }
-html:not([data-era="minitel"]) .departure-board .dispatch-flight .board-cell:not(.airline-logo-cell),
-html:not([data-era="minitel"]) .departure-board .split-flap-field {
+html:not([data-era="minitel-legacy"]) .departure-board .dispatch-flight .board-cell:not(.airline-logo-cell),
+html:not([data-era="minitel-legacy"]) .departure-board .split-flap-field {
   width: 100%;
 }
-html:not([data-era="minitel"]) .departure-board .split-flap-char {
+html:not([data-era="minitel-legacy"]) .departure-board .split-flap-char {
   flex: 1 1 0;
   width: auto;
   min-width: 0;
   max-width: none;
   font-size: clamp(11px, .9vw, 15px);
 }
-html:not([data-era="minitel"]) .departure-board .flight-stack::after {
+html:not([data-era="minitel-legacy"]) .departure-board .flight-stack::after {
   opacity: 0;
   animation: none;
 }
-html:not([data-era="minitel"]) .departure-board .flight-stack.board-updated::after {
+html:not([data-era="minitel-legacy"]) .departure-board .flight-stack.board-updated::after {
   opacity: 1;
   animation: airport-board-scan 900ms ease-out 1;
 }
 
 @media (max-width: 1180px) {
-  html:not([data-era="minitel"]) .departure-board .split-flap-grid {
+  html:not([data-era="minitel-legacy"]) .departure-board .split-flap-grid {
     grid-template-columns:
       48px
       minmax(82px, 7fr)
@@ -1579,24 +1579,24 @@ html:not([data-era="minitel"]) .departure-board .flight-stack.board-updated::aft
       minmax(132px, 11fr);
     column-gap: 3px;
   }
-  html:not([data-era="minitel"]) .departure-board .split-flap-char {
+  html:not([data-era="minitel-legacy"]) .departure-board .split-flap-char {
     height: 32px;
     font-size: clamp(9px, 1vw, 11px);
     line-height: 32px;
   }
-  html:not([data-era="minitel"]) .departure-board .flap-face { height: 32px; }
-  html:not([data-era="minitel"]) .departure-board .flap-bottom .flap-face { transform: translateY(-16px); }
-  html:not([data-era="minitel"]) .departure-board .dispatch-flight { min-height: 33px; }
+  html:not([data-era="minitel-legacy"]) .departure-board .flap-face { height: 32px; }
+  html:not([data-era="minitel-legacy"]) .departure-board .flap-bottom .flap-face { transform: translateY(-16px); }
+  html:not([data-era="minitel-legacy"]) .departure-board .dispatch-flight { min-height: 33px; }
 }
 
 @media (max-width: 820px) {
-  html:not([data-era="minitel"]) .departure-board-scroll { overflow-x: auto; }
-  html:not([data-era="minitel"]) .departure-board .flight-stack { width: max-content; min-width: 960px; }
-  html:not([data-era="minitel"]) .departure-board .split-flap-grid {
+  html:not([data-era="minitel-legacy"]) .departure-board-scroll { overflow-x: auto; }
+  html:not([data-era="minitel-legacy"]) .departure-board .flight-stack { width: max-content; min-width: 960px; }
+  html:not([data-era="minitel-legacy"]) .departure-board .split-flap-grid {
     width: 960px;
     min-width: 960px;
   }
-  html:not([data-era="minitel"]) .departure-board .split-flap-char {
+  html:not([data-era="minitel-legacy"]) .departure-board .split-flap-char {
     flex: 0 0 12px;
     width: 12px;
     min-width: 12px;
@@ -1621,19 +1621,19 @@ html:not([data-era="minitel"]) .departure-board .flight-stack.board-updated::aft
 .passport-stamp.is-visited img{filter:none;opacity:1}
 .passport-stamp.is-visited:hover img{transform:scale(1.035)}
 .passport-stamps-empty{grid-column:1/-1;margin:0;color:var(--muted)}
-html[data-appearance="dark"]:not([data-era="minitel"]) .passport-stamps-count{background:#162b3f;color:#9fc8ff}
-html[data-appearance="dark"]:not([data-era="minitel"]) .passport-stamps-progress{background:#253849}
-html[data-appearance="dark"]:not([data-era="minitel"]) .passport-stamp{background:#22303c;border-color:#344a5c}
-html[data-appearance="dark"]:not([data-era="minitel"]) .passport-stamp.is-visited{background:#172534;border-color:#55738b}
-[data-era="minitel"] .passport-stamps-panel{border-color:var(--minitel-green)}
-[data-era="minitel"] .passport-stamps-count{background:var(--minitel-blue);color:var(--minitel-yellow);border-color:var(--minitel-cyan);border-radius:0}
-[data-era="minitel"] .passport-stamps-progress{height:1em;border:1px solid var(--minitel-cyan);border-radius:0;background:var(--minitel-black)}
-[data-era="minitel"] .passport-stamps-progress>span{border-radius:0;background:var(--minitel-green)}
-[data-era="minitel"] .passport-stamp{height:34px;border-radius:0;border-color:#666;background:var(--minitel-black)}
-[data-era="minitel"] .passport-stamp img{filter:grayscale(1) contrast(1.4);opacity:.35}
-[data-era="minitel"] .passport-stamp.is-visited{border-color:var(--minitel-yellow)}
-[data-era="minitel"] .passport-stamp.is-visited img{filter:grayscale(1) sepia(1) hue-rotate(65deg) saturate(4);opacity:1}
-[data-era="minitel"] .passport-stamp span{border-radius:0;background:var(--minitel-blue);color:var(--minitel-white)}
+html[data-appearance="dark"]:not([data-era="minitel-legacy"]) .passport-stamps-count{background:#162b3f;color:#9fc8ff}
+html[data-appearance="dark"]:not([data-era="minitel-legacy"]) .passport-stamps-progress{background:#253849}
+html[data-appearance="dark"]:not([data-era="minitel-legacy"]) .passport-stamp{background:#22303c;border-color:#344a5c}
+html[data-appearance="dark"]:not([data-era="minitel-legacy"]) .passport-stamp.is-visited{background:#172534;border-color:#55738b}
+[data-era="minitel-legacy"] .passport-stamps-panel{border-color:var(--minitel-green)}
+[data-era="minitel-legacy"] .passport-stamps-count{background:var(--minitel-blue);color:var(--minitel-yellow);border-color:var(--minitel-cyan);border-radius:0}
+[data-era="minitel-legacy"] .passport-stamps-progress{height:1em;border:1px solid var(--minitel-cyan);border-radius:0;background:var(--minitel-black)}
+[data-era="minitel-legacy"] .passport-stamps-progress>span{border-radius:0;background:var(--minitel-green)}
+[data-era="minitel-legacy"] .passport-stamp{height:34px;border-radius:0;border-color:#666;background:var(--minitel-black)}
+[data-era="minitel-legacy"] .passport-stamp img{filter:grayscale(1) contrast(1.4);opacity:.35}
+[data-era="minitel-legacy"] .passport-stamp.is-visited{border-color:var(--minitel-yellow)}
+[data-era="minitel-legacy"] .passport-stamp.is-visited img{filter:grayscale(1) sepia(1) hue-rotate(65deg) saturate(4);opacity:1}
+[data-era="minitel-legacy"] .passport-stamp span{border-radius:0;background:var(--minitel-blue);color:var(--minitel-white)}
 @media(max-width:760px){
   .passport-stamps-heading{padding:18px 16px 12px}
   .passport-stamps-progress{margin:0 16px 15px}
@@ -1643,10 +1643,10 @@ html[data-appearance="dark"]:not([data-era="minitel"]) .passport-stamp.is-visite
 
 /* Split-flap performance: isolate the mechanical boards from the rest of the
    dashboard so thousands of palette glyphs cannot invalidate page-wide paint. */
-html:not([data-era="minitel"]) .departure-board .flight-stack {
+html:not([data-era="minitel-legacy"]) .departure-board .flight-stack {
   contain: layout paint style;
 }
-html:not([data-era="minitel"]) .departure-board .dispatch-flight {
+html:not([data-era="minitel-legacy"]) .departure-board .dispatch-flight {
   content-visibility: auto;
   contain-intrinsic-size: 39px;
 }
@@ -1676,7 +1676,7 @@ html[data-appearance="dark"] .next-operation-panel{background:linear-gradient(11
 .workspace-switch button span{font-size:10px;font-weight:900;letter-spacing:.08em}.workspace-switch button small{overflow:hidden;font-size:8px;color:#7892a8;text-overflow:ellipsis;white-space:nowrap}
 .workspace-switch button:hover,.workspace-switch button.selected,.workspace-switch button[aria-pressed="true"]{border-color:#6ea9fa;background:#153d62;color:#fff}.workspace-switch button.selected small,.workspace-switch button[aria-pressed="true"] small{color:#bcd6f1}
 [data-era="2000"] .workspace-switch{gap:2px;padding:3px;border:2px inset #9cb8dc;border-radius:0;background:#244d8b}[data-era="2000"] .workspace-switch button{border:2px outset #9cb8dc;border-radius:0;background:#dce8f7;color:#173a66}[data-era="2000"] .workspace-switch button.selected,[data-era="2000"] .workspace-switch button[aria-pressed="true"]{border-style:inset;background:#9ebce0;color:#061d3d}[data-era="2000"] .workspace-switch button small{color:#3f5e7c}
-[data-era="minitel"] .workspace-switch{border-color:var(--line);border-radius:0;background:#06120a}[data-era="minitel"] .workspace-switch button{border-radius:0;color:var(--muted)}[data-era="minitel"] .workspace-switch button.selected,[data-era="minitel"] .workspace-switch button[aria-pressed="true"]{border-color:var(--minitel-green);background:#0b1d12;color:var(--ink)}
+[data-era="minitel-legacy"] .workspace-switch{border-color:var(--line);border-radius:0;background:#06120a}[data-era="minitel-legacy"] .workspace-switch button{border-radius:0;color:var(--muted)}[data-era="minitel-legacy"] .workspace-switch button.selected,[data-era="minitel-legacy"] .workspace-switch button[aria-pressed="true"]{border-color:var(--minitel-green);background:#0b1d12;color:var(--ink)}
 .admin-page-heading{margin-bottom:18px}.admin-page-heading h1{margin:3px 0 6px;font-size:30px}.admin-page-heading p{max-width:780px;margin:0;color:var(--muted)}
 @media(max-width:1100px){.workspace-switch{grid-template-columns:1fr}.workspace-switch button small{display:none}}
 
@@ -1735,10 +1735,10 @@ html[data-appearance="dark"] .next-operation-panel{background:linear-gradient(11
 [data-era="2000"] .operation-progress::-moz-progress-bar {
   border-radius: 0;
 }
-[data-era="minitel"] .operation-progress,
-[data-era="minitel"] .operation-progress::-webkit-progress-bar,
-[data-era="minitel"] .operation-progress::-webkit-progress-value,
-[data-era="minitel"] .operation-progress::-moz-progress-bar {
+[data-era="minitel-legacy"] .operation-progress,
+[data-era="minitel-legacy"] .operation-progress::-webkit-progress-bar,
+[data-era="minitel-legacy"] .operation-progress::-webkit-progress-value,
+[data-era="minitel-legacy"] .operation-progress::-moz-progress-bar {
   border-radius: 0;
 }
 
@@ -1758,9 +1758,9 @@ html[data-appearance="dark"] .next-operation-panel{background:linear-gradient(11
 .admin-detail-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:18px 0}.admin-detail-metrics article{display:grid;gap:4px;padding:12px;border:1px solid var(--line);background:color-mix(in srgb,var(--paper) 95%,var(--ops-blue) 5%)}.admin-detail-metrics span,.admin-detail-facts dt{font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.admin-detail-metrics strong{font-size:22px}
 .admin-detail-facts{display:grid;gap:9px;margin:0}.admin-detail-facts div{display:grid;grid-template-columns:110px minmax(0,1fr);gap:12px}.admin-detail-facts dd{margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .admin-detail-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
-html[data-appearance="dark"]:not([data-era="minitel"]) .admin-master-pane,html[data-appearance="dark"]:not([data-era="minitel"]) .admin-detail-pane{background:#132434}
+html[data-appearance="dark"]:not([data-era="minitel-legacy"]) .admin-master-pane,html[data-appearance="dark"]:not([data-era="minitel-legacy"]) .admin-detail-pane{background:#132434}
 [data-era="2000"] .admin-master-pane,[data-era="2000"] .admin-detail-pane{border:2px inset #9cb8dc;border-radius:0}[data-era="2000"] .admin-master-row.selected,[data-era="2000"] .admin-master-row[aria-pressed="true"]{box-shadow:inset 4px 0 0 #244d8b}
-[data-era="minitel"] .admin-master-pane,[data-era="minitel"] .admin-detail-pane{border-color:var(--minitel-green);border-radius:0;background:var(--minitel-black)}[data-era="minitel"] .admin-master-row.selected,[data-era="minitel"] .admin-master-row[aria-pressed="true"]{box-shadow:inset 3px 0 0 var(--minitel-yellow);background:#0b1d12}
+[data-era="minitel-legacy"] .admin-master-pane,[data-era="minitel-legacy"] .admin-detail-pane{border-color:var(--minitel-green);border-radius:0;background:var(--minitel-black)}[data-era="minitel-legacy"] .admin-master-row.selected,[data-era="minitel-legacy"] .admin-master-row[aria-pressed="true"]{box-shadow:inset 3px 0 0 var(--minitel-yellow);background:#0b1d12}
 @media(max-width:900px){.admin-master-detail{grid-template-columns:1fr}.admin-master-list{max-height:360px}}@media(max-width:560px){.admin-detail-metrics{grid-template-columns:1fr}.admin-detail-facts div{grid-template-columns:1fr;gap:3px}}
 
 
@@ -1775,7 +1775,7 @@ html[data-appearance="dark"]:not([data-era="minitel"]) .admin-master-pane,html[d
 .attention-item-copy{display:grid;gap:3px}.attention-item-copy small{color:var(--muted)}
 .attention-item-action{display:grid;justify-items:end;gap:3px;white-space:nowrap}.attention-item-action b{font:800 18px/1 Consolas,monospace}.attention-item-action span{font-size:10px;font-weight:800;color:var(--ops-blue)}
 .attention-empty{display:grid;gap:4px;padding:18px 16px}.attention-empty span{color:var(--muted)}
-[data-era="minitel"] .attention-item-signal{border-radius:0}[data-era="minitel"] .attention-item:hover{background:#0b1d12}
+[data-era="minitel-legacy"] .attention-item-signal{border-radius:0}[data-era="minitel-legacy"] .attention-item:hover{background:#0b1d12}
 @media(max-width:650px){.attention-item{grid-template-columns:10px 1fr}.attention-item-action{grid-column:2;justify-items:start;white-space:normal}}
 
 
@@ -1783,6 +1783,6 @@ html[data-appearance="dark"]:not([data-era="minitel"]) .admin-master-pane,html[d
 .airline-mark{display:block;width:48px;max-height:28px;object-fit:contain}.table-sort-link{color:inherit;text-decoration:none}.table-sort-link:hover{color:var(--ops-blue);text-decoration:none}
 
 /* Audit UX phase 11 — era adapters and responsive flight programme. */
-[data-era="2000"] .topbar-controls .theme-control{margin:0}[data-era="minitel"] .topbar-controls{display:contents}[data-era="minitel"] .theme-control-label{display:none}
+[data-era="2000"] .topbar-controls .theme-control{margin:0}[data-era="minitel-legacy"] .topbar-controls{display:contents}[data-era="minitel-legacy"] .theme-control-label{display:none}
 @media(max-width:1180px){[data-era="modern"] .theme-control-label{display:none}.flight-filter-primary{grid-template-columns:1fr 1fr}.flight-filter-primary .filter-wide{grid-column:1/-1}.flight-filter-actions{grid-column:1/-1}.flight-filter-advanced-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:620px){.topbar-controls{width:100%;flex-wrap:wrap}.flight-filter-primary,.flight-filter-advanced-grid{grid-template-columns:1fr}.flight-filter-primary .filter-wide{grid-column:auto}.flight-filter-primary{padding:15px}.flight-filter-advanced>summary,.flight-filter-advanced-grid,.flight-filter-advanced-actions{padding-inline:15px}.flight-filter-advanced>summary span{display:none}.flight-filter-advanced-actions{justify-content:flex-start}}
