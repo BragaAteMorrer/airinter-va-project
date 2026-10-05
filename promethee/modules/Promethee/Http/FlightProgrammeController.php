@@ -598,9 +598,13 @@ public function saveBriefing(string $id, Request $r) {
     }
 
 public function replay(string $id) {
-        $pirep=Pirep::with(['user','aircraft','flight'])->findOrFail($id);
+        $pirep=Pirep::with(['user','aircraft','flight','acars_route'])->findOrFail($id);
         $samples=DB::table('promethee_telemetry')->where('pirep_id',$id)->orderBy('recorded_at')->get()->map(fn ($row) => array_merge(json_decode($row->payload,true),['recorded_at'=>$row->recorded_at]))->values();
+        $plannedPath=$pirep->acars_route
+            ->filter(fn ($point) => is_numeric($point->lat) && is_numeric($point->lon))
+            ->map(fn ($point) => [(float) $point->lat, (float) $point->lon])
+            ->values();
         $score=(new SafetyAnalyzer())->score($pirep->landing_rate === null ? null : (float) $pirep->landing_rate,$samples->all());
-        return $this->page('replay',['pirep'=>$pirep,'samples'=>$samples,'analysis'=>$score['analysis'],'score'=>$score]);
+        return $this->page('replay',['pirep'=>$pirep,'samples'=>$samples,'plannedPath'=>$plannedPath,'analysis'=>$score['analysis'],'score'=>$score]);
     }
 }
