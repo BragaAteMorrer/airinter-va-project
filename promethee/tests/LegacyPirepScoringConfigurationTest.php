@@ -49,6 +49,43 @@ final class LegacyPirepScoringConfigurationTest extends TestCase
             ]
         );
 
+
+        DB::table('vmsacars_rules')->updateOrInsert(
+            ['id' => 'EXCESS_GFORCE'],
+            [
+                'name' => 'Facteur de charge hors enveloppe',
+                'description' => 'En vol : >= +2.5 g ou <= -1.0 g.',
+                'parameter' => null,
+                'points' => 15,
+                'enabled' => true,
+                'has_parameter' => false,
+                'repeatable' => false,
+                'delay' => 0,
+                'cooldown' => 0,
+                'order' => 35,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
+
+        DB::table('vmsacars_rules')->updateOrInsert(
+            ['id' => 'EXCESS_GFORCE_MAINTENANCE'],
+            [
+                'name' => 'Facteur de charge · mise en maintenance',
+                'description' => 'En vol : >= +2.9 g ou <= -1.2 g.',
+                'parameter' => null,
+                'points' => 50,
+                'enabled' => true,
+                'has_parameter' => false,
+                'repeatable' => false,
+                'delay' => 0,
+                'cooldown' => 0,
+                'order' => 36,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
+
         DB::table('vmsacars_rules')->updateOrInsert(
             ['id' => 'STABILIZED_APPROACH'],
             [
@@ -130,6 +167,41 @@ final class LegacyPirepScoringConfigurationTest extends TestCase
         $this->assertCount(1, $occurrences);
         $this->assertSame('APPROACH_DESCENT_RATE_UNSTABLE', $occurrences[0]['code']);
         $this->assertSame(-1450, $occurrences[0]['value']);
+    }
+
+
+    public function test_load_factor_rules_expose_air_inter_points_and_fixed_asymmetric_thresholds(): void
+    {
+        $service = app(LegacyPirepScoringService::class);
+        $rules = collect($service->configurationRules());
+
+        $normal = $rules->firstWhere('id', 'EXCESS_GFORCE');
+        $severe = $rules->firstWhere('id', 'EXCESS_GFORCE_MAINTENANCE');
+
+        $this->assertNotNull($normal);
+        $this->assertNotNull($severe);
+        $this->assertFalse($normal['has_parameter']);
+        $this->assertFalse($severe['has_parameter']);
+        $this->assertSame(15, $normal['points']);
+        $this->assertSame(50, $severe['points']);
+    }
+
+    public function test_structural_gforce_suppresses_normal_penalty_for_the_same_flight(): void
+    {
+        $service = app(LegacyPirepScoringService::class);
+        $samples = [
+            ['recorded_at' => '2026-10-05T09:00:00Z', 'on_ground' => false, 'g_force' => 2.6],
+            ['recorded_at' => '2026-10-05T09:00:05Z', 'on_ground' => false, 'g_force' => 1.0],
+            ['recorded_at' => '2026-10-05T09:00:10Z', 'on_ground' => false, 'g_force' => -1.25],
+        ];
+
+        $normal = $this->invokeMethod($service, 'gForceOccurrences', [$samples, false]);
+        $severe = $this->invokeMethod($service, 'gForceOccurrences', [$samples, true]);
+
+        $this->assertSame([], $normal);
+        $this->assertCount(1, $severe);
+        $this->assertSame(-1.25, $severe[0]['value']);
+        $this->assertSame('EXCESS_GFORCE_MAINTENANCE', $severe[0]['code']);
     }
 
     public function test_runway_overrun_is_detected_from_hermes_trace_and_runway_geometry(): void

@@ -10,6 +10,7 @@
     'admin.promethee.maintenance.sync',
     'admin.promethee.maintenance.airframe-settings.save',
     'admin.promethee.maintenance.airframe.start',
+    'admin.promethee.maintenance.airframe.safety-hold.release',
     'admin.promethee.maintenance.engine-profiles.save',
     'admin.promethee.maintenance.engines.create',
     'admin.promethee.maintenance.engines.overhaul',
@@ -193,7 +194,10 @@
         <td><strong>{{ $state->registration }}</strong><br><small>{{ $state->airline_icao ?: '—' }} · {{ $state->subfleet_name ?: $state->subfleet_type }}</small></td>
         <td>{{ $state->airport_id ?: '—' }}</td>
         <td>
-          @if($state->maintenance_state === 'maintenance')
+          @if($state->safety_hold_at)
+            <span class="tag">IMMOBILISÉ FDM</span><br>
+            <small>{{ $state->safety_hold_reason }}</small>
+          @elseif($state->maintenance_state === 'maintenance')
             <span class="tag">MAINTENANCE</span>
           @elseif($state->maintenance_state === 'due')
             <span class="tag">CHECK DÛ</span>
@@ -216,7 +220,11 @@
           </td>
         @endforeach
         <td>
-          @if($state->active_check)
+          @if($state->safety_hold_at)
+            <strong>Inspection facteur de charge</strong><br>
+            <small>{{ \Carbon\Carbon::parse($state->safety_hold_at)->locale('fr')->isoFormat('DD/MM HH:mm') }} · PIREP {{ $state->safety_hold_pirep_id ?: '—' }}</small>
+            @if($state->active_check)<br><strong>{{ strtoupper($state->active_check) }} Check en parallèle</strong>@endif
+          @elseif($state->active_check)
             <strong>{{ strtoupper($state->active_check) }} Check</strong><br>
             <small>
               {{ $state->active_started_at ? \Carbon\Carbon::parse($state->active_started_at)->locale('fr')->isoFormat('DD/MM HH:mm') : '—' }}
@@ -228,6 +236,13 @@
           @endif
         </td>
         <td>
+          @if($state->safety_hold_at)
+            <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.airframe.safety-hold.release', $state->aircraft_id) : '#' }}" class="inline-form" onsubmit="return confirm('Confirmer que l’inspection technique est terminée et lever l’immobilisation FDM ?');">
+              @csrf
+              <input name="notes" maxlength="1000" placeholder="Compte-rendu inspection (optionnel)">
+              <button type="submit" @disabled(!$maintenanceActionsReady)>Lever l’immobilisation</button>
+            </form>
+          @endif
           @if(!$state->active_check)
             <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.airframe.start', $state->aircraft_id) : '#' }}" class="inline-form" onsubmit="return confirm('Immobiliser cet appareil pour le check sélectionné ?');">
               @csrf
@@ -261,8 +276,14 @@
       <tr>
         <td>{{ \Carbon\Carbon::parse($event->occurred_at)->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') }}</td>
         <td><strong>{{ $event->registration }}</strong></td>
-        <td>{{ strtoupper($event->check_type) }} Check</td>
-        <td>{{ $event->event_type === 'started' ? 'Début' : 'Terminé' }}</td>
+        <td>{{ $event->check_type === 'g' ? 'FDM / facteur de charge' : strtoupper($event->check_type).' Check' }}</td>
+        <td>
+          @if($event->event_type === 'safety_hold') Immobilisation sécurité
+          @elseif($event->event_type === 'safety_release') Remise en service
+          @elseif($event->event_type === 'started') Début
+          @else Terminé
+          @endif
+        </td>
         <td>{{ $event->airport_id ?: '—' }}</td>
         <td>{{ $event->minutes_before !== null ? number_format($event->minutes_before / 60,1,',',' ') . ' h' : '—' }} / {{ $event->cycles_before !== null ? number_format($event->cycles_before) . ' cycles' : '—' }}</td>
         <td>{{ $event->notes ?: '—' }}</td>

@@ -77,6 +77,45 @@ public sealed class FlightDataMonitoringTests
         Assert.Contains("1000 ft AGL", unstable.Message);
     }
 
+
+    [Fact]
+    public void Load_factor_exceedance_is_recorded_once_with_air_inter_limits()
+    {
+        var monitor = new FlightDataMonitor();
+        var t = DateTimeOffset.Parse("2026-10-05T09:00:00Z");
+
+        var moderate = monitor.Process(new AircraftSnapshot(
+            Guid.NewGuid(), t, OnGround: false, GForce: 2.6), FlightPhase.Climb, []);
+
+        var observation = Assert.Single(moderate, x => x.Code == "LOAD_FACTOR_EXCEEDED");
+        Assert.Equal(2.6, observation.Value);
+        Assert.Equal("g", observation.Unit);
+        Assert.Equal("EXCEEDED", observation.Status);
+
+        var duplicate = monitor.Process(new AircraftSnapshot(
+            Guid.NewGuid(), t.AddSeconds(1), OnGround: false, GForce: -1.1), FlightPhase.Climb, []);
+        Assert.DoesNotContain(duplicate, x => x.Code == "LOAD_FACTOR_EXCEEDED");
+    }
+
+    [Fact]
+    public void Severe_load_factor_requests_maintenance_and_suppresses_normal_fact()
+    {
+        var monitor = new FlightDataMonitor();
+        var t = DateTimeOffset.Parse("2026-10-05T09:10:00Z");
+
+        var observations = monitor.Process(new AircraftSnapshot(
+            Guid.NewGuid(), t, OnGround: false, GForce: -1.25), FlightPhase.Cruise, []);
+
+        var severe = Assert.Single(observations);
+        Assert.Equal("LOAD_FACTOR_MAINTENANCE", severe.Code);
+        Assert.Equal(-1.25, severe.Value);
+        Assert.Equal("MAINTENANCE_REQUIRED", severe.Status);
+
+        var after = monitor.Process(new AircraftSnapshot(
+            Guid.NewGuid(), t.AddSeconds(1), OnGround: false, GForce: 2.7), FlightPhase.Cruise, []);
+        Assert.DoesNotContain(after, x => x.Code == "LOAD_FACTOR_EXCEEDED");
+    }
+
     [Fact]
     public void Bank_excursion_is_closed_with_peak_and_duration()
     {

@@ -155,6 +155,133 @@ class AirframeMaintenanceService
         return ['updated' => $updated, 'reason' => $updated ? 'RECORDED' : 'ALREADY_RECORDED'];
     }
 
+
+    public function placeSafetyHold(Pirep $pirep, float $gForce, ?string $recordedAt = null): array
+    {
+        if (!Schema::hasTable('promethee_airframe_maintenance')
+            || !Schema::hasColumn('promethee_airframe_maintenance', 'safety_hold_at')) {
+            return ['updated' => 0, 'reason' => 'SCHEMA_NOT_READY'];
+        }
+
+        $pirep->loadMissing('aircraft');
+        if (!$pirep->aircraft) {
+            return ['updated' => 0, 'reason' => 'NO_AIRCRAFT'];
+        }
+
+        $aircraftId = (int) $pirep->aircraft->id;
+        $this->ensureAircraft($aircraftId);
+        $occurredAt = $recordedAt ? \Carbon\Carbon::parse($recordedAt)->utc() : now();
+        $reason = sprintf(
+            'Facteur de charge structurel %.2f g détecté par Hermès (limites +2.9 g / -1.2 g). Inspection technique requise.',
+            $gForce
+        );
+
+        return DB::transaction(function () use ($pirep, $aircraftId, $gForce, $occurredAt, $reason) {
+            $state = DB::table('promethee_airframe_maintenance')
+                ->where('aircraft_id', $aircraftId)
+                ->lockForUpdate()
+                ->first();
+            $aircraft = Aircraft::query()->lockForUpdate()->find($aircraftId);
+
+            if (!$state || !$aircraft) {
+                return ['updated' => 0, 'reason' => 'AIRCRAFT_NOT_FOUND'];
+            }
+
+            if ($state->safety_hold_at ?? null) {
+                return [
+                    'updated' => 0,
+                    'reason' => 'ALREADY_HELD',
+                    'aircraft_id' => $aircraftId,
+                    'g_force' => $gForce,
+                    'existing_pirep_id' => $state->safety_hold_pirep_id ?? null,
+                ];
+            }
+
+            DB::table('promethee_airframe_maintenance')->where('id', $state->id)->update([
+                'safety_hold_reason' => $reason,
+                'safety_hold_at' => $occurredAt,
+                'safety_hold_pirep_id' => (string) $pirep->id,
+                'safety_hold_previous_status' => (string) $aircraft->status,
+                'updated_at' => now(),
+            ]);
+
+            if (Schema::hasTable('promethee_airframe_maintenance_events')) {
+                DB::table('promethee_airframe_maintenance_events')->insert([
+                    'aircraft_id' => $aircraftId,
+                    'check_type' => 'g',
+                    'event_type' => 'safety_hold',
+                    'airport_id' => $aircraft->airport_id,
+                    'minutes_before' => null,
+                    'cycles_before' => null,
+                    'created_by' => null,
+                    'notes' => $reason.' PIREP '.$pirep->id,
+                    'occurred_at' => $occurredAt,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            $aircraft->update(['status' => AircraftStatus::MAINTENANCE]);
+
+            return [
+                'updated' => 1,
+                'reason' => 'SAFETY_HOLD',
+                'aircraft_id' => $aircraftId,
+                'g_force' => $gForce,
+            ];
+        });
+    }
+
+    public function releaseSafetyHold(int $aircraftId, ?int $userId = null, ?string $notes = null): bool
+    {
+        if (!Schema::hasTable('promethee_airframe_maintenance')
+            || !Schema::hasColumn('promethee_airframe_maintenance', 'safety_hold_at')) {
+            throw new RuntimeException('Migration de sécurité FDM non appliquée.');
+        }
+
+        return DB::transaction(function () use ($aircraftId, $userId, $notes) {
+            $state = DB::table('promethee_airframe_maintenance')
+                ->where('aircraft_id', $aircraftId)
+                ->lockForUpdate()
+                ->first();
+            $aircraft = Aircraft::query()->lockForUpdate()->find($aircraftId);
+
+            if (!$state || !$aircraft || !$state->safety_hold_at) return false;
+
+            $previousReason = (string) ($state->safety_hold_reason ?? '');
+            $previousStatus = (string) ($state->safety_hold_previous_status ?? AircraftStatus::ACTIVE);
+            DB::table('promethee_airframe_maintenance')->where('id', $state->id)->update([
+                'safety_hold_reason' => null,
+                'safety_hold_at' => null,
+                'safety_hold_pirep_id' => null,
+                'safety_hold_previous_status' => null,
+                'updated_at' => now(),
+            ]);
+
+            if (Schema::hasTable('promethee_airframe_maintenance_events')) {
+                DB::table('promethee_airframe_maintenance_events')->insert([
+                    'aircraft_id' => $aircraftId,
+                    'check_type' => 'g',
+                    'event_type' => 'safety_release',
+                    'airport_id' => $aircraft->airport_id,
+                    'minutes_before' => null,
+                    'cycles_before' => null,
+                    'created_by' => $userId,
+                    'notes' => trim(($notes ?: 'Inspection technique validée.').' '.($previousReason ? 'Hold précédent : '.$previousReason : '')),
+                    'occurred_at' => now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            if (!$state->active_check && $aircraft->status === AircraftStatus::MAINTENANCE) {
+                $aircraft->update(['status' => $previousStatus ?: AircraftStatus::ACTIVE]);
+            }
+
+            return true;
+        });
+    }
+
     public function rollbackPirep(Pirep $pirep): array
     {
         if (!Schema::hasTable('promethee_airframe_maintenance') || !Schema::hasTable('promethee_airframe_usage_events')) {
@@ -223,7 +350,7 @@ class AirframeMaintenanceService
         $threshold = max(0, min(100, 100 - $biasPercent));
 
         return $this->fleetStatus()
-            ->filter(fn ($row) => !$row->active_check)
+            ->filter(fn ($row) => !$row->active_check && !($row->safety_hold_at ?? null))
             ->mapWithKeys(function ($row) use ($threshold) {
                 foreach (['c', 'b', 'a'] as $check) {
                     $status = $row->checks[$check];
@@ -386,7 +513,7 @@ class AirframeMaintenanceService
                 'updated_at' => now(),
             ]);
 
-            if ($aircraft->status === AircraftStatus::MAINTENANCE) {
+            if (!($state->safety_hold_at ?? null) && $aircraft->status === AircraftStatus::MAINTENANCE) {
                 $aircraft->update(['status' => AircraftStatus::ACTIVE]);
             }
 
@@ -458,7 +585,7 @@ class AirframeMaintenanceService
         }
 
         $row->next_check = $mostUrgent;
-        $row->maintenance_state = $row->active_check
+        $row->maintenance_state = ($row->active_check || ($row->safety_hold_at ?? null))
             ? 'maintenance'
             : ($mostUrgent && $row->checks[$mostUrgent]['due'] ? 'due' : ($mostUrgent ? 'warning' : 'serviceable'));
 
