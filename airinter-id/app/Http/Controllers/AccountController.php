@@ -100,6 +100,14 @@ class AccountController extends Controller
             ],
         ]);
 
+        $recoveryCodes = (array) ($user->two_factor_recovery_codes ?? []);
+        $recoveryReadiness = [
+            'email' => $user->hasVerifiedEmail(),
+            'mfa' => (bool) $user->two_factor_confirmed_at,
+            'recovery_codes' => count($recoveryCodes) > 0,
+            'passkey' => $passkeys->isNotEmpty(),
+        ];
+
         return view('account', [
             'user' => $user,
             'applications' => $families,
@@ -110,6 +118,7 @@ class AccountController extends Controller
             'trustedDevices' => $trustedDevices,
             'securityScore' => min(100, $securityScore),
             'securityLevel' => $securityLevel,
+            'recoveryReadiness' => $recoveryReadiness,
             'currentSessionId' => $request->session()->getId(),
         ]);
     }
@@ -121,8 +130,6 @@ class AccountController extends Controller
         $data = $request->validate([
             'display_name' => ['required', 'string', 'max:191'],
             'email' => ['required', 'email:rfc', 'max:191', Rule::unique('users', 'email')->ignore($user->id)],
-            'country' => ['nullable', 'string', 'regex:/^[A-Za-z]{2}$/'],
-            'home_airport_id' => ['nullable', 'string', 'max:10', 'regex:/^[A-Za-z0-9-]+$/'],
             'vatsim_id' => ['nullable', 'string', 'max:32', 'regex:/^[0-9]+$/'],
             'ivao_id' => ['nullable', 'string', 'max:32', 'regex:/^[0-9]+$/'],
             'avatar' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
@@ -132,8 +139,6 @@ class AccountController extends Controller
 
         $user->display_name = trim((string) $data['display_name']);
         $user->email = mb_strtolower(trim((string) $data['email']));
-        $user->country = filled($data['country'] ?? null) ? strtoupper(trim((string) $data['country'])) : null;
-        $user->home_airport_id = filled($data['home_airport_id'] ?? null) ? strtoupper(trim((string) $data['home_airport_id'])) : null;
         $user->vatsim_id = filled($data['vatsim_id'] ?? null) ? trim((string) $data['vatsim_id']) : null;
         $user->ivao_id = filled($data['ivao_id'] ?? null) ? trim((string) $data['ivao_id']) : null;
 
