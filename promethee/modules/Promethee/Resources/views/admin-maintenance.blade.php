@@ -124,8 +124,8 @@
   <div class="panel-heading">
     <div>
       <span class="eyebrow">MAINTENANCE CELLULE</span>
-      <h2>Paramètres des checks A / B / C</h2>
-      <p>Un check devient exigible dès que la limite en heures <strong>ou</strong> la limite en cycles est atteinte. La durée correspond à l’immobilisation planifiée de l’appareil.</p>
+      <h2>Référentiel des checks A / B / C</h2>
+      <p>Ces valeurs sont maintenant les <strong>mêmes réglages que ceux utilisés par les fiches appareils</strong>. Elles servent de valeurs globales ; une fiche technique ICAO peut conserver ses propres limites et reste prioritaire.</p>
     </div>
   </div>
   <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.airframe-settings.save') : '#' }}" class="form-grid">
@@ -173,9 +173,9 @@
       <input type="number" name="warning_percent" min="0" max="100" step="0.1" value="{{ $airframeSettings['warning_percent'] }}" required>
       <small>% de potentiel restant avant mise en évidence dans Prométhée</small>
     </label>
-    <button type="submit" @disabled(!$maintenanceActionsReady)>Enregistrer les cycles / durées</button>
+    <button type="submit" @disabled(!$maintenanceActionsReady)>Enregistrer dans le référentiel maintenance</button>
   </form>
-  <p class="hint">La fin d’un B Check remet aussi les compteurs A à zéro. La fin d’un C Check remet les compteurs A, B et C à zéro. Les PIREPs rejetés sont retirés des compteurs.</p>
+  <p class="hint"><strong>Source opérationnelle :</strong> {{ $airframeSettings['source'] === 'disposable_settings' ? 'référentiel maintenance des appareils' : 'fallback Prométhée' }}@if($airframeSettings['per_type_overrides']) · les limites par type ICAO restent prioritaires lorsqu’elles existent@endif. La fin d’un B Check remet aussi les compteurs A à zéro ; un C Check remet A, B et C à zéro.</p>
 </section>
 
 <section class="panel table-wrap admin-table-scroll">
@@ -206,12 +206,17 @@
           @else
             <span class="tag">SERVICE</span>
           @endif
+          @if($state->current_state_percent !== null)
+            <br><small>État cellule {{ number_format($state->current_state_percent, 0, ',', ' ') }} %</small>
+          @endif
         </td>
         @foreach(['a','b','c'] as $check)
           @php($checkState = $state->checks[$check])
           <td>
             <strong>{{ number_format($checkState['remaining_hours'],1,',',' ') }} h</strong><br>
             <small>{{ number_format($checkState['remaining_cycles']) }} cycles · {{ number_format($checkState['progress_percent'],1,',',' ') }} % consommé</small><br>
+            <small>Limite {{ number_format($checkState['time_limit_hours'],1,',',' ') }} h / {{ number_format($checkState['cycle_limit']) }} cycles · {{ $checkState['policy_source'] === 'type_icao' ? 'profil ICAO' : 'global' }}</small>
+            @if($checkState['last_check_at'])<br><small>Dernier {{ strtoupper($check) }} : {{ \Carbon\Carbon::parse($checkState['last_check_at'])->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') }}</small>@endif<br>
             @if($checkState['due'])
               <span class="tag">{{ strtoupper($check) }} DÛ</span>
             @elseif($checkState['warning'])
@@ -231,6 +236,13 @@
               →
               {{ $state->active_due_at ? \Carbon\Carbon::parse($state->active_due_at)->locale('fr')->isoFormat('DD/MM HH:mm') : '—' }}
             </small>
+          @elseif($state->active_legacy_check)
+            <strong>{{ $state->active_legacy_check }}</strong><br>
+            <small>
+              {{ $state->legacy_act_start ? \Carbon\Carbon::parse($state->legacy_act_start)->locale('fr')->isoFormat('DD/MM HH:mm') : '—' }}
+              →
+              {{ $state->legacy_act_end ? \Carbon\Carbon::parse($state->legacy_act_end)->locale('fr')->isoFormat('DD/MM HH:mm') : '—' }}
+            </small>
           @else
             —
           @endif
@@ -243,7 +255,7 @@
               <button type="submit" @disabled(!$maintenanceActionsReady)>Lever l’immobilisation</button>
             </form>
           @endif
-          @if(!$state->active_check)
+          @if(!$state->active_check && !$state->active_legacy_check)
             <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.airframe.start', $state->aircraft_id) : '#' }}" class="inline-form" onsubmit="return confirm('Immobiliser cet appareil pour le check sélectionné ?');">
               @csrf
               <select name="check" required>
@@ -254,7 +266,7 @@
               <button type="submit" @disabled(!$maintenanceActionsReady)>Démarrer</button>
             </form>
           @else
-            <small>Remise en service automatique à l’échéance.</small>
+            <small>Maintenance déjà active sur la fiche appareil.</small>
           @endif
         </td>
       </tr>
