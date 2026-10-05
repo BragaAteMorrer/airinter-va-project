@@ -6,9 +6,12 @@ use App\Contracts\Notification;
 use App\Models\User;
 use App\Notifications\Channels\MailChannel;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Modules\Promethee\Services\CrmMailTemplateService;
 
 class UserRegistered extends Notification implements ShouldQueue
 {
+    private bool $mailEnabled = true;
+
     use MailChannel;
 
     /**
@@ -19,16 +22,20 @@ class UserRegistered extends Notification implements ShouldQueue
     ) {
         parent::__construct();
 
-        $this->setMailable(
-            'Air Inter · Votre accès pilote est ouvert',
-            'notifications.mail.user.registered',
-            ['user' => $this->user]
-        );
+        $template = app(CrmMailTemplateService::class)->resolve('pilot.welcome', $this->user);
+        $this->mailEnabled = $template['active'];
+        if ($this->mailEnabled) {
+            $this->setMailable(
+                $template['subject'],
+                'notifications.mail.user.crm-template',
+                ['bodyHtml' => $template['body_html']]
+            );
+        }
     }
 
     public function via($notifiable)
     {
-        return ['mail'];
+        return $this->mailEnabled ? ['mail'] : [];
     }
 
     public function toArray($notifiable)
