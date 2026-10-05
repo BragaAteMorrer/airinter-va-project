@@ -137,6 +137,27 @@ public function saveAirframeMaintenanceSettings(Request $r, AirframeMaintenanceS
         return back()->with('success','Limites heures/cycles et durées des checks A/B/C enregistrées.');
     }
 
+
+public function releaseAirframeSafetyHold(int $aircraft, Request $r, AirframeMaintenanceService $airframeService) {
+        $data = $r->validate(['notes'=>'nullable|string|max:1000']);
+
+        try {
+            $released = $airframeService->releaseSafetyHold(
+                $aircraft,
+                (int) $r->user()->id,
+                $data['notes'] ?? null
+            );
+        } catch (\RuntimeException $exception) {
+            return back()->withErrors(['airframe'=>$exception->getMessage()]);
+        }
+
+        if (!$released) {
+            return back()->withErrors(['airframe'=>'Aucune immobilisation FDM active sur cet appareil.']);
+        }
+
+        return back()->with('success','Immobilisation FDM levée après inspection technique.');
+    }
+
 public function startAirframeCheck(int $aircraft, Request $r, AirframeMaintenanceService $airframeService) {
         $data = $r->validate(['check'=>'required|in:a,b,c']);
         try {
