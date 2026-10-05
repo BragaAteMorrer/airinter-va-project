@@ -251,3 +251,38 @@ body[data-era="minitel"]{
     outline:3px solid Highlight;
   }
 }
+
+/* M9 internal terminal generation — deliberately distinct from the legacy skin. */
+.hermes-minitel-overlay .ai-minitel-shell[data-minitel-generation="m9"] .ai-minitel-terminal{
+  border-radius:18px 18px 44px 44px;
+  background:
+    linear-gradient(145deg,#f4edd9 0,#d9d0b8 44%,#c7bca2 76%,#aaa089 100%);
+}
+.hermes-minitel-overlay .ai-minitel-shell[data-minitel-generation="m9"] .ai-minitel-control-deck{
+  position:relative;
+  padding-top:2px;
+}
+.hermes-minitel-overlay .ai-minitel-shell[data-minitel-generation="m9"] .ai-minitel-control-deck::before{
+  content:"";
+  display:block;
+  height:5px;
+  margin:0 0 4px;
+  background:linear-gradient(to right,#1528c7 0 24%,transparent 24% 26%,#1528c7 26% 50%,transparent 50% 52%,#1528c7 52% 76%,transparent 76% 78%,#d4202d 78% 100%);
+  border-radius:1px;
+}
+.hermes-minitel-overlay .ai-minitel-shell[data-minitel-generation="m9"] .ai-minitel-deck-brand{
+  padding-bottom:4px;
+  border-bottom:1px solid rgb(67 57 45 / 20%);
+}
+.hermes-minitel-overlay .ai-minitel-shell[data-minitel-generation="m9"] .ai-minitel-screen{
+  border-width:clamp(11px,1.35vmin,15px);
+  border-radius:14px;
+  box-shadow:
+    inset 0 0 54px rgb(0 0 0 / 74%),
+    0 0 0 2px #666d68,
+    0 10px 22px rgb(0 0 0 / 42%);
+}
+.hermes-minitel-overlay .ai-minitel-shell[data-minitel-generation="m9"] .ai-minitel-key{
+  border:1px solid rgb(54 31 20 / 18%);
+  box-shadow:inset 0 1px 0 rgb(255 255 255 / 10%),inset 0 -2px 0 rgb(0 0 0 / 36%),0 1px 1px rgb(55 40 28 / 18%);
+}
