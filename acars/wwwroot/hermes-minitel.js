@@ -190,12 +190,13 @@
     if (page === 'search') return renderer.showCursor(10, Math.min(39, 6 + value), true);
     if (['operations', 'search-results'].includes(page)) return renderer.showCursor(21, Math.min(39, 21 + value), true);
     if (page === 'aircraft') return renderer.showCursor(21, Math.min(39, 21 + value), true);
-    if (page === 'preparation') return renderer.showCursor(21, Math.min(39, 21 + value), true);
-    if (['simbrief', 'simbrief-account', 'simbrief-api', 'simbrief-local', 'parameters'].includes(page)) return renderer.showCursor(20, Math.min(39, 10 + value), true);
-    if (page === 'simbrief-pilot') return renderer.showCursor(10, Math.min(39, 4 + value), true);
+    if (page === 'preparation') return renderer.showCursor(22, Math.min(39, 21 + value), true);
+    if (['simbrief', 'simbrief-account', 'simbrief-api', 'simbrief-local'].includes(page)) return renderer.showCursor(22, Math.min(39, 21 + value), true);
+    if (page === 'parameters') return renderer.showCursor(20, Math.min(39, 10 + value), true);
+    if (page === 'simbrief-pilot') return renderer.showCursor(11, Math.min(39, 6 + value), true);
     if (page === 'flight-live') return renderer.showCursor(21, Math.min(39, 21 + value), true);
     if (page === 'datalink') return renderer.showCursor(21, Math.min(39, 21 + value), true);
-    if (page === 'datalink-message') return renderer.showCursor(20, Math.min(39, 9 + value), true);
+    if (page === 'datalink-message') return renderer.showCursor(22, Math.min(39, 21 + value), true);
     if (page === 'datalink-compose') {
       const row = 12 + Math.min(3, Math.floor(value / 36));
       const column = 2 + (value % 36);
@@ -203,9 +204,9 @@
     }
     if (page === 'journal') return renderer.showCursor(21, Math.min(39, 21 + value), true);
     if (page === 'network') return renderer.showCursor(20, Math.min(39, 9 + value), true);
-    if (page === 'review') return renderer.showCursor(20, Math.min(39, 9 + value), true);
-    if (page === 'review-list') return renderer.showCursor(20, Math.min(39, 9 + value), true);
-    if (page === 'recovery') return renderer.showCursor(20, Math.min(39, 9 + value), true);
+    if (page === 'review') return renderer.showCursor(22, Math.min(39, 21 + value), true);
+    if (page === 'review-list') return renderer.showCursor(0, 0, false);
+    if (page === 'recovery') return renderer.showCursor(22, Math.min(39, 21 + value), true);
     renderer.showCursor(0, 0, false);
   };
 
@@ -369,14 +370,14 @@
     terminalSession.register(new mt.MinitelPage('search-results', {
       onRender: (_ctx, screen, current) => {
         serviceLine(screen);
-        screen.write(2, 1, 'VOLS RESERVABLES', { foreground: 'yellow' });
+        titleBand(screen, 'VOLS RESERVABLES', 'PROGRAMME AIR INTER');
         if (hm.error) return showError(screen);
         const pages = Math.max(1, Math.ceil(hm.searchResults.length / 7));
         hm.searchPage = Math.max(1, Math.min(pages, hm.searchPage));
         const items = hm.searchResults.slice((hm.searchPage - 1) * 7, hm.searchPage * 7);
-        screen.write(4, 1, 'N VOL      DEPART  ARRIVEE', { foreground: 'cyan' });
+        screen.write(6, 1, 'N VOL      DEPART  ARRIVEE', { foreground: 'cyan' });
         items.forEach((flight, index) => {
-          const row = 6 + index * 2;
+          const row = 7 + index * 2;
           const normalized = core.operationFlight(flight);
           screen.write(row, 1, String(index + 1) + ' ' + fit(normalized.ident, 8) + ' ' + fit(normalized.departure, 7) + ' ' + fit(normalized.arrival, 7));
           screen.write(row + 1, 3, fit(normalized.route || 'ROUTE PROGRAMMEE', 35), { foreground: 'cyan' });
@@ -933,7 +934,7 @@
         menuLine(screen, 15, 1, 'REPRENDRE LE VOL', true);
         menuLine(screen, 16, 2, 'CONSULTER FLIGHT REVIEW');
         menuLine(screen, 17, 3, 'ABANDONNER ET ARCHIVER');
-        screen.write(20, 2, 'CHOIX : ' + current.input.value, { foreground: 'yellow' });
+        promptLine(screen, 22, current.input.value);
         footer(screen);
       },
       acceptInput: key => /^[1-3]$/.test(key),
