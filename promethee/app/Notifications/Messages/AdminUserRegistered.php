@@ -6,9 +6,12 @@ use App\Contracts\Notification;
 use App\Models\User;
 use App\Notifications\Channels\MailChannel;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Modules\Promethee\Services\CrmMailTemplateService;
 
 class AdminUserRegistered extends Notification implements ShouldQueue
 {
+    private bool $mailEnabled = true;
+
     use MailChannel;
 
     /**
@@ -19,11 +22,15 @@ class AdminUserRegistered extends Notification implements ShouldQueue
     ) {
         parent::__construct();
 
-        $this->setMailable(
-            'Prométhée · Nouvelle candidature pilote Air Inter',
-            'notifications.mail.admin.user.registered',
-            ['user' => $user]
-        );
+        $template = app(CrmMailTemplateService::class)->resolve('admin.pilot_registered', $this->user);
+        $this->mailEnabled = $template['active'];
+        if ($this->mailEnabled) {
+            $this->setMailable(
+                $template['subject'],
+                'notifications.mail.user.crm-template',
+                ['bodyHtml' => $template['body_html']]
+            );
+        }
     }
 
     /**
@@ -31,7 +38,7 @@ class AdminUserRegistered extends Notification implements ShouldQueue
      */
     public function via($notifiable)
     {
-        return ['mail'];
+        return $this->mailEnabled ? ['mail'] : [];
     }
 
     /**
