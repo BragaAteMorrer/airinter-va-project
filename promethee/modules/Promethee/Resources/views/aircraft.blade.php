@@ -19,7 +19,7 @@
 <section class="panel"><div class="panel-heading"><div><span class="eyebrow">TECHNIQUE</span><h2>Maintenance</h2></div>@if($maintenance)<span class="tag">État actuel {{ number_format($maintenance->curr_state, 0) }} %</span>@endif</div>
 @if($maintenance)<div class="three-columns">
   @foreach(['A' => ['rem_ta','rem_ca','last_a'], 'B' => ['rem_tb','rem_cb','last_b'], 'C' => ['rem_tc','rem_cc','last_c']] as $check => $fields)
-  <div><h3>{{ $check }} Check</h3><p>Temps restant : <strong>{{ $maintenance->{$fields[0]} ?? '—' }} h</strong></p><p>Cycles restants : <strong>{{ $maintenance->{$fields[1]} ?? '—' }}</strong></p><p>Dernier contrôle : <strong>{{ $maintenance->{$fields[2]} ?? '—' }}</strong></p></div>
+  <div><h3>{{ $check }} Check</h3><p>Temps restant : <strong>{{ is_numeric($maintenance->{$fields[0]} ?? null) ? number_format(((float) $maintenance->{$fields[0]}) / 60, 1, ',', ' ') . ' h' : '—' }}</strong></p><p>Cycles restants : <strong>{{ $maintenance->{$fields[1]} ?? '—' }}</strong></p><p>Dernier contrôle : <strong>{{ $maintenance->{$fields[2]} ?? '—' }}</strong></p></div>
   @endforeach
 </div><p>Dernière action : <strong>{{ $maintenance->act_note ?: 'Aucune' }}</strong></p>@else<p class="empty">Aucune donnée de maintenance disponible pour cet appareil.</p>@endif
 </section>
