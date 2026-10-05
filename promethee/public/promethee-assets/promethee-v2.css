@@ -10,7 +10,7 @@
   --ops-blue: var(--ds-action, #0b5cad);
   --ops-red: var(--ds-danger, #d92732);
   --ops-yellow: var(--ds-warning, #f2c14e);
-  --radius: var(--ds-radius-md, 8px);
+  --radius: 8px;
   --shadow: var(--ds-shadow-md, 0 8px 22px #0b223512);
 }
 .pilot-space { margin: 0 5px 20px; padding: 14px 0 15px; border-block: 1px solid #ffffff20; color: #a6b9ca; font-size: 9px; letter-spacing: 1px; }
@@ -257,7 +257,7 @@ html[data-era="modern"] {
   --line: var(--ds-border, #d7e0e7);
   --ink: var(--ds-text, #1c3043);
   --muted: var(--ds-text-muted, #667786);
-  --radius: var(--ds-radius-md, 8px);
+  --radius: 8px;
   --shadow: var(--ds-shadow-sm, 0 3px 12px rgb(17 45 72 / 6%));
 }
 
