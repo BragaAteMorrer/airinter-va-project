@@ -172,11 +172,22 @@ for (const contract of ["event.code==='NumpadEnter'", "event.key==='F10'||event.
 }
 
 for (const [label, source] of [['Prométhée', client], ['Hermès', hermesClient]]) {
-  for (const contract of ['titleBand', 'noticeBand', "background: 'green'"]) {
+  for (const contract of ['titleBand', 'promptLine', "let displayMode = 'monochrome'"]) {
     if (!source.includes(contract)) {
       failures += 1;
-      console.error(label + ' is missing directory-style Videotex UI contract:', contract);
+      console.error(label + ' is missing M8 internal Videotex UI contract:', contract);
     }
+  }
+  if (source.includes("background: 'green'")) {
+    failures += 1;
+    console.error(label + ' reintroduced the removed web-style green command footer.');
+  }
+}
+
+for (const contract of ['videotexTransmissionUnits', 'transmissionDuration']) {
+  if (!sharedRuntime.includes(contract)) {
+    failures += 1;
+    console.error('Missing M8 internal Videotex transmission contract:', contract);
   }
 }
 

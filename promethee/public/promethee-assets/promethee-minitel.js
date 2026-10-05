@@ -93,12 +93,23 @@
   };
 
   const writeFooter = (screen, pagination = false) => {
-    // The virtual Minitel keyboard already carries the historical command labels.
-    // Keep the 40x25 raster focused on the Télétel service itself.
+    // Historical commands belong to the Minitel keyboard. The raster only
+    // exposes context that a Télétel service would have needed to repeat.
     if (pagination) {
       screen.write(24, 1, 'RETOUR', { foreground: 'cyan' });
       screen.write(24, 32, 'SUITE', { foreground: 'cyan' });
     }
+  };
+
+  const promptLine = (screen, row, value = '', label = 'VOTRE CHOIX') => {
+    screen.write(row, 4, fit(label, 14) + ' : ' + String(value ?? ''), { foreground: 'yellow' });
+  };
+
+  const pageLine = (screen, row, page, pages, total = null) => {
+    const left = 'PAGE ' + page + '/' + pages;
+    const right = total === null ? '' : 'TOTAL ' + total;
+    screen.write(row, 2, fit(left, 16), { foreground: 'cyan' });
+    if (right) screen.write(row, 27, fit(right, 11), { foreground: 'cyan' });
   };
 
   const action = (type, payload = {}) => {
@@ -151,12 +162,12 @@
   const updateCursor = () => {
     if (!renderer || !session) return;
     const page = session.currentPageId;
-    if (page === 'home') return renderer.showCursor(19, Math.min(39, 20 + session.input.value.length), true);
+    if (page === 'home') return renderer.showCursor(19, Math.min(39, 21 + session.input.value.length), true);
     if (['flight-search', 'fleet-search', 'pilot-search'].includes(page)) {
-      return renderer.showCursor(9, Math.min(39, 4 + session.input.value.length), true);
+      return renderer.showCursor(10, Math.min(39, 6 + session.input.value.length), true);
     }
-    if (page === 'flights') return renderer.showCursor(21, Math.min(39, 9 + session.input.value.length), true);
-    if (page === 'operations') return renderer.showCursor(20, Math.min(39, 9 + session.input.value.length), true);
+    if (page === 'flights') return renderer.showCursor(21, Math.min(39, 21 + session.input.value.length), true);
+    if (page === 'operations') return renderer.showCursor(21, Math.min(39, 21 + session.input.value.length), true);
     if (page === 'aircraft-select') return renderer.showCursor(20, Math.min(39, 9 + session.input.value.length), true);
     if (page === 'operation') return renderer.showCursor(19, Math.min(39, 9 + session.input.value.length), true);
     if (page === 'simbrief') return renderer.showCursor(19, Math.min(39, 9 + session.input.value.length), true);
@@ -182,9 +193,10 @@
   };
 
   const renderError = (screen) => {
-    noticeBand(screen, 6, '*** ERREUR SERVICE ***', 'red', 'white');
-    screen.write(9, 2, fit(state.error || 'SERVICE INDISPONIBLE', 36), { foreground: 'yellow' });
-    screen.write(13, 2, 'RETOUR : PAGE PRECEDENTE', { foreground: 'cyan' });
+    screen.write(7, 8, 'SERVICE INDISPONIBLE', { foreground: 'red', blink: true });
+    screen.write(10, 2, fit(state.error || 'ERREUR DE TRANSMISSION', 36), { foreground: 'yellow' });
+    screen.write(14, 3, 'RETOUR POUR PAGE PRECEDENTE', { foreground: 'cyan' });
+    screen.write(16, 3, 'REPETITION POUR RETRANSMETTRE', { foreground: 'cyan' });
     writeFooter(screen);
   };
 
@@ -233,10 +245,10 @@
         onRender: (_context, screen, current) => {
           writeStatus(screen);
           titleBand(screen, title, hint);
-          noticeBand(screen, 6, 'SAISISSEZ VOTRE RECHERCHE', 'red', 'white');
-          screen.write(9, 2, '> ' + current.input.value, { foreground: 'cyan' });
-          screen.write(13, 2, 'ENVOI : RECHERCHER', { foreground: 'yellow' });
-          screen.write(14, 2, 'ANNULATION : EFFACER', { foreground: 'cyan' });
+          screen.write(8, 2, 'CRITERE :', { foreground: 'white' });
+          screen.write(10, 4, '> ' + current.input.value, { foreground: 'cyan' });
+          screen.write(14, 4, 'ENVOI POUR LANCER LA RECHERCHE', { foreground: 'yellow' });
+          screen.write(16, 4, 'ANNULATION EFFACE LA SAISIE', { foreground: 'cyan' });
           writeFooter(screen);
         },
         acceptInput: (key) => /^[A-Za-z0-9 ._/-]$/.test(key),
@@ -247,11 +259,11 @@
     session.register(new mt.MinitelPage('departures', {
       onRender: (_context, screen) => {
         writeStatus(screen);
-        screen.write(2, 1, 'DEPARTS / MOUVEMENTS', { foreground: 'yellow' });
+        titleBand(screen, 'DEPARTS', 'MOUVEMENTS AIR INTER');
         if (renderLoadingOrError(screen)) return;
-        screen.write(4, 1, 'VOL      DEP   H.    DEST   H.   ETAT', { foreground: 'cyan' });
+        screen.write(6, 1, 'VOL      DEP   H.    DEST   H.   ETAT', { foreground: 'cyan' });
         (state.collection?.items || []).slice(0, 7).forEach((flight, index) => {
-          const row = 6 + index * 2;
+          const row = 7 + index * 2;
           screen.write(row, 1, fit(flight.flight, 8) + ' ' + fit(flight.departure, 4) + ' ' + fit(flight.departure_time, 5) + ' ' + fit(flight.destination, 6) + ' ' + fit(flight.arrival_time, 5));
           screen.write(row + 1, 10, fit(flight.status_label, 28), { foreground: statusColour(flight.status) });
         });
@@ -267,19 +279,19 @@
     session.register(new mt.MinitelPage('flights', {
       onRender: (_context, screen, current) => {
         writeStatus(screen);
-        screen.write(2, 1, 'PROGRAMME DES VOLS', { foreground: 'yellow' });
+        titleBand(screen, 'PROGRAMME DES VOLS', 'SERVICE RESERVATIONS');
         if (renderLoadingOrError(screen)) return;
-        screen.write(4, 1, 'N VOL      DEP   H.    ARR   H.', { foreground: 'cyan' });
+        screen.write(6, 1, 'N VOL      DEP        ARR', { foreground: 'cyan' });
         const items = state.collection?.items || [];
         items.slice(0, 7).forEach((item, index) => {
-          const row = 6 + index * 2;
+          const row = 7 + index * 2;
           screen.write(row, 1, String(index + 1) + ' ' + fit(item.ident, 8) + ' ' + fit(item.departure, 4) + ' > ' + fit(item.arrival, 4));
           screen.write(row + 1, 3, fit((item.airline?.icao || 'ITF') + ' / ' + (item.route || 'ROUTE PROGRAMMEE'), 35), { foreground: 'cyan' });
         });
         if (!items.length) screen.write(8, 7, 'AUCUN VOL RESERVABLE');
         const pagination = state.collection?.pagination || { page: 1, last_page: 1, total: items.length };
         screen.write(20, 1, 'RESULTATS ' + fit(pagination.total ?? items.length, 5));
-        screen.write(21, 1, 'CHOIX : ' + current.input.value + ' + ENVOI = RESERVER', { foreground: 'yellow' });
+        promptLine(screen, 21, current.input.value, 'VOL A RESERVER');
         writeFooter(screen, true);
       },
       acceptInput: (key) => /^[1-7]$/.test(key),
@@ -293,21 +305,22 @@
     session.register(new mt.MinitelPage('operations', {
       onRender: (_context, screen, current) => {
         writeStatus(screen);
-        screen.write(2, 1, 'MES OPERATIONS', { foreground: 'yellow' });
+        titleBand(screen, 'MES OPERATIONS', 'RESERVATIONS ACTIVES');
         if (renderLoadingOrError(screen)) return;
-        screen.write(4, 1, 'N VOL      TRAJET       ETAT', { foreground: 'cyan' });
+        screen.write(6, 1, 'N VOL      TRAJET       ETAT', { foreground: 'cyan' });
         const allItems = state.collection?.operations || [];
         const operationPages = Math.max(1, Math.ceil(allItems.length / 7));
         state.operationPage = Math.max(1, Math.min(operationPages, state.operationPage));
         const items = allItems.slice((state.operationPage - 1) * 7, state.operationPage * 7);
         items.forEach((item, index) => {
-          const row = 6 + index * 2;
+          const row = 7 + index * 2;
           const flight = item.flight || {};
           screen.write(row, 1, String(index + 1) + ' ' + fit(flight.ident, 8) + ' ' + fit(flight.departure + '>' + flight.arrival, 11) + ' ' + fit(item.status, 13));
           screen.write(row + 1, 3, fit(item.aircraft?.registration || 'APPAREIL A SELECTIONNER', 35), { foreground: item.aircraft ? 'green' : 'yellow' });
         });
         if (!allItems.length) screen.write(8, 4, 'AUCUNE OPERATION RESERVEE');
-        screen.write(20, 1, 'CHOIX : ' + current.input.value + '  PAGE ' + state.operationPage + '/' + operationPages, { foreground: 'yellow' });
+        pageLine(screen, 19, state.operationPage, operationPages, allItems.length);
+        promptLine(screen, 21, current.input.value);
         writeFooter(screen, operationPages > 1);
       },
       acceptInput: (key) => /^[1-7]$/.test(key),
@@ -343,7 +356,7 @@
         screen.write(12, 2, '5 ETAT DISPATCH', { foreground: 'cyan' });
         screen.write(15, 2, 'OFP........... ' + (op.simbrief?.available ? 'PRET' : 'A PREPARER'), { foreground: op.simbrief?.available ? 'green' : 'yellow' });
         screen.write(16, 2, 'PIREP......... ' + (op.pirep_id ? 'PRET' : 'A PREPARER'), { foreground: op.pirep_id ? 'green' : 'yellow' });
-        screen.write(19, 2, 'CHOIX : ' + current.input.value, { foreground: 'yellow' });
+        promptLine(screen, 19, current.input.value);
         writeFooter(screen);
       },
       acceptInput: (key) => /^[1-5]$/.test(key),
@@ -372,7 +385,7 @@
           screen.write(row + 1, 3, fit((item.type_label || item.subfleet || '') + ' PAX ' + (item.passengers ?? '-'), 35), { foreground: 'cyan' });
         });
         if (!items.length) screen.write(8, 3, 'AUCUN APPAREIL DISPONIBLE');
-        screen.write(20, 1, 'CHOIX : ' + current.input.value + ' + ENVOI', { foreground: 'yellow' });
+        promptLine(screen, 20, current.input.value);
         writeFooter(screen);
       },
       acceptInput: (key) => /^[1-7]$/.test(key),
@@ -550,7 +563,7 @@
         menuLine(screen, 9, 4, 'CALENDRIER');
         menuLine(screen, 10, 5, 'MON DOSSIER');
         menuLine(screen, 11, 6, 'ADMINISTRATION');
-        screen.write(18, 2, 'CHOIX : ' + current.input.value, { foreground: 'yellow' });
+        promptLine(screen, 18, current.input.value);
         writeFooter(screen);
       },
       acceptInput: (key) => /^[1-6]$/.test(key),
@@ -580,7 +593,7 @@
     session.register(new mt.MinitelPage('arrivals', {
       onRender: (_context, screen) => {
         writeStatus(screen);
-        screen.write(2, 1, 'ARRIVEES', { foreground: 'yellow' });
+        titleBand(screen, 'ARRIVEES', 'MOUVEMENTS AIR INTER');
         if (renderLoadingOrError(screen)) return;
         screen.write(4, 1, 'VOL      ORIG  H.    ARR   H.   ETAT', { foreground: 'cyan' });
         (state.collection?.items || []).slice(0, 7).forEach((flight, index) => {
@@ -698,7 +711,7 @@
     items.slice(0, 7).forEach((item, index) => renderItem(item, 6 + index * 2));
     if (!items.length) screen.write(8, 7, 'AUCUN RESULTAT');
     const pagination = state.collection?.pagination || {};
-    screen.write(20, 1, 'PAGE ' + fit(pagination.page || 1, 3) + '/' + fit(pagination.last_page || 1, 3) + ' TOTAL ' + fit(pagination.total || 0, 6), { foreground: 'yellow' });
+    pageLine(screen, 20, pagination.page || 1, pagination.last_page || 1, pagination.total || 0);
     writeFooter(screen, true);
   };
 
