@@ -262,7 +262,7 @@
         </article>
 
         <article class="card timeline-card">
-            <span class="kicker">JOURNAL DE SÉCURITÉ</span><h3>30 derniers événements</h3>
+            <span class="kicker">JOURNAL GLOBAL</span><h3>30 derniers événements</h3><p class="muted">Activité Argos et accès de l’écosystème Air Inter.</p><a class="button secondary small" href="{{ route('account.activity') }}">Voir le journal complet</a>
             <div class="timeline">
                 @forelse($securityEvents as $event)
                     <div class="timeline-item"><span class="timeline-dot {{ $event->severity === 'high' ? 'danger' : '' }}"></span><div><strong>{{ str_replace('.', ' · ', $event->type) }}</strong><small>{{ $event->created_at->format('d/m/Y H:i') }} @if($event->ip_address) · {{ $event->ip_address }} @endif</small></div></div>
