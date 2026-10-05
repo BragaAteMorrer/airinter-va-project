@@ -258,6 +258,9 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::get('/users/{user}/edit', [PortalController::class,'editAdminUser'])->name('users.edit');
         Route::put('/users/{user}', [PortalController::class,'updateAdminUser'])->name('users.update');
         Route::get('/airlines', [PortalController::class,'adminAirlines'])->name('airlines');
+        Route::get('/airlines/{airline}/edit', [PortalController::class,'editAdminAirline'])->name('airlines.edit');
+        Route::put('/airlines/{airline}', [PortalController::class,'updateAdminAirline'])->name('airlines.update');
+        Route::delete('/airlines/{airline}/logo', [PortalController::class,'deleteAdminAirlineLogo'])->name('airlines.logo.delete');
         Route::post('/airlines', [PortalController::class,'saveAdminAirline'])->name('airlines.save');
         Route::get('/regional-operations', [RegionalOperationsAdminController::class,'regionalOperations'])->name('regional');
         Route::post('/regional-operations/settings', [RegionalOperationsAdminController::class,'saveRegionalOperations'])->name('regional.settings');
