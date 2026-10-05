@@ -403,7 +403,13 @@ class AirframeMaintenanceService
                 ]);
             }
 
-            if (!$state->active_check && $aircraft->status === AircraftStatus::MAINTENANCE) {
+            $legacyCheckActive = Schema::hasTable('disposable_maintenance')
+                && DB::table('disposable_maintenance')
+                    ->where('aircraft_id', $aircraftId)
+                    ->whereNotNull('act_note')
+                    ->exists();
+
+            if (!$state->active_check && !$legacyCheckActive && $aircraft->status === AircraftStatus::MAINTENANCE) {
                 $aircraft->update(['status' => $previousStatus ?: AircraftStatus::ACTIVE]);
             }
 
@@ -516,7 +522,7 @@ class AirframeMaintenanceService
         $threshold = max(0, min(100, 100 - $biasPercent));
 
         return $this->fleetStatus()
-            ->filter(fn ($row) => !$row->active_check && !($row->safety_hold_at ?? null))
+            ->filter(fn ($row) => !$row->active_check && !$row->active_legacy_check && !($row->safety_hold_at ?? null))
             ->mapWithKeys(function ($row) use ($threshold) {
                 foreach (['c', 'b', 'a'] as $check) {
                     $status = $row->checks[$check];
@@ -565,6 +571,10 @@ class AirframeMaintenanceService
             }
             if ($state->active_check) {
                 throw new RuntimeException('Un check cellule est déjà en cours sur cet appareil.');
+            }
+            if (Schema::hasTable('disposable_maintenance')
+                && DB::table('disposable_maintenance')->where('aircraft_id', $aircraftId)->whereNotNull('act_note')->exists()) {
+                throw new RuntimeException('Une maintenance est déjà en cours sur la fiche de cet appareil.');
             }
 
             $column = 'check_'.$check;
