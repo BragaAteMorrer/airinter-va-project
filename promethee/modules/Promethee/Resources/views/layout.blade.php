@@ -165,7 +165,7 @@ window.prometheeI18n = @json($prometheeI18n);
         <span>{{ __('promethee.navigation') }}</span><b aria-hidden="true">☰</b>
     </button>
 </div>
-<nav id="promethee-navigation" class="is-grouped" aria-label="{{ __('promethee.navigation') }}" data-default-workspace="{{ request()->routeIs('admin.promethee.*', 'admin.users.*', 'admin.ranks.*') ? 'staff' : 'pilot' }}">
+<nav id="promethee-navigation" class="is-grouped" aria-label="{{ __('promethee.navigation') }}" data-default-workspace="{{ request()->routeIs('admin.promethee.*') ? 'staff' : 'pilot' }}">
 @auth
 @php
     // Each entry uses a registered, server-side route. Optional legacy modules
@@ -246,14 +246,14 @@ window.prometheeI18n = @json($prometheeI18n);
         </div>
     </details>
 @endforeach
-<details @class(['nav-group', 'selected' => !request()->routeIs('admin.promethee.dispatch*', 'admin.promethee.network*', 'admin.promethee.mailbox*', 'admin.promethee.health') && request()->routeIs('admin.promethee.*', 'admin.users.*', 'admin.ranks.*')]) data-workspace-group="staff">
+<details @class(['nav-group', 'selected' => !request()->routeIs('admin.promethee.dispatch*', 'admin.promethee.network*', 'admin.promethee.mailbox*', 'admin.promethee.health') && request()->routeIs('admin.promethee.*')]) data-workspace-group="staff">
     <summary>{{ __('promethee.navigation_private') }}<b aria-hidden="true">⌄</b></summary>
     <div class="nav-menu">
         @ability('admin','admin-access')
         <a @class(['selected' => !request()->routeIs('admin.promethee.dispatch*', 'admin.promethee.network*', 'admin.promethee.mailbox*', 'admin.promethee.health') && request()->routeIs('admin.promethee.*')]) @if(!request()->routeIs('admin.promethee.dispatch*', 'admin.promethee.network*', 'admin.promethee.mailbox*', 'admin.promethee.health') && request()->routeIs('admin.promethee.*')) aria-current="page" @endif href="{{ route('admin.promethee.dashboard') }}">{{ __('promethee.administration') }}</a>
         @if(\Illuminate\Support\Facades\Route::has('admin.promethee.crm'))<a @class(['selected' => request()->routeIs('admin.promethee.crm*')]) @if(request()->routeIs('admin.promethee.crm*')) aria-current="page" @endif href="{{ route('admin.promethee.crm') }}">CRM & communications</a>@endif
-        @if(\Illuminate\Support\Facades\Route::has('admin.promethee.users'))<a @class(['selected' => request()->routeIs('admin.promethee.users*')]) @if(request()->routeIs('admin.promethee.users','admin.users.*')) aria-current="page" @endif href="{{ route('admin.promethee.users') }}">{{ __('promethee.admin_pilots') }}</a>@endif
-        @if(\Illuminate\Support\Facades\Route::has('admin.promethee.ranks'))<a @class(['selected' => request()->routeIs('admin.promethee.ranks*')]) @if(request()->routeIs('admin.promethee.ranks','admin.ranks.*')) aria-current="page" @endif href="{{ route('admin.promethee.ranks') }}">{{ __('promethee.admin_ranks') }}</a>@endif
+        @if(\Illuminate\Support\Facades\Route::has('admin.promethee.users'))<a @class(['selected' => request()->routeIs('admin.promethee.users*')]) @if(request()->routeIs('admin.promethee.users*')) aria-current="page" @endif href="{{ route('admin.promethee.users') }}">{{ __('promethee.admin_pilots') }}</a>@endif
+        @if(\Illuminate\Support\Facades\Route::has('admin.promethee.ranks'))<a @class(['selected' => request()->routeIs('admin.promethee.ranks*')]) @if(request()->routeIs('admin.promethee.ranks*')) aria-current="page" @endif href="{{ route('admin.promethee.ranks') }}">{{ __('promethee.admin_ranks') }}</a>@endif
         @if(\Illuminate\Support\Facades\Route::has('admin.promethee.airlines'))<a @class(['selected' => request()->routeIs('admin.promethee.airlines*')]) @if(request()->routeIs('admin.promethee.airlines*')) aria-current="page" @endif href="{{ route('admin.promethee.airlines') }}">Compagnies</a>@endif
         @endability
         <a href="{{ url('/logout') }}">{{ __('promethee.logout') }}</a>
