@@ -252,6 +252,8 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::delete('/assignments/{id}', [PortalController::class,'deleteAssignment'])->name('assignments.delete');
         Route::delete('/assignments', [PortalController::class,'deleteAssignments'])->name('assignments.bulk-delete');
         Route::get('/ranks', [PortalController::class,'adminRanks'])->name('ranks');
+        Route::get('/ranks/create', [PortalController::class,'createAdminRank'])->name('ranks.create');
+        Route::post('/ranks', [PortalController::class,'storeAdminRank'])->name('ranks.store');
         Route::get('/ranks/{rank}/edit', [PortalController::class,'editAdminRank'])->name('ranks.edit');
         Route::put('/ranks/{rank}', [PortalController::class,'updateAdminRank'])->name('ranks.update');
         Route::get('/users', [PortalController::class,'adminUsers'])->name('users');
