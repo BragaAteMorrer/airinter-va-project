@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Laravel\Passport\Passport;
@@ -111,6 +112,56 @@ class AccountController extends Controller
             'securityLevel' => $securityLevel,
             'currentSessionId' => $request->session()->getId(),
         ]);
+    }
+
+    public function updateProfile(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'display_name' => ['required', 'string', 'max:191'],
+            'email' => ['required', 'email:rfc', 'max:191', Rule::unique('users', 'email')->ignore($user->id)],
+            'country' => ['nullable', 'string', 'regex:/^[A-Za-z]{2}$/'],
+            'home_airport_id' => ['nullable', 'string', 'max:10', 'regex:/^[A-Za-z0-9-]+$/'],
+            'vatsim_id' => ['nullable', 'string', 'max:32', 'regex:/^[0-9]+$/'],
+            'ivao_id' => ['nullable', 'string', 'max:32', 'regex:/^[0-9]+$/'],
+            'avatar' => ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
+        ]);
+
+        $emailChanged = !hash_equals(mb_strtolower((string) $user->email), mb_strtolower((string) $data['email']));
+
+        $user->display_name = trim((string) $data['display_name']);
+        $user->email = mb_strtolower(trim((string) $data['email']));
+        $user->country = filled($data['country'] ?? null) ? strtoupper(trim((string) $data['country'])) : null;
+        $user->home_airport_id = filled($data['home_airport_id'] ?? null) ? strtoupper(trim((string) $data['home_airport_id'])) : null;
+        $user->vatsim_id = filled($data['vatsim_id'] ?? null) ? trim((string) $data['vatsim_id']) : null;
+        $user->ivao_id = filled($data['ivao_id'] ?? null) ? trim((string) $data['ivao_id']) : null;
+
+        if ($emailChanged) {
+            $user->email_verified_at = null;
+        }
+
+        if ($request->hasFile('avatar')) {
+            if (filled($user->avatar_path)) {
+                Storage::disk('public')->delete($user->avatar_path);
+            }
+
+            $avatar = $request->file('avatar');
+            $user->avatar_path = $avatar->storeAs(
+                'avatars',
+                $user->subject.'.'.$avatar->extension(),
+                'public'
+            );
+        }
+
+        $user->save();
+
+        if ($emailChanged) {
+            $user->sendEmailVerificationNotification();
+        }
+
+        return redirect()->route('account', ['#' => 'profile'])
+            ->with('status', 'Profil Argos mis à jour. Les applications Air Inter utiliseront ces données à la prochaine synchronisation.');
     }
 
     public function updatePreferences(Request $request): RedirectResponse
