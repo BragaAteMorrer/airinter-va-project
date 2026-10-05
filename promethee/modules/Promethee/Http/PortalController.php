@@ -3406,11 +3406,7 @@ class PortalController extends Controller
 
         $subfleets = Subfleet::with('airline')->orderBy('name')->get();
         $aircraft = Aircraft::with('subfleet.airline')->orderBy('registration')->get();
-        $itvaEngineCategories = (array) data_get(
-            config('promethee.engine-profiles', []),
-            '__meta.itva_categories',
-            []
-        );
+        $itvaEngineCategories = (array) data_get(config('promethee.engine-profiles', []), '__meta.itva_categories', []);
 
         $airframeSettings = $airframeService->settings();
         $airframeStates = $airframeService->fleetStatus();
@@ -3527,79 +3523,30 @@ class PortalController extends Controller
 
     public function syncEngineFleet(EngineMaintenanceService $engineService) {
         $references = (array) config('promethee.engine-profiles', []);
-        $createdProfiles = 0;
-        $updatedProfiles = 0;
+        $createdProfiles = $updatedProfiles = 0;
 
         Subfleet::with('airline')->orderBy('id')->get()->each(function (Subfleet $subfleet) use ($references, &$createdProfiles, &$updatedProfiles) {
-            $airlineIcao = strtoupper((string) ($subfleet->airline?->icao ?: ''));
-            $referenceKey = $airlineIcao.'|'.(string) $subfleet->type;
-            $reference = $references[$referenceKey] ?? null;
+            $reference = $references[strtoupper((string) ($subfleet->airline?->icao ?: '')).'|'.(string) $subfleet->type] ?? null;
+            if (!is_array($reference)) return;
+            $existing = DB::table('promethee_engine_profiles')->where('subfleet_id', $subfleet->id)->first();
+            $values = ['engine_type'=>(string) $reference['engine_type'], 'engine_count'=>(int) $reference['engine_count'], 'tbo_hours'=>$reference['tbo_hours'] ?? null, 'warning_hours'=>(float) ($reference['warning_hours'] ?? 100), 'updated_at'=>now()];
 
-            if (!is_array($reference)) {
-                return;
-            }
-
-            $existing = DB::table('promethee_engine_profiles')
-                ->where('subfleet_id', $subfleet->id)
-                ->first();
-
-            // ITVA is the operational source of truth. The legacy tbo_hours
-            // column stores the ITVA gameplay potential, never a real-world
-            // manufacturer TBO.
-            $values = [
-                'engine_type' => (string) $reference['engine_type'],
-                'engine_count' => (int) $reference['engine_count'],
-                'tbo_hours' => $reference['tbo_hours'] ?? null,
-                'warning_hours' => (float) ($reference['warning_hours'] ?? 100),
-                'updated_at' => now(),
-            ];
-
-            if (array_key_exists('tbo_cycles', $reference)) {
-                $values['tbo_cycles'] = $reference['tbo_cycles'];
-            }
-            if (array_key_exists('warning_cycles', $reference)) {
-                $values['warning_cycles'] = $reference['warning_cycles'];
-            }
-
-            if ($existing) {
-                DB::table('promethee_engine_profiles')->where('id', $existing->id)->update($values);
-                $updatedProfiles++;
-                return;
-            }
-
-            DB::table('promethee_engine_profiles')->insert($values + [
-                'subfleet_id' => $subfleet->id,
-                'tbo_cycles' => $reference['tbo_cycles'] ?? null,
-                'warning_cycles' => $reference['warning_cycles'] ?? null,
-                'active' => true,
-                'created_at' => now(),
-            ]);
+            if (array_key_exists('tbo_cycles', $reference)) $values['tbo_cycles'] = $reference['tbo_cycles'];
+            if (array_key_exists('warning_cycles', $reference)) $values['warning_cycles'] = $reference['warning_cycles'];
+            if ($existing) { DB::table('promethee_engine_profiles')->where('id', $existing->id)->update($values); $updatedProfiles++; return; }
+            DB::table('promethee_engine_profiles')->insert($values + ['subfleet_id'=>$subfleet->id, 'tbo_cycles'=>$reference['tbo_cycles'] ?? null, 'warning_cycles'=>$reference['warning_cycles'] ?? null, 'active'=>true, 'created_at'=>now()]);
             $createdProfiles++;
         });
 
-        $profileIds = DB::table('promethee_engine_profiles')->where('active', true)->pluck('subfleet_id');
         $synced = 0;
-        foreach ($profileIds as $subfleetId) {
-            $synced += $engineService->syncSubfleet((int) $subfleetId);
-        }
-
-        return back()->with(
-            'success',
-            $createdProfiles.' profil(s) ITVA créé(s) · '
-            .$updatedProfiles.' profil(s) ITVA remis à niveau · '
-            .$synced.' position(s) moteur vérifiée(s) / synchronisée(s).'
-        );
+        foreach (DB::table('promethee_engine_profiles')->where('active', true)->pluck('subfleet_id') as $subfleetId) $synced += $engineService->syncSubfleet((int) $subfleetId);
+        return back()->with('success', $createdProfiles.' profil(s) ITVA créé(s) · '.$updatedProfiles.' profil(s) ITVA remis à niveau · '.$synced.' position(s) moteur vérifiée(s) / synchronisée(s).');
     }
 
     public function saveEngineProfile(Request $r, EngineMaintenanceService $engineService) {
-        $itvaCategories = array_map(
-            'strval',
-            (array) data_get(config('promethee.engine-profiles', []), '__meta.itva_categories', [])
-        );
+        $itvaCategories = array_map('strval', (array) data_get(config('promethee.engine-profiles', []), '__meta.itva_categories', []));
         $hoursRule = 'nullable|numeric|min:1|max:100000';
-        if ($itvaCategories !== []) {
-            $hoursRule .= '|in:'.implode(',', $itvaCategories);
-        }
+        if ($itvaCategories !== []) $hoursRule .= '|in:'.implode(',', $itvaCategories);
 
         $data = $r->validate([
             'subfleet_id'=>'required|integer|exists:subfleets,id',
