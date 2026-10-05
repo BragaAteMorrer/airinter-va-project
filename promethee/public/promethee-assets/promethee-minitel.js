@@ -11,7 +11,7 @@
 
   const readMinitelPreferences = () => {
     let speed = 'fast';
-    let displayMode = 'color';
+    let displayMode = 'monochrome';
     try {
       const storedSpeed = localStorage.getItem(MINITEL_SPEED_KEY);
       const storedDisplay = localStorage.getItem(MINITEL_DISPLAY_KEY);
