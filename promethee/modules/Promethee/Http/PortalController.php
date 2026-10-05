@@ -576,12 +576,61 @@ class PortalController extends Controller
         for ($offset = 0; $offset <= 7; $offset++) {
             $departure = $base->addDays($offset)->setTime($hour, $minute);
             $parisDeparture = $departure->setTimezone('Europe/Paris');
-            $operatesThatDay = $days === 0 || ($days & (1 << $parisDeparture->dayOfWeek));
+            // phpVMS Days uses ISO Monday as bit 0; Carbon dayOfWeek starts on
+            // Sunday and would shift every operating day by one.
+            $dayBit = 1 << ($departure->isoWeekday() - 1);
+            $operatesThatDay = $days === 0 || ($days & $dayBit);
 
             if ($operatesThatDay && $parisDeparture->greaterThan($now)) return $parisDeparture;
         }
 
         return null;
+    }
+
+    /** Decorate programme rows with their next dated occurrence in Paris time. */
+    private function decorateProgrammeTimetable($flights): void
+    {
+        $parisNow = CarbonImmutable::now('Europe/Paris');
+
+        $flights->each(function (Flight $flight) use ($parisNow) {
+            $departure = $this->nextDeparture($flight);
+            $arrival = null;
+            if ($departure && trim((string) $flight->arr_time) !== '') {
+                $arrival = $this->scheduledDateTime((string) $flight->arr_time, $departure);
+                if ($arrival && $arrival->lte($departure)) $arrival = $arrival->addDay();
+                $arrival = $arrival?->setTimezone('Europe/Paris');
+            }
+
+            $secondsUntil = $departure ? max(0, $parisNow->diffInSeconds($departure, false)) : null;
+            $minutesUntil = $secondsUntil === null ? null : (int) ceil($secondsUntil / 60);
+            $relative = null;
+
+            if ($departure) {
+                if ($minutesUntil <= 1) {
+                    $relative = 'Départ imminent';
+                } elseif ($minutesUntil < 60) {
+                    $relative = 'Dans '.$minutesUntil.' min';
+                } elseif ($minutesUntil < 180) {
+                    $hours = intdiv($minutesUntil, 60);
+                    $minutes = $minutesUntil % 60;
+                    $relative = 'Dans '.$hours.' h'.($minutes ? ' '.str_pad((string) $minutes, 2, '0', STR_PAD_LEFT) : '');
+                } elseif ($departure->isSameDay($parisNow)) {
+                    $relative = 'Aujourd’hui';
+                } elseif ($departure->isSameDay($parisNow->addDay())) {
+                    $relative = 'Demain';
+                } else {
+                    $relative = 'Le '.$departure->format('d/m');
+                }
+            }
+
+            $flight->setAttribute('next_departure_time', $departure?->format('H:i') ?: trim((string) $flight->dpt_time));
+            $flight->setAttribute('next_arrival_time', $arrival?->format('H:i') ?: trim((string) $flight->arr_time));
+            $flight->setAttribute('next_departure_iso', $departure?->toIso8601String());
+            $flight->setAttribute('next_arrival_iso', $arrival?->toIso8601String());
+            $flight->setAttribute('next_departure_relative', $relative);
+            $flight->setAttribute('next_departure_soon', $minutesUntil !== null && $minutesUntil <= 90);
+            $flight->setAttribute('next_departure_sort', $departure?->getTimestamp());
+        });
     }
 
     /**
@@ -695,7 +744,8 @@ class PortalController extends Controller
                 for ($offset = -1; $offset <= 7; $offset++) {
                     $date = $now->addDays($offset);
                     $departure = $this->scheduledDateTime((string) $flight->dpt_time, $date);
-                    if (!$departure || (($flight->days ?? 0) !== 0 && !($flight->days & (1 << $departure->dayOfWeek)))) continue;
+                    $dayBit = 1 << ($departure?->isoWeekday() - 1);
+                    if (!$departure || (($flight->days ?? 0) !== 0 && !($flight->days & $dayBit))) continue;
 
                     $arrival = $this->scheduledDateTime((string) $flight->arr_time, $date);
                     if ($arrival && $arrival->lte($departure)) $arrival = $arrival->addDay();
@@ -1750,9 +1800,27 @@ class PortalController extends Controller
         $selectedDeparture = $resolveAirport($filters['departure'] ?? null);
         $selectedArrival = $resolveAirport($filters['arrival'] ?? null);
 
+        // The unfiltered programme is a pilot-oriented departure board, not a
+        // catalogue dump. Keep explicit searches global, but default to the
+        // pilot's declared base (current position is only a legacy fallback).
+        $explicitFilterKeys = [
+            'departure', 'arrival', 'airline_id', 'subfleet_id', 'flight_type',
+            'q', 'min_distance', 'max_distance', 'time_from', 'time_to',
+        ];
+        $personalizedDefault = collect($explicitFilterKeys)->every(fn ($key) => !$r->filled($key))
+            && (!$r->filled('sort') || ($filters['sort'] ?? 'departure') === 'departure');
+        $programmeBaseId = $r->user()?->home_airport_id ?: $r->user()?->curr_airport_id;
+        $programmeBase = $programmeBaseId ? Airport::find($programmeBaseId) : null;
+
         $q = Flight::where('active', true)
             ->where('visible', true)
             ->with(['airline', 'fares', 'dpt_airport', 'arr_airport', 'subfleets']);
+
+        if ($personalizedDefault) {
+            $programmeBaseId
+                ? $q->where('dpt_airport_id', $programmeBaseId)
+                : $q->whereRaw('1 = 0');
+        }
 
         if ($r->user() && !$r->user()->ability('admin', 'admin-access')) {
             $q->whereIn('airline_id', app(CompanyAccessService::class)->allowedAirlineIds($r->user()));
@@ -1773,55 +1841,34 @@ class PortalController extends Controller
             $q->where(fn($f)=>$f->where('flight_number','like',$term)->orWhere('callsign','like',$term)->orWhere('route_code','like',$term)->orWhereIn('dpt_airport_id',$ids)->orWhereIn('arr_airport_id',$ids));
         }
 
-        $sort = $filters['sort'] ?? 'departure';
-        if ($sort === 'ident') $q->orderBy('route_code')->orderBy('flight_number');
-        elseif ($sort === 'distance') $q->orderBy('distance');
-        else $q->orderBy('dpt_time')->orderBy('route_code')->orderBy('flight_number');
+        if ($personalizedDefault) {
+            // A raw HH:MM sort is wrong after the day's first departures have
+            // passed. Resolve each recurring schedule to its next real date,
+            // then keep the first ten occurrences.
+            $upcoming = $q->get();
+            $this->decorateProgrammeTimetable($upcoming);
+            $upcoming = $upcoming
+                ->filter(fn (Flight $flight) => $flight->next_departure_sort !== null)
+                ->sortBy('next_departure_sort')
+                ->take(10)
+                ->values();
 
-        $flights = $q->paginate(24)->withQueryString();
+            $flights = new \Illuminate\Pagination\LengthAwarePaginator(
+                $upcoming,
+                $upcoming->count(),
+                10,
+                1,
+                ['path' => $r->url(), 'query' => $r->query()]
+            );
+        } else {
+            $sort = $filters['sort'] ?? 'departure';
+            if ($sort === 'ident') $q->orderBy('route_code')->orderBy('flight_number');
+            elseif ($sort === 'distance') $q->orderBy('distance');
+            else $q->orderBy('dpt_time')->orderBy('route_code')->orderBy('flight_number');
 
-        // Show the next real timetable occurrence directly in search results.
-        // phpVMS stores recurring schedules, so reuse the departure-board
-        // occurrence logic instead of comparing raw HH:MM values.
-        $parisNow = CarbonImmutable::now('Europe/Paris');
-        $flights->getCollection()->each(function (Flight $flight) use ($parisNow) {
-            $departure = $this->nextDeparture($flight);
-            $arrival = null;
-            if ($departure && trim((string) $flight->arr_time) !== '') {
-                $arrival = $this->scheduledDateTime((string) $flight->arr_time, $departure);
-                if ($arrival && $arrival->lte($departure)) $arrival = $arrival->addDay();
-                $arrival = $arrival?->setTimezone('Europe/Paris');
-            }
-
-            $secondsUntil = $departure ? max(0, $parisNow->diffInSeconds($departure, false)) : null;
-            $minutesUntil = $secondsUntil === null ? null : (int) ceil($secondsUntil / 60);
-            $relative = null;
-
-            if ($departure) {
-                if ($minutesUntil <= 1) {
-                    $relative = 'Départ imminent';
-                } elseif ($minutesUntil < 60) {
-                    $relative = 'Dans '.$minutesUntil.' min';
-                } elseif ($minutesUntil < 180) {
-                    $hours = intdiv($minutesUntil, 60);
-                    $minutes = $minutesUntil % 60;
-                    $relative = 'Dans '.$hours.' h'.($minutes ? ' '.str_pad((string) $minutes, 2, '0', STR_PAD_LEFT) : '');
-                } elseif ($departure->isSameDay($parisNow)) {
-                    $relative = 'Aujourd’hui';
-                } elseif ($departure->isSameDay($parisNow->addDay())) {
-                    $relative = 'Demain';
-                } else {
-                    $relative = 'Le '.$departure->format('d/m');
-                }
-            }
-
-            $flight->setAttribute('next_departure_time', $departure?->format('H:i') ?: trim((string) $flight->dpt_time));
-            $flight->setAttribute('next_arrival_time', $arrival?->format('H:i') ?: trim((string) $flight->arr_time));
-            $flight->setAttribute('next_departure_iso', $departure?->toIso8601String());
-            $flight->setAttribute('next_arrival_iso', $arrival?->toIso8601String());
-            $flight->setAttribute('next_departure_relative', $relative);
-            $flight->setAttribute('next_departure_soon', $minutesUntil !== null && $minutesUntil <= 90);
-        });
+            $flights = $q->paginate(24)->withQueryString();
+            $this->decorateProgrammeTimetable($flights->getCollection());
+        }
 
         // The public programme is not the legacy phpVMS flight screen. When a
         // real origin/destination search returns no direct line, build possible
@@ -1931,6 +1978,8 @@ class PortalController extends Controller
             'mapRoutes' => $mapRoutes,
             'selectedDeparture' => $selectedDeparture,
             'selectedArrival' => $selectedArrival,
+            'personalizedDefault' => $personalizedDefault,
+            'programmeBase' => $programmeBase,
         ]);
     }
 
