@@ -86,6 +86,7 @@ window.prometheeI18n = @json($prometheeI18n);
 </script>
 @stack('styles')
 <link rel="stylesheet" href="{{ asset('promethee-assets/promethee-era-components.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-era-components.css')) }}">
+<link rel="stylesheet" href="{{ asset('promethee-assets/promethee-airinter-brand.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-airinter-brand.css')) }}">
 <link rel="stylesheet" href="{{ asset('promethee-assets/promethee-accessibility.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-accessibility.css')) }}">
 </head>
 @php
