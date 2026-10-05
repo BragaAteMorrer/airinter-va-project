@@ -369,23 +369,23 @@ class RouteServiceProvider extends ServiceProvider
             // Pages
             Route::resource('pages', 'PagesController')->middleware('ability:admin,pages');
 
-            // rankings
-            Route::prefix('promethee')->group(function () {
+            // Legacy phpVMS rank CRUD must never own the canonical Promethee URLs.
+            // Keep it available under /admin/phpvms/ranks for upstream compatibility.
+            Route::prefix('phpvms')->group(function () {
                 Route::resource('ranks', 'RankController')->middleware('ability:admin,ranks');
+                Route::match([
+                    'get',
+                    'post',
+                    'put',
+                    'delete',
+                ], 'ranks/{id}/subfleets', 'RankController@subfleets')->name('ranks.subfleets')->middleware('ability:admin,ranks');
             });
-            Route::match([
-                'get',
-                'post',
-                'put',
-                'delete',
-            ], 'promethee/ranks/{id}/subfleets', 'RankController@subfleets')->name('ranks.subfleets')->middleware('ability:admin,ranks');
 
-            // Backward-compatible phpVMS admin bookmarks. Canonical URLs now live under /admin/promethee.
-            Route::get('ranks', fn () => redirect()->route('admin.ranks.index', [], 301))->middleware('ability:admin,ranks');
-            Route::get('ranks/create', fn () => redirect()->route('admin.ranks.create', [], 301))->middleware('ability:admin,ranks');
-            Route::get('ranks/{id}/edit', fn (int $id) => redirect()->route('admin.ranks.edit', [$id], 301))->middleware('ability:admin,ranks');
-            Route::get('ranks/{id}', fn (int $id) => redirect()->route('admin.ranks.show', [$id], 301))->middleware('ability:admin,ranks');
-            Route::match(['get','post','put','delete'], 'ranks/{id}/subfleets', 'RankController@subfleets')->middleware('ability:admin,ranks');
+            // Historic bookmarks now resolve to the native Promethee workspace.
+            Route::get('ranks', fn () => redirect()->route('admin.promethee.ranks', [], 301))->middleware('ability:admin,ranks');
+            Route::get('ranks/create', fn () => redirect()->route('admin.promethee.ranks.create', [], 301))->middleware('ability:admin,ranks');
+            Route::get('ranks/{id}/edit', fn (int $id) => redirect()->route('admin.promethee.ranks.edit', [$id], 301))->middleware('ability:admin,ranks');
+            Route::get('ranks/{id}', fn (int $id) => redirect()->route('admin.promethee.ranks.edit', [$id], 301))->middleware('ability:admin,ranks');
 
             // settings
             Route::match(['get'], 'settings', 'SettingsController@index')->middleware('ability:admin,settings');
@@ -484,19 +484,21 @@ class RouteServiceProvider extends ServiceProvider
             /**
              * USERS
              */
-            Route::delete('promethee/users/{id}/award/{award_id}', 'UserController@destroy_user_award')
+            Route::delete('phpvms/users/{id}/award/{award_id}', 'UserController@destroy_user_award')
                 ->name('users.destroy_user_award')->middleware('ability:admin,users');
 
-            Route::get('promethee/users/{id}/regen_apikey', 'UserController@regen_apikey')
+            Route::get('phpvms/users/{id}/regen_apikey', 'UserController@regen_apikey')
                 ->name('users.regen_apikey')->middleware('ability:admin,users');
 
-            Route::get('promethee/users/{id}/verify_email', 'UserController@verify_email')
+            Route::get('phpvms/users/{id}/verify_email', 'UserController@verify_email')
                 ->name('users.verify_email')->middleware('ability:admin,users');
 
-            Route::get('promethee/users/{id}/request_email_verification', 'UserController@request_email_verification')
+            Route::get('phpvms/users/{id}/request_email_verification', 'UserController@request_email_verification')
                 ->name('users.request_email_verification')->middleware('ability:admin,users');
 
-            Route::prefix('promethee')->group(function () {
+            // Legacy phpVMS user CRUD remains available for upstream internals,
+            // but lives away from /admin/promethee so it cannot shadow Promethee.
+            Route::prefix('phpvms')->group(function () {
                 Route::resource('users', 'UserController')->middleware('ability:admin,users');
             });
 
@@ -512,13 +514,13 @@ class RouteServiceProvider extends ServiceProvider
                 'post',
                 'put',
                 'delete',
-            ], 'promethee/users/{id}/typeratings', 'UserController@typeratings')->name('users.typeratings')->middleware('ability:admin,users');
+            ], 'phpvms/users/{id}/typeratings', 'UserController@typeratings')->name('users.typeratings')->middleware('ability:admin,users');
 
             // Compatibility aliases for old phpVMS admin user URLs.
-            Route::get('users', fn () => redirect()->route('admin.users.index', [], 301))->middleware('ability:admin,users');
-            Route::get('users/create', fn () => redirect()->route('admin.users.create', [], 301))->middleware('ability:admin,users');
-            Route::get('users/{id}/edit', fn (int $id) => redirect()->route('admin.users.edit', [$id], 301))->middleware('ability:admin,users');
-            Route::get('users/{id}', fn (int $id) => redirect()->route('admin.users.show', [$id], 301))->middleware('ability:admin,users');
+            Route::get('users', fn () => redirect()->route('admin.promethee.users', [], 301))->middleware('ability:admin,users');
+            Route::get('users/create', fn () => redirect()->away(rtrim((string) config('services.airinter_id.base_url'), '/').'/register', 302))->middleware('ability:admin,users');
+            Route::get('users/{id}/edit', fn (int $id) => redirect()->route('admin.promethee.users.edit', [$id], 301))->middleware('ability:admin,users');
+            Route::get('users/{id}', fn (int $id) => redirect()->route('admin.promethee.users.edit', [$id], 301))->middleware('ability:admin,users');
             Route::delete('users/{id}/award/{award_id}', 'UserController@destroy_user_award')->middleware('ability:admin,users');
             Route::get('users/{id}/regen_apikey', 'UserController@regen_apikey')->middleware('ability:admin,users');
             Route::get('users/{id}/verify_email', 'UserController@verify_email')->middleware('ability:admin,users');
