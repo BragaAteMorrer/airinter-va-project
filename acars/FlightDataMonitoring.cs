@@ -111,8 +111,8 @@ public sealed class FlightDataMonitor
         var codes = existing.Select(x => x.Code).ToHashSet(StringComparer.Ordinal);
         approach1000Recorded = codes.Any(x => x.StartsWith("APPROACH_1000_", StringComparison.Ordinal));
         approach500Recorded = codes.Any(x => x.StartsWith("APPROACH_500_", StringComparison.Ordinal));
-        loadFactorExceededReported = codes.Contains("LOAD_FACTOR_EXCEEDED");
         loadFactorMaintenanceReported = codes.Contains("LOAD_FACTOR_MAINTENANCE");
+        loadFactorExceededReported = loadFactorMaintenanceReported || codes.Contains("LOAD_FACTOR_EXCEEDED");
     }
 
     public IReadOnlyList<FdmObservation> Process(
