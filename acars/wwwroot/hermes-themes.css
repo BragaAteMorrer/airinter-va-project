@@ -551,3 +551,15 @@ body[data-era="modern"][data-appearance="dark"] .operations-browser,
 body[data-era="modern"][data-appearance="dark"] .operations-current{background:#0f2435;border-color:#52718a}
 body[data-era="modern"][data-appearance="dark"] .source-tabs button.active{background:#173a52;color:#9bd4fa}
 
+
+
+/* Boutique Hermès — premium visual packs. Access is gated by Prométhée entitlements in app.js. */
+body[data-era="airinter-1978"]{--blue:#173f78;--navy:#102d55;--red:#d1242f;--paper:#f7f3e8;--panel:#fffdf7;--ink:#17202a;--muted:#68727b;--line:#c8c2b5;background:linear-gradient(90deg,var(--blue) 0 10px,#fff 10px 14px,var(--blue) 14px 24px,#fff 24px 28px,var(--blue) 28px 38px,#fff 38px 42px,var(--red) 42px 52px,var(--paper) 52px)}
+body[data-era="airinter-1978"] .rail{background:#102d55}
+body[data-era="airinter-1978"] .panel,body[data-era="airinter-1978"] .flightplan-source{border-radius:2px;box-shadow:none}
+body[data-era="airinter-1978"] .kicker,body[data-era="airinter-1978"] .eyebrow{letter-spacing:.14em}
+body[data-era="minitel-ambre"]{--minitel-green:#ffb640;--paper:#100b03;--panel:#100b03;--ink:#ffc35c;--muted:#c68d39;--line:#7b551f;--blue:#ffb640;--navy:#ffc35c;--red:#ff7a33;background:#080501;color:var(--ink)}
+body[data-era="minitel-ambre"] .rail,body[data-era="minitel-ambre"] .panel{background:#100b03;border-color:#7b551f;border-radius:0;box-shadow:none}
+body[data-era="minitel-ambre"] button,body[data-era="minitel-ambre"] input,body[data-era="minitel-ambre"] select,body[data-era="minitel-ambre"] textarea{border-radius:0}
+body[data-era="minitel-ambre"]{font-family:"Minitel",ui-monospace,Consolas,monospace}
+body[data-efb-skin="airinter-historique"] .operational-weather,body[data-efb-skin="airinter-historique"] .flight-draft{border-left:4px solid var(--red)}
