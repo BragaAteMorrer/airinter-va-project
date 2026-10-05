@@ -261,6 +261,7 @@
       const shell = this.document.createElement('section');
       shell.className = 'ai-minitel-shell';
       shell.setAttribute('data-product', this.product.toLowerCase());
+      shell.setAttribute('data-minitel-generation', 'm9');
 
       const toolbar = this.document.createElement('div');
       toolbar.className = 'ai-minitel-shell-toolbar';
