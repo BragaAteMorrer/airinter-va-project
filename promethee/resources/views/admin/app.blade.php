@@ -25,6 +25,7 @@
   <link rel="stylesheet" href="{{ public_mix('/assets/admin/css/vendor.css') }}"/>
   <link rel="stylesheet" href="{{ public_asset('/assets/admin/css/admin.css') }}"/>
   <link rel="stylesheet" href="{{ public_asset('/promethee-assets/global-shell.css') }}"/>
+  <link rel="stylesheet" href="{{ public_asset('/promethee-assets/promethee-design-system.css') }}"/>
   <link rel="stylesheet" href="{{ public_asset('/promethee-assets/admin-promethee.css') }}"/>
 
   <style type="text/css">
