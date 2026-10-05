@@ -12,19 +12,47 @@
         <p>Le barème PIREP ci-dessous est la configuration réellement utilisée pour le score Hermès. Les règles SOP restent un moteur de supervision séparé, sans retrait de points.</p>
     </div>
 </div>
-<nav class="admin-workspace-nav" aria-label="Navigation locale">
-  <a href="#sop-scoring">Barème Hermès</a>
-  <a href="#sop-create">Créer une règle</a>
-  <a href="#sop-rules">Règles SOP</a>
-  <a href="#sop-alerts">Alertes Dispatch</a>
-</nav>
-
 
 @if(session('success')) <div class="notice success">{{ session('success') }}</div> @endif
 @if($errors->any()) <div class="notice warning">{{ $errors->first() }}</div> @endif
 
 
-<section class="panel admin-workspace-section" id="sop-scoring">
+
+<div class="admin-master-detail"
+     id="sop-workspace"
+     data-admin-master-detail
+     data-workspace-key="sop"
+     data-master-default="sop-score-panel">
+  <aside class="admin-master-pane" aria-label="SOP et scoring">
+    <div class="admin-master-toolbar">
+      <label>Rechercher
+        <input type="search" data-master-filter placeholder="Scoring, règle, alerte…">
+      </label>
+    </div>
+    <div class="admin-master-list" role="tablist" aria-orientation="vertical">
+      <button type="button" class="admin-master-row" data-master-target="sop-score-panel" data-master-search="barème hermès scoring pirep vmsacars points pénalités">
+        <span class="admin-master-row-main"><strong>Barème Hermès</strong><small>{{ count($scoringRules) }} règle(s) de score</small></span>
+        <span class="tag">SCORE</span>
+      </button>
+      <button type="button" class="admin-master-row" data-master-target="sop-create-panel" data-master-search="créer règle sop supervision">
+        <span class="admin-master-row-main"><strong>Créer une règle SOP</strong><small>Supervision sans impact score</small></span>
+        <span class="tag">+</span>
+      </button>
+      <button type="button" class="admin-master-row" data-master-target="sop-rules-panel" data-master-search="règles sop alertes politique compagnie">
+        <span class="admin-master-row-main"><strong>Règles SOP</strong><small>{{ count($rules) }} règle(s) configurée(s)</small></span>
+        <span class="tag">POLITIQUE</span>
+      </button>
+      <button type="button" class="admin-master-row" data-master-target="sop-alerts-panel" data-master-search="alertes dispatch évaluations ack">
+        <span class="admin-master-row-main"><strong>Alertes Dispatch</strong><small>{{ count($alerts) }} évaluation(s) récente(s)</small></span>
+        @if(count($alerts))<span class="tag">{{ count($alerts) }}</span>@endif
+      </button>
+      <div class="admin-master-empty" data-master-empty hidden>Aucune section ne correspond.</div>
+    </div>
+  </aside>
+
+  <div class="admin-detail-pane">
+    <button type="button" class="button outline admin-master-back" data-master-back>← Retour à la liste</button>
+    <div class="admin-detail-panel" data-detail-panel="sop-score-panel"><section class="panel admin-workspace-section" id="sop-scoring">
     <div class="panel-heading">
         <div>
             <span class="eyebrow">BARÈME HERMÈS · SOURCE AUTORITATIVE</span>
@@ -109,9 +137,8 @@
         </table>
     </div>
     @endif
-</section>
-
-<section class="panel admin-workspace-section" id="sop-create">
+</section></div>
+    <div class="admin-detail-panel" data-detail-panel="sop-create-panel" hidden><section class="panel admin-workspace-section" id="sop-create">
     <div class="panel-heading"><div><span class="eyebrow">SUPERVISION SOP · SANS IMPACT SCORE</span><h2>Créer une règle SOP</h2></div></div>
     <form method="post" action="{{ route('admin.promethee.sop.rules.save') }}" class="form-grid">
         @csrf
@@ -132,9 +159,8 @@
         <div class="wide"><button class="button" type="submit">Créer la règle</button></div>
     </form>
     <p class="muted">Variables disponibles : <code>{value}</code>, <code>{unit}</code>, <code>{code}</code>, <code>{phase}</code>, <code>{message}</code>.</p>
-</section>
-
-<section class="panel admin-workspace-section" id="sop-rules">
+</section></div>
+    <div class="admin-detail-panel" data-detail-panel="sop-rules-panel" hidden><section class="panel admin-workspace-section" id="sop-rules">
     <div class="panel-heading"><div><span class="eyebrow">POLITIQUE COMPAGNIE · SUPERVISION</span><h2>Règles SOP / alertes</h2></div><span>{{ count($rules) }} règle(s)</span></div>
     <p class="muted">Ces règles évaluent les faits remontés par Hermès pour la revue pilote et le Dispatch. Elles ne modifient pas le score PIREP.</p>
     <div class="route-list">
@@ -165,9 +191,8 @@
         </details>
         @endforeach
     </div>
-</section>
-
-<section class="panel admin-workspace-section" id="sop-alerts">
+</section></div>
+    <div class="admin-detail-panel" data-detail-panel="sop-alerts-panel" hidden><section class="panel admin-workspace-section" id="sop-alerts">
     <div class="panel-heading"><div><span class="eyebrow">DISPATCH ALERTS</span><h2>Évaluations récentes</h2></div><span>{{ count($alerts) }}</span></div>
     @if(!$alerts)
         <p class="muted">Aucune alerte SOP reçue.</p>
@@ -199,6 +224,12 @@
         </tbody>
     </table></div>
     @endif
-</section>
+</section></div>
+  </div>
+</div>
 </div>
 @endsection
+
+@push('scripts')
+<script src="{{ asset('promethee-assets/promethee-admin-workspaces.js') }}?v={{ filemtime(public_path('promethee-assets/promethee-admin-workspaces.js')) }}"></script>
+@endpush
