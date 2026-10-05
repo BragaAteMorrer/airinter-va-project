@@ -20,6 +20,9 @@ return new class() extends Migration
             if (!Schema::hasColumn('promethee_airframe_maintenance', 'safety_hold_pirep_id')) {
                 $table->string('safety_hold_pirep_id', 36)->nullable()->after('safety_hold_at');
             }
+            if (!Schema::hasColumn('promethee_airframe_maintenance', 'safety_hold_previous_status')) {
+                $table->string('safety_hold_previous_status', 1)->nullable()->after('safety_hold_pirep_id');
+            }
         });
     }
 
@@ -31,6 +34,7 @@ return new class() extends Migration
             Schema::hasColumn('promethee_airframe_maintenance', 'safety_hold_reason') ? 'safety_hold_reason' : null,
             Schema::hasColumn('promethee_airframe_maintenance', 'safety_hold_at') ? 'safety_hold_at' : null,
             Schema::hasColumn('promethee_airframe_maintenance', 'safety_hold_pirep_id') ? 'safety_hold_pirep_id' : null,
+            Schema::hasColumn('promethee_airframe_maintenance', 'safety_hold_previous_status') ? 'safety_hold_previous_status' : null,
         ]));
 
         if ($columns) {
