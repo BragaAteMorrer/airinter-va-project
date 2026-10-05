@@ -553,7 +553,8 @@ public function briefing(string $id, Request $r, DemandProfileService $demand) {
         // An empty flight/subfleet pivot means "no line restriction" in phpVMS,
         // not "zero compatible fleets". Keep the briefing consistent with the
         // operation dispatch used by Hermes.
-        $allowedSubfleetIds = app(UserService::class)->getAllowableSubfleets($r->user())->pluck('id');
+        $allowedSubfleetIds = app(UserService::class)->getAllowableSubfleets($r->user())->pluck('id')
+            ->merge(app(\Modules\Promethee\Services\ShopEntitlementService::class)->subfleetIds($r->user()))->unique()->values();
         $flightSubfleetIds = $flight->subfleets->pluck('id');
         $compatibleSubfleetIds = $flightSubfleetIds->isEmpty()
             ? $allowedSubfleetIds
