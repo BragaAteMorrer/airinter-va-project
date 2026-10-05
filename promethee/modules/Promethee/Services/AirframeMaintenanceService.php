@@ -195,6 +195,7 @@ class AirframeMaintenanceService
                 'safety_hold_reason' => $reason,
                 'safety_hold_at' => $occurredAt,
                 'safety_hold_pirep_id' => (string) $pirep->id,
+                'safety_hold_previous_status' => (string) $aircraft->status,
                 'updated_at' => now(),
             ]);
 
@@ -242,10 +243,12 @@ class AirframeMaintenanceService
             if (!$state || !$aircraft || !$state->safety_hold_at) return false;
 
             $previousReason = (string) ($state->safety_hold_reason ?? '');
+            $previousStatus = (string) ($state->safety_hold_previous_status ?? AircraftStatus::ACTIVE);
             DB::table('promethee_airframe_maintenance')->where('id', $state->id)->update([
                 'safety_hold_reason' => null,
                 'safety_hold_at' => null,
                 'safety_hold_pirep_id' => null,
+                'safety_hold_previous_status' => null,
                 'updated_at' => now(),
             ]);
 
@@ -266,7 +269,7 @@ class AirframeMaintenanceService
             }
 
             if (!$state->active_check && $aircraft->status === AircraftStatus::MAINTENANCE) {
-                $aircraft->update(['status' => AircraftStatus::ACTIVE]);
+                $aircraft->update(['status' => $previousStatus ?: AircraftStatus::ACTIVE]);
             }
 
             return true;
@@ -341,7 +344,7 @@ class AirframeMaintenanceService
         $threshold = max(0, min(100, 100 - $biasPercent));
 
         return $this->fleetStatus()
-            ->filter(fn ($row) => !$row->active_check && !$row->safety_hold_at)
+            ->filter(fn ($row) => !$row->active_check && !($row->safety_hold_at ?? null))
             ->mapWithKeys(function ($row) use ($threshold) {
                 foreach (['c', 'b', 'a'] as $check) {
                     $status = $row->checks[$check];
@@ -504,7 +507,7 @@ class AirframeMaintenanceService
                 'updated_at' => now(),
             ]);
 
-            if (!$state->safety_hold_at && $aircraft->status === AircraftStatus::MAINTENANCE) {
+            if (!($state->safety_hold_at ?? null) && $aircraft->status === AircraftStatus::MAINTENANCE) {
                 $aircraft->update(['status' => AircraftStatus::ACTIVE]);
             }
 
@@ -576,7 +579,7 @@ class AirframeMaintenanceService
         }
 
         $row->next_check = $mostUrgent;
-        $row->maintenance_state = ($row->active_check || $row->safety_hold_at)
+        $row->maintenance_state = ($row->active_check || ($row->safety_hold_at ?? null))
             ? 'maintenance'
             : ($mostUrgent && $row->checks[$mostUrgent]['due'] ? 'due' : ($mostUrgent ? 'warning' : 'serviceable'));
 
