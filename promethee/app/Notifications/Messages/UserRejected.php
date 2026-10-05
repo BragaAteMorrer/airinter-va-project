@@ -7,9 +7,12 @@ use App\Models\User;
 use App\Notifications\Channels\MailChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Modules\Promethee\Services\CrmMailTemplateService;
 
 class UserRejected extends Notification implements ShouldQueue
 {
+    private bool $mailEnabled = true;
+
     use MailChannel;
     use Queueable;
 
@@ -18,16 +21,20 @@ class UserRejected extends Notification implements ShouldQueue
     ) {
         parent::__construct();
 
-        $this->setMailable(
-            'Air Inter · Mise à jour de votre candidature',
-            'notifications.mail.user.rejected',
-            ['user' => $this->user]
-        );
+        $template = app(CrmMailTemplateService::class)->resolve('pilot.rejected', $this->user);
+        $this->mailEnabled = $template['active'];
+        if ($this->mailEnabled) {
+            $this->setMailable(
+                $template['subject'],
+                'notifications.mail.user.crm-template',
+                ['bodyHtml' => $template['body_html']]
+            );
+        }
     }
 
     public function via($notifiable)
     {
-        return ['mail'];
+        return $this->mailEnabled ? ['mail'] : [];
     }
 
     /**

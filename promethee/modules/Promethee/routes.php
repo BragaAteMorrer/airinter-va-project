@@ -219,6 +219,8 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::get('/crm', [CrmController::class,'index'])->name('crm');
         Route::post('/crm/send', [CrmController::class,'send'])->name('crm.send');
         Route::post('/crm/senders', [CrmController::class,'saveSender'])->name('crm.senders.save');
+        Route::post('/crm/templates/{key}', [CrmController::class,'saveMailTemplate'])
+            ->where('key', '[A-Za-z0-9._-]+')->name('crm.templates.save');
         Route::delete('/crm/senders/{id}', [CrmController::class,'deleteSender'])->name('crm.senders.delete');
         Route::get('/crm/campaigns/{id}', [CrmController::class,'campaign'])->name('crm.campaigns.show');
         // Lot 5 transport surface for the future Dispatcher Desk.
