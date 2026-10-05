@@ -251,6 +251,8 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::post('/assignments', [PortalController::class,'saveAssignment'])->name('assignments.save');
         Route::delete('/assignments/{id}', [PortalController::class,'deleteAssignment'])->name('assignments.delete');
         Route::delete('/assignments', [PortalController::class,'deleteAssignments'])->name('assignments.bulk-delete');
+        Route::get('/ranks', [PortalController::class,'adminRanks'])->name('ranks');
+        Route::get('/users', [PortalController::class,'adminUsers'])->name('users');
         Route::get('/airlines', [PortalController::class,'adminAirlines'])->name('airlines');
         Route::post('/airlines', [PortalController::class,'saveAdminAirline'])->name('airlines.save');
         Route::get('/regional-operations', [RegionalOperationsAdminController::class,'regionalOperations'])->name('regional');
