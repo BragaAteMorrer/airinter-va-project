@@ -289,7 +289,7 @@
         <td>{{ $profile->engine_type }}</td>
         <td>{{ $profile->engine_count }}</td>
         <td>{{ $profile->tbo_hours !== null ? number_format($profile->tbo_hours,1,',',' ') . ' h' : '—' }} / {{ $profile->tbo_cycles !== null ? number_format($profile->tbo_cycles) . ' cycles' : '—' }}</td>
-        <td>{{ $profile->itva_overhaul_cost !== null ? number_format($profile->itva_overhaul_cost,2,',',' ') . ' €' : '—' }}</td>
+        <td>{{ ($profile->itva_overhaul_cost ?? null) !== null ? number_format($profile->itva_overhaul_cost,2,',',' ') . ' €' : '—' }}</td>
         <td>{{ number_format($profile->warning_hours,1,',',' ') }} h / {{ $profile->warning_cycles !== null ? number_format($profile->warning_cycles) . ' cycles' : '—' }}</td>
         <td><span class="tag">{{ $profile->active ? 'ACTIF' : 'INACTIF' }}</span></td>
       </tr>
