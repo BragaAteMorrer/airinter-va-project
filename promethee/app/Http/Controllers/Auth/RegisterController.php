@@ -49,8 +49,12 @@ class RegisterController extends Controller
         $this->redirectTo = config('phpvms.registration_redirect');
     }
 
-    public function showRegistrationForm(Request $request): View
+    public function showRegistrationForm(Request $request): RedirectResponse|View
     {
+        if (config('services.airinter_id.enabled')) {
+            return redirect()->away(rtrim((string) config('services.airinter_id.base_url'), '/').'/register');
+        }
+
         if (setting('general.disable_registrations', false)) {
             abort(403, 'Registrations are disabled');
         }
@@ -225,6 +229,10 @@ class RegisterController extends Controller
      */
     public function register(Request $request): RedirectResponse|View
     {
+        if (config('services.airinter_id.enabled')) {
+            return redirect()->away(rtrim((string) config('services.airinter_id.base_url'), '/').'/register', 303);
+        }
+
         $request->merge([
             'timezone' => $this->normalizeTimezone($request->input('timezone')),
         ]);
