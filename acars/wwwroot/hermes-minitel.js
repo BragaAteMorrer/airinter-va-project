@@ -176,20 +176,22 @@
     const value = terminalSession.input.value.length;
     if (page === 'login-user') return renderer.showCursor(10, Math.min(39, 4 + value), true);
     if (page === 'login-password') return renderer.showCursor(10, Math.min(39, 4 + value), true);
-    if (page === 'home') return renderer.showCursor(18, Math.min(39, 16 + value), true);
-    if (page === 'search') return renderer.showCursor(9, Math.min(39, 4 + value), true);
-    if (['operations', 'search-results', 'aircraft'].includes(page)) return renderer.showCursor(20, Math.min(39, 9 + value), true);
-    if (['preparation', 'simbrief', 'simbrief-account', 'simbrief-api', 'simbrief-local', 'parameters'].includes(page)) return renderer.showCursor(20, Math.min(39, 10 + value), true);
+    if (page === 'home') return renderer.showCursor(21, Math.min(39, 21 + value), true);
+    if (page === 'search') return renderer.showCursor(10, Math.min(39, 6 + value), true);
+    if (['operations', 'search-results'].includes(page)) return renderer.showCursor(21, Math.min(39, 21 + value), true);
+    if (page === 'aircraft') return renderer.showCursor(21, Math.min(39, 21 + value), true);
+    if (page === 'preparation') return renderer.showCursor(21, Math.min(39, 21 + value), true);
+    if (['simbrief', 'simbrief-account', 'simbrief-api', 'simbrief-local', 'parameters'].includes(page)) return renderer.showCursor(20, Math.min(39, 10 + value), true);
     if (page === 'simbrief-pilot') return renderer.showCursor(10, Math.min(39, 4 + value), true);
-    if (page === 'flight-live') return renderer.showCursor(20, Math.min(39, 9 + value), true);
-    if (page === 'datalink') return renderer.showCursor(20, Math.min(39, 9 + value), true);
+    if (page === 'flight-live') return renderer.showCursor(21, Math.min(39, 21 + value), true);
+    if (page === 'datalink') return renderer.showCursor(21, Math.min(39, 21 + value), true);
     if (page === 'datalink-message') return renderer.showCursor(20, Math.min(39, 9 + value), true);
     if (page === 'datalink-compose') {
       const row = 12 + Math.min(3, Math.floor(value / 36));
       const column = 2 + (value % 36);
       return renderer.showCursor(row, Math.min(39, column), true);
     }
-    if (page === 'journal') return renderer.showCursor(20, Math.min(39, 9 + value), true);
+    if (page === 'journal') return renderer.showCursor(21, Math.min(39, 21 + value), true);
     if (page === 'network') return renderer.showCursor(20, Math.min(39, 9 + value), true);
     if (page === 'review') return renderer.showCursor(20, Math.min(39, 9 + value), true);
     if (page === 'review-list') return renderer.showCursor(20, Math.min(39, 9 + value), true);
@@ -428,16 +430,16 @@
     terminalSession.register(new mt.MinitelPage('aircraft', {
       onRender: (_ctx, screen, current) => {
         serviceLine(screen);
-        screen.write(2, 1, 'APPAREILS ELIGIBLES', { foreground: 'yellow' });
+        titleBand(screen, 'APPAREILS', 'ELIGIBLES POUR LE VOL');
         if (hm.error) return showError(screen);
-        screen.write(4, 1, 'N IMMATR.    TYPE    BASE', { foreground: 'cyan' });
+        screen.write(6, 1, 'N IMMATR.    TYPE    BASE', { foreground: 'cyan' });
         hm.aircraft.slice(0, 7).forEach((plane, index) => {
-          const row = 6 + index * 2;
+          const row = 7 + index * 2;
           screen.write(row, 1, String(index + 1) + ' ' + fit(plane.registration, 10) + ' ' + fit(plane.icao || plane.type_key, 7) + ' ' + fit(plane.airport || '---', 5));
           screen.write(row + 1, 3, fit((plane.type_label || plane.subfleet || '') + ' PAX ' + (plane.passengers ?? '-'), 35), { foreground: 'cyan' });
         });
         if (!hm.aircraft.length) screen.write(8, 4, 'AUCUN APPAREIL DISPONIBLE');
-        screen.write(20, 1, 'CHOIX : ' + current.input.value + ' + ENVOI', { foreground: 'yellow' });
+        promptLine(screen, 21, current.input.value, 'APPAREIL');
         footer(screen);
       },
       acceptInput: key => /^[1-7]$/.test(key),
@@ -461,7 +463,7 @@
         menuLine(screen, 11, 3, 'PLAN LOCAL PLN / XML');
         statusLine(screen, 15, 'OFP', hm.operation?.simbrief?.available ? 'DISPONIBLE' : 'ABSENT', hm.operation?.simbrief?.available ? 'green' : 'yellow');
         statusLine(screen, 16, 'API COMPAGNIE', hm.operation?.simbrief?.company_api_available ? 'DISPONIBLE' : 'NON CONFIGUREE', hm.operation?.simbrief?.company_api_available ? 'green' : 'yellow');
-        screen.write(20, 2, 'CHOIX : ' + current.input.value, { foreground: 'yellow' });
+        promptLine(screen, 21, current.input.value);
         footer(screen);
       },
       acceptInput: key => /^[1-3]$/.test(key),
@@ -483,7 +485,7 @@
         screen.write(13, 2, 'ETAPES :', { foreground: 'yellow' });
         screen.write(14, 4, 'ENVOI > GENERATION > RECUPERATION');
         statusLine(screen, 17, 'OFP', hm.operation?.simbrief?.available ? 'DISPONIBLE' : 'A GENERER', hm.operation?.simbrief?.available ? 'green' : 'yellow');
-        screen.write(20, 2, 'CHOIX : ' + current.input.value, { foreground: 'yellow' });
+        promptLine(screen, 21, current.input.value);
         footer(screen);
       },
       acceptInput: key => /^[1-3]$/.test(key),
@@ -659,12 +661,12 @@
         serviceLine(screen);
         const dl = core.datalinkSnapshot(hm.datalink || {});
         titleBand(screen, 'MESSAGERIE', 'AIR INTER DATALINK');
-        screen.write(3, 1, 'ETAT ' + fit(dl.syncState, 9) + ' NON LUS ' + fit(dl.unreadCount, 3) + ' ACK ' + fit(dl.pendingRequiredAcks, 3), { foreground: dl.error ? 'yellow' : 'cyan' });
+        screen.write(6, 1, 'ETAT ' + fit(dl.syncState, 9) + ' NON LUS ' + fit(dl.unreadCount, 3) + ' ACK ' + fit(dl.pendingRequiredAcks, 3), { foreground: dl.error ? 'yellow' : 'cyan' });
         const pages = Math.max(1, Math.ceil(dl.messages.length / 5));
         hm.datalinkPage = Math.max(1, Math.min(pages, hm.datalinkPage));
         const items = dl.messages.slice((hm.datalinkPage - 1) * 5, hm.datalinkPage * 5);
         items.forEach((message, index) => {
-          const row = 5 + index * 3;
+          const row = 7 + index * 3;
           const incoming = message.direction === 'OPS_TO_COCKPIT';
           screen.write(row, 1, String(index + 1) + ' ' + fit(incoming ? '< ' + (message.sender || 'OPS') : '> COCKPIT', 15) + ' ' + fit(message.priority, 9) + ' ' + core.timeLabel(message.createdAt), { foreground: incoming ? 'yellow' : 'cyan' });
           screen.write(row + 1, 3, fit(message.body, 36));
@@ -796,15 +798,15 @@
     terminalSession.register(new mt.MinitelPage('network', {
       onRender: (_ctx, screen, current) => {
         serviceLine(screen);
-        screen.write(2, 1, 'AIR INTER NETWORK', { foreground: 'yellow' });
+        titleBand(screen, 'RESEAU EQUIPAGES', 'AIR INTER NETWORK');
         const data = unwrapHm(hm.network) || {};
         const crews = Array.isArray(data.crews) ? data.crews : [];
         const pages = Math.max(1, Math.ceil(crews.length / 6));
         hm.networkPage = Math.max(1, Math.min(pages, hm.networkPage));
         const items = crews.slice((hm.networkPage - 1) * 6, hm.networkPage * 6);
-        screen.write(4, 1, 'EQUIPAGES EN LIGNE : ' + (data.online_count ?? data.onlineCount ?? crews.length), { foreground: 'cyan' });
+        screen.write(6, 1, 'EQUIPAGES EN LIGNE : ' + (data.online_count ?? data.onlineCount ?? crews.length), { foreground: 'cyan' });
         items.forEach((crew, index) => {
-          const row = 6 + index * 2;
+          const row = 7 + index * 2;
           const pilot = crew.pilot || {};
           const flight = crew.flight || {};
           const aircraft = crew.aircraft || {};
@@ -812,7 +814,8 @@
           screen.write(row + 1, 3, fit((flight.departure || '---') + '>' + (flight.arrival || '---') + ' ' + (aircraft.registration || '') + ' ' + String(crew.simulator || '').toUpperCase(), 35), { foreground: 'cyan' });
         });
         if (!crews.length) screen.write(8, 5, 'AUCUN EQUIPAGE EN LIGNE');
-        screen.write(20, 2, 'PAGE ' + hm.networkPage + '/' + pages + '  1 RAFRAICHIR');
+        pageLine(screen, 20, hm.networkPage, pages);
+        screen.write(20, 23, '1 RAFRAICHIR', { foreground: 'cyan' });
         footer(screen, pages > 1);
       },
       acceptInput: key => key === '1',
@@ -831,7 +834,7 @@
     terminalSession.register(new mt.MinitelPage('review', {
       onRender: (_ctx, screen, current) => {
         serviceLine(screen);
-        screen.write(2, 1, 'FLIGHT REVIEW', { foreground: 'yellow' });
+        titleBand(screen, 'COMPTE RENDU VOL', 'FLIGHT REVIEW');
         const review = core.reviewSummary(hm.review || hm.filedReview || hm.status?.review || hm.status?.Review || {});
         screen.write(4, 2, 'PHASE......... ' + fit(review.phase, 18), { foreground: review.readyToFile ? 'green' : 'yellow' });
         screen.write(5, 2, 'DISTANCE...... ' + fit(review.distance.toFixed(1) + ' NM', 18));
@@ -870,7 +873,7 @@
         const review = core.reviewSummary(hm.review || hm.filedReview || hm.status?.review || {});
         const entries = hm.reviewListMode === 'issues' ? review.issues : review.observations;
         const title = hm.reviewListMode === 'issues' ? 'ANOMALIES / REGLES' : 'OBSERVATIONS FDM';
-        screen.write(2, 1, title, { foreground: 'yellow' });
+        titleBand(screen, title, 'CONTROLE FDM');
         const pages = Math.max(1, Math.ceil(entries.length / 5));
         hm.reviewListPage = Math.max(1, Math.min(pages, hm.reviewListPage));
         const items = entries.slice((hm.reviewListPage - 1) * 5, hm.reviewListPage * 5);
@@ -887,7 +890,8 @@
           if (value != null) screen.write(row + 2, 5, fit(String(value) + (unit ? ' ' + unit : ''), 30));
         });
         if (!entries.length) screen.write(8, 5, 'AUCUNE DONNEE A SIGNALER');
-        screen.write(20, 2, 'PAGE ' + hm.reviewListPage + '/' + pages + '  RETOUR REVIEW');
+        pageLine(screen, 20, hm.reviewListPage, pages);
+        screen.write(20, 20, 'RETOUR : COMPTE RENDU', { foreground: 'cyan' });
         footer(screen, pages > 1);
       },
       next: () => {
@@ -905,14 +909,14 @@
       onRender: (_ctx, screen, current) => {
         serviceLine(screen);
         const info = hm.status?.recovery || {};
-        videotexHeader(screen, 'HERMES', 'VOL INTERROMPU');
-        noticeBand(screen, 6, 'VOL INTERROMPU DETECTE', 'red', 'white');
+        titleBand(screen, 'VOL INTERROMPU', 'CENTRE DE REPRISE');
+        screen.write(6, 7, 'VOL INTERROMPU DETECTE', { foreground: 'red', blink: true });
         statusLine(screen, 8, 'PIREP', info.pirepId || info.PirepId || '---', 'yellow');
         statusLine(screen, 9, 'PHASE', info.phase || info.Phase || 'INTERROMPU');
         statusLine(screen, 10, 'DISTANCE', Number(info.distance || info.Distance || 0).toFixed(1) + ' NM');
         statusLine(screen, 11, 'TEMPS', (info.airborneMinutes || info.AirborneMinutes || 0) + ' MIN');
         statusLine(screen, 12, 'EN ATTENTE', String(info.pendingMessages || info.PendingMessages || hm.status?.pending || 0));
-        sectionBand(screen, 14, 'ACTION DE RECUPERATION', 'magenta', 'white');
+        screen.write(14, 2, 'ACTION DE RECUPERATION', { foreground: 'yellow' });
         menuLine(screen, 15, 1, 'REPRENDRE LE VOL', true);
         menuLine(screen, 16, 2, 'CONSULTER FLIGHT REVIEW');
         menuLine(screen, 17, 3, 'ABANDONNER ET ARCHIVER');
