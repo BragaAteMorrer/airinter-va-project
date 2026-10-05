@@ -2,6 +2,7 @@
 @section('title','Flotte technique')
 
 @push('styles')
+<link rel="stylesheet" href="{{ asset('promethee-assets/promethee-admin-workspaces.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-admin-workspaces.css')) }}">
 <style>
 .airframe-console{display:grid;gap:1.25rem}
 .airframe-console .ops-header{margin-bottom:0}
@@ -71,14 +72,53 @@
     <div class="airframe-stat"><strong>{{ count($configurations) }}</strong><span>Configurations</span></div>
   </div>
 
-  <div class="airframe-tabs" role="tablist" aria-label="Gestion des airframes">
-    <button class="airframe-tab" type="button" role="tab" aria-selected="true" data-airframe-tab="fleet">Flotte</button>
-    <button class="airframe-tab" type="button" role="tab" aria-selected="false" data-airframe-tab="catalog">Catalogue avion</button>
-    <button class="airframe-tab" type="button" role="tab" aria-selected="false" data-airframe-tab="simulator">Simulateur</button>
-    <button class="airframe-tab" type="button" role="tab" aria-selected="false" data-airframe-tab="history">Historique</button>
-  </div>
+  <div class="admin-master-detail"
+       id="airframes-workspace"
+       data-admin-master-detail
+       data-workspace-key="airframes"
+       data-master-default="fleet">
+    <aside class="admin-master-pane" aria-label="Gestion des airframes">
+      <div class="admin-master-toolbar">
+        <label>Rechercher une section
+          <input type="search" data-master-filter placeholder="Flotte, SimBrief, historique…">
+        </label>
+      </div>
+      <div class="admin-master-list" role="tablist" aria-orientation="vertical">
+        <button type="button" class="admin-master-row" data-master-target="fleet" data-master-search="flotte immatriculations affectation variante configuration">
+          <span class="admin-master-row-main">
+            <strong>Flotte</strong>
+            <small>{{ count($aircraft) }} immatriculation(s) · {{ $configuredAircraft }} configurée(s)</small>
+          </span>
+          <span class="tag">OPÉRATIONNEL</span>
+        </button>
+        <button type="button" class="admin-master-row" data-master-target="catalog" data-master-search="catalogue avion types variantes configurations simbrief">
+          <span class="admin-master-row-main">
+            <strong>Catalogue avion</strong>
+            <small>{{ count($variants) }} variante(s) · {{ count($configurations) }} configuration(s)</small>
+          </span>
+          <span class="tag">RÉFÉRENTIEL</span>
+        </button>
+        <button type="button" class="admin-master-row" data-master-target="simulator" data-master-search="simulateur addons hermes profils télémétrie">
+          <span class="admin-master-row-main">
+            <strong>Simulateur</strong>
+            <small>Reconnaissance des addons Hermès</small>
+          </span>
+          <span class="tag">HERMÈS</span>
+        </button>
+        <button type="button" class="admin-master-row" data-master-target="history" data-master-search="historique modifications cabine moteur équipement">
+          <span class="admin-master-row-main">
+            <strong>Historique</strong>
+            <small>Évolutions documentées de la flotte</small>
+          </span>
+        </button>
+        <div class="admin-master-empty" data-master-empty hidden>Aucune section ne correspond.</div>
+      </div>
+    </aside>
 
-  <section class="airframe-panel" role="tabpanel" data-airframe-panel="fleet">
+    <div class="admin-detail-pane">
+      <button type="button" class="button outline admin-master-back" data-master-back>← Retour à la liste</button>
+
+  <section class="airframe-panel admin-detail-panel" role="tabpanel" data-airframe-panel="fleet" data-detail-panel="fleet">
     <section class="panel">
       <div class="panel-heading">
         <div>
@@ -197,7 +237,7 @@
     </section>
   </section>
 
-  <section class="airframe-panel" role="tabpanel" data-airframe-panel="catalog" hidden>
+  <section class="airframe-panel admin-detail-panel" role="tabpanel" data-airframe-panel="catalog" data-detail-panel="catalog" hidden>
     <section class="panel">
       <div class="panel-heading">
         <div>
@@ -338,7 +378,7 @@
     </section>
   </section>
 
-  <section class="airframe-panel" role="tabpanel" data-airframe-panel="simulator" hidden>
+  <section class="airframe-panel admin-detail-panel" role="tabpanel" data-airframe-panel="simulator" data-detail-panel="simulator" hidden>
     <section class="panel">
       <div class="panel-heading">
         <div>
@@ -390,7 +430,7 @@
     </section>
   </section>
 
-  <section class="airframe-panel" role="tabpanel" data-airframe-panel="history" hidden>
+  <section class="airframe-panel admin-detail-panel" role="tabpanel" data-airframe-panel="history" data-detail-panel="history" hidden>
     <section class="panel">
       <div class="panel-heading">
         <div>
@@ -434,6 +474,8 @@
       </form>
     </section>
   </section>
+    </div>
+  </div>
 </div>
 @endsection
 
@@ -496,4 +538,5 @@
   if (window.location.hash === '#catalog') activateTab('catalog');
 })();
 </script>
+<script src="{{ asset('promethee-assets/promethee-admin-workspaces.js') }}?v={{ filemtime(public_path('promethee-assets/promethee-admin-workspaces.js')) }}"></script>
 @endpush
