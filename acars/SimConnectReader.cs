@@ -32,8 +32,10 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
     private const uint SimStartEventId = 1003;
     private const int RecvIdEvent = 4;
     private const int RecvIdSimObjectData = 8;
-    // MSFS 2024 SDK SIMCONNECT_RECV_ID enum: COMM_BUS is entry 43.
-    private const int RecvIdCommBus = 43;
+    // MSFS 2024 SDK SIMCONNECT_RECV_ID enum: COMM_BUS is entry 44.
+    // Keep this value aligned with the native SDK enum: using CAMERA_DEFINITION_LIST (43)
+    // silently drops EFB CommBus requests before they reach HermesEfbBridge.
+    private const int RecvIdCommBus = 44;
     private const uint EfbRequestEventId = 2001;
     private const uint CommBusBroadcastJs = 1 << 0;
 
