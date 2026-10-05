@@ -274,6 +274,7 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::get('/shop', [ShopController::class,'admin'])->name('shop');
         Route::post('/shop/items', [ShopController::class,'store'])->name('shop.items.save');
         Route::post('/shop/wallets', [PortalController::class,'creditWallet'])->name('shop.wallets.credit');
+        Route::put('/shop/maintenance-priorities/{id}', [ShopController::class,'priority'])->name('shop.maintenance-priorities.update');
         Route::get('/jumpseats', [PortalController::class,'adminJumpseats'])->name('jumpseats');
         Route::post('/jumpseats/settings', [PortalController::class,'saveJumpseatSettings'])->name('jumpseats.settings');
         Route::get('/downloads', [DownloadsController::class,'adminDownloads'])->name('downloads');
