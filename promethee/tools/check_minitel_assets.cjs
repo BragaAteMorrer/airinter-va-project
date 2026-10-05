@@ -210,3 +210,23 @@ for (const page of ['flight-live', 'datalink', 'journal', 'network', 'review', '
 
 if (failures) process.exitCode = 1;
 else console.log('\nMinitel M0-M6 shared/public, operational and fidelity contracts are synchronized.');
+
+
+const legacyMinitelCss = [
+  path.join(root, 'public', 'promethee-assets', 'promethee.css'),
+  path.join(root, 'public', 'promethee-assets', 'promethee-v2.css'),
+  path.join(root, 'public', 'promethee-assets', 'airinter-eras.css'),
+  path.join(root, 'public', 'promethee-assets', 'promethee-era-components.css')
+];
+for (const cssPath of legacyMinitelCss) {
+  const css = fs.readFileSync(cssPath, 'utf8');
+  if (/data-era\s*=\s*["']minitel["']/.test(css)) {
+    failures += 1;
+    console.error('Legacy Prométhée Minitel skin is still active in:', path.relative(root, cssPath));
+  }
+}
+if (!client.includes("host.dataset.minitelGeneration = 'm10'")) {
+  failures += 1;
+  console.error('Prométhée real Minitel overlay is missing M10 generation marker.');
+}
+if (failures) process.exitCode = 1;

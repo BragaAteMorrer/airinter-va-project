@@ -14,6 +14,9 @@
 
   const bootMinitel = () => {
     clearMinitelBoot();
+    // M2+ is a real 40x25 terminal overlay. The former faux-Minitel page skin
+    // and its <pre> boot animation must never appear in front of it.
+    if (document.documentElement.dataset.minitelRuntime === 'm2') return;
     if (reduceMotion || document.documentElement.dataset.era !== 'minitel') return;
 
     const screen = document.createElement('pre');
@@ -41,6 +44,7 @@
 
   const revealMinitelLines = () => {
     document.body.classList.remove('minitel-enter');
+    if (document.documentElement.dataset.minitelRuntime === 'm2') return;
     if (reduceMotion || document.documentElement.dataset.era !== 'minitel') return;
 
     const lines = document.querySelectorAll([
