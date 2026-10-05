@@ -18,3 +18,39 @@ html[data-era="minitel"] .flight-result-schedule.is-soon small{color:#fff35a}
   .flight-result-schedule strong{font-size:13px}
   .flight-result-schedule small{white-space:normal}
 }
+
+/* Restored programme cards: compact, airline-coded and still responsive. */
+.flight-results-heading{margin:0 0 14px}
+.flight-results-heading .panel-heading{margin:0}
+.flight-results-heading .panel-heading p{margin:5px 0 0}
+.flight-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.line-card{position:relative;display:grid;gap:15px;overflow:hidden;padding-top:20px}
+.line-card::before{content:"";position:absolute;inset:0 0 auto;height:5px;background:linear-gradient(90deg,var(--ops-blue) 0 25%,#174f94 25% 50%,var(--ops-blue) 50% 75%,var(--ops-red) 75% 100%)}
+.line-card.airline-air-charter::before{background:linear-gradient(90deg,var(--ops-red) 0 55%,#fff 55% 67%,var(--ops-blue) 67% 100%)}
+.line-card.airline-ics::before{background:linear-gradient(90deg,#e0ad16 0 58%,var(--ops-blue) 58% 82%,var(--ops-red) 82% 100%)}
+.line-card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.line-card h2{margin:4px 0 0;font-size:24px}
+.line-card h2 a{color:var(--ops-dark);text-decoration:none}
+.line-card h2 a:hover{text-decoration:underline}
+.airport-pair{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;color:var(--ops-dark);font:700 23px/1.1 Consolas,monospace}
+.airport-pair i{height:3px;border:1px solid var(--line);background:linear-gradient(90deg,var(--ops-blue),#fff,var(--ops-red))}
+.flight-card-route-label{margin:-7px 0 0}
+.line-meta{display:grid;grid-template-columns:minmax(0,1.35fr) repeat(2,minmax(0,.82fr));gap:8px;margin:0}
+.line-meta>div{min-width:0;padding:8px;border:1px solid var(--line);border-radius:6px;background:color-mix(in srgb,var(--paper) 94%,var(--ops-blue) 6%)}
+.line-meta dt{font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase}
+.line-meta dd{margin:3px 0 0;font-weight:700}
+.line-meta .flight-result-schedule{min-width:0}
+.fare-chips{display:flex;flex-wrap:wrap;gap:6px}
+.fare-chips span{padding:4px 8px;border:1px solid var(--line);border-radius:999px;background:color-mix(in srgb,var(--paper) 96%,var(--ops-blue) 4%);color:var(--muted);font-size:10px}
+html[data-appearance="dark"]:not([data-era="minitel"]) .line-card h2 a,
+html[data-appearance="dark"]:not([data-era="minitel"]) .airport-pair{color:var(--ink)}
+html[data-era="2000"] .line-card{border-radius:0}
+html[data-era="2000"] .line-card::before{height:6px}
+html[data-era="minitel"] .line-card::before{display:none}
+html[data-era="minitel"] .flight-results-heading{border-color:var(--minitel-green)}
+@media(max-width:760px){
+  .flight-cards{grid-template-columns:1fr}
+  .airport-pair{font-size:19px}
+  .line-meta{grid-template-columns:1fr}
+}
+
