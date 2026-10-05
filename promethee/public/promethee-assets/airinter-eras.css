@@ -416,9 +416,9 @@ html[data-era="2000"] .pilot-space-actions a:hover { color: #d22531; }
 
 /* Prométhée shell navigation v2: mobile and compatibility adapters. */
 html[data-era="2000"] .shell-primary,
-html[data-era="minitel"] .shell-primary { display:contents; }
+html[data-era="minitel-legacy"] .shell-primary { display:contents; }
 html[data-era="2000"] .shell-menu-toggle,
-html[data-era="minitel"] .shell-menu-toggle { display:none; }
+html[data-era="minitel-legacy"] .shell-menu-toggle { display:none; }
 html[data-era="2000"] .workspace-switch {
   position:absolute;
   z-index:7;
