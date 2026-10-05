@@ -163,6 +163,7 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::post('/identite/importer', [PortalController::class, 'importBranding'])->name('branding.import');
         Route::get('/simbrief', [PortalController::class, 'adminSimbrief'])->name('simbrief');
         Route::get('/airframes', [AircraftConfigurationAdminController::class, 'index'])->name('airframes');
+        Route::post('/airframes/import-phpvms', [AircraftConfigurationAdminController::class, 'importPhpVms'])->name('airframes.import-phpvms');
         Route::post('/airframes/types', [AircraftConfigurationAdminController::class, 'storeType'])->name('airframes.types.save');
         Route::post('/airframes/variants', [AircraftConfigurationAdminController::class, 'storeVariant'])->name('airframes.variants.save');
         Route::post('/airframes/variants/{variant}/duplicate', [AircraftConfigurationAdminController::class, 'duplicateVariant'])->name('airframes.variants.duplicate');
