@@ -44,6 +44,11 @@ jobs:
           node --check acars/wwwroot/hermes-review.js
           node --check acars/wwwroot/hermes-weather.js
           node --check acars/wwwroot/hermes-identity.js
+          node --check acars/wwwroot/hermes-operations.js
+          node --check acars/wwwroot/hermes-communications.js
+          node --check acars/wwwroot/hermes-workflow.js
+          node --check acars/wwwroot/hermes-planning.js
+          node --check acars/wwwroot/hermes-recovery.js
           node --check acars/wwwroot/app.js
           node --check acars/msfs2024-efb/HermesEfb/build.js
           node -e "JSON.parse(require('fs').readFileSync('acars/msfs2024-efb/HermesEfb/package.json','utf8')); JSON.parse(require('fs').readFileSync('acars/msfs2024-efb/HermesEfb/tsconfig.json','utf8'));"
@@ -218,6 +223,17 @@ jobs:
         shell: bash
         run: |
           php -l modules/Promethee/Http/PortalController.php
+          php -l modules/Promethee/Http/PrometheeWebController.php
+          php -l modules/Promethee/Http/PirepController.php
+          php -l modules/Promethee/Http/FlightProgrammeController.php
+          php -l modules/Promethee/Http/DownloadsController.php
+          php -l modules/Promethee/Http/MissionsController.php
+          php -l modules/Promethee/Http/CalendarController.php
+          php -l modules/Promethee/Http/EconomyController.php
+          php -l modules/Promethee/Http/CompanyController.php
+          php -l modules/Promethee/Http/MaintenanceAdminController.php
+          php -l modules/Promethee/Http/RegionalOperationsAdminController.php
+          php -l modules/Promethee/Services/DownloadCatalogueService.php
           php -l modules/Promethee/Http/AutomationController.php
           php -l modules/Promethee/Services/EngineMaintenanceService.php
           php -l modules/Promethee/Services/FleetRotationService.php

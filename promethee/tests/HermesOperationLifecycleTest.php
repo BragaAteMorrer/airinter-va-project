@@ -645,10 +645,10 @@ final class HermesOperationLifecycleTest extends TestCase
         $pirep = Pirep::with('acars_logs')->findOrFail($pirepId);
         $this->assertCount(0, $pirep->acars_logs);
 
-        $controller = app(\Modules\Promethee\Http\PortalController::class);
-        $method = new \ReflectionMethod($controller, 'pirepJournal');
-        $method->setAccessible(true);
-        $journal = $method->invoke($controller, $pirep);
+        // Journal reconstruction is a domain service now; keep this test
+        // coupled to the actual owner instead of the old PortalController seam.
+        $journal = app(\Modules\Promethee\Services\PirepJournalService::class)
+            ->build($pirep);
 
         $codes = $journal->pluck('code')->all();
         $this->assertContains('BOARDING', $codes);

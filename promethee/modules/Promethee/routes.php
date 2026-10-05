@@ -2,6 +2,15 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Frontend\LanguageController;
 use Modules\Promethee\Http\PortalController;
+use Modules\Promethee\Http\PirepController;
+use Modules\Promethee\Http\FlightProgrammeController;
+use Modules\Promethee\Http\DownloadsController;
+use Modules\Promethee\Http\MissionsController;
+use Modules\Promethee\Http\CalendarController;
+use Modules\Promethee\Http\EconomyController;
+use Modules\Promethee\Http\CompanyController;
+use Modules\Promethee\Http\MaintenanceAdminController;
+use Modules\Promethee\Http\RegionalOperationsAdminController;
 use Modules\Promethee\Http\MinitelController;
 use Modules\Promethee\Http\MinitelOperationsController;
 use Modules\Promethee\Http\TelemetryController;
@@ -31,26 +40,26 @@ Route::get('/language/{lang}', [LanguageController::class, 'switchLang'])
 Route::get('/occ', [PortalController::class, 'occ'])->middleware('web')->name('promethee.occ');
 // Public flight reports replace the legacy phpVMS report screen. The report
 // remains readable without an account, just as the former public URL was.
-Route::get('/pireps/{id}', [PortalController::class, 'pirep'])->middleware(['web','auth'])->name('promethee.pireps.show');
-Route::delete('/pireps/{id}', [PortalController::class, 'deleteOwnPirep'])->middleware(['web','auth'])->name('promethee.pireps.delete');
-Route::post('/pireps/{id}/repeat', [PortalController::class, 'repeatPirep'])->middleware(['web','auth'])->name('promethee.pireps.repeat');
+Route::get('/pireps/{id}', [PirepController::class, 'pirep'])->middleware(['web','auth'])->name('promethee.pireps.show');
+Route::delete('/pireps/{id}', [PirepController::class, 'deleteOwnPirep'])->middleware(['web','auth'])->name('promethee.pireps.delete');
+Route::post('/pireps/{id}/repeat', [PirepController::class, 'repeatPirep'])->middleware(['web','auth'])->name('promethee.pireps.repeat');
 // Backward-compatible name used by the aircraft history view.
-Route::get('/pirep/{id}', [PortalController::class, 'pirep'])->middleware(['web','auth'])->name('promethee.pirep');
+Route::get('/pirep/{id}', [PirepController::class, 'pirep'])->middleware(['web','auth'])->name('promethee.pirep');
 Route::middleware('web')->prefix('public')->name('promethee.public.')->group(function () {
     Route::get('/pilots', [PortalController::class, 'publicPilots'])->name('pilots');
-    Route::get('/pireps', [PortalController::class, 'publicPireps'])->middleware('auth')->name('pireps');
-    Route::get('/pireps/mine', [PortalController::class, 'myPireps'])->middleware('auth')->name('pireps.mine');
+    Route::get('/pireps', [PirepController::class, 'publicPireps'])->middleware('auth')->name('pireps');
+    Route::get('/pireps/mine', [PirepController::class, 'myPireps'])->middleware('auth')->name('pireps.mine');
     Route::get('/live', [PortalController::class, 'publicLive'])->name('live');
     Route::get('/live-data', [PortalController::class, 'liveData'])->name('live.data');
 });
 // Native Promethee fleet directory. Data comes directly from phpVMS models.
-Route::get('/fleet', [PortalController::class, 'fleet'])->middleware('web')->name('promethee.fleet');
+Route::get('/fleet', [CompanyController::class, 'fleet'])->middleware('web')->name('promethee.fleet');
 // Legacy bookmarks remain redirects only; no Promethee navigation depends on them.
 Route::redirect('/dfleet', '/fleet', 301)->middleware('web');
 
 Route::middleware(['web','auth'])->name('promethee.')->group(function () {
     Route::get('/', [PortalController::class,'dashboard'])->name('dashboard');
-    Route::post('/flights/itineraries/reserve', [PortalController::class, 'reserveItinerary'])
+    Route::post('/flights/itineraries/reserve', [FlightProgrammeController::class, 'reserveItinerary'])
         ->name('flights.itineraries.reserve');
     Route::get('/departure-board-data', [PortalController::class,'departureBoardData'])->name('departure-board.data');
     Route::prefix('minitel')->name('minitel.')->group(function () {
@@ -82,12 +91,12 @@ Route::middleware(['web','auth'])->name('promethee.')->group(function () {
     Route::get('/bookings', [PortalController::class,'bookings'])->name('bookings');
     Route::delete('/bookings/{bid}', [PortalController::class,'cancelBooking'])->name('bookings.cancel');
     Route::delete('/bookings/{bid}/pirep', [PortalController::class,'deleteBookingPirep'])->name('bookings.pirep.delete');
-    Route::get('/downloads', [PortalController::class,'downloads'])->name('downloads');
-    Route::get('/downloads/categories/{category}', [PortalController::class,'downloadCategoryPage'])->where('category','acars|fleet|airports|documents')->name('downloads.category');
-    Route::get('/downloads/{file}', [PortalController::class,'download'])->name('downloads.download');
-    Route::get('/missions', [PortalController::class,'missions'])->name('missions');
-    Route::post('/missions/{id}/reserve', [PortalController::class,'reserveMission'])->name('missions.reserve');
-    Route::delete('/missions/{id}/reservation', [PortalController::class,'cancelMissionReservation'])->name('missions.cancel');
+    Route::get('/downloads', [DownloadsController::class,'downloads'])->name('downloads');
+    Route::get('/downloads/categories/{category}', [DownloadsController::class,'downloadCategoryPage'])->where('category','acars|fleet|airports|documents')->name('downloads.category');
+    Route::get('/downloads/{file}', [DownloadsController::class,'download'])->name('downloads.download');
+    Route::get('/missions', [MissionsController::class,'missions'])->name('missions');
+    Route::post('/missions/{id}/reserve', [MissionsController::class,'reserveMission'])->name('missions.reserve');
+    Route::delete('/missions/{id}/reservation', [MissionsController::class,'cancelMissionReservation'])->name('missions.cancel');
     Route::get('/assignments', [PortalController::class,'assignments'])->name('assignments');
     Route::get('/shop', [PortalController::class,'shop'])->name('shop');
     Route::post('/shop/{id}/buy', [PortalController::class,'buyShopItem'])->name('shop.buy');
@@ -96,14 +105,14 @@ Route::middleware(['web','auth'])->name('promethee.')->group(function () {
     Route::post('/jumpseat', [PortalController::class,'requestJumpseat'])->name('jumpseat.buy');
     Route::get('/operations', [PortalController::class,'operations'])->name('operations');
     // Native Promethee pages backed directly by phpVMS data/models.
-    Route::get('/airlines', [PortalController::class, 'airlines'])->name('airlines');
-    Route::get('/documents', [PortalController::class, 'documents'])->name('documents');
-    Route::get('/my-documents', [PortalController::class, 'myDocuments'])->name('documents.mine');
-    Route::get('/documents/{file}', [PortalController::class, 'document'])->name('documents.show');
-    Route::get('/documents/{file}/content', [PortalController::class, 'documentContent'])->name('documents.content');
-    Route::get('/finances', [PortalController::class, 'finances'])->name('finances');
-    Route::get('/maintenance', [PortalController::class, 'maintenance'])->name('maintenance');
-    Route::get('/aircraft/{registration}', [PortalController::class, 'aircraftDetail'])->name('aircraft.show');
+    Route::get('/airlines', [CompanyController::class, 'airlines'])->name('airlines');
+    Route::get('/documents', [DownloadsController::class, 'documents'])->name('documents');
+    Route::get('/my-documents', [DownloadsController::class, 'myDocuments'])->name('documents.mine');
+    Route::get('/documents/{file}', [DownloadsController::class, 'document'])->name('documents.show');
+    Route::get('/documents/{file}/content', [DownloadsController::class, 'documentContent'])->name('documents.content');
+    Route::get('/finances', [CompanyController::class, 'finances'])->name('finances');
+    Route::get('/maintenance', [CompanyController::class, 'maintenance'])->name('maintenance');
+    Route::get('/aircraft/{registration}', [CompanyController::class, 'aircraftDetail'])->name('aircraft.show');
 
     // Compatibility redirects for historic DisposableBasic bookmarks only.
     Route::redirect('/dairlines', '/airlines', 301);
@@ -112,20 +121,20 @@ Route::middleware(['web','auth'])->name('promethee.')->group(function () {
     Route::get('/daircraft/{registration}', fn (string $registration) => redirect('/aircraft/'.rawurlencode($registration), 301));
     Route::get('/live', [PortalController::class,'live'])->name('live');
     Route::get('/live-data', [PortalController::class,'liveData'])->name('live.data');
-    Route::get('/calendar', [PortalController::class,'calendar'])->name('calendar');
-    Route::post('/calendar/{id}/rsvp', [PortalController::class,'rsvpEvent'])->name('calendar.rsvp');
+    Route::get('/calendar', [CalendarController::class,'calendar'])->name('calendar');
+    Route::post('/calendar/{id}/rsvp', [CalendarController::class,'rsvpEvent'])->name('calendar.rsvp');
     Route::get('/pilots', [PortalController::class,'pilots'])->name('pilots');
     Route::get('/pilots/{id}', [PortalController::class,'pilot'])->name('pilots.show');
     Route::get('/safety', [PortalController::class,'safety'])->name('safety');
     Route::get('/safety/export', [PortalController::class,'export'])->name('export');
     Route::get('/acars', [PortalController::class,'acars'])->name('acars');
-    Route::get('/flights', [PortalController::class,'flights'])->name('flights');
-    Route::get('/flights/{id}', [PortalController::class,'flight'])->name('flights.show');
-    Route::post('/flights/{id}/reserve', [PortalController::class,'reserveFlight'])->name('flights.reserve');
-    Route::get('/flights/{id}/briefing', [PortalController::class,'briefing'])->name('flights.briefing');
-    Route::post('/flights/{id}/briefing', [PortalController::class,'saveBriefing'])->name('flights.briefing.save');
-    Route::get('/simbrief/{id}', [PortalController::class,'simbrief'])->name('simbrief.show');
-    Route::get('/replay/{id}', [PortalController::class,'replay'])->name('replay');
+    Route::get('/flights', [FlightProgrammeController::class,'flights'])->name('flights');
+    Route::get('/flights/{id}', [FlightProgrammeController::class,'flight'])->name('flights.show');
+    Route::post('/flights/{id}/reserve', [FlightProgrammeController::class,'reserveFlight'])->name('flights.reserve');
+    Route::get('/flights/{id}/briefing', [FlightProgrammeController::class,'briefing'])->name('flights.briefing');
+    Route::post('/flights/{id}/briefing', [FlightProgrammeController::class,'saveBriefing'])->name('flights.briefing.save');
+    Route::get('/simbrief/{id}', [FlightProgrammeController::class,'simbrief'])->name('simbrief.show');
+    Route::get('/replay/{id}', [FlightProgrammeController::class,'replay'])->name('replay');
 });
 
 // Dispatch Desk is readable by every authenticated pilot. Mutating OPS/Datalink
@@ -161,36 +170,36 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::delete('/simbrief/api-key', [PortalController::class, 'deleteSimbriefApiKey'])->name('simbrief.api-key.delete');
         Route::post('/simbrief/settings', [PortalController::class, 'saveSimbriefSettings'])->name('simbrief.settings');
         Route::post('/simbrief/sync', [PortalController::class, 'syncSimbrief'])->name('simbrief.sync');
-        Route::post('/calendar', [PortalController::class,'saveEvent'])->name('calendar.save');
-        Route::delete('/calendar/{id}', [PortalController::class,'deleteEvent'])->name('calendar.delete');
+        Route::post('/calendar', [CalendarController::class,'saveEvent'])->name('calendar.save');
+        Route::delete('/calendar/{id}', [CalendarController::class,'deleteEvent'])->name('calendar.delete');
         Route::post('/pilots/{id}', [PortalController::class,'saveMember'])->name('pilots.save');
-        Route::get('/tarifs-bbr', [PortalController::class,'bbrSettings'])->name('bbr');
-        Route::post('/tarifs-bbr', [PortalController::class,'saveBbrSettings'])->name('bbr.save');
-        Route::get('/economy', [PortalController::class,'economy'])->name('economy');
-        Route::get('/pricing-criteria', [PortalController::class,'pricingCriteria'])->name('pricing-criteria');
-        Route::post('/pricing-criteria', [PortalController::class,'savePricingCriteria'])->name('pricing-criteria.save');
-        Route::get('/economy/flight-prices/edit', [PortalController::class,'flightPriceEditor'])->name('economy.flight-prices.edit');
-        Route::get('/economy/flight-prices/{flight}/edit', [PortalController::class,'flightPriceEdit'])->name('economy.flight-prices.line-edit');
-        Route::post('/economy/bands', [PortalController::class,'saveBandSettings'])->name('economy.bands');
-        Route::post('/economy/simulation', [PortalController::class,'saveSimulationSettings'])->name('economy.simulation');
-        Route::post('/economy/preview', [PortalController::class,'preview'])->name('economy.preview');
-        Route::post('/economy/flight-prices', [PortalController::class,'changeFlightPrices'])->name('economy.flight-prices');
-        Route::get('/economy/fuel-prices/edit', [PortalController::class,'fuelPriceEditor'])->name('economy.fuel-prices.editor');
-        Route::get('/economy/fuel-prices/{country}/edit', [PortalController::class,'fuelPriceEdit'])->name('economy.fuel-prices.edit');
-        Route::post('/economy/fuel-prices', [PortalController::class,'changeFuelPrices'])->name('economy.fuel-prices');
-        Route::post('/economy/apply', [PortalController::class,'apply'])->name('economy.apply');
-        Route::post('/economy/cancel-preview', [PortalController::class,'cancelPreview'])->name('economy.cancel-preview');
-        Route::post('/economy/{id}/revert', [PortalController::class,'revert'])->name('economy.revert');
-        Route::post('/economy/import', [PortalController::class,'importPricing'])->name('economy.import');
-        Route::post('/economy/rules', [PortalController::class,'savePricingRule'])->name('economy.rules.save');
-        Route::put('/economy/rules/{id}', [PortalController::class,'updatePricingRule'])->name('economy.rules.update');
-        Route::post('/economy/rules/{id}/preview', [PortalController::class,'previewPricingRule'])->name('economy.rules.preview');
-        Route::delete('/economy/rules/{id}', [PortalController::class,'deletePricingRule'])->name('economy.rules.delete');
-        Route::get('/seasons', [PortalController::class,'seasons'])->name('seasons');
-        Route::post('/seasons', [PortalController::class,'saveSeason'])->name('seasons.save');
-        Route::post('/seasons/pricing-adjustments', [PortalController::class,'saveSeasonPricingAdjustment'])->name('seasons.pricing-adjustments.save');
-        Route::delete('/seasons/pricing-adjustments/{id}', [PortalController::class,'deleteSeasonPricingAdjustment'])->name('seasons.pricing-adjustments.delete');
-        Route::post('/seasons/import', [PortalController::class,'importSchedule'])->name('seasons.import');
+        Route::get('/tarifs-bbr', [EconomyController::class,'bbrSettings'])->name('bbr');
+        Route::post('/tarifs-bbr', [EconomyController::class,'saveBbrSettings'])->name('bbr.save');
+        Route::get('/economy', [EconomyController::class,'economy'])->name('economy');
+        Route::get('/pricing-criteria', [EconomyController::class,'pricingCriteria'])->name('pricing-criteria');
+        Route::post('/pricing-criteria', [EconomyController::class,'savePricingCriteria'])->name('pricing-criteria.save');
+        Route::get('/economy/flight-prices/edit', [EconomyController::class,'flightPriceEditor'])->name('economy.flight-prices.edit');
+        Route::get('/economy/flight-prices/{flight}/edit', [EconomyController::class,'flightPriceEdit'])->name('economy.flight-prices.line-edit');
+        Route::post('/economy/bands', [EconomyController::class,'saveBandSettings'])->name('economy.bands');
+        Route::post('/economy/simulation', [EconomyController::class,'saveSimulationSettings'])->name('economy.simulation');
+        Route::post('/economy/preview', [EconomyController::class,'preview'])->name('economy.preview');
+        Route::post('/economy/flight-prices', [EconomyController::class,'changeFlightPrices'])->name('economy.flight-prices');
+        Route::get('/economy/fuel-prices/edit', [EconomyController::class,'fuelPriceEditor'])->name('economy.fuel-prices.editor');
+        Route::get('/economy/fuel-prices/{country}/edit', [EconomyController::class,'fuelPriceEdit'])->name('economy.fuel-prices.edit');
+        Route::post('/economy/fuel-prices', [EconomyController::class,'changeFuelPrices'])->name('economy.fuel-prices');
+        Route::post('/economy/apply', [EconomyController::class,'apply'])->name('economy.apply');
+        Route::post('/economy/cancel-preview', [EconomyController::class,'cancelPreview'])->name('economy.cancel-preview');
+        Route::post('/economy/{id}/revert', [EconomyController::class,'revert'])->name('economy.revert');
+        Route::post('/economy/import', [EconomyController::class,'importPricing'])->name('economy.import');
+        Route::post('/economy/rules', [EconomyController::class,'savePricingRule'])->name('economy.rules.save');
+        Route::put('/economy/rules/{id}', [EconomyController::class,'updatePricingRule'])->name('economy.rules.update');
+        Route::post('/economy/rules/{id}/preview', [EconomyController::class,'previewPricingRule'])->name('economy.rules.preview');
+        Route::delete('/economy/rules/{id}', [EconomyController::class,'deletePricingRule'])->name('economy.rules.delete');
+        Route::get('/seasons', [EconomyController::class,'seasons'])->name('seasons');
+        Route::post('/seasons', [EconomyController::class,'saveSeason'])->name('seasons.save');
+        Route::post('/seasons/pricing-adjustments', [EconomyController::class,'saveSeasonPricingAdjustment'])->name('seasons.pricing-adjustments.save');
+        Route::delete('/seasons/pricing-adjustments/{id}', [EconomyController::class,'deleteSeasonPricingAdjustment'])->name('seasons.pricing-adjustments.delete');
+        Route::post('/seasons/import', [EconomyController::class,'importSchedule'])->name('seasons.import');
         Route::post('/safety', [PortalController::class,'generate'])->name('safety.generate');
         Route::get('/network', [PortalController::class,'network'])->name('network');
         Route::get('/network/presence', [PresenceController::class,'index'])->name('network.presence');
@@ -221,30 +230,30 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::post('/automation/ranks', [AutomationController::class,'saveRankRule'])->name('automation.ranks.save');
         Route::post('/automation/preview', [AutomationController::class,'previewAutomation'])->name('automation.preview');
         Route::post('/automation/recalculate', [AutomationController::class,'recalculateAutomation'])->name('automation.recalculate');
-        Route::get('/events', [PortalController::class,'adminEvents'])->name('events');
-        Route::post('/events', [PortalController::class,'saveAdminEvent'])->name('events.save');
-        Route::delete('/events/{id}', [PortalController::class,'deleteEvent'])->name('events.delete');
-        Route::get('/missions', [PortalController::class,'adminMissions'])->name('missions');
-        Route::post('/missions', [PortalController::class,'saveMission'])->name('missions.save');
-        Route::delete('/missions/{id}', [PortalController::class,'deleteMission'])->name('missions.delete');
-        Route::post('/circuits', [PortalController::class,'saveCircuit'])->name('circuits.save');
-        Route::delete('/circuits/{id}', [PortalController::class,'deleteCircuit'])->name('circuits.delete');
+        Route::get('/events', [CalendarController::class,'adminEvents'])->name('events');
+        Route::post('/events', [CalendarController::class,'saveAdminEvent'])->name('events.save');
+        Route::delete('/events/{id}', [CalendarController::class,'deleteEvent'])->name('events.delete');
+        Route::get('/missions', [MissionsController::class,'adminMissions'])->name('missions');
+        Route::post('/missions', [MissionsController::class,'saveMission'])->name('missions.save');
+        Route::delete('/missions/{id}', [MissionsController::class,'deleteMission'])->name('missions.delete');
+        Route::post('/circuits', [MissionsController::class,'saveCircuit'])->name('circuits.save');
+        Route::delete('/circuits/{id}', [MissionsController::class,'deleteCircuit'])->name('circuits.delete');
         Route::get('/assignments', [PortalController::class,'adminAssignments'])->name('assignments');
         Route::post('/assignments', [PortalController::class,'saveAssignment'])->name('assignments.save');
         Route::delete('/assignments/{id}', [PortalController::class,'deleteAssignment'])->name('assignments.delete');
         Route::delete('/assignments', [PortalController::class,'deleteAssignments'])->name('assignments.bulk-delete');
         Route::get('/airlines', [PortalController::class,'adminAirlines'])->name('airlines');
         Route::post('/airlines', [PortalController::class,'saveAdminAirline'])->name('airlines.save');
-        Route::get('/regional-operations', [PortalController::class,'regionalOperations'])->name('regional');
-        Route::post('/regional-operations/settings', [PortalController::class,'saveRegionalOperations'])->name('regional.settings');
-        Route::post('/regional-operations/bases', [PortalController::class,'saveRegionalBase'])->name('regional.bases.save');
-        Route::post('/regional-operations/aircraft', [PortalController::class,'assignAircraftBase'])->name('regional.aircraft.assign');
-        Route::post('/regional-operations/repatriation/sync', [PortalController::class,'syncRegionalRepatriations'])->name('regional.repatriation.sync');
-        Route::post('/regional-operations/rotation/settings', [PortalController::class,'saveFleetRotationSettings'])->name('regional.rotation.settings');
-        Route::post('/regional-operations/rotation/run', [PortalController::class,'runFleetRotation'])->name('regional.rotation.run');
-        Route::get('/maintenance', [PortalController::class,'adminMaintenance'])->name('maintenance');
-        Route::post('/maintenance/airframe-settings', [PortalController::class,'saveAirframeMaintenanceSettings'])->name('maintenance.airframe-settings.save');
-        Route::post('/maintenance/airframe/{aircraft}/start', [PortalController::class,'startAirframeCheck'])->name('maintenance.airframe.start');
+        Route::get('/regional-operations', [RegionalOperationsAdminController::class,'regionalOperations'])->name('regional');
+        Route::post('/regional-operations/settings', [RegionalOperationsAdminController::class,'saveRegionalOperations'])->name('regional.settings');
+        Route::post('/regional-operations/bases', [RegionalOperationsAdminController::class,'saveRegionalBase'])->name('regional.bases.save');
+        Route::post('/regional-operations/aircraft', [RegionalOperationsAdminController::class,'assignAircraftBase'])->name('regional.aircraft.assign');
+        Route::post('/regional-operations/repatriation/sync', [RegionalOperationsAdminController::class,'syncRegionalRepatriations'])->name('regional.repatriation.sync');
+        Route::post('/regional-operations/rotation/settings', [RegionalOperationsAdminController::class,'saveFleetRotationSettings'])->name('regional.rotation.settings');
+        Route::post('/regional-operations/rotation/run', [RegionalOperationsAdminController::class,'runFleetRotation'])->name('regional.rotation.run');
+        Route::get('/maintenance', [MaintenanceAdminController::class,'adminMaintenance'])->name('maintenance');
+        Route::post('/maintenance/airframe-settings', [MaintenanceAdminController::class,'saveAirframeMaintenanceSettings'])->name('maintenance.airframe-settings.save');
+        Route::post('/maintenance/airframe/{aircraft}/start', [MaintenanceAdminController::class,'startAirframeCheck'])->name('maintenance.airframe.start');
         Route::post('/maintenance/sync', [EngineMaintenanceAdminController::class,'syncFleet'])->name('maintenance.sync');
         Route::post('/maintenance/engine-profiles', [EngineMaintenanceAdminController::class,'saveProfile'])->name('maintenance.engine-profiles.save');
         Route::post('/maintenance/engines', [EngineMaintenanceAdminController::class,'createUnit'])->name('maintenance.engines.create');
@@ -257,11 +266,11 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::post('/shop/wallets', [PortalController::class,'creditWallet'])->name('shop.wallets.credit');
         Route::get('/jumpseats', [PortalController::class,'adminJumpseats'])->name('jumpseats');
         Route::post('/jumpseats/settings', [PortalController::class,'saveJumpseatSettings'])->name('jumpseats.settings');
-        Route::get('/downloads', [PortalController::class,'adminDownloads'])->name('downloads');
-        Route::post('/downloads', [PortalController::class,'storeDownload'])->name('downloads.store');
-        Route::get('/downloads/{file}/edit', [PortalController::class,'editDownload'])->name('downloads.edit');
-        Route::put('/downloads/{file}', [PortalController::class,'updateDownload'])->name('downloads.update');
-        Route::delete('/downloads/{file}', [PortalController::class,'deleteDownload'])->name('downloads.delete');
+        Route::get('/downloads', [DownloadsController::class,'adminDownloads'])->name('downloads');
+        Route::post('/downloads', [DownloadsController::class,'storeDownload'])->name('downloads.store');
+        Route::get('/downloads/{file}/edit', [DownloadsController::class,'editDownload'])->name('downloads.edit');
+        Route::put('/downloads/{file}', [DownloadsController::class,'updateDownload'])->name('downloads.update');
+        Route::delete('/downloads/{file}', [DownloadsController::class,'deleteDownload'])->name('downloads.delete');
 });
 // SimBrief redirects the browser here after an API generation. The random state token
 // correlates the callback; the OFP is still imported only by the authenticated pilot.
