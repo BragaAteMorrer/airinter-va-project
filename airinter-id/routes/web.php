@@ -42,6 +42,7 @@ Route::middleware('auth')->get('/auth/passkey/complete', function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/account', AccountController::class)->name('account');
+    Route::put('/account/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');
     Route::put('/account/preferences', [AccountController::class, 'updatePreferences'])->name('account.preferences.update');
 
     Route::get('/confirm-password', [ConfirmPasswordController::class, 'show'])->name('password.confirm');

@@ -107,6 +107,10 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): RedirectResponse|View
     {
+        if (config('services.airinter_id.enabled')) {
+            return redirect()->away(rtrim((string) config('services.airinter_id.base_url'), '/').'/account#profile');
+        }
+
         /** @var \App\Models\User $user */
         $user = User::with('fields.field', 'home_airport')->where('id', Auth::id())->first();
 
@@ -141,6 +145,10 @@ class ProfileController extends Controller
      */
     public function update(Request $request): RedirectResponse
     {
+        if (config('services.airinter_id.enabled')) {
+            return redirect()->away(rtrim((string) config('services.airinter_id.base_url'), '/').'/account#profile');
+        }
+
         $id = Auth::user()->id;
         $user = $this->userRepo->findWithoutFail($id);
 

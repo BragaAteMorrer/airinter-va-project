@@ -7,6 +7,7 @@ use Illuminate\Auth\MustVerifyEmail as MustVerifyEmailTrait;
 use Illuminate\Contracts\Auth\MustVerifyEmail as MustVerifyEmailContract;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Passport\Contracts\OAuthenticatable;
 use Laravel\Passkeys\Contracts\PasskeyUser;
 use Laravel\Passkeys\PasskeyAuthenticatable;
@@ -30,6 +31,11 @@ class User extends Authenticatable implements OAuthenticatable, MustVerifyEmailC
         'password_changed_at',
         'preferred_locale',
         'timezone',
+        'country',
+        'home_airport_id',
+        'vatsim_id',
+        'ivao_id',
+        'avatar_path',
         'state',
         'email_verified_at',
         'last_login_at',
@@ -82,6 +88,19 @@ class User extends Authenticatable implements OAuthenticatable, MustVerifyEmailC
     public function getPasskeyUsername(): string
     {
         return $this->email;
+    }
+
+    public function avatarUrl(): ?string
+    {
+        if (blank($this->avatar_path)) {
+            return null;
+        }
+
+        $url = Storage::disk('public')->url($this->avatar_path);
+
+        return str_starts_with($url, 'http://') || str_starts_with($url, 'https://')
+            ? $url
+            : url($url);
     }
 
     public function canUseSso(): bool

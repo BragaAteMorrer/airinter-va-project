@@ -200,6 +200,66 @@ class AirInterIdController extends Controller
             abort(403, 'Ce compte pilote ne peut pas se connecter actuellement.');
         }
 
+        // Argos is the source of truth for every pilot-editable profile field.
+        // Prométhée keeps a local projection because phpVMS and operational
+        // modules still depend on the users table.
+        $pilotProfile = (array) ($profile['pilot_profile'] ?? []);
+        $argosEmail = mb_strtolower(trim((string) ($profile['email'] ?? '')));
+        if ($argosEmail === '') {
+            abort(502, 'Argos a renvoyé un profil sans adresse e-mail.');
+        }
+
+        $emailConflict = User::query()
+            ->whereRaw('LOWER(email) = ?', [$argosEmail])
+            ->where($user->getKeyName(), '!=', $user->getKey())
+            ->exists();
+
+        if ($emailConflict) {
+            abort(409, 'Cette adresse e-mail Argos est déjà utilisée par un autre compte Prométhée.');
+        }
+
+        $homeAirport = filled($pilotProfile['home_airport_id'] ?? null)
+            ? strtoupper(trim((string) $pilotProfile['home_airport_id']))
+            : null;
+
+        if (
+            $homeAirport !== null
+            && !\App\Models\Airport::query()->whereKey($homeAirport)->exists()
+        ) {
+            abort(409, 'La base définie dans Argos n’existe pas dans Prométhée : '.$homeAirport);
+        }
+
+        $sync = [
+            'name' => trim((string) ($profile['name'] ?? $user->name)),
+            'email' => $argosEmail,
+            'email_verified_at' => !empty($profile['email_verified'])
+                ? ($user->email_verified_at ?: now())
+                : null,
+            'timezone' => filled($profile['zoneinfo'] ?? null)
+                ? (string) $profile['zoneinfo']
+                : $user->timezone,
+            'locale' => filled($profile['locale'] ?? null)
+                ? (string) $profile['locale']
+                : ($user->locale ?? null),
+            'country' => filled($pilotProfile['country'] ?? null)
+                ? strtoupper(trim((string) $pilotProfile['country']))
+                : null,
+            'home_airport_id' => $homeAirport,
+            'vatsim_id' => filled($pilotProfile['vatsim_id'] ?? null)
+                ? trim((string) $pilotProfile['vatsim_id'])
+                : null,
+            'ivao_id' => filled($pilotProfile['ivao_id'] ?? null)
+                ? trim((string) $pilotProfile['ivao_id'])
+                : null,
+        ];
+
+        $avatarUrl = trim((string) ($pilotProfile['avatar_url'] ?? ''));
+        if ($avatarUrl !== '' && filter_var($avatarUrl, FILTER_VALIDATE_URL)) {
+            $sync['avatar'] = $avatarUrl;
+        }
+
+        $user->forceFill($sync)->save();
+
         // Use the web guard explicitly and keep a remember cookie as a
         // resilient fallback for shared-hosting setups where PHP session
         // persistence can be unreliable across redirects.

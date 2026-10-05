@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\OidcTokenService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Laravel\Passport\Passport;
 
 class ProviderController extends Controller
@@ -78,6 +79,10 @@ class ProviderController extends Controller
 
     private function hermesClientPayload(OidcTokenService $tokens): ?array
     {
+        if (!Schema::hasTable('oauth_clients')) {
+            return null;
+        }
+
         $definition = (array) config('airinter-id.clients.hermes', []);
         $name = (string) ($definition['name'] ?? 'Hermès');
 

@@ -15,6 +15,7 @@
 
 <nav class="account-tabs" aria-label="Sections du compte">
     <a href="#overview">Vue d’ensemble</a>
+    <a href="#profile">Profil</a>
     <a href="#apps">Applications</a>
     <a href="#security">Sécurité</a>
     <a href="#activity">Activité</a>
@@ -51,6 +52,76 @@
         @endforelse
     </article>
 </section>
+
+<section id="profile" class="section-block">
+    <div class="section-head">
+        <div><span class="kicker">SOURCE D’AUTORITÉ</span><h2>Mon profil Air Inter</h2></div>
+        <p>Ces informations sont gérées uniquement dans Argos puis synchronisées vers Prométhée et les autres applications Air Inter.</p>
+    </div>
+    <div class="account-grid">
+        <article class="card">
+            <span class="kicker">IDENTITÉ & PILOTE</span>
+            <h2>Informations personnelles</h2>
+            <form method="post" action="{{ route('account.profile.update') }}" enctype="multipart/form-data" class="form-stack">
+                @csrf @method('PUT')
+                <label>Nom affiché
+                    <input name="display_name" value="{{ old('display_name', $user->display_name) }}" maxlength="191" required autocomplete="name">
+                </label>
+                @error('display_name')<p class="error">{{ $message }}</p>@enderror
+
+                <label>Adresse e-mail
+                    <input type="email" name="email" value="{{ old('email', $user->email) }}" maxlength="191" required autocomplete="email">
+                    <small>Une modification invalide la vérification actuelle et déclenche un nouvel e-mail de confirmation.</small>
+                </label>
+                @error('email')<p class="error">{{ $message }}</p>@enderror
+
+                <label>Pays
+                    <input name="country" value="{{ old('country', $user->country) }}" maxlength="2" placeholder="FR" autocomplete="country">
+                </label>
+                @error('country')<p class="error">{{ $message }}</p>@enderror
+
+                <label>Base d’attache
+                    <input name="home_airport_id" value="{{ old('home_airport_id', $user->home_airport_id) }}" maxlength="10" placeholder="LFPO" autocapitalize="characters">
+                    <small>Code aéroport utilisé par Prométhée pour votre base pilote.</small>
+                </label>
+                @error('home_airport_id')<p class="error">{{ $message }}</p>@enderror
+
+                <label>Identifiant VATSIM
+                    <input name="vatsim_id" value="{{ old('vatsim_id', $user->vatsim_id) }}" inputmode="numeric" maxlength="32">
+                </label>
+                @error('vatsim_id')<p class="error">{{ $message }}</p>@enderror
+
+                <label>Identifiant IVAO
+                    <input name="ivao_id" value="{{ old('ivao_id', $user->ivao_id) }}" inputmode="numeric" maxlength="32">
+                </label>
+                @error('ivao_id')<p class="error">{{ $message }}</p>@enderror
+
+                <label>Photo de profil
+                    @if($user->avatarUrl())
+                        <img src="{{ $user->avatarUrl() }}" alt="" style="display:block;width:72px;height:72px;object-fit:cover;border-radius:18px;margin:.45rem 0 .7rem">
+                    @endif
+                    <input type="file" name="avatar" accept="image/jpeg,image/png,image/webp">
+                    <small>JPEG, PNG ou WebP · 2 Mo maximum.</small>
+                </label>
+                @error('avatar')<p class="error">{{ $message }}</p>@enderror
+
+                <button class="button primary">Enregistrer mon profil</button>
+            </form>
+        </article>
+
+        <article class="card">
+            <span class="kicker">GOUVERNANCE</span>
+            <h2>Ce qu’Argos contrôle</h2>
+            <p>Argos est désormais la référence pour les données modifiables par le pilote. Prométhée et Hermès les consomment mais ne proposent plus leur propre édition.</p>
+            <dl>
+                <div><dt>Identité</dt><dd>Nom, e-mail, avatar</dd></div>
+                <div><dt>Profil pilote</dt><dd>Pays, base, VATSIM, IVAO</dd></div>
+                <div><dt>Préférences</dt><dd>Langue, fuseau horaire</dd></div>
+                <div><dt>Sécurité</dt><dd>Mot de passe, MFA, passkeys, sessions</dd></div>
+            </dl>
+            <p class="muted">Le grade, la compagnie affectée, les qualifications, les heures, les soldes et les données de vol restent des données opérationnelles gérées par Prométhée ou le staff.</p>
+        </article>
+    </div>
 
 <section id="apps" class="section-block">
     <div class="section-head"><div><span class="kicker">ÉCOSYSTÈME</span><h2>Mes applications</h2></div><p>Les services Air Inter reliés à votre identité Argos.</p></div>
