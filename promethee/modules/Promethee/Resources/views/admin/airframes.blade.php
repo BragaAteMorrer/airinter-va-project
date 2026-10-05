@@ -35,6 +35,12 @@
 .airframe-table-wrap{max-height:520px;overflow:auto}
 .airframe-table-wrap table{margin:0}
 .airframe-table-wrap thead{position:sticky;top:0;z-index:1}
+.airframe-fleet-row{cursor:pointer}
+.airframe-fleet-row td{transition:background-color .12s ease,border-color .12s ease}
+.airframe-fleet-row:hover td,.airframe-fleet-row:focus td{background:var(--panel-bg,#fff)}
+.airframe-fleet-row:focus{outline:2px solid currentColor;outline-offset:-2px}
+.airframe-fleet-row.is-selected td:first-child{border-left:3px solid currentColor}
+.airframe-selection-summary{margin:0;padding:.7rem .85rem;border:1px dashed var(--border-color,#d7dce2);border-radius:9px}
 .airframe-assignment-select{min-height:15rem}
 .airframe-subtitle{margin:0}
 .airframe-empty{display:none;padding:1rem;text-align:center;opacity:.7}
@@ -54,6 +60,20 @@
 @section('content')
 @php
   $configuredAircraft = collect($aircraft)->filter(fn($row) => !empty($row['resolved']['variant']['name']) || !empty($row['resolved']['configuration']['name']))->count();
+  $fleetSearchIndex = collect($aircraft)->map(function ($row) {
+      $resolved = $row['resolved'];
+
+      return implode(' ', array_filter([
+          $row['model']->registration,
+          $row['model']->name,
+          $resolved['aircraft']['icao'] ?? null,
+          $resolved['aircraft']['type_name'] ?? null,
+          $resolved['variant']['code'] ?? null,
+          $resolved['variant']['name'] ?? null,
+          $resolved['configuration']['code'] ?? null,
+          $resolved['configuration']['name'] ?? null,
+      ]));
+  })->join(' ');
 @endphp
 
 <div class="airframe-console" data-airframe-console>
@@ -79,12 +99,12 @@
        data-master-default="fleet">
     <aside class="admin-master-pane" aria-label="Gestion des airframes">
       <div class="admin-master-toolbar">
-        <label>Rechercher une section
-          <input type="search" data-master-filter placeholder="Flotte, SimBrief, historique…">
+        <label>Rechercher une section ou un appareil
+          <input type="search" data-master-filter data-airframe-global-search placeholder="Flotte, A340, F-IOCA, SimBrief…">
         </label>
       </div>
       <div class="admin-master-list" role="tablist" aria-orientation="vertical">
-        <button type="button" class="admin-master-row" data-master-target="fleet" data-master-search="flotte immatriculations affectation variante configuration">
+        <button type="button" class="admin-master-row" data-master-target="fleet" data-master-search="flotte immatriculations affectation variante configuration {{ $fleetSearchIndex }}">
           <span class="admin-master-row-main">
             <strong>Flotte</strong>
             <small>{{ count($aircraft) }} immatriculation(s) · {{ $configuredAircraft }} configurée(s)</small>
@@ -129,10 +149,11 @@
       </div>
 
       <div class="airframe-toolbar">
-        <label>Rechercher
-          <input type="search" id="airframeFleetSearch" placeholder="F-GPMA, A319, Nord 262…">
+        <label>Rechercher un appareil
+          <input type="search" id="airframeFleetSearch" placeholder="F-GPMA, A319, Nord 262…" autocomplete="off">
         </label>
       </div>
+      <p class="airframe-help" id="airframeFleetStatus" aria-live="polite"></p>
 
       <div class="table-wrap airframe-table-wrap">
         <table>
@@ -144,18 +165,24 @@
               <th>Configuration</th>
               <th>PAX</th>
               <th>SimBrief</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody id="airframeFleetRows">
           @foreach($aircraft as $row)
             @php($r=$row['resolved'])
-            <tr>
+            <tr class="airframe-fleet-row"
+                data-aircraft-id="{{ $row['model']->id }}"
+                data-variant-id="{{ $r['variant']['id'] ?? '' }}"
+                data-configuration-id="{{ $r['configuration']['id'] ?? '' }}"
+                tabindex="0">
               <td><strong>{{ $row['model']->registration }}</strong></td>
               <td>{{ $r['aircraft']['type_name'] }}</td>
               <td>{{ $r['variant']['name'] ?? '—' }}</td>
               <td>{{ $r['configuration']['name'] ?? '—' }}</td>
               <td>{{ $r['effective']['max_pax'] ?? '—' }}</td>
               <td>{{ $r['simbrief']['strategy'] }} · {{ $r['simbrief']['value'] ?? 'AUTO' }}</td>
+              <td><button type="button" class="airframe-secondary" data-airframe-configure="{{ $row['model']->id }}">Configurer</button></td>
             </tr>
           @endforeach
           </tbody>
@@ -173,7 +200,7 @@
         </div>
       </div>
 
-      <form method="post" action="{{ route('admin.promethee.airframes.assign') }}" class="stack">
+      <form method="post" action="{{ route('admin.promethee.airframes.assign') }}" class="stack" id="airframeAssignmentForm">
         @csrf
         <div class="airframe-form-grid">
           <div class="airframe-span-2">
@@ -184,7 +211,9 @@
           <label class="airframe-span-2">2. Sélectionner les appareils
             <select class="airframe-assignment-select" id="airframeAircraftSelect" name="aircraft_ids[]" multiple size="10" required>
               @foreach($aircraft as $row)
-                <option value="{{ $row['model']->id }}">{{ $row['model']->registration }} · {{ $row['model']->name }}</option>
+                <option value="{{ $row['model']->id }}"
+                        data-variant-id="{{ $row['resolved']['variant']['id'] ?? '' }}"
+                        data-configuration-id="{{ $row['resolved']['configuration']['id'] ?? '' }}">{{ $row['model']->registration }} · {{ $row['model']->name }}</option>
               @endforeach
             </select>
           </label>
@@ -193,9 +222,10 @@
             <button class="airframe-secondary" type="button" id="airframeSelectVisible">Sélectionner les résultats visibles</button>
             <button class="airframe-secondary" type="button" id="airframeClearSelection">Effacer la sélection</button>
           </div>
+          <p class="airframe-selection-summary airframe-span-2" id="airframeSelectionSummary" aria-live="polite">Aucune immatriculation sélectionnée.</p>
 
           <label>3. Variante réelle
-            <select name="variant_id" required>
+            <select name="variant_id" id="airframeVariantSelect" required>
               <option value="">Choisir une variante…</option>
               @foreach($variants as $variant)
                 <option value="{{ $variant->id }}">{{ $variant->type_key }} · {{ $variant->name }}</option>
@@ -204,10 +234,10 @@
           </label>
 
           <label>4. Configuration cabine
-            <select name="configuration_id">
+            <select name="configuration_id" id="airframeConfigurationSelect">
               <option value="">Aucune configuration spécifique</option>
               @foreach($configurations as $config)
-                <option value="{{ $config->id }}">{{ $config->variant?->code }} · {{ $config->name }}</option>
+                <option value="{{ $config->id }}" data-variant-id="{{ $config->variant_id }}">{{ $config->variant?->code }} · {{ $config->name }}</option>
               @endforeach
             </select>
           </label>
@@ -480,63 +510,223 @@
 @endsection
 
 @push('scripts')
+<script src="{{ asset('promethee-assets/promethee-admin-workspaces.js') }}?v={{ filemtime(public_path('promethee-assets/promethee-admin-workspaces.js')) }}"></script>
 <script>
 (() => {
-  const root = document.querySelector('[data-airframe-console]');
-  if (!root) return;
+  'use strict';
 
-  const tabs = [...root.querySelectorAll('[data-airframe-tab]')];
-  const panels = [...root.querySelectorAll('[data-airframe-panel]')];
+  const init = () => {
+    const root = document.querySelector('[data-airframe-console]');
+    if (!root) return;
 
-  const activateTab = (name) => {
-    tabs.forEach(tab => tab.setAttribute('aria-selected', tab.dataset.airframeTab === name ? 'true' : 'false'));
-    panels.forEach(panel => panel.hidden = panel.dataset.airframePanel !== name);
-  };
+    const normalize = value => (value || '')
+      .toString()
+      .trim()
+      .toLocaleLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
 
-  tabs.forEach(tab => tab.addEventListener('click', () => activateTab(tab.dataset.airframeTab)));
+    const fleetSearch = root.querySelector('#airframeFleetSearch');
+    const fleetRows = [...root.querySelectorAll('#airframeFleetRows tr[data-aircraft-id]')];
+    const fleetEmpty = root.querySelector('#airframeFleetEmpty');
+    const fleetStatus = root.querySelector('#airframeFleetStatus');
+    const fleetMasterButton = root.querySelector('[data-master-target="fleet"]');
+    const globalSearch = root.querySelector('[data-airframe-global-search]');
 
-  const fleetSearch = root.querySelector('#airframeFleetSearch');
-  const fleetRows = [...root.querySelectorAll('#airframeFleetRows tr')];
-  const fleetEmpty = root.querySelector('#airframeFleetEmpty');
+    const aircraftSearch = root.querySelector('#airframeAircraftSearch');
+    const aircraftSelect = root.querySelector('#airframeAircraftSelect');
+    const assignmentForm = root.querySelector('#airframeAssignmentForm');
+    const variantSelect = root.querySelector('#airframeVariantSelect');
+    const configurationSelect = root.querySelector('#airframeConfigurationSelect');
+    const selectionSummary = root.querySelector('#airframeSelectionSummary');
 
-  const filterFleet = () => {
-    const query = (fleetSearch?.value || '').trim().toLocaleLowerCase();
-    let visible = 0;
+    const visibleFleetRows = () => fleetRows.filter(row => !row.hidden);
+
+    const filterFleet = () => {
+      const query = normalize(fleetSearch?.value);
+      let visible = 0;
+
+      fleetRows.forEach(row => {
+        const match = !query || normalize(row.textContent).includes(query);
+        row.hidden = !match;
+        if (match) visible += 1;
+      });
+
+      fleetEmpty?.classList.toggle('is-visible', visible === 0);
+      if (fleetStatus) {
+        fleetStatus.textContent = visible === 0
+          ? 'Aucun appareil trouvé.'
+          : visible === 1
+            ? '1 appareil trouvé · cliquez sur la ligne ou sur « Configurer ».'
+            : visible + ' appareils trouvés · cliquez sur une ligne pour la configurer.';
+      }
+    };
+
+    const filterConfigurations = () => {
+      if (!configurationSelect) return;
+
+      const variantId = variantSelect?.value || '';
+      [...configurationSelect.options].forEach(option => {
+        if (!option.value) {
+          option.hidden = false;
+          return;
+        }
+        option.hidden = !!variantId && option.dataset.variantId !== variantId;
+      });
+
+      const selected = configurationSelect.selectedOptions[0];
+      if (selected?.hidden) configurationSelect.value = '';
+    };
+
+    const updateSelection = ({ prefill = true } = {}) => {
+      if (!aircraftSelect) return;
+
+      const selected = [...aircraftSelect.selectedOptions];
+      const ids = new Set(selected.map(option => option.value));
+      fleetRows.forEach(row => row.classList.toggle('is-selected', ids.has(row.dataset.aircraftId)));
+
+      if (selectionSummary) {
+        selectionSummary.textContent = selected.length === 0
+          ? 'Aucune immatriculation sélectionnée.'
+          : selected.length === 1
+            ? 'Sélection : ' + selected[0].textContent.trim() + '. La variante/configuration actuelle est préchargée si elle existe.'
+            : selected.length + ' immatriculations sélectionnées. Les valeurs communes sont préchargées automatiquement.';
+      }
+
+      if (!prefill || selected.length === 0 || !variantSelect) return;
+
+      const variantIds = [...new Set(selected.map(option => option.dataset.variantId || '').filter(Boolean))];
+      const configurationIds = [...new Set(selected.map(option => option.dataset.configurationId || '').filter(Boolean))];
+
+      if (variantIds.length === 1) {
+        variantSelect.value = variantIds[0];
+      } else if (selected.length > 1) {
+        variantSelect.value = '';
+      }
+
+      filterConfigurations();
+
+      if (configurationSelect) {
+        if (configurationIds.length === 1) {
+          const candidate = [...configurationSelect.options].find(option => option.value === configurationIds[0] && !option.hidden);
+          configurationSelect.value = candidate ? configurationIds[0] : '';
+        } else if (selected.length > 1) {
+          configurationSelect.value = '';
+        }
+      }
+    };
+
+    const configureAircraft = (aircraftId, { scroll = true } = {}) => {
+      if (!aircraftSelect) return;
+
+      const option = [...aircraftSelect.options].find(item => item.value === String(aircraftId));
+      if (!option) return;
+
+      [...aircraftSelect.options].forEach(item => { item.selected = item === option; });
+      updateSelection();
+
+      if (fleetMasterButton && root.dataset.activeDetail !== 'fleet') {
+        fleetMasterButton.click();
+      }
+
+      if (scroll && assignmentForm) {
+        assignmentForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        window.setTimeout(() => aircraftSelect.focus({ preventScroll: true }), 250);
+      }
+    };
+
+    fleetSearch?.addEventListener('input', filterFleet);
+    fleetSearch?.addEventListener('keydown', event => {
+      if (event.key !== 'Enter') return;
+      const first = visibleFleetRows()[0];
+      if (!first) return;
+      event.preventDefault();
+      configureAircraft(first.dataset.aircraftId);
+    });
+
     fleetRows.forEach(row => {
-      const match = !query || row.textContent.toLocaleLowerCase().includes(query);
-      row.hidden = !match;
-      if (match) visible++;
+      row.addEventListener('click', event => {
+        if (event.target.closest('button,a,input,select,textarea,label')) return;
+        configureAircraft(row.dataset.aircraftId);
+      });
+      row.addEventListener('keydown', event => {
+        if (!['Enter', ' '].includes(event.key)) return;
+        event.preventDefault();
+        configureAircraft(row.dataset.aircraftId);
+      });
     });
-    fleetEmpty?.classList.toggle('is-visible', visible === 0);
+
+    root.querySelectorAll('[data-airframe-configure]').forEach(button => {
+      button.addEventListener('click', () => configureAircraft(button.dataset.airframeConfigure));
+    });
+
+    const filterAircraft = () => {
+      const query = normalize(aircraftSearch?.value);
+      [...(aircraftSelect?.options || [])].forEach(option => {
+        option.hidden = !!query && !normalize(option.textContent).includes(query);
+      });
+    };
+    aircraftSearch?.addEventListener('input', filterAircraft);
+    aircraftSearch?.addEventListener('keydown', event => {
+      if (event.key !== 'Enter' || !aircraftSelect) return;
+      const first = [...aircraftSelect.options].find(option => !option.hidden);
+      if (!first) return;
+      event.preventDefault();
+      configureAircraft(first.value, { scroll: false });
+    });
+
+    aircraftSelect?.addEventListener('change', () => updateSelection());
+    variantSelect?.addEventListener('change', filterConfigurations);
+
+    root.querySelector('#airframeSelectVisible')?.addEventListener('click', () => {
+      [...(aircraftSelect?.options || [])].forEach(option => {
+        if (!option.hidden) option.selected = true;
+      });
+      updateSelection();
+      aircraftSelect?.focus();
+    });
+
+    root.querySelector('#airframeClearSelection')?.addEventListener('click', () => {
+      [...(aircraftSelect?.options || [])].forEach(option => { option.selected = false; });
+      updateSelection({ prefill: false });
+      aircraftSelect?.focus();
+    });
+
+    globalSearch?.addEventListener('input', () => {
+      const raw = globalSearch.value || '';
+      const query = normalize(raw);
+      const matchingAircraft = query
+        ? fleetRows.filter(row => normalize(row.textContent).includes(query))
+        : [];
+
+      if (query && matchingAircraft.length) {
+        if (fleetMasterButton) fleetMasterButton.hidden = false;
+        if (fleetSearch) {
+          fleetSearch.value = raw;
+          filterFleet();
+        }
+        if (root.dataset.activeDetail !== 'fleet') fleetMasterButton?.click();
+      }
+    });
+
+    globalSearch?.addEventListener('keydown', event => {
+      if (event.key !== 'Enter') return;
+      const first = visibleFleetRows()[0];
+      if (!first || normalize(globalSearch.value) === '') return;
+      event.preventDefault();
+      configureAircraft(first.dataset.aircraftId);
+    });
+
+    filterConfigurations();
+    filterFleet();
+    updateSelection({ prefill: false });
   };
-  fleetSearch?.addEventListener('input', filterFleet);
 
-  const aircraftSearch = root.querySelector('#airframeAircraftSearch');
-  const aircraftSelect = root.querySelector('#airframeAircraftSelect');
-  const filterAircraft = () => {
-    const query = (aircraftSearch?.value || '').trim().toLocaleLowerCase();
-    [...(aircraftSelect?.options || [])].forEach(option => {
-      option.hidden = !!query && !option.textContent.toLocaleLowerCase().includes(query);
-    });
-  };
-  aircraftSearch?.addEventListener('input', filterAircraft);
-
-  root.querySelector('#airframeSelectVisible')?.addEventListener('click', () => {
-    [...(aircraftSelect?.options || [])].forEach(option => {
-      if (!option.hidden) option.selected = true;
-    });
-    aircraftSelect?.focus();
-  });
-
-  root.querySelector('#airframeClearSelection')?.addEventListener('click', () => {
-    [...(aircraftSelect?.options || [])].forEach(option => option.selected = false);
-    aircraftSelect?.focus();
-  });
-
-  if (window.location.hash === '#simulator') activateTab('simulator');
-  if (window.location.hash === '#history') activateTab('history');
-  if (window.location.hash === '#catalog') activateTab('catalog');
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init, { once: true });
+  } else {
+    init();
+  }
 })();
 </script>
-<script src="{{ asset('promethee-assets/promethee-admin-workspaces.js') }}?v={{ filemtime(public_path('promethee-assets/promethee-admin-workspaces.js')) }}"></script>
 @endpush
