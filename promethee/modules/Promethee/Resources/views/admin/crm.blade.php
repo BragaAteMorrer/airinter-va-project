@@ -72,10 +72,61 @@
       <code>@{{airline}}</code><span>Compagnie</span>
       <code>@{{base}}</code><span>Base d’attache</span>
       <code>@{{hours}}</code><span>Heures de vol arrondies</span>
+      <code>@{{email}}</code><span>Adresse e-mail</span>
+      <code>@{{ident}}</code><span>Identifiant pilote complet</span>
+      <code>@{{state}}</code><span>État du dossier</span>
+      <code>@{{promethee_url}}</code><span>Adresse de Prométhée</span>
     </div>
     <p class="hint">Les e-mails sont envoyés un par un : aucun pilote ne voit la liste des autres destinataires.</p>
   </section>
 </div>
+
+<section class="panel crm-system-templates">
+  <div class="panel-heading">
+    <div>
+      <span class="eyebrow">AUTOMATISMES</span>
+      <h2>Mails système</h2>
+      <p>Ces modèles sont utilisés automatiquement lors du parcours pilote : candidature reçue, validation, refus et notification du staff.</p>
+    </div>
+    <span class="tag">{{ $mailTemplates->count() }} modèle(s)</span>
+  </div>
+
+  <div class="crm-template-grid">
+    @foreach($mailTemplates as $template)
+      <details class="crm-template-card" @if($loop->first) open @endif>
+        <summary>
+          <span>
+            <strong>{{ $template->label }}</strong>
+            <small>{{ $template->key }}</small>
+          </span>
+          <span class="tag">{{ $template->active ? 'ACTIF' : 'INACTIF' }}</span>
+        </summary>
+
+        <form method="post" action="{{ route('admin.promethee.crm.templates.save', ['key' => $template->key]) }}" class="form-grid crm-template-form">
+          @csrf
+          <label class="full">Objet
+            <input name="subject" value="{{ $template->subject }}" required maxlength="191">
+          </label>
+
+          <label class="full">Contenu
+            <textarea name="body" rows="12" required maxlength="30000">{{ $template->body }}</textarea>
+          </label>
+
+          <label class="crm-check">
+            <input type="checkbox" name="active" value="1" @checked($template->active)>
+            <span><strong>Envoi automatique actif</strong><small>Décochez pour désactiver uniquement ce mail.</small></span>
+          </label>
+
+          <div class="full">
+            <small class="hint">Variables : @{{name}}, @{{email}}, @{{pilot_id}}, @{{ident}}, @{{rank}}, @{{airline}}, @{{base}}, @{{state}}, @{{promethee_url}}. Le contenu accepte le Markdown simple.</small>
+          </div>
+
+          <button type="submit">Enregistrer ce modèle</button>
+        </form>
+      </details>
+    @endforeach
+  </div>
+</section>
 
 <section class="panel">
   <div class="panel-heading"><div><span class="eyebrow">NOUVELLE CAMPAGNE</span><h2>Composer et cibler</h2><p>Le serveur recalcule toujours la sélection au moment de l’envoi.</p></div><strong id="crmAudienceCount" class="metric-tag">0 destinataire</strong></div>
