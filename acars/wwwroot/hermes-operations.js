@@ -1,5 +1,5 @@
-// Hermès operations workspace extracted from app.js.
-// Classic script on purpose: it shares the existing global runtime contract.
+// Hermès modularization phase 2 — operations domain.
+// Classic script: preserves the existing shared runtime/global handler contract.
 
 function simulatorCode() {
   const forced = localSettings.forcedSimulator;
@@ -66,7 +66,7 @@ function operationCard(operation) {
   return wrapper;
 }
 
-function cancelReservation(operation, flight, button) {
+async function cancelReservation(operation, flight, button) {
   const operationId = operation.operation_id || operation.bid_id || operation.id;
   if (!operationId) return;
 
@@ -146,7 +146,7 @@ function renderOperations(value, source = 'reservations') {
   operations.forEach(operation => list.append(operationCard(operation)));
 }
 
-function refreshOperations() {
+async function refreshOperations() {
   setOperationsMode('bids');
   if (!connected) {
     renderOperations([], 'reservations');
@@ -192,7 +192,7 @@ function normalizedSearchValue(selector) {
   return $(selector).value.trim().toUpperCase();
 }
 
-function searchFlights() {
+async function searchFlights() {
   if (!connected) return showMessage('#flightMessage', 'Connectez-vous d’abord.', true);
   const params = new URLSearchParams();
   let number = normalizedSearchValue('#flightNumberSearch');
@@ -328,7 +328,7 @@ function renderRouteSuggestions(payload, initialRoute = '') {
   select.disabled = false;
 }
 
-function loadRouteSuggestions(operationRef, initialRoute = '') {
+async function loadRouteSuggestions(operationRef, initialRoute = '') {
   const select = $('#routeSuggestion');
   if (select) {
     select.disabled = true;
@@ -392,7 +392,7 @@ function renderAircraftVariants(payload) {
   select.disabled = false;
 }
 
-function refreshAircraftVariants() {
+async function refreshAircraftVariants() {
   const operationRef = selectedOperation?.operation_id || selectedOperation?.id || selectedOperation?.bid_id;
   if (!operationRef || !selectedAircraft?.id) {
     renderAircraftVariants({ variants: [] });
@@ -409,7 +409,7 @@ function refreshAircraftVariants() {
   }
 }
 
-function refreshAircraftVariantLibrary() {
+async function refreshAircraftVariantLibrary() {
   const container = $('#aircraftVariantLibrary');
   if (!container) return;
   if (!connected) {
@@ -527,7 +527,7 @@ function renderOperationLoad(aircraft, briefing = flightPlan) {
   renderSimBriefPreparationSummary();
 }
 
-function selectOperation(operation) {
+async function selectOperation(operation) {
   if (!operation?.operation_id && !operation?.bid_id && operation?.id) {
     try {
       showMessage('#flightMessage', 'Réservation du vol dans Prométhée…');
