@@ -8,6 +8,9 @@ use Modules\Promethee\Http\DownloadsController;
 use Modules\Promethee\Http\MissionsController;
 use Modules\Promethee\Http\CalendarController;
 use Modules\Promethee\Http\EconomyController;
+use Modules\Promethee\Http\CompanyController;
+use Modules\Promethee\Http\MaintenanceAdminController;
+use Modules\Promethee\Http\RegionalOperationsAdminController;
 use Modules\Promethee\Http\MinitelController;
 use Modules\Promethee\Http\MinitelOperationsController;
 use Modules\Promethee\Http\TelemetryController;
@@ -50,7 +53,7 @@ Route::middleware('web')->prefix('public')->name('promethee.public.')->group(fun
     Route::get('/live-data', [PortalController::class, 'liveData'])->name('live.data');
 });
 // Native Promethee fleet directory. Data comes directly from phpVMS models.
-Route::get('/fleet', [PortalController::class, 'fleet'])->middleware('web')->name('promethee.fleet');
+Route::get('/fleet', [CompanyController::class, 'fleet'])->middleware('web')->name('promethee.fleet');
 // Legacy bookmarks remain redirects only; no Promethee navigation depends on them.
 Route::redirect('/dfleet', '/fleet', 301)->middleware('web');
 
@@ -102,14 +105,14 @@ Route::middleware(['web','auth'])->name('promethee.')->group(function () {
     Route::post('/jumpseat', [PortalController::class,'requestJumpseat'])->name('jumpseat.buy');
     Route::get('/operations', [PortalController::class,'operations'])->name('operations');
     // Native Promethee pages backed directly by phpVMS data/models.
-    Route::get('/airlines', [PortalController::class, 'airlines'])->name('airlines');
+    Route::get('/airlines', [CompanyController::class, 'airlines'])->name('airlines');
     Route::get('/documents', [DownloadsController::class, 'documents'])->name('documents');
     Route::get('/my-documents', [DownloadsController::class, 'myDocuments'])->name('documents.mine');
     Route::get('/documents/{file}', [DownloadsController::class, 'document'])->name('documents.show');
     Route::get('/documents/{file}/content', [DownloadsController::class, 'documentContent'])->name('documents.content');
-    Route::get('/finances', [PortalController::class, 'finances'])->name('finances');
-    Route::get('/maintenance', [PortalController::class, 'maintenance'])->name('maintenance');
-    Route::get('/aircraft/{registration}', [PortalController::class, 'aircraftDetail'])->name('aircraft.show');
+    Route::get('/finances', [CompanyController::class, 'finances'])->name('finances');
+    Route::get('/maintenance', [CompanyController::class, 'maintenance'])->name('maintenance');
+    Route::get('/aircraft/{registration}', [CompanyController::class, 'aircraftDetail'])->name('aircraft.show');
 
     // Compatibility redirects for historic DisposableBasic bookmarks only.
     Route::redirect('/dairlines', '/airlines', 301);
@@ -241,16 +244,16 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::delete('/assignments', [PortalController::class,'deleteAssignments'])->name('assignments.bulk-delete');
         Route::get('/airlines', [PortalController::class,'adminAirlines'])->name('airlines');
         Route::post('/airlines', [PortalController::class,'saveAdminAirline'])->name('airlines.save');
-        Route::get('/regional-operations', [PortalController::class,'regionalOperations'])->name('regional');
-        Route::post('/regional-operations/settings', [PortalController::class,'saveRegionalOperations'])->name('regional.settings');
-        Route::post('/regional-operations/bases', [PortalController::class,'saveRegionalBase'])->name('regional.bases.save');
-        Route::post('/regional-operations/aircraft', [PortalController::class,'assignAircraftBase'])->name('regional.aircraft.assign');
-        Route::post('/regional-operations/repatriation/sync', [PortalController::class,'syncRegionalRepatriations'])->name('regional.repatriation.sync');
-        Route::post('/regional-operations/rotation/settings', [PortalController::class,'saveFleetRotationSettings'])->name('regional.rotation.settings');
-        Route::post('/regional-operations/rotation/run', [PortalController::class,'runFleetRotation'])->name('regional.rotation.run');
-        Route::get('/maintenance', [PortalController::class,'adminMaintenance'])->name('maintenance');
-        Route::post('/maintenance/airframe-settings', [PortalController::class,'saveAirframeMaintenanceSettings'])->name('maintenance.airframe-settings.save');
-        Route::post('/maintenance/airframe/{aircraft}/start', [PortalController::class,'startAirframeCheck'])->name('maintenance.airframe.start');
+        Route::get('/regional-operations', [RegionalOperationsAdminController::class,'regionalOperations'])->name('regional');
+        Route::post('/regional-operations/settings', [RegionalOperationsAdminController::class,'saveRegionalOperations'])->name('regional.settings');
+        Route::post('/regional-operations/bases', [RegionalOperationsAdminController::class,'saveRegionalBase'])->name('regional.bases.save');
+        Route::post('/regional-operations/aircraft', [RegionalOperationsAdminController::class,'assignAircraftBase'])->name('regional.aircraft.assign');
+        Route::post('/regional-operations/repatriation/sync', [RegionalOperationsAdminController::class,'syncRegionalRepatriations'])->name('regional.repatriation.sync');
+        Route::post('/regional-operations/rotation/settings', [RegionalOperationsAdminController::class,'saveFleetRotationSettings'])->name('regional.rotation.settings');
+        Route::post('/regional-operations/rotation/run', [RegionalOperationsAdminController::class,'runFleetRotation'])->name('regional.rotation.run');
+        Route::get('/maintenance', [MaintenanceAdminController::class,'adminMaintenance'])->name('maintenance');
+        Route::post('/maintenance/airframe-settings', [MaintenanceAdminController::class,'saveAirframeMaintenanceSettings'])->name('maintenance.airframe-settings.save');
+        Route::post('/maintenance/airframe/{aircraft}/start', [MaintenanceAdminController::class,'startAirframeCheck'])->name('maintenance.airframe.start');
         Route::post('/maintenance/sync', [EngineMaintenanceAdminController::class,'syncFleet'])->name('maintenance.sync');
         Route::post('/maintenance/engine-profiles', [EngineMaintenanceAdminController::class,'saveProfile'])->name('maintenance.engine-profiles.save');
         Route::post('/maintenance/engines', [EngineMaintenanceAdminController::class,'createUnit'])->name('maintenance.engines.create');
