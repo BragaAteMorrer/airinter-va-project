@@ -457,17 +457,17 @@ function setIndicator(selector, state, label) {
 
 
 
-async 
 
 
 
 
 
-async 
 
 
 
-async 
+
+
+
 const showBidsBtn = $('#showBidsBtn');
 if (showBidsBtn) showBidsBtn.onclick = async () => {
   await refreshOperations();
@@ -494,22 +494,22 @@ $('#flightSearchForm').onsubmit = event => {
 
 
 
-async 
-
-
-
-async 
-
-async 
 
 
 
 
 
 
-async 
 
-async 
+
+
+
+
+
+
+
+
+
 
 async function refreshOperationalWeather() {
   const operationRef = selectedOperation?.operation_id || selectedOperation?.id || selectedOperation?.bid_id;
@@ -527,7 +527,6 @@ async function refreshOperationalWeather() {
   return weather;
 }
 
-async 
 
 
 
@@ -535,11 +534,12 @@ async
 
 
 
-async 
 
 
 
-async 
+
+
+
 
 
 
@@ -927,7 +927,7 @@ $('#clearPlanBtn').onclick = () => {
   showMessage('#simbriefState', 'Sélectionnez un vol et un appareil.');
 };
 
-async  = {}) {
+ = {}) {
   const form = $('#prefileForm');
   const body = Object.fromEntries([...new FormData(form)].filter(([, value]) => value !== ''));
   if (!body.aircraft_id) {
@@ -1071,11 +1071,11 @@ $('#abortPirepBtn').onclick = async () => {
 
 
 
-async 
 
-async 
 
-async 
+
+
+
 
 
 
@@ -1119,7 +1119,7 @@ $('#datalinkForm').onsubmit = async event => {
 
 
 let networkRefreshing = false;
-async 
+
 
 /* Flight map rendering lives in hermes-map.js. */
 
@@ -1131,7 +1131,7 @@ initializeFlightMapControls();
 
 
 
-async 
+
 
 const journalRefreshBtn = $('#journalRefreshBtn');
 if (journalRefreshBtn) journalRefreshBtn.onclick = refreshJournal;
