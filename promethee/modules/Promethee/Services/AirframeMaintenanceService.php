@@ -593,17 +593,40 @@ class AirframeMaintenanceService
             ]);
 
             if (Schema::hasTable('disposable_maintenance')) {
-                DB::table('disposable_maintenance')->updateOrInsert(
-                    ['aircraft_id' => $aircraftId],
-                    [
-                        'curr_state' => DB::raw('COALESCE(curr_state, 100)'),
+                $legacyState = DB::table('disposable_maintenance')
+                    ->where('aircraft_id', $aircraftId)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($legacyState) {
+                    DB::table('disposable_maintenance')->where('id', $legacyState->id)->update([
                         'act_note' => strtoupper($check).' Check',
                         'act_start' => $startedAt,
                         'act_end' => $dueAt,
                         'op_type' => 'PROMETHEE',
                         'updated_at' => now(),
-                    ]
-                );
+                    ]);
+                } else {
+                    $legacyInsert = [
+                        'aircraft_id' => $aircraftId,
+                        'curr_state' => 100,
+                        'time_a' => 0, 'time_b' => 0, 'time_c' => 0,
+                        'cycle_a' => 0, 'cycle_b' => 0, 'cycle_c' => 0,
+                        'act_note' => strtoupper($check).' Check',
+                        'act_start' => $startedAt,
+                        'act_end' => $dueAt,
+                        'op_type' => 'PROMETHEE',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+
+                    foreach (self::CHECKS as $legacyCheck) {
+                        $legacyInsert['rem_t'.$legacyCheck] = (int) round($policy[$legacyCheck]['time_limit_hours'] * 60);
+                        $legacyInsert['rem_c'.$legacyCheck] = (int) $policy[$legacyCheck]['cycle_limit'];
+                    }
+
+                    DB::table('disposable_maintenance')->insert($legacyInsert);
+                }
             }
 
             DB::table('promethee_airframe_maintenance_events')->insert([
