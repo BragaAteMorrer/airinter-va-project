@@ -3406,6 +3406,11 @@ class PortalController extends Controller
 
         $subfleets = Subfleet::with('airline')->orderBy('name')->get();
         $aircraft = Aircraft::with('subfleet.airline')->orderBy('registration')->get();
+        $itvaEngineCategories = (array) data_get(
+            config('promethee.engine-profiles', []),
+            '__meta.itva_categories',
+            []
+        );
 
         $airframeSettings = $airframeService->settings();
         $airframeStates = $airframeService->fleetStatus();
@@ -3486,7 +3491,7 @@ class PortalController extends Controller
 
         return $this->page('admin-maintenance', compact(
             'profiles','subfleets','aircraft','engineUnits','engineSites','engineEvents','engineSummary',
-            'airframeSettings','airframeStates','airframeSummary','airframeEvents'
+            'airframeSettings','airframeStates','airframeSummary','airframeEvents','itvaEngineCategories'
         ));
     }
 
@@ -3523,27 +3528,51 @@ class PortalController extends Controller
     public function syncEngineFleet(EngineMaintenanceService $engineService) {
         $references = (array) config('promethee.engine-profiles', []);
         $createdProfiles = 0;
+        $updatedProfiles = 0;
 
-        Subfleet::with('airline')->orderBy('id')->get()->each(function (Subfleet $subfleet) use ($references, &$createdProfiles) {
+        Subfleet::with('airline')->orderBy('id')->get()->each(function (Subfleet $subfleet) use ($references, &$createdProfiles, &$updatedProfiles) {
             $airlineIcao = strtoupper((string) ($subfleet->airline?->icao ?: ''));
             $referenceKey = $airlineIcao.'|'.(string) $subfleet->type;
             $reference = $references[$referenceKey] ?? null;
 
-            if (!$reference || DB::table('promethee_engine_profiles')->where('subfleet_id', $subfleet->id)->exists()) {
+            if (!is_array($reference)) {
                 return;
             }
 
-            DB::table('promethee_engine_profiles')->insert([
-                'subfleet_id' => $subfleet->id,
+            $existing = DB::table('promethee_engine_profiles')
+                ->where('subfleet_id', $subfleet->id)
+                ->first();
+
+            // ITVA is the operational source of truth. The legacy tbo_hours
+            // column stores the ITVA gameplay potential, never a real-world
+            // manufacturer TBO.
+            $values = [
                 'engine_type' => (string) $reference['engine_type'],
                 'engine_count' => (int) $reference['engine_count'],
                 'tbo_hours' => $reference['tbo_hours'] ?? null,
-                'tbo_cycles' => $reference['tbo_cycles'] ?? null,
                 'warning_hours' => (float) ($reference['warning_hours'] ?? 100),
+                'updated_at' => now(),
+            ];
+
+            if (array_key_exists('tbo_cycles', $reference)) {
+                $values['tbo_cycles'] = $reference['tbo_cycles'];
+            }
+            if (array_key_exists('warning_cycles', $reference)) {
+                $values['warning_cycles'] = $reference['warning_cycles'];
+            }
+
+            if ($existing) {
+                DB::table('promethee_engine_profiles')->where('id', $existing->id)->update($values);
+                $updatedProfiles++;
+                return;
+            }
+
+            DB::table('promethee_engine_profiles')->insert($values + [
+                'subfleet_id' => $subfleet->id,
+                'tbo_cycles' => $reference['tbo_cycles'] ?? null,
                 'warning_cycles' => $reference['warning_cycles'] ?? null,
                 'active' => true,
                 'created_at' => now(),
-                'updated_at' => now(),
             ]);
             $createdProfiles++;
         });
@@ -3556,17 +3585,27 @@ class PortalController extends Controller
 
         return back()->with(
             'success',
-            $createdProfiles.' profil(s) moteur créé(s) depuis le référentiel · '
+            $createdProfiles.' profil(s) ITVA créé(s) · '
+            .$updatedProfiles.' profil(s) ITVA remis à niveau · '
             .$synced.' position(s) moteur vérifiée(s) / synchronisée(s).'
         );
     }
 
     public function saveEngineProfile(Request $r, EngineMaintenanceService $engineService) {
+        $itvaCategories = array_map(
+            'strval',
+            (array) data_get(config('promethee.engine-profiles', []), '__meta.itva_categories', [])
+        );
+        $hoursRule = 'nullable|numeric|min:1|max:100000';
+        if ($itvaCategories !== []) {
+            $hoursRule .= '|in:'.implode(',', $itvaCategories);
+        }
+
         $data = $r->validate([
             'subfleet_id'=>'required|integer|exists:subfleets,id',
             'engine_type'=>'required|string|max:80',
             'engine_count'=>'required|integer|min:1|max:4',
-            'tbo_hours'=>'nullable|numeric|min:1|max:100000',
+            'tbo_hours'=>$hoursRule,
             'tbo_cycles'=>'nullable|integer|min:1|max:100000',
             'warning_hours'=>'required|numeric|min:0|max:10000',
             'warning_cycles'=>'nullable|integer|min:0|max:10000',
@@ -3574,7 +3613,7 @@ class PortalController extends Controller
         ]);
 
         if (!$r->filled('tbo_hours') && !$r->filled('tbo_cycles')) {
-            return back()->withErrors(['tbo_hours'=>'Renseignez au moins une limite TBO en heures ou en cycles.'])->withInput();
+            return back()->withErrors(['tbo_hours'=>'Renseignez au moins une limite de potentiel ITVA en heures ou en cycles.'])->withInput();
         }
 
         DB::table('promethee_engine_profiles')->updateOrInsert(
@@ -3594,7 +3633,7 @@ class PortalController extends Controller
 
         $engineService->syncSubfleet((int) $data['subfleet_id']);
 
-        return back()->with('success','Profil moteur enregistré et flotte correspondante synchronisée.');
+        return back()->with('success','Profil moteur ITVA enregistré et flotte correspondante synchronisée.');
     }
 
     public function createEngineUnit(Request $r, EngineMaintenanceService $engineService) {
@@ -3633,7 +3672,7 @@ class PortalController extends Controller
         } catch (\RuntimeException $exception) {
             return back()->withErrors(['engine'=>$exception->getMessage()]);
         }
-        return back()->with('success','Révision moteur enregistrée ; TBO et cycles remis à zéro.');
+        return back()->with('success','Révision moteur enregistrée ; compteurs remis à zéro et potentiel ITVA restauré.');
     }
 
     public function installEngine(int $engine, Request $r, EngineMaintenanceService $engineService) {
