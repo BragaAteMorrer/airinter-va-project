@@ -106,10 +106,19 @@
   document.querySelectorAll('[data-era-choice]').forEach(button => button.addEventListener('click',() => setEra(button.dataset.eraChoice)));
   document.querySelectorAll('[data-print]').forEach(button => button.addEventListener('click',() => window.print()));
   const tick = () => {
+    const now = new Date();
+    const utcTime = now.toISOString().slice(11,19);
     const clock = document.getElementById('utc-clock');
-    if (clock) clock.textContent = new Date().toISOString().slice(11,19)+' UTC';
+    if (clock) clock.textContent = utcTime+' UTC';
+    document.querySelectorAll('[data-utc-clock]').forEach((node) => {
+      node.textContent = utcTime.slice(0,5);
+    });
+    const parisTime = new Intl.DateTimeFormat(dateLocale,{timeZone:'Europe/Paris',hour:'2-digit',minute:'2-digit'}).format(now);
     const paris = document.getElementById('paris-clock');
-    if (paris) paris.textContent = new Intl.DateTimeFormat(dateLocale,{timeZone:'Europe/Paris',hour:'2-digit',minute:'2-digit'}).format(new Date());
+    if (paris) paris.textContent = parisTime;
+    document.querySelectorAll('[data-paris-clock]').forEach((node) => {
+      node.textContent = parisTime;
+    });
     document.querySelectorAll('[data-world-clock]').forEach((node) => {
       const zone = node.dataset.worldClock;
       try {

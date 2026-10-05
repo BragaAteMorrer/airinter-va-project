@@ -46,9 +46,7 @@ main { max-width: 1680px; }
 .ops-header.compact { align-items: center; }
 .ops-header h1 { font-size: 32px; line-height: 1.1; margin-bottom: 8px; }
 .ops-header p { max-width: 760px; }
-.ops-clock { min-width: 190px; border: 1px solid var(--line); background: var(--panel); border-top: 4px solid var(--ops-red); border-radius: var(--radius); padding: 14px 18px; text-align: right; }
 .ops-clock span, .ops-clock small { display: block; color: var(--muted); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; }
-.ops-clock strong { display: block; font: 34px/1.2 Consolas, monospace; color: var(--ops-dark); letter-spacing: -1px; }
 .control-strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 0 0 22px; }
 .control-strip article { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--ops-blue); border-radius: var(--radius); padding: 14px 16px; }
 .control-strip article:nth-child(2) { border-left-color: var(--ops-red); }

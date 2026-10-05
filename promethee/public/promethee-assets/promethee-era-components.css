@@ -1,3 +1,12 @@
+
+/* Shared dashboard dual-zone clock. Kept out of the core v2 bundle. */
+.ops-clock{min-width:340px;border:1px solid var(--line);background:var(--panel);border-top:4px solid var(--ops-red);border-radius:var(--radius);padding:14px 18px;text-align:right}
+.ops-clock-date{margin-bottom:9px}
+.ops-clock-times{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:end}
+.ops-clock-zone{min-width:0}
+.ops-clock-zone+.ops-clock-zone{margin-left:16px;padding-left:16px;border-left:1px solid var(--line)}
+.ops-clock strong{display:block;font:32px/1.2 Consolas,monospace;color:var(--ops-dark);letter-spacing:-1px}
+
 /* Prométhée historical component adapters.
    Semantic components live in their feature stylesheets; this file owns how
    those components feel in the 1999–2005 and Minitel universes. */

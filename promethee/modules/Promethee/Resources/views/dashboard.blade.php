@@ -8,9 +8,17 @@
         <p>{{ __('promethee.dashboard_page.intro') }}</p>
     </div>
     <div class="ops-clock">
-        <span>{{ now('Europe/Paris')->locale(app()->getLocale())->isoFormat('DD MMMM YYYY') }}</span>
-        <strong>{{ now('Europe/Paris')->format('H:i') }}</strong>
-        <small>{{ __('promethee.dashboard_page.paris_time') }}</small>
+        <span class="ops-clock-date">{{ now('Europe/Paris')->locale(app()->getLocale())->isoFormat('DD MMMM YYYY') }}</span>
+        <div class="ops-clock-times">
+            <div class="ops-clock-zone">
+                <strong data-paris-clock>{{ now('Europe/Paris')->format('H:i') }}</strong>
+                <small>{{ __('promethee.dashboard_page.paris_time') }}</small>
+            </div>
+            <div class="ops-clock-zone">
+                <strong data-utc-clock>{{ now('UTC')->format('H:i') }}</strong>
+                <small>UTC</small>
+            </div>
+        </div>
     </div>
 </div>
 
