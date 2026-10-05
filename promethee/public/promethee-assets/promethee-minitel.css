@@ -4,3 +4,20 @@
 .ai-minitel-fatal{display:grid;place-items:center;width:min(100%,40ch);min-height:25em;padding:2em;background:#050505;color:#f26767;font-family:"Minitel","Courier New",monospace;white-space:pre-line;text-align:center;line-height:1.4}
 html[data-era="minitel"][data-minitel-runtime="m2"] body{overflow:hidden}
 @media(max-width:899px),(pointer:coarse){html[data-era="minitel"][data-minitel-runtime="m2"] body{overflow:auto}}
+
+/* M10: Minitel is now exclusively the real terminal overlay, never a CSS skin. */
+html[data-era="minitel"][data-minitel-runtime="m2"] body > :not(#promethee-minitel-root):not(script):not(style){
+  visibility:hidden!important;
+}
+html[data-era="minitel"][data-minitel-runtime="m2"] #promethee-minitel-root,
+html[data-era="minitel"][data-minitel-runtime="m2"] #promethee-minitel-root *{
+  visibility:visible!important;
+}
+.promethee-minitel-overlay .ai-minitel-shell{
+  isolation:isolate;
+}
+.promethee-minitel-overlay .ai-minitel-shell::before{
+  content:"M10 · TERMINAL AIR INTER";
+  position:absolute;
+  left:-9999px;
+}
