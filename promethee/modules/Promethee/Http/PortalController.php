@@ -1304,27 +1304,117 @@ class PortalController extends PrometheeWebController
             ->select('assignment.*','users.name as user_name','users.pilot_id','flights.route_code','flights.flight_number','flights.dpt_airport_id','flights.arr_airport_id')->orderBy('users.pilot_id')->get();
         return $this->page('admin-assignments',['month'=>$month,'assignments'=>$assignments,'pilots'=>User::where('state',UserState::ACTIVE)->orderBy('pilot_id')->get(['id','pilot_id','name']),'flights'=>Flight::where('active',true)->where('visible',true)->orderBy('dpt_airport_id')->get(['id','route_code','flight_number','dpt_airport_id','arr_airport_id'])]);
     }
-    /** Prométhée-native read surface over phpVMS ranks. Mutations stay on core routes. */
+    /** Rich Prométhée-native rank management surface over phpVMS data. */
     public function adminRanks(Request $r) {
-        $term = trim((string) $r->query('q'));
-        $ranks = Rank::query()->withCount(['users','subfleets'])
-            ->when($term !== '', fn ($query) => $query->where('name','like','%'.$term.'%'))
+        $filters = $r->validate([
+            'q'=>'nullable|string|max:80',
+            'automation'=>'nullable|in:all,automatic,manual',
+            'coverage'=>'nullable|in:all,with_subfleets,without_subfleets',
+        ]);
+
+        $ranks = Rank::query()->with(['subfleets.airline'])->withCount(['users','subfleets'])
+            ->when($filters['q'] ?? null, fn ($query,$term) => $query->where('name','like','%'.$term.'%'))
+            ->when(($filters['automation'] ?? 'all') === 'automatic', fn ($query) => $query->where('auto_promote',true))
+            ->when(($filters['automation'] ?? 'all') === 'manual', fn ($query) => $query->where('auto_promote',false))
+            ->when(($filters['coverage'] ?? 'all') === 'with_subfleets', fn ($query) => $query->has('subfleets'))
+            ->when(($filters['coverage'] ?? 'all') === 'without_subfleets', fn ($query) => $query->doesntHave('subfleets'))
             ->orderBy('hours')->get();
-        return $this->page('admin-ranks', compact('ranks'));
+
+        $allRanks = Rank::query()->orderBy('hours')->get();
+        $pilotProgress = User::query()
+            ->whereNotNull('rank_id')
+            ->get(['id','rank_id','flight_time','transfer_time','state'])
+            ->groupBy('rank_id');
+
+        $ordered = $allRanks->values();
+        $ranks->each(function (Rank $rank) use ($ordered, $pilotProgress) {
+            $position = $ordered->search(fn (Rank $candidate) => $candidate->id === $rank->id);
+            $next = $position === false ? null : $ordered->get($position + 1);
+            $pilots = collect($pilotProgress->get($rank->id, collect()));
+            $rank->setAttribute('next_rank', $next);
+            $rank->setAttribute('active_users_count', $pilots->where('state',UserState::ACTIVE)->count());
+            $rank->setAttribute('promotion_ready_count', $next
+                ? $pilots->filter(fn (User $pilot) => ((int)$pilot->flight_time + (int)$pilot->transfer_time) >= ((int)$next->hours * 60))->count()
+                : 0);
+            $rank->setAttribute('coverage_airlines_count', $rank->subfleets->pluck('airline_id')->filter()->unique()->count());
+        });
+
+        return $this->page('admin-ranks', [
+            'ranks'=>$ranks,
+            'metrics'=>[
+                'total'=>$allRanks->count(),
+                'automatic'=>$allRanks->where('auto_promote',true)->count(),
+                'pilots'=>User::query()->whereNotNull('rank_id')->count(),
+                'without_subfleets'=>$allRanks->filter(fn (Rank $rank) => $rank->subfleets()->count() === 0)->count(),
+            ],
+        ]);
     }
 
-    /** Prométhée-native read surface over phpVMS users. Mutations stay on core routes. */
+    /** Operational pilot administration. Identity remains authoritative in Argos. */
     public function adminUsers(Request $r) {
-        $filters = $r->validate(['q'=>'nullable|string|max:100','rank'=>'nullable|integer|exists:ranks,id','airline'=>'nullable|integer|exists:airlines,id']);
-        $users = User::query()->with(['rank','airline','home_airport'])
-            ->when($filters['q'] ?? null, fn ($query,$q) => $query->where(fn ($nested) => $nested->where('name','like','%'.$q.'%')->orWhere('pilot_id','like','%'.$q.'%')->orWhere('email','like','%'.$q.'%')))
+        $filters = $r->validate([
+            'q'=>'nullable|string|max:100',
+            'rank'=>'nullable|integer|exists:ranks,id',
+            'airline'=>'nullable|integer|exists:airlines,id',
+            'state'=>'nullable|integer|in:0,1,2,3,4,5',
+            'base'=>'nullable|string|exists:airports,id',
+            'identity'=>'nullable|in:all,argos,unlinked',
+            'activity'=>'nullable|in:all,30d,90d,no_flight',
+            'sort'=>'nullable|in:pilot_id,name,flight_time,flights,lastlogin_at,created_at',
+            'direction'=>'nullable|in:asc,desc',
+        ]);
+
+        $hasArgosSubject = Schema::hasColumn('users','argos_subject');
+        $sort = $filters['sort'] ?? 'pilot_id';
+        $direction = $filters['direction'] ?? 'asc';
+
+        $users = User::query()
+            ->with(['rank','airline','home_airport','current_airport','last_pirep'])
+            ->withCount(['pireps','typeratings','awards'])
+            ->when($filters['q'] ?? null, fn ($query,$q) => $query->where(fn ($nested) => $nested
+                ->where('name','like','%'.$q.'%')
+                ->orWhere('pilot_id','like','%'.$q.'%')
+                ->orWhere('callsign','like','%'.$q.'%')
+                ->orWhere('email','like','%'.$q.'%')
+                ->orWhere('vatsim_id','like','%'.$q.'%')
+                ->orWhere('ivao_id','like','%'.$q.'%')))
             ->when($filters['rank'] ?? null, fn ($query,$id) => $query->where('rank_id',$id))
             ->when($filters['airline'] ?? null, fn ($query,$id) => $query->where('airline_id',$id))
-            ->orderBy('pilot_id')->paginate(40)->withQueryString();
+            ->when(isset($filters['state']), fn ($query) => $query->where('state',(int)$filters['state']))
+            ->when($filters['base'] ?? null, fn ($query,$id) => $query->where('home_airport_id',$id))
+            ->when($hasArgosSubject && ($filters['identity'] ?? 'all') === 'argos', fn ($query) => $query->whereNotNull('argos_subject'))
+            ->when($hasArgosSubject && ($filters['identity'] ?? 'all') === 'unlinked', fn ($query) => $query->whereNull('argos_subject'))
+            ->when(($filters['activity'] ?? 'all') === '30d', fn ($query) => $query->whereHas('pireps',fn ($pireps) => $pireps->where('submitted_at','>=',now()->subDays(30))))
+            ->when(($filters['activity'] ?? 'all') === '90d', fn ($query) => $query->whereHas('pireps',fn ($pireps) => $pireps->where('submitted_at','>=',now()->subDays(90))))
+            ->when(($filters['activity'] ?? 'all') === 'no_flight', fn ($query) => $query->doesntHave('pireps'))
+            ->orderBy($sort,$direction)
+            ->paginate(40)->withQueryString();
+
+        $metrics = [
+            'total'=>User::query()->count(),
+            'active'=>User::query()->where('state',UserState::ACTIVE)->count(),
+            'pending'=>User::query()->where('state',UserState::PENDING)->count(),
+            'on_leave'=>User::query()->where('state',UserState::ON_LEAVE)->count(),
+            'suspended'=>User::query()->where('state',UserState::SUSPENDED)->count(),
+            'recent'=>User::query()->whereHas('pireps',fn ($q) => $q->where('submitted_at','>=',now()->subDays(30)))->count(),
+            'argos'=>$hasArgosSubject ? User::query()->whereNotNull('argos_subject')->count() : null,
+        ];
+
         return $this->page('admin-users', [
             'users'=>$users,
+            'metrics'=>$metrics,
+            'hasArgosSubject'=>$hasArgosSubject,
             'ranks'=>Rank::orderBy('hours')->get(['id','name']),
             'airlines'=>Airline::orderBy('name')->get(['id','name','icao']),
+            'bases'=>Airport::query()->whereIn('id',User::query()->whereNotNull('home_airport_id')->distinct()->pluck('home_airport_id'))->orderBy('name')->get(['id','icao','iata','name']),
+            'states'=>[
+                UserState::PENDING=>'En attente',
+                UserState::ACTIVE=>'Actif',
+                UserState::REJECTED=>'Refusé',
+                UserState::ON_LEAVE=>'En congé',
+                UserState::SUSPENDED=>'Suspendu',
+                UserState::DELETED=>'Supprimé',
+            ],
         ]);
     }
 
@@ -1368,14 +1458,50 @@ class PortalController extends PrometheeWebController
         return redirect()->route('admin.promethee.ranks')->with('success','Grade mis à jour dans phpVMS.');
     }
     public function editAdminUser(User $user) {
-        $user->load(['rank','airline','home_airport']);
-        return $this->page('admin-user-edit',['pilot'=>$user,'ranks'=>Rank::orderBy('hours')->get(),'airlines'=>Airline::orderBy('name')->get(),'airports'=>Airport::orderBy('name')->get(['id','name','icao','iata'])]);
+        $user->load(['rank','airline','home_airport','current_airport','last_pirep','typeratings','awards']);
+        return $this->page('admin-user-edit',[
+            'pilot'=>$user,
+            'ranks'=>Rank::orderBy('hours')->get(),
+            'airlines'=>Airline::orderBy('name')->get(),
+            'airports'=>Airport::orderBy('name')->get(['id','name','icao','iata']),
+            'countries'=>Countries::getSelectList(),
+            'states'=>[
+                UserState::PENDING=>'En attente',
+                UserState::ACTIVE=>'Actif',
+                UserState::REJECTED=>'Refusé',
+                UserState::ON_LEAVE=>'En congé',
+                UserState::SUSPENDED=>'Suspendu',
+            ],
+            'hasArgosSubject'=>Schema::hasColumn('users','argos_subject'),
+        ]);
     }
-    public function updateAdminUser(User $user, Request $r) {
-        $data=$r->validate(['name'=>'required|string|max:191','email'=>'required|email|max:191|unique:users,email,'.$user->id,'pilot_id'=>'required|integer|unique:users,pilot_id,'.$user->id,'callsign'=>'nullable|string|max:4','airline_id'=>'required|integer|exists:airlines,id','rank_id'=>'nullable|integer|exists:ranks,id','home_airport_id'=>'nullable|string|exists:airports,id']);
-        $oldRank=$user->rank_id; $user->update($data);
-        if ((string)$oldRank !== (string)$user->rank_id) event(new \App\Events\UserStatsChanged($user,'rank',$user->rank_id));
-        return redirect()->route('admin.promethee.users')->with('success','Pilote mis à jour dans phpVMS.');
+    public function updateAdminUser(User $user, Request $r, UserService $userService) {
+        $data=$r->validate([
+            'pilot_id'=>'required|integer|unique:users,pilot_id,'.$user->id,
+            'callsign'=>'nullable|string|max:4',
+            'airline_id'=>'required|integer|exists:airlines,id',
+            'rank_id'=>'nullable|integer|exists:ranks,id',
+            'home_airport_id'=>'nullable|string|exists:airports,id',
+            'country'=>'nullable|string|size:2',
+            'state'=>'required|integer|in:0,1,2,3,4',
+            'transfer_hours'=>'nullable|numeric|min:0|max:100000',
+            'notes'=>'nullable|string|max:5000',
+        ]);
+
+        $oldRank=$user->rank_id;
+        $oldState=$user->state;
+        $attributes=collect($data)->except('transfer_hours')->all();
+        $attributes['transfer_time']=(int) round(((float)($data['transfer_hours'] ?? 0))*60);
+        $user->update($attributes);
+
+        if ((string)$oldRank !== (string)$user->rank_id) {
+            event(new \App\Events\UserStatsChanged($user,'rank',$user->rank_id));
+        }
+        if ((int)$oldState !== (int)$user->state) {
+            $userService->changeUserState($user,$oldState);
+        }
+
+        return redirect()->route('admin.promethee.users.edit',$user)->with('success','Données opérationnelles du pilote mises à jour.');
     }
 
     /** Prométhée-native airline catalogue; legacy phpVMS URLs remain valid. */
