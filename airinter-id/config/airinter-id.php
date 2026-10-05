@@ -7,6 +7,8 @@ return [
     'favicon_url' => env('ARGOS_FAVICON_URL', env('ARGOS_BRAND_LOGO_URL', 'https://promethee.airinter-va.org/promethee-assets/logos/air-inter-compact.png')),
     'public_url' => env('AIRINTER_ID_PUBLIC_URL', 'https://www.airinter-va.org'),
     'promethee_url' => env('AIRINTER_ID_PROMETHEE_URL', 'https://promethee.airinter-va.org'),
+    'promethee_provisioning_url' => env('PROMETHEE_PROVISIONING_URL', rtrim(env('AIRINTER_ID_PROMETHEE_URL', 'https://promethee.airinter-va.org'), '/').'/api/internal/argos/provision'),
+    'promethee_provisioning_token' => env('ARGOS_PROVISIONING_TOKEN'),
     'hermes_name' => env('AIRINTER_ID_HERMES_NAME', 'Hermès'),
     'legacy' => [
         'pilot_id_prefix' => env('PROMETHEE_PILOT_ID_PREFIX', 'IT'),
