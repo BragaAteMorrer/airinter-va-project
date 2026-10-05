@@ -175,7 +175,14 @@
     </label>
     <button type="submit" @disabled(!$maintenanceActionsReady)>Enregistrer dans le référentiel maintenance</button>
   </form>
-  <p class="hint"><strong>Source opérationnelle :</strong> {{ $airframeSettings['source'] === 'disposable_settings' ? 'référentiel maintenance des appareils' : 'fallback Prométhée' }}@if($airframeSettings['per_type_overrides']) · les limites par type ICAO restent prioritaires lorsqu’elles existent@endif. La fin d’un B Check remet aussi les compteurs A à zéro ; un C Check remet A, B et C à zéro.</p>
+  <p class="hint">
+    <strong>Source opérationnelle :</strong>
+    {{ $airframeSettings['source'] === 'disposable_settings' ? 'référentiel maintenance des appareils' : 'fallback Prométhée' }}
+    @if($airframeSettings['per_type_overrides'])
+      · les limites par type ICAO restent prioritaires lorsqu’elles existent
+    @endif
+    . La fin d’un B Check remet aussi les compteurs A à zéro ; un C Check remet A, B et C à zéro.
+  </p>
 </section>
 
 <section class="panel table-wrap admin-table-scroll">
@@ -216,7 +223,10 @@
             <strong>{{ number_format($checkState['remaining_hours'],1,',',' ') }} h</strong><br>
             <small>{{ number_format($checkState['remaining_cycles']) }} cycles · {{ number_format($checkState['progress_percent'],1,',',' ') }} % consommé</small><br>
             <small>Limite {{ number_format($checkState['time_limit_hours'],1,',',' ') }} h / {{ number_format($checkState['cycle_limit']) }} cycles · {{ $checkState['policy_source'] === 'type_icao' ? 'profil ICAO' : 'global' }}</small>
-            @if($checkState['last_check_at'])<br><small>Dernier {{ strtoupper($check) }} : {{ \Carbon\Carbon::parse($checkState['last_check_at'])->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') }}</small>@endif<br>
+            @if($checkState['last_check_at'])
+              <br><small>Dernier {{ strtoupper($check) }} : {{ \Carbon\Carbon::parse($checkState['last_check_at'])->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') }}</small>
+            @endif
+            <br>
             @if($checkState['due'])
               <span class="tag">{{ strtoupper($check) }} DÛ</span>
             @elseif($checkState['warning'])
@@ -228,7 +238,9 @@
           @if($state->safety_hold_at)
             <strong>Inspection FDM obligatoire</strong><br>
             <small>{{ \Carbon\Carbon::parse($state->safety_hold_at)->locale('fr')->isoFormat('DD/MM HH:mm') }} · PIREP {{ $state->safety_hold_pirep_id ?: '—' }}</small>
-            @if($state->active_check)<br><strong>{{ strtoupper($state->active_check) }} Check en parallèle</strong>@endif
+            @if($state->active_check)
+              <br><strong>{{ strtoupper($state->active_check) }} Check en parallèle</strong>
+            @endif
           @elseif($state->active_check)
             <strong>{{ strtoupper($state->active_check) }} Check</strong><br>
             <small>
