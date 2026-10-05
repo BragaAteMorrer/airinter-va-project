@@ -13,7 +13,12 @@ const fail = message => failures.push(message);
 const expect = (condition, message) => { if (!condition) fail(message); };
 
 const budgets = {
-  '../acars/wwwroot/app.js': 145000,
+  '../acars/wwwroot/app.js': 65000,
+  '../acars/wwwroot/hermes-operations.js': 32000,
+  '../acars/wwwroot/hermes-communications.js': 15000,
+  '../acars/wwwroot/hermes-workflow.js': 32000,
+  '../acars/wwwroot/hermes-planning.js': 18000,
+  '../acars/wwwroot/hermes-recovery.js': 12000,
   '../acars/wwwroot/hermes-map.js': 21000,
   '../acars/wwwroot/hermes-review.js': 20000,
   '../acars/wwwroot/hermes-weather.js': 12000,
@@ -35,7 +40,17 @@ const budgets = {
   'public/promethee-assets/promethee-flight-results.css': 5000,
   'public/promethee-assets/promethee.js': 24000,
   'public/promethee-assets/navigation-groups.js': 8000,
-  'modules/Promethee/Http/PortalController.php': 245000,
+  'modules/Promethee/Http/PortalController.php': 95000,
+  'modules/Promethee/Http/PrometheeWebController.php': 12000,
+  'modules/Promethee/Http/PirepController.php': 12000,
+  'modules/Promethee/Http/FlightProgrammeController.php': 36000,
+  'modules/Promethee/Http/DownloadsController.php': 16000,
+  'modules/Promethee/Http/MissionsController.php': 10000,
+  'modules/Promethee/Http/CalendarController.php': 7000,
+  'modules/Promethee/Http/EconomyController.php': 47000,
+  'modules/Promethee/Http/CompanyController.php': 30000,
+  'modules/Promethee/Http/MaintenanceAdminController.php': 12000,
+  'modules/Promethee/Http/RegionalOperationsAdminController.php': 14000,
   'modules/Promethee/Http/AutomationController.php': 14000,
   'modules/Promethee/Resources/views/admin/dispatch.blade.php': 45000,
 };
@@ -52,6 +67,11 @@ const hermesIndex = read('../acars/wwwroot/index.html');
 const hermesApp = read('../acars/wwwroot/app.js');
 const hermesMap = read('../acars/wwwroot/hermes-map.js');
 const hermesReview = read('../acars/wwwroot/hermes-review.js');
+const hermesOperations = read('../acars/wwwroot/hermes-operations.js');
+const hermesCommunications = read('../acars/wwwroot/hermes-communications.js');
+const hermesWorkflow = read('../acars/wwwroot/hermes-workflow.js');
+const hermesPlanning = read('../acars/wwwroot/hermes-planning.js');
+const hermesRecovery = read('../acars/wwwroot/hermes-recovery.js');
 const hermesWeather = read('../acars/wwwroot/hermes-weather.js');
 const hermesIdentity = read('../acars/wwwroot/hermes-identity.js');
 const hermesDesktop = read('../acars/WebDesktop.cs');
@@ -82,6 +102,15 @@ const prometheeFlights = read('modules/Promethee/Resources/views/flights.blade.p
 const prometheeFlightResults = read('public/promethee-assets/promethee-flight-results.css');
 const portalController = read('modules/Promethee/Http/PortalController.php');
 const automationController = read('modules/Promethee/Http/AutomationController.php');
+const pirepController = read('modules/Promethee/Http/PirepController.php');
+const flightProgrammeController = read('modules/Promethee/Http/FlightProgrammeController.php');
+const downloadsController = read('modules/Promethee/Http/DownloadsController.php');
+const missionsController = read('modules/Promethee/Http/MissionsController.php');
+const calendarController = read('modules/Promethee/Http/CalendarController.php');
+const economyController = read('modules/Promethee/Http/EconomyController.php');
+const companyController = read('modules/Promethee/Http/CompanyController.php');
+const maintenanceAdminController = read('modules/Promethee/Http/MaintenanceAdminController.php');
+const regionalOperationsAdminController = read('modules/Promethee/Http/RegionalOperationsAdminController.php');
 const prometheeRoutes = read('modules/Promethee/routes.php');
 expect(!portalController.includes('public function automation(')
     && !portalController.includes('public function saveBadgeRule(')
@@ -90,6 +119,37 @@ expect(!portalController.includes('public function automation(')
 expect(prometheeRoutes.includes("[AutomationController::class,'automation']")
     && prometheeRoutes.includes("[AutomationController::class,'saveRankRule']"),
   'Prométhée automation routes must remain owned by AutomationController without changing route names.');
+expect(!portalController.includes('public function flights(')
+    && !portalController.includes('public function pirep(')
+    && !portalController.includes('public function downloads(')
+    && !portalController.includes('public function missions(')
+    && !portalController.includes('public function calendar(')
+    && !portalController.includes('public function economy(')
+    && pirepController.includes('class PirepController extends PrometheeWebController')
+    && flightProgrammeController.includes('class FlightProgrammeController extends PrometheeWebController')
+    && downloadsController.includes('class DownloadsController extends PrometheeWebController')
+    && missionsController.includes('class MissionsController extends PrometheeWebController')
+    && calendarController.includes('class CalendarController extends PrometheeWebController')
+    && economyController.includes('class EconomyController extends PrometheeWebController'),
+  'Prométhée domain controllers must stay extracted from PortalController.');
+expect(prometheeRoutes.includes("[FlightProgrammeController::class,'flights']")
+    && prometheeRoutes.includes("[PirepController::class, 'pirep']")
+    && prometheeRoutes.includes("[DownloadsController::class,'downloads']")
+    && prometheeRoutes.includes("[MissionsController::class,'missions']")
+    && prometheeRoutes.includes("[CalendarController::class,'calendar']")
+    && prometheeRoutes.includes("[EconomyController::class,'economy']")
+    && prometheeRoutes.includes("[CompanyController::class, 'fleet']")
+    && prometheeRoutes.includes("[MaintenanceAdminController::class,'adminMaintenance']")
+    && prometheeRoutes.includes("[RegionalOperationsAdminController::class,'regionalOperations']"),
+  'Prométhée route ownership must stay aligned with the extracted domain controllers.');
+expect(!portalController.includes('public function finances(')
+    && !portalController.includes('public function maintenance(')
+    && !portalController.includes('public function adminMaintenance(')
+    && !portalController.includes('public function regionalOperations(')
+    && companyController.includes('class CompanyController extends PrometheeWebController')
+    && maintenanceAdminController.includes('class MaintenanceAdminController extends PrometheeWebController')
+    && regionalOperationsAdminController.includes('class RegionalOperationsAdminController extends PrometheeWebController'),
+  'Prométhée company, maintenance and regional operations must stay outside PortalController.');
 const adminWorkspaceCss = read('public/promethee-assets/promethee-admin-workspaces.css');
 const automationWorkspace = read('modules/Promethee/Resources/views/admin/automation.blade.php');
 const seasonsWorkspace = read('modules/Promethee/Resources/views/seasons.blade.php');
@@ -126,6 +186,27 @@ expect(!hermesApp.includes('function normalizeReviewProfile')
     && hermesApp.includes('initializeFlightMapControls();')
     && hermesApp.includes('initializeReviewActions();'),
   'Hermès app.js must not absorb map/review rendering again.');
+expect(hermesIndex.indexOf('/hermes-operations.js') < hermesIndex.indexOf('/app.js')
+    && hermesIndex.indexOf('/hermes-communications.js') < hermesIndex.indexOf('/app.js')
+    && hermesIndex.indexOf('/hermes-workflow.js') < hermesIndex.indexOf('/app.js')
+    && hermesIndex.indexOf('/hermes-planning.js') < hermesIndex.indexOf('/app.js')
+    && hermesIndex.indexOf('/hermes-recovery.js') < hermesIndex.indexOf('/app.js')
+    && !hermesApp.includes('function refreshOperations(')
+    && !hermesApp.includes('function renderDatalink(')
+    && !hermesApp.includes('function updateWorkflow(')
+    && !hermesApp.includes('function applyBriefing(')
+    && !hermesApp.includes('function renderRecovery(')
+    && hermesOperations.includes('function refreshOperations(')
+    && hermesOperations.includes('function selectOperation(')
+    && hermesCommunications.includes('function renderDatalink(')
+    && hermesCommunications.includes('function refreshNetwork(')
+    && hermesWorkflow.includes('function updateWorkflow(')
+    && hermesWorkflow.includes('function renderEligibility(')
+    && hermesPlanning.includes('function applyBriefing(')
+    && hermesPlanning.includes('function prefilePreparedOperation(')
+    && hermesRecovery.includes('function renderJournalHistory(')
+    && hermesRecovery.includes('function renderRecovery('),
+  'Hermès domain modules must stay outside the app.js orchestrator.');
 expect(hermesIndex.indexOf('/hermes-weather.js') < hermesIndex.indexOf('/app.js')
     && hermesWeather.includes('renderOperationalWeather')
     && hermesWeather.includes('initializeOperationalWeather')
@@ -375,10 +456,10 @@ expect(prometheeFlightResults.includes('.flight-result-schedule')
     && prometheeFlightResults.includes('.airline-ics::before')
     && prometheeFlightResults.includes('@media(max-width:760px)'),
   'Prométhée flight cards must preserve timetable proximity, airline accents and responsive treatment.');
-expect(portalController.includes('$personalizedDefault')
-    && portalController.includes('home_airport_id')
-    && portalController.includes('->take(10)')
-    && portalController.includes('next_departure_sort'),
+expect(flightProgrammeController.includes('$personalizedDefault')
+    && flightProgrammeController.includes('home_airport_id')
+    && flightProgrammeController.includes('->take(10)')
+    && flightProgrammeController.includes('next_departure_sort'),
   'Prométhée unfiltered flight programme must show the next ten dated departures from the pilot base.');
 expect(prometheeV2.includes('Audit UX phase 11 — flight programme progressive disclosure')
     && prometheeV2.includes('Audit UX phase 11 — compact shell controls'),
