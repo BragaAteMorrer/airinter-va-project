@@ -3,9 +3,10 @@
 @section('content')
 @if(auth()->id() === $pilot->id)
 <div class="profile-page-actions">
-  <a class="button outline" href="{{ route('promethee.profile.edit') }}">Modifier mon profil</a>
   @if(config('services.airinter_id.enabled'))
-    <a class="button" href="{{ rtrim(config('services.airinter_id.base_url'), '/') }}/account">Compte Air Inter</a>
+    <a class="button" href="{{ rtrim(config('services.airinter_id.base_url'), '/') }}/account#profile">Gérer mon profil dans Argos</a>
+  @else
+    <a class="button outline" href="{{ route('promethee.profile.edit') }}">Modifier mon profil</a>
   @endif
 </div>
 @endif
@@ -23,7 +24,7 @@
     <span class="tag">SSO · OIDC</span>
   </div>
   <div class="profile-page-actions">
-    <a class="button" href="{{ rtrim(config('services.airinter_id.base_url'), '/') }}/account">Gérer mon compte Air Inter</a>
+    <a class="button" href="{{ rtrim(config('services.airinter_id.base_url'), '/') }}/account#profile">Gérer mon profil Air Inter</a>
     <span class="muted">Prométhée · Hermès · services Air Inter</span>
   </div>
 </section>
