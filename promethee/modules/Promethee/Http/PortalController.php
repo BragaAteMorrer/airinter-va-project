@@ -16,6 +16,7 @@ use App\Services\FileService;
 use App\Services\UserService;
 use App\Support\Money;
 use App\Support\Countries;
+use Modules\Promethee\Models\RealSimulatorCertification;
 use Modules\Promethee\Services\{AirframeMaintenanceService,BrandingService,BulletinService,CompanyAccessService,DemandProfileService,EconomyFareResolver,EconomyService,EngineMaintenanceService,FleetRotationService,FlightOpsService,LegacyPirepScoringService,OperationalWeatherService,PilotPirepDeletionService,PirepJournalService,RegionalOperationsService,SafetyAnalyzer};
 
 class PortalController extends PrometheeWebController
@@ -849,6 +850,12 @@ class PortalController extends PrometheeWebController
         $wallet = $pilot->journal?->getBalance() ?? new Money(0);
         $memberProfile = DB::table('promethee_members')->where('user_id', $pilot->id)->first();
         $pilot->setAttribute('admin_portrait_url', $memberProfile->memorial_portrait_url ?? null);
+        $realSimulatorCertifications = RealSimulatorCertification::query()
+            ->where('user_id', $pilot->id)
+            ->where('status', 'verified')
+            ->orderByDesc('completed_on')
+            ->orderByDesc('id')
+            ->get();
 
         $myMissions = collect();
         if (auth()->check() && (int) auth()->id() === (int) $pilot->id) {
@@ -884,6 +891,7 @@ class PortalController extends PrometheeWebController
             'monthFlights'=>$monthFlights,
             'badges'=>$badges,
             'myMissions'=>$myMissions,
+            'realSimulatorCertifications'=>$realSimulatorCertifications,
         ]);
     }
     public function saveMember(int $id,Request $r) {
