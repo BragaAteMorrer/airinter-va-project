@@ -143,9 +143,14 @@ final class PrometheeAirframeMaintenanceTest extends TestCase
         $this->assertSame((string) $pirep->id, (string) $state->safety_hold_pirep_id);
         $this->assertSame(AircraftStatus::ACTIVE, (string) $state->safety_hold_previous_status);
 
-        $duplicate = $service->placeSafetyHold($pirep, 3.10, '2026-10-05T09:30:01Z');
+        $secondPirep = Pirep::factory()->create(['aircraft_id' => $aircraft->id]);
+        $duplicate = $service->placeSafetyHold($secondPirep, 3.10, '2026-10-05T09:30:01Z');
         $this->assertSame(0, $duplicate['updated']);
         $this->assertSame('ALREADY_HELD', $duplicate['reason']);
+
+        $state = DB::table('promethee_airframe_maintenance')->where('aircraft_id', $aircraft->id)->first();
+        $this->assertSame((string) $pirep->id, (string) $state->safety_hold_pirep_id);
+        $this->assertSame(AircraftStatus::ACTIVE, (string) $state->safety_hold_previous_status);
 
         $this->assertTrue($service->releaseSafetyHold((int) $aircraft->id, null, 'Inspection visuelle OK.'));
         $state = DB::table('promethee_airframe_maintenance')->where('aircraft_id', $aircraft->id)->first();
