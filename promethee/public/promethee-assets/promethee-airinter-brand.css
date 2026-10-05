@@ -4,17 +4,11 @@
    Solid red remains available for warnings/destructive states. */
 
 html[data-era="modern"] {
-  --airinter-band-blue-1: #8eb3c7;
-  --airinter-band-blue-2: #2089b2;
-  --airinter-band-blue-3: #0d5f8f;
-  --airinter-band-red: #d73346;
-  --airinter-band-gradient: linear-gradient(
-    90deg,
-    var(--airinter-band-blue-1) 0 25%,
-    var(--airinter-band-blue-2) 25% 50%,
-    var(--airinter-band-blue-3) 50% 75%,
-    var(--airinter-band-red) 75% 100%
-  );
+  --airinter-band-blue-1: var(--ds-band-blue-1);
+  --airinter-band-blue-2: var(--ds-band-blue-2);
+  --airinter-band-blue-3: var(--ds-band-blue-3);
+  --airinter-band-red: var(--ds-band-red);
+  --airinter-band-gradient: var(--ds-band-gradient);
 }
 
 /* Keep the airline signature visible in the shell without turning the whole
@@ -143,15 +137,6 @@ html[data-era="modern"] .panel-heading .eyebrow::before {
   left: 0;
   width: 3px;
   background: var(--airinter-band-red);
-}
-
-/* Night mode gets a brighter red so the fourth band remains visible against
-   the navy shell. */
-html[data-era="modern"][data-appearance="dark"] {
-  --airinter-band-blue-1: #79a9c2;
-  --airinter-band-blue-2: #2c9dca;
-  --airinter-band-blue-3: #1375a8;
-  --airinter-band-red: #ef5360;
 }
 
 @media (max-width: 760px) {
