@@ -15,7 +15,10 @@ class AcarsConfigurationController extends Controller
     public function show()
     {
         return response()->json(['data' => [
-            'schema_version' => 1,
+            'schema_version' => 2,
+            'entitlements' => auth()->check()
+                ? app(\Modules\Promethee\Services\ShopEntitlementService::class)->hermes(auth()->user())
+                : [],
             'live' => [
                 'position_interval_seconds' => $this->integer('acars.position_interval_seconds', 15, 5, 300),
             ],
