@@ -58,7 +58,7 @@
                             @elseif($item->small_maintenance)<span class="tag">PETITE</span>
                             @else<span class="tag">TRANSFERT TECHNIQUE REQUIS</span>@endif
                         </td>
-                        <td>{{ $item->rem_ta ?? '—' }} h</td><td>{{ $item->rem_tb ?? '—' }} h</td><td>{{ $item->rem_tc ?? '—' }} h</td>
+                        <td>{{ is_numeric($item->rem_ta) ? number_format($item->rem_ta / 60, 1, ',', ' ') . ' h' : '—' }}</td><td>{{ is_numeric($item->rem_tb) ? number_format($item->rem_tb / 60, 1, ',', ' ') . ' h' : '—' }}</td><td>{{ is_numeric($item->rem_tc) ? number_format($item->rem_tc / 60, 1, ',', ' ') . ' h' : '—' }}</td>
                         <td>{{ $item->rem_ca ?? '—' }}</td><td>{{ $item->rem_cb ?? '—' }}</td><td>{{ $item->rem_cc ?? '—' }}</td>
                     </tr>
                 @empty
@@ -85,7 +85,7 @@
                         <td><a href="{{ route('promethee.aircraft.show', $item->registration) }}"><strong>{{ $item->registration }}</strong></a> · {{ $item->icao }}</td>
                         <td>{{ $item->airline_icao ?: '—' }}</td>
                         <td><strong>{{ $item->airport_id ?: '—' }}</strong> · @if($item->heavy_maintenance) petite + grosse maintenance @elseif($item->small_maintenance) petite maintenance @else aucune capacité technique @endif</td>
-                        <td>{{ $item->rem_ta ?? '—' }} / {{ $item->rem_tb ?? '—' }} / {{ $item->rem_tc ?? '—' }} h</td>
+                        <td>{{ is_numeric($item->rem_ta) ? number_format($item->rem_ta / 60, 1, ',', ' ') : '—' }} / {{ is_numeric($item->rem_tb) ? number_format($item->rem_tb / 60, 1, ',', ' ') : '—' }} / {{ is_numeric($item->rem_tc) ? number_format($item->rem_tc / 60, 1, ',', ' ') : '—' }} h</td>
                         <td>{{ $item->rem_ca ?? '—' }} / {{ $item->rem_cb ?? '—' }} / {{ $item->rem_cc ?? '—' }}</td>
                     </tr>
                 @empty

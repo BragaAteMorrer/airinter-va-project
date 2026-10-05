@@ -261,7 +261,8 @@ public function fleet(Request $r) {
             $maintenance = $maintenanceByAircraft->get($plane->id);
             $hours = collect([$maintenance?->rem_ta, $maintenance?->rem_tb, $maintenance?->rem_tc])->filter(fn ($value) => is_numeric($value));
             $cycles = collect([$maintenance?->rem_ca, $maintenance?->rem_cb, $maintenance?->rem_cc])->filter(fn ($value) => is_numeric($value));
-            $plane->setAttribute('maintenance_hours_remaining', $hours->isNotEmpty() ? $hours->min() : null);
+            // disposable_maintenance stores A/B/C time counters in minutes.
+            $plane->setAttribute('maintenance_hours_remaining', $hours->isNotEmpty() ? round($hours->min() / 60, 1) : null);
             $plane->setAttribute('maintenance_cycles_remaining', $cycles->isNotEmpty() ? $cycles->min() : null);
             $plane->setAttribute('state_label', AircraftState::$labels[$plane->state] ?? 'Inconnu');
             $plane->setAttribute('status_label', __(AircraftStatus::$labels[$plane->status] ?? 'aircraft.status.active'));
@@ -295,6 +296,7 @@ public function maintenance(Request $r) {
             })->orderBy('maintenance.curr_state')->paginate(40);
 
         $warningHours = (int) config('maintenance-warning.hours', 100);
+        $warningMinutes = $warningHours * 60;
         $warningCycles = (int) config('maintenance-warning.cycles', 2);
         $upcomingMaintenance = DB::table('disposable_maintenance as maintenance')
             ->join('aircraft as aircraft', 'aircraft.id', '=', 'maintenance.aircraft_id')
@@ -303,10 +305,10 @@ public function maintenance(Request $r) {
             ->leftJoin('promethee_operational_bases as ops_base', 'ops_base.airport_id', '=', 'aircraft.airport_id')
             ->select(['maintenance.*', 'aircraft.registration', 'aircraft.icao', 'aircraft.airport_id', 'airlines.name as airline_name', 'airlines.icao as airline_icao', 'ops_base.kind as maintenance_base_kind', 'ops_base.small_maintenance', 'ops_base.heavy_maintenance'])
             ->whereNull('maintenance.act_note')
-            ->where(function ($query) use ($warningHours, $warningCycles) {
-                $query->whereBetween('maintenance.rem_ta', [0, $warningHours])
-                    ->orWhereBetween('maintenance.rem_tb', [0, $warningHours])
-                    ->orWhereBetween('maintenance.rem_tc', [0, $warningHours])
+            ->where(function ($query) use ($warningMinutes, $warningCycles) {
+                $query->whereBetween('maintenance.rem_ta', [0, $warningMinutes])
+                    ->orWhereBetween('maintenance.rem_tb', [0, $warningMinutes])
+                    ->orWhereBetween('maintenance.rem_tc', [0, $warningMinutes])
                     ->orWhereBetween('maintenance.rem_ca', [0, $warningCycles])
                     ->orWhereBetween('maintenance.rem_cb', [0, $warningCycles])
                     ->orWhereBetween('maintenance.rem_cc', [0, $warningCycles]);
@@ -317,9 +319,9 @@ public function maintenance(Request $r) {
             })
             ->limit(12)->get()
             ->sortBy(fn ($item) => min(array_filter([
-                is_numeric($item->rem_ta) ? (float) $item->rem_ta : INF,
-                is_numeric($item->rem_tb) ? (float) $item->rem_tb : INF,
-                is_numeric($item->rem_tc) ? (float) $item->rem_tc : INF,
+                is_numeric($item->rem_ta) ? (float) $item->rem_ta / 60 : INF,
+                is_numeric($item->rem_tb) ? (float) $item->rem_tb / 60 : INF,
+                is_numeric($item->rem_tc) ? (float) $item->rem_tc / 60 : INF,
                 is_numeric($item->rem_ca) ? (float) $item->rem_ca * 25 : INF,
                 is_numeric($item->rem_cb) ? (float) $item->rem_cb * 25 : INF,
                 is_numeric($item->rem_cc) ? (float) $item->rem_cc * 25 : INF,

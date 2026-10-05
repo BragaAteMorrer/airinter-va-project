@@ -6,6 +6,7 @@ use App\Models\Enums\AircraftState;
 use App\Models\Enums\AircraftStatus;
 use App\Models\Pirep;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Modules\Promethee\Services\AirframeMaintenanceService;
 
 final class PrometheeAirframeMaintenanceTest extends TestCase
@@ -30,6 +31,73 @@ final class PrometheeAirframeMaintenanceTest extends TestCase
         $this->assertSame('20', DB::table('promethee_settings')->where('key', 'maintenance.airframe.a.cycle_limit')->value('value'));
         $this->assertSame('60', DB::table('promethee_settings')->where('key', 'maintenance.airframe.b.time_limit_hours')->value('value'));
         $this->assertSame('120', DB::table('promethee_settings')->where('key', 'maintenance.airframe.c.duration_hours')->value('value'));
+
+        if (Schema::hasTable('disposable_settings')) {
+            $this->assertSame('20', DB::table('disposable_settings')->where('key', 'turksim.maint_lim_ac')->value('value'));
+            $this->assertSame('60', DB::table('disposable_settings')->where('key', 'turksim.maint_lim_bt')->value('value'));
+            $this->assertSame('120', DB::table('disposable_settings')->where('key', 'turksim.maint_hours_c')->value('value'));
+            $this->assertSame('disposable_settings', $service->settings()['source']);
+        }
+    }
+
+    public function test_admin_fleet_status_uses_the_same_aircraft_maintenance_record(): void
+    {
+        if (!Schema::hasTable('disposable_maintenance')) {
+            $this->markTestSkipped('Disposable maintenance table is not installed in this test environment.');
+        }
+
+        $fleet = $this->createSubfleetWithAircraft(1, 'LFPO');
+        $aircraft = $fleet['aircraft']->first();
+        $aircraft->update(['icao' => 'ZZZZ']);
+
+        /** @var AirframeMaintenanceService $service */
+        $service = app(AirframeMaintenanceService::class);
+        $service->saveSettings([
+            'a_time_limit_hours' => 20,
+            'a_cycle_limit' => 20,
+            'a_duration_hours' => 10,
+            'b_time_limit_hours' => 60,
+            'b_cycle_limit' => 60,
+            'b_duration_hours' => 48,
+            'c_time_limit_hours' => 180,
+            'c_cycle_limit' => 180,
+            'c_duration_hours' => 120,
+            'warning_percent' => 10,
+        ]);
+        $service->syncFleet();
+
+        DB::table('disposable_maintenance')->updateOrInsert(
+            ['aircraft_id' => $aircraft->id],
+            [
+                'curr_state' => 99,
+                'time_a' => 600,
+                'time_b' => 1200,
+                'time_c' => 1800,
+                'cycle_a' => 8,
+                'cycle_b' => 20,
+                'cycle_c' => 20,
+                'rem_ta' => 600,
+                'rem_tb' => 2400,
+                'rem_tc' => 9000,
+                'rem_ca' => 12,
+                'rem_cb' => 40,
+                'rem_cc' => 160,
+                'last_a' => '2026-09-07 16:02:14',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
+
+        $state = $service->fleetStatus()->firstWhere('aircraft_id', $aircraft->id);
+
+        $this->assertNotNull($state);
+        $this->assertSame('disposable_maintenance', $state->maintenance_source);
+        $this->assertSame(99.0, $state->current_state_percent);
+        $this->assertSame(10.0, $state->checks['a']['remaining_hours']);
+        $this->assertSame(12, $state->checks['a']['remaining_cycles']);
+        $this->assertSame(40.0, $state->checks['b']['remaining_hours']);
+        $this->assertSame(160, $state->checks['c']['remaining_cycles']);
+        $this->assertSame('2026-09-07 16:02:14', (string) $state->checks['a']['last_check_at']);
     }
 
     public function test_accepted_pirep_increments_airframe_hours_and_cycles_once(): void
