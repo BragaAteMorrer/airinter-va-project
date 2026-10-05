@@ -13,16 +13,59 @@
   </div>
   <span class="tag">{{ $bases->where('active', true)->count() }} site(s) actif(s)</span>
 </div>
-<nav class="admin-workspace-nav" aria-label="Navigation locale">
-  <a href="#regional-rules">Rapatriement</a>
-  <a href="#regional-sites">Sites</a>
-  <a href="#regional-rotation">Rotation</a>
-  <a href="#regional-fleet">Flotte</a>
-  <a href="#regional-history">Historique</a>
-</nav>
 
 
-<div class="two-columns admin-workspace-grid">
+<div class="admin-master-detail"
+     id="regional-operations-workspace"
+     data-admin-master-detail
+     data-workspace-key="regional-operations"
+     data-master-default="regional-sites-panel">
+  <aside class="admin-master-pane" aria-label="Bases et opérations régionales">
+    <div class="admin-master-toolbar">
+      <label>Rechercher
+        <input type="search" data-master-filter placeholder="Site, rotation, flotte…">
+      </label>
+    </div>
+    <div class="admin-master-list" role="tablist" aria-orientation="vertical">
+      <button type="button" class="admin-master-row" data-master-target="regional-sites-panel" data-master-search="rapatriement règles sites bases plateformes escales">
+        <span class="admin-master-row-main">
+          <strong>Règles & sites</strong>
+          <small>{{ $bases->where('active', true)->count() }} site(s) actif(s)</small>
+        </span>
+        <span class="tag">RÉSEAU</span>
+      </button>
+      <button type="button" class="admin-master-row" data-master-target="regional-rotation-panel" data-master-search="rotation flotte permutations fréquence maintenance">
+        <span class="admin-master-row-main">
+          <strong>Rotation flotte</strong>
+          <small>{{ $rotationSettings['enabled'] ? 'Automatique activée' : 'Automatique désactivée' }}</small>
+        </span>
+        <span class="tag">{{ strtoupper($rotationSettings['frequency']) }}</span>
+      </button>
+      <button type="button" class="admin-master-row" data-master-target="regional-network-panel" data-master-search="réseau technique checks maintenance sites">
+        <span class="admin-master-row-main">
+          <strong>Réseau technique</strong>
+          <small>Capacités A / B / C et moteurs</small>
+        </span>
+      </button>
+      <button type="button" class="admin-master-row" data-master-target="regional-fleet-panel" data-master-search="flotte appareils affectation base position">
+        <span class="admin-master-row-main">
+          <strong>Flotte & affectations</strong>
+          <small>{{ $aircraft->count() }} appareil(s)</small>
+        </span>
+        <span class="tag">AFFECTATION</span>
+      </button>
+      <button type="button" class="admin-master-row" data-master-target="regional-history-panel" data-master-search="historique rotations permutations">
+        <span class="admin-master-row-main">
+          <strong>Historique</strong>
+          <small>Dernières permutations automatiques</small>
+        </span>
+      </button>
+      <div class="admin-master-empty" data-master-empty hidden>Aucune section ne correspond.</div>
+    </div>
+  </aside>
+  <div class="admin-detail-pane">
+    <button type="button" class="button outline admin-master-back" data-master-back>← Retour à la liste</button>
+    <div class="admin-detail-panel" data-detail-panel="regional-sites-panel"><div class="two-columns admin-workspace-grid">
   <section class="panel admin-workspace-section" id="regional-rules">
     <div class="panel-heading"><div><span class="eyebrow">RAPATRIEMENT</span><h2>Règles automatiques</h2></div></div>
     <form method="post" action="{{ route('admin.promethee.regional.settings') }}" class="form-grid">
@@ -63,9 +106,8 @@
       <button>Enregistrer le site</button>
     </form>
   </section>
-</div>
-
-<section class="panel admin-workspace-section" id="regional-rotation">
+</div></div>
+    <div class="admin-detail-panel" data-detail-panel="regional-rotation-panel" hidden><section class="panel admin-workspace-section" id="regional-rotation">
   <div class="panel-heading regional-aircraft-heading">
     <div><span class="eyebrow">ROTATION FLOTTE</span><h2>Faire tourner les immatriculations entre bases</h2><p>Seuls les appareils stationnés dans leur propre base, parkés, non réservés et sans mission/PIREP/maintenance en cours sont éligibles. Les permutations se font uniquement entre appareils de la même sous-flotte.</p></div>
     <form method="post" action="{{ route('admin.promethee.regional.rotation.run') }}" class="inline-form" onsubmit="return confirm('Lancer maintenant une rotation forcée des appareils actuellement éligibles ?');">
@@ -105,9 +147,8 @@
     <button>Enregistrer la rotation</button>
   </form>
   <p class="hint">Dernière exécution : {{ $rotationSettings['last_run_at'] ? \Carbon\Carbon::parse($rotationSettings['last_run_at'])->locale('fr')->diffForHumans() : 'jamais' }}. Une rotation ne crée jamais de mission de rapatriement : position et base attitrée sont permutées ensemble.</p>
-</section>
-
-<section class="panel table-wrap admin-table-scroll">
+</section></div>
+    <div class="admin-detail-panel" data-detail-panel="regional-network-panel" hidden><section class="panel table-wrap admin-table-scroll">
   <div class="panel-heading"><div><span class="eyebrow">RÉSEAU TECHNIQUE</span><h2>Sites opérationnels</h2></div></div>
   <table>
     <thead><tr><th>Aéroport</th><th>Rôles</th><th>A CHECK</th><th>B CHECK</th><th>C CHECK</th><th>Révision moteur</th><th>État</th></tr></thead>
@@ -132,9 +173,8 @@
     @endforeach
     </tbody>
   </table>
-</section>
-
-<section class="panel table-wrap admin-workspace-section admin-table-scroll" id="regional-fleet">
+</section></div>
+    <div class="admin-detail-panel" data-detail-panel="regional-fleet-panel" hidden><section class="panel table-wrap admin-workspace-section admin-table-scroll" id="regional-fleet">
   <div class="panel-heading regional-aircraft-heading">
     <div>
       <span class="eyebrow">AFFECTATION</span>
@@ -237,9 +277,8 @@
     @endforeach
     </tbody>
   </table>
-</section>
-
-<section class="panel table-wrap admin-workspace-section admin-table-scroll" id="regional-history">
+</section></div>
+    <div class="admin-detail-panel" data-detail-panel="regional-history-panel" hidden><section class="panel table-wrap admin-workspace-section admin-table-scroll" id="regional-history">
   <div class="panel-heading"><div><span class="eyebrow">HISTORIQUE ROTATION</span><h2>Dernières permutations automatiques</h2></div></div>
   <table>
     <thead><tr><th>Date</th><th>Appareil 1</th><th>Appareil 2</th><th>Permutation</th><th>Motif</th></tr></thead>
@@ -265,7 +304,9 @@
     @endforelse
     </tbody>
   </table>
-</section>
+</section></div>
+  </div>
+</div>
 
 @push('scripts')
 <script>
@@ -342,6 +383,7 @@
   apply();
 })();
 </script>
+<script src="{{ asset('promethee-assets/promethee-admin-workspaces.js') }}?v={{ filemtime(public_path('promethee-assets/promethee-admin-workspaces.js')) }}"></script>
 @endpush
 </div>
 @endsection
