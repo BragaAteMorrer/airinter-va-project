@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="{{ asset('promethee-assets/promethee-community.css') }}">
 <link rel="stylesheet" href="{{ asset('promethee-assets/airinter-eras.css') }}">
 <link rel="stylesheet" href="{{ asset('promethee-assets/promethee-appearance.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-appearance.css')) }}">
+<link rel="stylesheet" href="{{ asset('promethee-assets/promethee-design-system.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-design-system.css')) }}">
 <script>
 window.ensurePrometheeMinitelStyles = (() => {
   let loaded = false;
