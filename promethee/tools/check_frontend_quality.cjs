@@ -498,20 +498,28 @@ expect(prometheeV2.includes('.attention-inbox')
   'Prométhée must preserve shared OCC attention-inbox styling.');
 
 expect(adminWorkspaceCss.includes('.admin-workspace-nav')
+    && adminWorkspaceCss.includes('.admin-master-detail')
     && adminWorkspaceCss.includes('@media(max-width:980px)')
     && adminWorkspaceCss.includes('@media(max-width:760px)')
     && adminWorkspaceCss.includes('.admin-table-scroll'),
-  'Prométhée staff workspaces must preserve responsive local navigation, grid collapse and table scrolling.');
+  'Prométhée staff workspaces must preserve responsive local navigation/master-detail behavior, grid collapse and table scrolling.');
 for (const [name, source] of Object.entries({
   automationWorkspace,seasonsWorkspace,economyWorkspace,regionalWorkspace,maintenanceWorkspace,sopWorkspace,
 })) {
+  const usesLegacyNav = source.includes('class="admin-workspace-nav"');
+  const usesMasterDetail = source.includes('data-admin-master-detail')
+    && source.includes('promethee-admin-workspaces.js');
   expect(source.includes('class="admin-workspace-page"')
-      && source.includes('class="admin-workspace-nav"')
+      && (usesLegacyNav || usesMasterDetail)
       && source.includes('promethee-admin-workspaces.css'),
     name + ' must use the shared responsive staff workspace shell.');
   expect(!/<[^>]+\sstyle\s*=/i.test(source),
     name + ' must not use inline style attributes.');
 }
+expect([automationWorkspace,regionalWorkspace,maintenanceWorkspace,sopWorkspace]
+    .every(source => source.includes('data-admin-master-detail')
+      && source.includes('promethee-admin-workspaces.js')),
+  'Dense OCC/admin workspaces migrated by the master/detail refactor must keep the shared controller and responsive shell.');
 expect(regionalWorkspace.includes('id="regional-fleet"')
     && maintenanceWorkspace.includes('id="maintenance-engines"')
     && sopWorkspace.includes('id="sop-scoring"'),
