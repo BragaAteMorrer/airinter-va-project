@@ -40,15 +40,72 @@
 .airframe-fleet-row:hover td,.airframe-fleet-row:focus td{background:var(--panel-bg,#fff)}
 .airframe-fleet-row:focus{outline:2px solid currentColor;outline-offset:-2px}
 .airframe-fleet-row.is-selected td:first-child{border-left:3px solid currentColor}
-.airframe-selection-summary{margin:0;padding:.7rem .85rem;border:1px dashed var(--border-color,#d7dce2);border-radius:9px}
-.airframe-assignment-select{min-height:15rem}
+.airframe-configurator{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:1rem;align-items:start}
+.airframe-configurator-main{display:grid;gap:1rem}
+.airframe-config-step{border:1px solid var(--border-color,#d7dce2);border-radius:14px;padding:1rem;background:color-mix(in srgb,var(--panel-bg,#fff) 96%,transparent)}
+.airframe-step-head{display:flex;align-items:flex-start;gap:.75rem;margin-bottom:.9rem}
+.airframe-step-index{display:grid;place-items:center;flex:0 0 2.1rem;height:2.1rem;border-radius:999px;background:var(--accent,#0d5dcc);color:#fff;font-size:.72rem;font-weight:800;letter-spacing:.06em}
+.airframe-step-copy{min-width:0}
+.airframe-step-copy strong{display:block;font-size:1rem}
+.airframe-step-copy small{display:block;margin-top:.15rem;opacity:.68;line-height:1.35}
+.airframe-picker-search{position:relative;margin-bottom:.7rem}
+.airframe-picker-search input{width:100%;padding-left:2.4rem}
+.airframe-picker-search span{position:absolute;left:.85rem;top:50%;transform:translateY(-50%);opacity:.55;pointer-events:none}
+.airframe-picker-list{display:grid;gap:.45rem;max-height:330px;overflow:auto;padding:.15rem .2rem .15rem 0;scrollbar-gutter:stable}
+.airframe-aircraft-choice{display:grid;grid-template-columns:1.6rem minmax(0,1fr) auto;gap:.7rem;align-items:center;padding:.72rem .8rem;border:1px solid var(--border-color,#d7dce2);border-radius:10px;cursor:pointer;background:var(--panel-bg,#fff);transition:border-color .12s ease,transform .12s ease,box-shadow .12s ease}
+.airframe-aircraft-choice:hover{transform:translateY(-1px);box-shadow:0 5px 15px rgba(0,0,0,.06)}
+.airframe-aircraft-choice:has(input:focus-visible){outline:2px solid currentColor;outline-offset:2px}
+.airframe-aircraft-choice.is-selected{border-color:var(--accent,#0d5dcc);box-shadow:inset 3px 0 0 var(--accent,#0d5dcc)}
+.airframe-aircraft-choice input{position:absolute;opacity:0;pointer-events:none}
+.airframe-choice-check{display:grid;place-items:center;width:1.45rem;height:1.45rem;border:1px solid var(--border-color,#d7dce2);border-radius:6px;font-size:.8rem;font-weight:900;color:transparent;background:transparent}
+.airframe-aircraft-choice.is-selected .airframe-choice-check{background:var(--accent,#0d5dcc);border-color:var(--accent,#0d5dcc);color:#fff}
+.airframe-choice-copy{min-width:0}
+.airframe-choice-copy strong,.airframe-choice-copy small{display:block}
+.airframe-choice-copy strong{font-size:.92rem}
+.airframe-choice-copy small{margin-top:.1rem;opacity:.64;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.airframe-choice-current{max-width:13rem;text-align:right;font-size:.72rem;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.airframe-picker-empty{display:none;padding:1.25rem;text-align:center;border:1px dashed var(--border-color,#d7dce2);border-radius:10px;opacity:.65}
+.airframe-picker-empty.is-visible{display:block}
+.airframe-config-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem}
+.airframe-field-card{display:grid;gap:.35rem;padding:.85rem;border:1px solid var(--border-color,#d7dce2);border-radius:10px;background:var(--panel-bg,#fff)}
+.airframe-field-card span{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;opacity:.64}
+.airframe-field-card select{width:100%}
+.airframe-config-summary{position:sticky;top:1rem;border:1px solid var(--border-color,#d7dce2);border-radius:14px;padding:1rem;background:var(--panel-bg,#fff);box-shadow:0 10px 28px rgba(0,0,0,.06)}
+.airframe-config-summary .eyebrow{margin-bottom:.35rem}
+.airframe-summary-count{display:flex;align-items:baseline;gap:.35rem;margin:.15rem 0 .7rem}
+.airframe-summary-count strong{font-size:1.75rem;line-height:1}
+.airframe-summary-count span{font-size:.82rem;opacity:.65}
+.airframe-selected-list{display:grid;gap:.4rem;max-height:245px;overflow:auto;margin:.65rem 0}
+.airframe-selected-chip{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.55rem .65rem;border-radius:9px;background:color-mix(in srgb,var(--panel-bg,#fff) 82%,currentColor 4%);border:1px solid var(--border-color,#d7dce2)}
+.airframe-selected-chip strong{font-size:.82rem}
+.airframe-selected-chip button{appearance:none;border:0;background:transparent;color:inherit;cursor:pointer;font-size:1rem;line-height:1;opacity:.55;padding:.1rem .25rem}
+.airframe-selected-chip button:hover{opacity:1}
+.airframe-selection-empty{padding:.8rem;border:1px dashed var(--border-color,#d7dce2);border-radius:9px;text-align:center;font-size:.82rem;opacity:.62}
+.airframe-summary-actions{display:grid;grid-template-columns:1fr 1fr;gap:.45rem;margin-top:.75rem}
+.airframe-summary-actions .airframe-secondary{padding:.5rem .6rem;font-size:.8rem}
+.airframe-submit-bar{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.85rem 1rem;border:1px solid var(--border-color,#d7dce2);border-radius:12px;background:color-mix(in srgb,var(--panel-bg,#fff) 96%,transparent)}
+.airframe-submit-copy strong,.airframe-submit-copy small{display:block}
+.airframe-submit-copy small{margin-top:.15rem;opacity:.65}
+.airframe-submit-bar .button{min-width:220px}
+.airframe-config-summary.has-error{border-color:#b42318;box-shadow:0 0 0 2px rgba(180,35,24,.1)}
 .airframe-subtitle{margin:0}
 .airframe-empty{display:none;padding:1rem;text-align:center;opacity:.7}
 .airframe-empty.is-visible{display:block}
+@media (max-width:1050px){
+  .airframe-configurator{grid-template-columns:1fr}
+  .airframe-config-summary{position:static}
+}
 @media (max-width:900px){
   .airframe-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
   .airframe-form-grid{grid-template-columns:1fr}
   .airframe-span-2{grid-column:auto}
+}
+@media (max-width:640px){
+  .airframe-config-fields{grid-template-columns:1fr}
+  .airframe-aircraft-choice{grid-template-columns:1.6rem minmax(0,1fr)}
+  .airframe-choice-current{display:none}
+  .airframe-submit-bar{align-items:stretch;flex-direction:column}
+  .airframe-submit-bar .button{width:100%;min-width:0}
 }
 @media (max-width:560px){
   .airframe-stats{grid-template-columns:1fr}
@@ -202,45 +259,97 @@
 
       <form method="post" action="{{ route('admin.promethee.airframes.assign') }}" class="stack" id="airframeAssignmentForm">
         @csrf
-        <div class="airframe-form-grid">
-          <div class="airframe-span-2">
-            <label for="airframeAircraftSearch">1. Trouver les immatriculations</label>
-            <input type="search" id="airframeAircraftSearch" placeholder="Filtrer la liste : F-GPM, A320, Mercure…">
+
+        <div class="airframe-configurator">
+          <div class="airframe-configurator-main">
+            <section class="airframe-config-step">
+              <div class="airframe-step-head">
+                <span class="airframe-step-index">01</span>
+                <div class="airframe-step-copy">
+                  <strong>Choisir les appareils</strong>
+                  <small>Recherchez une immatriculation ou un type, puis cochez un ou plusieurs appareils.</small>
+                </div>
+              </div>
+
+              <div class="airframe-picker-search">
+                <span aria-hidden="true">⌕</span>
+                <input type="search" id="airframeAircraftSearch" placeholder="F-GP…, A340, Mercure, Nord 262…" autocomplete="off">
+              </div>
+
+              <div class="airframe-picker-list" id="airframeAircraftChoices" role="group" aria-label="Immatriculations disponibles">
+                @foreach($aircraft as $row)
+                  @php($currentVariant = $row['resolved']['variant']['name'] ?? null)
+                  @php($currentConfiguration = $row['resolved']['configuration']['name'] ?? null)
+                  <label class="airframe-aircraft-choice"
+                         data-aircraft-choice
+                         data-aircraft-id="{{ $row['model']->id }}"
+                         data-variant-id="{{ $row['resolved']['variant']['id'] ?? '' }}"
+                         data-configuration-id="{{ $row['resolved']['configuration']['id'] ?? '' }}">
+                    <input type="checkbox"
+                           name="aircraft_ids[]"
+                           value="{{ $row['model']->id }}"
+                           class="airframe-aircraft-checkbox">
+                    <span class="airframe-choice-check" aria-hidden="true">✓</span>
+                    <span class="airframe-choice-copy">
+                      <strong>{{ $row['model']->registration }}</strong>
+                      <small>{{ $row['model']->name }}</small>
+                    </span>
+                    <span class="airframe-choice-current">{{ $currentVariant ?: 'À configurer' }}@if($currentConfiguration) · {{ $currentConfiguration }}@endif</span>
+                  </label>
+                @endforeach
+              </div>
+              <div class="airframe-picker-empty" id="airframeAircraftEmpty">Aucune immatriculation ne correspond à cette recherche.</div>
+            </section>
+
+            <section class="airframe-config-step">
+              <div class="airframe-step-head">
+                <span class="airframe-step-index">02</span>
+                <div class="airframe-step-copy">
+                  <strong>Définir la configuration</strong>
+                  <small>La variante est obligatoire. La cabine reste optionnelle et se filtre automatiquement.</small>
+                </div>
+              </div>
+
+              <div class="airframe-config-fields">
+                <label class="airframe-field-card">
+                  <span>Variante réelle</span>
+                  <select name="variant_id" id="airframeVariantSelect" required>
+                    <option value="">Choisir une variante…</option>
+                    @foreach($variants as $variant)
+                      <option value="{{ $variant->id }}">{{ $variant->type_key }} · {{ $variant->name }}</option>
+                    @endforeach
+                  </select>
+                </label>
+
+                <label class="airframe-field-card">
+                  <span>Configuration cabine</span>
+                  <select name="configuration_id" id="airframeConfigurationSelect">
+                    <option value="">Aucune configuration spécifique</option>
+                    @foreach($configurations as $config)
+                      <option value="{{ $config->id }}" data-variant-id="{{ $config->variant_id }}">{{ $config->variant?->code }} · {{ $config->name }}</option>
+                    @endforeach
+                  </select>
+                </label>
+              </div>
+            </section>
           </div>
 
-          <label class="airframe-span-2">2. Sélectionner les appareils
-            <select class="airframe-assignment-select" id="airframeAircraftSelect" name="aircraft_ids[]" multiple size="10" required>
-              @foreach($aircraft as $row)
-                <option value="{{ $row['model']->id }}"
-                        data-variant-id="{{ $row['resolved']['variant']['id'] ?? '' }}"
-                        data-configuration-id="{{ $row['resolved']['configuration']['id'] ?? '' }}">{{ $row['model']->registration }} · {{ $row['model']->name }}</option>
-              @endforeach
-            </select>
-          </label>
+          <aside class="airframe-config-summary" id="airframeSelectionSummary" aria-live="polite">
+            <span class="eyebrow">SÉLECTION</span>
+            <div class="airframe-summary-count">
+              <strong id="airframeSelectionCount">0</strong>
+              <span>appareil sélectionné</span>
+            </div>
 
-          <div class="airframe-actions airframe-span-2">
-            <button class="airframe-secondary" type="button" id="airframeSelectVisible">Sélectionner les résultats visibles</button>
-            <button class="airframe-secondary" type="button" id="airframeClearSelection">Effacer la sélection</button>
-          </div>
-          <p class="airframe-selection-summary airframe-span-2" id="airframeSelectionSummary" aria-live="polite">Aucune immatriculation sélectionnée.</p>
+            <div class="airframe-selected-list" id="airframeSelectedList">
+              <div class="airframe-selection-empty">Cliquez sur un appareil pour commencer.</div>
+            </div>
 
-          <label>3. Variante réelle
-            <select name="variant_id" id="airframeVariantSelect" required>
-              <option value="">Choisir une variante…</option>
-              @foreach($variants as $variant)
-                <option value="{{ $variant->id }}">{{ $variant->type_key }} · {{ $variant->name }}</option>
-              @endforeach
-            </select>
-          </label>
-
-          <label>4. Configuration cabine
-            <select name="configuration_id" id="airframeConfigurationSelect">
-              <option value="">Aucune configuration spécifique</option>
-              @foreach($configurations as $config)
-                <option value="{{ $config->id }}" data-variant-id="{{ $config->variant_id }}">{{ $config->variant?->code }} · {{ $config->name }}</option>
-              @endforeach
-            </select>
-          </label>
+            <div class="airframe-summary-actions">
+              <button class="airframe-secondary" type="button" id="airframeSelectVisible">Tout sélectionner</button>
+              <button class="airframe-secondary" type="button" id="airframeClearSelection">Tout effacer</button>
+            </div>
+          </aside>
         </div>
 
         <details class="airframe-advanced">
@@ -262,7 +371,13 @@
           @include('promethee::admin.partials.airframe-source-fields')
         </details>
 
-        <button class="button" type="submit">Appliquer aux immatriculations</button>
+        <div class="airframe-submit-bar">
+          <div class="airframe-submit-copy">
+            <strong>Prêt à appliquer</strong>
+            <small id="airframeSubmitHint">Sélectionnez au moins un appareil et une variante.</small>
+          </div>
+          <button class="button" type="submit" id="airframeSubmitButton">Appliquer la configuration</button>
+        </div>
       </form>
     </section>
   </section>
@@ -534,11 +649,17 @@
     const globalSearch = root.querySelector('[data-airframe-global-search]');
 
     const aircraftSearch = root.querySelector('#airframeAircraftSearch');
-    const aircraftSelect = root.querySelector('#airframeAircraftSelect');
+    const aircraftChoices = [...root.querySelectorAll('[data-aircraft-choice]')];
+    const aircraftCheckboxes = aircraftChoices.map(choice => choice.querySelector('.airframe-aircraft-checkbox')).filter(Boolean);
+    const aircraftEmpty = root.querySelector('#airframeAircraftEmpty');
     const assignmentForm = root.querySelector('#airframeAssignmentForm');
     const variantSelect = root.querySelector('#airframeVariantSelect');
     const configurationSelect = root.querySelector('#airframeConfigurationSelect');
     const selectionSummary = root.querySelector('#airframeSelectionSummary');
+    const selectionCount = root.querySelector('#airframeSelectionCount');
+    const selectedList = root.querySelector('#airframeSelectedList');
+    const submitHint = root.querySelector('#airframeSubmitHint');
+    const submitButton = root.querySelector('#airframeSubmitButton');
 
     const visibleFleetRows = () => fleetRows.filter(row => !row.hidden);
 
@@ -578,25 +699,72 @@
       if (selected?.hidden) configurationSelect.value = '';
     };
 
-    const updateSelection = ({ prefill = true } = {}) => {
-      if (!aircraftSelect) return;
+    const selectedChoices = () => aircraftChoices.filter(choice => choice.querySelector('.airframe-aircraft-checkbox')?.checked);
 
-      const selected = [...aircraftSelect.selectedOptions];
-      const ids = new Set(selected.map(option => option.value));
+    const updateSelection = ({ prefill = true } = {}) => {
+      const selected = selectedChoices();
+      const ids = new Set(selected.map(choice => choice.dataset.aircraftId));
+
+      aircraftChoices.forEach(choice => {
+        const checked = choice.querySelector('.airframe-aircraft-checkbox')?.checked === true;
+        choice.classList.toggle('is-selected', checked);
+      });
       fleetRows.forEach(row => row.classList.toggle('is-selected', ids.has(row.dataset.aircraftId)));
 
-      if (selectionSummary) {
-        selectionSummary.textContent = selected.length === 0
-          ? 'Aucune immatriculation sélectionnée.'
+      if (selectionCount) selectionCount.textContent = String(selected.length);
+
+      if (selectedList) {
+        selectedList.innerHTML = '';
+        if (!selected.length) {
+          const empty = document.createElement('div');
+          empty.className = 'airframe-selection-empty';
+          empty.textContent = 'Cliquez sur un appareil pour commencer.';
+          selectedList.append(empty);
+        } else {
+          selected.forEach(choice => {
+            const copy = choice.querySelector('.airframe-choice-copy');
+            const chip = document.createElement('div');
+            chip.className = 'airframe-selected-chip';
+
+            const label = document.createElement('strong');
+            label.textContent = copy?.querySelector('strong')?.textContent?.trim() || choice.dataset.aircraftId;
+
+            const remove = document.createElement('button');
+            remove.type = 'button';
+            remove.setAttribute('aria-label', 'Retirer ' + label.textContent);
+            remove.textContent = '×';
+            remove.addEventListener('click', () => {
+              const checkbox = choice.querySelector('.airframe-aircraft-checkbox');
+              if (checkbox) checkbox.checked = false;
+              updateSelection({ prefill: false });
+            });
+
+            chip.append(label, remove);
+            selectedList.append(chip);
+          });
+        }
+      }
+
+      selectionSummary?.classList.remove('has-error');
+
+      if (submitHint) {
+        submitHint.textContent = selected.length === 0
+          ? 'Sélectionnez au moins un appareil et une variante.'
           : selected.length === 1
-            ? 'Sélection : ' + selected[0].textContent.trim() + '. La variante/configuration actuelle est préchargée si elle existe.'
-            : selected.length + ' immatriculations sélectionnées. Les valeurs communes sont préchargées automatiquement.';
+            ? 'La configuration sera appliquée à 1 appareil.'
+            : 'La configuration sera appliquée à ' + selected.length + ' appareils.';
+      }
+
+      if (submitButton) {
+        submitButton.textContent = selected.length > 1
+          ? 'Appliquer à ' + selected.length + ' appareils'
+          : 'Appliquer la configuration';
       }
 
       if (!prefill || selected.length === 0 || !variantSelect) return;
 
-      const variantIds = [...new Set(selected.map(option => option.dataset.variantId || '').filter(Boolean))];
-      const configurationIds = [...new Set(selected.map(option => option.dataset.configurationId || '').filter(Boolean))];
+      const variantIds = [...new Set(selected.map(choice => choice.dataset.variantId || '').filter(Boolean))];
+      const configurationIds = [...new Set(selected.map(choice => choice.dataset.configurationId || '').filter(Boolean))];
 
       if (variantIds.length === 1) {
         variantSelect.value = variantIds[0];
@@ -617,12 +785,12 @@
     };
 
     const configureAircraft = (aircraftId, { scroll = true } = {}) => {
-      if (!aircraftSelect) return;
+      const choice = aircraftChoices.find(item => item.dataset.aircraftId === String(aircraftId));
+      if (!choice) return;
 
-      const option = [...aircraftSelect.options].find(item => item.value === String(aircraftId));
-      if (!option) return;
-
-      [...aircraftSelect.options].forEach(item => { item.selected = item === option; });
+      aircraftCheckboxes.forEach(checkbox => { checkbox.checked = false; });
+      const checkbox = choice.querySelector('.airframe-aircraft-checkbox');
+      if (checkbox) checkbox.checked = true;
       updateSelection();
 
       if (fleetMasterButton && root.dataset.activeDetail !== 'fleet') {
@@ -631,7 +799,7 @@
 
       if (scroll && assignmentForm) {
         assignmentForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        window.setTimeout(() => aircraftSelect.focus({ preventScroll: true }), 250);
+        window.setTimeout(() => aircraftSearch?.focus({ preventScroll: true }), 250);
       }
     };
 
@@ -660,36 +828,61 @@
       button.addEventListener('click', () => configureAircraft(button.dataset.airframeConfigure));
     });
 
-    const filterAircraft = () => {
-      const query = normalize(aircraftSearch?.value);
-      [...(aircraftSelect?.options || [])].forEach(option => {
-        option.hidden = !!query && !normalize(option.textContent).includes(query);
-      });
-    };
-    aircraftSearch?.addEventListener('input', filterAircraft);
-    aircraftSearch?.addEventListener('keydown', event => {
-      if (event.key !== 'Enter' || !aircraftSelect) return;
-      const first = [...aircraftSelect.options].find(option => !option.hidden);
-      if (!first) return;
-      event.preventDefault();
-      configureAircraft(first.value, { scroll: false });
+    aircraftCheckboxes.forEach(checkbox => {
+      checkbox.addEventListener('change', () => updateSelection());
     });
 
-    aircraftSelect?.addEventListener('change', () => updateSelection());
-    variantSelect?.addEventListener('change', filterConfigurations);
+    const filterAircraft = () => {
+      const query = normalize(aircraftSearch?.value);
+      let visible = 0;
+
+      aircraftChoices.forEach(choice => {
+        const match = !query || normalize(choice.textContent).includes(query);
+        choice.hidden = !match;
+        if (match) visible += 1;
+      });
+
+      aircraftEmpty?.classList.toggle('is-visible', visible === 0);
+    };
+
+    aircraftSearch?.addEventListener('input', filterAircraft);
+    aircraftSearch?.addEventListener('keydown', event => {
+      if (event.key !== 'Enter') return;
+      const first = aircraftChoices.find(choice => !choice.hidden);
+      if (!first) return;
+
+      event.preventDefault();
+      const checkbox = first.querySelector('.airframe-aircraft-checkbox');
+      if (checkbox) checkbox.checked = !checkbox.checked;
+      updateSelection();
+    });
+
+    variantSelect?.addEventListener('change', () => {
+      filterConfigurations();
+      updateSelection({ prefill: false });
+    });
 
     root.querySelector('#airframeSelectVisible')?.addEventListener('click', () => {
-      [...(aircraftSelect?.options || [])].forEach(option => {
-        if (!option.hidden) option.selected = true;
+      aircraftChoices.forEach(choice => {
+        if (choice.hidden) return;
+        const checkbox = choice.querySelector('.airframe-aircraft-checkbox');
+        if (checkbox) checkbox.checked = true;
       });
       updateSelection();
-      aircraftSelect?.focus();
     });
 
     root.querySelector('#airframeClearSelection')?.addEventListener('click', () => {
-      [...(aircraftSelect?.options || [])].forEach(option => { option.selected = false; });
+      aircraftCheckboxes.forEach(checkbox => { checkbox.checked = false; });
       updateSelection({ prefill: false });
-      aircraftSelect?.focus();
+      aircraftSearch?.focus();
+    });
+
+    assignmentForm?.addEventListener('submit', event => {
+      if (selectedChoices().length) return;
+      event.preventDefault();
+      selectionSummary?.classList.add('has-error');
+      if (submitHint) submitHint.textContent = 'Choisissez au moins une immatriculation avant d’appliquer.';
+      aircraftSearch?.focus();
     });
 
     globalSearch?.addEventListener('input', () => {
@@ -719,6 +912,7 @@
 
     filterConfigurations();
     filterFleet();
+    filterAircraft();
     updateSelection({ prefill: false });
   };
 
