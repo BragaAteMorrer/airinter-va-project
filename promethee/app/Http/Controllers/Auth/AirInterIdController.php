@@ -238,6 +238,9 @@ class AirInterIdController extends Controller
             'timezone' => filled($profile['zoneinfo'] ?? null)
                 ? (string) $profile['zoneinfo']
                 : $user->timezone,
+            'locale' => filled($profile['locale'] ?? null)
+                ? (string) $profile['locale']
+                : ($user->locale ?? null),
             'country' => filled($pilotProfile['country'] ?? null)
                 ? strtoupper(trim((string) $pilotProfile['country']))
                 : null,
