@@ -145,6 +145,8 @@ final class PhpVmsAirframeImportServiceTest extends TestCase
         $this->assertSame($manualVariant->id, $manual->variant_id);
         $this->assertSame('Documentation Air Inter', $manual->source);
         $this->assertEquals(2.5, $manual->overrides['fuel_factor']);
+        $this->assertEquals(14360.0, $manual->overrides['max_cargo']);
+        $this->assertSame('kg', $manual->overrides['weight_unit']);
         $this->assertSame('F-CARGO', $manual->overrides['legacy_phpvms']['registration']);
     }
 
