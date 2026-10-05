@@ -90,7 +90,7 @@ html[data-era="2000"] .attention-item:hover{background:#eaf4f8}
 
 /* --- Minitel fallback: text-first Videotex grammar.
    The real 40x25 runtime remains authoritative when available. --- */
-html[data-era="minitel"] :where(.pilot-hub-nav,.admin-workspace-nav){
+html[data-era="minitel-legacy"] :where(.pilot-hub-nav,.admin-workspace-nav){
   display:block;
   margin-bottom:8px;
   padding:2px 0;
@@ -100,7 +100,7 @@ html[data-era="minitel"] :where(.pilot-hub-nav,.admin-workspace-nav){
   background:transparent;
   overflow:visible;
 }
-html[data-era="minitel"] :where(.pilot-hub-nav,.admin-workspace-nav) a{
+html[data-era="minitel-legacy"] :where(.pilot-hub-nav,.admin-workspace-nav) a{
   display:inline-flex;
   gap:0;
   padding:2px 8px 2px 0;
@@ -110,9 +110,9 @@ html[data-era="minitel"] :where(.pilot-hub-nav,.admin-workspace-nav) a{
   color:var(--minitel-cyan,#58f7ff);
   font:16px/1.25 "Courier New",monospace;
 }
-html[data-era="minitel"] :where(.pilot-hub-nav,.admin-workspace-nav) a::before{content:"[";color:var(--minitel-yellow,#fff35a)}
-html[data-era="minitel"] :where(.pilot-hub-nav,.admin-workspace-nav) a::after{content:"]";color:var(--minitel-yellow,#fff35a)}
-html[data-era="minitel"] .pilot-hub-nav a span{
+html[data-era="minitel-legacy"] :where(.pilot-hub-nav,.admin-workspace-nav) a::before{content:"[";color:var(--minitel-yellow,#fff35a)}
+html[data-era="minitel-legacy"] :where(.pilot-hub-nav,.admin-workspace-nav) a::after{content:"]";color:var(--minitel-yellow,#fff35a)}
+html[data-era="minitel-legacy"] .pilot-hub-nav a span{
   min-width:0;
   padding:0 0 0 4px;
   border:0;
@@ -121,48 +121,48 @@ html[data-era="minitel"] .pilot-hub-nav a span{
   color:var(--minitel-yellow,#fff35a);
   font:inherit;
 }
-html[data-era="minitel"] .mission-personal{border-left:0}
-html[data-era="minitel"] .mission-owned-row{
+html[data-era="minitel-legacy"] .mission-personal{border-left:0}
+html[data-era="minitel-legacy"] .mission-owned-row{
   display:grid;
   gap:2px;
   padding:5px 0;
   border-color:#285e39;
 }
-html[data-era="minitel"] .mission-owned-row strong{color:#99edb1;font-family:"Courier New",monospace}
-html[data-era="minitel"] .mission-owned-row small{color:#6fcf8a}
-html[data-era="minitel"] .admin-workspace-grid{display:block}
-html[data-era="minitel"] .admin-workspace-page details.route-list,
-html[data-era="minitel"] .admin-workspace-page details.sop-rule{
+html[data-era="minitel-legacy"] .mission-owned-row strong{color:#99edb1;font-family:"Courier New",monospace}
+html[data-era="minitel-legacy"] .mission-owned-row small{color:#6fcf8a}
+html[data-era="minitel-legacy"] .admin-workspace-grid{display:block}
+html[data-era="minitel-legacy"] .admin-workspace-page details.route-list,
+html[data-era="minitel-legacy"] .admin-workspace-page details.sop-rule{
   border:1px solid #285e39;
   border-radius:0;
   background:transparent;
 }
-html[data-era="minitel"] .next-operation,
-html[data-era="minitel"] :where(.attention-inbox,.attention-item){
+html[data-era="minitel-legacy"] .next-operation,
+html[data-era="minitel-legacy"] :where(.attention-inbox,.attention-item){
   border:1px solid #285e39;
   border-radius:0;
   background:#07130c;
   box-shadow:none;
 }
-html[data-era="minitel"] .next-operation .eyebrow,
-html[data-era="minitel"] .attention-inbox .eyebrow{color:var(--minitel-cyan,#58f7ff)}
-html[data-era="minitel"] .next-operation-progress{
+html[data-era="minitel-legacy"] .next-operation .eyebrow,
+html[data-era="minitel-legacy"] .attention-inbox .eyebrow{color:var(--minitel-cyan,#58f7ff)}
+html[data-era="minitel-legacy"] .next-operation-progress{
   height:1em;
   border:1px solid #285e39;
   border-radius:0;
   background:#07130c;
 }
-html[data-era="minitel"] .next-operation-progress::-webkit-progress-bar{background:#07130c}
-html[data-era="minitel"] .next-operation-progress::-webkit-progress-value{background:#99edb1}
-html[data-era="minitel"] .next-operation-progress::-moz-progress-bar{background:#99edb1}
-html[data-era="minitel"] .documentation-header-actions .button{border-radius:0}
+html[data-era="minitel-legacy"] .next-operation-progress::-webkit-progress-bar{background:#07130c}
+html[data-era="minitel-legacy"] .next-operation-progress::-webkit-progress-value{background:#99edb1}
+html[data-era="minitel-legacy"] .next-operation-progress::-moz-progress-bar{background:#99edb1}
+html[data-era="minitel-legacy"] .documentation-header-actions .button{border-radius:0}
 
 @media(max-width:760px){
   html[data-era="2000"] :where(.pilot-hub-nav,.admin-workspace-nav){
     margin-inline:-16px;
     border-inline:0;
   }
-  html[data-era="minitel"] :where(.pilot-hub-nav,.admin-workspace-nav){
+  html[data-era="minitel-legacy"] :where(.pilot-hub-nav,.admin-workspace-nav){
     margin-inline:0;
     padding-inline:0;
   }
