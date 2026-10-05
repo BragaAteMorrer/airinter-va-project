@@ -134,7 +134,7 @@ public function saveAirframeMaintenanceSettings(Request $r, AirframeMaintenanceS
 
         $airframeService->saveSettings($data);
 
-        return back()->with('success','Limites heures/cycles et durées des checks A/B/C enregistrées.');
+        return back()->with('success','Référentiel A/B/C synchronisé avec les fiches appareils.');
     }
 
 
