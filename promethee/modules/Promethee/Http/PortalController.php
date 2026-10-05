@@ -1358,6 +1358,19 @@ class PortalController extends PrometheeWebController
         $airlines->each(fn (Airline $airline) => $airline->setAttribute('min_flight_hours', (int) ($accessRules[$airline->id] ?? 0)));
         return $this->page('admin-airlines', ['airlines'=>$airlines,'countries'=>Countries::getSelectList()]);
     }
+    public function editAdminAirline(Airline $airline) {
+        $rule = DB::table('promethee_airline_access_rules')->where('airline_id', $airline->id)->first();
+        $airline->setAttribute('min_flight_hours', (int) ($rule->min_flight_hours ?? 0));
+        return $this->page('admin-airline-edit', ['airline'=>$airline,'countries'=>Countries::getSelectList()]);
+    }
+    public function updateAdminAirline(Airline $airline, Request $r) {
+        $r->merge(['id'=>$airline->id]);
+        return $this->saveAdminAirline($r);
+    }
+    public function deleteAdminAirlineLogo(Airline $airline) {
+        $airline->update(['logo'=>null]);
+        return redirect()->route('admin.promethee.airlines.edit',$airline)->with('success','Logo de la compagnie supprimé.');
+    }
     public function saveAdminAirline(Request $r) {
         $data=$r->validate(['id'=>'nullable|integer|exists:airlines,id','icao'=>'required|string|max:5','iata'=>'nullable|string|max:5','name'=>'required|string|max:191','callsign'=>'nullable|string|max:191','logo'=>'nullable|string|max:2000','logo_upload'=>'nullable|image|mimes:png,jpg,jpeg,webp|max:2048','country'=>'nullable|string|size:2','active'=>'nullable|boolean','min_flight_hours'=>'nullable|integer|min:0|max:100000']);
         $attributes=collect($data)->except(['id','min_flight_hours','logo_upload'])->all();
