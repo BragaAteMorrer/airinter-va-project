@@ -68,9 +68,11 @@
   };
 
   const titleBand = (screen, title, subtitle = '') => {
-    writeBand(screen, 2, title, 'blue', 'white');
-    writeBand(screen, 3, subtitle || 'AIR INTER', 'blue', subtitle ? 'cyan' : 'yellow');
-    fillRow(screen, 4, 'blue', 'white');
+    // Télétel composition: semigraphic identity + sparse text, not a web-style full-width header.
+    mt.writeAirInterMosaic(screen, 2, 1, { foreground: 'blue', separatedMosaic: true });
+    screen.write(2, 12, fit('AIR INTER', 27), { foreground: 'yellow' });
+    screen.write(3, 12, fit(title, 27), { foreground: 'cyan' });
+    screen.write(4, 12, fit(subtitle || 'SERVICE TELEMATIQUE', 27), { foreground: 'white' });
   };
 
   const noticeBand = (screen, row, text, background = 'red', foreground = 'white') => {
@@ -78,8 +80,8 @@
   };
 
   const menuLine = (screen, row, number, label, accent = false) => {
-    screen.write(row, 1, String(number), { foreground: accent ? 'yellow' : 'cyan' });
-    screen.write(row, 3, fit(label, 35), { foreground: accent ? 'yellow' : 'cyan' });
+    screen.write(row, 2, String(number), { foreground: accent ? 'yellow' : 'cyan' });
+    screen.write(row, 4, '- ' + fit(label, 33), { foreground: accent ? 'yellow' : 'white' });
   };
 
   const writeStatus = (screen, identity, service = '3615 AIRINTER') => {
@@ -195,19 +197,19 @@
     session.register(new mt.MinitelPage('home', {
       onRender: (_context, screen, current) => {
         writeStatus(screen);
-        titleBand(screen, 'AIR INTER - PROMETHEE', 'CENTRE DES OPERATIONS');
-        menuLine(screen, 6, 1, 'TABLEAU DE BORD');
-        menuLine(screen, 7, 2, 'DEPARTS');
-        menuLine(screen, 8, 3, 'ARRIVEES');
-        menuLine(screen, 9, 4, 'MES OPERATIONS', true);
-        menuLine(screen, 10, 5, 'RAPPORTS DE VOL');
-        menuLine(screen, 11, 6, 'MISSIONS');
-        menuLine(screen, 12, 7, 'FLOTTE');
-        menuLine(screen, 13, 8, 'PASSPORT');
-        menuLine(screen, 14, 9, 'FINANCES');
-        menuLine(screen, 15, 0, 'AUTRES SERVICES');
-        noticeBand(screen, 18, 'SERVICE TELEMATIQUE AIR INTER', 'red', 'white');
-        screen.write(20, 2, 'CHOIX : ' + current.input.value, { foreground: 'yellow' });
+        titleBand(screen, 'PROMETHEE', 'CENTRE DES OPERATIONS');
+        menuLine(screen, 7, 1, 'TABLEAU DE BORD');
+        menuLine(screen, 8, 2, 'DEPARTS');
+        menuLine(screen, 9, 3, 'ARRIVEES');
+        menuLine(screen, 10, 4, 'MES OPERATIONS', true);
+        menuLine(screen, 11, 5, 'RAPPORTS DE VOL');
+        menuLine(screen, 12, 6, 'MISSIONS');
+        menuLine(screen, 13, 7, 'FLOTTE');
+        menuLine(screen, 14, 8, 'DOSSIER PILOTE');
+        menuLine(screen, 15, 9, 'FINANCES');
+        menuLine(screen, 16, 0, 'AUTRES SERVICES');
+        screen.write(19, 7, 'VOTRE CHOIX : ' + current.input.value, { foreground: 'yellow' });
+        screen.write(21, 4, 'GUIDE POUR PLUS D INFORMATIONS', { foreground: 'cyan' });
         writeFooter(screen);
       },
       acceptInput: (key) => /^[0-9]$/.test(key),
