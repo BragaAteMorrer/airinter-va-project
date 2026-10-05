@@ -188,4 +188,24 @@ protected function scheduledDateTime(string $raw, CarbonImmutable $date): ?Carbo
         return $date->setTimezone(!empty($parts[3]) ? 'UTC' : 'Europe/Paris')
             ->startOfDay()->setTime((int) $parts[1], (int) $parts[2]);
     }
+
+protected function airlineLogoUrl(?Airline $airline): ?string
+    {
+        $logo = trim((string) $airline?->logo);
+        if ($logo === '') {
+            // Several historic timetable carriers have no logo URL in phpVMS.
+            // Keep the board's airline column visual instead of falling back
+            // to vertically stacked split-flap letters.
+            $code = strtoupper((string) ($airline?->code ?: $airline?->icao ?: $airline?->callsign));
+            $bundledLogos = [
+                'ITF' => 'SPTheme/images/LogoITF002.png',
+                'ACF' => 'SPTheme/images/AirCharterLogo.png',
+                'ICS' => 'SPTheme/images/ICSLogo.png',
+            ];
+
+            return isset($bundledLogos[$code]) ? asset($bundledLogos[$code]) : null;
+        }
+
+        return filter_var($logo, FILTER_VALIDATE_URL) ? $logo : asset(ltrim($logo, '/'));
+    }
 }
