@@ -30,6 +30,7 @@ class EngineMaintenanceAdminController extends Controller
                 'engine_count' => (int) $reference['engine_count'],
                 'tbo_hours' => $reference['tbo_hours'] ?? null,
                 'warning_hours' => (float) ($reference['warning_hours'] ?? 100),
+                'itva_overhaul_cost' => $reference['itva_tbo_cost'] ?? null,
                 'updated_at' => now(),
             ];
 
