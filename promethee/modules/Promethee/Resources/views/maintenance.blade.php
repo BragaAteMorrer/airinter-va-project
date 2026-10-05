@@ -54,9 +54,20 @@
                         <td>{{ $item->act_note ?: 'À planifier' }}</td>
                         <td>
                             <strong>{{ $item->airport_id ?: '—' }}</strong><br>
-                            @if($item->heavy_maintenance)<span class="tag">PETITE + GROSSE</span>
-                            @elseif($item->small_maintenance)<span class="tag">PETITE</span>
-                            @else<span class="tag">TRANSFERT TECHNIQUE REQUIS</span>@endif
+                            @php
+                                $availableChecks = collect([
+                                    'A' => (bool) ($item->check_a ?? false),
+                                    'B' => (bool) ($item->check_b ?? false),
+                                    'C' => (bool) ($item->check_c ?? false),
+                                ])->filter();
+                            @endphp
+                            @if($availableChecks->isNotEmpty())
+                                @foreach($availableChecks as $check => $enabled)
+                                    <span class="tag">{{ $check }}</span>
+                                @endforeach
+                            @else
+                                <span class="tag">TRANSFERT TECHNIQUE REQUIS</span>
+                            @endif
                         </td>
                         <td>{{ is_numeric($item->rem_ta) ? number_format($item->rem_ta / 60, 1, ',', ' ') . ' h' : '—' }}</td><td>{{ is_numeric($item->rem_tb) ? number_format($item->rem_tb / 60, 1, ',', ' ') . ' h' : '—' }}</td><td>{{ is_numeric($item->rem_tc) ? number_format($item->rem_tc / 60, 1, ',', ' ') . ' h' : '—' }}</td>
                         <td>{{ $item->rem_ca ?? '—' }}</td><td>{{ $item->rem_cb ?? '—' }}</td><td>{{ $item->rem_cc ?? '—' }}</td>
@@ -84,7 +95,21 @@
                     <tr>
                         <td><a href="{{ route('promethee.aircraft.show', $item->registration) }}"><strong>{{ $item->registration }}</strong></a> · {{ $item->icao }}</td>
                         <td>{{ $item->airline_icao ?: '—' }}</td>
-                        <td><strong>{{ $item->airport_id ?: '—' }}</strong> · @if($item->heavy_maintenance) petite + grosse maintenance @elseif($item->small_maintenance) petite maintenance @else aucune capacité technique @endif</td>
+                        <td>
+                            <strong>{{ $item->airport_id ?: '—' }}</strong>
+                            @php
+                                $availableChecks = collect([
+                                    'A' => (bool) ($item->check_a ?? false),
+                                    'B' => (bool) ($item->check_b ?? false),
+                                    'C' => (bool) ($item->check_c ?? false),
+                                ])->filter();
+                            @endphp
+                            @if($availableChecks->isNotEmpty())
+                                · {{ $availableChecks->keys()->map(fn ($check) => $check.' Check')->join(' / ') }}
+                            @else
+                                · aucune capacité A/B/C
+                            @endif
+                        </td>
                         <td>{{ is_numeric($item->rem_ta) ? number_format($item->rem_ta / 60, 1, ',', ' ') : '—' }} / {{ is_numeric($item->rem_tb) ? number_format($item->rem_tb / 60, 1, ',', ' ') : '—' }} / {{ is_numeric($item->rem_tc) ? number_format($item->rem_tc / 60, 1, ',', ' ') : '—' }} h</td>
                         <td>{{ $item->rem_ca ?? '—' }} / {{ $item->rem_cb ?? '—' }} / {{ $item->rem_cc ?? '—' }}</td>
                     </tr>
