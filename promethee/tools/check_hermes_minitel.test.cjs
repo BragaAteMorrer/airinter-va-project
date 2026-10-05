@@ -263,6 +263,17 @@ test('Hermès M8 keeps authentic Videotex timing uncapped and fast mode bounded'
   assert.ok(renderer.includes('actualFrames'));
 });
 
+test('Hermès M9 invalidates legacy WebView assets and uses only internal branding', () => {
+  const index = fs.readFileSync(path.join(__dirname, '..', '..', 'acars', 'wwwroot', 'index.html'), 'utf8');
+  const shell = fs.readFileSync(path.join(__dirname, '..', 'shared', 'minitel', 'minitel-shell.css'), 'utf8');
+  const shellJs = fs.readFileSync(path.join(__dirname, '..', 'shared', 'minitel', 'shell.js'), 'utf8');
+  assert.ok(index.includes('/minitel/minitel-shell.css?rev=20261005-m9'));
+  assert.ok(index.includes('/hermes-minitel.js?rev=20261005-m9'));
+  assert.ok(shellJs.includes("data-minitel-generation', 'm9'"));
+  assert.ok(!shell.includes('miniPAVI style'));
+  assert.ok(shell.includes('AIR INTER · TERMINAL VIDEOTEX'));
+});
+
 test('Hermès Minitel shell scales uniformly and respects accessibility preferences', () => {
   const css = fs.readFileSync(path.join(__dirname, '..', '..', 'acars', 'wwwroot', 'hermes-minitel.css'), 'utf8').replace(/\s+/g, ' ');
   assert.ok(css.includes('--mt-chassis-size:min(calc(100dvh - 44px),calc(100vw - 16px),980px)'));
