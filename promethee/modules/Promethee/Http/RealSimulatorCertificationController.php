@@ -83,13 +83,6 @@ class RealSimulatorCertificationController extends Controller
         return back()->with('success', 'Certification mise à jour.');
     }
 
-    public function destroy(RealSimulatorCertification $certification)
-    {
-        $certification->delete();
-
-        return back()->with('success', 'Certification supprimée.');
-    }
-
     private function validated(Request $request): array
     {
         return $request->validate([
