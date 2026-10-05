@@ -32,7 +32,7 @@
   <div>
     <span class="eyebrow">AIR INTER · DIRECTION TECHNIQUE</span>
     <h1>Maintenance cellule & moteurs.</h1>
-    <p>Prométhée suit séparément les checks A/B/C de la cellule et le potentiel TBO de chaque moteur, avec des compteurs heures + cycles issus des PIREPs acceptés.</p>
+    <p>Prométhée suit séparément les checks A/B/C de la cellule et le potentiel ITVA de chaque moteur, avec des compteurs heures + cycles issus des PIREPs acceptés. Les TBO constructeur ne pilotent jamais l’échéance.</p>
   </div>
   <div class="inline-form">
     <span class="tag">{{ $airframeSummary['total'] }} cellule(s)</span>
@@ -55,8 +55,8 @@
 <section class="control-strip">
   <article><span>Moteurs suivis</span><strong>{{ $engineSummary['total'] }}</strong><small>{{ $engineSummary['installed'] }} installés · {{ $engineSummary['stock'] }} en stock</small></article>
   <article><span>Disponibles</span><strong>{{ $engineSummary['serviceable'] }}</strong><small>potentiel hors alerte</small></article>
-  <article><span>À planifier</span><strong>{{ $engineSummary['warning'] }}</strong><small>dans la fenêtre d’alerte TBO</small></article>
-  <article><span>TBO atteint</span><strong>{{ $engineSummary['due'] }}</strong><small>révision requise</small></article>
+  <article><span>À planifier</span><strong>{{ $engineSummary['warning'] }}</strong><small>dans la fenêtre d’alerte ITVA</small></article>
+  <article><span>Potentiel épuisé</span><strong>{{ $engineSummary['due'] }}</strong><small>révision requise</small></article>
 </section>
 
 @if($errors->any())
@@ -237,15 +237,22 @@
       </label>
       <label>Type moteur<input name="engine_type" maxlength="80" placeholder="CFM56-5A1" required></label>
       <label>Nombre de moteurs<input type="number" name="engine_count" min="1" max="4" value="2" required></label>
-      <label>TBO heures<input type="number" name="tbo_hours" min="1" max="100000" step="0.1" placeholder="12000"></label>
-      <label>TBO cycles<input type="number" name="tbo_cycles" min="1" max="100000" placeholder="9000"></label>
-      <label>Alerte avant TBO (h)<input type="number" name="warning_hours" min="0" max="10000" step="0.1" value="100" required></label>
-      <label>Alerte avant TBO (cycles)<input type="number" name="warning_cycles" min="0" max="10000" placeholder="100"></label>
+      <label>Catégorie ITVA (heures)
+        <select name="tbo_hours">
+          <option value="">—</option>
+          @foreach($itvaEngineCategories as $hours)
+            <option value="{{ $hours }}">{{ number_format($hours,0,',',' ') }} h</option>
+          @endforeach
+        </select>
+      </label>
+      <label>Limite cycles (optionnelle)<input type="number" name="tbo_cycles" min="1" max="100000" placeholder="9000"></label>
+      <label>Alerte avant échéance ITVA (h)<input type="number" name="warning_hours" min="0" max="10000" step="0.1" value="100" required></label>
+      <label>Alerte cycles (optionnelle)<input type="number" name="warning_cycles" min="0" max="10000" placeholder="100"></label>
       <label><input type="checkbox" name="active" value="1" checked> Suivi actif</label>
       <button @disabled(!$maintenanceActionsReady)>Enregistrer / synchroniser la flotte</button>
     </form>
     <p class="hint">À la première synchronisation, Prométhée crée automatiquement des moteurs virtuels AUTO-* pour les appareils de la sous-flotte. Ils peuvent ensuite être remplacés par des moteurs de stock identifiés par numéro de série.</p>
-    <p class="hint"><strong>Synchroniser toute la flotte</strong> complète aussi les profils moteurs manquants depuis le référentiel Air Inter VA embarqué, sans écraser les profils déjà personnalisés.</p>
+    <p class="hint"><strong>Synchroniser toute la flotte</strong> réapplique le référentiel moteur ITVA aux sous-flottes connues et recale les moteurs déjà installés. Le champ technique historique <code>tbo_hours</code> contient ici le potentiel ITVA, jamais la TBO constructeur.</p>
   </section>
 
   <section class="panel">
@@ -274,7 +281,7 @@
 <section class="panel table-wrap admin-table-scroll">
   <div class="panel-heading"><div><span class="eyebrow">CONFIGURATION</span><h2>Profils moteurs</h2></div></div>
   <table>
-    <thead><tr><th>Compagnie / sous-flotte</th><th>Moteur</th><th>Qté</th><th>TBO</th><th>Alerte</th><th>État</th></tr></thead>
+    <thead><tr><th>Compagnie / sous-flotte</th><th>Moteur</th><th>Qté</th><th>Potentiel ITVA</th><th>Alerte</th><th>État</th></tr></thead>
     <tbody>
     @forelse($profiles as $profile)
       <tr>
@@ -286,7 +293,7 @@
         <td><span class="tag">{{ $profile->active ? 'ACTIF' : 'INACTIF' }}</span></td>
       </tr>
     @empty
-      <tr><td colspan="6">Aucun profil moteur. Renseignez les valeurs engine/TBO de votre référentiel pour commencer.</td></tr>
+      <tr><td colspan="6">Aucun profil moteur. Synchronisez le référentiel ITVA ou créez un profil pour commencer.</td></tr>
     @endforelse
     </tbody>
   </table>
@@ -295,7 +302,7 @@
 <section class="panel table-wrap admin-workspace-section admin-table-scroll" id="maintenance-engine-stock">
   <div class="panel-heading"><div><span class="eyebrow">MOTEURS</span><h2>Unités installées & stock</h2></div></div>
   <table>
-    <thead><tr><th>N° série</th><th>Type</th><th>Appareil</th><th>TBO nominal</th><th>Consommé depuis révision</th><th>Potentiel moteur</th><th>Dernière révision</th><th>État</th><th>Actions</th></tr></thead>
+    <thead><tr><th>N° série</th><th>Type</th><th>Appareil</th><th>Potentiel ITVA initial</th><th>Consommé depuis révision</th><th>Potentiel moteur</th><th>Dernière révision</th><th>État</th><th>Actions</th></tr></thead>
     <tbody>
     @forelse($engineUnits as $unit)
       <tr>
@@ -330,14 +337,14 @@
               · C {{ $unit->potential_cycles_percent !== null ? number_format($unit->potential_cycles_percent,1,',',' ') . ' %' : '—' }}
             </small>
           @else
-            <span class="tag">TBO non renseigné</span>
+            <span class="tag">Potentiel ITVA non renseigné</span>
           @endif
         </td>
         <td>{{ $unit->last_overhaul_at ? \Carbon\Carbon::parse($unit->last_overhaul_at)->locale('fr')->isoFormat('DD/MM/YYYY') : 'Jamais / inconnu' }}</td>
         <td><span class="tag">{{ strtoupper($unit->status) }}</span></td>
         <td>
           @if($unit->aircraft_id)
-            <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.engines.overhaul', $unit->id) : '#' }}" class="inline-form" onsubmit="return confirm('Enregistrer la révision complète de ce moteur et remettre son TBO à zéro ?');">
+            <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.engines.overhaul', $unit->id) : '#' }}" class="inline-form" onsubmit="return confirm('Enregistrer la révision complète de ce moteur et remettre les compteurs depuis révision à zéro ?');">
               @csrf
               <input name="notes" maxlength="2000" placeholder="Note révision">
               <button type="submit" @disabled(!$maintenanceActionsReady)>Réviser</button>

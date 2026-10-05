@@ -165,15 +165,18 @@ class EngineMaintenanceService
 
         $engines = $this->installedForAircraft((int) $aircraft->id);
         foreach ($engines as $engine) {
-            if (str_starts_with((string) $engine->serial_number, 'AUTO-')) {
-                DB::table('promethee_engines')->where('id', $engine->id)->update([
-                    'engine_profile_id' => $profile->id,
-                    'engine_type' => $profile->engine_type,
-                    'tbo_hours' => $profile->tbo_hours,
-                    'tbo_cycles' => $profile->tbo_cycles,
-                    'updated_at' => now(),
-                ]);
-            }
+            // The profile potential is an Air Inter VA gameplay rule. It is
+            // authoritative for every installed unit, including a real serial
+            // number: manufacturer/real-world TBO values must not leak back
+            // into maintenance status once a profile is synchronised.
+            DB::table('promethee_engines')->where('id', $engine->id)->update([
+                'engine_profile_id' => $profile->id,
+                'engine_type' => $profile->engine_type,
+                'tbo_hours' => $profile->tbo_hours,
+                'tbo_cycles' => $profile->tbo_cycles,
+                'updated_at' => now(),
+            ]);
+
             $this->refreshStatus((int) $engine->id);
         }
 

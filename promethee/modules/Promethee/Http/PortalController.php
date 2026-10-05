@@ -3419,6 +3419,7 @@ class PortalController extends Controller
 
         $subfleets = Subfleet::with('airline')->orderBy('name')->get();
         $aircraft = Aircraft::with('subfleet.airline')->orderBy('registration')->get();
+        $itvaEngineCategories = (array) data_get(config('promethee.engine-profiles', []), '__meta.itva_categories', []);
 
         $airframeSettings = $airframeService->settings();
         $airframeStates = $airframeService->fleetStatus();
@@ -3499,7 +3500,7 @@ class PortalController extends Controller
 
         return $this->page('admin-maintenance', compact(
             'profiles','subfleets','aircraft','engineUnits','engineSites','engineEvents','engineSummary',
-            'airframeSettings','airframeStates','airframeSummary','airframeEvents'
+            'airframeSettings','airframeStates','airframeSummary','airframeEvents','itvaEngineCategories'
         ));
     }
 
@@ -3531,135 +3532,6 @@ class PortalController extends Controller
         }
 
         return back()->with('success',strtoupper($data['check']).' Check démarré ; l’appareil est immobilisé pendant la durée configurée.');
-    }
-
-    public function syncEngineFleet(EngineMaintenanceService $engineService) {
-        $references = (array) config('promethee.engine-profiles', []);
-        $createdProfiles = 0;
-
-        Subfleet::with('airline')->orderBy('id')->get()->each(function (Subfleet $subfleet) use ($references, &$createdProfiles) {
-            $airlineIcao = strtoupper((string) ($subfleet->airline?->icao ?: ''));
-            $referenceKey = $airlineIcao.'|'.(string) $subfleet->type;
-            $reference = $references[$referenceKey] ?? null;
-
-            if (!$reference || DB::table('promethee_engine_profiles')->where('subfleet_id', $subfleet->id)->exists()) {
-                return;
-            }
-
-            DB::table('promethee_engine_profiles')->insert([
-                'subfleet_id' => $subfleet->id,
-                'engine_type' => (string) $reference['engine_type'],
-                'engine_count' => (int) $reference['engine_count'],
-                'tbo_hours' => $reference['tbo_hours'] ?? null,
-                'tbo_cycles' => $reference['tbo_cycles'] ?? null,
-                'warning_hours' => (float) ($reference['warning_hours'] ?? 100),
-                'warning_cycles' => $reference['warning_cycles'] ?? null,
-                'active' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-            $createdProfiles++;
-        });
-
-        $profileIds = DB::table('promethee_engine_profiles')->where('active', true)->pluck('subfleet_id');
-        $synced = 0;
-        foreach ($profileIds as $subfleetId) {
-            $synced += $engineService->syncSubfleet((int) $subfleetId);
-        }
-
-        return back()->with(
-            'success',
-            $createdProfiles.' profil(s) moteur créé(s) depuis le référentiel · '
-            .$synced.' position(s) moteur vérifiée(s) / synchronisée(s).'
-        );
-    }
-
-    public function saveEngineProfile(Request $r, EngineMaintenanceService $engineService) {
-        $data = $r->validate([
-            'subfleet_id'=>'required|integer|exists:subfleets,id',
-            'engine_type'=>'required|string|max:80',
-            'engine_count'=>'required|integer|min:1|max:4',
-            'tbo_hours'=>'nullable|numeric|min:1|max:100000',
-            'tbo_cycles'=>'nullable|integer|min:1|max:100000',
-            'warning_hours'=>'required|numeric|min:0|max:10000',
-            'warning_cycles'=>'nullable|integer|min:0|max:10000',
-            'active'=>'nullable|boolean',
-        ]);
-
-        if (!$r->filled('tbo_hours') && !$r->filled('tbo_cycles')) {
-            return back()->withErrors(['tbo_hours'=>'Renseignez au moins une limite TBO en heures ou en cycles.'])->withInput();
-        }
-
-        DB::table('promethee_engine_profiles')->updateOrInsert(
-            ['subfleet_id'=>$data['subfleet_id']],
-            [
-                'engine_type'=>trim($data['engine_type']),
-                'engine_count'=>$data['engine_count'],
-                'tbo_hours'=>$data['tbo_hours'] ?? null,
-                'tbo_cycles'=>$data['tbo_cycles'] ?? null,
-                'warning_hours'=>$data['warning_hours'],
-                'warning_cycles'=>$data['warning_cycles'] ?? null,
-                'active'=>$r->boolean('active'),
-                'created_at'=>now(),
-                'updated_at'=>now(),
-            ]
-        );
-
-        $engineService->syncSubfleet((int) $data['subfleet_id']);
-
-        return back()->with('success','Profil moteur enregistré et flotte correspondante synchronisée.');
-    }
-
-    public function createEngineUnit(Request $r, EngineMaintenanceService $engineService) {
-        $data = $r->validate([
-            'engine_profile_id'=>'required|integer|exists:promethee_engine_profiles,id',
-            'serial_number'=>'required|string|max:96|unique:promethee_engines,serial_number',
-            'hours_since_overhaul'=>'nullable|numeric|min:0|max:100000',
-            'cycles_since_overhaul'=>'nullable|integer|min:0|max:100000',
-        ]);
-
-        $profile = DB::table('promethee_engine_profiles')->where('id',$data['engine_profile_id'])->first();
-        abort_unless($profile,404);
-
-        $engineId=DB::table('promethee_engines')->insertGetId([
-            'engine_profile_id'=>$profile->id,
-            'serial_number'=>strtoupper(trim($data['serial_number'])),
-            'engine_type'=>$profile->engine_type,
-            'tbo_hours'=>$profile->tbo_hours,
-            'tbo_cycles'=>$profile->tbo_cycles,
-            'hours_since_overhaul'=>$data['hours_since_overhaul'] ?? 0,
-            'cycles_since_overhaul'=>$data['cycles_since_overhaul'] ?? 0,
-            'status'=>'serviceable',
-            'last_overhaul_at'=>null,
-            'created_at'=>now(),
-            'updated_at'=>now(),
-        ]);
-        $engineService->refreshStatus((int)$engineId);
-
-        return back()->with('success','Moteur ajouté au stock.');
-    }
-
-    public function overhaulEngine(int $engine, Request $r, EngineMaintenanceService $engineService) {
-        $data=$r->validate(['notes'=>'nullable|string|max:2000']);
-        try {
-            $engineService->overhaul($engine, (int) $r->user()->id, $data['notes'] ?? null);
-        } catch (\RuntimeException $exception) {
-            return back()->withErrors(['engine'=>$exception->getMessage()]);
-        }
-        return back()->with('success','Révision moteur enregistrée ; TBO et cycles remis à zéro.');
-    }
-
-    public function installEngine(int $engine, Request $r, EngineMaintenanceService $engineService) {
-        $data=$r->validate([
-            'aircraft_id'=>'required|integer|exists:aircraft,id',
-            'position'=>'required|integer|min:1|max:4',
-        ]);
-        try {
-            $engineService->install($engine, (int) $data['aircraft_id'], (int) $data['position'], (int) $r->user()->id);
-        } catch (\RuntimeException $exception) {
-            return back()->withErrors(['engine'=>$exception->getMessage()]);
-        }
-        return back()->with('success','Moteur installé ; l’ancien moteur de la position est revenu au stock.');
     }
 
     public function regionalOperations(Request $r, RegionalOperationsService $operations, FleetRotationService $rotation) {
