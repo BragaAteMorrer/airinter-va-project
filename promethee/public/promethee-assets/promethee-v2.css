@@ -5,13 +5,13 @@
 }
 
 :root {
-  --ops-bg: #eef2f5;
-  --ops-dark: #0e2a44;
-  --ops-blue: #0b5cad;
-  --ops-red: #d92732;
-  --ops-yellow: #f2c14e;
-  --radius: 8px;
-  --shadow: 0 8px 22px #0b223512;
+  --ops-bg: var(--ds-bg, #eef2f5);
+  --ops-dark: var(--ds-brand-navy, #0e2a44);
+  --ops-blue: var(--ds-action, #0b5cad);
+  --ops-red: var(--ds-danger, #d92732);
+  --ops-yellow: var(--ds-warning, #f2c14e);
+  --radius: var(--ds-radius-md, 8px);
+  --shadow: var(--ds-shadow-md, 0 8px 22px #0b223512);
 }
 .pilot-space { margin: 0 5px 20px; padding: 14px 0 15px; border-block: 1px solid #ffffff20; color: #a6b9ca; font-size: 9px; letter-spacing: 1px; }
 .pilot-space-label { display: block; margin-bottom: 10px; }
@@ -248,17 +248,17 @@ html[data-era="minitel"] .map-airport.selected-arrival { fill: #ffbb57; }
    dashboard: restrained depth, compact geometry, clear typography and blue-led
    hierarchy. Red is reserved for warnings, destructive actions and real alerts. */
 html[data-era="modern"] {
-  --ops-blue: #155cb8;
-  --ops-dark: #112d48;
-  --ops-red: #d43640;
-  --ops-yellow: #c58b24;
-  --paper: #f4f5f3;
-  --panel: #ffffff;
-  --line: #d7e0e7;
-  --ink: #1c3043;
-  --muted: #667786;
-  --radius: 8px;
-  --shadow: 0 3px 12px rgb(17 45 72 / 6%);
+  --ops-blue: var(--ds-action, #155cb8);
+  --ops-dark: var(--ds-brand-navy, #112d48);
+  --ops-red: var(--ds-danger, #d43640);
+  --ops-yellow: var(--ds-warning, #c58b24);
+  --paper: var(--ds-bg, #f4f5f3);
+  --panel: var(--ds-surface, #ffffff);
+  --line: var(--ds-border, #d7e0e7);
+  --ink: var(--ds-text, #1c3043);
+  --muted: var(--ds-text-muted, #667786);
+  --radius: var(--ds-radius-md, 8px);
+  --shadow: var(--ds-shadow-sm, 0 3px 12px rgb(17 45 72 / 6%));
 }
 
 [data-era="modern"] body {
