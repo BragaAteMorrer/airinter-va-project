@@ -73,7 +73,7 @@
     fillRow(screen, 4, 'blue', 'white');
   };
 
-  const noticeBand = (screen, row, text, background = 'red', foreground = 'white') => {
+  const noticeBand = (screen, row, text, background = 'green', foreground = 'black') => {
     writeBand(screen, row, text, background, foreground);
   };
 
