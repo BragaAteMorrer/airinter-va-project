@@ -635,7 +635,7 @@
         statusLine(screen, 10, 'CARBURANT', t.fuel == null ? '---' : Math.round(t.fuel) + ' LB');
         statusLine(screen, 11, 'TEMPS', t.airborneMinutes + ' MIN');
         statusLine(screen, 12, 'DISTANCE', t.distance.toFixed(1) + ' NM');
-        sectionBand(screen, 14, 'ETAT DES LIAISONS', 'magenta', 'white');
+        screen.write(14, 2, 'ETAT DES LIAISONS', { foreground: 'yellow' });
         screen.write(15, 1, 'PROMETHEE ' + (hm.status?.connected ? 'OK' : 'HS') + '   SIM ' + (hm.status?.latest ? 'OK' : '--'), { foreground: hm.status?.connected && hm.status?.latest ? 'green' : 'yellow' });
         screen.write(16, 1, 'TRACKING  ' + (t.recording ? 'OK' : '--') + '   SYNC ' + fit(t.syncState, 10), { foreground: t.pending ? 'yellow' : 'green' });
         if (t.warning) screen.write(17, 1, fit(t.warning, 38), { foreground: 'red' });
@@ -662,9 +662,9 @@
         const dl = core.datalinkSnapshot(hm.datalink || {});
         titleBand(screen, 'MESSAGERIE', 'AIR INTER DATALINK');
         screen.write(6, 1, 'ETAT ' + fit(dl.syncState, 9) + ' NON LUS ' + fit(dl.unreadCount, 3) + ' ACK ' + fit(dl.pendingRequiredAcks, 3), { foreground: dl.error ? 'yellow' : 'cyan' });
-        const pages = Math.max(1, Math.ceil(dl.messages.length / 5));
+        const pages = Math.max(1, Math.ceil(dl.messages.length / 4));
         hm.datalinkPage = Math.max(1, Math.min(pages, hm.datalinkPage));
-        const items = dl.messages.slice((hm.datalinkPage - 1) * 5, hm.datalinkPage * 5);
+        const items = dl.messages.slice((hm.datalinkPage - 1) * 4, hm.datalinkPage * 4);
         items.forEach((message, index) => {
           const row = 7 + index * 3;
           const incoming = message.direction === 'OPS_TO_COCKPIT';
@@ -681,7 +681,7 @@
       send: value => {
         if (value === '8') { hm.replyTo = null; return 'datalink-compose'; }
         const dl = core.datalinkSnapshot(hm.datalink || {});
-        const index = ((hm.datalinkPage - 1) * 5) + Number(value) - 1;
+        const index = ((hm.datalinkPage - 1) * 4) + Number(value) - 1;
         if (dl.messages[index]) {
           hm.selectedMessage = dl.messages[index];
           hm.messagePage = 1;
@@ -689,7 +689,7 @@
         }
       },
       next: () => {
-        const pages = Math.max(1, Math.ceil(core.datalinkSnapshot(hm.datalink || {}).messages.length / 5));
+        const pages = Math.max(1, Math.ceil(core.datalinkSnapshot(hm.datalink || {}).messages.length / 4));
         hm.datalinkPage = Math.min(pages, hm.datalinkPage + 1);
       },
       previous: () => {
@@ -836,21 +836,20 @@
         serviceLine(screen);
         titleBand(screen, 'COMPTE RENDU VOL', 'FLIGHT REVIEW');
         const review = core.reviewSummary(hm.review || hm.filedReview || hm.status?.review || hm.status?.Review || {});
-        screen.write(4, 2, 'PHASE......... ' + fit(review.phase, 18), { foreground: review.readyToFile ? 'green' : 'yellow' });
-        screen.write(5, 2, 'DISTANCE...... ' + fit(review.distance.toFixed(1) + ' NM', 18));
-        screen.write(6, 2, 'AIRBORNE...... ' + fit(review.airborneMinutes + ' MIN', 18));
-        screen.write(7, 2, 'BLOCK......... ' + fit(review.blockMinutes + ' MIN', 18));
-        screen.write(8, 2, 'FUEL USE...... ' + fit(Math.round(review.fuelUsed) + ' LB', 18));
-        screen.write(9, 2, 'LANDING....... ' + fit(review.landingRate == null ? '---' : Math.round(Number(review.landingRate)) + ' FPM', 18));
-        screen.write(10, 2, 'APP 1000...... ' + fit(review.approach1000, 18));
-        screen.write(11, 2, 'APP 500....... ' + fit(review.approach500, 18));
-        screen.write(12, 2, 'GO AROUND..... ' + fit(review.goAroundCount, 5) + ' BOUNCE ' + fit(review.bounceCount, 4));
-        screen.write(13, 2, 'MAX BANK...... ' + fit(review.maxBank == null ? '---' : Number(review.maxBank).toFixed(1) + ' DEG', 18));
-        screen.write(14, 2, 'SIM RATE MAX.. ' + fit(review.maxSimulationRate == null ? 'X1' : 'X' + Number(review.maxSimulationRate).toFixed(2), 18));
+        screen.write(6, 2, 'PHASE......... ' + fit(review.phase, 18), { foreground: review.readyToFile ? 'green' : 'yellow' });
+        screen.write(7, 2, 'DISTANCE...... ' + fit(review.distance.toFixed(1) + ' NM', 18));
+        screen.write(8, 2, 'AIRBORNE...... ' + fit(review.airborneMinutes + ' MIN', 18));
+        screen.write(9, 2, 'BLOCK......... ' + fit(review.blockMinutes + ' MIN', 18));
+        screen.write(10, 2, 'FUEL USE...... ' + fit(Math.round(review.fuelUsed) + ' LB', 18));
+        screen.write(11, 2, 'LANDING....... ' + fit(review.landingRate == null ? '---' : Math.round(Number(review.landingRate)) + ' FPM', 18));
+        screen.write(12, 2, 'APP 1000/500.. ' + fit(review.approach1000, 7) + '/' + fit(review.approach500, 7));
+        screen.write(13, 2, 'GO AROUND..... ' + fit(review.goAroundCount, 5) + ' BOUNCE ' + fit(review.bounceCount, 4));
+        screen.write(14, 2, 'MAX BANK...... ' + fit(review.maxBank == null ? '---' : Number(review.maxBank).toFixed(1) + ' DEG', 18));
+        screen.write(15, 2, 'SIM RATE MAX.. ' + fit(review.maxSimulationRate == null ? 'X1' : 'X' + Number(review.maxSimulationRate).toFixed(2), 18));
         screen.write(16, 2, 'OBSERVATIONS.. ' + fit(review.observations.length, 5) + ' ANOM. ' + fit(review.issues.length, 4));
-        if (review.readyToFile && !hm.filedReview) screen.write(18, 2, '1 DEPOSER PIREP  2 OBS.  3 ANOM.', { foreground: 'green' });
-        else if (hm.filedReview) screen.write(18, 2, '2 OBSERVATIONS   3 ANOMALIES', { foreground: 'green' });
-        else screen.write(18, 2, '2 OBSERVATIONS   3 ANOMALIES');
+        if (review.readyToFile && !hm.filedReview) screen.write(19, 2, '1 DEPOSER PIREP  2 OBS.  3 ANOM.', { foreground: 'green' });
+        else if (hm.filedReview) screen.write(19, 2, '2 OBSERVATIONS   3 ANOMALIES', { foreground: 'green' });
+        else screen.write(19, 2, '2 OBSERVATIONS   3 ANOMALIES');
         screen.write(20, 2, 'CHOIX : ' + current.input.value, { foreground: 'yellow' });
         footer(screen);
       },
