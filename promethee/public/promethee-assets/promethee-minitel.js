@@ -1007,6 +1007,7 @@
     host = document.createElement('div');
     host.id = 'promethee-minitel-root';
     host.className = 'promethee-minitel-overlay';
+    host.dataset.minitelGeneration = 'm10';
     document.body.appendChild(host);
 
     const terminalPreferences = readMinitelPreferences();
