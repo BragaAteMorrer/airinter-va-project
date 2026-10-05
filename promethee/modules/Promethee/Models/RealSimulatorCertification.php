@@ -30,6 +30,6 @@ class RealSimulatorCertification extends Model
 
     public function isExpired(): bool
     {
-        return $this->valid_until !== null && $this->valid_until->isPast();
+        return $this->valid_until !== null && $this->valid_until->copy()->endOfDay()->isPast();
     }
 }
