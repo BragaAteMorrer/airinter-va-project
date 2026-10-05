@@ -163,10 +163,7 @@
         skipDefaultBlank: previous === null
       });
 
-      const cps = runtime.SPEEDS[speed] ?? runtime.SPEEDS.fast;
-      const nominalDuration = Number.isFinite(cps) && cps > 0
-        ? (operations.length / cps) * 1000
-        : 0;
+      const nominalDuration = runtime.transmissionDuration(operations, speed);
       const duration = this.maxProgressiveDurationMs > 0
         ? Math.min(nominalDuration, this.maxProgressiveDurationMs)
         : nominalDuration;

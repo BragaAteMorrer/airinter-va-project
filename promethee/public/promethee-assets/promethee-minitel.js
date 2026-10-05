@@ -11,7 +11,7 @@
 
   const readMinitelPreferences = () => {
     let speed = 'fast';
-    let displayMode = 'color';
+    let displayMode = 'monochrome';
     try {
       const storedSpeed = localStorage.getItem(MINITEL_SPEED_KEY);
       const storedDisplay = localStorage.getItem(MINITEL_DISPLAY_KEY);
@@ -68,9 +68,11 @@
   };
 
   const titleBand = (screen, title, subtitle = '') => {
-    writeBand(screen, 2, title, 'blue', 'white');
-    writeBand(screen, 3, subtitle || 'AIR INTER', 'blue', subtitle ? 'cyan' : 'yellow');
-    fillRow(screen, 4, 'blue', 'white');
+    // Télétel composition: semigraphic identity + sparse text, not a web-style full-width header.
+    mt.writeAirInterMosaic(screen, 2, 1, { foreground: 'blue', separatedMosaic: true });
+    screen.write(2, 12, fit('AIR INTER', 27), { foreground: 'yellow' });
+    screen.write(3, 12, fit(title, 27), { foreground: 'cyan' });
+    screen.write(4, 12, fit(subtitle || 'SERVICE TELEMATIQUE', 27), { foreground: 'white' });
   };
 
   const noticeBand = (screen, row, text, background = 'red', foreground = 'white') => {
@@ -78,8 +80,8 @@
   };
 
   const menuLine = (screen, row, number, label, accent = false) => {
-    screen.write(row, 1, String(number), { foreground: accent ? 'yellow' : 'cyan' });
-    screen.write(row, 3, fit(label, 35), { foreground: accent ? 'yellow' : 'cyan' });
+    screen.write(row, 2, String(number), { foreground: accent ? 'yellow' : 'cyan' });
+    screen.write(row, 4, '- ' + fit(label, 33), { foreground: accent ? 'yellow' : 'white' });
   };
 
   const writeStatus = (screen, identity, service = '3615 AIRINTER') => {
@@ -91,19 +93,12 @@
   };
 
   const writeFooter = (screen, pagination = false) => {
-    writeBand(screen, 22, pagination ? 'RETOUR PAGE -     SUITE PAGE +' : 'F1 GUIDE     HOME SOMMAIRE', 'blue', 'white');
-    fillRow(screen, 23, 'green', 'black');
-    screen.write(23, 1, 'Guide', { background: 'green', foreground: 'black' });
-    screen.write(23, 9, 'Sommaire', { background: 'green', foreground: 'black' });
-    screen.write(23, 20, 'Retour', { background: 'green', foreground: 'black' });
-    screen.write(23, 29, 'Suite', { background: 'green', foreground: 'black' });
-    screen.write(23, 35, 'Envoi', { background: 'green', foreground: 'black' });
-    fillRow(screen, 24, 'green', 'black');
-    screen.write(24, 1, 'F1', { background: 'green', foreground: 'black' });
-    screen.write(24, 9, 'HOME', { background: 'green', foreground: 'black' });
-    screen.write(24, 20, 'PgUp', { background: 'green', foreground: 'black' });
-    screen.write(24, 29, 'PgDn', { background: 'green', foreground: 'black' });
-    screen.write(24, 35, 'ENT', { background: 'green', foreground: 'black' });
+    // The virtual Minitel keyboard already carries the historical command labels.
+    // Keep the 40x25 raster focused on the Télétel service itself.
+    if (pagination) {
+      screen.write(24, 1, 'RETOUR', { foreground: 'cyan' });
+      screen.write(24, 32, 'SUITE', { foreground: 'cyan' });
+    }
   };
 
   const action = (type, payload = {}) => {
@@ -156,7 +151,7 @@
   const updateCursor = () => {
     if (!renderer || !session) return;
     const page = session.currentPageId;
-    if (page === 'home') return renderer.showCursor(20, Math.min(39, 16 + session.input.value.length), true);
+    if (page === 'home') return renderer.showCursor(19, Math.min(39, 20 + session.input.value.length), true);
     if (['flight-search', 'fleet-search', 'pilot-search'].includes(page)) {
       return renderer.showCursor(9, Math.min(39, 4 + session.input.value.length), true);
     }
@@ -202,19 +197,19 @@
     session.register(new mt.MinitelPage('home', {
       onRender: (_context, screen, current) => {
         writeStatus(screen);
-        titleBand(screen, 'AIR INTER - PROMETHEE', 'CENTRE DES OPERATIONS');
-        menuLine(screen, 6, 1, 'TABLEAU DE BORD');
-        menuLine(screen, 7, 2, 'DEPARTS');
-        menuLine(screen, 8, 3, 'ARRIVEES');
-        menuLine(screen, 9, 4, 'MES OPERATIONS', true);
-        menuLine(screen, 10, 5, 'RAPPORTS DE VOL');
-        menuLine(screen, 11, 6, 'MISSIONS');
-        menuLine(screen, 12, 7, 'FLOTTE');
-        menuLine(screen, 13, 8, 'PASSPORT');
-        menuLine(screen, 14, 9, 'FINANCES');
-        menuLine(screen, 15, 0, 'AUTRES SERVICES');
-        noticeBand(screen, 18, 'SERVICE TELEMATIQUE AIR INTER', 'red', 'white');
-        screen.write(20, 2, 'CHOIX : ' + current.input.value, { foreground: 'yellow' });
+        titleBand(screen, 'PROMETHEE', 'CENTRE DES OPERATIONS');
+        menuLine(screen, 7, 1, 'TABLEAU DE BORD');
+        menuLine(screen, 8, 2, 'DEPARTS');
+        menuLine(screen, 9, 3, 'ARRIVEES');
+        menuLine(screen, 10, 4, 'MES OPERATIONS', true);
+        menuLine(screen, 11, 5, 'RAPPORTS DE VOL');
+        menuLine(screen, 12, 6, 'MISSIONS');
+        menuLine(screen, 13, 7, 'FLOTTE');
+        menuLine(screen, 14, 8, 'DOSSIER PILOTE');
+        menuLine(screen, 15, 9, 'FINANCES');
+        menuLine(screen, 16, 0, 'AUTRES SERVICES');
+        screen.write(19, 7, 'VOTRE CHOIX : ' + current.input.value, { foreground: 'yellow' });
+        screen.write(21, 4, 'GUIDE POUR PLUS D INFORMATIONS', { foreground: 'cyan' });
         writeFooter(screen);
       },
       acceptInput: (key) => /^[0-9]$/.test(key),

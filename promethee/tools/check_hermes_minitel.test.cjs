@@ -226,9 +226,13 @@ test('Hermès Minitel exposes the renovated 40x25 Videotex screen hierarchy', ()
   }
   assert.ok(source.includes('writeAirInterMosaic'), 'Air Inter identity must use Videotex mosaic');
   assert.ok(!source.includes('air-inter-va-hermes.png'), 'logical Minitel screen must not embed the PNG logo');
-  for (const command of ['ANNUL', 'CORR', 'REPETITION', 'SOMM', 'RET', 'SUI', 'ENVOI']) {
-    assert.ok(source.includes(command), 'missing visible Minitel command ' + command);
-  }
+  // M8 removes the permanent web-style command footer. Commands remain
+  // keyboard-driven; only contextual actions such as ENVOI and pagination
+  // hints are rendered inside a page when useful.
+  assert.ok(source.includes('ENVOI'), 'ENVOI must remain visible where input is expected');
+  assert.ok(source.includes("'RETOUR'"), 'paged screens must expose RETOUR');
+  assert.ok(source.includes("'SUITE'"), 'paged screens must expose SUITE');
+  assert.ok(source.includes('Commands belong to the Minitel keyboard'), 'M8 must keep global commands off permanent footers');
 });
 
 test('SimBrief sources are split into exclusive Minitel workflows', () => {
@@ -249,11 +253,11 @@ test('Recovery is fully operable from Minitel including abandon/archive', () => 
   assert.ok(source.includes("runCall('/api/recovery/abandon'"));
 });
 
-test('Hermès Minitel caps progressive screen transmission around 2-3 seconds', () => {
+test('Hermès M8 keeps authentic Videotex timing uncapped and fast mode bounded', () => {
   const source = fs.readFileSync(path.join(__dirname, '..', '..', 'acars', 'wwwroot', 'hermes-minitel.js'), 'utf8');
   const renderer = fs.readFileSync(path.join(__dirname, '..', 'shared', 'minitel', 'renderer.js'), 'utf8');
-  assert.ok(source.includes('maxProgressiveDurationMs: 2600'));
-  assert.ok(source.includes('bootFrameDelay: 120'));
+  assert.ok(source.includes("bootFrameDelay: terminalPreferences.speed === 'authentic' ? 260 : 120"));
+  assert.ok(source.includes("maxProgressiveDurationMs: terminalPreferences.speed === 'authentic' ? 0 : 2600"));
   assert.ok(renderer.includes('maxProgressiveDurationMs'));
   assert.ok(renderer.includes('batchSize'));
   assert.ok(renderer.includes('actualFrames'));

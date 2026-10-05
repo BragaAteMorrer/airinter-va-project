@@ -2,6 +2,8 @@
 
 This directory contains the shared, framework-free foundation for the Air Inter Videotex experience used by Prométhée and Hermès.
 
+> Internal-only product boundary: the Videotex layer is rendered and transported entirely inside the Air Inter applications. It must not depend on MiniPavi, an external gateway, a public terminal endpoint or any third-party Minitel service.
+
 M0 defines the framework-free terminal contract. M1 adds the shared 3615 AIRINTER shell, boot sequence, system pages and safety escape. Neither lot duplicates Prométhée/Hermès business logic.
 
 ## Invariants
@@ -262,3 +264,15 @@ It uploads `minitel-m7-release.json` and `minitel-m7-release.md`.
 Real-simulator/network acceptance cannot be fully reproduced in GitHub Actions.
 The mandatory manual production scenarios are documented in
 `M7-RELEASE-CHECKLIST.md`.
+
+
+## M8 — Internal Videotex fidelity
+
+M8 keeps the Minitel experience entirely inside Prométhée and Hermès while making its behaviour closer to a real Télétel terminal.
+
+- progressive display timing accounts for estimated Videotex control bytes (cursor addressing, G0/G1 shifts and attribute changes), not only changed DOM cells;
+- authentic mode is never duration-capped in either product;
+- monochrome is the default for a new terminal profile while colour remains available from terminal settings;
+- permanent web-style command footers are removed because the virtual Minitel keyboard already exposes ENVOI, RETOUR, SUITE, GUIDE, SOMMAIRE and the other historical keys;
+- paginated pages retain only contextual RETOUR/SUITE hints on the raster;
+- no external Minitel gateway or third-party service is introduced.

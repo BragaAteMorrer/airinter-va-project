@@ -399,6 +399,46 @@
     return operations;
   }
 
+  function videotexTransmissionUnits(operations = []) {
+    let units = 2; // clear/home sequence on a freshly transmitted Videotex page
+    let row = 0;
+    let column = -1;
+    let attrs = { ...DEFAULT_ATTRS };
+
+    for (const operation of operations) {
+      const cell = operation?.cell;
+      if (!cell) continue;
+
+      // A non-contiguous write requires a cursor-address sequence on a real terminal.
+      if (operation.row !== row || operation.column !== column + 1) units += 3;
+
+      const next = cell.attrs || DEFAULT_ATTRS;
+      if (next.foreground !== attrs.foreground) units += 2;
+      if (next.background !== attrs.background) units += 2;
+      if (next.blink !== attrs.blink) units += 2;
+      if (next.inverse !== attrs.inverse) units += 2;
+      if (next.underline !== attrs.underline) units += 2;
+      if (next.doubleWidth !== attrs.doubleWidth || next.doubleHeight !== attrs.doubleHeight) units += 2;
+      if (next.mosaic !== attrs.mosaic) units += 1; // G0/G1 shift
+      if (next.separatedMosaic !== attrs.separatedMosaic) units += 2;
+      if (next.concealed !== attrs.concealed) units += 2;
+
+      // Character or semigraphic cell payload.
+      units += 1;
+      row = operation.row;
+      column = operation.column;
+      attrs = next;
+    }
+
+    return units;
+  }
+
+  function transmissionDuration(operations = [], speed = 'fast') {
+    const cps = SPEEDS[speed] ?? SPEEDS.fast;
+    if (!Number.isFinite(cps) || cps <= 0) return 0;
+    return Math.max(0, (videotexTransmissionUnits(operations) / cps) * 1000);
+  }
+
   function transmissionDelay(speed = 'fast') {
     const cps = SPEEDS[speed] ?? SPEEDS.fast;
     return Number.isFinite(cps) ? Math.max(1, Math.round(1000 / cps)) : 0;
@@ -442,6 +482,8 @@
     mosaicBits,
     isDefaultBlank,
     transmissionOperations,
+    videotexTransmissionUnits,
+    transmissionDuration,
     transmissionDelay,
     minitelCapability
   });
