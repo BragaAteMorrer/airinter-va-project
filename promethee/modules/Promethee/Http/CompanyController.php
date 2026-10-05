@@ -286,7 +286,7 @@ public function maintenance(Request $r) {
         // Read the existing maintenance data directly: no disabled module or
         // legacy event listener is required for this dashboard.
         $maintenance = DB::table('disposable_maintenance as maintenance')->join('aircraft as aircraft', 'aircraft.id', '=', 'maintenance.aircraft_id')->leftJoin('subfleets as subfleets', 'subfleets.id', '=', 'aircraft.subfleet_id')->leftJoin('airlines as airlines', 'airlines.id', '=', 'subfleets.airline_id')->leftJoin('promethee_operational_bases as ops_base', 'ops_base.airport_id', '=', 'aircraft.airport_id')
-            ->select(['maintenance.*', 'aircraft.registration', 'aircraft.icao', 'aircraft.airport_id', 'airlines.name as airline_name', 'airlines.icao as airline_icao', 'ops_base.kind as maintenance_base_kind', 'ops_base.small_maintenance', 'ops_base.heavy_maintenance'])
+            ->select(['maintenance.*', 'aircraft.registration', 'aircraft.icao', 'aircraft.airport_id', 'airlines.name as airline_name', 'airlines.icao as airline_icao', 'ops_base.kind as maintenance_base_kind', 'ops_base.check_a', 'ops_base.check_b', 'ops_base.check_c'])
             ->where(function ($query) {
                 $query->whereNotNull('maintenance.act_note')->orWhere('maintenance.curr_state', '<', 80)->orWhere('maintenance.rem_ta', '<', 600)->orWhere('maintenance.rem_tb', '<', 600)->orWhere('maintenance.rem_tc', '<', 600)->orWhere('maintenance.rem_ca', '<', 3)->orWhere('maintenance.rem_cb', '<', 3)->orWhere('maintenance.rem_cc', '<', 3);
             })
@@ -303,7 +303,7 @@ public function maintenance(Request $r) {
             ->leftJoin('subfleets as subfleets', 'subfleets.id', '=', 'aircraft.subfleet_id')
             ->leftJoin('airlines as airlines', 'airlines.id', '=', 'subfleets.airline_id')
             ->leftJoin('promethee_operational_bases as ops_base', 'ops_base.airport_id', '=', 'aircraft.airport_id')
-            ->select(['maintenance.*', 'aircraft.registration', 'aircraft.icao', 'aircraft.airport_id', 'airlines.name as airline_name', 'airlines.icao as airline_icao', 'ops_base.kind as maintenance_base_kind', 'ops_base.small_maintenance', 'ops_base.heavy_maintenance'])
+            ->select(['maintenance.*', 'aircraft.registration', 'aircraft.icao', 'aircraft.airport_id', 'airlines.name as airline_name', 'airlines.icao as airline_icao', 'ops_base.kind as maintenance_base_kind', 'ops_base.check_a', 'ops_base.check_b', 'ops_base.check_c'])
             ->whereNull('maintenance.act_note')
             ->where(function ($query) use ($warningMinutes, $warningCycles) {
                 $query->whereBetween('maintenance.rem_ta', [0, $warningMinutes])
