@@ -452,26 +452,63 @@ class AirframeMaintenanceService
 
         $this->syncFleet();
         $settings = $this->settings();
+        $techProfiles = $this->technicalProfiles();
 
-        return DB::table('promethee_airframe_maintenance as maintenance')
+        $query = DB::table('promethee_airframe_maintenance as maintenance')
             ->join('aircraft', 'aircraft.id', '=', 'maintenance.aircraft_id')
             ->leftJoin('subfleets', 'subfleets.id', '=', 'aircraft.subfleet_id')
-            ->leftJoin('airlines', 'airlines.id', '=', 'subfleets.airline_id')
-            ->select([
-                'maintenance.*',
-                'aircraft.registration',
-                'aircraft.airport_id',
-                'aircraft.status as aircraft_status',
-                'aircraft.state as aircraft_state',
-                'subfleets.name as subfleet_name',
-                'subfleets.type as subfleet_type',
-                'airlines.icao as airline_icao',
-            ])
+            ->leftJoin('airlines', 'airlines.id', '=', 'subfleets.airline_id');
+
+        $select = [
+            'maintenance.*',
+            'aircraft.registration',
+            'aircraft.icao',
+            'aircraft.airport_id',
+            'aircraft.status as aircraft_status',
+            'aircraft.state as aircraft_state',
+            'subfleets.name as subfleet_name',
+            'subfleets.type as subfleet_type',
+            'airlines.icao as airline_icao',
+        ];
+
+        if (Schema::hasTable('disposable_maintenance')) {
+            $query->leftJoin('disposable_maintenance as legacy', 'legacy.aircraft_id', '=', 'maintenance.aircraft_id');
+            $select = array_merge($select, [
+                'legacy.aircraft_id as legacy_aircraft_id',
+                'legacy.curr_state as legacy_curr_state',
+                'legacy.time_a as legacy_time_a',
+                'legacy.time_b as legacy_time_b',
+                'legacy.time_c as legacy_time_c',
+                'legacy.cycle_a as legacy_cycle_a',
+                'legacy.cycle_b as legacy_cycle_b',
+                'legacy.cycle_c as legacy_cycle_c',
+                'legacy.rem_ta as legacy_rem_ta',
+                'legacy.rem_tb as legacy_rem_tb',
+                'legacy.rem_tc as legacy_rem_tc',
+                'legacy.rem_ca as legacy_rem_ca',
+                'legacy.rem_cb as legacy_rem_cb',
+                'legacy.rem_cc as legacy_rem_cc',
+                'legacy.last_a as legacy_last_a',
+                'legacy.last_b as legacy_last_b',
+                'legacy.last_c as legacy_last_c',
+                'legacy.last_note as legacy_last_note',
+                'legacy.last_time as legacy_last_time',
+                'legacy.act_note as legacy_act_note',
+                'legacy.act_start as legacy_act_start',
+                'legacy.act_end as legacy_act_end',
+            ]);
+        }
+
+        return $query
+            ->select($select)
             ->orderBy('airlines.icao')
             ->orderBy('subfleets.name')
             ->orderBy('aircraft.registration')
             ->get()
-            ->map(fn ($row) => $this->decorate($row, $settings));
+            ->map(function ($row) use ($settings, $techProfiles) {
+                $icao = strtoupper(trim((string) ($row->icao ?: $row->subfleet_type)));
+                return $this->decorate($row, $settings, $techProfiles->get($icao));
+            });
     }
 
     public function rotationPriorities(float $biasPercent): Collection
@@ -665,19 +702,33 @@ class AirframeMaintenanceService
         ]);
     }
 
-    private function decorate(object $row, array $settings): object
+    private function decorate(object $row, array $settings, ?object $techProfile = null): object
     {
         $row->checks = [];
         $mostUrgent = null;
+        $hasLegacyState = isset($row->legacy_aircraft_id) && $row->legacy_aircraft_id !== null;
 
         foreach (self::CHECKS as $check) {
-            $config = $settings['checks'][$check];
-            $usedMinutes = (int) $row->{$check.'_minutes'};
-            $usedCycles = (int) $row->{$check.'_cycles'};
+            $config = $this->checkPolicy($check, $settings['checks'][$check], $techProfile);
+            $usedMinutes = $hasLegacyState
+                ? max(0, (int) ($row->{'legacy_time_'.$check} ?? 0))
+                : max(0, (int) $row->{$check.'_minutes'});
+            $usedCycles = $hasLegacyState
+                ? max(0, (int) ($row->{'legacy_cycle_'.$check} ?? 0))
+                : max(0, (int) $row->{$check.'_cycles'});
+
             $limitMinutes = max(1, (int) round($config['time_limit_hours'] * 60));
             $limitCycles = max(1, (int) $config['cycle_limit']);
-            $remainingMinutes = $limitMinutes - $usedMinutes;
-            $remainingCycles = $limitCycles - $usedCycles;
+
+            $legacyRemainingTimeField = 'legacy_rem_t'.$check;
+            $legacyRemainingCycleField = 'legacy_rem_c'.$check;
+            $remainingMinutes = $hasLegacyState && is_numeric($row->{$legacyRemainingTimeField} ?? null)
+                ? (int) $row->{$legacyRemainingTimeField}
+                : $limitMinutes - $usedMinutes;
+            $remainingCycles = $hasLegacyState && is_numeric($row->{$legacyRemainingCycleField} ?? null)
+                ? (int) $row->{$legacyRemainingCycleField}
+                : $limitCycles - $usedCycles;
+
             $timeProgress = ($usedMinutes / $limitMinutes) * 100;
             $cycleProgress = ($usedCycles / $limitCycles) * 100;
             $progress = max($timeProgress, $cycleProgress);
@@ -688,10 +739,12 @@ class AirframeMaintenanceService
                 'time_limit_hours' => $config['time_limit_hours'],
                 'cycle_limit' => $config['cycle_limit'],
                 'duration_hours' => $config['duration_hours'],
+                'policy_source' => $config['source'],
                 'used_hours' => round($usedMinutes / 60, 2),
                 'used_cycles' => $usedCycles,
                 'remaining_hours' => round($remainingMinutes / 60, 2),
                 'remaining_cycles' => $remainingCycles,
+                'last_check_at' => $hasLegacyState ? ($row->{'legacy_last_'.$check} ?? null) : ($row->{'last_'.$check.'_at'} ?? null),
                 'progress_percent' => round($progress, 1),
                 'due' => $due,
                 'warning' => $warning,
@@ -713,11 +766,130 @@ class AirframeMaintenanceService
             }
         }
 
+        $row->current_state_percent = $hasLegacyState && is_numeric($row->legacy_curr_state ?? null)
+            ? (float) $row->legacy_curr_state
+            : null;
+        $row->last_maintenance_note = $hasLegacyState ? ($row->legacy_last_note ?? null) : null;
+        $row->last_maintenance_at = $hasLegacyState ? ($row->legacy_last_time ?? null) : null;
+        $row->active_legacy_check = $hasLegacyState ? ($row->legacy_act_note ?? null) : null;
+        $row->maintenance_source = $hasLegacyState ? 'disposable_maintenance' : 'promethee_fallback';
         $row->next_check = $mostUrgent;
-        $row->maintenance_state = ($row->active_check || ($row->safety_hold_at ?? null))
+        $row->maintenance_state = ($row->active_check || ($row->safety_hold_at ?? null) || $row->active_legacy_check)
             ? 'maintenance'
             : ($mostUrgent && $row->checks[$mostUrgent]['due'] ? 'due' : ($mostUrgent ? 'warning' : 'serviceable'));
 
         return $row;
     }
+
+    private function disposableSetting(string $key, int|float|string $fallback): float
+    {
+        if (!Schema::hasTable('disposable_settings')) {
+            return is_numeric($fallback) ? (float) $fallback : 0.0;
+        }
+
+        $row = DB::table('disposable_settings')
+            ->where('key', $key)
+            ->first(['value', 'default']);
+
+        $value = $row && filled($row->value)
+            ? $row->value
+            : ($row && filled($row->default) ? $row->default : $fallback);
+
+        return is_numeric($value) ? (float) $value : (float) $fallback;
+    }
+
+    private function technicalProfiles(): Collection
+    {
+        if (!Schema::hasTable('disposable_tech_details')) {
+            return collect();
+        }
+
+        return DB::table('disposable_tech_details')
+            ->where('active', true)
+            ->get()
+            ->filter(fn ($profile) => filled($profile->icao ?? null))
+            ->keyBy(fn ($profile) => strtoupper(trim((string) $profile->icao)));
+    }
+
+    private function checkPolicy(string $check, array $fallback, ?object $techProfile = null): array
+    {
+        $timeField = 'max_time_'.$check;
+        $cycleField = 'max_cycle_'.$check;
+        $durationField = 'duration_'.$check;
+        $hasOverride = $techProfile
+            && (
+                (is_numeric($techProfile->{$timeField} ?? null) && (float) $techProfile->{$timeField} > 0)
+                || (is_numeric($techProfile->{$cycleField} ?? null) && (float) $techProfile->{$cycleField} > 0)
+                || (is_numeric($techProfile->{$durationField} ?? null) && (float) $techProfile->{$durationField} > 0)
+            );
+
+        return [
+            'time_limit_hours' => is_numeric($techProfile->{$timeField} ?? null) && (float) $techProfile->{$timeField} > 0
+                ? (float) $techProfile->{$timeField}
+                : (float) $fallback['time_limit_hours'],
+            'cycle_limit' => is_numeric($techProfile->{$cycleField} ?? null) && (int) $techProfile->{$cycleField} > 0
+                ? (int) $techProfile->{$cycleField}
+                : (int) $fallback['cycle_limit'],
+            'duration_hours' => is_numeric($techProfile->{$durationField} ?? null) && (float) $techProfile->{$durationField} > 0
+                ? (float) $techProfile->{$durationField}
+                : (float) $fallback['duration_hours'],
+            'source' => $hasOverride ? 'type_icao' : 'global',
+        ];
+    }
+
+    private function policyForAircraft(Aircraft $aircraft, ?array $settings = null): array
+    {
+        $settings ??= $this->settings();
+        $techProfile = null;
+
+        if (Schema::hasTable('disposable_tech_details') && filled($aircraft->icao)) {
+            $techProfile = DB::table('disposable_tech_details')
+                ->where('active', true)
+                ->whereRaw('UPPER(icao) = ?', [strtoupper(trim((string) $aircraft->icao))])
+                ->first();
+        }
+
+        $policy = [];
+        foreach (self::CHECKS as $check) {
+            $policy[$check] = $this->checkPolicy($check, $settings['checks'][$check], $techProfile);
+        }
+
+        return $policy;
+    }
+
+    private function recalculateLegacyRemaining(): void
+    {
+        if (!Schema::hasTable('disposable_maintenance')) return;
+
+        $settings = $this->settings();
+        $techProfiles = $this->technicalProfiles();
+
+        DB::table('disposable_maintenance as legacy')
+            ->join('aircraft', 'aircraft.id', '=', 'legacy.aircraft_id')
+            ->select([
+                'legacy.id',
+                'legacy.time_a', 'legacy.time_b', 'legacy.time_c',
+                'legacy.cycle_a', 'legacy.cycle_b', 'legacy.cycle_c',
+                'aircraft.icao',
+            ])
+            ->orderBy('legacy.id')
+            ->chunk(200, function ($rows) use ($settings, $techProfiles) {
+                foreach ($rows as $row) {
+                    $icao = strtoupper(trim((string) ($row->icao ?? '')));
+                    $techProfile = $techProfiles->get($icao);
+                    $update = ['updated_at' => now()];
+
+                    foreach (self::CHECKS as $check) {
+                        $policy = $this->checkPolicy($check, $settings['checks'][$check], $techProfile);
+                        $limitMinutes = (int) round($policy['time_limit_hours'] * 60);
+                        $limitCycles = (int) $policy['cycle_limit'];
+                        $update['rem_t'.$check] = $limitMinutes - max(0, (int) ($row->{'time_'.$check} ?? 0));
+                        $update['rem_c'.$check] = $limitCycles - max(0, (int) ($row->{'cycle_'.$check} ?? 0));
+                    }
+
+                    DB::table('disposable_maintenance')->where('id', $row->id)->update($update);
+                }
+            });
+    }
+
 }
