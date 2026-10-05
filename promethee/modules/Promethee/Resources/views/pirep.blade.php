@@ -40,9 +40,7 @@
     @if($isOwner && !$pirep->read_only)
       <form method="post" action="{{ route('frontend.pireps.submit', $pirep->id) }}">@csrf<button type="submit">Soumettre</button></form>
     @endif
-    @if($pirep->simbrief)
-      <a class="button outline" href="{{ route('promethee.simbrief.show', $pirep->simbrief->id) }}">Ouvrir l’OFP SimBrief</a>
-    @endif
+    <a class="button outline" href="{{ route('promethee.replay', $pirep->id) }}">Ouvrir le Replay</a>
     @if($canRepeat)
       <form method="post" action="{{ route('promethee.pireps.repeat', $pirep->id) }}">
         @csrf
