@@ -45,5 +45,40 @@
 </section>
 @endif
 
+<section class="panel">
+  <div class="panel-heading">
+    <div>
+      <span class="eyebrow">FORMATION SUR SIMULATEUR RÉEL</span>
+      <h2>Certifications vérifiées</h2>
+      <p>Sessions et certifications documentées par le staff Air Inter VA. Elles ne remplacent aucune licence ou qualification réglementaire.</p>
+    </div>
+    <span class="tag">{{ $realSimulatorCertifications->count() }} certification(s)</span>
+  </div>
+  <div class="distinctions">
+    @forelse($realSimulatorCertifications as $certification)
+      <article class="distinction">
+        <div>
+          <strong>{{ $certification->certificate_name }}</strong>
+          <p>
+            @if($certification->aircraft_type){{ $certification->aircraft_type }} · @endif
+            {{ str_replace('_', ' ', $certification->simulator_level) }} · {{ $certification->device_name }}
+          </p>
+          <p>{{ $certification->organisation }}@if($certification->location) · {{ $certification->location }}@endif</p>
+          <small>
+            Réalisée le {{ optional($certification->completed_on)->format('d/m/Y') }}
+            @if($certification->valid_until)
+              · {{ $certification->isExpired() ? 'Échue le' : 'Valide jusqu’au' }} {{ $certification->valid_until->format('d/m/Y') }}
+            @else
+              · Sans échéance enregistrée
+            @endif
+          </small>
+        </div>
+      </article>
+    @empty
+      <p class="muted">Aucune certification sur simulateur réel vérifiée pour ce pilote.</p>
+    @endforelse
+  </div>
+</section>
+
 <section class="panel"><div class="panel-heading"><div><span class="eyebrow">DISTINCTIONS</span><h2>Badges obtenus</h2></div><span class="tag">{{ $badges->count() }} badge(s)</span></div><div class="distinctions">@forelse($badges as $badge)<article class="distinction">@if($badge->image_url)<img class="distinction-image" src="{{ $badge->image_url }}" alt="">@endif<div><strong>{{ $badge->name }}</strong><p>{{ $badge->description }}</p></div></article>@empty<p class="muted">Aucun badge obtenu pour le moment.</p>@endforelse</div></section>
 @endsection
