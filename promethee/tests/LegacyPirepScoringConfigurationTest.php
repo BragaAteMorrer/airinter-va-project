@@ -5,6 +5,7 @@ namespace Tests;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use App\Models\Pirep;
 use Modules\Promethee\Services\LegacyPirepScoringService;
 
 final class LegacyPirepScoringConfigurationTest extends TestCase
@@ -129,6 +130,111 @@ final class LegacyPirepScoringConfigurationTest extends TestCase
         $this->assertCount(1, $occurrences);
         $this->assertSame('APPROACH_DESCENT_RATE_UNSTABLE', $occurrences[0]['code']);
         $this->assertSame(-1450, $occurrences[0]['value']);
+    }
+
+    public function test_runway_overrun_is_detected_from_hermes_trace_and_runway_geometry(): void
+    {
+        if (!Schema::hasTable('disposable_runways')) {
+            $this->markTestSkipped('Disposable runway geometry is not installed in this test environment.');
+        }
+
+        DB::table('disposable_runways')->updateOrInsert(
+            ['airport_id' => 'LFXX', 'runway_ident' => '36'],
+            [
+                'lat' => '48.000000',
+                'lon' => '2.000000',
+                'heading' => '0',
+                'length' => '1000',
+                'ils_freq' => null,
+                'loc_course' => null,
+                'airac' => '2609',
+                'updated_at' => now(),
+                'created_at' => now(),
+            ]
+        );
+
+        $pirep = new Pirep();
+        $pirep->arr_airport_id = 'LFXX';
+
+        $samples = [
+            [
+                'recorded_at' => '2026-10-05T08:00:00Z',
+                'lat' => 48.0018,
+                'lon' => 2.0,
+                'on_ground' => true,
+                'gs' => 115,
+                'heading' => 1,
+                'phase' => 'LANDING',
+            ],
+            [
+                'recorded_at' => '2026-10-05T08:00:20Z',
+                'lat' => 48.00965,
+                'lon' => 2.0,
+                'on_ground' => true,
+                'gs' => 42,
+                'heading' => 0,
+                'phase' => 'LANDING',
+            ],
+        ];
+
+        $service = app(LegacyPirepScoringService::class);
+        $occurrences = $this->invokeMethod($service, 'runwayOverrun', [$pirep, $samples]);
+
+        $this->assertCount(1, $occurrences);
+        $this->assertSame('RUNWAY_OVERRUN', $occurrences[0]['code']);
+        $this->assertSame('36', $occurrences[0]['runway']);
+        $this->assertGreaterThan(60, $occurrences[0]['value']);
+    }
+
+    public function test_runway_rollout_inside_physical_end_is_not_an_overrun(): void
+    {
+        if (!Schema::hasTable('disposable_runways')) {
+            $this->markTestSkipped('Disposable runway geometry is not installed in this test environment.');
+        }
+
+        DB::table('disposable_runways')->updateOrInsert(
+            ['airport_id' => 'LFXY', 'runway_ident' => '36'],
+            [
+                'lat' => '48.000000',
+                'lon' => '2.000000',
+                'heading' => '0',
+                'length' => '1000',
+                'ils_freq' => null,
+                'loc_course' => null,
+                'airac' => '2609',
+                'updated_at' => now(),
+                'created_at' => now(),
+            ]
+        );
+
+        $pirep = new Pirep();
+        $pirep->arr_airport_id = 'LFXY';
+
+        $samples = [
+            [
+                'recorded_at' => '2026-10-05T08:00:00Z',
+                'lat' => 48.0018,
+                'lon' => 2.0,
+                'on_ground' => true,
+                'gs' => 115,
+                'heading' => 0,
+                'phase' => 'LANDING',
+            ],
+            [
+                'recorded_at' => '2026-10-05T08:00:25Z',
+                'lat' => 48.0081,
+                'lon' => 2.0,
+                'on_ground' => true,
+                'gs' => 35,
+                'heading' => 0,
+                'phase' => 'LANDING',
+            ],
+        ];
+
+        $service = app(LegacyPirepScoringService::class);
+        $occurrences = $this->invokeMethod($service, 'runwayOverrun', [$pirep, $samples]);
+
+        $this->assertSame([], $occurrences);
     }
 
     public function test_admin_update_changes_the_same_rule_consumed_by_hermes_scoring(): void

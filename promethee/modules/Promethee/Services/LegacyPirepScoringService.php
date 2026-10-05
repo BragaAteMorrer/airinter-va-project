@@ -17,7 +17,7 @@ use Throwable;
  */
 final class LegacyPirepScoringService
 {
-    public const VERSION = 2;
+    public const VERSION = 3;
     public const STARTING_SCORE = 100;
 
     public function __construct(private readonly SopEngineService $sop) {}
@@ -129,7 +129,7 @@ final class LegacyPirepScoringService
                     'rule_id' => $rule['id'],
                     'name' => $rule['name'],
                     'points' => $points,
-                    'reason' => 'Télémétrie Hermès non disponible pour cette règle.',
+                    'reason' => $this->unavailableReason($rule['id']),
                 ];
                 continue;
             }
@@ -228,7 +228,12 @@ final class LegacyPirepScoringService
             'starting_score' => (int) $stored->starting_score,
             'penalty_total' => (int) $stored->penalty_total,
             'items' => array_values($breakdown['items'] ?? []),
-            'unavailable_rules' => array_values($breakdown['unavailable_rules'] ?? []),
+            'unavailable_rules' => array_map(function ($rule) {
+                if (is_array($rule) && !empty($rule['rule_id'])) {
+                    $rule['reason'] = $this->unavailableReason((string) $rule['rule_id']);
+                }
+                return $rule;
+            }, array_values($breakdown['unavailable_rules'] ?? [])),
             'rules_source' => 'vmsacars_rules_snapshot',
             'calculated_at' => optional(Carbon::parse($stored->calculated_at))->toIso8601String(),
         ];
@@ -408,11 +413,169 @@ final class LegacyPirepScoringService
                 fn ($s) => (float) $s['gs']
             ),
             'HARD_LANDING' => $this->hardLanding($pirep, $facts, $parameter),
-            // Runway geometry is not supplied by the simulator-neutral Hermès
-            // contract. Unknown data must never become a penalty.
-            'RUNWAY_OVERRUN' => null,
+            'RUNWAY_OVERRUN' => $this->runwayOverrun($pirep, $samples),
             default => [],
         };
+    }
+
+    private function unavailableReason(string $ruleId): string
+    {
+        return match ($ruleId) {
+            'EXCESS_GFORCE' => 'Signal G-Force absent de la télémétrie Hermès de ce vol.',
+            'OVERSPEED_WARNING' => 'Signal d’alarme overspeed absent de la télémétrie Hermès de ce vol.',
+            'STALL_WARNING' => 'Signal d’alarme décrochage absent de la télémétrie Hermès de ce vol.',
+            'THRUST_REVERSERS_INFLIGHT', 'THRUST_REVERSERS_SPEED' => 'Position des inverseurs de poussée absente de la télémétrie Hermès de ce vol.',
+            'RUNWAY_OVERRUN' => 'Impossible de croiser la trace Hermès avec une géométrie de piste exploitable à l’arrivée.',
+            default => 'Télémétrie Hermès non disponible pour cette règle.',
+        };
+    }
+
+    /**
+     * Detects a runway excursion beyond the physical end of the landing runway.
+     *
+     * Hermès supplies the neutral simulator facts (position, ground state,
+     * ground speed and track). Prométhée combines them with its runway database,
+     * keeping company scoring authoritative on the server.
+     */
+    private function runwayOverrun(Pirep $pirep, array $samples): ?array
+    {
+        if (!Schema::hasTable('disposable_runways')) return null;
+        foreach (['airport_id', 'lat', 'lon', 'heading', 'length'] as $column) {
+            if (!Schema::hasColumn('disposable_runways', $column)) return null;
+        }
+
+        $runways = DB::table('disposable_runways')
+            ->where('airport_id', strtoupper((string) $pirep->arr_airport_id))
+            ->get(['runway_ident', 'lat', 'lon', 'heading', 'length'])
+            ->filter(fn ($runway) =>
+                is_numeric($runway->lat)
+                && is_numeric($runway->lon)
+                && is_numeric($runway->heading)
+                && is_numeric($runway->length)
+                && (float) $runway->length > 100
+            )
+            ->values();
+
+        if ($runways->isEmpty()) return null;
+
+        $landingSamples = collect($samples)
+            ->filter(fn ($sample) =>
+                ($sample['on_ground'] ?? null) === true
+                && in_array(strtoupper((string) ($sample['phase'] ?? '')), ['LANDING', 'TAXI_IN'], true)
+                && is_numeric($sample['lat'] ?? null)
+                && is_numeric($sample['lon'] ?? null)
+                && is_numeric($sample['gs'] ?? null)
+            )
+            ->values();
+
+        if ($landingSamples->isEmpty()) return null;
+
+        // The first fast on-ground LANDING sample is our conservative touchdown
+        // anchor. Avoid taxi-only data so a normal taxiway cannot be mistaken
+        // for a landing roll.
+        $touchdown = $landingSamples->first(fn ($sample) =>
+            strtoupper((string) ($sample['phase'] ?? '')) === 'LANDING'
+            && (float) $sample['gs'] >= 30
+        );
+
+        if (!$touchdown) return null;
+
+        $touchdownAt = !empty($touchdown['recorded_at']) ? Carbon::parse($touchdown['recorded_at']) : null;
+        $track = is_numeric($touchdown['track'] ?? null)
+            ? (float) $touchdown['track']
+            : (is_numeric($touchdown['heading'] ?? null) ? (float) $touchdown['heading'] : null);
+
+        $best = null;
+        $bestScore = INF;
+        foreach ($runways as $runway) {
+            $geometry = $this->runwayCoordinates(
+                (float) $runway->lat,
+                (float) $runway->lon,
+                (float) $runway->heading,
+                (float) $touchdown['lat'],
+                (float) $touchdown['lon']
+            );
+
+            $length = (float) $runway->length;
+            if (abs($geometry['cross']) > 120) continue;
+            if ($geometry['along'] < -250 || $geometry['along'] > $length + 250) continue;
+
+            if ($track !== null && $this->headingDifference($track, (float) $runway->heading) > 35) continue;
+
+            $score = abs($geometry['cross'])
+                + max(0, -$geometry['along'])
+                + max(0, $geometry['along'] - $length);
+
+            if ($score < $bestScore) {
+                $bestScore = $score;
+                $best = $runway;
+            }
+        }
+
+        // No runway can be identified confidently: do not invent a penalty.
+        if (!$best) return null;
+
+        $length = (float) $best->length;
+        foreach ($landingSamples as $sample) {
+            if ($touchdownAt && !empty($sample['recorded_at'])) {
+                $at = Carbon::parse($sample['recorded_at']);
+                if ($at->lt($touchdownAt) || $touchdownAt->diffInSeconds($at) > 90) continue;
+            }
+
+            // A stopped aircraft or a very slow taxi beyond the threshold is not
+            // enough evidence of an overrun.
+            if ((float) $sample['gs'] < 10) continue;
+
+            $geometry = $this->runwayCoordinates(
+                (float) $best->lat,
+                (float) $best->lon,
+                (float) $best->heading,
+                (float) $sample['lat'],
+                (float) $sample['lon']
+            );
+
+            if (abs($geometry['cross']) > 150) continue;
+
+            // 60 m tolerance absorbs GPS/navdata/sampling discrepancies while
+            // still requiring the aircraft to pass beyond the physical end.
+            $excess = $geometry['along'] - $length;
+            if ($excess <= 60) continue;
+
+            return [[
+                'at' => $sample['recorded_at'] ?? null,
+                'value' => round($excess),
+                'unit' => 'm beyond runway',
+                'source' => 'hermes_telemetry',
+                'code' => 'RUNWAY_OVERRUN',
+                'runway' => (string) ($best->runway_ident ?? ''),
+            ]];
+        }
+
+        return [];
+    }
+
+    /**
+     * Convert a geographic point to local runway coordinates in metres.
+     * along: distance from threshold in runway heading; cross: lateral offset.
+     */
+    private function runwayCoordinates(float $lat0, float $lon0, float $heading, float $lat, float $lon): array
+    {
+        $earth = 6371000.0;
+        $lat0Rad = deg2rad($lat0);
+        $north = deg2rad($lat - $lat0) * $earth;
+        $east = deg2rad($lon - $lon0) * $earth * cos($lat0Rad);
+        $headingRad = deg2rad(fmod($heading + 360.0, 360.0));
+
+        return [
+            'along' => $north * cos($headingRad) + $east * sin($headingRad),
+            'cross' => -$north * sin($headingRad) + $east * cos($headingRad),
+        ];
+    }
+
+    private function headingDifference(float $a, float $b): float
+    {
+        $difference = abs(fmod(($a - $b + 540.0), 360.0) - 180.0);
+        return $difference;
     }
 
     private function telemetryEpisodesIfAvailable(

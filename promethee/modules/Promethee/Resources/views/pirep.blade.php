@@ -124,7 +124,26 @@
     </div>
     @if($unavailableScoreRules->isNotEmpty())
       <div class="alert alert-warning">
-        {{ $unavailableScoreRules->count() }} règle{{ $unavailableScoreRules->count() > 1 ? 's' : '' }} n’ont pas pu être évaluées faute de télémétrie compatible.
+        <strong>{{ $unavailableScoreRules->count() }} règle{{ $unavailableScoreRules->count() > 1 ? 's' : '' }} non évaluée{{ $unavailableScoreRules->count() > 1 ? 's' : '' }}</strong>
+        <span>Ces règles n’ont généré aucune pénalité : les données nécessaires étaient absentes ou insuffisantes.</span>
+      </div>
+      <div class="flight-log score-unavailable-rules">
+        @foreach($unavailableScoreRules as $rule)
+          <article class="pirep-journal-entry">
+            <time>NON ÉVALUÉE</time>
+            <div>
+              <div class="pirep-journal-meta">
+                <span>RÈGLE COMPAGNIE</span>
+                <code>{{ $rule['rule_id'] ?? '—' }}</code>
+              </div>
+              <p>{{ $rule['name'] ?? 'Règle de scoring' }}</p>
+              <small>{{ $rule['reason'] ?? 'Télémétrie Hermès insuffisante pour cette règle.' }}</small>
+              @if(!empty($rule['points']))
+                <small class="mono">Aucun retrait appliqué · barème potentiel : {{ (int) $rule['points'] }} pt{{ (int) $rule['points'] > 1 ? 's' : '' }}</small>
+              @endif
+            </div>
+          </article>
+        @endforeach
       </div>
     @endif
   @else
