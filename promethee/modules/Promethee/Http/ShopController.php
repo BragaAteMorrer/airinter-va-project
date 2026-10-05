@@ -1,7 +1,6 @@
 <?php
 namespace Modules\Promethee\Http;
 
-use App\Contracts\Controller;
 use App\Models\{Aircraft,Bid,Subfleet,User};
 use App\Models\Enums\UserState;
 use App\Services\FinanceService;
@@ -10,7 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Modules\Promethee\Services\ShopEntitlementService;
 
-class ShopController extends Controller
+class ShopController extends PrometheeWebController
 {
     private const TYPES = [
         'aircraft_type','aircraft_variant','aircraft_premium','aircraft_rental',
@@ -28,7 +27,7 @@ class ShopController extends Controller
         $bids=Bid::with('flight')->where('user_id',$pilot->id)->latest()->get();
         $aircraft=Aircraft::with('subfleet')->orderBy('registration')->get();
 
-        return view('promethee::shop', compact('pilot','items','orders','bids','aircraft')+['wallet'=>$journal->getBalance()]);
+        return $this->page('shop', compact('pilot','items','orders','bids','aircraft')+['wallet'=>$journal->getBalance()]);
     }
 
     public function buy(int $id, Request $r, FinanceService $finance, ShopEntitlementService $entitlements)
@@ -89,7 +88,7 @@ class ShopController extends Controller
 
     public function admin()
     {
-        return view('promethee::admin-shop',[
+        return $this->page('admin-shop',[
             'items'=>DB::table('promethee_shop_items')->latest()->get(),
             'pilots'=>User::where('state',UserState::ACTIVE)->orderBy('pilot_id')->get(['id','pilot_id','name']),
             'subfleets'=>Subfleet::with('aircraft')->orderBy('name')->get(),
