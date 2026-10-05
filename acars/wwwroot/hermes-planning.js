@@ -1,7 +1,7 @@
 // Hermès modularization phase 2 — planning domain.
-// Kept as a classic script to preserve the existing shared runtime contract.
+// Classic script: preserves the existing shared runtime/global handler contract.
 
-function refreshDispatch() {
+async function refreshDispatch() {
   const operationRef = selectedOperation?.operation_id || selectedOperation?.id;
   if (!operationRef) { serverDispatch = null; clearOperationalWeather(); return null; }
 
@@ -42,7 +42,7 @@ function refreshDispatch() {
   return serverDispatch;
 }
 
-function assertDispatchCanStart() {
+async function assertDispatchCanStart() {
   const dispatch = await refreshDispatch();
   const checks = dispatch?.server_checks || {};
   const checksReady = ['operation', 'aircraft', 'ofp', 'pirep'].every(key => checks[key] === true);
@@ -139,7 +139,7 @@ function simBriefPlanningPayload(form) {
   return payload;
 }
 
-function assertSimBriefReady(form, mode = 'company') {
+async function assertSimBriefReady(form, mode = 'company') {
   const resolved = unwrap(await call(simbriefPath('readiness'), simBriefPlanningPayload(form)));
   const ready = mode === 'account'
     ? Boolean(resolved?.ready_account)
@@ -189,7 +189,7 @@ function renderNetworkPrefiles(prefiles) {
     : '');
 }
 
-function applyBriefing(briefing, sourceLabel) {
+async function applyBriefing(briefing, sourceLabel) {
   const form = $('#prefileForm');
   const flightLevel = normalizeFlightLevel(briefing.initial_altitude);
   const importedPax = briefing.passengers
@@ -291,4 +291,4 @@ function setPlanMode(mode) {
   if (!flightPlan) showMessage('#simbriefState', labels[mode] || '');
 }
 
-function prefilePreparedOperation({ navigate = true, automatic = false }
+async function prefilePreparedOperation({ navigate = true, automatic = false }
