@@ -603,13 +603,15 @@ class PortalController extends Controller
                 $departure->isSameDay($now->addDay()) => 'Demain',
                 default => 'Le '.$departure->format('d/m'),
             } : null;
-            $flight->setAttribute('next_departure_time',$departure?->format('H:i') ?: trim((string)$flight->dpt_time));
-            $flight->setAttribute('next_arrival_time',$arrival?->format('H:i') ?: trim((string)$flight->arr_time));
-            $flight->setAttribute('next_departure_iso',$departure?->toIso8601String());
-            $flight->setAttribute('next_arrival_iso',$arrival?->toIso8601String());
-            $flight->setAttribute('next_departure_relative',$relative);
-            $flight->setAttribute('next_departure_soon',$minutes!==null && $minutes<=90);
-            $flight->setAttribute('next_departure_sort',$departure?->getTimestamp());
+            foreach([
+                'next_departure_time'=>$departure?->format('H:i') ?: trim((string)$flight->dpt_time),
+                'next_arrival_time'=>$arrival?->format('H:i') ?: trim((string)$flight->arr_time),
+                'next_departure_iso'=>$departure?->toIso8601String(),
+                'next_arrival_iso'=>$arrival?->toIso8601String(),
+                'next_departure_relative'=>$relative,
+                'next_departure_soon'=>$minutes!==null && $minutes<=90,
+                'next_departure_sort'=>$departure?->getTimestamp(),
+            ] as $key=>$value) $flight->setAttribute($key,$value);
         });
     }
 
@@ -1782,10 +1784,10 @@ class PortalController extends Controller
         $selectedArrival = $resolveAirport($filters['arrival'] ?? null);
 
         $explicitFilterKeys=['departure','arrival','airline_id','subfleet_id','flight_type','q','min_distance','max_distance','time_from','time_to'];
-        $personalizedDefault = collect($explicitFilterKeys)->every(fn ($key) => !$r->filled($key))
-            && (!$r->filled('sort') || ($filters['sort'] ?? 'departure') === 'departure');
-        $programmeBaseId = $r->user()?->home_airport_id ?: $r->user()?->curr_airport_id;
-        $programmeBase = $programmeBaseId ? Airport::find($programmeBaseId) : null;
+        $personalizedDefault=collect($explicitFilterKeys)->every(fn($key)=>!$r->filled($key))
+            && (!$r->filled('sort') || ($filters['sort']??'departure')==='departure');
+        $programmeBaseId=$r->user()?->home_airport_id ?: $r->user()?->curr_airport_id;
+        $programmeBase=$programmeBaseId ? Airport::find($programmeBaseId) : null;
 
         $q = Flight::where('active', true)
             ->where('visible', true)
