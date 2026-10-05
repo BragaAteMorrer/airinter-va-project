@@ -179,6 +179,7 @@ final class PhpVmsAirframeImportService
                             }
 
                             $tailOverrides = $this->deepMerge(
+                                $fareData,
                                 $tailOverrides,
                                 [
                                     'legacy_phpvms' => $this->aircraftSnapshot($plane),
@@ -198,9 +199,15 @@ final class PhpVmsAirframeImportService
                                 ->first();
 
                             if ($current && $current->source !== self::SOURCE) {
-                                // Never replace a manually curated historical assignment. We
-                                // only fill missing registration-level source/technical data.
-                                $current->overrides = $this->deepMerge($tailOverrides, $current->overrides ?? []);
+                                // Never replace a manually curated historical assignment. Its
+                                // variant/configuration remains authoritative, but every missing
+                                // phpVMS parameter is still made available at registration level.
+                                $manualImport = $this->deepMerge(
+                                    $fareData,
+                                    $tailData,
+                                    ['legacy_phpvms' => $this->aircraftSnapshot($plane)]
+                                );
+                                $current->overrides = $this->deepMerge($manualImport, $current->overrides ?? []);
                                 $current->save();
                                 $result['assignments_updated']++;
                                 $result['manual_assignments_preserved']++;
@@ -360,6 +367,9 @@ final class PhpVmsAirframeImportService
             'cost_block_hour' => $subfleet->cost_block_hour,
             'cost_delay_minute' => $subfleet->cost_delay_minute,
             'ground_handling_multiplier' => $subfleet->ground_handling_multiplier,
+            'cargo_capacity' => $subfleet->cargo_capacity,
+            'fuel_capacity' => $subfleet->fuel_capacity,
+            'gross_weight' => $subfleet->gross_weight,
             'fares' => $subfleet->fares->map(function ($fare) {
                 $capacity = is_numeric($fare->pivot?->capacity) ? (float) $fare->pivot->capacity : $fare->capacity;
 
