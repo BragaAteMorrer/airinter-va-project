@@ -258,7 +258,24 @@ function updateRecommendedPlanSource() {
   setText($('#ofpSourceHint'), 'Source recommandée : ' + labels[recommendedPlanMode()]);
 }
 
-function updateSimBriefAvailability(simbrief = selectedOperation?.simbrief || {}
+function updateSimBriefAvailability(simbrief = selectedOperation?.simbrief || {}) {
+  const available = simbrief.company_api_available === true;
+  const apiButton = document.querySelector('[data-plan-mode="api"]');
+  const apiHint = document.querySelector('[data-plan-panel="api"] .hint');
+  if (apiButton) {
+    apiButton.disabled = !available;
+    apiButton.title = available
+      ? 'Clé API compagnie configurée dans Prométhée'
+      : 'La clé API compagnie doit être configurée dans Prométhée.';
+  }
+  if (apiHint) {
+    apiHint.textContent = available
+      ? 'Mode compagnie disponible : la clé API SimBrief reste sur Prométhée et n’est jamais transmise à Hermès.'
+      : 'Mode compagnie indisponible : configurez la clé API SimBrief dans l’administration Prométhée.';
+  }
+  if (!available && localSettings.flightPlanMode === 'api') setPlanMode('account');
+  updateRecommendedPlanSource();
+}
 
 function setPlanMode(mode) {
   if (!['account', 'api', 'file'].includes(mode)) mode = 'account';
@@ -291,4 +308,55 @@ function setPlanMode(mode) {
   if (!flightPlan) showMessage('#simbriefState', labels[mode] || '');
 }
 
-async function prefilePreparedOperation({ navigate = true, automatic = false }
+async function prefilePreparedOperation({ navigate = true, automatic = false } = {}) {
+  const form = $('#prefileForm');
+  const body = Object.fromEntries([...new FormData(form)].filter(([, value]) => value !== ''));
+  if (!body.aircraft_id) {
+    showMessage('#pirepMessage', 'Sélectionnez un appareil.', true);
+    return false;
+  }
+  if (body.block_fuel) body.block_fuel = Number(body.block_fuel);
+  if (body.level) {
+    const normalizedLevel = normalizeFlightLevel(body.level);
+    if (normalizedLevel) body.level = normalizedLevel;
+    else delete body.level;
+  }
+  if (body.alt_airport_id) body.alt_airport_id = body.alt_airport_id.toUpperCase();
+  Object.assign(body, flightPlan || {}, { source_name: 'Hermes ACARS' });
+
+  try {
+    const operationRef = selectedOperation?.operation_id || selectedOperation?.id;
+    const operationPirepBody = operationRef ? {
+      route: body.route || flightPlan?.route || undefined,
+      level: normalizeFlightLevel(body.level || flightPlan?.level),
+      block_fuel: body.block_fuel || flightPlan?.block_fuel || undefined,
+      passengers: Number.isFinite(Number(flightPlan?.passengers)) ? Math.max(0, Math.round(Number(flightPlan.passengers))) : undefined,
+      simbrief_source: flightPlan?.source === 'simbrief_account'
+        ? 'simbrief_account'
+        : (String(flightPlan?.source || '').toLowerCase().includes('simbrief') ? 'simbrief' : undefined)
+    } : body;
+    if (!operationRef) throw new Error('Impossible de préparer le brouillon PIREP sans operation_id.');
+
+    const result = unwrap(await call(`/api/v1/operations/${encodeURIComponent(operationRef)}/pirep`, operationPirepBody));
+    pirepId = result.id || result.pirep_id || result.pirep?.id;
+    if (!pirepId) throw new Error('Prométhée n’a pas retourné l’identifiant du PIREP.');
+
+    await refreshDispatch();
+    updateWorkflow();
+    showMessage(
+      '#pirepMessage',
+      automatic
+        ? `OFP importé · brouillon PIREP ${pirepId} préparé. Aucun rapport de vol n’est encore déposé : il le sera après le vol.`
+        : `Brouillon PIREP ${pirepId} prêt. Le rapport restera IN_PROGRESS jusqu’à la fin du vol.`
+    );
+    showMessage('#simbriefState', automatic
+      ? 'OFP importé et brouillon PIREP ACARS préparé.'
+      : 'OFP prêt.');
+    if (navigate) document.querySelector('[data-tab="record"]')?.click();
+    return true;
+  } catch (error) {
+    showMessage('#pirepMessage', friendlyError(error), true);
+    if (automatic) showMessage('#simbriefState', 'OFP importé. Préparation du brouillon PIREP impossible : ' + friendlyError(error), true);
+    return false;
+  }
+}
