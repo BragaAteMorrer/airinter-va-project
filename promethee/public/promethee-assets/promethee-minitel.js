@@ -284,7 +284,7 @@
         screen.write(6, 1, 'N VOL      DEP        ARR', { foreground: 'cyan' });
         const items = state.collection?.items || [];
         items.slice(0, 7).forEach((item, index) => {
-          const row = 6 + index * 2;
+          const row = 7 + index * 2;
           screen.write(row, 1, String(index + 1) + ' ' + fit(item.ident, 8) + ' ' + fit(item.departure, 4) + ' > ' + fit(item.arrival, 4));
           screen.write(row + 1, 3, fit((item.airline?.icao || 'ITF') + ' / ' + (item.route || 'ROUTE PROGRAMMEE'), 35), { foreground: 'cyan' });
         });
@@ -313,7 +313,7 @@
         state.operationPage = Math.max(1, Math.min(operationPages, state.operationPage));
         const items = allItems.slice((state.operationPage - 1) * 7, state.operationPage * 7);
         items.forEach((item, index) => {
-          const row = 6 + index * 2;
+          const row = 7 + index * 2;
           const flight = item.flight || {};
           screen.write(row, 1, String(index + 1) + ' ' + fit(flight.ident, 8) + ' ' + fit(flight.departure + '>' + flight.arrival, 11) + ' ' + fit(item.status, 13));
           screen.write(row + 1, 3, fit(item.aircraft?.registration || 'APPAREIL A SELECTIONNER', 35), { foreground: item.aircraft ? 'green' : 'yellow' });
