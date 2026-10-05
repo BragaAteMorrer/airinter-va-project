@@ -36,10 +36,21 @@ final class HermesPirepScoringListener
         $runwayOverrun = collect($result['items'] ?? [])
             ->first(fn (array $item) => ($item['rule_id'] ?? null) === 'RUNWAY_OVERRUN');
 
-        if (!$runwayOverrun) return;
-
         $occurrence = collect($runwayOverrun['events'] ?? [])->first();
-        if (!is_array($occurrence)) $occurrence = [];
+        if (!is_array($occurrence)) {
+            try {
+                $occurrence = $this->scoring->detectedRunwayOverrun($event->pirep);
+            } catch (\Throwable $exception) {
+                logger()->error('hermes_runway_overrun_detection_failed', [
+                    'pirep_id' => $event->pirep->id,
+                    'aircraft_id' => $event->pirep->aircraft_id,
+                    'error' => $exception->getMessage(),
+                ]);
+                return;
+            }
+        }
+
+        if (!is_array($occurrence)) return;
 
         try {
             $hold = $this->airframeMaintenance->placeRunwayOverrunHold(
