@@ -228,7 +228,12 @@ final class LegacyPirepScoringService
             'starting_score' => (int) $stored->starting_score,
             'penalty_total' => (int) $stored->penalty_total,
             'items' => array_values($breakdown['items'] ?? []),
-            'unavailable_rules' => array_values($breakdown['unavailable_rules'] ?? []),
+            'unavailable_rules' => array_map(function ($rule) {
+                if (is_array($rule) && !empty($rule['rule_id'])) {
+                    $rule['reason'] = $this->unavailableReason((string) $rule['rule_id']);
+                }
+                return $rule;
+            }, array_values($breakdown['unavailable_rules'] ?? [])),
             'rules_source' => 'vmsacars_rules_snapshot',
             'calculated_at' => optional(Carbon::parse($stored->calculated_at))->toIso8601String(),
         ];
