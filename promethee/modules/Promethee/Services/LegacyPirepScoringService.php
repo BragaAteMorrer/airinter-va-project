@@ -17,7 +17,7 @@ use Throwable;
  */
 final class LegacyPirepScoringService
 {
-    public const VERSION = 3;
+    public const VERSION = 4;
     public const STARTING_SCORE = 100;
 
     public function __construct(private readonly SopEngineService $sop) {}
@@ -341,14 +341,8 @@ final class LegacyPirepScoringService
                 $delay,
                 fn ($s) => isset($s['gs']) ? (float) $s['gs'] : null
             ),
-            'EXCESS_GFORCE' => $this->telemetryEpisodesIfAvailable(
-                $samples,
-                ['on_ground', 'g_force'],
-                fn ($s) => ($s['on_ground'] ?? null) === false
-                    && abs((float) $s['g_force']) > $parameter,
-                $delay,
-                fn ($s) => abs((float) $s['g_force'])
-            ),
+            'EXCESS_GFORCE' => $this->gForceOccurrences($samples, false),
+            'EXCESS_GFORCE_MAINTENANCE' => $this->gForceOccurrences($samples, true),
             'OVERSPEED_WARNING' => $this->telemetryEpisodesIfAvailable(
                 $samples,
                 ['overspeed_warning'],
@@ -421,7 +415,7 @@ final class LegacyPirepScoringService
     private function unavailableReason(string $ruleId): string
     {
         return match ($ruleId) {
-            'EXCESS_GFORCE' => 'Signal G-Force absent de la télémétrie Hermès de ce vol.',
+            'EXCESS_GFORCE', 'EXCESS_GFORCE_MAINTENANCE' => 'Signal G-Force absent de la télémétrie Hermès de ce vol.',
             'OVERSPEED_WARNING' => 'Signal d’alarme overspeed absent de la télémétrie Hermès de ce vol.',
             'STALL_WARNING' => 'Signal d’alarme décrochage absent de la télémétrie Hermès de ce vol.',
             'THRUST_REVERSERS_INFLIGHT', 'THRUST_REVERSERS_SPEED' => 'Position des inverseurs de poussée absente de la télémétrie Hermès de ce vol.',
@@ -652,6 +646,73 @@ final class LegacyPirepScoringService
         // seconds" is real continuity, not an inference from the 15 s network
         // position interval. Prométhée remains authoritative only for points.
         return $this->factOccurrences($facts, ['APPROACH_DESCENT_RATE_UNSTABLE']);
+    }
+
+
+    /**
+     * Air Inter load-factor envelope.
+     *
+     * A severe excursion suppresses the normal penalty for the whole flight,
+     * so the same structural event never costs 15 + 50 points.
+     */
+    private function gForceOccurrences(array $samples, bool $maintenance): ?array
+    {
+        if (!$this->telemetryAvailable($samples, ['on_ground', 'g_force'])) return null;
+
+        $valid = array_values(array_filter($samples, fn ($sample) =>
+            $this->sampleHasFields($sample, ['on_ground', 'g_force'])
+            && ($sample['on_ground'] ?? null) === false
+            && is_numeric($sample['g_force'] ?? null)
+        ));
+
+        $isSevere = fn (float $g): bool => $g >= 2.9 || $g <= -1.2;
+        $isModerate = fn (float $g): bool => $g >= 2.5 || $g <= -1.0;
+
+        if (!$maintenance) {
+            foreach ($valid as $sample) {
+                if ($isSevere((float) $sample['g_force'])) return [];
+            }
+        }
+
+        $episodes = [];
+        $active = null;
+        $lastAt = null;
+        $close = function () use (&$episodes, &$active, &$lastAt) {
+            if ($active !== null) $episodes[] = $active;
+            $active = null;
+            $lastAt = null;
+        };
+
+        foreach ($valid as $sample) {
+            $at = $sample['recorded_at'] ?? null;
+            if (!$at) continue;
+
+            if ($lastAt !== null && Carbon::parse($lastAt)->diffInSeconds(Carbon::parse($at)) > 45) $close();
+
+            $g = (float) $sample['g_force'];
+            $matches = $maintenance ? $isSevere($g) : ($isModerate($g) && !$isSevere($g));
+            if (!$matches) {
+                $close();
+                continue;
+            }
+
+            if ($active === null) {
+                $active = [
+                    'at' => $at,
+                    'value' => $g,
+                    'unit' => 'g',
+                    'source' => 'hermes_telemetry',
+                    'code' => $maintenance ? 'EXCESS_GFORCE_MAINTENANCE' : 'EXCESS_GFORCE',
+                ];
+            } elseif (abs($g) > abs((float) $active['value'])) {
+                $active['value'] = $g;
+            }
+
+            $lastAt = $at;
+        }
+
+        $close();
+        return $episodes;
     }
 
     private function reversersActive(array $sample): bool
