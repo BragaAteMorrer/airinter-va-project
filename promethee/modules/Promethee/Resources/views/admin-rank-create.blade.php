@@ -1,0 +1,36 @@
+@extends('promethee::layout')
+@section('title','Créer un grade')
+@push('styles')
+<link rel="stylesheet" href="{{ asset('promethee-assets/promethee-admin-workspaces.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-admin-workspaces.css')) }}">
+@endpush
+@section('content')
+<div class="admin-workspace-page">
+<div class="ops-header compact">
+  <div>
+    <span class="eyebrow">PROMÉTHÉE · ADMINISTRATION</span>
+    <h1>Nouveau grade pilote.</h1>
+    <p>Créez le grade et ses règles sans quitter l’interface Prométhée.</p>
+  </div>
+  <a class="button outline" href="{{ route('admin.promethee.ranks') }}">← Grades</a>
+</div>
+
+<form method="post" action="{{ route('admin.promethee.ranks.store') }}" class="panel form-grid">
+  @csrf
+  <label>Nom<input name="name" required value="{{ old('name') }}"></label>
+  <label>Heures requises<input type="number" min="0" name="hours" required value="{{ old('hours',0) }}"></label>
+  <label>Taux ACARS<input type="number" step="0.01" min="0" name="acars_base_pay_rate" value="{{ old('acars_base_pay_rate') }}"></label>
+  <label>Taux manuel<input type="number" step="0.01" min="0" name="manual_base_pay_rate" value="{{ old('manual_base_pay_rate') }}"></label>
+  <label class="check"><input type="checkbox" name="auto_promote" value="1" @checked(old('auto_promote'))> Promotion automatique</label>
+  <label class="check"><input type="checkbox" name="auto_approve_acars" value="1" @checked(old('auto_approve_acars'))> Approuver ACARS automatiquement</label>
+  <label class="check"><input type="checkbox" name="auto_approve_manual" value="1" @checked(old('auto_approve_manual'))> Approuver manuel automatiquement</label>
+  <label class="filter-wide">Sous-flottes autorisées
+    <select name="subfleet_ids[]" multiple size="12">
+      @foreach($subfleets as $subfleet)
+        <option value="{{ $subfleet->id }}" @selected(in_array($subfleet->id, old('subfleet_ids', [])))>{{ $subfleet->name }} · {{ $subfleet->airline?->icao }}</option>
+      @endforeach
+    </select>
+  </label>
+  <div><button class="button">Créer le grade</button></div>
+</form>
+</div>
+@endsection
