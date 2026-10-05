@@ -545,9 +545,8 @@ class AirframeMaintenanceService
         }
 
         $settings = $this->settings();
-        $durationHours = (float) $settings['checks'][$check]['duration_hours'];
 
-        DB::transaction(function () use ($aircraftId, $check, $userId, $durationHours) {
+        DB::transaction(function () use ($aircraftId, $check, $userId, $settings) {
             $aircraft = Aircraft::query()->lockForUpdate()->find($aircraftId);
             if (!$aircraft) {
                 throw new RuntimeException('Appareil introuvable.');
@@ -555,6 +554,9 @@ class AirframeMaintenanceService
             if ((int) $aircraft->state !== AircraftState::PARKED) {
                 throw new RuntimeException('L’appareil doit être au parking pour démarrer un check.');
             }
+
+            $policy = $this->policyForAircraft($aircraft, $settings);
+            $durationHours = (float) $policy[$check]['duration_hours'];
 
             $this->ensureAircraft($aircraftId);
             $state = DB::table('promethee_airframe_maintenance')->where('aircraft_id', $aircraftId)->lockForUpdate()->first();
@@ -589,6 +591,20 @@ class AirframeMaintenanceService
                 'active_started_by' => $userId,
                 'updated_at' => now(),
             ]);
+
+            if (Schema::hasTable('disposable_maintenance')) {
+                DB::table('disposable_maintenance')->updateOrInsert(
+                    ['aircraft_id' => $aircraftId],
+                    [
+                        'curr_state' => DB::raw('COALESCE(curr_state, 100)'),
+                        'act_note' => strtoupper($check).' Check',
+                        'act_start' => $startedAt,
+                        'act_end' => $dueAt,
+                        'op_type' => 'PROMETHEE',
+                        'updated_at' => now(),
+                    ]
+                );
+            }
 
             DB::table('promethee_airframe_maintenance_events')->insert([
                 'aircraft_id' => $aircraftId,
@@ -649,6 +665,15 @@ class AirframeMaintenanceService
 
             $minutesColumn = $check.'_minutes';
             $cyclesColumn = $check.'_cycles';
+            $legacy = Schema::hasTable('disposable_maintenance')
+                ? DB::table('disposable_maintenance')->where('aircraft_id', $aircraftId)->lockForUpdate()->first()
+                : null;
+            $minutesBefore = $legacy && is_numeric($legacy->{'time_'.$check} ?? null)
+                ? (int) $legacy->{'time_'.$check}
+                : (int) $state->{$minutesColumn};
+            $cyclesBefore = $legacy && is_numeric($legacy->{'cycle_'.$check} ?? null)
+                ? (int) $legacy->{'cycle_'.$check}
+                : (int) $state->{$cyclesColumn};
             $updates = [
                 'active_check' => null,
                 'active_started_at' => null,
@@ -665,13 +690,38 @@ class AirframeMaintenanceService
             }
 
             DB::table('promethee_airframe_maintenance')->where('id', $state->id)->update($updates);
+
+            if ($legacy) {
+                $policy = $this->policyForAircraft($aircraft);
+                $legacyUpdate = [
+                    'act_note' => null,
+                    'act_start' => null,
+                    'act_end' => null,
+                    'last_note' => strtoupper($check).' Check',
+                    'last_time' => now(),
+                    'curr_state' => 100,
+                    'op_type' => 'PROMETHEE',
+                    'updated_at' => now(),
+                ];
+
+                foreach ($resetChecks as $reset) {
+                    $legacyUpdate['time_'.$reset] = 0;
+                    $legacyUpdate['cycle_'.$reset] = 0;
+                    $legacyUpdate['rem_t'.$reset] = (int) round($policy[$reset]['time_limit_hours'] * 60);
+                    $legacyUpdate['rem_c'.$reset] = (int) $policy[$reset]['cycle_limit'];
+                    $legacyUpdate['last_'.$reset] = now();
+                }
+
+                DB::table('disposable_maintenance')->where('id', $legacy->id)->update($legacyUpdate);
+            }
+
             DB::table('promethee_airframe_maintenance_events')->insert([
                 'aircraft_id' => $aircraftId,
                 'check_type' => $check,
                 'event_type' => 'completed',
                 'airport_id' => $aircraft->airport_id,
-                'minutes_before' => (int) $state->{$minutesColumn},
-                'cycles_before' => (int) $state->{$cyclesColumn},
+                'minutes_before' => $minutesBefore,
+                'cycles_before' => $cyclesBefore,
                 'created_by' => $userId ?: $state->active_started_by,
                 'notes' => null,
                 'occurred_at' => now(),
