@@ -341,7 +341,10 @@ public function maintenance(Request $r) {
                     'aircraft.airport_id',
                     'airlines.icao as airline_icao',
                 ])
-                ->orderByRaw("CASE WHEN engine.status = 'due' THEN 0 ELSE 1 END")
+                // Only "due" and "warning" are selected above, so a normal
+                // qualified order keeps "due" first without bypassing the
+                // connection table-prefix handling (DB_PREFIX=phpvms7_ in prod).
+                ->orderBy('engine.status')
                 ->orderBy('aircraft.registration')
                 ->get()
                 ->map(function ($engine) {
