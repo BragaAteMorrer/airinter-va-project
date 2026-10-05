@@ -211,7 +211,7 @@ class AirInterIdController extends Controller
 
         $emailConflict = User::query()
             ->whereRaw('LOWER(email) = ?', [$argosEmail])
-            ->whereKeyNot($user->getKey())
+            ->where($user->getKeyName(), '!=', $user->getKey())
             ->exists();
 
         if ($emailConflict) {
