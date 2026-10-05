@@ -301,6 +301,7 @@ function applyDisplay(eraValue, appearanceValue, persist = true) {
   era.value = nextEra;
   appearance.value = nextAppearance;
   if (persist) {
+    if (!allowedEras.includes(nextEra)) return;
     localStorage.hermesEra = nextEra;
     localStorage.hermesAppearance = nextAppearance;
     if (!reduceMotion) {
