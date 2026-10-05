@@ -239,6 +239,20 @@ final class LegacyPirepScoringService
         ];
     }
 
+    /**
+     * Safety-critical runway excursion detection, independent from the
+     * configurable scoring points/enabled state of RUNWAY_OVERRUN.
+     */
+    public function detectedRunwayOverrun(Pirep $pirep): ?array
+    {
+        $occurrences = $this->runwayOverrun($pirep, $this->samples((string) $pirep->id));
+        if (!$occurrences) return null;
+
+        $first = reset($occurrences);
+
+        return is_array($first) ? $first : null;
+    }
+
     private function isHermes(Pirep $pirep): bool
     {
         return str_starts_with((string) $pirep->source_name, 'Hermes ACARS [op_');

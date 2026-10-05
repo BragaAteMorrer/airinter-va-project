@@ -158,6 +158,56 @@ class AirframeMaintenanceService
 
     public function placeSafetyHold(Pirep $pirep, float $gForce, ?string $recordedAt = null): array
     {
+        $reason = sprintf(
+            'Facteur de charge structurel %.2f g détecté par Hermès (limites +2.9 g / -1.2 g). Inspection technique requise.',
+            $gForce
+        );
+
+        return $this->placeFdmSafetyHold(
+            $pirep,
+            'g',
+            $reason,
+            $recordedAt,
+            ['g_force' => $gForce]
+        );
+    }
+
+    public function placeRunwayOverrunHold(
+        Pirep $pirep,
+        ?float $distanceMetres = null,
+        ?string $runway = null,
+        ?string $recordedAt = null
+    ): array {
+        $details = ['Runway overrun détecté à partir de la trace Hermès'];
+
+        if (filled($runway)) {
+            $details[] = 'piste '.strtoupper(trim((string) $runway));
+        }
+        if ($distanceMetres !== null) {
+            $details[] = sprintf('dépassement estimé %.0f m', max(0, $distanceMetres));
+        }
+
+        $reason = implode(' · ', $details).'. Immobilisation et inspection technique obligatoires avant remise en service.';
+
+        return $this->placeFdmSafetyHold(
+            $pirep,
+            'r',
+            $reason,
+            $recordedAt,
+            array_filter([
+                'runway' => $runway,
+                'distance_metres' => $distanceMetres,
+            ], fn ($value) => $value !== null && $value !== '')
+        );
+    }
+
+    private function placeFdmSafetyHold(
+        Pirep $pirep,
+        string $checkType,
+        string $reason,
+        ?string $recordedAt = null,
+        array $context = []
+    ): array {
         if (!Schema::hasTable('promethee_airframe_maintenance')
             || !Schema::hasColumn('promethee_airframe_maintenance', 'safety_hold_at')) {
             return ['updated' => 0, 'reason' => 'SCHEMA_NOT_READY'];
@@ -170,13 +220,10 @@ class AirframeMaintenanceService
 
         $aircraftId = (int) $pirep->aircraft->id;
         $this->ensureAircraft($aircraftId);
-        $occurredAt = $recordedAt ? \Carbon\Carbon::parse($recordedAt)->utc() : now();
-        $reason = sprintf(
-            'Facteur de charge structurel %.2f g détecté par Hermès (limites +2.9 g / -1.2 g). Inspection technique requise.',
-            $gForce
-        );
+        $occurredAt = filled($recordedAt) ? \Carbon\Carbon::parse($recordedAt)->utc() : now();
+        $checkType = substr(strtolower(trim($checkType)), 0, 1) ?: 'f';
 
-        return DB::transaction(function () use ($pirep, $aircraftId, $gForce, $occurredAt, $reason) {
+        return DB::transaction(function () use ($pirep, $aircraftId, $occurredAt, $reason, $checkType, $context) {
             $state = DB::table('promethee_airframe_maintenance')
                 ->where('aircraft_id', $aircraftId)
                 ->lockForUpdate()
@@ -192,9 +239,9 @@ class AirframeMaintenanceService
                     'updated' => 0,
                     'reason' => 'ALREADY_HELD',
                     'aircraft_id' => $aircraftId,
-                    'g_force' => $gForce,
                     'existing_pirep_id' => $state->safety_hold_pirep_id ?? null,
-                ];
+                    'trigger' => $checkType,
+                ] + $context;
             }
 
             DB::table('promethee_airframe_maintenance')->where('id', $state->id)->update([
@@ -208,7 +255,7 @@ class AirframeMaintenanceService
             if (Schema::hasTable('promethee_airframe_maintenance_events')) {
                 DB::table('promethee_airframe_maintenance_events')->insert([
                     'aircraft_id' => $aircraftId,
-                    'check_type' => 'g',
+                    'check_type' => $checkType,
                     'event_type' => 'safety_hold',
                     'airport_id' => $aircraft->airport_id,
                     'minutes_before' => null,
@@ -227,8 +274,8 @@ class AirframeMaintenanceService
                 'updated' => 1,
                 'reason' => 'SAFETY_HOLD',
                 'aircraft_id' => $aircraftId,
-                'g_force' => $gForce,
-            ];
+                'trigger' => $checkType,
+            ] + $context;
         });
     }
 
@@ -250,6 +297,7 @@ class AirframeMaintenanceService
 
             $previousReason = (string) ($state->safety_hold_reason ?? '');
             $previousStatus = (string) ($state->safety_hold_previous_status ?? AircraftStatus::ACTIVE);
+            $releaseCheckType = str_contains(strtolower($previousReason), 'runway overrun') ? 'r' : 'g';
             DB::table('promethee_airframe_maintenance')->where('id', $state->id)->update([
                 'safety_hold_reason' => null,
                 'safety_hold_at' => null,
@@ -261,7 +309,7 @@ class AirframeMaintenanceService
             if (Schema::hasTable('promethee_airframe_maintenance_events')) {
                 DB::table('promethee_airframe_maintenance_events')->insert([
                     'aircraft_id' => $aircraftId,
-                    'check_type' => 'g',
+                    'check_type' => $releaseCheckType,
                     'event_type' => 'safety_release',
                     'airport_id' => $aircraft->airport_id,
                     'minutes_before' => null,

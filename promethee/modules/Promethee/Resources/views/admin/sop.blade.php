@@ -94,7 +94,7 @@
                             <div class="muted">{{ $rule['description'] }}</div>
                         @endif
                         @if($rule['id'] === 'RUNWAY_OVERRUN')
-                            <div class="muted"><strong>Non appliquée actuellement :</strong> Hermès ne dispose pas encore d'une géométrie piste fiable.</div>
+                            <div class="muted"><strong>Protection FDM active :</strong> Prométhée croise la trace Hermès avec la géométrie de la piste d'arrivée. Un dépassement confirmé immobilise automatiquement l'appareil jusqu'à inspection technique.</div>
                         @endif
                     </td>
                     <td>
