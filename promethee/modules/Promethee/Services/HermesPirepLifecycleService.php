@@ -188,7 +188,7 @@ final class HermesPirepLifecycleService
                 }
             }
 
-            if ($user && (string) $user->curr_airport_id === (string) $arrival) {
+            if ($user && $wasAccepted && (string) $user->curr_airport_id === (string) $arrival) {
                 $lastAccepted = Pirep::query()
                     ->where('user_id', $user->id)
                     ->where('state', PirepState::ACCEPTED)
@@ -196,7 +196,9 @@ final class HermesPirepLifecycleService
                     ->first();
 
                 $user->last_pirep_id = $lastAccepted?->id;
-                $user->curr_airport_id = $lastAccepted?->arr_airport_id ?: $user->home_airport_id;
+                $user->curr_airport_id = $lastAccepted?->arr_airport_id
+                    ?: $departure
+                    ?: $user->home_airport_id;
                 $user->save();
             }
         });

@@ -771,6 +771,81 @@ final class HermesOperationLifecycleTest extends TestCase
         $this->assertContains('TAXI_OUT_TIME', $codes);
     }
 
+    public function test_emergency_delete_of_in_progress_pirep_never_resets_pilot_to_home_airport(): void
+    {
+        $fx = $this->operationFixture();
+        $home = Airport::factory()->create(['id' => 'H003', 'icao' => 'H003', 'iata' => 'H03']);
+
+        $fx['user']->home_airport_id = $home->id;
+        $fx['user']->curr_airport_id = $fx['origin']->id;
+        $fx['user']->save();
+
+        $pirepId = $this->prefile($fx);
+        $this->telemetry($fx, 'CLIMB');
+
+        $request = \Illuminate\Http\Request::create(
+            '/admin/promethee/pireps/'.$pirepId.'/emergency-delete',
+            'POST',
+            ['confirmation' => 'SUPPRIMER']
+        );
+        $request->setUserResolver(fn () => $fx['user']);
+
+        app(\Modules\Promethee\Http\PortalController::class)
+            ->emergencyDeletePirep($pirepId, $request);
+
+        $this->assertDatabaseMissing('pireps', ['id' => $pirepId]);
+        $fx['user']->refresh();
+        $this->assertSame($fx['origin']->id, $fx['user']->curr_airport_id);
+        $this->assertNotSame($home->id, $fx['user']->curr_airport_id);
+    }
+
+    public function test_recovery_keeps_bound_aircraft_authoritative_after_departure_without_moving_pilot(): void
+    {
+        $fx = $this->operationFixture();
+        $pirepId = $this->prefile($fx);
+        $pilotAirportBefore = $fx['user']->curr_airport_id;
+
+        // Before any real flight evidence exists, the Dispatch must keep the
+        // normal pre-departure safety gate even though the aircraft is already
+        // immutable on the prefiled PIREP.
+        $fx['aircraft']->state = AircraftState::IN_AIR;
+        $fx['aircraft']->airport_id = $fx['destination']->id;
+        $fx['aircraft']->save();
+
+        $preDeparture = $this->dispatch($fx);
+        $this->assertFalse((bool) $preDeparture['server_checks']['aircraft']);
+
+        // The assigned aircraft must nevertheless remain discoverable as the
+        // operation-locked airframe. Hermès Recovery needs this exact identity
+        // to rehydrate the UI after a desktop/simulator restart.
+        $eligibility = $this->get(
+            '/api/v1/operations/'.$fx['operation_id'].'/aircraft-eligibility',
+            [],
+            $fx['user']
+        )->assertOk()->json('data');
+
+        $boundAircraft = collect($eligibility['available'])
+            ->firstWhere('id', $fx['aircraft']->id);
+
+        $this->assertNotNull($boundAircraft);
+        $this->assertTrue((bool) $boundAircraft['locked_to_operation']);
+        $this->assertSame($fx['aircraft']->registration, $boundAircraft['registration']);
+
+        // Once real Hermès telemetry proves that the flight is in progress,
+        // PARKED/departure-position checks are no longer valid recovery gates.
+        $this->telemetry($fx, 'CLIMB');
+
+        $inProgress = $this->dispatch($fx);
+        $this->assertSame('IN_PROGRESS', $inProgress['status']);
+        $this->assertTrue((bool) $inProgress['server_checks']['aircraft']);
+        $this->assertSame($pirepId, $inProgress['pirep']['id']);
+
+        // An interrupted/unfiled flight must never teleport the phpVMS pilot.
+        // Pilot location changes only when a PIREP is actually accepted.
+        $fx['user']->refresh();
+        $this->assertSame($pilotAirportBefore, $fx['user']->curr_airport_id);
+    }
+
     public function test_15_reference_pilot_journey_crosses_the_full_operation_contract(): void
     {
         $fx = $this->operationFixture();

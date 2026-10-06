@@ -325,6 +325,8 @@ class OperationsV1Controller extends Controller
         $flightAllowed = $flight->subfleets->pluck('id')->all();
 
         $operationId = $this->operationIdentity->id($bid);
+        $operationPirep = $this->operationPirep($bid);
+        $lockedAircraftId = $this->lockedOperationAircraftId($bid, $operationPirep);
 
         $candidates = Aircraft::query()
             ->with(['subfleet:id,name,type,airline_id'])
@@ -337,6 +339,8 @@ class OperationsV1Controller extends Controller
         foreach ($candidates as $plane) {
             $reasons = [];
             $checks = [];
+            $lockedToOperation = $lockedAircraftId !== null
+                && (string) $plane->id === $lockedAircraftId;
 
             $pilotAllowed = in_array($plane->subfleet_id, $allowed, true);
             $checks[] = $this->check('pilot_qualification', $pilotAllowed, 'Qualification pilote');
@@ -359,13 +363,27 @@ class OperationsV1Controller extends Controller
             $checks[] = $this->check('active', $active, 'Appareil actif');
             if (!$active) $reasons[] = $this->reason('INACTIVE', 'Cet appareil est hors service ou inactif.');
 
-            $parked = $plane->state === AircraftState::PARKED;
-            $checks[] = $this->check('parked', $parked, 'Appareil au parking');
+            // Once a PIREP exists for this operation, the assigned airframe is
+            // immutable. Keep that exact aircraft visible to Hermès Recovery
+            // even when phpVMS reports it IN_USE/IN_AIR or no longer at the
+            // scheduled departure. These are pre-departure availability checks,
+            // not valid reasons to detach an aircraft from a flight in progress.
+            $parked = $lockedToOperation || $plane->state === AircraftState::PARKED;
+            $checks[] = $this->check(
+                'parked',
+                $parked,
+                $lockedToOperation ? 'Appareil verrouillé sur l’opération active' : 'Appareil au parking'
+            );
             if (!$parked) $reasons[] = $this->reason('NOT_PARKED', 'Cet appareil n’est pas actuellement au parking.');
 
             if (setting('pireps.only_aircraft_at_dpt_airport')) {
-                $atDeparture = strtoupper((string) $plane->airport_id) === strtoupper((string) $flight->dpt_airport_id);
-                $checks[] = $this->check('departure_airport', $atDeparture, 'Position '.$flight->dpt_airport_id);
+                $atDeparture = $lockedToOperation
+                    || strtoupper((string) $plane->airport_id) === strtoupper((string) $flight->dpt_airport_id);
+                $checks[] = $this->check(
+                    'departure_airport',
+                    $atDeparture,
+                    $lockedToOperation ? 'Position conservée par l’opération active' : 'Position '.$flight->dpt_airport_id
+                );
                 if (!$atDeparture) $reasons[] = $this->reason('WRONG_AIRPORT', 'Appareil actuellement à '.($plane->airport_id ?: 'une position inconnue').'.');
             }
 
@@ -396,6 +414,7 @@ class OperationsV1Controller extends Controller
                 'type_key' => $this->demandProfile->typeKey($plane),
                 'type_label' => $this->demandProfile->typeLabel($plane),
                 'airport' => $plane->airport_id,
+                'locked_to_operation' => $lockedToOperation,
                 'eligible' => count($reasons) === 0,
                 'checks' => $checks,
                 'reasons' => $reasons,
@@ -1233,6 +1252,20 @@ class OperationsV1Controller extends Controller
         return $ofpAvailable ? 'planned' : 'reserved';
     }
 
+    private function lockedOperationAircraftId(Bid $bid, ?Pirep $pirep): ?string
+    {
+        if (!$pirep
+            || $this->pirepLifecycle->isFiled($pirep)
+            || $this->pirepLifecycle->isCancelled($pirep)
+            || !$bid->aircraft_id
+            || !$pirep->aircraft_id
+            || (string) $bid->aircraft_id !== (string) $pirep->aircraft_id) {
+            return null;
+        }
+
+        return (string) $bid->aircraft_id;
+    }
+
     private function operationPirep(Bid $bid): ?Pirep
     {
         $operationId = $this->operationIdentity->id($bid);
@@ -1254,11 +1287,19 @@ class OperationsV1Controller extends Controller
     {
         $aircraft = $bid->aircraft;
         $flight = $bid->flight;
+        $lockedAircraftId = $this->lockedOperationAircraftId($bid, $pirep);
+        $flightInProgress = $lockedAircraftId !== null
+            && $pirep !== null
+            && $this->pirepLifecycle->hasFlightEvidence($pirep);
+
         $aircraftReady = $aircraft !== null
             && $aircraft->status === AircraftStatus::ACTIVE
-            && $aircraft->state === AircraftState::PARKED
-            && (!setting('pireps.only_aircraft_at_dpt_airport')
-                || strtoupper((string) $aircraft->airport_id) === strtoupper((string) $flight?->dpt_airport_id));
+            && ($pirep === null || !$pirep->aircraft_id || (string) $pirep->aircraft_id === (string) $aircraft->id)
+            && ($flightInProgress || (
+                $aircraft->state === AircraftState::PARKED
+                && (!setting('pireps.only_aircraft_at_dpt_airport')
+                    || strtoupper((string) $aircraft->airport_id) === strtoupper((string) $flight?->dpt_airport_id))
+            ));
         $ofpReady = $ofp !== null;
         $pirepReady = $pirep !== null && $this->pirepLifecycle->isActiveDraft($pirep);
 
