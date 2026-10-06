@@ -17,6 +17,8 @@ use RuntimeException;
 final class PhpVmsAirframeImportService
 {
     public const SOURCE = 'phpVMS legacy subfleet/fares';
+    private const PASSENGER_FARE_CODES = ['Y', 'T'];
+    private const CARGO_FARE_CODES = ['CGO', 'CARGO'];
     public const NOTE_MARKER = '[AUTO:PHPVMS_AIRFRAME_IMPORT]';
 
     /**
@@ -278,8 +280,18 @@ final class PhpVmsAirframeImportService
                 'cost' => is_numeric($fare->pivot?->cost) ? (float) $fare->pivot->cost : $fare->cost,
             ];
 
-            $isCargo = (int) $fare->type === FareType::CARGO
-                || in_array($item['code'], ['CGO', 'CARGO'], true);
+            // Historical Air Inter dataset semantics are encoded primarily by
+            // fare code, not reliably by the phpVMS fare type:
+            // - Y = scheduled/economy passenger capacity (seats)
+            // - T = passenger capacity (notably ACF/charter fleet)
+            // - CGO = Inter Cargo Services payload capacity in kilograms
+            //
+            // Known historical codes are therefore authoritative. Unknown
+            // codes still fall back to the native phpVMS FareType metadata.
+            $isPassengerCode = in_array($item['code'], self::PASSENGER_FARE_CODES, true);
+            $isCargoCode = in_array($item['code'], self::CARGO_FARE_CODES, true);
+            $isCargo = $isCargoCode
+                || (!$isPassengerCode && (int) $fare->type === FareType::CARGO);
 
             if ($isCargo) {
                 $cargo[] = $item;

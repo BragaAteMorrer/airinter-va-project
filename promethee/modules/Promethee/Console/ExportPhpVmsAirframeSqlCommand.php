@@ -11,7 +11,7 @@ final class ExportPhpVmsAirframeSqlCommand extends Command
 {
     protected $signature = 'promethee:airframes-export-sql
         {--path= : Chemin absolu du fichier SQL à générer}
-        {--no-sync : Ne pas resynchroniser Airframes via le service de la PR #246 avant l’export}';
+        {--sync-local : Resynchroniser aussi les Airframes locaux via la logique de la PR #246}';
 
     protected $description = 'Fige les données flotte phpVMS et les Airframes Prométhée associés dans un snapshot SQL réimportable.';
 
@@ -20,8 +20,8 @@ final class ExportPhpVmsAirframeSqlCommand extends Command
         PhpVmsAirframeSqlSnapshotService $snapshot
     ): int {
         try {
-            if (!$this->option('no-sync')) {
-                $this->info('Synchronisation phpVMS → Airframes…');
+            if ($this->option('sync-local')) {
+                $this->info('Synchronisation des tables locales phpVMS → Airframes…');
                 $result = $import->import();
                 $this->line(sprintf(
                     '%d sous-flotte(s), %d appareil(s), %d affectation(s) créée(s), %d mise(s) à jour.',
@@ -31,6 +31,8 @@ final class ExportPhpVmsAirframeSqlCommand extends Command
                     $result['assignments_updated']
                 ));
             }
+
+            $this->info('Lecture de la flotte depuis la connexion Prometheus…');
 
             $path = $this->option('path');
             $export = $snapshot->export(is_string($path) && $path !== '' ? $path : null);
