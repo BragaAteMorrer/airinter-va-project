@@ -45,6 +45,15 @@ final class FleetTransferAdminTest extends TestCase
         $this->assertSame($destination->id, $aircraft->airport_id);
         $this->assertSame($origin->id, $aircraft->hub_id);
         $this->assertSame($origin->id, $admin->curr_airport_id);
+        $this->assertDatabaseHas('promethee_aircraft_bases', [
+            'aircraft_id' => $aircraft->id,
+            'base_airport_id' => $origin->id,
+        ]);
+        $this->assertNotNull(
+            DB::table('promethee_aircraft_bases')
+                ->where('aircraft_id', $aircraft->id)
+                ->value('away_since')
+        );
         $this->assertDatabaseHas('promethee_audit_logs', [
             'action' => 'aircraft.transfer',
             'subject_type' => 'aircraft',
