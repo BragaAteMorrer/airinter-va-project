@@ -33,12 +33,17 @@ final class FleetTransferAdminTest extends TestCase
         $this->actingAs($admin, 'web');
         $view = app(FleetTransferAdminController::class)->index();
         $this->assertSame('promethee::admin-fleet-transfers', $view->name());
-        $this->assertStringContainsString('Transferts de flotte.', $view->render());
+        $rendered = $view->render();
+        $this->assertStringContainsString('Repositionnement des appareils.', $rendered);
+        $this->assertStringNotContainsString('Changer aussi la base de rattachement', $rendered);
 
         $request = Request::create('/admin/promethee/fleet-transfers', 'POST', [
             'aircraft_ids' => [$aircraft->id],
             'destination_airport_id' => $destination->id,
             'reason' => 'Test de repositionnement administratif',
+            // Even if a stale/malicious client still sends the old field,
+            // this endpoint must never alter the base.
+            'change_base' => '1',
         ]);
         $request->setUserResolver(fn () => $admin);
         app(FleetTransferAdminController::class)->transfer($request);
@@ -73,7 +78,8 @@ final class FleetTransferAdminTest extends TestCase
         $context = json_decode((string) $audit->context, true);
         $this->assertSame($origin->id, $context['from_airport']);
         $this->assertSame($destination->id, $context['to_airport']);
-        $this->assertFalse((bool) $context['change_base']);
+        $this->assertSame($origin->id, $context['base_unchanged']);
+        $this->assertArrayNotHasKey('change_base', $context);
     }
 
     public function test_aircraft_in_flight_cannot_be_transferred(): void
