@@ -150,6 +150,54 @@ final class PhpVmsAirframeImportServiceTest extends TestCase
         $this->assertSame('F-CARGO', $manual->overrides['legacy_phpvms']['registration']);
     }
 
+
+    public function test_historical_fare_codes_override_incorrect_phpvms_fare_types(): void
+    {
+        $passengerFleet = $this->createSubfleetWithAircraft(1, 'LFPO');
+        $passengerFleet['subfleet']->airline()->update(['icao' => 'ACF']);
+        $passengerFleet['subfleet']->update([
+            'type' => 'A310',
+            'name' => 'Airbus A310-series',
+        ]);
+
+        // Historical CSV: T means passenger seats, even if legacy FareType is wrong.
+        $tFare = Fare::factory()->create([
+            'code' => 'T',
+            'name' => 'Transport',
+            'type' => FareType::CARGO,
+            'capacity' => 240,
+        ]);
+        $passengerFleet['subfleet']->fares()->attach($tFare->id, ['capacity' => '240']);
+
+        $cargoFleet = $this->createSubfleetWithAircraft(1, 'LFPO');
+        $cargoFleet['subfleet']->airline()->update(['icao' => 'ICS']);
+        $cargoFleet['subfleet']->update([
+            'type' => 'L-100-30',
+            'name' => 'Lockheed Hercules',
+        ]);
+
+        // Historical CSV: CGO means kilograms of cargo, even if FareType is wrong.
+        $cargoFare = Fare::factory()->create([
+            'code' => 'CGO',
+            'name' => 'Cargo',
+            'type' => FareType::PASSENGER,
+            'capacity' => 23150,
+        ]);
+        $cargoFleet['subfleet']->fares()->attach($cargoFare->id, ['capacity' => '23150']);
+
+        app(PhpVmsAirframeImportService::class)->import();
+
+        $acf = AircraftTypeProfile::query()->where('type_key', 'ACFA310')->firstOrFail();
+        $this->assertSame(240, $acf->data['max_pax']);
+        $this->assertSame('T240', $acf->data['seat_configuration']);
+        $this->assertArrayNotHasKey('max_cargo', $acf->data);
+
+        $ics = AircraftTypeProfile::query()->where('type_key', 'ICSL10030')->firstOrFail();
+        $this->assertEquals(23150.0, $ics->data['max_cargo']);
+        $this->assertSame('kg', $ics->data['weight_unit']);
+        $this->assertArrayNotHasKey('max_pax', $ics->data);
+    }
+
     public function test_import_is_idempotent_for_its_own_assignments(): void
     {
         $fleet = $this->createSubfleetWithAircraft(1, 'LFPO');
