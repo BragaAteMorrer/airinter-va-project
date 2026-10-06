@@ -399,9 +399,27 @@ class AcarsSimBriefController extends Controller
         };
 
         $raw = trim((string) $atc->flightplan_text);
-        $vatsimUrl = $raw !== ''
-            ? 'https://my.vatsim.net/pilots/flightplan?raw='.rawurlencode($raw)
-            : 'https://my.vatsim.net/pilots/flightplan';
+        $fuelEnduranceSeconds = max(0, (int) ($xml->times->endurance ?? 0));
+        $fuelEndurance = $fuelEnduranceSeconds > 0
+            ? $secondsToHhmm($fuelEnduranceSeconds)
+            : null;
+
+        // myVATSIM's raw ICAO parser does not carry ICAO item 19 (E/) from
+        // SimBrief's flightplan_text. SimBrief itself therefore sends fuel_time
+        // as a dedicated query parameter. Mirror that behaviour so the VATSIM
+        // Fuel Endurance field is actually populated instead of left blank.
+        $vatsimQuery = [];
+        if ($raw !== '') {
+            $vatsimQuery['raw'] = $raw;
+        }
+        if ($fuelEndurance !== null) {
+            $vatsimQuery['fuel_time'] = $fuelEndurance;
+        }
+
+        $vatsimUrl = 'https://my.vatsim.net/pilots/flightplan'
+            .($vatsimQuery !== []
+                ? '?'.http_build_query($vatsimQuery, '', '&', PHP_QUERY_RFC3986)
+                : '');
 
         $offTimestamp = (int) ($xml->times->est_off ?: $xml->times->sched_off);
         $departureTime = $offTimestamp > 0
@@ -413,6 +431,7 @@ class AcarsSimBriefController extends Controller
             'vatsim' => [
                 'method' => 'GET',
                 'url' => $vatsimUrl,
+                'fuel_time' => $fuelEndurance,
             ],
             'ivao' => [
                 'method' => 'GET',
