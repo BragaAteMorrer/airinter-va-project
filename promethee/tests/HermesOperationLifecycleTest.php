@@ -771,6 +771,34 @@ final class HermesOperationLifecycleTest extends TestCase
         $this->assertContains('TAXI_OUT_TIME', $codes);
     }
 
+    public function test_emergency_delete_of_in_progress_pirep_never_resets_pilot_to_home_airport(): void
+    {
+        $fx = $this->operationFixture();
+        $home = Airport::factory()->create(['id' => 'H003', 'icao' => 'H003', 'iata' => 'H03']);
+
+        $fx['user']->home_airport_id = $home->id;
+        $fx['user']->curr_airport_id = $fx['origin']->id;
+        $fx['user']->save();
+
+        $pirepId = $this->prefile($fx);
+        $this->telemetry($fx, 'CLIMB');
+
+        $request = \Illuminate\Http\Request::create(
+            '/admin/promethee/pireps/'.$pirepId.'/emergency-delete',
+            'POST',
+            ['confirmation' => 'SUPPRIMER']
+        );
+        $request->setUserResolver(fn () => $fx['user']);
+
+        app(\Modules\Promethee\Http\PortalController::class)
+            ->emergencyDeletePirep($pirepId, $request);
+
+        $this->assertDatabaseMissing('pireps', ['id' => $pirepId]);
+        $fx['user']->refresh();
+        $this->assertSame($fx['origin']->id, $fx['user']->curr_airport_id);
+        $this->assertNotSame($home->id, $fx['user']->curr_airport_id);
+    }
+
     public function test_recovery_keeps_bound_aircraft_authoritative_after_departure_without_moving_pilot(): void
     {
         $fx = $this->operationFixture();
