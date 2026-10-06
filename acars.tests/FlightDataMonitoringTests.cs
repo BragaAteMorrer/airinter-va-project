@@ -160,6 +160,26 @@ public sealed class FlightDataMonitoringTests
     }
 
     [Fact]
+    public void Ground_fuel_event_from_legacy_tracker_is_ignored()
+    {
+        var monitor = new FlightDataMonitor();
+        var t = DateTimeOffset.Parse("2026-10-06T13:04:54Z");
+        var snapshot = new AircraftSnapshot(
+            Guid.NewGuid(),
+            t,
+            GroundSpeedKnots: 0.1,
+            FuelWeight: 20_000,
+            OnGround: true);
+
+        var observations = monitor.Process(
+            snapshot,
+            FlightPhase.Boarding,
+            [new FlightEvent("FUEL_INCREASED", t, snapshot, 11_696)]);
+
+        Assert.DoesNotContain(observations, x => x.Code == "FUEL_ADDED");
+    }
+
+    [Fact]
     public void Pause_segment_is_recorded_with_kind_and_duration()
     {
         var monitor = new FlightDataMonitor();
