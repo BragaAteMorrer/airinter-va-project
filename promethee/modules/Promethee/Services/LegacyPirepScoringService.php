@@ -17,7 +17,7 @@ use Throwable;
  */
 final class LegacyPirepScoringService
 {
-    public const VERSION = 4;
+    public const VERSION = 5;
     public const STARTING_SCORE = 100;
 
     public function __construct(private readonly SopEngineService $sop) {}
@@ -387,7 +387,7 @@ final class LegacyPirepScoringService
                 $delay,
                 fn ($s) => isset($s['ias']) ? (float) $s['ias'] : null
             ),
-            'FUEL_REFILLED' => $this->factOccurrences($facts, ['FUEL_ADDED'], fn ($f) => (float) ($f['value'] ?? 0) > 0),
+            'FUEL_REFILLED' => $this->fuelRefillOccurrences($facts),
             'SIMRATE_INCREASED' => $this->simulationRateOccurrences($samples, $facts, $parameter, $delay),
             'SLEW_ACTIVATED' => $this->slewOccurrences($samples, $facts, $delay),
             'PAUSE_ACTIVATED' => $this->factOccurrences(
@@ -622,6 +622,28 @@ final class LegacyPirepScoringService
         }
 
         return true;
+    }
+
+    /**
+     * Fuel loaded while the aircraft is on the ground is normal operational
+     * activity and must never reduce the PIREP score. Older Hermès builds could
+     * emit FUEL_ADDED during BOARDING because tiny groundspeed jitter was used
+     * as the discriminator, so Prométhée also rejects those facts server-side.
+     *
+     * Unknown/ground phases are intentionally non-penalising: a company score
+     * must only deduct points when the fact is explicitly associated with an
+     * airborne phase.
+     */
+    private function fuelRefillOccurrences(array $facts): array
+    {
+        $airbornePhases = ['TAKEOFF', 'CLIMB', 'CRUISE', 'DESCENT', 'APPROACH', 'FINAL'];
+
+        return $this->factOccurrences(
+            $facts,
+            ['FUEL_ADDED'],
+            fn ($fact) => (float) ($fact['value'] ?? 0) > 0
+                && in_array(strtoupper((string) ($fact['phase'] ?? '')), $airbornePhases, true)
+        );
     }
 
     private function simulationRateOccurrences(array $samples, array $facts, float $parameter, int $delay): array
