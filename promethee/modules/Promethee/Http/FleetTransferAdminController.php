@@ -216,14 +216,33 @@ class FleetTransferAdminController extends PrometheeWebController
             ->map(fn ($id) => (int) $id)
             ->flip();
 
-        $missionAircraft = Schema::hasTable('promethee_missions')
-            ? DB::table('promethee_missions')
+        $missionAircraft = collect();
+        if (Schema::hasTable('promethee_missions')) {
+            $activeMissions = DB::table('promethee_missions')
                 ->whereIn('aircraft_id', $ids)
                 ->where('active', true)
+                ->get(['id', 'aircraft_id', 'mission_type']);
+
+            $reservedMissionIds = Schema::hasTable('promethee_mission_bookings') && $activeMissions->isNotEmpty()
+                ? DB::table('promethee_mission_bookings')
+                    ->whereIn('mission_id', $activeMissions->pluck('id'))
+                    ->where('status', 'reserved')
+                    ->pluck('mission_id')
+                    ->map(fn ($id) => (int) $id)
+                    ->flip()
+                : collect();
+
+            // An unbooked auto-repatriation is administrative cleanup, not a
+            // hard lock: a manual transfer may supersede it and will close it.
+            // Any other active mission, or a repatriation already reserved by
+            // a pilot, protects the airframe from being moved under their feet.
+            $missionAircraft = $activeMissions
+                ->filter(fn ($mission) => $mission->mission_type !== 'repatriation'
+                    || $reservedMissionIds->has((int) $mission->id))
                 ->pluck('aircraft_id')
                 ->map(fn ($id) => (int) $id)
-                ->flip()
-            : collect();
+                ->flip();
+        }
 
         $airframeMaintenanceAircraft = Schema::hasTable('promethee_airframe_maintenance')
             ? DB::table('promethee_airframe_maintenance')
