@@ -32,10 +32,6 @@
 .fleet-transfer-form label{display:grid;gap:.35rem}
 .fleet-transfer-form select,.fleet-transfer-form textarea{width:100%}
 .fleet-transfer-form textarea{min-height:86px;resize:vertical}
-.fleet-transfer-option{display:flex!important;grid-template-columns:none!important;gap:.55rem!important;align-items:flex-start;padding:.75rem;border:1px solid var(--border-color,#d7dce2);border-radius:10px}
-.fleet-transfer-option input{margin-top:.15rem}
-.fleet-transfer-option span{display:grid;gap:.1rem}
-.fleet-transfer-option small{opacity:.65;line-height:1.35}
 .fleet-transfer-selection{padding:.75rem;border-radius:10px;background:color-mix(in srgb,var(--panel-bg,#fff) 92%,currentColor 3%);border:1px dashed var(--border-color,#d7dce2)}
 .fleet-transfer-selection strong{font-size:1.35rem}
 .fleet-transfer-selection span{font-size:.8rem;opacity:.68}
@@ -69,8 +65,8 @@
   <div class="ops-header compact">
     <div>
       <span class="eyebrow">ADMIN · FLOTTE</span>
-      <h1>Transferts de flotte.</h1>
-      <p>Déplacez administrativement une ou plusieurs immatriculations entre aéroports sans toucher aux pilotes ni créer de faux PIREP.</p>
+      <h1>Repositionnement des appareils.</h1>
+      <p>Déplacez administrativement une ou plusieurs immatriculations vers un autre aéroport. La base de rattachement ne change jamais depuis cet écran.</p>
     </div>
     <a class="button outline" href="{{ route('admin.promethee.dashboard') }}">← Administration</a>
   </div>
@@ -126,7 +122,7 @@
                   <th>Immatriculation</th>
                   <th>Compagnie / type</th>
                   <th>Position actuelle</th>
-                  <th>Base</th>
+                  <th>Base (inchangée)</th>
                   <th>État</th>
                   <th>Disponibilité</th>
                 </tr>
@@ -177,9 +173,7 @@
                     </td>
                     <td>
                       {{ $row['state_label'] }}
-                      @if($plane->status !== AppModelsEnumsAircraftStatus::ACTIVE)
-                        <br><small>{{ $row['status_label'] }}</small>
-                      @endif
+                      <br><small>{{ $row['status_label'] }}</small>
                     </td>
                     <td>
                       @if($row['eligible'])
@@ -217,23 +211,12 @@
               <select name="destination_airport_id" id="fleetTransferDestination" required>
                 <option value="">Choisir un aéroport…</option>
                 @foreach($airports as $airport)
-                  @php($isOperationalBase=$operationalBases->has(strtoupper((string)$airport->id)))
-                  <option value="{{ $airport->id }}"
-                          data-operational-base="{{ $isOperationalBase ? '1' : '0' }}">
+                  <option value="{{ $airport->id }}">
                     {{ $airport->icao }}@if($airport->iata) / {{ $airport->iata }}@endif
                     · {{ $airport->name }}
-                    @if($airport->hub) · HUB @elseif($isOperationalBase) · BASE OPS @endif
                   </option>
                 @endforeach
               </select>
-            </label>
-
-            <label class="fleet-transfer-option">
-              <input type="checkbox" name="change_base" value="1" id="fleetTransferChangeBase">
-              <span>
-                <strong>Changer aussi la base de rattachement</strong>
-                <small>Met à jour le hub phpVMS et l’affectation de base Prométhée. La destination doit être une base opérationnelle active.</small>
-              </span>
             </label>
 
             <label>Motif / note
@@ -241,7 +224,7 @@
             </label>
 
             <div class="fleet-transfer-warning">
-              <strong>Important :</strong> ce transfert modifie la position administrative de l’avion. Il ne déplace aucun pilote et ne crée aucun PIREP.
+              <strong>Important :</strong> seul l’aéroport actuel de l’avion est modifié. Sa base reste inchangée ; aucun pilote n’est déplacé et aucun PIREP n’est créé.
             </div>
 
             <button class="button" type="submit" id="fleetTransferSubmit" disabled>Transférer la sélection</button>
@@ -268,11 +251,10 @@
             <strong>{{ $transfer['registration'] ?? ('Appareil #'.$entry->subject_id) }}</strong>
             <span>
               {{ $transfer['from_airport'] ?? '—' }} → {{ $transfer['to_airport'] ?? '—' }}
-              @if(!empty($transfer['change_base'])) · base modifiée @endif
             </span>
             @if(!empty($transfer['reason']))<small>{{ $transfer['reason'] }}</small>@endif
           </div>
-          <small>{{ IlluminateSupportCarbon::parse($entry->created_at)->timezone('Europe/Paris')->format('d/m/Y H:i') }}</small>
+          <small>{{ $entry->created_at }}</small>
         </div>
       @empty
         <div class="fleet-transfer-empty">Aucun transfert administratif enregistré pour le moment.</div>
@@ -293,7 +275,6 @@
   const status = document.getElementById('fleetTransferListStatus');
   const empty = document.getElementById('fleetTransferEmpty');
   const destination = document.getElementById('fleetTransferDestination');
-  const changeBase = document.getElementById('fleetTransferChangeBase');
   const submit = document.getElementById('fleetTransferSubmit');
 
   function selectedCount() {
@@ -346,30 +327,14 @@
     refreshSelection();
   });
 
-  changeBase.addEventListener('change', () => {
-    if (!changeBase.checked || !destination.value) return;
-    const option = destination.selectedOptions[0];
-    if (option?.dataset.operationalBase !== '1') {
-      alert('Cette destination n’est pas une base opérationnelle active. Le transfert de position reste possible, mais pas le changement de base.');
-      changeBase.checked = false;
-    }
-  });
-
-  destination.addEventListener('change', () => {
-    if (changeBase.checked && destination.selectedOptions[0]?.dataset.operationalBase !== '1') {
-      changeBase.checked = false;
-    }
-  });
-
   window.confirmFleetTransfer = function () {
     const total = selectedCount();
     const airport = destination.value;
     if (!total || !airport) return false;
-    const baseText = changeBase.checked ? ' La base de rattachement sera également modifiée.' : '';
     return confirm(
-      'Transférer ' + total + ' appareil' + (total > 1 ? 's' : '')
-      + ' vers ' + airport + ' ?' + baseText
-      + '\n\nLes appareils devenus occupés entre-temps seront protégés côté serveur.'
+      'Repositionner ' + total + ' appareil' + (total > 1 ? 's' : '')
+      + ' vers ' + airport + ' ?'
+      + '\n\nLa base de rattachement restera inchangée. Les appareils devenus occupés entre-temps seront protégés côté serveur.'
     );
   };
 
