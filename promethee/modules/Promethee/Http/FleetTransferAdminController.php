@@ -46,14 +46,6 @@ class FleetTransferAdminController extends PrometheeWebController
             ->orderBy('icao')
             ->get(['id', 'icao', 'iata', 'name', 'location', 'hub']);
 
-        $operationalBases = Schema::hasTable('promethee_operational_bases')
-            ? DB::table('promethee_operational_bases')
-                ->where('active', true)
-                ->pluck('airport_id')
-                ->map(fn ($id) => strtoupper((string) $id))
-                ->flip()
-            : collect();
-
         $history = collect();
         if (Schema::hasTable('promethee_audit_logs')) {
             $history = DB::table('promethee_audit_logs')
@@ -71,7 +63,6 @@ class FleetTransferAdminController extends PrometheeWebController
         return $this->page('admin-fleet-transfers', [
             'rows' => $rows,
             'airports' => $airports,
-            'operationalBases' => $operationalBases,
             'history' => $history,
             'eligibleCount' => $rows->where('eligible', true)->count(),
             'blockedCount' => $rows->where('eligible', false)->count(),
@@ -84,31 +75,17 @@ class FleetTransferAdminController extends PrometheeWebController
             'aircraft_ids' => 'required|array|min:1|max:100',
             'aircraft_ids.*' => 'required|integer|distinct|exists:aircraft,id',
             'destination_airport_id' => 'required|string|max:8|exists:airports,id',
-            'change_base' => 'nullable|boolean',
             'reason' => 'nullable|string|max:500',
         ]);
 
         $destination = strtoupper((string) $data['destination_airport_id']);
-        $changeBase = $request->boolean('change_base');
         $reason = trim((string) ($data['reason'] ?? ''));
-
-        if ($changeBase) {
-            if (!Schema::hasTable('promethee_operational_bases')
-                || !DB::table('promethee_operational_bases')
-                    ->where('airport_id', $destination)
-                    ->where('active', true)
-                    ->exists()) {
-                throw ValidationException::withMessages([
-                    'destination_airport_id' => 'Pour changer la base de rattachement, la destination doit être une base opérationnelle active de Prométhée.',
-                ]);
-            }
-        }
 
         $ids = collect($data['aircraft_ids'])->map(fn ($id) => (int) $id)->unique()->values();
         $moved = 0;
         $unchanged = 0;
 
-        DB::transaction(function () use ($ids, $destination, $changeBase, $reason, $request, &$moved, &$unchanged) {
+        DB::transaction(function () use ($ids, $destination, $reason, $request, &$moved, &$unchanged) {
             $planes = Aircraft::query()
                 ->whereIn('id', $ids)
                 ->orderBy('id')
@@ -140,24 +117,17 @@ class FleetTransferAdminController extends PrometheeWebController
                 /** @var Aircraft $plane */
                 $plane = $planes->get($id);
                 $fromAirport = strtoupper((string) $plane->airport_id);
-                $fromBase = strtoupper((string) $plane->hub_id);
+                $base = strtoupper((string) $plane->hub_id);
 
-                if ($fromAirport === $destination && (!$changeBase || $fromBase === $destination)) {
+                if ($fromAirport === $destination) {
                     $unchanged++;
                     continue;
                 }
 
-                $updates = ['airport_id' => $destination];
-                if ($changeBase) {
-                    $updates['hub_id'] = $destination;
-                }
-                $plane->update($updates);
-
-                if ($changeBase) {
-                    $this->updateBaseAssignment($plane, $destination);
-                } else {
-                    $this->syncAwayState($plane, $destination);
-                }
+                // This screen repositions an aircraft only. Its operational
+                // base/hub is intentionally immutable here.
+                $plane->update(['airport_id' => $destination]);
+                $this->syncAwayState($plane, $destination);
 
                 if (Schema::hasTable('promethee_audit_logs')) {
                     DB::table('promethee_audit_logs')->insert([
@@ -169,9 +139,7 @@ class FleetTransferAdminController extends PrometheeWebController
                             'registration' => $plane->registration,
                             'from_airport' => $fromAirport ?: null,
                             'to_airport' => $destination,
-                            'change_base' => $changeBase,
-                            'from_base' => $fromBase ?: null,
-                            'to_base' => $changeBase ? $destination : ($fromBase ?: null),
+                            'base_unchanged' => $base ?: null,
                             'reason' => $reason !== '' ? $reason : null,
                         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                         'created_at' => now(),
@@ -183,10 +151,7 @@ class FleetTransferAdminController extends PrometheeWebController
             }
         });
 
-        $message = $moved.' appareil(s) transféré(s) vers '.$destination.'.';
-        if ($changeBase && $moved > 0) {
-            $message .= ' Base de rattachement mise à jour.';
-        }
+        $message = $moved.' appareil(s) repositionné(s) vers '.$destination.'. La base de rattachement reste inchangée.';
         if ($unchanged > 0) {
             $message .= ' '.$unchanged.' appareil(s) déjà à destination, sans modification.';
         }
@@ -338,33 +303,5 @@ class FleetTransferAdminController extends PrometheeWebController
             ]);
     }
 
-    private function updateBaseAssignment(Aircraft $plane, string $destination): void
-    {
-        if (!Schema::hasTable('promethee_aircraft_bases')) {
-            return;
-        }
 
-        $assignment = DB::table('promethee_aircraft_bases')
-            ->where('aircraft_id', $plane->id)
-            ->lockForUpdate()
-            ->first();
-
-        if ($assignment?->repatriation_mission_id && Schema::hasTable('promethee_missions')) {
-            DB::table('promethee_missions')
-                ->where('id', $assignment->repatriation_mission_id)
-                ->update(['active' => false, 'updated_at' => now()]);
-        }
-
-        DB::table('promethee_aircraft_bases')->updateOrInsert(
-            ['aircraft_id' => $plane->id],
-            [
-                'base_airport_id' => $destination,
-                'assigned_at' => now(),
-                'away_since' => null,
-                'repatriation_mission_id' => null,
-                'updated_at' => now(),
-                'created_at' => $assignment?->created_at ?? now(),
-            ]
-        );
-    }
 }
