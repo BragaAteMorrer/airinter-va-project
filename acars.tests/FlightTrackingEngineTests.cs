@@ -210,10 +210,10 @@ public sealed class FlightTrackingEngineTests
         var start = DateTimeOffset.Parse("2026-09-21T12:00:00Z");
 
         engine.Process(new AircraftSnapshot(
-            Guid.NewGuid(), start, GroundSpeedKnots: 1, FuelWeight: 1_000, SlewActive: false, SimulationRate: 1));
+            Guid.NewGuid(), start, GroundSpeedKnots: 180, FuelWeight: 1_000, OnGround: false, SlewActive: false, SimulationRate: 1));
 
         var decision = engine.Process(new AircraftSnapshot(
-            Guid.NewGuid(), start.AddSeconds(5), GroundSpeedKnots: 1, FuelWeight: 1_301, SlewActive: true, SimulationRate: 2));
+            Guid.NewGuid(), start.AddSeconds(5), GroundSpeedKnots: 180, FuelWeight: 1_301, OnGround: false, SlewActive: true, SimulationRate: 2));
 
         Assert.Contains(decision.Events, x => x.Type == "SLEW_ACTIVE");
         Assert.Contains(decision.Events, x => x.Type == "SIM_RATE_INCREASED" && x.Value == 2);
@@ -222,23 +222,33 @@ public sealed class FlightTrackingEngineTests
     }
 
     [Fact]
-    public void Fuel_increase_while_stationary_is_not_reported()
+    public void Ground_refuelling_is_never_reported_even_with_groundspeed_jitter()
     {
         var engine = new FlightTrackingEngine();
         var start = DateTimeOffset.Parse("2026-10-04T18:00:00Z");
 
         engine.Process(new AircraftSnapshot(
-            Guid.NewGuid(), start, GroundSpeedKnots: 0, FuelWeight: 1_000));
+            Guid.NewGuid(), start, GroundSpeedKnots: 0, FuelWeight: 1_000, OnGround: true));
 
         var stationary = engine.Process(new AircraftSnapshot(
-            Guid.NewGuid(), start.AddSeconds(5), GroundSpeedKnots: 0, FuelWeight: 1_500));
+            Guid.NewGuid(), start.AddSeconds(5), GroundSpeedKnots: 0, FuelWeight: 1_500, OnGround: true));
 
         Assert.DoesNotContain(stationary.Events, x => x.Type == "FUEL_INCREASED");
 
-        var moving = engine.Process(new AircraftSnapshot(
-            Guid.NewGuid(), start.AddSeconds(10), GroundSpeedKnots: 0.1, FuelWeight: 1_801));
+        var jittering = engine.Process(new AircraftSnapshot(
+            Guid.NewGuid(), start.AddSeconds(10), GroundSpeedKnots: 0.1, FuelWeight: 1_801, OnGround: true));
 
-        Assert.Contains(moving.Events, x => x.Type == "FUEL_INCREASED" && x.Value == 301);
+        Assert.DoesNotContain(jittering.Events, x => x.Type == "FUEL_INCREASED");
+
+        // The first airborne sample only establishes a trustworthy airborne
+        // baseline. A later in-flight fuel increase remains detectable.
+        engine.Process(new AircraftSnapshot(
+            Guid.NewGuid(), start.AddSeconds(15), GroundSpeedKnots: 160, FuelWeight: 1_801, OnGround: false));
+
+        var airborne = engine.Process(new AircraftSnapshot(
+            Guid.NewGuid(), start.AddSeconds(20), GroundSpeedKnots: 165, FuelWeight: 2_102, OnGround: false));
+
+        Assert.Contains(airborne.Events, x => x.Type == "FUEL_INCREASED" && x.Value == 301);
     }
 
     [Fact]
