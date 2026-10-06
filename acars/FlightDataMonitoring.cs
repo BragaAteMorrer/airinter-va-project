@@ -470,10 +470,15 @@ public sealed class FlightDataMonitor
             var phaseName = FlightTrackingEngine.ToExternalPhase(phase);
             switch (fact.Type)
             {
-                case "FUEL_INCREASED":
+                case "FUEL_INCREASED" when fact.Snapshot.OnGround == false:
                     result.Add(new("FUEL_ADDED", "fuel", fact.OccurredAt,
                         $"Carburant ajouté en vol : {fact.Value ?? 0:0} lb.", "attention",
                         fact.Value, "lb", phaseName));
+                    break;
+                case "FUEL_INCREASED":
+                    // Defensive guard for events restored/emitted by an older
+                    // tracker: ground refuelling is normal and must not surface
+                    // as an FDM anomaly.
                     break;
                 case "SLEW_ACTIVE":
                     result.Add(new("SLEW", "simulator", fact.OccurredAt,
