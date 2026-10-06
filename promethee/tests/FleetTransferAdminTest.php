@@ -5,7 +5,10 @@ namespace Tests;
 use App\Models\Airport;
 use App\Models\Enums\AircraftState;
 use App\Models\Enums\AircraftStatus;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+use Modules\Promethee\Http\FleetTransferAdminController;
 
 final class FleetTransferAdminTest extends TestCase
 {
@@ -27,19 +30,18 @@ final class FleetTransferAdminTest extends TestCase
             'home_airport_id' => $origin->id,
         ]);
 
-        $this->actingAs($admin, 'web')
-            ->get('/admin/promethee/fleet-transfers')
-            ->assertOk()
-            ->assertSee('Transferts de flotte.', false);
+        $this->actingAs($admin, 'web');
+        $view = app(FleetTransferAdminController::class)->index();
+        $this->assertSame('promethee::admin-fleet-transfers', $view->name());
+        $this->assertStringContainsString('Transferts de flotte.', $view->render());
 
-        $this->actingAs($admin, 'web')
-            ->post('/admin/promethee/fleet-transfers', [
-                'aircraft_ids' => [$aircraft->id],
-                'destination_airport_id' => $destination->id,
-                'reason' => 'Test de repositionnement administratif',
-            ])
-            ->assertRedirect()
-            ->assertSessionHasNoErrors();
+        $request = Request::create('/admin/promethee/fleet-transfers', 'POST', [
+            'aircraft_ids' => [$aircraft->id],
+            'destination_airport_id' => $destination->id,
+            'reason' => 'Test de repositionnement administratif',
+        ]);
+        $request->setUserResolver(fn () => $admin);
+        app(FleetTransferAdminController::class)->transfer($request);
 
         $aircraft->refresh();
         $admin->refresh();
@@ -88,13 +90,21 @@ final class FleetTransferAdminTest extends TestCase
 
         $admin = $this->createAdminUser();
 
-        $this->actingAs($admin, 'web')
-            ->post('/admin/promethee/fleet-transfers', [
-                'aircraft_ids' => [$aircraft->id],
-                'destination_airport_id' => $destination->id,
-            ])
-            ->assertRedirect()
-            ->assertSessionHasErrors('aircraft_ids');
+        $request = Request::create('/admin/promethee/fleet-transfers', 'POST', [
+            'aircraft_ids' => [$aircraft->id],
+            'destination_airport_id' => $destination->id,
+        ]);
+        $request->setUserResolver(fn () => $admin);
+
+        try {
+            app(FleetTransferAdminController::class)->transfer($request);
+            $this->fail('Un appareil en vol ne doit jamais pouvoir être transféré administrativement.');
+        } catch (ValidationException $exception) {
+            $this->assertStringContainsString(
+                'actuellement en vol',
+                implode(' ', $exception->errors()['aircraft_ids'] ?? [])
+            );
+        }
 
         $aircraft->refresh();
         $this->assertSame($origin->id, $aircraft->airport_id);
@@ -123,13 +133,18 @@ final class FleetTransferAdminTest extends TestCase
 
         $admin = $this->createAdminUser();
 
-        $this->actingAs($admin, 'web')
-            ->post('/admin/promethee/fleet-transfers', [
-                'aircraft_ids' => [$first->id, $second->id],
-                'destination_airport_id' => $destination->id,
-            ])
-            ->assertRedirect()
-            ->assertSessionHasErrors('aircraft_ids');
+        $request = Request::create('/admin/promethee/fleet-transfers', 'POST', [
+            'aircraft_ids' => [$first->id, $second->id],
+            'destination_airport_id' => $destination->id,
+        ]);
+        $request->setUserResolver(fn () => $admin);
+
+        try {
+            app(FleetTransferAdminController::class)->transfer($request);
+            $this->fail('Le transfert groupé doit être atomique si un appareil devient indisponible.');
+        } catch (ValidationException) {
+            // Expected: the transaction must leave every selected aircraft untouched.
+        }
 
         $first->refresh();
         $second->refresh();
