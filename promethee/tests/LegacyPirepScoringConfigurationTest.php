@@ -170,6 +170,41 @@ final class LegacyPirepScoringConfigurationTest extends TestCase
     }
 
 
+    public function test_ground_refuelling_fact_is_not_scored_but_airborne_refuelling_is(): void
+    {
+        $service = app(LegacyPirepScoringService::class);
+        $facts = [
+            [
+                'code' => 'FUEL_ADDED',
+                'occurred_at' => '2026-10-06T13:04:54Z',
+                'value' => 11696,
+                'unit' => 'lb',
+                'phase' => 'BOARDING',
+            ],
+            [
+                'code' => 'FUEL_ADDED',
+                'occurred_at' => '2026-10-06T14:00:00Z',
+                'value' => 500,
+                'unit' => 'lb',
+                'phase' => 'CLIMB',
+            ],
+            [
+                'code' => 'FUEL_ADDED',
+                'occurred_at' => '2026-10-06T14:05:00Z',
+                'value' => 250,
+                'unit' => 'lb',
+                'phase' => null,
+            ],
+        ];
+
+        $occurrences = $this->invokeMethod($service, 'fuelRefillOccurrences', [$facts]);
+
+        $this->assertCount(1, $occurrences);
+        $this->assertSame(500, $occurrences[0]['value']);
+        $this->assertSame('FUEL_ADDED', $occurrences[0]['code']);
+    }
+
+    #[\PHPUnit\Framework\Attributes\Test]
     public function test_load_factor_rules_expose_air_inter_points_and_fixed_asymmetric_thresholds(): void
     {
         $service = app(LegacyPirepScoringService::class);
