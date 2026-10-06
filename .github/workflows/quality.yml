@@ -272,6 +272,7 @@ jobs:
           php -l modules/Promethee/Services/AirInterCabinProfileService.php
           php -l modules/Promethee/Services/AircraftConfigurationResolver.php
           php -l modules/Promethee/Http/AircraftConfigurationAdminController.php
+          php -l modules/Promethee/Http/FleetTransferAdminController.php
           php -l modules/Promethee/Http/Api/AircraftConfigurationController.php
           php -l modules/Promethee/Models/AircraftTypeProfile.php
           php -l modules/Promethee/Models/AircraftHistoricalVariant.php
@@ -282,6 +283,7 @@ jobs:
           php -l modules/Promethee/Models/PirepAircraftProfile.php
           php -l modules/Promethee/Database/migrations/2026_10_02_000023_add_aircraft_configuration_profiles.php
           php -l tests/AircraftConfigurationResolverTest.php
+          php -l tests/FleetTransferAdminTest.php
           php -l modules/Promethee/Config/cabin-profiles.php
           php -l modules/Promethee/Services/EconomyFareResolver.php
           php -l modules/Promethee/Services/BbrReferenceRepairService.php
@@ -376,6 +378,8 @@ jobs:
         run: vendor/bin/phpunit tests/AircraftConfigurationResolverTest.php
       - name: Run airframe maintenance and fleet rotation tests
         run: vendor/bin/phpunit tests/PrometheeAirframeMaintenanceTest.php
+      - name: Run fleet transfer admin tests
+        run: vendor/bin/phpunit tests/FleetTransferAdminTest.php
 
   minitel-release-gate:
     name: Minitel M7 release gate
