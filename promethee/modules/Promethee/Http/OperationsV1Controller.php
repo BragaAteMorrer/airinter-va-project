@@ -1294,7 +1294,7 @@ class OperationsV1Controller extends Controller
 
         $aircraftReady = $aircraft !== null
             && $aircraft->status === AircraftStatus::ACTIVE
-            && (!$pirep?->aircraft_id || (string) $pirep->aircraft_id === (string) $aircraft->id)
+            && ($pirep === null || !$pirep->aircraft_id || (string) $pirep->aircraft_id === (string) $aircraft->id)
             && ($flightInProgress || (
                 $aircraft->state === AircraftState::PARKED
                 && (!setting('pireps.only_aircraft_at_dpt_airport')
