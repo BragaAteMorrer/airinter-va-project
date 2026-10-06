@@ -387,7 +387,7 @@ final class LegacyPirepScoringService
                 $delay,
                 fn ($s) => isset($s['ias']) ? (float) $s['ias'] : null
             ),
-            'FUEL_REFILLED' => $this->fuelRefillOccurrences($facts),
+            'FUEL_REFILLED' => $this->fuelRefillOccurrences($facts, $samples),
             'SIMRATE_INCREASED' => $this->simulationRateOccurrences($samples, $facts, $parameter, $delay),
             'SLEW_ACTIVATED' => $this->slewOccurrences($samples, $facts, $delay),
             'PAUSE_ACTIVATED' => $this->factOccurrences(
@@ -634,15 +634,58 @@ final class LegacyPirepScoringService
      * must only deduct points when the fact is explicitly associated with an
      * airborne phase.
      */
-    private function fuelRefillOccurrences(array $facts): array
+    private function fuelRefillOccurrences(array $facts, array $samples): array
     {
-        $airbornePhases = ['TAKEOFF', 'CLIMB', 'CRUISE', 'DESCENT', 'APPROACH', 'FINAL'];
+        $safeAirbornePhases = ['CLIMB', 'CRUISE', 'DESCENT', 'APPROACH', 'FINAL'];
+        $groundPhases = ['RESERVED', 'PREPARATION', 'BOARDING', 'ACARS_READY', 'PUSHBACK', 'TAXI_OUT', 'LANDING', 'TAXI_IN', 'IN', 'COMPLETED'];
 
         return $this->factOccurrences(
             $facts,
             ['FUEL_ADDED'],
-            fn ($fact) => (float) ($fact['value'] ?? 0) > 0
-                && in_array(strtoupper((string) ($fact['phase'] ?? '')), $airbornePhases, true)
+            function ($fact) use ($samples, $safeAirbornePhases, $groundPhases) {
+                if ((float) ($fact['value'] ?? 0) <= 0) return false;
+
+                $phase = strtoupper((string) ($fact['phase'] ?? ''));
+                if (in_array($phase, $groundPhases, true)) return false;
+
+                // When telemetry is available around the fact timestamp, it is
+                // the source of truth: only an explicit airborne sample may
+                // trigger the penalty. A 45 s window matches the telemetry
+                // episode gap tolerance used by the rest of the scorer.
+                $occurredAt = $fact['occurred_at'] ?? null;
+                if ($occurredAt) {
+                    try {
+                        $target = Carbon::parse($occurredAt);
+                        $nearestGroundState = null;
+                        $nearestSeconds = null;
+
+                        foreach ($samples as $sample) {
+                            if (!array_key_exists('on_ground', $sample)
+                                || $sample['on_ground'] === null
+                                || empty($sample['recorded_at'])) {
+                                continue;
+                            }
+
+                            $seconds = abs($target->diffInSeconds(Carbon::parse($sample['recorded_at']), false));
+                            if ($nearestSeconds === null || $seconds < $nearestSeconds) {
+                                $nearestSeconds = $seconds;
+                                $nearestGroundState = $sample['on_ground'];
+                            }
+                        }
+
+                        if ($nearestSeconds !== null && $nearestSeconds <= 45) {
+                            return $nearestGroundState === false;
+                        }
+                    } catch (Throwable) {
+                        // Fall back to the conservative phase allow-list below.
+                    }
+                }
+
+                // Without trustworthy telemetry, only phases that are
+                // unambiguously airborne are eligible. TAKEOFF is excluded
+                // because it also contains the on-ground takeoff roll.
+                return in_array($phase, $safeAirbornePhases, true);
+            }
         );
     }
 
