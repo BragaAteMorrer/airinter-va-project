@@ -197,7 +197,7 @@ final class LegacyPirepScoringConfigurationTest extends TestCase
             ],
         ];
 
-        $occurrences = $this->invokeMethod($service, 'fuelRefillOccurrences', [$facts]);
+        $occurrences = $this->invokeMethod($service, 'fuelRefillOccurrences', [$facts, []]);
 
         $this->assertCount(1, $occurrences);
         $this->assertSame(500, $occurrences[0]['value']);
