@@ -28,7 +28,7 @@ class FleetTransferAdminController extends PrometheeWebController
             ->orderBy('registration')
             ->get();
 
-        $blocked = $this->blockedAircraft();
+        $blocked = $this->blockedAircraft($aircraft);
         $rows = $aircraft->map(function (Aircraft $plane) use ($blocked) {
             $reason = $blocked->get((int) $plane->id);
 
@@ -117,15 +117,18 @@ class FleetTransferAdminController extends PrometheeWebController
                 ->keyBy('id');
 
             foreach ($ids as $id) {
-                /** @var Aircraft|null $plane */
-                $plane = $planes->get($id);
-                if (!$plane) {
+                if (!$planes->has($id)) {
                     throw ValidationException::withMessages([
                         'aircraft_ids' => 'Un appareil sélectionné n’existe plus.',
                     ]);
                 }
+            }
 
-                $blockingReason = $this->blockingReason($plane);
+            $blocked = $this->blockedAircraft($planes->values());
+            foreach ($ids as $id) {
+                /** @var Aircraft $plane */
+                $plane = $planes->get($id);
+                $blockingReason = $blocked->get((int) $plane->id);
                 if ($blockingReason !== null) {
                     throw ValidationException::withMessages([
                         'aircraft_ids' => $plane->registration.' ne peut plus être transféré : '.$blockingReason.'. Actualisez la page puis réessayez.',
@@ -152,6 +155,8 @@ class FleetTransferAdminController extends PrometheeWebController
 
                 if ($changeBase) {
                     $this->updateBaseAssignment($plane, $destination);
+                } else {
+                    $this->syncAwayState($plane, $destination);
                 }
 
                 if (Schema::hasTable('promethee_audit_logs')) {
@@ -189,62 +194,129 @@ class FleetTransferAdminController extends PrometheeWebController
         return back()->with('success', $message);
     }
 
-    private function blockedAircraft()
+    private function blockedAircraft($planes)
     {
-        return Aircraft::query()
-            ->get(['id', 'status', 'state'])
-            ->mapWithKeys(fn (Aircraft $plane) => [(int) $plane->id => $this->blockingReason($plane)])
-            ->filter(fn ($reason) => $reason !== null);
+        $planes = collect($planes);
+        $ids = $planes->pluck('id')->map(fn ($id) => (int) $id)->values();
+
+        if ($ids->isEmpty()) {
+            return collect();
+        }
+
+        $bidAircraft = DB::table('bids')
+            ->whereIn('aircraft_id', $ids)
+            ->pluck('aircraft_id')
+            ->map(fn ($id) => (int) $id)
+            ->flip();
+
+        $pirepAircraft = DB::table('pireps')
+            ->whereIn('aircraft_id', $ids)
+            ->whereIn('state', self::BUSY_PIREP_STATES)
+            ->pluck('aircraft_id')
+            ->map(fn ($id) => (int) $id)
+            ->flip();
+
+        $missionAircraft = Schema::hasTable('promethee_missions')
+            ? DB::table('promethee_missions')
+                ->whereIn('aircraft_id', $ids)
+                ->where('active', true)
+                ->pluck('aircraft_id')
+                ->map(fn ($id) => (int) $id)
+                ->flip()
+            : collect();
+
+        $airframeMaintenanceAircraft = Schema::hasTable('promethee_airframe_maintenance')
+            ? DB::table('promethee_airframe_maintenance')
+                ->whereIn('aircraft_id', $ids)
+                ->whereNotNull('active_check')
+                ->pluck('aircraft_id')
+                ->map(fn ($id) => (int) $id)
+                ->flip()
+            : collect();
+
+        $legacyMaintenanceAircraft = Schema::hasTable('disposable_maintenance')
+            ? DB::table('disposable_maintenance')
+                ->whereIn('aircraft_id', $ids)
+                ->whereNotNull('act_note')
+                ->pluck('aircraft_id')
+                ->map(fn ($id) => (int) $id)
+                ->flip()
+            : collect();
+
+        return $planes->mapWithKeys(function (Aircraft $plane) use (
+            $bidAircraft,
+            $pirepAircraft,
+            $missionAircraft,
+            $airframeMaintenanceAircraft,
+            $legacyMaintenanceAircraft
+        ) {
+            $reason = null;
+
+            if ($plane->status !== AircraftStatus::ACTIVE) {
+                $reason = 'statut appareil non actif';
+            } elseif ((int) $plane->state !== AircraftState::PARKED) {
+                $reason = (int) $plane->state === AircraftState::IN_AIR
+                    ? 'appareil actuellement en vol'
+                    : 'appareil actuellement utilisé';
+            } elseif ($bidAircraft->has((int) $plane->id)) {
+                $reason = 'réservation active';
+            } elseif ($pirepAircraft->has((int) $plane->id)) {
+                $reason = 'PIREP actif ou en attente';
+            } elseif ($missionAircraft->has((int) $plane->id)) {
+                $reason = 'mission active';
+            } elseif ($airframeMaintenanceAircraft->has((int) $plane->id)) {
+                $reason = 'maintenance cellule en cours';
+            } elseif ($legacyMaintenanceAircraft->has((int) $plane->id)) {
+                $reason = 'maintenance active';
+            }
+
+            return [(int) $plane->id => $reason];
+        })->filter(fn ($reason) => $reason !== null);
     }
 
-    private function blockingReason(Aircraft $plane): ?string
+    private function syncAwayState(Aircraft $plane, string $destination): void
     {
-        if ($plane->status !== AircraftStatus::ACTIVE) {
-            return 'statut appareil non actif';
+        if (!Schema::hasTable('promethee_aircraft_bases')) {
+            return;
         }
 
-        if ((int) $plane->state !== AircraftState::PARKED) {
-            return (int) $plane->state === AircraftState::IN_AIR
-                ? 'appareil actuellement en vol'
-                : 'appareil actuellement utilisé';
-        }
-
-        if (DB::table('bids')->where('aircraft_id', $plane->id)->exists()) {
-            return 'réservation active';
-        }
-
-        if (DB::table('pireps')
+        $assignment = DB::table('promethee_aircraft_bases')
             ->where('aircraft_id', $plane->id)
-            ->whereIn('state', self::BUSY_PIREP_STATES)
-            ->exists()) {
-            return 'PIREP actif ou en attente';
+            ->lockForUpdate()
+            ->first();
+
+        if (!$assignment) {
+            $base = strtoupper((string) $plane->hub_id);
+            if ($base === '') {
+                return;
+            }
+
+            DB::table('promethee_aircraft_bases')->insert([
+                'aircraft_id' => $plane->id,
+                'base_airport_id' => $base,
+                'assigned_at' => now(),
+                'away_since' => $destination === $base ? null : now(),
+                'repatriation_mission_id' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            return;
         }
 
-        if (Schema::hasTable('promethee_missions')
-            && DB::table('promethee_missions')
-                ->where('aircraft_id', $plane->id)
-                ->where('active', true)
-                ->exists()) {
-            return 'mission active';
+        if ($assignment->repatriation_mission_id && Schema::hasTable('promethee_missions')) {
+            DB::table('promethee_missions')
+                ->where('id', $assignment->repatriation_mission_id)
+                ->update(['active' => false, 'updated_at' => now()]);
         }
 
-        if (Schema::hasTable('promethee_airframe_maintenance')
-            && DB::table('promethee_airframe_maintenance')
-                ->where('aircraft_id', $plane->id)
-                ->whereNotNull('active_check')
-                ->exists()) {
-            return 'maintenance cellule en cours';
-        }
-
-        if (Schema::hasTable('disposable_maintenance')
-            && DB::table('disposable_maintenance')
-                ->where('aircraft_id', $plane->id)
-                ->whereNotNull('act_note')
-                ->exists()) {
-            return 'maintenance active';
-        }
-
-        return null;
+        $base = strtoupper((string) $assignment->base_airport_id);
+        DB::table('promethee_aircraft_bases')
+            ->where('aircraft_id', $plane->id)
+            ->update([
+                'away_since' => $destination === $base ? null : now(),
+                'repatriation_mission_id' => null,
+                'updated_at' => now(),
+            ]);
     }
 
     private function updateBaseAssignment(Aircraft $plane, string $destination): void
