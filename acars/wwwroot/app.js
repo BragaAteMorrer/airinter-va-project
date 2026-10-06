@@ -1167,14 +1167,42 @@ $('#recoveryReviewBtn').onclick = async () => {
 
 $('#recoveryResumeBtn').onclick = async () => {
   try {
+    // Rehydrate the authoritative server operation BEFORE re-enabling local
+    // recording. A CTD/restart must never resume against a stale UI selection
+    // or silently lose the physical aircraft assigned to the active PIREP.
+    await refreshOperations();
+
+    const localFlight = lastStatus?.flight || lastStatus?.Flight || {};
+    const recovery = lastStatus?.recovery || lastStatus?.Recovery || {};
+    const recoveryOperationId = localFlight.operationId || localFlight.OperationId
+      || recovery.operationId || recovery.OperationId || null;
+    const recoveryPirepId = localFlight.pirepId || localFlight.PirepId
+      || recovery.pirepId || recovery.PirepId || null;
+    const selectedOperationId = selectedOperation?.operation_id || selectedOperation?.operationId
+      || selectedOperation?.bid_id || selectedOperation?.id || null;
+    const selectedPirepId = selectedOperation?.pirep_id || selectedOperation?.pirep?.id || pirepId || null;
+    const assignedAircraft = selectedOperation?.aircraft || null;
+
+    if (!selectedOperation || (recoveryOperationId && String(selectedOperationId) !== String(recoveryOperationId))) {
+      throw new Error('Reprise refusée : l’opération Prométhée du vol interrompu n’a pas pu être restaurée.');
+    }
+    if (recoveryPirepId && selectedPirepId && String(selectedPirepId) !== String(recoveryPirepId)) {
+      throw new Error('Reprise refusée : le PIREP restauré ne correspond pas au vol local interrompu.');
+    }
+    if (!assignedAircraft?.id) {
+      throw new Error('Reprise refusée : l’appareil affecté à cette opération est introuvable dans Prométhée.');
+    }
+
     await call('/api/recovery/resume', {});
-    showMessage('#recoveryMessage', 'Vol repris. Hermès continue à partir de l’état local sauvegardé.');
+    showMessage(
+      '#recoveryMessage',
+      'Vol repris'
+        + (assignedAircraft.registration ? ' sur ' + assignedAircraft.registration : '')
+        + '. Hermès continue à partir de l’état local sauvegardé.'
+    );
     $('#recoveryCenter').hidden = true;
     document.querySelector('[data-tab="record"]')?.click();
     await refreshStatus();
-    // Rehydrate the exact Prométhée operation/OFP after recovery. This restores
-    // the planned route even when the desktop state was lost with the CTD.
-    await refreshOperations();
   } catch (error) {
     showMessage('#recoveryMessage', friendlyError(error), true);
   }
