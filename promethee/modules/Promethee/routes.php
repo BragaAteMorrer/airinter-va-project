@@ -28,6 +28,7 @@ use Modules\Promethee\Http\PresenceController;
 use Modules\Promethee\Http\DispatchDeskController;
 use Modules\Promethee\Http\CrmController;
 use Modules\Promethee\Http\AircraftConfigurationAdminController;
+use Modules\Promethee\Http\FleetTransferAdminController;
 use Modules\Promethee\Http\EngineMaintenanceAdminController;
 use Modules\Promethee\Http\RealSimulatorCertificationController;
 use Modules\Promethee\Http\Api\AircraftConfigurationController;
@@ -163,6 +164,8 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::post('/identite/importer', [PortalController::class, 'importBranding'])->name('branding.import');
         Route::get('/simbrief', [PortalController::class, 'adminSimbrief'])->name('simbrief');
         Route::get('/airframes', [AircraftConfigurationAdminController::class, 'index'])->name('airframes');
+        Route::get('/fleet-transfers', [FleetTransferAdminController::class, 'index'])->name('fleet-transfers');
+        Route::post('/fleet-transfers', [FleetTransferAdminController::class, 'transfer'])->name('fleet-transfers.store');
         Route::post('/airframes/import-phpvms', [AircraftConfigurationAdminController::class, 'importPhpVms'])->name('airframes.import-phpvms');
         Route::post('/airframes/types', [AircraftConfigurationAdminController::class, 'storeType'])->name('airframes.types.save');
         Route::post('/airframes/variants', [AircraftConfigurationAdminController::class, 'storeVariant'])->name('airframes.variants.save');
