@@ -163,18 +163,37 @@ async function refreshOperations() {
     const localFlight = lastStatus?.flight || lastStatus?.Flight || {};
     const recoveryOperationId = localFlight.operationId || localFlight.OperationId
       || lastStatus?.recovery?.operationId || lastStatus?.recovery?.OperationId || null;
-    const recoveryOperation = !selectedOperation && recoveryOperationId
+    const recoveryOperation = recoveryOperationId
       ? operations.find(operation => String(operation.operation_id || operation.operationId || '') === String(recoveryOperationId))
       : null;
+    const selectedOperationId = selectedOperation?.operation_id || selectedOperation?.operationId
+      || selectedOperation?.bid_id || selectedOperation?.id || null;
+    const mustRestoreRecoveryOperation = recoveryOperation
+      && String(selectedOperationId || '') !== String(recoveryOperationId);
     const canAutoSelect = operations.length === 1
       && !selectedOperation
       && !lastStatus?.recoveryAvailable;
 
-    if (recoveryOperation) {
+    // Recovery always wins over an older/stale UI selection. The local state
+    // carries the immutable operation_id, and Prométhée carries the exact
+    // aircraft bound to that operation. Rehydrate that pair before resuming.
+    if (mustRestoreRecoveryOperation) {
       const flight = normalizeFlight(recoveryOperation.flight || recoveryOperation);
-      showMessage('#flightMessage', 'Vol interrompu détecté : ' + displayFlightIdent(flight) + '. Restauration du Dispatch et de la route…');
+      showMessage('#flightMessage', 'Vol interrompu détecté : ' + displayFlightIdent(flight) + '. Restauration de l’appareil, du Dispatch et de la route…');
       await selectOperation(recoveryOperation);
-      showMessage('#flightMessage', 'Vol interrompu restauré. Reprenez-le depuis le Recovery Center.');
+      const registration = recoveryOperation.aircraft?.registration;
+      showMessage(
+        '#flightMessage',
+        'Vol interrompu restauré'
+          + (registration ? ' avec ' + registration : '')
+          + '. Reprenez-le depuis le Recovery Center.'
+      );
+    } else if (recoveryOperationId && !recoveryOperation) {
+      showMessage(
+        '#flightMessage',
+        'Le vol local interrompu existe encore, mais son opération Prométhée n’est plus disponible. Ne démarrez pas un autre vol : utilisez le Recovery Center ou faites vérifier l’opération.',
+        true
+      );
     } else if (canAutoSelect) {
       const flight = normalizeFlight(operations[0].flight || operations[0]);
       showMessage('#flightMessage', 'Réservation active détectée : ' + displayFlightIdent(flight) + '. Chargement automatique…');
