@@ -204,7 +204,6 @@ final class LegacyPirepScoringConfigurationTest extends TestCase
         $this->assertSame('FUEL_ADDED', $occurrences[0]['code']);
     }
 
-    #[\PHPUnit\Framework\Attributes\Test]
     public function test_load_factor_rules_expose_air_inter_points_and_fixed_asymmetric_thresholds(): void
     {
         $service = app(LegacyPirepScoringService::class);
