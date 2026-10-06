@@ -17,24 +17,29 @@ final class PhpVmsAirframeSqlSnapshotService
      */
     public function export(?string $absolutePath = null): array
     {
+        $source = DB::connection('prometheus');
+        $target = DB::connection();
+
+        foreach (['subfleets', 'fares', 'subfleet_fare', 'aircraft'] as $table) {
+            if (!$source->getSchemaBuilder()->hasTable($table)) {
+                throw new RuntimeException('Table Prometheus requise absente : '.$source->getTablePrefix().$table);
+            }
+        }
+
         foreach ([
-            'subfleets',
-            'fares',
-            'subfleet_fare',
-            'aircraft',
             'promethee_aircraft_type_profiles',
             'promethee_aircraft_historical_variants',
             'promethee_aircraft_configuration_assignments',
         ] as $table) {
             if (!Schema::hasTable($table)) {
-                throw new RuntimeException('Table requise absente pour le snapshot Airframes : '.$table);
+                throw new RuntimeException('Table Prométhée requise absente : '.$target->getTablePrefix().$table);
             }
         }
 
-        $subfleetIds = DB::table('subfleets')->orderBy('id')->pluck('id')->all();
+        $subfleetIds = $source->table('subfleets')->orderBy('id')->pluck('id')->all();
         $fareIds = $subfleetIds === []
             ? []
-            : DB::table('subfleet_fare')
+            : $source->table('subfleet_fare')
                 ->whereIn('subfleet_id', $subfleetIds)
                 ->orderBy('fare_id')
                 ->pluck('fare_id')
@@ -42,27 +47,30 @@ final class PhpVmsAirframeSqlSnapshotService
                 ->values()
                 ->all();
 
+        $sourcePrefix = $source->getTablePrefix();
+        $targetPrefix = $target->getTablePrefix();
+
         $tables = [
-            'subfleets' => DB::table('subfleets')->orderBy('id')->get(),
-            'fares' => $fareIds === []
+            $sourcePrefix.'subfleets' => $source->table('subfleets')->orderBy('id')->get(),
+            $sourcePrefix.'fares' => $fareIds === []
                 ? collect()
-                : DB::table('fares')->whereIn('id', $fareIds)->orderBy('id')->get(),
-            'subfleet_fare' => $subfleetIds === []
+                : $source->table('fares')->whereIn('id', $fareIds)->orderBy('id')->get(),
+            $sourcePrefix.'subfleet_fare' => $subfleetIds === []
                 ? collect()
-                : DB::table('subfleet_fare')
+                : $source->table('subfleet_fare')
                     ->whereIn('subfleet_id', $subfleetIds)
                     ->orderBy('subfleet_id')
                     ->orderBy('fare_id')
                     ->get(),
-            'aircraft' => $subfleetIds === []
+            $sourcePrefix.'aircraft' => $subfleetIds === []
                 ? collect()
-                : DB::table('aircraft')
+                : $source->table('aircraft')
                     ->whereIn('subfleet_id', $subfleetIds)
                     ->orderBy('id')
                     ->get(),
-            'promethee_aircraft_type_profiles' => $this->airframeRows('promethee_aircraft_type_profiles', 'data'),
-            'promethee_aircraft_historical_variants' => $this->airframeRows('promethee_aircraft_historical_variants', 'data'),
-            'promethee_aircraft_configuration_assignments' => $this->airframeRows('promethee_aircraft_configuration_assignments', 'overrides'),
+            $targetPrefix.'promethee_aircraft_type_profiles' => $this->airframeRows('promethee_aircraft_type_profiles', 'data'),
+            $targetPrefix.'promethee_aircraft_historical_variants' => $this->airframeRows('promethee_aircraft_historical_variants', 'data'),
+            $targetPrefix.'promethee_aircraft_configuration_assignments' => $this->airframeRows('promethee_aircraft_configuration_assignments', 'overrides'),
         ];
 
         $absolutePath ??= storage_path('app/'.self::DEFAULT_RELATIVE_PATH);
@@ -75,7 +83,8 @@ final class PhpVmsAirframeSqlSnapshotService
         $sql = [
             '-- Air Inter VA · phpVMS → Promethee Airframes snapshot',
             '-- Generated at '.$generatedAt,
-            '-- Source: live legacy tables + PR #246 materialised Airframes rows',
+            '-- Source legacy: Prometheus database connection (phpvms7_* in production)',
+            '-- Target: current Promethee Airframes rows when already materialised',
             '-- Re-runnable: INSERT ... ON DUPLICATE KEY UPDATE',
             '',
             'SET NAMES utf8mb4;',
