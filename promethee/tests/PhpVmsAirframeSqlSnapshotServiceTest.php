@@ -12,6 +12,9 @@ final class PhpVmsAirframeSqlSnapshotServiceTest extends TestCase
 {
     public function test_it_exports_legacy_source_and_materialised_airframes_to_reimportable_sql(): void
     {
+        config(['database.connections.prometheus' => config('database.connections.testing')]);
+        DB::purge('prometheus');
+
         $fleet = $this->createSubfleetWithAircraft(1, 'LFPO');
         $subfleet = $fleet['subfleet'];
         $subfleet->airline()->update(['icao' => 'ITF']);
