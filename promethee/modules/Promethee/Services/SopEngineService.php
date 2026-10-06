@@ -17,7 +17,9 @@ class SopEngineService
     private const MAX_EVALUATIONS = 1500;
     private const OPERATORS = ['exists', 'gt', 'gte', 'lt', 'lte', 'eq', 'neq'];
     private const SEVERITIES = ['INFO', 'ADVISORY', 'WARNING'];
-    private const AIRBORNE_FUEL_PHASES = ['TAKEOFF', 'CLIMB', 'CRUISE', 'DESCENT', 'APPROACH', 'FINAL'];
+    // TAKEOFF is intentionally excluded: that phase also contains the
+    // on-ground takeoff roll, while SOP facts do not carry weight-on-wheels.
+    private const AIRBORNE_FUEL_PHASES = ['CLIMB', 'CRUISE', 'DESCENT', 'APPROACH', 'FINAL'];
 
     public function __construct(private readonly ?string $root = null) {}
 
