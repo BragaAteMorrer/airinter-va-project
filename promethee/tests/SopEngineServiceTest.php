@@ -78,6 +78,42 @@ final class SopEngineServiceTest extends TestCase
         $this->assertCount(1, array_filter($high['new_evaluations'], fn ($item) => $item['rule_id'] === 'custom_taxi'));
     }
 
+    public function test_ground_refuelling_does_not_create_company_anomaly(): void
+    {
+        $service = new SopEngineService($this->folder);
+        $ground = $service->ingest('op_fuel', 42, [[
+            'fact_id' => '55555555-5555-4555-8555-555555555555',
+            'code' => 'FUEL_ADDED',
+            'category' => 'fuel',
+            'occurred_at' => '2026-10-06T13:04:54Z',
+            'message' => 'Carburant ajouté en vol : 11696 lb.',
+            'value' => 11696,
+            'unit' => 'lb',
+            'phase' => 'BOARDING',
+        ]]);
+
+        $this->assertCount(0, array_filter(
+            $ground['new_evaluations'],
+            fn ($item) => $item['rule_id'] === 'default_fuel_added'
+        ));
+
+        $airborne = $service->ingest('op_fuel', 42, [[
+            'fact_id' => '66666666-6666-4666-8666-666666666666',
+            'code' => 'FUEL_ADDED',
+            'category' => 'fuel',
+            'occurred_at' => '2026-10-06T14:00:00Z',
+            'message' => 'Carburant ajouté en vol : 500 lb.',
+            'value' => 500,
+            'unit' => 'lb',
+            'phase' => 'CLIMB',
+        ]]);
+
+        $this->assertCount(1, array_filter(
+            $airborne['new_evaluations'],
+            fn ($item) => $item['rule_id'] === 'default_fuel_added'
+        ));
+    }
+
     public function test_review_and_dispatch_ack_are_independent_and_idempotent(): void
     {
         $service = new SopEngineService($this->folder);
