@@ -1231,6 +1231,7 @@ class PortalController extends PrometheeWebController
             $aircraft = $pirep->aircraft;
             $user = $pirep->user;
             $departure = $pirep->dpt_airport_id;
+            $arrival = $pirep->arr_airport_id;
 
             // Reverse phpVMS flight-time/count accounting first when an already
             // accepted report must be removed in an emergency.
@@ -1267,8 +1268,15 @@ class PortalController extends PrometheeWebController
                     ->latest('submitted_at')
                     ->first();
                 $user->last_pirep_id = $lastAccepted?->id;
-                if (!$lastAccepted || (string) $user->curr_airport_id === (string) ($snapshot['flight_id'] ? $pirep->arr_airport_id : $user->curr_airport_id)) {
-                    $user->curr_airport_id = $lastAccepted?->arr_airport_id ?: $user->home_airport_id;
+
+                // Deleting an IN_PROGRESS/PENDING recovery must never move the
+                // pilot. phpVMS only changes curr_airport_id when a PIREP is
+                // accepted, so only roll the location back when this deleted
+                // PIREP had really been accepted and still owns that location.
+                if ($wasAccepted && $arrival && (string) $user->curr_airport_id === (string) $arrival) {
+                    $user->curr_airport_id = $lastAccepted?->arr_airport_id
+                        ?: $departure
+                        ?: $user->home_airport_id;
                 }
                 $user->save();
             }
