@@ -5,10 +5,7 @@ namespace Tests;
 use App\Models\Airport;
 use App\Models\Enums\AircraftState;
 use App\Models\Enums\AircraftStatus;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
-use Modules\Promethee\Http\FleetTransferAdminController;
 
 final class FleetTransferAdminTest extends TestCase
 {
@@ -30,14 +27,19 @@ final class FleetTransferAdminTest extends TestCase
             'home_airport_id' => $origin->id,
         ]);
 
-        $request = Request::create('/admin/promethee/fleet-transfers', 'POST', [
-            'aircraft_ids' => [$aircraft->id],
-            'destination_airport_id' => $destination->id,
-            'reason' => 'Test de repositionnement administratif',
-        ]);
-        $request->setUserResolver(fn () => $admin);
+        $this->actingAs($admin, 'web')
+            ->get('/admin/promethee/fleet-transfers')
+            ->assertOk()
+            ->assertSee('Transferts de flotte.', false);
 
-        app(FleetTransferAdminController::class)->transfer($request);
+        $this->actingAs($admin, 'web')
+            ->post('/admin/promethee/fleet-transfers', [
+                'aircraft_ids' => [$aircraft->id],
+                'destination_airport_id' => $destination->id,
+                'reason' => 'Test de repositionnement administratif',
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
 
         $aircraft->refresh();
         $admin->refresh();
@@ -86,21 +88,13 @@ final class FleetTransferAdminTest extends TestCase
 
         $admin = $this->createAdminUser();
 
-        $request = Request::create('/admin/promethee/fleet-transfers', 'POST', [
-            'aircraft_ids' => [$aircraft->id],
-            'destination_airport_id' => $destination->id,
-        ]);
-        $request->setUserResolver(fn () => $admin);
-
-        try {
-            app(FleetTransferAdminController::class)->transfer($request);
-            $this->fail('Un appareil en vol ne doit jamais pouvoir être transféré administrativement.');
-        } catch (ValidationException $exception) {
-            $this->assertStringContainsString(
-                'actuellement en vol',
-                implode(' ', $exception->errors()['aircraft_ids'] ?? [])
-            );
-        }
+        $this->actingAs($admin, 'web')
+            ->post('/admin/promethee/fleet-transfers', [
+                'aircraft_ids' => [$aircraft->id],
+                'destination_airport_id' => $destination->id,
+            ])
+            ->assertRedirect()
+            ->assertSessionHasErrors('aircraft_ids');
 
         $aircraft->refresh();
         $this->assertSame($origin->id, $aircraft->airport_id);
@@ -128,18 +122,14 @@ final class FleetTransferAdminTest extends TestCase
         $second->update(['state' => AircraftState::IN_USE]);
 
         $admin = $this->createAdminUser();
-        $request = Request::create('/admin/promethee/fleet-transfers', 'POST', [
-            'aircraft_ids' => [$first->id, $second->id],
-            'destination_airport_id' => $destination->id,
-        ]);
-        $request->setUserResolver(fn () => $admin);
 
-        try {
-            app(FleetTransferAdminController::class)->transfer($request);
-            $this->fail('Le transfert groupé doit être atomique si un appareil devient indisponible.');
-        } catch (ValidationException) {
-            // Expected.
-        }
+        $this->actingAs($admin, 'web')
+            ->post('/admin/promethee/fleet-transfers', [
+                'aircraft_ids' => [$first->id, $second->id],
+                'destination_airport_id' => $destination->id,
+            ])
+            ->assertRedirect()
+            ->assertSessionHasErrors('aircraft_ids');
 
         $first->refresh();
         $second->refresh();
