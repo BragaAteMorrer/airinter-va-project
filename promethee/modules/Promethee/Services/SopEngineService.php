@@ -17,6 +17,9 @@ class SopEngineService
     private const MAX_EVALUATIONS = 1500;
     private const OPERATORS = ['exists', 'gt', 'gte', 'lt', 'lte', 'eq', 'neq'];
     private const SEVERITIES = ['INFO', 'ADVISORY', 'WARNING'];
+    // TAKEOFF is intentionally excluded: that phase also contains the
+    // on-ground takeoff roll, while SOP facts do not carry weight-on-wheels.
+    private const AIRBORNE_FUEL_PHASES = ['CLIMB', 'CRUISE', 'DESCENT', 'APPROACH', 'FINAL'];
 
     public function __construct(private readonly ?string $root = null) {}
 
@@ -214,6 +217,15 @@ class SopEngineService
     private function matches(array $rule, array $fact): bool
     {
         if (($rule['fact_code'] ?? '') !== ($fact['code'] ?? '')) return false;
+
+        // FUEL_ADDED is an in-flight fact by definition. Older Hermès builds
+        // could emit it during BOARDING when the simulator reported tiny
+        // groundspeed jitter, so never turn a ground/unknown-phase fuel load
+        // into a company anomaly.
+        if (($fact['code'] ?? '') === 'FUEL_ADDED'
+            && !in_array($fact['phase'] ?? null, self::AIRBORNE_FUEL_PHASES, true)) {
+            return false;
+        }
 
         $phases = $rule['phases'] ?? [];
         if ($phases !== [] && !in_array($fact['phase'] ?? null, $phases, true)) return false;
@@ -430,7 +442,7 @@ class SopEngineService
             ['id'=>'default_slew','name'=>'Mode slew','enabled'=>true,'fact_code'=>'SLEW','operator'=>'exists','threshold'=>null,'phases'=>[],'severity'=>'WARNING','pilot_review'=>true,'dispatch_alert'=>true,'message'=>'Mode slew détecté pendant le vol.'],
             ['id'=>'default_sim_rate','name'=>'Simulation accélérée','enabled'=>true,'fact_code'=>'SIM_RATE','operator'=>'gt','threshold'=>1.0,'phases'=>[],'severity'=>'ADVISORY','pilot_review'=>true,'dispatch_alert'=>false,'message'=>'Simulation accélérée jusqu’à x{value}.'],
             ['id'=>'default_pause','name'=>'Pause simulateur','enabled'=>true,'fact_code'=>'PAUSE','operator'=>'gte','threshold'=>1.0,'phases'=>[],'severity'=>'ADVISORY','pilot_review'=>true,'dispatch_alert'=>false,'message'=>'Pause simulateur détectée pendant {value} {unit}.'],
-            ['id'=>'default_fuel_added','name'=>'Ajout de carburant','enabled'=>true,'fact_code'=>'FUEL_ADDED','operator'=>'gt','threshold'=>0.0,'phases'=>[],'severity'=>'WARNING','pilot_review'=>true,'dispatch_alert'=>true,'message'=>'Carburant ajouté pendant le vol : {value} {unit}.'],
+            ['id'=>'default_fuel_added','name'=>'Ajout de carburant','enabled'=>true,'fact_code'=>'FUEL_ADDED','operator'=>'gt','threshold'=>0.0,'phases'=>self::AIRBORNE_FUEL_PHASES,'severity'=>'WARNING','pilot_review'=>true,'dispatch_alert'=>true,'message'=>'Carburant ajouté pendant le vol : {value} {unit}.'],
             ['id'=>'default_bounce','name'=>'Rebond à l’atterrissage','enabled'=>true,'fact_code'=>'BOUNCE','operator'=>'gt','threshold'=>0.0,'phases'=>[],'severity'=>'ADVISORY','pilot_review'=>true,'dispatch_alert'=>false,'message'=>'{value} rebond(s) observé(s) à l’atterrissage.'],
         ];
     }

@@ -330,12 +330,15 @@ public sealed class FlightTrackingEngine
             events.Add(new("SLEW_ACTIVE", after.RecordedAt, after));
         if (before.SimulationRate is not null && after.SimulationRate is > 1 && after.SimulationRate > before.SimulationRate)
             events.Add(new("SIM_RATE_INCREASED", after.RecordedAt, after, after.SimulationRate));
-        // Refuelling at the stand is normal and must never become a flight
-        // anomaly. Air Inter's rule only considers a fuel increase once the
-        // aircraft is actually moving (strictly above 0 kt groundspeed).
+        // Refuelling on the ground is normal, including while boarding,
+        // pushback/taxi or when the simulator reports a tiny groundspeed jitter.
+        // Only an actual in-flight increase is an operational anomaly. Require
+        // two consecutive explicit airborne samples so a transient weight-on-
+        // wheels change cannot create a false FUEL_INCREASED event.
         if (before.FuelWeight is not null
             && after.FuelWeight is not null
-            && (after.GroundSpeedKnots ?? 0) > 0
+            && before.OnGround == false
+            && after.OnGround == false
             && after.FuelWeight > before.FuelWeight + 250)
             events.Add(new("FUEL_INCREASED", after.RecordedAt, after, after.FuelWeight - before.FuelWeight));
 
