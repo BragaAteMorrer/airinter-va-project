@@ -111,31 +111,73 @@ function renderAircraftCapabilities(report) {
   if (!panel) return;
   if (!report) { panel.hidden = true; return; }
   panel.hidden = false;
+
   const read = (camel, pascal) => report?.[camel] ?? report?.[pascal];
-  setText($('#capabilityAircraft'), read('aircraftLabel','AircraftLabel') || 'Appareil non identifié');
+  const plannedIcao = String(
+    selectedAircraft?.icao
+      || selectedOperation?.aircraft?.icao
+      || ''
+  ).trim().toUpperCase();
+  const simulatorIcao = String(read('aircraftIcao','AircraftIcao') || '').trim().toUpperCase();
+
+  // AircraftIcao is telemetry metadata, not a flight-safety sensor. Some
+  // FSUIPC/MSFS aircraft do not expose it even though Prométhée already knows
+  // the exact assigned airframe. In that case use the authoritative operation
+  // identity for the capability display without inventing simulator telemetry.
+  const rawEntries = read('capabilities','Capabilities') || [];
+  const entries = rawEntries.map(entry => {
+    const capability = entry.capability ?? entry.Capability;
+    const availability = String(entry.availability ?? entry.Availability ?? 'Unknown');
+    if (capability === 'AircraftIcao' && availability === 'Unknown' && plannedIcao) {
+      return {
+        ...entry,
+        capability,
+        availability: 'Supported',
+        source: 'promethee-preparation',
+        effectiveValue: plannedIcao
+      };
+    }
+    return entry;
+  });
+
+  const effectiveCounts = entries.reduce((counts, entry) => {
+    const availability = String(entry.availability ?? entry.Availability ?? 'Unknown');
+    if (availability === 'Supported') counts.supported += 1;
+    else if (availability === 'Unsupported') counts.unsupported += 1;
+    else counts.unknown += 1;
+    return counts;
+  }, { supported: 0, unknown: 0, unsupported: 0 });
+
+  const reportedLabel = read('aircraftLabel','AircraftLabel') || 'Appareil non identifié';
+  const effectiveLabel = plannedIcao && !simulatorIcao && !reportedLabel.toUpperCase().includes(plannedIcao)
+    ? plannedIcao + ' · ' + reportedLabel
+    : reportedLabel;
+  setText($('#capabilityAircraft'), effectiveLabel);
+
   const adapterName = read('adapterName','AdapterName') || 'Generic aircraft';
   const connector = read('connectorId','ConnectorId') || 'connector';
   setText($('#capabilityAdapter'), adapterName + ' · ' + connector);
-  setText($('#capabilitySupported'), String(read('supportedCount','SupportedCount') ?? 0));
-  setText($('#capabilityUnknown'), String(read('unknownCount','UnknownCount') ?? 0));
-  setText($('#capabilityUnsupported'), String(read('unsupportedCount','UnsupportedCount') ?? 0));
+  setText($('#capabilitySupported'), String(effectiveCounts.supported));
+  setText($('#capabilityUnknown'), String(effectiveCounts.unknown));
+  setText($('#capabilityUnsupported'), String(effectiveCounts.unsupported));
 
   const matrix = $('#capabilityMatrix');
   matrix.replaceChildren();
-  const entries = read('capabilities','Capabilities') || [];
   entries.forEach(entry => {
     const capability = entry.capability ?? entry.Capability;
     const availability = String(entry.availability ?? entry.Availability ?? 'Unknown');
     const source = entry.source ?? entry.Source ?? '';
+    const effectiveValue = entry.effectiveValue || '';
     const item = document.createElement('span');
     item.className = 'capability-item ' + availability.toLowerCase();
     const label = document.createElement('strong');
     label.textContent = capabilityLabels[capability] || capability;
     const state = document.createElement('small');
-    state.textContent = availability === 'Supported' ? 'DISPONIBLE'
+    state.textContent = availability === 'Supported'
+      ? (source === 'promethee-preparation' ? 'DISPONIBLE · PRÉPARATION' : 'DISPONIBLE')
       : availability === 'Unsupported' ? 'NON PRIS EN CHARGE'
       : 'À COMPLÉTER';
-    item.title = source;
+    item.title = [source, effectiveValue].filter(Boolean).join(' · ');
     item.append(label, state);
     matrix.append(item);
   });
