@@ -12,6 +12,7 @@ use Illuminate\Console\Scheduling\Schedule;
 use Modules\Promethee\Console\BulletinCommand;
 use Modules\Promethee\Console\CheckPrometheeTranslations;
 use Modules\Promethee\Console\CheckTranslations;
+use Modules\Promethee\Console\ExportPhpVmsAirframeSqlCommand;
 use Modules\Promethee\Console\LocalUserCommand;
 use Modules\Promethee\Console\ProcessAirframeMaintenanceCommand;
 use Modules\Promethee\Console\RecalculateProgressionCommand;
@@ -53,6 +54,7 @@ class PrometheeServiceProvider extends ServiceProvider
                 BulletinCommand::class,
                 CheckPrometheeTranslations::class,
                 CheckTranslations::class,
+                ExportPhpVmsAirframeSqlCommand::class,
                 LocalUserCommand::class,
                 ProcessAirframeMaintenanceCommand::class,
                 RecalculateProgressionCommand::class,
