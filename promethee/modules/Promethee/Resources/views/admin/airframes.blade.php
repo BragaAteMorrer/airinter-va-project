@@ -11,6 +11,14 @@
 .airframe-stat{border:1px solid var(--border-color,#d7dce2);border-radius:12px;padding:.9rem 1rem;background:var(--panel-bg,transparent)}
 .airframe-stat strong{display:block;font-size:1.45rem;line-height:1.1}
 .airframe-stat span{display:block;margin-top:.25rem;font-size:.78rem;opacity:.7;text-transform:uppercase;letter-spacing:.06em}
+.airframe-import-panel{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1rem;align-items:center}
+.airframe-import-copy{min-width:0}
+.airframe-import-copy h2{margin:.15rem 0 .35rem}
+.airframe-import-copy p{margin:0}
+.airframe-import-meta{display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.65rem}
+.airframe-import-actions{display:grid;gap:.45rem;justify-items:end}
+.airframe-import-actions small{max-width:34rem;text-align:right;opacity:.66}
+.airframe-masses{white-space:nowrap;font-size:.78rem;line-height:1.45}
 .airframe-tabs{display:flex;gap:.45rem;flex-wrap:wrap;padding:.35rem;border:1px solid var(--border-color,#d7dce2);border-radius:12px}
 .airframe-tab{appearance:none;border:0;border-radius:9px;background:transparent;color:inherit;padding:.72rem 1rem;font:inherit;font-weight:700;cursor:pointer}
 .airframe-tab[aria-selected="true"]{background:var(--panel-bg,#fff);box-shadow:0 1px 8px rgba(0,0,0,.08)}
@@ -96,6 +104,9 @@
   .airframe-config-summary{position:static}
 }
 @media (max-width:900px){
+  .airframe-import-panel{grid-template-columns:1fr}
+  .airframe-import-actions{justify-items:start}
+  .airframe-import-actions small{text-align:left}
   .airframe-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
   .airframe-form-grid{grid-template-columns:1fr}
   .airframe-span-2{grid-column:auto}
@@ -141,6 +152,29 @@
       <p class="airframe-intro">Commencez par une immatriculation et sa variante réelle. Les réglages SimBrief, masses, moteurs et sources restent disponibles, mais uniquement quand vous en avez besoin.</p>
     </div>
   </div>
+
+  <section class="panel airframe-import-panel">
+    <div class="airframe-import-copy">
+      <span class="eyebrow">IMPORT PHPVMS · SOURCE HISTORIQUE</span>
+      <h2>Récupérer automatiquement les paramètres des appareils</h2>
+      <p>Prométhée lit les <strong>subfleets</strong> pour les types, les <strong>fares</strong> pour les capacités passagers/cargo et la configuration cabine, puis les <strong>aircraft</strong> pour les masses et les valeurs propres à chaque immatriculation.</p>
+      <div class="airframe-import-meta">
+        <span class="tag">{{ $legacyImportPreview['subfleets'] }} sous-flotte(s)</span>
+        <span class="tag">{{ $legacyImportPreview['aircraft'] }} appareil(s)</span>
+        <span class="tag">{{ $legacyImportPreview['with_passenger_capacity'] }} capacité(s) PAX</span>
+        <span class="tag">{{ $legacyImportPreview['with_cargo_capacity'] }} capacité(s) cargo</span>
+      </div>
+    </div>
+    <div class="airframe-import-actions">
+      <form method="post"
+            action="{{ route('admin.promethee.airframes.import-phpvms') }}"
+            onsubmit="return confirm('Importer / resynchroniser les paramètres phpVMS vers Airframes ? Les affectations historiques créées manuellement seront conservées.');">
+        @csrf
+        <button class="button" type="submit">Importer / resynchroniser</button>
+      </form>
+      <small>Le processus est idempotent : les profils qu’il a créés sont actualisés, tandis que les affectations manuelles restent prioritaires.</small>
+    </div>
+  </section>
 
   <div class="airframe-stats" aria-label="Résumé de la flotte technique">
     <div class="airframe-stat"><strong>{{ count($aircraft) }}</strong><span>Immatriculations</span></div>
@@ -220,7 +254,8 @@
               <th>Type</th>
               <th>Variante réelle</th>
               <th>Configuration</th>
-              <th>PAX</th>
+              <th>Cabine</th>
+              <th>Masses</th>
               <th>SimBrief</th>
               <th>Action</th>
             </tr>
@@ -237,7 +272,21 @@
               <td>{{ $r['aircraft']['type_name'] }}</td>
               <td>{{ $r['variant']['name'] ?? '—' }}</td>
               <td>{{ $r['configuration']['name'] ?? '—' }}</td>
-              <td>{{ $r['effective']['max_pax'] ?? '—' }}</td>
+              <td>
+                <strong>{{ $r['effective']['max_pax'] ?? '—' }}</strong> PAX
+                <br><small>{{ $r['effective']['seat_configuration'] ?? '—' }}</small>
+                @if(isset($r['effective']['max_cargo']))
+                  <br><small>Cargo {{ number_format((float) $r['effective']['max_cargo'], 0, ',', ' ') }}</small>
+                @endif
+              </td>
+              <td class="airframe-masses">
+                OEW {{ isset($r['effective']['oew']) ? number_format((float) $r['effective']['oew'], 0, ',', ' ') : '—' }}
+                · MZFW {{ isset($r['effective']['mzfw']) ? number_format((float) $r['effective']['mzfw'], 0, ',', ' ') : '—' }}
+                <br>
+                MTOW {{ isset($r['effective']['mtow']) ? number_format((float) $r['effective']['mtow'], 0, ',', ' ') : '—' }}
+                · MLW {{ isset($r['effective']['mlw']) ? number_format((float) $r['effective']['mlw'], 0, ',', ' ') : '—' }}
+                {{ $r['effective']['weight_unit'] ?? '' }}
+              </td>
               <td>{{ $r['simbrief']['strategy'] }} · {{ $r['simbrief']['value'] ?? 'AUTO' }}</td>
               <td><button type="button" class="airframe-secondary" data-airframe-configure="{{ $row['model']->id }}">Configurer</button></td>
             </tr>

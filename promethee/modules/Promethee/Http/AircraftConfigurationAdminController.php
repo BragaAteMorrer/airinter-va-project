@@ -17,6 +17,7 @@ use Modules\Promethee\Models\AirframeConfiguration;
 use Modules\Promethee\Models\AirframeSimulatorProfile;
 use Modules\Promethee\Services\AircraftConfigurationResolver;
 use Modules\Promethee\Services\BrandingService;
+use Modules\Promethee\Services\PhpVmsAirframeImportService;
 
 class AircraftConfigurationAdminController extends Controller
 {
@@ -29,7 +30,8 @@ class AircraftConfigurationAdminController extends Controller
 
     public function __construct(
         private readonly AircraftConfigurationResolver $resolver,
-        private readonly BrandingService $branding
+        private readonly BrandingService $branding,
+        private readonly PhpVmsAirframeImportService $phpVmsImport
     ) {}
 
     public function index()
@@ -74,8 +76,27 @@ class AircraftConfigurationAdminController extends Controller
             'confidenceOptions' => self::CONFIDENCE,
             'strategyOptions' => self::STRATEGIES,
             'modificationCategories' => self::MOD_CATEGORIES,
+            'legacyImportPreview' => $this->phpVmsImport->preview(),
             'branding' => $this->branding->active(),
         ]);
+    }
+
+    public function importPhpVms()
+    {
+        $result = $this->phpVmsImport->import();
+
+        return back()->with(
+            'success',
+            sprintf(
+                'Import phpVMS terminé : %d sous-flotte(s), %d appareil(s), %d capacité(s) passagers, %d capacité(s) cargo, %d affectation(s) créée(s), %d mise(s) à jour.',
+                $result['subfleets'],
+                $result['aircraft'],
+                $result['passenger_capacities'],
+                $result['cargo_capacities'],
+                $result['assignments_created'],
+                $result['assignments_updated']
+            )
+        );
     }
 
     public function storeType(Request $request)
