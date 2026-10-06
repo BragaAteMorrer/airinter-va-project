@@ -151,6 +151,7 @@
       <h1>Configurer la flotte, sans se perdre.</h1>
       <p class="airframe-intro">Commencez par une immatriculation et sa variante réelle. Les réglages SimBrief, masses, moteurs et sources restent disponibles, mais uniquement quand vous en avez besoin.</p>
     </div>
+    <a class="button outline" href="{{ route('admin.promethee.fleet-transfers') }}">Transférer des appareils →</a>
   </div>
 
   <section class="panel airframe-import-panel">
