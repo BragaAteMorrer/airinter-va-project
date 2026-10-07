@@ -105,7 +105,14 @@ public sealed class FsuipcConnector : ISimulatorConnector
         }
     }
 
-    public void Dispose() => CloseSession();
+    public void Dispose()
+    {
+        CloseSession();
+        LatestSnapshot = null;
+        ConnectionState = SimulatorConnectionState.NotDetected;
+        Status = displayName + " — connecteur en veille";
+        nextConnectAttemptAt = DateTimeOffset.MinValue;
+    }
 
     private void CloseSession()
     {
