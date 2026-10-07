@@ -79,6 +79,49 @@ public sealed class FlightDataMonitoringTests
 
 
     [Fact]
+    public void Speed_under_10k_requires_ten_continuous_seconds_above_255_knots()
+    {
+        var monitor = new FlightDataMonitor();
+        var t = DateTimeOffset.Parse("2026-10-07T20:00:00Z");
+
+        for (var second = 0; second < 9; second++)
+        {
+            var observations = monitor.Process(
+                Snapshot(t.AddSeconds(second), 9000, 0, 0, false, 0, 257),
+                FlightPhase.Climb,
+                []);
+            Assert.DoesNotContain(observations, x => x.Code == "SPEED_UNDER_10K");
+        }
+
+        var recovered = monitor.Process(
+            Snapshot(t.AddSeconds(9), 9000, 0, 0, false, 0, 255),
+            FlightPhase.Climb,
+            []);
+        Assert.DoesNotContain(recovered, x => x.Code == "SPEED_UNDER_10K");
+
+        for (var second = 20; second < 30; second++)
+        {
+            var observations = monitor.Process(
+                Snapshot(t.AddSeconds(second), 9000, 0, 0, false, 0, 256 + (second % 2)),
+                FlightPhase.Climb,
+                []);
+            Assert.DoesNotContain(observations, x => x.Code == "SPEED_UNDER_10K");
+        }
+
+        var sustained = monitor.Process(
+            Snapshot(t.AddSeconds(30), 9000, 0, 0, false, 0, 260),
+            FlightPhase.Climb,
+            []);
+
+        var observation = Assert.Single(sustained, x => x.Code == "SPEED_UNDER_10K");
+        Assert.Equal(260, observation.Value);
+        Assert.Equal("kt", observation.Unit);
+        Assert.Contains("10 s", observation.Message);
+        Assert.Contains("255 kt", observation.Message);
+    }
+
+
+    [Fact]
     public void Load_factor_exceedance_is_recorded_once_with_air_inter_limits()
     {
         var monitor = new FlightDataMonitor();
@@ -221,7 +264,8 @@ public sealed class FlightDataMonitoringTests
         double vs,
         double? bank,
         bool gearDown,
-        double flaps) =>
+        double flaps,
+        double ias = 145) =>
         new(
             Guid.NewGuid(),
             time,
@@ -229,7 +273,7 @@ public sealed class FlightDataMonitoringTests
             Longitude: 2.3,
             AltitudeMslFeet: agl + 300,
             AltitudeAglFeet: agl,
-            IndicatedAirspeedKnots: 145,
+            IndicatedAirspeedKnots: ias,
             GroundSpeedKnots: 150,
             VerticalSpeedFeetPerMinute: vs,
             HeadingDegrees: 180,
