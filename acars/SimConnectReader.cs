@@ -38,6 +38,7 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
     private const int RecvIdCommBus = 44;
     private const uint EfbRequestEventId = 2001;
     private const uint CommBusBroadcastJs = 1 << 0;
+    private const string CommBusOptInEnvironmentVariable = "HERMES_MSFS2024_COMMBUS";
 
     private IntPtr handle; private readonly Dispatch callback;
     private string? aircraftTitle;
@@ -100,7 +101,12 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
                 TrySubscribeSystemEvent(PauseEventId, "Pause_EX1");
                 TrySubscribeSystemEvent(SimStopEventId, "SimStop");
                 TrySubscribeSystemEvent(SimStartEventId, "SimStart");
-                TryEnableCommBus();
+                // CommBus is intentionally opt-in while the native MSFS 2024 bridge
+                // is being flight-tested. Hermès must never expose every pilot to a
+                // fresh unmanaged SimConnect surface that is unrelated to core ACARS
+                // telemetry. Set HERMES_MSFS2024_COMMBUS=1 only for controlled EFB tests.
+                if (ExperimentalCommBusEnabled) TryEnableCommBus();
+                else CommBusAvailable = false;
                 Status="MSFS détecté";
             }
             Marshal.ThrowExceptionForHR(SimConnect_CallDispatch(handle,callback,IntPtr.Zero));
@@ -174,6 +180,19 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
             ? "Connecté à MSFS — simulation en pause"
             : "Connecté à MSFS";
         Received?.Invoke(Latest); SnapshotReceived?.Invoke(LatestSnapshot);
+    }
+
+    public bool CommBusOptedIn => ExperimentalCommBusEnabled;
+
+    private static bool ExperimentalCommBusEnabled
+    {
+        get
+        {
+            var value = Environment.GetEnvironmentVariable(CommBusOptInEnvironmentVariable);
+            return string.Equals(value, "1", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     private void TryEnableCommBus()

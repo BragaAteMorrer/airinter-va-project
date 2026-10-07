@@ -39,24 +39,42 @@ public sealed class SimulatorConnectorHub(params ISimulatorConnector[] connector
 
     public void Poll()
     {
-        foreach (var connector in connectors) connector.Poll();
-
-        if (Active is not null && !IsHealthy(Active)) {
-            lastActiveDescriptor = Active.Descriptor;
-            Active = null;
-            latestAdaptedSnapshot = null;
-            TemporarilyLost = true;
-            LostAt ??= DateTimeOffset.UtcNow;
+        // Keep exactly one simulator transport hot once a connector has been
+        // selected. In particular, do not keep both SimConnect and the FSUIPC7
+        // fallback polling MSFS for the whole flight. Besides wasting work, two
+        // native bridges touching the same simulator process make crash isolation
+        // impossible and add avoidable pressure to MSFS.
+        var activeAtStart = Active;
+        if (activeAtStart is not null) {
+            activeAtStart.Poll();
+            if (!IsHealthy(activeAtStart)) {
+                lastActiveDescriptor = activeAtStart.Descriptor;
+                try { activeAtStart.Dispose(); }
+                catch (Exception exception) { System.Diagnostics.Trace.WriteLine($"Simulator connector close failed: {exception}"); }
+                Active = null;
+                latestAdaptedSnapshot = null;
+                TemporarilyLost = true;
+                LostAt ??= DateTimeOffset.UtcNow;
+            }
         }
 
         if (Active is null) {
-            var candidate = connectors.FirstOrDefault(IsHealthy);
-            if (candidate is not null) {
-                Active = candidate;
-                lastActiveDescriptor = candidate.Descriptor;
+            foreach (var connector in connectors) {
+                // A connector which just failed above gets one tick of cooldown;
+                // this gives the next fallback a chance without immediately
+                // reopening the same native session twice in one dispatcher pass.
+                if (ReferenceEquals(connector, activeAtStart)) continue;
+
+                connector.Poll();
+                if (!IsHealthy(connector)) continue;
+
+                Active = connector;
+                lastActiveDescriptor = connector.Descriptor;
                 if (TemporarilyLost) RecoveredAt = DateTimeOffset.UtcNow;
                 TemporarilyLost = false;
                 LostAt = null;
+                ReleaseInactiveConnectors(connector);
+                break;
             }
         }
 
@@ -65,6 +83,15 @@ public sealed class SimulatorConnectorHub(params ISimulatorConnector[] connector
             latestAdaptedSnapshot = adapted.Snapshot;
             AircraftCapabilities = adapted.Report;
             SnapshotReceived?.Invoke(adapted.Snapshot);
+        }
+    }
+
+    private void ReleaseInactiveConnectors(ISimulatorConnector selected)
+    {
+        foreach (var connector in connectors) {
+            if (ReferenceEquals(connector, selected)) continue;
+            try { connector.Dispose(); }
+            catch (Exception exception) { System.Diagnostics.Trace.WriteLine($"Simulator standby close failed: {exception}"); }
         }
     }
 
