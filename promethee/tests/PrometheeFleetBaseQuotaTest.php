@@ -34,7 +34,7 @@ final class PrometheeFleetBaseQuotaTest extends TestCase
         $aircraft->update([
             'hub_id' => 'LFPO',
             'airport_id' => 'LFMN',
-            'landing_time' => now()->subDays(4),
+            'landing_time' => now()->subDays(5),
         ]);
 
         DB::table('promethee_aircraft_bases')->updateOrInsert(
@@ -42,7 +42,7 @@ final class PrometheeFleetBaseQuotaTest extends TestCase
             [
                 'base_airport_id' => 'LFPO',
                 'assigned_at' => now()->subDays(30),
-                'away_since' => now()->subDays(4),
+                'away_since' => now()->subDays(5),
                 'repatriation_mission_id' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
