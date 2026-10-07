@@ -68,6 +68,9 @@
     <div class="admin-detail-panel" data-detail-panel="regional-sites-panel"><div class="two-columns admin-workspace-grid">
   <section class="panel admin-workspace-section" id="regional-rules">
     <div class="panel-heading"><div><span class="eyebrow">RAPATRIEMENT</span><h2>Règles automatiques</h2></div></div>
+    <div class="hint">
+      <strong>Fenêtre pilote protégée :</strong> un appareil hors de sa base depuis 5 jours ou moins reste attribué à sa base Excel et ne déclenche aucun rapatriement, même lors d’une synchronisation forcée. À partir du 6e jour, il redevient éligible au processus régional normal.
+    </div>
     <form method="post" action="{{ route('admin.promethee.regional.settings') }}" class="form-grid">
       @csrf
       <label>Créer une mission après
@@ -109,7 +112,7 @@
 </div></div>
     <div class="admin-detail-panel" data-detail-panel="regional-rotation-panel" hidden><section class="panel admin-workspace-section" id="regional-rotation">
   <div class="panel-heading regional-aircraft-heading">
-    <div><span class="eyebrow">ROTATION FLOTTE</span><h2>Faire tourner les immatriculations entre bases</h2><p>Seuls les appareils stationnés dans leur propre base, parkés, non réservés et sans mission/PIREP/maintenance en cours sont éligibles. Les permutations se font uniquement entre appareils de la même sous-flotte.</p></div>
+    <div><span class="eyebrow">ROTATION FLOTTE</span><h2>Faire tourner les immatriculations entre bases</h2><p>Seuls les appareils stationnés dans leur propre base, parkés, non réservés et sans mission/PIREP/maintenance en cours sont éligibles. Les permutations se font uniquement entre appareils de la même sous-flotte et ne peuvent jamais modifier les quotas de base définis par l’Excel.</p></div>
     <form method="post" action="{{ route('admin.promethee.regional.rotation.run') }}" class="inline-form" onsubmit="return confirm('Lancer maintenant une rotation forcée des appareils actuellement éligibles ?');">
       @csrf
       <button type="submit" class="outline">Lancer une rotation maintenant</button>
@@ -186,6 +189,65 @@
       <button type="submit" class="outline">Générer les rapatriements maintenant</button>
     </form>
   </div>
+
+  @if(($quotaOverview['available'] ?? false))
+  <div class="hint">
+    <strong>Répartition Excel verrouillée :</strong>
+    {{ $quotaOverview['target_total'] }} appareils de référence.
+    Les sorties pilote de {{ $quotaOverview['grace_days'] }} jours ou moins restent neutralisées dans le calcul opérationnel ; au-delà, elles apparaissent comme hors-base actionnables.
+  </div>
+
+  <div class="regional-aircraft-tools" aria-label="Synthèse quotas de base">
+    @foreach($quotaOverview['base_totals'] as $baseTotal)
+      <span class="tag">
+        {{ $baseTotal['base'] }}
+        · {{ $baseTotal['assigned'] }}/{{ $baseTotal['target'] }} affectés
+        @if($baseTotal['protected_away'] > 0) · {{ $baseTotal['protected_away'] }} protégé(s) ≤5j @endif
+        @if($baseTotal['actionable_away'] > 0) · {{ $baseTotal['actionable_away'] }} hors base >5j @endif
+      </span>
+    @endforeach
+  </div>
+
+  <div class="table-wrap admin-table-scroll" style="margin-bottom:1rem">
+    <table>
+      <thead>
+        <tr>
+          <th>Compagnie</th><th>Type</th><th>Flotte</th>
+          @foreach(['LFPO','LFMN','LFLL','LFML','LFBO','LFBD'] as $quotaBase)<th>{{ $quotaBase }}</th>@endforeach
+          <th>État</th>
+        </tr>
+      </thead>
+      <tbody>
+        @foreach($quotaOverview['groups'] as $quotaGroup)
+          <tr>
+            <td><strong>{{ $quotaGroup['airline'] }}</strong></td>
+            <td>{{ $quotaGroup['type'] }}</td>
+            <td>{{ $quotaGroup['fleet_total'] }}/{{ $quotaGroup['target_total'] }}</td>
+            @foreach(['LFPO','LFMN','LFLL','LFML','LFBO','LFBD'] as $quotaBase)
+              @php($cell = $quotaGroup['bases'][$quotaBase] ?? ['assigned'=>0,'target'=>0,'protected_away'=>0,'actionable_away'=>0])
+              <td>
+                <strong>{{ $cell['assigned'] }}/{{ $cell['target'] }}</strong>
+                @if($cell['protected_away'] > 0)<small> · {{ $cell['protected_away'] }} pilote ≤5j</small>@endif
+                @if($cell['actionable_away'] > 0)<small> · {{ $cell['actionable_away'] }} &gt;5j</small>@endif
+              </td>
+            @endforeach
+            <td>
+              @if(!$quotaGroup['fleet_size_ok'])
+                <span class="tag">FLOTTE ≠ EXCEL</span>
+              @elseif(!$quotaGroup['assignment_ok'])
+                <span class="tag">À RÉCONCILIER</span>
+              @elseif($quotaGroup['actionable_away'] > 0)
+                <span class="tag">HORS BASE &gt;5J</span>
+              @else
+                <span class="tag">OK</span>
+              @endif
+            </td>
+          </tr>
+        @endforeach
+      </tbody>
+    </table>
+  </div>
+  @endif
 
   <div class="regional-aircraft-tools" data-aircraft-tools>
     <label>Recherche

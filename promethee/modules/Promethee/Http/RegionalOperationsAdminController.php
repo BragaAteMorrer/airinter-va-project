@@ -16,12 +16,12 @@ use App\Services\FileService;
 use App\Services\UserService;
 use App\Support\Money;
 use App\Support\Countries;
-use Modules\Promethee\Services\{AirframeMaintenanceService,BrandingService,BulletinService,CompanyAccessService,DemandProfileService,EconomyFareResolver,EconomyService,EngineMaintenanceService,FleetRotationService,FlightOpsService,LegacyPirepScoringService,OperationalWeatherService,PilotPirepDeletionService,PirepJournalService,RegionalOperationsService,SafetyAnalyzer};
+use Modules\Promethee\Services\{AirframeMaintenanceService,BrandingService,BulletinService,CompanyAccessService,DemandProfileService,EconomyFareResolver,EconomyService,EngineMaintenanceService,FleetBaseQuotaService,FleetRotationService,FlightOpsService,LegacyPirepScoringService,OperationalWeatherService,PilotPirepDeletionService,PirepJournalService,RegionalOperationsService,SafetyAnalyzer};
 
 
 class RegionalOperationsAdminController extends PrometheeWebController
 {
-public function regionalOperations(Request $r, RegionalOperationsService $operations, FleetRotationService $rotation) {
+public function regionalOperations(Request $r, RegionalOperationsService $operations, FleetRotationService $rotation, FleetBaseQuotaService $quota) {
         $operations->sync();
         $bases = DB::table('promethee_operational_bases as base')
             ->leftJoin('airports', 'airports.id', '=', 'base.airport_id')
@@ -36,6 +36,7 @@ public function regionalOperations(Request $r, RegionalOperationsService $operat
         $assignments = DB::table('promethee_aircraft_bases')->get()->keyBy('aircraft_id');
         $settings = $operations->settings();
         $rotationSettings = $rotation->settings();
+        $quotaOverview = $quota->overview();
         $rotationLog = Schema::hasTable('promethee_fleet_rotation_log')
             ? DB::table('promethee_fleet_rotation_log as rotation')
                 ->join('aircraft as first_aircraft', 'first_aircraft.id', '=', 'rotation.first_aircraft_id')
@@ -43,7 +44,7 @@ public function regionalOperations(Request $r, RegionalOperationsService $operat
                 ->select('rotation.*', 'first_aircraft.registration as first_registration', 'second_aircraft.registration as second_registration')
                 ->latest('rotation.rotated_at')->limit(20)->get()
             : collect();
-        return $this->page('admin-regional-operations', compact('bases','aircraft','assignments','settings','rotationSettings','rotationLog'));
+        return $this->page('admin-regional-operations', compact('bases','aircraft','assignments','settings','rotationSettings','rotationLog','quotaOverview'));
     }
 
 public function saveRegionalOperations(Request $r) {
@@ -122,12 +123,19 @@ public function saveRegionalBase(Request $r) {
         return back()->with('success','Rôles et capacités de maintenance enregistrés.');
     }
 
-public function assignAircraftBase(Request $r) {
+public function assignAircraftBase(Request $r, FleetBaseQuotaService $quota) {
         $data=$r->validate(['aircraft_id'=>'required|integer|exists:aircraft,id','base_airport_id'=>'required|string|max:8|exists:promethee_operational_bases,airport_id','rotation_locked'=>'nullable|boolean']);
         $aircraft=Aircraft::findOrFail($data['aircraft_id']);
         $assignment=DB::table('promethee_aircraft_bases')->where('aircraft_id',$aircraft->id)->first();
         $newBase=strtoupper($data['base_airport_id']);
         $baseChanged=!$assignment || strtoupper((string)$assignment->base_airport_id) !== $newBase;
+
+        if ($baseChanged) {
+            $decision=$quota->assignmentDecision($aircraft,$newBase);
+            if (!$decision['allowed']) {
+                return back()->withErrors(['base_airport_id'=>$decision['message']])->withInput();
+            }
+        }
 
         $values=[
             'base_airport_id'=>$newBase,
@@ -162,7 +170,8 @@ public function syncRegionalRepatriations(RegionalOperationsService $operations)
             'success',
             $result['created'].' mission(s) de rapatriement créée(s), '
             .$result['cleared'].' situation(s) régularisée(s), '
-            .$result['returned'].' retour(s) automatique(s).'
+            .$result['returned'].' retour(s) automatique(s), '
+            .($result['quota_reconciled'] ?? 0).' affectation(s) remise(s) au quota Excel.'
         );
     }
 

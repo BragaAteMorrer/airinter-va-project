@@ -237,6 +237,10 @@ jobs:
           php -l modules/Promethee/Http/AutomationController.php
           php -l modules/Promethee/Services/EngineMaintenanceService.php
           php -l modules/Promethee/Services/FleetRotationService.php
+          php -l modules/Promethee/Services/FleetBaseQuotaService.php
+          php -l modules/Promethee/Services/RegionalOperationsService.php
+          php -l modules/Promethee/Database/migrations/2026_10_07_233900_add_strict_fleet_base_targets.php
+          php -l tests/PrometheeFleetBaseQuotaTest.php
           php -l modules/Promethee/Listeners/EngineMaintenanceEventListener.php
           php -l modules/Promethee/Console/RotateFleetCommand.php
           php -l modules/Promethee/Database/migrations/2026_10_02_000023_add_engine_maintenance_and_fleet_rotation.php
@@ -378,6 +382,8 @@ jobs:
         run: vendor/bin/phpunit tests/AircraftConfigurationResolverTest.php
       - name: Run airframe maintenance and fleet rotation tests
         run: vendor/bin/phpunit tests/PrometheeAirframeMaintenanceTest.php
+      - name: Run strict fleet base quota tests
+        run: vendor/bin/phpunit tests/PrometheeFleetBaseQuotaTest.php
       - name: Run fleet transfer admin tests
         run: vendor/bin/phpunit tests/FleetTransferAdminTest.php
 
