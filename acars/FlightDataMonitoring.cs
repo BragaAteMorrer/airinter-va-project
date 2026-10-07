@@ -56,6 +56,10 @@ public sealed class FlightDataMonitor
     private const double LoadFactorNegativeLimit = -1.0;
     private const double LoadFactorMaintenancePositiveLimit = 2.9;
     private const double LoadFactorMaintenanceNegativeLimit = -1.2;
+    private const double SpeedUnder10kLimitKnots = 255;
+    private const double SpeedUnder10kAltitudeFeet = 10000;
+    private static readonly TimeSpan SpeedUnder10kViolationDuration = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan SpeedUnder10kMaxSampleGap = TimeSpan.FromSeconds(2.5);
 
     private AircraftSnapshot? previous;
     private bool approach1000Recorded;
@@ -78,6 +82,11 @@ public sealed class FlightDataMonitor
     private string? approachDescentPhase;
     private bool loadFactorExceededReported;
     private bool loadFactorMaintenanceReported;
+    private bool speedUnder10kSegment;
+    private bool speedUnder10kReported;
+    private DateTimeOffset speedUnder10kStartedAt;
+    private double speedUnder10kPeak;
+    private string? speedUnder10kPhase;
 
     public void Reset()
     {
@@ -102,6 +111,11 @@ public sealed class FlightDataMonitor
         approachDescentPhase = null;
         loadFactorExceededReported = false;
         loadFactorMaintenanceReported = false;
+        speedUnder10kSegment = false;
+        speedUnder10kReported = false;
+        speedUnder10kStartedAt = default;
+        speedUnder10kPeak = 0;
+        speedUnder10kPhase = null;
     }
 
     public void Restore(IEnumerable<FdmObservation>? existing)
@@ -128,6 +142,7 @@ public sealed class FlightDataMonitor
         RecordApproachGate(current, phase, 500, 1000, ref approach500Recorded, result);
         RecordStabilizedApproachDescentRate(current, phase, result);
         RecordLoadFactor(current, phase, result);
+        RecordSpeedUnder10k(current, phase, result);
         RecordBankExcursion(current, phase, result);
         RecordFlightEvents(flightEvents, phase, result);
 
@@ -146,6 +161,8 @@ public sealed class FlightDataMonitor
             ClosePause(current, result);
         if (approachDescentSegment && current is not null)
             CloseStabilizedApproachDescentRate(current, result);
+        if (speedUnder10kSegment && current is not null)
+            CloseSpeedUnder10k(current, result);
         return result;
     }
 
@@ -380,6 +397,84 @@ public sealed class FlightDataMonitor
             "ft/min",
             approachDescentPhase,
             "UNSTABLE"));
+    }
+
+
+    private void RecordSpeedUnder10k(
+        AircraftSnapshot current,
+        FlightPhase phase,
+        List<FdmObservation> result)
+    {
+        if (speedUnder10kSegment
+            && previous is not null
+            && current.RecordedAt - previous.RecordedAt > SpeedUnder10kMaxSampleGap)
+            ResetSpeedUnder10k();
+
+        var altitude = current.AltitudeMslFeet;
+        var indicatedAirspeed = current.IndicatedAirspeedKnots;
+        var violating = current.OnGround == false
+            && current.Paused != true
+            && altitude is not null
+            && altitude.Value < SpeedUnder10kAltitudeFeet
+            && indicatedAirspeed is not null
+            && indicatedAirspeed.Value > SpeedUnder10kLimitKnots;
+
+        if (!violating)
+        {
+            if (speedUnder10kSegment)
+                CloseSpeedUnder10k(current, result);
+            return;
+        }
+
+        if (!speedUnder10kSegment)
+        {
+            speedUnder10kSegment = true;
+            speedUnder10kReported = false;
+            speedUnder10kStartedAt = current.RecordedAt;
+            speedUnder10kPeak = indicatedAirspeed!.Value;
+            speedUnder10kPhase = FlightTrackingEngine.ToExternalPhase(phase);
+            return;
+        }
+
+        speedUnder10kPeak = Math.Max(speedUnder10kPeak, indicatedAirspeed!.Value);
+        if (!speedUnder10kReported
+            && current.RecordedAt - speedUnder10kStartedAt >= SpeedUnder10kViolationDuration)
+        {
+            AddSpeedUnder10kObservation(result);
+            speedUnder10kReported = true;
+        }
+    }
+
+    private void CloseSpeedUnder10k(AircraftSnapshot current, List<FdmObservation> result)
+    {
+        if (!speedUnder10kReported
+            && current.RecordedAt - speedUnder10kStartedAt >= SpeedUnder10kViolationDuration)
+            AddSpeedUnder10kObservation(result);
+
+        ResetSpeedUnder10k();
+    }
+
+    private void ResetSpeedUnder10k()
+    {
+        speedUnder10kSegment = false;
+        speedUnder10kReported = false;
+        speedUnder10kStartedAt = default;
+        speedUnder10kPeak = 0;
+        speedUnder10kPhase = null;
+    }
+
+    private void AddSpeedUnder10kObservation(List<FdmObservation> result)
+    {
+        result.Add(new(
+            "SPEED_UNDER_10K",
+            "speed",
+            speedUnder10kStartedAt,
+            $"Survitesse sous 10 000 ft : IAS supérieure à {SpeedUnder10kLimitKnots:0} kt pendant au moins {SpeedUnder10kViolationDuration.TotalSeconds:0} s (pic {speedUnder10kPeak:0.0} kt).",
+            "attention",
+            Math.Round(speedUnder10kPeak, 1),
+            "kt",
+            speedUnder10kPhase,
+            "EXCEEDED"));
     }
 
 
