@@ -223,6 +223,46 @@ public sealed class FlightDataMonitoringTests
     }
 
     [Fact]
+    public void Takeoff_roll_is_excluded_from_taxi_speed_peak()
+    {
+        var monitor = new FlightDataMonitor();
+        var t = DateTimeOffset.Parse("2026-10-07T10:15:30Z");
+
+        monitor.Process(GroundSnapshot(t, 3), FlightPhase.Pushback, []);
+        monitor.Process(GroundSnapshot(t.AddSeconds(4), 8), FlightPhase.TaxiOut, []);
+        monitor.Process(GroundSnapshot(t.AddSeconds(8), 8), FlightPhase.TaxiOut, []);
+        monitor.Process(GroundSnapshot(t.AddSeconds(9), 15), FlightPhase.TaxiOut, []);
+        monitor.Process(GroundSnapshot(t.AddSeconds(10), 25.1), FlightPhase.TaxiOut, []);
+
+        var observations = monitor.Process(
+            GroundSnapshot(t.AddSeconds(11), 35),
+            FlightPhase.Takeoff,
+            [new FlightEvent("TAKEOFF", t.AddSeconds(11), GroundSnapshot(t.AddSeconds(11), 35))]);
+
+        var taxi = Assert.Single(observations, x => x.Code == "TAXI_SPEED_MAX");
+        Assert.Equal(8d, taxi.Value);
+        Assert.Equal("TAXI_OUT", taxi.Phase);
+        Assert.Equal(t.AddSeconds(4), taxi.OccurredAt);
+    }
+
+    [Fact]
+    public void Taxi_speed_peak_is_not_trimmed_when_segment_does_not_end_in_takeoff()
+    {
+        var monitor = new FlightDataMonitor();
+        var t = DateTimeOffset.Parse("2026-10-07T11:10:00Z");
+
+        monitor.Process(GroundSnapshot(t, 8), FlightPhase.TaxiIn, []);
+        monitor.Process(GroundSnapshot(t.AddSeconds(1), 25.1), FlightPhase.TaxiIn, []);
+
+        var observations = monitor.Flush(GroundSnapshot(t.AddSeconds(2), 0), FlightPhase.TaxiIn);
+
+        var taxi = Assert.Single(observations, x => x.Code == "TAXI_SPEED_MAX");
+        Assert.Equal(25.1d, taxi.Value);
+        Assert.Equal("TAXI_IN", taxi.Phase);
+        Assert.Equal(t.AddSeconds(1), taxi.OccurredAt);
+    }
+
+    [Fact]
     public void Pause_segment_is_recorded_with_kind_and_duration()
     {
         var monitor = new FlightDataMonitor();
@@ -257,6 +297,25 @@ public sealed class FlightDataMonitoringTests
 
         Assert.DoesNotContain(after, x => x.Code.StartsWith("APPROACH_1000_", StringComparison.Ordinal));
     }
+
+    private static AircraftSnapshot GroundSnapshot(DateTimeOffset time, double groundSpeed) =>
+        new(
+            Guid.NewGuid(),
+            time,
+            Latitude: 46.22,
+            Longitude: 7.33,
+            AltitudeMslFeet: 1581,
+            AltitudeAglFeet: 6.5,
+            IndicatedAirspeedKnots: Math.Max(0, groundSpeed - 5),
+            GroundSpeedKnots: groundSpeed,
+            VerticalSpeedFeetPerMinute: 0,
+            HeadingDegrees: 252,
+            FuelWeight: 9800,
+            OnGround: true,
+            ParkingBrake: false,
+            GearDown: true,
+            FlapsPercent: 0,
+            BankDegrees: 0);
 
     private static AircraftSnapshot Snapshot(
         DateTimeOffset time,
