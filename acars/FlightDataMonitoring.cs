@@ -447,8 +447,12 @@ public sealed class FlightDataMonitor
 
     private void CloseSpeedUnder10k(AircraftSnapshot current, List<FdmObservation> result)
     {
+        // When the current sample is already back within limits, only the last
+        // violating sample belongs to the excursion. This avoids turning a
+        // 9.x-second overspeed into a 10-second penalty because of sample timing.
+        var lastViolatingAt = previous?.RecordedAt ?? current.RecordedAt;
         if (!speedUnder10kReported
-            && current.RecordedAt - speedUnder10kStartedAt >= SpeedUnder10kViolationDuration)
+            && lastViolatingAt - speedUnder10kStartedAt >= SpeedUnder10kViolationDuration)
             AddSpeedUnder10kObservation(result);
 
         ResetSpeedUnder10k();
