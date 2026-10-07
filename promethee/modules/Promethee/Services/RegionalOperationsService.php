@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 
 class RegionalOperationsService
 {
-    public function __construct(private readonly UserService $userService) {}
+    public function __construct(\n        private readonly UserService $userService,\n        private readonly FleetBaseQuotaService $baseQuotas,\n    ) {}
 
     public function settings(): array
     {
@@ -137,7 +137,7 @@ class RegionalOperationsService
             }
         }
 
-        return compact('created', 'returned', 'cleared');
+        return compact('created', 'returned', 'cleared') + [\n            'quota_reconciled' => (int) ($quota['moved'] ?? 0),\n            'quota_blocked_groups' => (int) ($quota['blocked_groups'] ?? 0),\n            'quota_fleet_mismatch_groups' => (int) ($quota['fleet_mismatch_groups'] ?? 0),\n        ];
     }
 
     public function decorateMissionsForPilot(Collection $missions, User $user): Collection
