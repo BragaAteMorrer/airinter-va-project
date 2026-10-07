@@ -1490,6 +1490,7 @@ class PortalController extends PrometheeWebController
             'airline_id'=>'required|integer|exists:airlines,id',
             'rank_id'=>'nullable|integer|exists:ranks,id',
             'home_airport_id'=>'nullable|string|exists:airports,id',
+            'curr_airport_id'=>'nullable|string|exists:airports,id',
             'country'=>'nullable|string|size:2',
             'state'=>'required|integer|in:0,1,2,3,4',
             'transfer_hours'=>'nullable|numeric|min:0|max:100000',
