@@ -107,7 +107,7 @@
               </div>
             </td>
             <td><span class="admin-status-badge {{ $stateTones[$pilot->state] ?? 'muted' }}">{{ $stateLabels[$pilot->state] ?? 'Inconnu' }}</span>@if(!$pilot->email_verified_at)<small class="admin-inline-alert">e-mail non vérifié</small>@endif</td>
-            <td><strong>{{ $pilot->airline?->icao ?: '—' }} · {{ $pilot->rank?->name ?: 'Sans grade' }}</strong><small>{{ $pilot->home_airport_id ?: 'Sans base' }}@if($pilot->country) · {{ strtoupper($pilot->country) }}@endif</small></td>
+            <td><strong>{{ $pilot->airline?->icao ?: '—' }} · {{ $pilot->rank?->name ?: 'Sans grade' }}</strong><small>Base {{ $pilot->home_airport?->icao ?: $pilot->home_airport_id ?: '—' }} · Position {{ $pilot->current_airport?->icao ?: $pilot->curr_airport_id ?: '—' }}@if($pilot->country) · {{ strtoupper($pilot->country) }}@endif</small></td>
             <td><strong>{{ number_format($minutes/60,1,',',' ') }} h · {{ $pilot->flights ?: $pilot->pireps_count }} vols</strong><small>@if($lastActivity) Dernière activité {{ $lastActivity->diffForHumans() }} @else Aucune activité enregistrée @endif</small></td>
             <td><strong>{{ $pilot->typeratings_count }} qualification(s)</strong><small>{{ $pilot->awards_count }} badge(s) · {{ $pilot->pireps_count }} PIREP(s)</small></td>
             <td>

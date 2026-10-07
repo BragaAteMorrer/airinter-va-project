@@ -50,7 +50,8 @@
           <legend>Affectation compagnie</legend>
           <div class="form-grid">
             <label>Compagnie<select name="airline_id" required>@foreach($airlines as $airline)<option value="{{ $airline->id }}" @selected((string)old('airline_id',$pilot->airline_id)===(string)$airline->id)>{{ $airline->icao }} · {{ $airline->name }}</option>@endforeach</select></label>
-            <label class="wide">Base<select name="home_airport_id"><option value="">— Sans base —</option>@foreach($airports as $airport)<option value="{{ $airport->id }}" @selected((string)old('home_airport_id',$pilot->home_airport_id)===(string)$airport->id)>{{ $airport->icao ?: $airport->iata ?: $airport->id }} · {{ $airport->name }}</option>@endforeach</select></label>
+            <label>Base<select name="home_airport_id"><option value="">— Sans base —</option>@foreach($airports as $airport)<option value="{{ $airport->id }}" @selected((string)old('home_airport_id',$pilot->home_airport_id)===(string)$airport->id)>{{ $airport->icao ?: $airport->iata ?: $airport->id }} · {{ $airport->name }}</option>@endforeach</select></label>
+            <label>Position actuelle<select name="curr_airport_id"><option value="">— Position inconnue —</option>@foreach($airports as $airport)<option value="{{ $airport->id }}" @selected((string)old('curr_airport_id',$pilot->curr_airport_id)===(string)$airport->id)>{{ $airport->icao ?: $airport->iata ?: $airport->id }} · {{ $airport->name }}</option>@endforeach</select><small>Position opérationnelle utilisée pour les vols disponibles et les déplacements du pilote.</small></label>
             <label>Pays<select name="country"><option value="">—</option>@foreach($countries as $code=>$name)<option value="{{ $code }}" @selected(strtolower((string)old('country',$pilot->country))===strtolower((string)$code))>{{ strtoupper($code) }} · {{ $name }}</option>@endforeach</select></label>
           </div>
         </fieldset>
