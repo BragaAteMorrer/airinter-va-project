@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Schema;
 
 class FleetRotationService
 {
+    public function __construct(private readonly FleetBaseQuotaService $baseQuotas) {}
+
     public function settings(): array
     {
         $values = Schema::hasTable('promethee_settings')
@@ -58,6 +60,11 @@ class FleetRotationService
         if (!$force && !$this->isDue($settings)) {
             return ['pairs' => 0, 'aircraft' => 0, 'maintenance_priority' => 0, 'airframe_maintenance_priority' => 0, 'reason' => 'NOT_DUE'];
         }
+
+        // Rotation is only allowed on top of the reference Excel matrix.
+        // Reconciliation changes base assignments only; it never teleports a
+        // plane and it excludes pilot-protected aircraft from donor choices.
+        $this->baseQuotas->reconcileAssignments();
 
         $candidates = $this->eligibleAircraft($settings);
         if ($candidates->count() < 2 || $settings['percent'] <= 0) {
