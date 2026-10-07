@@ -14,7 +14,10 @@ use Illuminate\Support\Facades\DB;
 
 class RegionalOperationsService
 {
-    public function __construct(\n        private readonly UserService $userService,\n        private readonly FleetBaseQuotaService $baseQuotas,\n    ) {}
+    public function __construct(
+        private readonly UserService $userService,
+        private readonly FleetBaseQuotaService $baseQuotas,
+    ) {}
 
     public function settings(): array
     {
@@ -29,12 +32,14 @@ class RegionalOperationsService
             'mission_after_days' => max(1, (int) ($values['regional.repatriation_mission_after_days'] ?? 10)),
             'auto_return_after_days' => max(2, (int) ($values['regional.auto_return_after_days'] ?? 20)),
             'reward_multiplier' => max(1, (float) ($values['regional.repatriation_reward_multiplier'] ?? 2)),
+            'position_grace_days' => $this->baseQuotas->graceDays(),
         ];
     }
 
     public function sync(bool $forceMissions = false): array
     {
         $settings = $this->settings();
+        $quota = $this->baseQuotas->reconcileAssignments();
         $created = 0;
         $returned = 0;
         $cleared = 0;
@@ -87,6 +92,15 @@ class RegionalOperationsService
 
             $daysAway = $awaySince->diffInDays(now());
 
+            // A flight can legitimately leave an aircraft away from its home
+            // base while the same pilot plans the return sector a few days
+            // later. During the first five days the aircraft is completely
+            // neutralised from the regional correction/repatriation process,
+            // even when an administrator forces a sync.
+            if ($daysAway <= $settings['position_grace_days']) {
+                continue;
+            }
+
             if (($forceMissions || $daysAway >= $settings['mission_after_days']) && !$assignment->repatriation_mission_id && $current !== '') {
                 $missionId = DB::table('promethee_missions')->insertGetId([
                     'created_by' => null,
@@ -137,7 +151,11 @@ class RegionalOperationsService
             }
         }
 
-        return compact('created', 'returned', 'cleared') + [\n            'quota_reconciled' => (int) ($quota['moved'] ?? 0),\n            'quota_blocked_groups' => (int) ($quota['blocked_groups'] ?? 0),\n            'quota_fleet_mismatch_groups' => (int) ($quota['fleet_mismatch_groups'] ?? 0),\n        ];
+        return compact('created', 'returned', 'cleared') + [
+            'quota_reconciled' => (int) ($quota['moved'] ?? 0),
+            'quota_blocked_groups' => (int) ($quota['blocked_groups'] ?? 0),
+            'quota_fleet_mismatch_groups' => (int) ($quota['fleet_mismatch_groups'] ?? 0),
+        ];
     }
 
     public function decorateMissionsForPilot(Collection $missions, User $user): Collection
