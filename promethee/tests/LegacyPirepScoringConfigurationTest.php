@@ -87,6 +87,25 @@ final class LegacyPirepScoringConfigurationTest extends TestCase
         );
 
         DB::table('vmsacars_rules')->updateOrInsert(
+            ['id' => 'SPEED_UNDER_10K'],
+            [
+                'name' => 'Overspeed under 10k',
+                'description' => 'IAS above 255 kt below 10,000 ft for at least 10 continuous seconds',
+                'parameter' => null,
+                'points' => 5,
+                'enabled' => true,
+                'has_parameter' => false,
+                'repeatable' => true,
+                'delay' => 10,
+                'cooldown' => 60,
+                'order' => 75,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
+
+
+        DB::table('vmsacars_rules')->updateOrInsert(
             ['id' => 'STABILIZED_APPROACH'],
             [
                 'name' => 'Approche stabilisée · taux de descente',
@@ -119,6 +138,54 @@ final class LegacyPirepScoringConfigurationTest extends TestCase
         $this->assertTrue($taxi['repeatable']);
         $this->assertTrue($taxi['enabled']);
     }
+
+    public function test_speed_under_10k_rule_uses_255_knots_and_ten_second_grace(): void
+    {
+        $service = app(LegacyPirepScoringService::class);
+        $rule = collect($service->configurationRules())->firstWhere('id', 'SPEED_UNDER_10K');
+
+        $this->assertNotNull($rule);
+        $this->assertFalse($rule['has_parameter']);
+        $this->assertNull($rule['parameter']);
+        $this->assertSame(10, $rule['delay']);
+        $this->assertSame(5, $rule['points']);
+
+        $samples = [
+            ['recorded_at' => '2026-10-07T20:00:00Z', 'on_ground' => false, 'altitude_msl' => 9000, 'ias' => 256],
+            ['recorded_at' => '2026-10-07T20:00:09Z', 'on_ground' => false, 'altitude_msl' => 9000, 'ias' => 260],
+            ['recorded_at' => '2026-10-07T20:00:10Z', 'on_ground' => false, 'altitude_msl' => 9000, 'ias' => 261],
+        ];
+
+        $occurrences = $this->invokeMethod($service, 'speedUnder10kOccurrences', [$samples, [], 10]);
+        $this->assertCount(1, $occurrences);
+        $this->assertSame(10, $occurrences[0]['duration_seconds']);
+
+        $atLimit = [
+            ['recorded_at' => '2026-10-07T20:01:00Z', 'on_ground' => false, 'altitude_msl' => 9000, 'ias' => 255],
+            ['recorded_at' => '2026-10-07T20:01:15Z', 'on_ground' => false, 'altitude_msl' => 9000, 'ias' => 255],
+        ];
+        $this->assertSame([], $this->invokeMethod($service, 'speedUnder10kOccurrences', [$atLimit, [], 10]));
+    }
+
+    public function test_speed_under_10k_prefers_exact_hermes_fact_over_network_sampling(): void
+    {
+        $service = app(LegacyPirepScoringService::class);
+        $facts = [[
+            'code' => 'SPEED_UNDER_10K',
+            'occurred_at' => '2026-10-07T20:00:10Z',
+            'value' => 263.4,
+            'unit' => 'kt',
+            'phase' => 'CLIMB',
+        ]];
+
+        $occurrences = $this->invokeMethod($service, 'speedUnder10kOccurrences', [[], $facts, 10]);
+
+        $this->assertCount(1, $occurrences);
+        $this->assertSame('SPEED_UNDER_10K', $occurrences[0]['code']);
+        $this->assertSame(263.4, $occurrences[0]['value']);
+        $this->assertSame('hermes_fdm', $occurrences[0]['source']);
+    }
+
 
     public function test_stabilized_approach_rule_keeps_points_configurable_with_fixed_criterion(): void
     {

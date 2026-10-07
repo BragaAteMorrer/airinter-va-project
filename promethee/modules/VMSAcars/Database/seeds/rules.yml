@@ -197,12 +197,12 @@ vmsacars_rules:
       order: 72
     - id: SPEED_UNDER_10K
       name: Overspeed under 10k
-      description: "Speed of 250kts under 10,000' is exceeded"
+      description: "IAS above 255 kt below 10,000 ft for at least 10 continuous seconds"
       parameter:
       points: 5
       has_parameter: false
       repeatable: true
-      delay: 20
+      delay: 10
       cooldown: 60
       enabled: true
       order: 75

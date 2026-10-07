@@ -17,7 +17,7 @@ use Throwable;
  */
 final class LegacyPirepScoringService
 {
-    public const VERSION = 5;
+    public const VERSION = 6;
     public const STARTING_SCORE = 100;
 
     public function __construct(private readonly SopEngineService $sop) {}
@@ -378,15 +378,7 @@ final class LegacyPirepScoringService
                 $delay,
                 fn ($s) => isset($s['pitch']) ? abs((float) $s['pitch']) : null
             ),
-            'SPEED_UNDER_10K' => $this->telemetryEpisodes(
-                $samples,
-                fn ($s) => ($s['on_ground'] ?? null) === false
-                    && isset($s['altitude_msl'], $s['ias'])
-                    && (float) $s['altitude_msl'] < 10000
-                    && (float) $s['ias'] > 250,
-                $delay,
-                fn ($s) => isset($s['ias']) ? (float) $s['ias'] : null
-            ),
+            'SPEED_UNDER_10K' => $this->speedUnder10kOccurrences($samples, $facts, $delay),
             'FUEL_REFILLED' => $this->fuelRefillOccurrences($facts, $samples),
             'SIMRATE_INCREASED' => $this->simulationRateOccurrences($samples, $facts, $parameter, $delay),
             'SLEW_ACTIVATED' => $this->slewOccurrences($samples, $facts, $delay),
@@ -718,6 +710,26 @@ final class LegacyPirepScoringService
 
         return $telemetry ?? $this->factOccurrences($facts, ['SLEW']);
     }
+
+    private function speedUnder10kOccurrences(array $samples, array $facts, int $delay): array
+    {
+        // Current Hermès builds detect the 10-second continuous excursion at
+        // simulator sampling rate. Prefer that exact local fact; the 15-second
+        // network telemetry remains a compatibility fallback for older builds.
+        $localFacts = $this->factOccurrences($facts, ['SPEED_UNDER_10K']);
+        if ($localFacts !== []) return $localFacts;
+
+        return $this->telemetryEpisodes(
+            $samples,
+            fn ($sample) => ($sample['on_ground'] ?? null) === false
+                && isset($sample['altitude_msl'], $sample['ias'])
+                && (float) $sample['altitude_msl'] < 10000
+                && (float) $sample['ias'] > 255,
+            $delay,
+            fn ($sample) => isset($sample['ias']) ? (float) $sample['ias'] : null
+        );
+    }
+
 
     private function stabilizedApproach(array $facts): array
     {
