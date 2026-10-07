@@ -84,7 +84,7 @@ public sealed class FlightDataMonitoringTests
         var monitor = new FlightDataMonitor();
         var t = DateTimeOffset.Parse("2026-10-07T20:00:00Z");
 
-        for (var second = 0; second < 9; second++)
+        for (var second = 0; second <= 9; second++)
         {
             var observations = monitor.Process(
                 Snapshot(t.AddSeconds(second), 9000, 0, 0, false, 0, 257),
@@ -94,7 +94,7 @@ public sealed class FlightDataMonitoringTests
         }
 
         var recovered = monitor.Process(
-            Snapshot(t.AddSeconds(9), 9000, 0, 0, false, 0, 255),
+            Snapshot(t.AddSeconds(10.5), 9000, 0, 0, false, 0, 255),
             FlightPhase.Climb,
             []);
         Assert.DoesNotContain(recovered, x => x.Code == "SPEED_UNDER_10K");
