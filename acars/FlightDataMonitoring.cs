@@ -60,6 +60,14 @@ public sealed class FlightDataMonitor
     private const double SpeedUnder10kAltitudeFeet = 10000;
     private static readonly TimeSpan SpeedUnder10kViolationDuration = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan SpeedUnder10kMaxSampleGap = TimeSpan.FromSeconds(2.5);
+    private static readonly TimeSpan TakeoffRollLookback = TimeSpan.FromSeconds(12);
+    private static readonly TimeSpan TakeoffRollMaxSampleGap = TimeSpan.FromSeconds(5);
+    private const double TakeoffRollBacktrackAcceleration = 0.5;
+    private const double TakeoffRollCumulativeAcceleration = 1.0;
+    private const double TakeoffRollContinuationSpeed = 15;
+    private const double TakeoffRollSpeedTolerance = 2;
+
+    private sealed record TaxiSpeedSample(DateTimeOffset RecordedAt, double Speed, string Phase);
 
     private AircraftSnapshot? previous;
     private bool approach1000Recorded;
@@ -68,9 +76,7 @@ public sealed class FlightDataMonitor
     private double bankPeak;
     private DateTimeOffset bankStartedAt;
     private bool taxiSegment;
-    private double taxiPeak;
-    private DateTimeOffset taxiPeakAt;
-    private string? taxiPhase;
+    private readonly List<TaxiSpeedSample> taxiSamples = [];
     private bool pauseSegment;
     private DateTimeOffset pauseStartedAt;
     private string? pauseKind;
@@ -97,9 +103,7 @@ public sealed class FlightDataMonitor
         bankPeak = 0;
         bankStartedAt = default;
         taxiSegment = false;
-        taxiPeak = 0;
-        taxiPeakAt = default;
-        taxiPhase = null;
+        taxiSamples.Clear();
         pauseSegment = false;
         pauseStartedAt = default;
         pauseKind = null;
@@ -156,7 +160,7 @@ public sealed class FlightDataMonitor
         if (bankExcursion && current is not null)
             CloseBankExcursion(current, phase, result);
         if (taxiSegment && current is not null)
-            CloseTaxiSegment(current, result);
+            CloseTaxiSegment(current, phase, result);
         if (pauseSegment && current is not null)
             ClosePause(current, result);
         if (approachDescentSegment && current is not null)
@@ -225,38 +229,109 @@ public sealed class FlightDataMonitor
             if (!taxiSegment)
             {
                 taxiSegment = true;
-                taxiPeak = speed;
-                taxiPeakAt = current.RecordedAt;
-                taxiPhase = FlightTrackingEngine.ToExternalPhase(phase);
+                taxiSamples.Clear();
             }
-            else if (speed > taxiPeak)
-            {
-                taxiPeak = speed;
-                taxiPeakAt = current.RecordedAt;
-            }
+
+            taxiSamples.Add(new(
+                current.RecordedAt,
+                speed,
+                FlightTrackingEngine.ToExternalPhase(phase)));
             return;
         }
 
         if (taxiSegment)
-            CloseTaxiSegment(current, result);
+            CloseTaxiSegment(current, phase, result);
     }
 
-    private void CloseTaxiSegment(AircraftSnapshot current, List<FdmObservation> result)
+    private void CloseTaxiSegment(
+        AircraftSnapshot current,
+        FlightPhase exitPhase,
+        List<FdmObservation> result)
     {
+        if (taxiSamples.Count == 0)
+        {
+            ResetTaxiSegment();
+            return;
+        }
+
+        var usableCount = taxiSamples.Count;
+
+        // Only backtrack the final acceleration when TAKEOFF is detected while
+        // the aircraft is still physically on the ground. If the first TAKEOFF
+        // sample is already airborne, the boundary is too late/ambiguous and
+        // trimming would risk deleting a genuine taxi-speed excursion.
+        if (exitPhase == FlightPhase.Takeoff && current.OnGround == true)
+        {
+            var takeoffRollStart = FindTakeoffRollStart(current);
+            if (takeoffRollStart >= 0)
+                usableCount = Math.Max(1, takeoffRollStart);
+        }
+
+        var peak = taxiSamples
+            .Take(usableCount)
+            .OrderByDescending(sample => sample.Speed)
+            .ThenBy(sample => sample.RecordedAt)
+            .First();
+
         result.Add(new(
             "TAXI_SPEED_MAX",
             "ground",
-            taxiPeakAt,
-            $"Vitesse maximale observée pendant le roulage : {taxiPeak:0.0} kt.",
+            peak.RecordedAt,
+            $"Vitesse maximale observée pendant le roulage : {peak.Speed:0.0} kt.",
             "info",
-            Math.Round(taxiPeak, 1),
+            Math.Round(peak.Speed, 1),
             "kt",
-            taxiPhase));
+            peak.Phase));
 
+        ResetTaxiSegment();
+    }
+
+    private int FindTakeoffRollStart(AircraftSnapshot current)
+    {
+        if (current.GroundSpeedKnots is not { } currentSpeed || taxiSamples.Count == 0)
+            return -1;
+
+        var laterAt = current.RecordedAt;
+        var laterSpeed = currentSpeed;
+        var start = -1;
+
+        for (var index = taxiSamples.Count - 1; index >= 0; index--)
+        {
+            var sample = taxiSamples[index];
+            var age = current.RecordedAt - sample.RecordedAt;
+            if (age < TimeSpan.Zero || age > TakeoffRollLookback)
+                break;
+
+            var dt = (laterAt - sample.RecordedAt).TotalSeconds;
+            if (dt <= 0 || dt > TakeoffRollMaxSampleGap.TotalSeconds)
+                break;
+
+            if (sample.Speed > laterSpeed + TakeoffRollSpeedTolerance)
+                break;
+
+            var localAcceleration = (laterSpeed - sample.Speed) / dt;
+            var totalSeconds = Math.Max(0.001, age.TotalSeconds);
+            var cumulativeAcceleration = (currentSpeed - sample.Speed) / totalSeconds;
+            var continuesTakeoffRoll = localAcceleration >= TakeoffRollBacktrackAcceleration
+                || (start >= 0
+                    && sample.Speed >= TakeoffRollContinuationSpeed
+                    && cumulativeAcceleration >= TakeoffRollCumulativeAcceleration);
+
+            if (!continuesTakeoffRoll)
+                break;
+
+            start = index;
+            laterAt = sample.RecordedAt;
+            laterSpeed = sample.Speed;
+        }
+
+        return start;
+    }
+
+    private void ResetTaxiSegment()
+    {
         taxiSegment = false;
-        taxiPeak = 0;
-        taxiPeakAt = default;
-        taxiPhase = null;
+        taxiSamples.Clear();
     }
 
     private void RecordApproachGate(
