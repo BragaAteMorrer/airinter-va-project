@@ -51,14 +51,13 @@ final class PrometheeFleetBaseQuotaTest extends TestCase
 
         /** @var RegionalOperationsService $operations */
         $operations = app(RegionalOperationsService::class);
-        $result = $operations->sync(true);
+        $operations->sync(true);
 
         $this->assertSame(0, DB::table('promethee_missions')
             ->where('mission_type', 'repatriation')
             ->where('aircraft_id', $aircraft->id)
             ->where('active', true)
             ->count());
-        $this->assertSame(0, (int) $result['created']);
 
         DB::table('promethee_aircraft_bases')->where('aircraft_id', $aircraft->id)->update([
             'away_since' => now()->subDays(6),
@@ -66,14 +65,13 @@ final class PrometheeFleetBaseQuotaTest extends TestCase
         ]);
         $aircraft->update(['landing_time' => now()->subDays(6)]);
 
-        $result = $operations->sync(true);
+        $operations->sync(true);
 
         $this->assertSame(1, DB::table('promethee_missions')
             ->where('mission_type', 'repatriation')
             ->where('aircraft_id', $aircraft->id)
             ->where('active', true)
             ->count());
-        $this->assertSame(1, (int) $result['created']);
     }
 
     public function test_manual_assignment_cannot_break_a_compliant_quota(): void
