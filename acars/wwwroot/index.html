@@ -502,6 +502,7 @@
   </label>
   <div class="review-submit">
     <p id="reviewHint" class="hint">Le dépôt du PIREP devient disponible après l'événement IN.</p>
+    <button id="openPirepReplayBtn" type="button">▶ Replay Prométhée</button>
     <button id="submitReviewBtn" class="primary" type="button" disabled>Déposer le PIREP</button>
   </div>
   <p id="reviewMessage" class="message" hidden role="status"></p>
@@ -589,6 +590,7 @@ if ((localStorage.hermesEra || localStorage.prometheeEra || 'modern') === 'minit
 </script>
 <script src="/hermes-map.js?rev=20261003-architecture-phase4"></script>
 <script src="/hermes-review.js?rev=20261003-architecture-phase4"></script>
+<script src="/hermes-replay-link.js?rev=20261012"></script>
 <script src="/hermes-weather.js?rev=20261005-audit-lot11"></script>
 <script src="/hermes-operations.js?rev=20261005-modularization-phase2"></script>
 <script src="/hermes-communications.js?rev=20261005-modularization-phase2"></script>
