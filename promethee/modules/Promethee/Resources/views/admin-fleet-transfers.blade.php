@@ -71,7 +71,7 @@
     <a class="button outline" href="{{ route('admin.promethee.dashboard') }}">← Administration</a>
   </div>
 
-  @if($errors->any())
+  @if(isset($errors) && $errors->any())
     <section class="panel">
       <strong>Transfert refusé.</strong>
       <ul>
