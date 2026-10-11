@@ -920,3 +920,10 @@ select option:disabled{color:#8b939b}
 .shop-entitlement{display:grid;grid-template-columns:minmax(90px,.3fr) 1fr auto;align-items:center;gap:10px}
 .shop-entitlement strong{color:var(--blue);font-size:10px;text-transform:uppercase}.shop-entitlement span{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11px}.shop-entitlement small{color:var(--muted)}
 @media(max-width:680px){.hermes-shop-settings,.shop-entitlement{grid-template-columns:1fr}}
+
+/* FDM observations: disclose evidence separately from company scoring. */
+.observation details { margin-top:9px; padding:9px 12px; background:rgba(18,65,106,.055); border:1px solid rgba(18,65,106,.16); border-radius:5px; }
+.observation details summary { cursor:pointer; font-weight:700; }
+.observation .fdm-explanation { margin:9px 0; line-height:1.5; }
+.observation details small { display:block; line-height:1.5; margin-top:5px; }
+.observation .fdm-score-disclaimer { color:#657585; font-style:italic; }
