@@ -168,6 +168,8 @@ async function syncEfbContext() {
     flight_ident: displayFlightIdent(flight),
     departure: flight.departure || null,
     arrival: flight.arrival || null,
+    destination_point: flight.destination_point || null,
+    route_points: Array.isArray(flightPlan?.route_points) ? flightPlan.route_points.slice(0,400) : [],
     alternate: form?.elements?.alt_airport_id?.value || flight.alternate || null,
     route: flightPlan?.route || form?.elements?.route?.value || flight.route || null,
     aircraft_registration: selectedAircraft?.registration || null,

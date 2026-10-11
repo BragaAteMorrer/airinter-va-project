@@ -33,6 +33,8 @@ public sealed record HermesEfbContext(
     string? OfpSource,
     string? DispatchStatus,
     JsonElement? Weather,
+    JsonElement? DestinationPoint,
+    JsonElement? RoutePoints,
     DateTimeOffset UpdatedAt);
 
 /// <summary>
@@ -95,6 +97,8 @@ public sealed class HermesEfbBridge : IDisposable
                 Text(value, "ofp_source", 48),
                 Upper(value, "dispatch_status", 48),
                 Object(value, "weather", 32768),
+                Object(value, "destination_point", 1024),
+                RoutePoints(value),
                 DateTimeOffset.UtcNow);
 
             return Diagnostics();
@@ -266,4 +270,26 @@ public sealed class HermesEfbBridge : IDisposable
             throw new InvalidOperationException($"Champ EFB {name} trop volumineux.");
         return property.Clone();
     }
+    private static JsonElement? RoutePoints(JsonElement context)
+    {
+        if (!context.TryGetProperty("route_points", out var points)
+            || points.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+            return null;
+        if (points.ValueKind != JsonValueKind.Array || points.GetArrayLength() > 400
+            || points.GetRawText().Length > 40960)
+            throw new InvalidOperationException("Route EFB trop volumineuse.");
+        foreach (var point in points.EnumerateArray())
+        {
+            if (point.ValueKind != JsonValueKind.Object
+                || !point.TryGetProperty("lat", out var lat)
+                || !point.TryGetProperty("lon", out var lon)
+                || !lat.TryGetDouble(out var latitude)
+                || !lon.TryGetDouble(out var longitude)
+                || !double.IsFinite(latitude) || !double.IsFinite(longitude)
+                || Math.Abs(latitude) > 90 || Math.Abs(longitude) > 180)
+                throw new InvalidOperationException("Coordonnées de route EFB invalides.");
+        }
+        return points.Clone();
+    }
+
 }

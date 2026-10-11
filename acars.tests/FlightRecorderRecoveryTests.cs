@@ -152,6 +152,45 @@ public sealed class FlightRecorderRecoveryTests
         Assert.Single(Directory.GetFiles(Path.Combine(folder, "recovery-archive"), "abandoned-*.json"));
     }
 
+    [Fact]
+    public void Corrupted_primary_checkpoint_restores_last_valid_backup()
+    {
+        var folder = NewFolder();
+        var recorder = new FlightRecorder(folder);
+        var at = DateTimeOffset.Parse("2026-10-11T15:00:00Z");
+        recorder.Start("https://promethee.example", "pirep-backup", Ground(at), "op-backup");
+        recorder.RecordLocalOperationalEvent("PREFLIGHT_READY", at.AddSeconds(1));
+
+        Assert.True(File.Exists(Path.Combine(folder, "state.backup.json")));
+        File.WriteAllText(Path.Combine(folder, "state.json"), "{corrupt");
+
+        var restored = new FlightRecorder(folder);
+        Assert.True(restored.RecoveryAvailable);
+        Assert.Equal("pirep-backup", restored.Flight?.PirepId);
+        Assert.Equal("op-backup", restored.Flight?.OperationId);
+        Assert.Contains("secours", restored.Warning ?? "", StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void True_sensor_outage_resets_transient_detection_without_losing_the_pirep()
+    {
+        var recorder = NewRecorder();
+        var at = DateTimeOffset.Parse("2026-10-11T16:00:00Z");
+        recorder.Start("https://promethee.example", "pirep-gap", Ground(at), "op-gap");
+        recorder.Capture(Ground(at.AddSeconds(20)) with { SampleId = Guid.NewGuid(), Gs = 5, ParkingBrake = false });
+        var previousPhase = recorder.Flight?.Phase;
+
+        // Simulate a real 2-minute silence without slowing down the test suite.
+        typeof(FlightRecorder).GetField("lastCaptureWallClock",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .SetValue(recorder, DateTimeOffset.UtcNow.AddMinutes(-2));
+        recorder.Capture(Ground(at.AddMinutes(2)) with { SampleId = Guid.NewGuid(), Gs = 40, ParkingBrake = false });
+
+        Assert.Equal(previousPhase, recorder.Flight?.Phase);
+        Assert.Contains(recorder.Flight!.Journal, e => e.Name == "TELEMETRY_GAP");
+        Assert.Equal("pirep-gap", recorder.Flight.PirepId);
+    }
+
     private static string NewFolder() =>
         Path.Combine(Path.GetTempPath(), "AirInter-Hermes-Tests", Guid.NewGuid().ToString("N"));
 

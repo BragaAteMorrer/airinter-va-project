@@ -1,0 +1,18 @@
+
+.airinter-hermes-efb {
+  .efb-assistant-host { max-width:960px; margin:14px auto 0; }
+  .efb-assistant { padding:16px; background:white; border:1px solid #cad5dc; border-top:4px solid #0b5cad; }
+  .efb-assistant-header { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; }
+  .efb-assistant-kicker { font-size:11px; font-weight:800; letter-spacing:.08em; color:#0b5cad; }
+  .efb-assistant-header strong { font:800 14px Consolas,monospace; }
+  .efb-assistant-next { padding:12px; background:#eaf2fa; color:#102d47; font-size:14px; font-weight:800; }
+  .efb-assistant-hint { margin:8px 0; font-size:12px; }
+  .efb-assistant-alerts { display:grid; gap:8px; margin-top:12px; }
+  .efb-assistant-alert { border-left:4px solid #4384b4; background:#f1f6fa; padding:10px; }
+  .efb-assistant-alert.caution { border-color:#bf8019; background:#fff3da; }
+  .efb-assistant-alert strong { font-size:13px; }
+  .efb-assistant-alert p { margin:5px 0 0; font-size:12px; line-height:1.5; }
+  .efb-assistant-limit { margin:12px 0 6px; color:#526879; font-size:12px; line-height:1.5; }
+  .efb-assistant-disclaimer { color:#647789; font-size:11px; }
+  .efb-assistant-offline { border-top-color:#bf8019; }
+}
