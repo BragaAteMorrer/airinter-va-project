@@ -247,7 +247,7 @@ REQUEST_EVENT,
 JSON.stringify({ version: 1, action: "state", requestId })
 ).catch(() => {
 this.set(this.bridgeState, "Hermès non joignable");
-this.showConnectionHelp("Envoi CommBus refusé. Vérifiez la liaison SimConnect et redémarrez Hermès après MSFS 2024.");
+this.showConnectionHelp("CommBus refusé. Vérifiez SimConnect et redémarrez Hermès.");
 });
 }
 
