@@ -55,7 +55,8 @@ export class HermesFlightAssistant {
     } else if(hours>=5/60||used< -10)this.fuelBaseline={at:stamped,fuel:t.fuel};
    }else if(!this.fuelBaseline)this.fuelBaseline={at:stamped,fuel:t.fuel};
   }
-  const route=Array.isArray(c.routePoints)?c.routePoints.filter(validPoint):[];
+  const route: Array<GeoPoint & {ident?:string;altitude?:number|null}> = Array.isArray(c.routePoints)
+   ? c.routePoints.filter(point=>validPoint(point)) : [];
   const routeOffset=validPoint(position)&&route.length>=2?nearestRouteOffsetNm(position,route):null;
   if(routeOffset!==null&&s.hermesConnected&&!t.paused&&typeof t.gs==='number'&&t.gs>80){
    alerts.push({key:'route-offset',title:'Écart géographique à l’OFP',detail:routeOffset.toFixed(1)+' NM du segment SimBrief le plus proche (géométrie du plan, non trajectoire ATC).',level:routeOffset>=5?'caution':'normal'});
