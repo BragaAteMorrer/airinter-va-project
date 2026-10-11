@@ -1,7 +1,7 @@
-import { greatCircleNm, todEstimateNm, estimateArrivalFuel, validPoint, type GeoPoint } from './HermesNavigationMath';
+import { greatCircleNm, todEstimateNm, estimateArrivalFuel, nearestRouteOffsetNm, validPoint, type GeoPoint } from './HermesNavigationMath';
 /** Read-only advisory assistant. No flight-control, ATC or FDM commands. */
 export interface AssistantSnapshot {
- context?: {departure?:string|null;arrival?:string|null;alternate?:string|null;route?:string|null;flightLevel?:number|null;blockFuel?:number|null;destinationPoint?:GeoPoint|null}|null;
+ context?: {departure?:string|null;arrival?:string|null;alternate?:string|null;route?:string|null;flightLevel?:number|null;blockFuel?:number|null;destinationPoint?:(GeoPoint&{elevation_ft?:number|null})|null;routePoints?:Array<GeoPoint&{ident?:string;altitude?:number|null}>|null}|null;
  state?: {hermesConnected?:boolean;flight?:{phase?:string|null;recording?:boolean;distance?:number;fuelUsed?:number}|null;telemetry?:{recordedAt?:string|null;latitude?:number|null;longitude?:number|null;altitude?:number|null;agl?:number|null;ias?:number|null;gs?:number|null;vs?:number|null;fuel?:number|null;onGround?:boolean|null;paused?:boolean|null}|null;warning?:string|null}|null;
 }
 type Level='normal'|'caution';
@@ -55,7 +55,18 @@ export class HermesFlightAssistant {
     } else if(hours>=5/60||used< -10)this.fuelBaseline={at:stamped,fuel:t.fuel};
    }else if(!this.fuelBaseline)this.fuelBaseline={at:stamped,fuel:t.fuel};
   }
-  const tod=distance!==null&&typeof t.altitude==='number'&&validPoint(destination)?todEstimateNm(t.altitude,destination.elevationFt??0):null;
+  const route=Array.isArray(c.routePoints)?c.routePoints.filter(validPoint):[];
+  const routeOffset=validPoint(position)&&route.length>=2?nearestRouteOffsetNm(position,route):null;
+  if(routeOffset!==null&&s.hermesConnected&&!t.paused&&typeof t.gs==='number'&&t.gs>80){
+   alerts.push({key:'route-offset',title:'Écart géographique à l’OFP',detail:routeOffset.toFixed(1)+' NM du segment SimBrief le plus proche (géométrie du plan, non trajectoire ATC).',level:routeOffset>=5?'caution':'normal'});
+  }
+  const nextPoint=validPoint(position)?route
+   .map((point,index)=>({point,index,distance:greatCircleNm(position,point)}))
+   .filter(x=>x.distance<30)
+   .sort((a,b)=>a.distance-b.distance)[0]:undefined;
+  if(nextPoint&&typeof nextPoint.point.altitude==='number'&&nextPoint.point.altitude>0)
+   alerts.push({key:'nav-altitude',title:'Altitude prévue au navlog',detail:'Point '+(nextPoint.point.ident||'#'+(nextPoint.index+1))+' à '+nextPoint.distance.toFixed(0)+' NM : '+Math.round(nextPoint.point.altitude)+' ft planifiés (pas une contrainte publiée ni une clairance).',level:'normal'});
+  const tod=distance!==null&&typeof t.altitude==='number'&&validPoint(destination)?todEstimateNm(t.altitude,destination.elevation_ft??destination.elevationFt??0):null;
   const arrivalFuel=distance!==null&&typeof t.fuel==='number'&&typeof t.gs==='number'&&this.fuelRate!==null
    ?estimateArrivalFuel(t.fuel,t.gs,distance,this.fuelRate):null;
   if(distance!==null&&s.hermesConnected){
@@ -67,6 +78,7 @@ export class HermesFlightAssistant {
   }
   if(!alerts.length)alerts.push({key:'normal',title:'Aucune alerte calculable',detail:'Les données actuellement disponibles ne signalent aucune situation surveillée par cet assistant.',level:'normal'});
   this.lastAdvisories=alerts;
+  this.area.classList.remove('efb-assistant-offline');
   this.area.replaceChildren();
   const header=make('header','efb-assistant-header','');
   header.append(make('span','efb-assistant-kicker','HERMÈS · ASSISTANCE DE VOL'),make('strong','',current));
@@ -77,7 +89,7 @@ export class HermesFlightAssistant {
   const list=make('div','efb-assistant-alerts','');
   for(const alert of alerts){const item=make('article','efb-assistant-alert '+alert.level,'');item.append(make('strong','',alert.title),make('p','',alert.detail));list.append(item);}
   this.area.append(list);
-  this.area.append(make('p','efb-assistant-limit','Écarts à la route OFP et contraintes publiées non évalués : il manque une route géoréférencée et les restrictions. Les calculs de distance/TOD/carburant restent indicatifs et ne remplacent pas le FMS.'));
+  this.area.append(make('p','efb-assistant-limit','Les écarts de route ne sont calculés que si le navlog géoréférencé est présent. Les vitesses/altitudes réglementaires et restrictions ATC ne sont pas connues ; TOD et carburant restent indicatifs.'));
   this.area.append(make('small','efb-assistant-disclaimer','Aide indicative uniquement · instruments de bord, SOP et instructions ATC prioritaires.'));
  }
  checkStale(){
