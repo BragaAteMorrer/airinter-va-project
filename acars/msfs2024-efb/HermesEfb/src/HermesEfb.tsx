@@ -211,7 +211,7 @@ this.set(this.bridgeState, "Connexion Hermès…");
 this.requestState();
 } catch {
 this.set(this.bridgeState, "CommBus indisponible");
-this.showConnectionHelp("Impossible d’initialiser CommBus dans l’EFB. Redémarrez MSFS 2024 après installation du package.");
+this.showConnectionHelp("CommBus indisponible. Redémarrez MSFS 2024 après installation.");
 }
 }
 
@@ -223,10 +223,10 @@ if (this.lastStateAt && Date.now() - this.lastStateAt > 6500) {
 this.set(this.bridgeState, "Liaison Hermès interrompue");
 this.workspace?.stale();
 this.assistant?.checkStale();
-this.showConnectionHelp("Aucune télémétrie récente. Vérifiez Hermès desktop et sa connexion à MSFS 2024.");
+this.showConnectionHelp("Télémétrie périmée. Vérifiez Hermès et MSFS 2024.");
 } else if (!this.lastStateAt && this.pendingRequestAt && Date.now() - this.pendingRequestAt > 6500) {
 this.set(this.bridgeState, "Aucune réponse de Hermès");
-this.showConnectionHelp("CommBus sans réponse. Lancez Hermès, connectez le simulateur et contrôlez Diagnostics > efb.commBusAvailable.");
+this.showConnectionHelp("CommBus sans réponse. Vérifiez Hermès et efb.commBusAvailable.");
 }
 this.requestState();
 }, 1500);
