@@ -241,6 +241,20 @@ public sealed class FlightRecorder
     private void Capture(Sample s, AircraftSnapshot snapshot) { lock (Gate) {
         if (Flight is null || !Flight.Recording) return;
 
+        // A long sensor outage is not a continuous phase of flight. Reset
+        // transient detectors before evaluating the next fresh sample, while
+        // retaining previously recorded observations and the current phase.
+        if (previous is not null && (s.RecordedAt - previous.RecordedAt).TotalSeconds > 10) {
+            var gapSeconds = (s.RecordedAt - previous.RecordedAt).TotalSeconds;
+            tracking.Restore(FlightTrackingEngine.ParsePhase(Flight.Phase),
+                Flight.Journal.Any(x => x.Name == "ON"));
+            fdm.Restore(Flight.Observations);
+            Flight = Flight with { Journal = [.. Flight.Journal, new(s.RecordedAt, "TELEMETRY_GAP", Math.Round(gapSeconds))] };
+            Warning = "Interruption de télémétrie : durée, consommation et pénalités pendant cette période non évaluées.";
+            previous = null;
+            previousSnapshot = null;
+        }
+
         var pendingBefore = Pending.Count;
         var eventsBefore = PendingEvents.Count;
         var observationsBefore = Flight.Observations.Count;
