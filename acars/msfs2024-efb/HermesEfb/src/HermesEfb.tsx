@@ -12,6 +12,7 @@ TVNode,
 import { FSComponent, VNode } from "@microsoft/msfs-sdk";
 
 import "./HermesEfb.scss";
+import { HermesEfbWorkspace } from "./HermesEfbWorkspace";
 
 declare const BASE_URL: string;
 
@@ -160,6 +161,8 @@ private readonly syncTime = FSComponent.createRef<HTMLSpanElement>();
 private readonly connectionHelp = FSComponent.createRef<HTMLDivElement>();
 private readonly telemetryDetails = FSComponent.createRef<HTMLSpanElement>();
 private readonly liveIndicators = FSComponent.createRef<HTMLSpanElement>();
+private readonly tabsHost = FSComponent.createRef<HTMLDivElement>();
+private workspace?: HermesEfbWorkspace;
 
 private listener?: CommBusListener;
 private timer?: number;
@@ -169,6 +172,7 @@ private requestSequence = 0;
 
 public onAfterRender(node: VNode): void {
 super.onAfterRender(node);
+this.workspace = new HermesEfbWorkspace(this.tabsHost.instance.parentElement as HTMLElement, this.tabsHost.instance);
 this.connectBridge();
 this.startPolling();
 }
@@ -213,6 +217,7 @@ this.requestState();
 this.timer = window.setInterval(() => {
 if (this.lastStateAt && Date.now() - this.lastStateAt > 6500) {
   this.set(this.bridgeState, "Liaison Hermès interrompue");
+  this.workspace?.stale();
   this.showConnectionHelp("Aucune télémétrie récente. Vérifiez Hermès desktop et sa connexion à MSFS 2024.");
 } else if (!this.lastStateAt && this.pendingRequestAt && Date.now() - this.pendingRequestAt > 6500) {
   this.set(this.bridgeState, "Aucune réponse de Hermès");
@@ -268,6 +273,8 @@ const live = state.flight || {};
 
 this.lastStateAt = Date.now();
 this.pendingRequestAt = 0;
+this.workspace?.fresh();
+this.workspace?.update(envelope);
 this.showConnectionHelp(state.hermesConnected
 ? (!context.operationId && !context.flightIdent ? "Hermès est joignable, mais aucune opération n’est préparée. Chargez un vol depuis Hermès desktop." : "")
 : "Bridge actif, mais Hermès n’a pas de session de vol connectée.");
@@ -396,6 +403,8 @@ return (
   </section>
 
   <section class="efb-live-strip"><strong ref={this.liveIndicators}>CONNEXION EN ATTENTE</strong><span ref={this.telemetryDetails}>IAS — · GS — · VS — · HDG — · AGL —</span></section>
+
+  <div class="efb-workspace-host" ref={this.tabsHost}></div>
 
   <section class="metric-grid">
     <article><span>PHASE</span><strong ref={this.phase}>STANDBY</strong></article>
