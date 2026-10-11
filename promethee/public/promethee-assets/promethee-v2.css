@@ -53,7 +53,7 @@ main { max-width: 1680px; }
 .control-strip article:nth-child(4) { border-left-color: var(--ops-yellow); }
 .control-strip span, .control-strip small { display: block; color: var(--muted); font-size: 10px; }
 .control-strip strong { display: block; font-size: 30px; line-height: 1.25; color: var(--ink); letter-spacing: -.8px; }
-/* The movements board is the main dispatch surface; actions follow beneath it. */
+
 .dispatch-grid { display: grid; grid-template-columns: minmax(0,1fr); gap: 18px; margin-bottom: 22px; }
 .board-main { padding: 0; }
 .board-main .panel-heading { padding: 22px 24px; margin: 0; border-bottom: 1px solid var(--line); }
@@ -77,7 +77,7 @@ main { max-width: 1680px; }
 .departure-board .dispatch-flight > div { display: flex; align-items: baseline; gap: 10px; }
 .departure-board .dispatch-flight > div strong { color: #f1c928; font: inherit; letter-spacing: inherit; }
 .departure-board .dispatch-flight > div span { overflow: hidden; text-overflow: clip; color: #f3f2e9; font: inherit; letter-spacing: inherit; }
-/* Times are grid items in their DOM order (H.DÉP then H.ARR), never reordered. */
+
 .departure-board .dispatch-flight time { color: #f6cf2d; }
 .departure-board .dispatch-flight .load { display: block; width: auto; height: auto; color: #f1c928; text-align: center; }
 .departure-board .dispatch-flight > a { color: #f1c928; font-size: 11px; font-weight: 700; white-space: nowrap; }
@@ -89,7 +89,7 @@ main { max-width: 1680px; }
 .departure-board .dispatch-flight .board-cell.flight-ident { color: #f1c928; text-decoration: none; }
 .departure-board .dispatch-flight .board-cell.load { display: block; width: auto; height: auto; color: #f1c928; text-align: center; }
 
-/* Airport departure-board treatment: staggered flap rows, live scan and tactile cells. */
+
 @keyframes airport-board-row-arrival {
   from { opacity: 0; transform: translateY(10px) scaleY(.92); filter: brightness(.55); }
   65% { opacity: 1; transform: translateY(-1px) scaleY(1.02); }
@@ -135,7 +135,7 @@ html:not([data-era="minitel-legacy"]) .departure-board .dispatch-flight .duratio
 .route-board article { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; background: #f8fafc; }
 .route-board i { height: 2px; background: linear-gradient(90deg,var(--ops-blue),var(--ops-red)); }
 .route-board span { grid-column: 1/-1; color: var(--muted); font-size: 11px; }
-/* Audit UX phase 11 — flight programme progressive disclosure. */
+
 .flight-filter{margin-bottom:18px;padding:0;overflow:hidden}.flight-filter-primary{display:grid;grid-template-columns:minmax(220px,1.6fr) repeat(2,minmax(140px,.75fr)) auto;gap:12px;align-items:end;padding:18px}.flight-filter-actions{display:flex;align-items:center;gap:10px}.flight-filter-advanced{border-top:1px solid var(--line)}.flight-filter-advanced>summary{display:flex;align-items:center;gap:10px;padding:10px 18px;background:var(--paper);color:var(--ink);cursor:pointer;list-style:none}.flight-filter-advanced>summary::-webkit-details-marker{display:none}.flight-filter-advanced>summary span{color:var(--muted);font-size:10px}.flight-filter-advanced>summary b{margin-left:auto}.flight-filter-advanced-grid{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:12px;padding:14px 18px 4px}.flight-filter-advanced-actions{display:flex;justify-content:flex-end;padding:10px 18px 16px}
 .directory-filter { margin-bottom: 22px; }
 .network-map-panel { padding-bottom: 16px; }
@@ -188,7 +188,7 @@ html[data-era="minitel-legacy"] .itinerary-summary span { border-color: #285e39;
   .itinerary-leg { grid-template-columns: 28px 1fr auto; }
   .itinerary-leg-time { grid-column: 2 / -1; text-align: left; }
 }
-/* Audit UX phase 11 — scan-friendly direct-flight results. */
+
 .flight-results-panel{padding:0;overflow:hidden}.flight-results-panel>.panel-heading{margin:0;padding:18px}.flight-results-panel .table-wrap{border-top:1px solid var(--line)}.flight-results{margin:0}.flight-results th:first-child,.flight-results td:first-child{padding-left:18px}.flight-results th:last-child,.flight-results td:last-child{padding-right:18px}.flight-results td{vertical-align:middle}.flight-results td>small{display:block;margin-top:2px;color:var(--muted);font-size:9px}.flight-result-ident,.flight-result-route{color:var(--ops-dark);font-family:Consolas,monospace;font-weight:700}.flight-result-route{display:flex;gap:6px}.flight-result-route span{color:var(--muted)}.flight-equipment-list{display:flex;flex-wrap:wrap;gap:4px}.flight-equipment-list>span{padding:2px 5px;border:1px solid var(--line);border-radius:3px;font-size:9px}.flight-equipment-list em{color:var(--muted);font-size:10px;font-style:normal}.flight-result-action-cell{width:56px}
 .line-card-head { display: flex; justify-content: space-between; gap: 12px; }
 
@@ -234,17 +234,9 @@ html[data-era="minitel-legacy"] .map-airport.selected-arrival { fill: #ffbb57; }
   .map-selection a { margin-left: 0; }
     }
 
-/* --------------------------------------------------------------------------
-   Promethee visual eras
-   The portal intentionally keeps the same information architecture in every
-   era. These rules change the visual language, never the meaning or order of
-   the interface.
-   -------------------------------------------------------------------------- */
 
-/* Audit UX phase 10 — modern operational visual system.
-   Prométhée should read like an airline operations product, not a generic SaaS
-   dashboard: restrained depth, compact geometry, clear typography and blue-led
-   hierarchy. Red is reserved for warnings, destructive actions and real alerts. */
+
+
 html[data-era="modern"] {
   --ops-blue: var(--ds-action, #155cb8);
   --ops-dark: var(--ds-brand-navy, #112d48);
@@ -470,9 +462,9 @@ html[data-era="modern"] {
   outline-offset: 2px;
 }
 
-/* Audit UX phase 11 — compact shell controls. */
+
 .topbar-controls{display:flex;align-items:center;gap:6px}.theme-control-label{white-space:nowrap}[data-era="modern"] .topbar-controls{padding-left:12px;border-left:1px solid var(--line)}[data-era="modern"] .topbar-controls .theme-control{gap:4px;margin:0;font-size:9px}[data-era="modern"] .topbar-controls .theme-control select{min-height:30px;margin:0;padding:5px 7px;font-size:10px}
-/* 2000–2004: constrained portal layout, blue chrome, bevels and glossy UI. */
+
 html[data-era="2000"] {
   --paper: #aebbd0;
   --panel: #f7fbff;
@@ -620,7 +612,7 @@ html[data-era="2000"] {
   color: #173a73;
 }
 
-/* Minitel: a clear but faithful 40-column Videotex-inspired terminal. */
+
 html[data-era="minitel-legacy"] {
   --minitel-green: #f6f1c1;
   --minitel-cyan: #68e3d0;
@@ -976,7 +968,7 @@ html[data-era="minitel-legacy"] {
 [data-era="minitel-legacy"] .bulletin-header,
 [data-era="minitel-legacy"] .bulletin-footer { border-color: var(--minitel-green); }
 
-/* Fast row-by-row arrival gives the terminal an immediate Videotex feel. */
+
 @keyframes minitel-line-arrival {
   from { opacity: 0; transform: translateY(.55em); }
   to { opacity: 1; transform: translateY(0); }
@@ -1008,7 +1000,7 @@ html[data-era="minitel-legacy"] {
   [data-era="2000"] main { padding-inline: 16px; }
 }
 
-/* Physical split-flap modules. They intentionally do not inherit the site's eras. */
+
 html:not([data-era="minitel-legacy"]) .departure-board {
   border: 8px solid #303234;
   border-radius: 4px;
@@ -1047,7 +1039,7 @@ html:not([data-era="minitel-legacy"]) .departure-board .flight-stack {
 .profile-form-actions { display: flex; justify-content: flex-end; margin-top: 28px; }
 html:not([data-era="minitel-legacy"]) .departure-board .flight-stack::before,
 html:not([data-era="minitel-legacy"]) .departure-board .flight-stack::after { display: none; }
-/* One shared seven-column track definition for headings and flight rows. */
+
 html:not([data-era="minitel-legacy"]) .departure-board .split-flap-grid {
   display: grid;
   grid-template-columns: 64px minmax(138px, 1fr) 70px 84px minmax(418px, 1.7fr) 84px minmax(240px, 1.3fr);
@@ -1127,7 +1119,7 @@ html:not([data-era="minitel-legacy"]) .departure-board .dispatch-flight .board-c
 }
 @media (prefers-reduced-motion: reduce) { .split-flap-char *, .split-flap-char { animation: none !important; } }
 
-/* Airport movements layout: the logo is a dedicated physical cell, not a glyph palette. */
+
 html:not([data-era="minitel-legacy"]) .departure-board-scroll { width: 100%; max-width: 100%; overflow-x: auto; }
 html:not([data-era="minitel-legacy"]) .departure-board .flight-stack { width: max-content; min-width: 100%; }
 html:not([data-era="minitel-legacy"]) .departure-board .split-flap-grid { min-width: 1140px; }
@@ -1143,11 +1135,7 @@ html:not([data-era="minitel-legacy"]) .departure-board .status .split-flap-char 
   html:not([data-era="minitel-legacy"]) .departure-board .split-flap-grid { min-width: 1140px; }
 }
 
-/*
-   The Minitel is deliberately presented as one square terminal. The actual
-   Videotex grid remains text-led inside it; long operational pages scroll in
-   the lower screen rather than changing the terminal proportions.
-*/
+
 html[data-era="minitel-legacy"] {
   background: #010301;
 }
@@ -1250,7 +1238,7 @@ html[data-era="minitel-legacy"] {
   [data-era="minitel-legacy"] .theme-control select { font-size: 12px; }
 }
 
-/* The eight saturated Videotex colours, used as colours—not as a neon theme. */
+
 [data-era="minitel-legacy"] body {
   --minitel-black: #000000;
   --minitel-blue: #0000ff;
@@ -1357,7 +1345,7 @@ html[data-era="minitel-legacy"] {
 [data-era="minitel-legacy"] .nav-link.selected::before { color: var(--minitel-magenta); }
 [data-era="minitel-legacy"] .footer { color: var(--minitel-white); }
 
-/* Boot page: it is a real <pre>, filled line after line by promethee.js. */
+
 [data-era="minitel-legacy"] #minitel-screen {
   position: absolute;
   z-index: 20;
@@ -1384,7 +1372,7 @@ html[data-era="minitel-legacy"] {
   [data-era="minitel-legacy"] #minitel-screen { font-size: 12px; padding: 16px; }
 }
 
-/* Navigation stays reachable in every era, including long admin menus. */
+
 html[data-era="modern"] .sidebar,
 html[data-era="2000"] .sidebar {
   overflow-y: auto;
@@ -1414,7 +1402,7 @@ html[data-era="2000"] .sidebar {
 [data-era="minitel-legacy"] .sidebar nav::-webkit-scrollbar-track { background: var(--minitel-black); }
 [data-era="minitel-legacy"] .sidebar nav::-webkit-scrollbar-thumb { background: var(--minitel-green); }
 
-/* The historic Air Inter mark is a bitmap-like service logo, not terminal text. */
+
 [data-era="minitel-legacy"] .brand {
   justify-content: center;
   align-items: end;
@@ -1445,14 +1433,14 @@ html[data-era="2000"] .sidebar {
 
 [data-era="minitel-legacy"] .brand-logo-minitel::before { content: none; }
 
-/* Geospatial operational views share one real map surface. */
+
 .ops-leaflet-map { height: clamp(360px, 58vh, 620px); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #dfe9f0; }
 .ops-leaflet-map.leaflet-container { font: inherit; }
 .pirep-made-by{display:flex;align-items:center;gap:8px;margin-top:10px;color:var(--muted);font-size:10px;line-height:1;text-transform:uppercase;letter-spacing:.08em}.pirep-made-by img{display:block;width:auto;height:30px;max-width:104px;object-fit:contain;border-radius:4px}.report-heading{align-items:flex-start}.report-heading .toolbar{justify-content:flex-end;margin:0}.report-heading form{margin:0}.report-strip{grid-template-columns:repeat(4,1fr)}.route-summary{display:grid;grid-template-columns:1fr minmax(130px,.55fr) 1fr;align-items:center;gap:20px}.airport-card strong{display:block;font-size:29px;line-height:1.1;margin:8px 0}.airport-card p{margin:0 0 7px}.airport-card small{color:var(--muted);font-size:11px}.airport-card.arrival{text-align:right}.route-line{display:grid;place-items:center;text-align:center;color:var(--muted);font-size:10px}.route-line:before,.route-line:after{content:"";display:block;width:100%;height:1px;background:var(--line)}.route-line i{font-size:24px;color:var(--blue);padding:7px;transform:rotate(90deg)}.report-tabs{display:flex;gap:5px;border-bottom:1px solid var(--line);margin:28px 0 22px}.report-tabs button{appearance:none;background:transparent;color:var(--muted);border:0;border-radius:0;padding:12px 17px;font-size:12px}.report-tabs button.active{color:var(--ink);border-bottom:3px solid var(--red)}.report-tabs span{font:10px Consolas,monospace;background:#e8eef5;color:var(--ink);border-radius:9px;padding:2px 5px}.report-tab-panel[hidden]{display:none}.report-route{margin:18px 0 0;padding:13px;background:var(--paper);border-radius:5px;white-space:pre-wrap}.flight-log{max-height:620px;overflow:auto}.flight-log article{display:grid;grid-template-columns:155px 1fr;gap:15px;padding:12px 0;border-bottom:1px solid var(--line)}.flight-log article:last-child{border:0}.flight-log time{font:10px/1.6 Consolas,monospace;color:var(--blue)}.flight-log p{margin:0;color:var(--ink)}.report-details-grid{grid-template-columns:1fr 1fr}.report-list{margin:0}.report-list>div{display:grid;grid-template-columns:minmax(110px,.7fr) 1.3fr;gap:18px;padding:11px 0;border-bottom:1px solid var(--line)}.report-list>div:last-child{border-bottom:0}.report-list dt{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}.report-list dd{margin:0;overflow-wrap:anywhere}.report-list.two-up{display:grid;grid-template-columns:1fr 1fr;gap:0 25px}.report-list.two-up>div:nth-last-child(2){border-bottom:0}@media(max-width:760px){.report-strip{grid-template-columns:1fr 1fr}.route-summary{grid-template-columns:1fr;gap:14px}.airport-card.arrival{text-align:left}.route-line{display:none}.report-tabs{overflow:auto}.report-tabs button{white-space:nowrap}.flight-log article{grid-template-columns:1fr;gap:4px}.report-details-grid{grid-template-columns:1fr}.report-list.two-up{grid-template-columns:1fr}.report-list.two-up>div:nth-last-child(2){border-bottom:1px solid var(--line)}}
 .aircraft-marker { display: grid; place-items: center; width: 28px !important; height: 28px !important; color: var(--ops-red); font-size: 25px; line-height: 1; text-shadow: 0 1px 2px #fff; transform: rotate(35deg); }
 [data-era="minitel-legacy"] .ops-leaflet-map { height: 280px; border-color: var(--minitel-green); border-radius: 0; filter: grayscale(1) contrast(1.2) brightness(.62) sepia(.45) hue-rotate(62deg); }
 
-/* The split-flap departure board keeps its physical-board appearance in every display era. */
+
 html[data-era] .departure-board { margin-bottom: 22px; background: #202224; border-color: #45484b; }
 html[data-era] .departure-board .panel-heading { display: flex; background: linear-gradient(180deg,#2c2e30,#202224); }
 html[data-era] .departure-board .panel-heading h2 { display: block; padding: 0; background: transparent; color: #f7ca22; }
@@ -1475,7 +1463,7 @@ html[data-era] .departure-board .dispatch-flight .load { color: #f1c928; }
   [data-era="minitel-legacy"] .brand-logo-minitel { width: min(100%, 190px); height: 25px; }
 }
 
-/* Keep the mechanical cabinet above generic era and small-screen board rules. */
+
 html:not([data-era="minitel-legacy"]) .departure-board { background: linear-gradient(145deg, #45484a, #151617 10%, #26282a 100%); border-color: #303234; border-width: 8px; border-radius: 4px; }
 html:not([data-era="minitel-legacy"]) .departure-board .panel-heading { padding: 14px 20px; background: linear-gradient(#4b4e4f, #27292a 45%, #171819 52%, #282a2b); }
 html:not([data-era="minitel-legacy"]) .departure-board .panel-heading h2 { color: #eee9d8; }
@@ -1487,7 +1475,7 @@ html:not([data-era="minitel-legacy"]) .departure-board .dispatch-flight .board-c
   html:not([data-era="minitel-legacy"]) .departure-board .dispatch-flight > a { align-self: stretch; }
 }
 
-/* Minitel keeps the same data order; narrow screens scroll the board instead of reflowing a flight. */
+
 html[data-era="minitel-legacy"] .departure-board-scroll { width: 100%; max-width: 100%; overflow-x: auto; }
 html[data-era="minitel-legacy"] .departure-board .flight-stack { width: max-content; min-width: 100%; }
 html[data-era="minitel-legacy"] .departure-board .split-flap-grid {
@@ -1497,7 +1485,7 @@ html[data-era="minitel-legacy"] .departure-board .split-flap-grid {
   min-width: 1140px;
 }
 
-/* Beta board: city labels stay on one mechanical row. */
+
 .occ-title small{display:inline-block;margin-top:4px;font-size:9px;letter-spacing:1.25px;color:inherit}
 html:not([data-era="minitel-legacy"]) .departure-board .split-flap-grid{
   grid-template-columns:64px minmax(138px,.8fr) minmax(310px,1.35fr) 84px minmax(360px,1.55fr) 84px minmax(220px,1fr);
@@ -1516,17 +1504,14 @@ html[data-era="minitel-legacy"] .departure-board .split-flap-grid{
 .hermes-public-points span{padding:7px 10px;border:1px solid var(--line);border-radius:999px;background:#f8fafc;font-size:10px;font-weight:750}
 @media(max-width:760px){.hermes-public-showcase{grid-template-columns:1fr}}
 
-/* Flight map airline route legend */
+
 .map-legend .route-legend { width: 24px; height: 3px; display: inline-block; border-radius: 999px; margin-left: 10px; }
 .map-legend .route-legend.air-inter { background: #0b5cad; }
 .map-legend .route-legend.air-charter { background: #d92732; }
 .map-legend .route-legend.ics { background: #e0ad16; }
 
 
-/* 2026-09 OPS board density/responsiveness.
- * The former fixed-pixel tracks only occupied ~55% of a wide OCC panel.
- * Keep the historical palette counts, but let every palette share the
- * available width so the physical board fills the cabinet proportionally. */
+
 html:not([data-era="minitel-legacy"]) .departure-board .split-flap-grid {
   grid-template-columns:
     58px
@@ -1605,7 +1590,7 @@ html:not([data-era="minitel-legacy"]) .departure-board .flight-stack.board-updat
 }
 
 
-/* Passport country collection ------------------------------------------------ */
+
 .passport-stamps-panel{margin:22px 0}
 .passport-stamps-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;padding:22px 24px 14px}
 .passport-stamps-heading h2{margin:5px 0 6px}
@@ -1641,8 +1626,7 @@ html[data-appearance="dark"]:not([data-era="minitel-legacy"]) .passport-stamp.is
   .passport-stamp{height:34px}
 }
 
-/* Split-flap performance: isolate the mechanical boards from the rest of the
-   dashboard so thousands of palette glyphs cannot invalidate page-wide paint. */
+
 html:not([data-era="minitel-legacy"]) .departure-board .flight-stack {
   contain: layout paint style;
 }
@@ -1658,7 +1642,7 @@ html:not([data-era="minitel-legacy"]) .departure-board .dispatch-flight {
 }
 
 
-/* Audit UX 2026-10-02 — personal-first dashboard. */
+
 .next-operation-panel{margin-bottom:18px;border-top:4px solid var(--ops-blue);background:linear-gradient(115deg,color-mix(in srgb,var(--ops-blue) 6%,#fff),#fff 46%)}
 .next-operation-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:14px}.next-operation-heading h2{margin:3px 0 0}
 .next-operation-main{display:grid;grid-template-columns:minmax(230px,.85fr) minmax(280px,1fr) auto;align-items:center;gap:22px}
@@ -1670,7 +1654,7 @@ html[data-appearance="dark"] .next-operation-panel{background:linear-gradient(11
 @media(max-width:980px){.next-operation-main{grid-template-columns:1fr 1fr}.next-operation-actions{grid-column:1/-1;justify-content:flex-start}}@media(max-width:650px){.next-operation-heading,.next-operation-empty{display:grid}.next-operation-main{grid-template-columns:1fr}}
 
 
-/* Audit UX phase 2 — explicit pilot/OCC workspace switch. */
+
 .workspace-switch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:0 5px 14px;padding:6px;border:1px solid #ffffff24;border-radius:9px;background:#071d30}
 .workspace-switch button{display:grid;gap:2px;min-width:0;padding:8px 9px;border:1px solid transparent;border-radius:6px;background:transparent;color:#a9bdcf;text-align:left;cursor:pointer}
 .workspace-switch button span{font-size:10px;font-weight:900;letter-spacing:.08em}.workspace-switch button small{overflow:hidden;font-size:8px;color:#7892a8;text-overflow:ellipsis;white-space:nowrap}
@@ -1681,7 +1665,7 @@ html[data-appearance="dark"] .next-operation-panel{background:linear-gradient(11
 @media(max-width:1100px){.workspace-switch{grid-template-columns:1fr}.workspace-switch button small{display:none}}
 
 
-/* Audit UX: reusable pilot-operation primitives. */
+
 .operation-id {
   display: block;
   margin-top: .2rem;
@@ -1743,7 +1727,7 @@ html[data-appearance="dark"] .next-operation-panel{background:linear-gradient(11
 }
 
 
-/* Audit UX phase 8 — reusable staff master/detail workspaces. */
+
 .admin-workspace-heading{align-items:flex-start}.admin-workspace-heading p{max-width:720px;margin:4px 0 0;color:var(--muted)}
 .admin-master-detail{display:grid;grid-template-columns:minmax(260px,.82fr) minmax(360px,1.18fr);gap:18px;align-items:start}
 .admin-master-pane{min-width:0;border:1px solid var(--line);background:color-mix(in srgb,var(--paper) 94%,var(--ops-blue) 6%)}
@@ -1764,7 +1748,7 @@ html[data-appearance="dark"]:not([data-era="minitel-legacy"]) .admin-master-pane
 @media(max-width:900px){.admin-master-detail{grid-template-columns:1fr}.admin-master-list{max-height:360px}}@media(max-width:560px){.admin-detail-metrics{grid-template-columns:1fr}.admin-detail-facts div{grid-template-columns:1fr;gap:3px}}
 
 
-/* Audit UX phase 9 — exception-first OCC inbox. */
+
 .attention-inbox{margin-bottom:18px}.attention-inbox .panel-heading p{max-width:760px;margin:4px 0 0;color:var(--muted)}
 .attention-inbox-list{display:grid;border-top:1px solid var(--line)}
 .attention-item{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);color:var(--ink);text-decoration:none}
@@ -1779,10 +1763,10 @@ html[data-appearance="dark"]:not([data-era="minitel-legacy"]) .admin-master-pane
 @media(max-width:650px){.attention-item{grid-template-columns:10px 1fr}.attention-item-action{grid-column:2;justify-items:start;white-space:normal}}
 
 
-/* Audit UX phase 12 — fleet/maintenance shared details. */
+
 .airline-mark{display:block;width:48px;max-height:28px;object-fit:contain}.table-sort-link{color:inherit;text-decoration:none}.table-sort-link:hover{color:var(--ops-blue);text-decoration:none}
 
-/* Audit UX phase 11 — era adapters and responsive flight programme. */
+
 [data-era="2000"] .topbar-controls .theme-control{margin:0}[data-era="minitel-legacy"] .topbar-controls{display:contents}[data-era="minitel-legacy"] .theme-control-label{display:none}
 @media(max-width:1180px){[data-era="modern"] .theme-control-label{display:none}.flight-filter-primary{grid-template-columns:1fr 1fr}.flight-filter-primary .filter-wide{grid-column:1/-1}.flight-filter-actions{grid-column:1/-1}.flight-filter-advanced-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:620px){.topbar-controls{width:100%;flex-wrap:wrap}.flight-filter-primary,.flight-filter-advanced-grid{grid-template-columns:1fr}.flight-filter-primary .filter-wide{grid-column:auto}.flight-filter-primary{padding:15px}.flight-filter-advanced>summary,.flight-filter-advanced-grid,.flight-filter-advanced-actions{padding-inline:15px}.flight-filter-advanced>summary span{display:none}.flight-filter-advanced-actions{justify-content:flex-start}}

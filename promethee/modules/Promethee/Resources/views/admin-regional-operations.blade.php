@@ -208,7 +208,7 @@
     @endforeach
   </div>
 
-  <div class="table-wrap admin-table-scroll" style="margin-bottom:1rem">
+  <div class="table-wrap admin-table-scroll" class="regional-workspace-intro">
     <table>
       <thead>
         <tr>

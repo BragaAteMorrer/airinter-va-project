@@ -232,7 +232,10 @@ test('Hermès Minitel exposes the renovated 40x25 Videotex screen hierarchy', ()
   assert.ok(source.includes('ENVOI'), 'ENVOI must remain visible where input is expected');
   assert.ok(source.includes("'RETOUR'"), 'paged screens must expose RETOUR');
   assert.ok(source.includes("'SUITE'"), 'paged screens must expose SUITE');
-  assert.ok(source.includes('Commands belong to the Minitel keyboard'), 'M8 must keep global commands off permanent footers');
+  const footerBody = source.match(/const footer = \(screen, paging = false\) => \{([\s\S]*?)\n  \};/)?.[1];
+  assert.ok(footerBody, 'M8 footer helper must exist');
+  assert.ok(!/SOMMAIRE|REPETITION|GUIDE|CORRECTION|ANNULATION/.test(footerBody),
+    'M8 must keep global commands off permanent footers');
 });
 
 test('SimBrief sources are split into exclusive Minitel workflows', () => {
