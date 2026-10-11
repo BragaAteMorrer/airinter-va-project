@@ -37,7 +37,7 @@
   const start = samples[0]?.at ?? events[0]?.at ?? null, end=samples[samples.length-1]?.at ?? null;
   let index=0, playing=false, speed=60, baseClock=0, baseFlight=0, raf=null;
   let map=null, marker=null, travelled=null;
-  const range=$('replay-range'), play=$('replay-play'), velocity=$('replay-speed'), detail=$('replay-detail');
+  const range=$('replay-range'), play=$('replay-play'), velocity=$('replay-rate'), detail=$('replay-detail');
   const chooseTime=target=>{
     let lo=0, hi=samples.length-1;
     while(lo<hi){const mid=(lo+hi)>>1;if(samples[mid].at<target)lo=mid+1;else hi=mid;}
@@ -64,7 +64,7 @@
           : [{key:'fuel',name:'Carburant',color:'#16876f'}];
       const all=definitions.flatMap(d=>samples.map(s=>s[d.key]).filter(v=>v!==null));
       if(!all.length){const message=svg('text',{x:450,y:85,'text-anchor':'middle'});message.textContent='Aucune donnée disponible';holder.append(message);return;}
-      const low=Math.min(...all),high=Math.max(...all),rangeY=Math.max(1,high-low),min=low-rangeY*.08,max=high+rangeY*.08;
+      const low=all.reduce((a,b)=>Math.min(a,b),Infinity),high=all.reduce((a,b)=>Math.max(a,b),-Infinity),rangeY=Math.max(1,high-low),min=low-rangeY*.08,max=high+rangeY*.08;
       for(let n=0;n<4;n++){const y=12+n*44;holder.append(svg('line',{x1:38,x2:878,y1:y,y2:y,stroke:'#d8e3ea','stroke-width':1}));}
       for(const definition of definitions){
         const coords=samples.filter(s=>s[definition.key]!==null).map(s=>chartX(s.at).toFixed(1)+','+(155-(s[definition.key]-min)/(max-min)*136).toFixed(1));
