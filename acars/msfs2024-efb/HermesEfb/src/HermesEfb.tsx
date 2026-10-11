@@ -283,7 +283,7 @@ this.workspace?.update(envelope);
 this.assistant?.update(envelope);
 this.showConnectionHelp(state.hermesConnected
 ? (!context.operationId && !context.flightIdent ? "Hermès est joignable, mais aucune opération n’est préparée. Chargez un vol depuis Hermès desktop." : "")
-: "Bridge actif, mais Hermès n’a pas de session de vol connectée.");
+: "Bridge actif. Aucun vol connecté.");
 this.set(this.telemetryDetails, `IAS ${this.number(telemetry.ias, 0, " kt")} · GS ${this.number(telemetry.gs, 0, " kt")} · VS ${this.number(telemetry.vs, 0, " ft/min")} · HDG ${this.number(telemetry.heading, 0, "°")} · AGL ${this.number(telemetry.agl, 0, " ft")}`);
 this.set(this.liveIndicators, `${telemetry.onGround ? "AU SOL" : "EN VOL"} · ${telemetry.paused ? "PAUSE" : "ACTIF"} · ${live.recording ? "ACARS ENREGISTRE" : "ACARS INACTIF"} · ${simulator.linkState || "SIM INCONNU"}`);
 this.set(this.bridgeState, state.hermesConnected ? "Hermès connecté" : "Hermès hors ligne");
