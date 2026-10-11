@@ -802,7 +802,11 @@ class OperationsV1Controller extends Controller
 
     public function prefilePirep(string $reference, Request $request)
     {
+        // Serialize all prefile attempts for one bid. Without a row lock, two
+        // concurrent retries can both observe no PIREP and create duplicates.
+        return DB::transaction(function () use ($reference, $request) {
         $bid = $this->bid($reference, $request);
+        $bid = Bid::query()->whereKey($bid->id)->lockForUpdate()->firstOrFail();
         $existing = $this->operationPirep($bid);
         if ($existing) {
             if ($this->pirepLifecycle->isActiveDraft($existing)) {
@@ -924,6 +928,7 @@ class OperationsV1Controller extends Controller
                 'pirep' => $pirep->id,
             ],
         ]], 201);
+        }, 3);
     }
 
     private function simBriefPassengerCount(?SimBrief $ofp): ?int
