@@ -157,10 +157,15 @@ class HermesEfbView extends AppView<RequiredProps<AppViewProps, "bus">> {
   private readonly wxSigmet = FSComponent.createRef<HTMLSpanElement>();
   private readonly warning = FSComponent.createRef<HTMLDivElement>();
   private readonly syncTime = FSComponent.createRef<HTMLSpanElement>();
+  private readonly connectionHelp = FSComponent.createRef<HTMLDivElement>();
+  private readonly telemetryDetails = FSComponent.createRef<HTMLSpanElement>();
+  private readonly liveIndicators = FSComponent.createRef<HTMLSpanElement>();
 
   private listener?: CommBusListener;
   private timer?: number;
   private lastStateAt = 0;
+  private pendingRequestAt = 0;
+  private requestSequence = 0;
 
   public onAfterRender(node: VNode): void {
     super.onAfterRender(node);
@@ -170,6 +175,7 @@ class HermesEfbView extends AppView<RequiredProps<AppViewProps, "bus">> {
 
   public onResume(): void {
     super.onResume();
+    this.connectBridge();
     this.startPolling();
   }
 
@@ -197,13 +203,23 @@ class HermesEfbView extends AppView<RequiredProps<AppViewProps, "bus">> {
       this.requestState();
     } catch {
       this.set(this.bridgeState, "CommBus indisponible");
+      this.showConnectionHelp("Impossible d’initialiser CommBus dans l’EFB. Redémarrez MSFS 2024 après installation du package.");
     }
   }
 
   private startPolling(): void {
     this.stopPolling();
     this.requestState();
-    this.timer = window.setInterval(() => this.requestState(), 1500);
+    this.timer = window.setInterval(() => {
+      if (this.lastStateAt && Date.now() - this.lastStateAt > 6500) {
+        this.set(this.bridgeState, "Liaison Hermès interrompue");
+        this.showConnectionHelp("Aucune télémétrie récente. Vérifiez Hermès desktop et sa connexion à MSFS 2024.");
+      } else if (!this.lastStateAt && this.pendingRequestAt && Date.now() - this.pendingRequestAt > 6500) {
+        this.set(this.bridgeState, "Aucune réponse de Hermès");
+        this.showConnectionHelp("CommBus sans réponse. Lancez Hermès, connectez le simulateur et contrôlez Diagnostics > efb.commBusAvailable.");
+      }
+      this.requestState();
+    }, 1500);
   }
 
   private stopPolling(): void {
@@ -213,11 +229,16 @@ class HermesEfbView extends AppView<RequiredProps<AppViewProps, "bus">> {
 
   private requestState(): void {
     if (!this.listener) return;
-    const requestId = `efb-${Date.now()}-${Math.round(Math.random() * 100000)}`;
+    if (this.pendingRequestAt && Date.now() - this.pendingRequestAt < 1400) return;
+    this.pendingRequestAt = Date.now();
+    const requestId = `efb-${Date.now()}-${++this.requestSequence}`;
     void this.listener.callSimConnect(
       REQUEST_EVENT,
       JSON.stringify({ version: 1, action: "state", requestId })
-    ).catch(() => this.set(this.bridgeState, "Hermès non joignable"));
+    ).catch(() => {
+      this.set(this.bridgeState, "Hermès non joignable");
+      this.showConnectionHelp("Envoi CommBus refusé. Vérifiez la liaison SimConnect et redémarrez Hermès après MSFS 2024.");
+    });
   }
 
   private receiveState(payload: string): void {
@@ -229,6 +250,10 @@ class HermesEfbView extends AppView<RequiredProps<AppViewProps, "bus">> {
       return;
     }
 
+    if (envelope.version !== 1) {
+      this.set(this.bridgeState, "Protocole EFB incompatible");
+      return;
+    }
     if (!envelope.ok) {
       this.set(this.bridgeState, envelope.error || "Hermès indisponible");
       return;
@@ -242,6 +267,12 @@ class HermesEfbView extends AppView<RequiredProps<AppViewProps, "bus">> {
     const live = state.flight || {};
 
     this.lastStateAt = Date.now();
+    this.pendingRequestAt = 0;
+    this.showConnectionHelp(state.hermesConnected
+      ? (!context.operationId && !context.flightIdent ? "Hermès est joignable, mais aucune opération n’est préparée. Chargez un vol depuis Hermès desktop." : "")
+      : "Bridge actif, mais Hermès n’a pas de session de vol connectée.");
+    this.set(this.telemetryDetails, `IAS ${this.number(telemetry.ias, 0, " kt")} · GS ${this.number(telemetry.gs, 0, " kt")} · VS ${this.number(telemetry.vs, 0, " ft/min")} · HDG ${this.number(telemetry.heading, 0, "°")} · AGL ${this.number(telemetry.agl, 0, " ft")}`);
+    this.set(this.liveIndicators, `${telemetry.onGround ? "AU SOL" : "EN VOL"} · ${telemetry.paused ? "PAUSE" : "ACTIF"} · ${live.recording ? "ACARS ENREGISTRE" : "ACARS INACTIF"} · ${simulator.linkState || "SIM INCONNU"}`);
     this.set(this.bridgeState, state.hermesConnected ? "Hermès connecté" : "Hermès hors ligne");
     this.set(this.operation, context.flightIdent || context.operationId || "Aucune opération");
     this.set(this.route, context.departure && context.arrival
@@ -287,6 +318,12 @@ class HermesEfbView extends AppView<RequiredProps<AppViewProps, "bus">> {
 
     const stamp = envelope.generatedAt ? new Date(envelope.generatedAt) : new Date();
     this.set(this.syncTime, stamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+  }
+
+  private showConnectionHelp(value: string): void {
+    if (!this.connectionHelp.instance) return;
+    this.connectionHelp.instance.textContent = value;
+    this.connectionHelp.instance.hidden = !value;
   }
 
   private set(ref: { instance: HTMLElement }, value: string): void {
@@ -341,6 +378,7 @@ class HermesEfbView extends AppView<RequiredProps<AppViewProps, "bus">> {
         </header>
 
         <div class="efb-warning" ref={this.warning} hidden></div>
+        <div class="efb-connect-help" ref={this.connectionHelp}>En attente d’une réponse de Hermès…</div>
 
         <section class="flight-hero">
           <div>
@@ -356,6 +394,8 @@ class HermesEfbView extends AppView<RequiredProps<AppViewProps, "bus">> {
             <strong ref={this.aircraft}>—</strong>
           </div>
         </section>
+
+        <section class="efb-live-strip"><strong ref={this.liveIndicators}>CONNEXION EN ATTENTE</strong><span ref={this.telemetryDetails}>IAS — · GS — · VS — · HDG — · AGL —</span></section>
 
         <section class="metric-grid">
           <article><span>PHASE</span><strong ref={this.phase}>STANDBY</strong></article>
@@ -398,7 +438,7 @@ class HermesEfbView extends AppView<RequiredProps<AppViewProps, "bus">> {
 
         <footer>
           <span>Lecture seule · les actions PIREP restent dans Hermès</span>
-          <button onClick={() => this.requestState()}>Actualiser</button>
+          <button onClick={() => { this.pendingRequestAt = 0; this.requestState(); }}>Actualiser les données</button>
         </footer>
       </div>
     );
