@@ -598,13 +598,50 @@ public function saveBriefing(string $id, Request $r) {
     }
 
 public function replay(string $id) {
-        $pirep=Pirep::with(['user','aircraft','flight','acars_route'])->findOrFail($id);
-        $samples=DB::table('promethee_telemetry')->where('pirep_id',$id)->orderBy('recorded_at')->get()->map(fn ($row) => array_merge(json_decode($row->payload,true),['recorded_at'=>$row->recorded_at]))->values();
-        $plannedPath=$pirep->acars_route
+        $pirep = Pirep::with([
+            'user', 'aircraft', 'flight', 'acars_route', 'acars_logs',
+            'acars', 'dpt_airport', 'arr_airport',
+        ])->findOrFail($id);
+        // A single PIREP id is the authoritative key for trace, FDM and
+        // operational journal. The page remains protected by its auth route.
+        $samples = DB::table('promethee_telemetry')
+            ->where('pirep_id', $pirep->id)
+            ->orderBy('recorded_at')->orderBy('sample_id')
+            ->get(['recorded_at', 'payload'])
+            ->map(fn ($row) => array_merge(
+                is_array($decoded = json_decode((string) $row->payload, true)) ? $decoded : [],
+                ['recorded_at' => $row->recorded_at]
+            ))->values();
+        $plannedPath = $pirep->acars_route
             ->filter(fn ($point) => is_numeric($point->lat) && is_numeric($point->lon))
             ->map(fn ($point) => [(float) $point->lat, (float) $point->lon])
             ->values();
-        $score=(new SafetyAnalyzer())->score($pirep->landing_rate === null ? null : (float) $pirep->landing_rate,$samples->all());
-        return $this->page('replay',['pirep'=>$pirep,'samples'=>$samples,'plannedPath'=>$plannedPath,'analysis'=>$score['analysis'],'score'=>$score]);
+        $score = (new SafetyAnalyzer())->score(
+            $pirep->landing_rate === null ? null : (float) $pirep->landing_rate,
+            $samples->all()
+        );
+        $companyScore = [];
+        if (str_starts_with((string) $pirep->source_name, 'Hermes ACARS [op_')) {
+            try {
+                $companyScore = app(LegacyPirepScoringService::class)->forPirep($pirep);
+            } catch (\Throwable $exception) {
+                logger()->warning('hermes_replay_score_unavailable', [
+                    'pirep_id' => $pirep->id, 'error' => $exception->getMessage(),
+                ]);
+            }
+        }
+        $journal = app(PirepJournalService::class)->build($pirep, $companyScore)
+            ->map(fn (array $entry) => [
+                'at' => $entry['occurred_at']->toIso8601String(),
+                'code' => $entry['code'],
+                'message' => $entry['message'],
+                'source' => $entry['source'],
+                'detail' => $entry['detail'],
+            ])->values();
+        return $this->page('replay', [
+            'pirep' => $pirep, 'samples' => $samples,
+            'plannedPath' => $plannedPath, 'analysis' => $score['analysis'],
+            'score' => $score, 'journal' => $journal,
+        ]);
     }
 }
