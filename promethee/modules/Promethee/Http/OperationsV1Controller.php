@@ -804,8 +804,10 @@ class OperationsV1Controller extends Controller
     {
         // Serialize all prefile attempts for one bid. Without a row lock, two
         // concurrent retries can both observe no PIREP and create duplicates.
-        return DB::transaction(function () use ($reference, $request) {
         $bid = $this->bid($reference, $request);
+        return DB::transaction(function () use ($bid, $request) {
+        // The first transactional read is locking, avoiding a stale snapshot
+        // under InnoDB REPEATABLE READ when parallel prefile retries race.
         $bid = Bid::query()->whereKey($bid->id)->lockForUpdate()->firstOrFail();
         $existing = $this->operationPirep($bid);
         if ($existing) {
