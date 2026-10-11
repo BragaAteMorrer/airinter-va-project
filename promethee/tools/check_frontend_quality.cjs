@@ -151,7 +151,8 @@ expect(!portalController.includes('public function finances(')
     && maintenanceAdminController.includes('class MaintenanceAdminController extends PrometheeWebController')
     && regionalOperationsAdminController.includes('class RegionalOperationsAdminController extends PrometheeWebController'),
   'Prométhée company, maintenance and regional operations must stay outside PortalController.');
-const adminWorkspaceCss = read('public/promethee-assets/promethee-admin-workspaces.css');
+const adminWorkspaceCss = read('public/promethee-assets/promethee-admin-workspaces.css')
+  + read('public/promethee-assets/promethee-admin-workspaces-base.css');
 const automationWorkspace = read('modules/Promethee/Resources/views/admin/automation.blade.php');
 const seasonsWorkspace = read('modules/Promethee/Resources/views/seasons.blade.php');
 const economyWorkspace = read('modules/Promethee/Resources/views/economy.blade.php');
@@ -292,8 +293,7 @@ expect(prometheeV2.includes('prefers-reduced-motion'),
 expect(prometheeV2.includes('focus-visible'),
   'Prométhée v2 CSS must preserve visible keyboard focus handling.');
 
-expect(prometheeV2.includes('Audit UX phase 10 — modern operational visual system')
-    && prometheeV2.includes('--radius: 8px;')
+expect(prometheeV2.includes('--radius: 8px;')
     && prometheeV2.includes('backdrop-filter: none')
     && prometheeDesignSystem.includes('--ds-radius-md: 8px;')
     && prometheeDesignSystem.includes('--ds-shadow-sm:'),
@@ -464,8 +464,8 @@ expect(flightProgrammeController.includes('$personalizedDefault')
     && flightProgrammeController.includes('->take(10)')
     && flightProgrammeController.includes('next_departure_sort'),
   'Prométhée unfiltered flight programme must show the next ten dated departures from the pilot base.');
-expect(prometheeV2.includes('Audit UX phase 11 — flight programme progressive disclosure')
-    && prometheeV2.includes('Audit UX phase 11 — compact shell controls'),
+expect(prometheeV2.includes('.flight-filter-advanced')
+    && prometheeV2.includes('.topbar-controls'),
   'Prométhée must preserve phase 11 shell and flight-programme primitives.');
 
 const prometheeDashboard = read('modules/Promethee/Resources/views/dashboard.blade.php');
@@ -477,7 +477,8 @@ expect(prometheeFleet.includes('class="airline-mark"') && prometheeFleet.include
   'Prométhée fleet must keep shared table, logo and sort primitives.');
 expect(prometheeMaintenance.includes('CELLULE · SUIVI ACTIF') && prometheeMaintenance.includes('Potentiel moteurs') && prometheeMaintenance.includes('<div class="table-wrap">'),
   'Prométhée maintenance must preserve the structured technical workspace.');
-expect(prometheeV2.includes('Audit UX phase 12 — fleet/maintenance shared details.'),
+expect(prometheeV2.includes('.airline-mark')
+    && prometheeV2.includes('.admin-master-detail'),
   'Prométhée must preserve phase 12 fleet/maintenance primitives.');
 
 expect(dispatch.includes('promethee-dispatch-filter') && dispatch.includes('promethee-dispatch-selected'),

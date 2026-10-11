@@ -1,600 +1,600 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Hermès ACARS — Air Inter</title>
-  <link rel="icon" type="image/png" href="/air-inter-va-hermes.png">
-  <link rel="apple-touch-icon" href="/air-inter-va-hermes.png">
-  <link rel="stylesheet" href="/styles.css?rev=20261003-quality-phase7"><link rel="stylesheet" href="/hermes-themes.css?rev=20261003-quality-phase7"><link rel="stylesheet" href="/hermes-era-components.css?rev=20261003-quality-phase7"><link rel="stylesheet" href="/hermes-accessibility.css?rev=20261003-quality-phase7"><link rel="stylesheet" href="/layout-overrides.css?rev=20261003-quality-phase7">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hermès ACARS — Air Inter</title>
+<link rel="icon" type="image/png" href="/air-inter-va-hermes.png">
+<link rel="apple-touch-icon" href="/air-inter-va-hermes.png">
+<link rel="stylesheet" href="/styles.css?rev=20261003-quality-phase7"><link rel="stylesheet" href="/hermes-themes.css?rev=20261003-quality-phase7"><link rel="stylesheet" href="/hermes-era-components.css?rev=20261003-quality-phase7"><link rel="stylesheet" href="/hermes-accessibility.css?rev=20261003-quality-phase7"><link rel="stylesheet" href="/layout-overrides.css?rev=20261003-quality-phase7">
 </head>
 <body class="auth-locked">
-  <aside class="rail">
-    <div class="brand"><img class="brand-logo" src="/air-inter-va-hermes.png" alt="Hermès — Air Inter VA"><span>ACARS · OPÉRATIONS</span><strong>Hermès</strong></div>
-    <nav aria-label="Navigation ACARS" role="tablist" aria-orientation="vertical">
-      <span class="rail-nav-label">SESSION</span>
-      <button id="tab-connect" class="tab active" data-tab="connect" role="tab" aria-selected="true" aria-controls="connect" tabindex="0"><span data-i18n="nav.connect">Connexion</span></button>
+<aside class="rail">
+<div class="brand"><img class="brand-logo" src="/air-inter-va-hermes.png" alt="Hermès — Air Inter VA"><span>ACARS · OPÉRATIONS</span><strong>Hermès</strong></div>
+<nav aria-label="Navigation ACARS" role="tablist" aria-orientation="vertical">
+  <span class="rail-nav-label">SESSION</span>
+  <button id="tab-connect" class="tab active" data-tab="connect" role="tab" aria-selected="true" aria-controls="connect" tabindex="0"><span data-i18n="nav.connect">Connexion</span></button>
 
-      <span class="rail-nav-label protected-tab-label">OPÉRATIONS</span>
-      <button id="tab-flight" class="tab protected-tab" data-tab="flight" role="tab" aria-selected="false" aria-controls="flight" tabindex="-1" disabled><span data-i18n="nav.flight">Mes opérations</span></button>
+  <span class="rail-nav-label protected-tab-label">OPÉRATIONS</span>
+  <button id="tab-flight" class="tab protected-tab" data-tab="flight" role="tab" aria-selected="false" aria-controls="flight" tabindex="-1" disabled><span data-i18n="nav.flight">Mes opérations</span></button>
 
-      <span class="rail-nav-label protected-tab-label">VOL</span>
-      <button id="tab-record" class="tab protected-tab" data-tab="record" role="tab" aria-selected="false" aria-controls="record" tabindex="-1" disabled><span data-i18n="nav.record">Enregistrement</span></button>
-      <button id="tab-map" class="tab protected-tab" data-tab="map" role="tab" aria-selected="false" aria-controls="map" tabindex="-1" disabled><span data-i18n="nav.map">Suivi du vol</span></button>
-      <button id="tab-journal" class="tab protected-tab" data-tab="journal" role="tab" aria-selected="false" aria-controls="journal" tabindex="-1" disabled><span data-i18n="nav.journal">Journal de bord</span></button>
-      <button id="tab-review" class="tab protected-tab" data-tab="review" role="tab" aria-selected="false" aria-controls="review" tabindex="-1" disabled><span data-i18n="nav.review">Flight Review</span></button>
+  <span class="rail-nav-label protected-tab-label">VOL</span>
+  <button id="tab-record" class="tab protected-tab" data-tab="record" role="tab" aria-selected="false" aria-controls="record" tabindex="-1" disabled><span data-i18n="nav.record">Enregistrement</span></button>
+  <button id="tab-map" class="tab protected-tab" data-tab="map" role="tab" aria-selected="false" aria-controls="map" tabindex="-1" disabled><span data-i18n="nav.map">Suivi du vol</span></button>
+  <button id="tab-journal" class="tab protected-tab" data-tab="journal" role="tab" aria-selected="false" aria-controls="journal" tabindex="-1" disabled><span data-i18n="nav.journal">Journal de bord</span></button>
+  <button id="tab-review" class="tab protected-tab" data-tab="review" role="tab" aria-selected="false" aria-controls="review" tabindex="-1" disabled><span data-i18n="nav.review">Flight Review</span></button>
 
-      <span class="rail-nav-label protected-tab-label">COMMUNICATION</span>
-      <button id="tab-datalink" class="tab protected-tab datalink-tab" data-tab="datalink" role="tab" aria-selected="false" aria-controls="datalink" tabindex="-1" disabled><span data-i18n="nav.datalink">Datalink</span> <span id="datalinkBadge" class="nav-badge" hidden>0</span></button>
-      <button id="tab-network" class="tab protected-tab" data-tab="network" role="tab" aria-selected="false" aria-controls="network" tabindex="-1" disabled><span data-i18n="nav.network">Air Inter Network</span> <span id="networkBadge" class="nav-badge" hidden>0</span></button>
+  <span class="rail-nav-label protected-tab-label">COMMUNICATION</span>
+  <button id="tab-datalink" class="tab protected-tab datalink-tab" data-tab="datalink" role="tab" aria-selected="false" aria-controls="datalink" tabindex="-1" disabled><span data-i18n="nav.datalink">Datalink</span> <span id="datalinkBadge" class="nav-badge" hidden>0</span></button>
+  <button id="tab-network" class="tab protected-tab" data-tab="network" role="tab" aria-selected="false" aria-controls="network" tabindex="-1" disabled><span data-i18n="nav.network">Air Inter Network</span> <span id="networkBadge" class="nav-badge" hidden>0</span></button>
 
-      <span class="rail-nav-label protected-tab-label">SYSTÈME</span>
-      <button id="tab-settings" class="tab protected-tab" data-tab="settings" role="tab" aria-selected="false" aria-controls="settings" tabindex="-1" disabled><span data-i18n="nav.settings">Paramètres</span></button>
-    </nav>
-    <details class="display-settings">
-      <summary><span>Affichage</span><b aria-hidden="true">⌄</b></summary>
-      <div class="display-controls" aria-label="Affichage Hermès"><label class="theme"><span data-i18n="display.language">Langue</span><select id="language"><option value="fr">Français</option><option value="en">English</option><option value="pt">Português</option><option value="es">Español</option><option value="it">Italiano</option><option value="ja">日本語</option><option value="tr">Türkçe</option><option value="de">Deutsch</option></select></label><label class="theme"><span data-i18n="display.style">Style</span><select id="era"><option value="modern" data-i18n="display.modern">Moderne</option><option value="2000" data-i18n="display.2000">Années 2000</option><option value="minitel">Minitel</option><option value="airinter-1978" data-premium-key="theme.airinter-1978" disabled>🔒 Air Inter 1978</option><option value="minitel-ambre" data-premium-key="theme.minitel-ambre" disabled>🔒 Minitel Ambre</option></select></label><label class="theme"><span data-i18n="display.appearance">Apparence</span><select id="appearance"><option value="light" data-i18n="display.light">Clair</option><option value="dark" data-i18n="display.dark">Nuit</option></select></label></div>
-    </details>
-    <small id="build"></small>
-  </aside>
-  <main>
-    <header>
-      <div><p class="kicker" data-i18n="header.direction">DIRECTION DE L’EXPLOITATION AÉRIENNE</p><h1>Hermès</h1><p class="header-subtitle" data-i18n="header.subtitle">Le client ACARS officiel d’Air Inter VA.</p></div>
-      <div class="header-status">
-        <div class="pilot-state"><span id="serverState">Identité pilote à venir</span><span id="identityProvider" class="identity-provider" hidden></span><button id="argosAccountBtn" class="identity-account-link" type="button" hidden>Compte Air Inter</button><button id="logoutBtn" class="identity-account-link" type="button" hidden>Déconnexion</button><span id="simState">Simulateur non détecté</span></div>
-        <div class="ops-status" aria-label="État opérationnel Hermès">
-          <span id="prometheeIndicator" class="status-chip pending">PROMÉTHÉE <b>●</b></span>
-          <span id="simIndicator" class="status-chip pending">SIM <b>●</b></span>
-          <span id="trackingIndicator" class="status-chip pending">TRACKING <b>●</b></span>
-          <span id="syncIndicator" class="status-chip pending">SYNC <b>●</b></span>
-        </div>
+  <span class="rail-nav-label protected-tab-label">SYSTÈME</span>
+  <button id="tab-settings" class="tab protected-tab" data-tab="settings" role="tab" aria-selected="false" aria-controls="settings" tabindex="-1" disabled><span data-i18n="nav.settings">Paramètres</span></button>
+</nav>
+<details class="display-settings">
+  <summary><span>Affichage</span><b aria-hidden="true">⌄</b></summary>
+  <div class="display-controls" aria-label="Affichage Hermès"><label class="theme"><span data-i18n="display.language">Langue</span><select id="language"><option value="fr">Français</option><option value="en">English</option><option value="pt">Português</option><option value="es">Español</option><option value="it">Italiano</option><option value="ja">日本語</option><option value="tr">Türkçe</option><option value="de">Deutsch</option></select></label><label class="theme"><span data-i18n="display.style">Style</span><select id="era"><option value="modern" data-i18n="display.modern">Moderne</option><option value="2000" data-i18n="display.2000">Années 2000</option><option value="minitel">Minitel</option><option value="airinter-1978" data-premium-key="theme.airinter-1978" disabled>🔒 Air Inter 1978</option><option value="minitel-ambre" data-premium-key="theme.minitel-ambre" disabled>🔒 Minitel Ambre</option></select></label><label class="theme"><span data-i18n="display.appearance">Apparence</span><select id="appearance"><option value="light" data-i18n="display.light">Clair</option><option value="dark" data-i18n="display.dark">Nuit</option></select></label></div>
+</details>
+<small id="build"></small>
+</aside>
+<main>
+<header>
+  <div><p class="kicker" data-i18n="header.direction">DIRECTION DE L’EXPLOITATION AÉRIENNE</p><h1>Hermès</h1><p class="header-subtitle" data-i18n="header.subtitle">Le client ACARS officiel d’Air Inter VA.</p></div>
+  <div class="header-status">
+    <div class="pilot-state"><span id="serverState">Identité pilote à venir</span><span id="identityProvider" class="identity-provider" hidden></span><button id="argosAccountBtn" class="identity-account-link" type="button" hidden>Compte Air Inter</button><button id="logoutBtn" class="identity-account-link" type="button" hidden>Déconnexion</button><span id="simState">Simulateur non détecté</span></div>
+    <div class="ops-status" aria-label="État opérationnel Hermès">
+      <span id="prometheeIndicator" class="status-chip pending">PROMÉTHÉE <b>●</b></span>
+      <span id="simIndicator" class="status-chip pending">SIM <b>●</b></span>
+      <span id="trackingIndicator" class="status-chip pending">TRACKING <b>●</b></span>
+      <span id="syncIndicator" class="status-chip pending">SYNC <b>●</b></span>
+    </div>
+  </div>
+</header>
+<details id="errorCenter" class="error-center" hidden>
+  <summary><span><b>ATTENTION</b> Centre d’erreurs Hermès</span><span id="errorCenterCount" class="nav-badge">0</span></summary>
+  <div class="error-center-toolbar"><p>Résumé humain, impact sur le vol et action recommandée. Les détails techniques restent repliés.</p><button id="errorCenterClearBtn" type="button">Effacer</button></div>
+  <div id="errorCenterList" class="error-center-list"></div>
+</details>
+<section id="connect" class="panel active auth-panel" role="tabpanel" aria-labelledby="tab-connect">
+  <div class="auth-mark"><span>AIR INTER VA</span><strong data-i18n="auth.crew">Accès équipage</strong></div><h2 data-i18n="auth.title">Connexion pilote</h2><p class="hint" data-i18n="auth.hint">Identifiez-vous avec votre compte pilote Air Inter pour préparer et suivre votre vol.</p>
+  <div class="login-form">
+    <button id="argosLoginBtn" class="primary" type="button">Se connecter avec Argos</button>
+    <p class="hint">La connexion s’ouvre dans votre navigateur. Hermès utilise OAuth 2.0 / OpenID Connect avec PKCE et ne reçoit jamais votre mot de passe Argos.</p>
+  </div>
+  <details class="legacy-login">
+    <summary>Connexion de secours Prométhée</summary>
+    <form id="loginForm" class="login-form">
+      <label><span data-i18n="auth.login">Identifiant pilote ou e-mail</span><input name="login" autocomplete="username" required></label>
+      <label><span data-i18n="auth.password">Mot de passe</span><input name="password" type="password" autocomplete="current-password" required></label>
+      <button type="submit"><span data-i18n="auth.submit">Connexion de secours</span></button>
+    </form>
+  </details>
+  <p id="loginMessage" class="message" hidden role="status"></p>
+</section>
+<section id="flight" class="panel" role="tabpanel" aria-labelledby="tab-flight">
+  <div class="workspace-title"><div><span class="kicker">FLIGHT WORKSPACE</span><h2>Préparation opérationnelle</h2></div><strong id="readyState" class="ready-state">NOT READY</strong></div>
+  <div id="workflow" class="workflow" aria-label="État de préparation">
+    <div data-phase="flight"><span>01</span><strong>Vol</strong><small>Opération + appareil</small></div>
+    <div data-phase="briefing"><span>02</span><strong>Briefing</strong><small>OFP + préparation enregistrée</small></div>
+    <div data-phase="ready"><span>03</span><strong>Prêt</strong><small>Simulateur + contrôles départ</small></div>
+  </div>
+  <section id="nextAction" class="next-action">
+    <div><span class="kicker">PROCHAINE ACTION</span><strong id="nextActionTitle">Choisissez votre vol</strong><p id="nextActionText">Sélectionnez une réservation ou recherchez une ligne du programme Air Inter.</p></div>
+    <button id="nextActionBtn" type="button" class="primary">Choisir un vol</button>
+  </section>
+
+  <section class="operations-browser" aria-label="Sélection de l’opération">
+    <div class="operations-browser-heading">
+      <div><span class="kicker">01 · OPÉRATION</span><h3>Choisir le vol</h3><p class="hint">Vos réservations d’abord. Le programme complet reste accessible sans mélanger les deux listes.</p></div>
+      <div class="operations-mode-switch" role="tablist" aria-label="Source des opérations">
+        <button id="showBidsBtn" type="button" class="active" role="tab" aria-selected="true">Mes réservations</button>
+        <button id="showSearchBtn" type="button" role="tab" aria-selected="false">Rechercher un vol</button>
       </div>
-    </header>
-    <details id="errorCenter" class="error-center" hidden>
-      <summary><span><b>ATTENTION</b> Centre d’erreurs Hermès</span><span id="errorCenterCount" class="nav-badge">0</span></summary>
-      <div class="error-center-toolbar"><p>Résumé humain, impact sur le vol et action recommandée. Les détails techniques restent repliés.</p><button id="errorCenterClearBtn" type="button">Effacer</button></div>
-      <div id="errorCenterList" class="error-center-list"></div>
-    </details>
-    <section id="connect" class="panel active auth-panel" role="tabpanel" aria-labelledby="tab-connect">
-      <div class="auth-mark"><span>AIR INTER VA</span><strong data-i18n="auth.crew">Accès équipage</strong></div><h2 data-i18n="auth.title">Connexion pilote</h2><p class="hint" data-i18n="auth.hint">Identifiez-vous avec votre compte pilote Air Inter pour préparer et suivre votre vol.</p>
-      <div class="login-form">
-        <button id="argosLoginBtn" class="primary" type="button">Se connecter avec Argos</button>
-        <p class="hint">La connexion s’ouvre dans votre navigateur. Hermès utilise OAuth 2.0 / OpenID Connect avec PKCE et ne reçoit jamais votre mot de passe Argos.</p>
+    </div>
+    <div id="operationsSearchPanel" class="operations-search-panel" hidden>
+      <form id="flightSearchForm" class="flight-search">
+        <label>Numéro de vol<input id="flightNumberSearch" placeholder="ITF749 ou 749" autocomplete="off"></label>
+        <label>Départ<input id="departureSearch" placeholder="LFPO" maxlength="8" autocomplete="off"></label>
+        <label>Arrivée<input id="arrivalSearch" placeholder="LIRF" maxlength="8" autocomplete="off"></label>
+        <label>Type appareil<input id="aircraftTypeSearch" placeholder="A320" maxlength="8" autocomplete="off"></label>
+        <button id="searchBtn" class="primary" type="submit">Rechercher le programme</button>
+      </form>
+      <p class="hint search-hint">Un seul critère suffit. La recherche respecte vos droits, qualifications et restrictions de compagnie.</p>
+    </div>
+    <div class="operations-results-heading"><strong id="operationsListTitle">Mes réservations</strong><span id="operationsListMeta" class="hint"></span></div>
+    <p id="flightMessage" class="message" hidden role="status"></p>
+    <div id="flightList" class="list operations-list"></div>
+  </section>
+
+  <section class="operations-current">
+    <div class="operations-current-heading"><div><span class="kicker">02 · OPÉRATION ACTIVE</span><h3>Vol sélectionné</h3></div><span class="hint">L’appareil, la variante et l’OFP sont rattachés à cette opération.</span></div>
+    <article id="selectedOperation" class="prefile" hidden>
+      <div><p id="selectedFlight">Aucun vol sélectionné</p><p id="operationBrief" class="hint"></p><p id="operationLoad" class="hint" hidden></p></div>
+    </article>
+    <div id="aircraftEligibility" class="eligibility" hidden></div>
+  </section>
+  <section class="flightplan-source operations-planning">
+    <div class="draft-heading ofp-task-heading">
+      <div><span class="kicker">02 · BRIEFING</span><h3>Préparer l’OFP</h3><p>Hermès choisit la meilleure source disponible pour cette opération. Les sources restent modifiables pour les cas particuliers.</p></div>
+      <div class="ofp-primary-actions"><button id="prepareOfpBtn" type="button" class="primary">Préparer l’OFP</button><span id="ofpSourceHint" class="hint">Source recommandée : détection en cours…</span></div>
+    </div>
+    <p class="hint source-choice-label"><strong>Changer de source</strong> · options avancées</p>
+    <div class="source-tabs" role="tablist" aria-label="Sources avancées du plan de vol">
+      <button type="button" data-plan-mode="account" class="active" role="tab" aria-selected="true" aria-controls="planPanelAccount">Compte SimBrief</button>
+      <button type="button" data-plan-mode="api" role="tab" aria-selected="false" aria-controls="planPanelApi">API SimBrief</button>
+      <button type="button" data-plan-mode="file" role="tab" aria-selected="false" aria-controls="planPanelFile">Plan local</button>
+    </div>
+
+    <div id="aircraftSelectionStatus" class="aircraft-selection-status pending" role="status" aria-live="polite">
+      <strong>APPAREIL REQUIS</strong>
+      <span>Choisissez un type d’appareil puis une immatriculation avant de préparer SimBrief.</span>
+    </div>
+
+    <div id="planPanelAccount" class="source-panel active plan-mode-card" data-plan-panel="account" role="tabpanel">
+      <div class="plan-mode-heading">
+        <div><span class="kicker">COMPTE SIMBRIEF</span><h4>Préparer sur SimBrief puis récupérer l’OFP</h4></div>
+        <span class="plan-mode-badge">Compte pilote</span>
       </div>
-      <details class="legacy-login">
-        <summary>Connexion de secours Prométhée</summary>
-        <form id="loginForm" class="login-form">
-          <label><span data-i18n="auth.login">Identifiant pilote ou e-mail</span><input name="login" autocomplete="username" required></label>
-          <label><span data-i18n="auth.password">Mot de passe</span><input name="password" type="password" autocomplete="current-password" required></label>
-          <button type="submit"><span data-i18n="auth.submit">Connexion de secours</span></button>
-        </form>
-      </details>
-      <p id="loginMessage" class="message" hidden role="status"></p>
-    </section>
-    <section id="flight" class="panel" role="tabpanel" aria-labelledby="tab-flight">
-      <div class="workspace-title"><div><span class="kicker">FLIGHT WORKSPACE</span><h2>Préparation opérationnelle</h2></div><strong id="readyState" class="ready-state">NOT READY</strong></div>
-      <div id="workflow" class="workflow" aria-label="État de préparation">
-        <div data-phase="flight"><span>01</span><strong>Vol</strong><small>Opération + appareil</small></div>
-        <div data-phase="briefing"><span>02</span><strong>Briefing</strong><small>OFP + préparation enregistrée</small></div>
-        <div data-phase="ready"><span>03</span><strong>Prêt</strong><small>Simulateur + contrôles départ</small></div>
+      <p class="hint">Hermès envoie le vol, l’appareil, la variante et votre préparation vers votre compte SimBrief. Après génération sur SimBrief, Hermès récupère le dernier OFP lié à votre compte.</p>
+      <div class="plan-mode-steps">
+        <span><b>1</b> Envoyer la préparation</span>
+        <span><b>2</b> Générer / ajuster sur SimBrief</span>
+        <span><b>3</b> Récupérer l’OFP dans Hermès</span>
       </div>
-      <section id="nextAction" class="next-action">
-        <div><span class="kicker">PROCHAINE ACTION</span><strong id="nextActionTitle">Choisissez votre vol</strong><p id="nextActionText">Sélectionnez une réservation ou recherchez une ligne du programme Air Inter.</p></div>
-        <button id="nextActionBtn" type="button" class="primary">Choisir un vol</button>
-      </section>
+      <div id="simbriefAccountSummary" class="simbrief-preparation-summary" hidden></div>
+      <div class="tools">
+        <button id="simbriefAccountOpenBtn" type="button" class="primary">Envoyer le vol vers SimBrief</button>
+        <button id="simbriefAccountEditBtn" type="button" hidden>Modifier dans SimBrief</button>
+        <button id="simbriefAccountImportBtn" type="button">Récupérer l’OFP généré</button>
+      </div>
+      <p class="hint plan-mode-footnote">Alias Navigraph / SimBrief et Pilot ID : Paramètres → Compte SimBrief. Aucun mot de passe Navigraph n’est stocké.</p>
+    </div>
 
-      <section class="operations-browser" aria-label="Sélection de l’opération">
-        <div class="operations-browser-heading">
-          <div><span class="kicker">01 · OPÉRATION</span><h3>Choisir le vol</h3><p class="hint">Vos réservations d’abord. Le programme complet reste accessible sans mélanger les deux listes.</p></div>
-          <div class="operations-mode-switch" role="tablist" aria-label="Source des opérations">
-            <button id="showBidsBtn" type="button" class="active" role="tab" aria-selected="true">Mes réservations</button>
-            <button id="showSearchBtn" type="button" role="tab" aria-selected="false">Rechercher un vol</button>
-          </div>
-        </div>
-        <div id="operationsSearchPanel" class="operations-search-panel" hidden>
-          <form id="flightSearchForm" class="flight-search">
-            <label>Numéro de vol<input id="flightNumberSearch" placeholder="ITF749 ou 749" autocomplete="off"></label>
-            <label>Départ<input id="departureSearch" placeholder="LFPO" maxlength="8" autocomplete="off"></label>
-            <label>Arrivée<input id="arrivalSearch" placeholder="LIRF" maxlength="8" autocomplete="off"></label>
-            <label>Type appareil<input id="aircraftTypeSearch" placeholder="A320" maxlength="8" autocomplete="off"></label>
-            <button id="searchBtn" class="primary" type="submit">Rechercher le programme</button>
-          </form>
-          <p class="hint search-hint">Un seul critère suffit. La recherche respecte vos droits, qualifications et restrictions de compagnie.</p>
-        </div>
-        <div class="operations-results-heading"><strong id="operationsListTitle">Mes réservations</strong><span id="operationsListMeta" class="hint"></span></div>
-        <p id="flightMessage" class="message" hidden role="status"></p>
-        <div id="flightList" class="list operations-list"></div>
-      </section>
+    <div id="planPanelApi" class="source-panel plan-mode-card" data-plan-panel="api" role="tabpanel" hidden>
+      <div class="plan-mode-heading">
+        <div><span class="kicker">API SIMBRIEF</span><h4>Génération intégrée compagnie</h4></div>
+        <span class="plan-mode-badge">Prométhée</span>
+      </div>
+      <p class="hint">Prométhée prépare la requête avec la clé API compagnie. Hermès ouvre le générateur SimBrief puis récupère automatiquement l’OFP lorsque la génération est terminée.</p>
+      <div class="plan-mode-steps">
+        <span><b>1</b> Générer avec les données Air Inter</span>
+        <span><b>2</b> Finaliser dans SimBrief</span>
+        <span><b>3</b> Import automatique dans Hermès</span>
+      </div>
+      <div id="simbriefApiSummary" class="simbrief-preparation-summary" hidden></div>
+      <div class="tools"><button id="simbriefBtn" type="button" class="primary">Générer et récupérer l’OFP</button></div>
+    </div>
 
-      <section class="operations-current">
-        <div class="operations-current-heading"><div><span class="kicker">02 · OPÉRATION ACTIVE</span><h3>Vol sélectionné</h3></div><span class="hint">L’appareil, la variante et l’OFP sont rattachés à cette opération.</span></div>
-        <article id="selectedOperation" class="prefile" hidden>
-          <div><p id="selectedFlight">Aucun vol sélectionné</p><p id="operationBrief" class="hint"></p><p id="operationLoad" class="hint" hidden></p></div>
-        </article>
-        <div id="aircraftEligibility" class="eligibility" hidden></div>
-      </section>
-      <section class="flightplan-source operations-planning">
-        <div class="draft-heading ofp-task-heading">
-          <div><span class="kicker">02 · BRIEFING</span><h3>Préparer l’OFP</h3><p>Hermès choisit la meilleure source disponible pour cette opération. Les sources restent modifiables pour les cas particuliers.</p></div>
-          <div class="ofp-primary-actions"><button id="prepareOfpBtn" type="button" class="primary">Préparer l’OFP</button><span id="ofpSourceHint" class="hint">Source recommandée : détection en cours…</span></div>
-        </div>
-        <p class="hint source-choice-label"><strong>Changer de source</strong> · options avancées</p>
-        <div class="source-tabs" role="tablist" aria-label="Sources avancées du plan de vol">
-          <button type="button" data-plan-mode="account" class="active" role="tab" aria-selected="true" aria-controls="planPanelAccount">Compte SimBrief</button>
-          <button type="button" data-plan-mode="api" role="tab" aria-selected="false" aria-controls="planPanelApi">API SimBrief</button>
-          <button type="button" data-plan-mode="file" role="tab" aria-selected="false" aria-controls="planPanelFile">Plan local</button>
-        </div>
+    <div id="planPanelFile" class="source-panel plan-mode-card" data-plan-panel="file" role="tabpanel" hidden>
+      <div class="plan-mode-heading">
+        <div><span class="kicker">PLAN LOCAL</span><h4>Importer un fichier de plan de vol</h4></div>
+        <span class="plan-mode-badge">Fichier local</span>
+      </div>
+      <p class="hint">Utilisez un fichier exporté localement lorsque vous ne souhaitez pas passer par votre compte ou l’API SimBrief.</p>
+      <div class="tools plan-file-tools">
+        <label>Plan de vol MSFS / XML<input id="planFile" type="file" accept=".pln,.xml"></label>
+        <button id="clearPlanBtn" type="button">Effacer le plan</button>
+      </div>
+    </div>
 
-        <div id="aircraftSelectionStatus" class="aircraft-selection-status pending" role="status" aria-live="polite">
-          <strong>APPAREIL REQUIS</strong>
-          <span>Choisissez un type d’appareil puis une immatriculation avant de préparer SimBrief.</span>
-        </div>
+    <p id="simbriefState" class="plan-state">Sélectionnez un vol et un appareil.</p>
+  </section>
+  <section id="operationalWeather" class="flightplan-source operational-weather" hidden aria-labelledby="operationalWeatherTitle">
+    <div class="draft-heading weather-ops-heading">
+      <div><span class="kicker">WEATHER / OPS</span><h3 id="operationalWeatherTitle">Météo opérationnelle</h3><p>Départ, destination, dégagement, SIGMET et piste probable selon le vent observé.</p></div>
+      <div class="weather-ops-actions"><strong id="weatherOpsState" class="ready-state">STANDBY</strong><button id="weatherRefreshBtn" type="button">Actualiser</button></div>
+    </div>
+    <div class="cards weather-ops-summary">
+      <div><span>Situation</span><strong id="weatherWorst">—</strong></div>
+      <div><span>SIGMET corridor</span><strong id="weatherSigmetCount">0</strong></div>
+      <div><span>Piste probable arrivée</span><strong id="weatherArrivalRunway">—</strong></div>
+    </div>
+    <div id="weatherOpsStations" class="weather-station-grid"></div>
+    <div class="weather-sigmet-panel"><div><span class="kicker">ROUTE</span><h4>SIGMET</h4></div><div id="weatherOpsSigmets" class="observation-list"></div></div>
+    <p id="weatherOpsNote" class="hint">Météo opérationnelle indicative.</p>
+  </section>
+  <pre id="planBox" hidden>Aucun plan chargé.</pre>
+  <section id="networkPrefilePanel" class="flightplan-source" hidden>
+    <div class="draft-heading">
+      <div><span class="kicker">RÉSEAUX ATC</span><h3>Pré-déposer le plan de vol</h3></div>
+      <p>Hermès utilise le plan ICAO généré par SimBrief. vPilot et Altitude récupéreront ensuite le plan depuis leur réseau respectif.</p>
+    </div>
+    <div class="tools">
+      <button id="vatsimPrefileBtn" type="button">Pré-déposer sur VATSIM</button>
+      <button id="ivaoPrefileBtn" type="button">Pré-déposer sur IVAO</button>
+    </div>
+    <pre id="icaoFlightPlanPreview" class="network-fpl-preview" hidden></pre>
+    <p id="networkPrefileMessage" class="message" hidden role="status"></p>
+  </section>
+  <form id="prefileForm" class="grid flight-draft" hidden>
+    <div class="draft-heading">
+      <div><span class="kicker">BROUILLON OPÉRATIONNEL</span><h3>Personnaliser le vol</h3></div>
+      <p>Les données du programme sont verrouillées. Vous pouvez adapter la préparation avant SimBrief ou l’enregistrement de la préparation.</p>
+    </div>
+    <input name="flight_id" type="hidden">
+    <input name="airline_id" type="hidden">
+    <input name="flight_number" type="hidden">
+    <input id="selectedAircraftId" name="aircraft_id" type="hidden">
+    <label>Type d’appareil<select id="aircraftTypeId" required><option value="">Sélectionnez d'abord un vol</option></select></label>
+    <label>Appareil précis<select id="aircraftId" required disabled><option value="">Choisissez d’abord un type</option></select></label>
+    <label>Add-on simulateur
+      <select id="aircraftVariantId" disabled><option value="">Choisissez d’abord un appareil</option></select>
+      <span id="aircraftVariantPreview" class="variant-preview" hidden></span>
+      <small>La variante réelle et la configuration Air Inter sont déterminées automatiquement par l’immatriculation.</small>
+    </label>
+    <label>Départ<input name="dpt_airport_id" required readonly></label>
+    <label>Arrivée<input name="arr_airport_id" required readonly></label>
+    <label>Aéroport de dégagement<input name="alt_airport_id" placeholder="AUTO ou LIRN" maxlength="8"></label>
+    <label>Niveau de vol<input name="level" type="number" min="10" max="600" step="10" placeholder="350"></label>
+    <label class="route-field">Route<input name="route" maxlength="2000" placeholder="AUTO SimBrief ou DCT…"></label>
+    <label>Routes proposées
+      <select id="routeSuggestion" disabled>
+        <option value="">Sélectionnez d’abord un vol</option>
+      </select>
+      <small>Routes compagnie disponibles sur la même liaison. AUTO laisse SimBrief calculer la route.</small>
+    </label>
+    <label>Block fuel lbs<input name="block_fuel" type="number" min="0" step="1"></label>
+    <label class="notes-field">Notes opérationnelles<textarea name="notes" maxlength="1000" rows="3" placeholder="Informations utiles au dispatch"></textarea></label>
 
-        <div id="planPanelAccount" class="source-panel active plan-mode-card" data-plan-panel="account" role="tabpanel">
-          <div class="plan-mode-heading">
-            <div><span class="kicker">COMPTE SIMBRIEF</span><h4>Préparer sur SimBrief puis récupérer l’OFP</h4></div>
-            <span class="plan-mode-badge">Compte pilote</span>
-          </div>
-          <p class="hint">Hermès envoie le vol, l’appareil, la variante et votre préparation vers votre compte SimBrief. Après génération sur SimBrief, Hermès récupère le dernier OFP lié à votre compte.</p>
-          <div class="plan-mode-steps">
-            <span><b>1</b> Envoyer la préparation</span>
-            <span><b>2</b> Générer / ajuster sur SimBrief</span>
-            <span><b>3</b> Récupérer l’OFP dans Hermès</span>
-          </div>
-          <div id="simbriefAccountSummary" class="simbrief-preparation-summary" hidden></div>
-          <div class="tools">
-            <button id="simbriefAccountOpenBtn" type="button" class="primary">Envoyer le vol vers SimBrief</button>
-            <button id="simbriefAccountEditBtn" type="button" hidden>Modifier dans SimBrief</button>
-            <button id="simbriefAccountImportBtn" type="button">Récupérer l’OFP généré</button>
-          </div>
-          <p class="hint plan-mode-footnote">Alias Navigraph / SimBrief et Pilot ID : Paramètres → Compte SimBrief. Aucun mot de passe Navigraph n’est stocké.</p>
-        </div>
-
-        <div id="planPanelApi" class="source-panel plan-mode-card" data-plan-panel="api" role="tabpanel" hidden>
-          <div class="plan-mode-heading">
-            <div><span class="kicker">API SIMBRIEF</span><h4>Génération intégrée compagnie</h4></div>
-            <span class="plan-mode-badge">Prométhée</span>
-          </div>
-          <p class="hint">Prométhée prépare la requête avec la clé API compagnie. Hermès ouvre le générateur SimBrief puis récupère automatiquement l’OFP lorsque la génération est terminée.</p>
-          <div class="plan-mode-steps">
-            <span><b>1</b> Générer avec les données Air Inter</span>
-            <span><b>2</b> Finaliser dans SimBrief</span>
-            <span><b>3</b> Import automatique dans Hermès</span>
-          </div>
-          <div id="simbriefApiSummary" class="simbrief-preparation-summary" hidden></div>
-          <div class="tools"><button id="simbriefBtn" type="button" class="primary">Générer et récupérer l’OFP</button></div>
-        </div>
-
-        <div id="planPanelFile" class="source-panel plan-mode-card" data-plan-panel="file" role="tabpanel" hidden>
-          <div class="plan-mode-heading">
-            <div><span class="kicker">PLAN LOCAL</span><h4>Importer un fichier de plan de vol</h4></div>
-            <span class="plan-mode-badge">Fichier local</span>
-          </div>
-          <p class="hint">Utilisez un fichier exporté localement lorsque vous ne souhaitez pas passer par votre compte ou l’API SimBrief.</p>
-          <div class="tools plan-file-tools">
-            <label>Plan de vol MSFS / XML<input id="planFile" type="file" accept=".pln,.xml"></label>
-            <button id="clearPlanBtn" type="button">Effacer le plan</button>
-          </div>
-        </div>
-
-        <p id="simbriefState" class="plan-state">Sélectionnez un vol et un appareil.</p>
-      </section>
-      <section id="operationalWeather" class="flightplan-source operational-weather" hidden aria-labelledby="operationalWeatherTitle">
-        <div class="draft-heading weather-ops-heading">
-          <div><span class="kicker">WEATHER / OPS</span><h3 id="operationalWeatherTitle">Météo opérationnelle</h3><p>Départ, destination, dégagement, SIGMET et piste probable selon le vent observé.</p></div>
-          <div class="weather-ops-actions"><strong id="weatherOpsState" class="ready-state">STANDBY</strong><button id="weatherRefreshBtn" type="button">Actualiser</button></div>
-        </div>
-        <div class="cards weather-ops-summary">
-          <div><span>Situation</span><strong id="weatherWorst">—</strong></div>
-          <div><span>SIGMET corridor</span><strong id="weatherSigmetCount">0</strong></div>
-          <div><span>Piste probable arrivée</span><strong id="weatherArrivalRunway">—</strong></div>
-        </div>
-        <div id="weatherOpsStations" class="weather-station-grid"></div>
-        <div class="weather-sigmet-panel"><div><span class="kicker">ROUTE</span><h4>SIGMET</h4></div><div id="weatherOpsSigmets" class="observation-list"></div></div>
-        <p id="weatherOpsNote" class="hint">Météo opérationnelle indicative.</p>
-      </section>
-      <pre id="planBox" hidden>Aucun plan chargé.</pre>
-      <section id="networkPrefilePanel" class="flightplan-source" hidden>
-        <div class="draft-heading">
-          <div><span class="kicker">RÉSEAUX ATC</span><h3>Pré-déposer le plan de vol</h3></div>
-          <p>Hermès utilise le plan ICAO généré par SimBrief. vPilot et Altitude récupéreront ensuite le plan depuis leur réseau respectif.</p>
-        </div>
-        <div class="tools">
-          <button id="vatsimPrefileBtn" type="button">Pré-déposer sur VATSIM</button>
-          <button id="ivaoPrefileBtn" type="button">Pré-déposer sur IVAO</button>
-        </div>
-        <pre id="icaoFlightPlanPreview" class="network-fpl-preview" hidden></pre>
-        <p id="networkPrefileMessage" class="message" hidden role="status"></p>
-      </section>
-      <form id="prefileForm" class="grid flight-draft" hidden>
-        <div class="draft-heading">
-          <div><span class="kicker">BROUILLON OPÉRATIONNEL</span><h3>Personnaliser le vol</h3></div>
-          <p>Les données du programme sont verrouillées. Vous pouvez adapter la préparation avant SimBrief ou l’enregistrement de la préparation.</p>
-        </div>
-        <input name="flight_id" type="hidden">
-        <input name="airline_id" type="hidden">
-        <input name="flight_number" type="hidden">
-        <input id="selectedAircraftId" name="aircraft_id" type="hidden">
-        <label>Type d’appareil<select id="aircraftTypeId" required><option value="">Sélectionnez d'abord un vol</option></select></label>
-        <label>Appareil précis<select id="aircraftId" required disabled><option value="">Choisissez d’abord un type</option></select></label>
-        <label>Add-on simulateur
-          <select id="aircraftVariantId" disabled><option value="">Choisissez d’abord un appareil</option></select>
-          <span id="aircraftVariantPreview" class="variant-preview" hidden></span>
-          <small>La variante réelle et la configuration Air Inter sont déterminées automatiquement par l’immatriculation.</small>
+    <details id="simbriefAdvanced" class="dispatch-advanced">
+      <summary><strong>Options SimBrief avancées</strong><span>Airframe · performances · carburant · OFP · pistes</span></summary>
+      <div class="grid simbrief-advanced-grid">
+        <label>Profil / Internal ID
+          <input name="simbrief_type" maxlength="64" placeholder="Géré par Prométhée / sb-airframe" readonly>
+          <small>Le type de calcul est résolu côté Prométhée depuis sb-airframe afin de préserver l’identité réelle de l’appareil.</small>
+          <small>Un Internal ID force un airframe SimBrief précis (Fenix, PMDG, profil personnel…).</small>
         </label>
-        <label>Départ<input name="dpt_airport_id" required readonly></label>
-        <label>Arrivée<input name="arr_airport_id" required readonly></label>
-        <label>Aéroport de dégagement<input name="alt_airport_id" placeholder="AUTO ou LIRN" maxlength="8"></label>
-        <label>Niveau de vol<input name="level" type="number" min="10" max="600" step="10" placeholder="350"></label>
-        <label class="route-field">Route<input name="route" maxlength="2000" placeholder="AUTO SimBrief ou DCT…"></label>
-        <label>Routes proposées
-          <select id="routeSuggestion" disabled>
-            <option value="">Sélectionnez d’abord un vol</option>
+        <label>ATC Callsign<input name="callsign" maxlength="16" placeholder="AUTO · ITF143"></label>
+        <label>SELCAL<input name="selcal" maxlength="16" placeholder="AUTO · AB-CD"></label>
+        <label>Passagers<input name="pax" type="number" min="0" max="999" step="1" placeholder="AUTO"></label>
+
+        <label>Unités
+          <select name="units"><option value="">AUTO (kg)</option><option value="KGS">Kilogrammes</option><option value="LBS">Livres</option></select>
+        </label>
+        <label>Format OFP
+          <select name="planformat">
+            <option value="">AUTO (LIDO)</option><option value="LIDO">LIDO</option><option value="AFR">Air France</option>
+            <option value="AFR2017">Air France 2017</option><option value="BAW">British Airways</option>
+            <option value="DLH">Lufthansa</option><option value="KLM">KLM</option><option value="UAL">United</option>
           </select>
-          <small>Routes compagnie disponibles sur la même liaison. AUTO laisse SimBrief calculer la route.</small>
         </label>
-        <label>Block fuel lbs<input name="block_fuel" type="number" min="0" step="1"></label>
-        <label class="notes-field">Notes opérationnelles<textarea name="notes" maxlength="1000" rows="3" placeholder="Informations utiles au dispatch"></textarea></label>
+        <label>Cartes
+          <select name="maps"><option value="">AUTO (détaillées)</option><option value="DETAIL">Détaillées</option><option value="SIMPLE">Simples</option><option value="NONE">Aucune</option></select>
+        </label>
+        <label>Navlog détaillé
+          <select name="navlog"><option value="">AUTO (oui)</option><option value="1">Oui</option><option value="0">Non</option></select>
+        </label>
 
-        <details id="simbriefAdvanced" class="dispatch-advanced">
-          <summary><strong>Options SimBrief avancées</strong><span>Airframe · performances · carburant · OFP · pistes</span></summary>
-          <div class="grid simbrief-advanced-grid">
-            <label>Profil / Internal ID
-              <input name="simbrief_type" maxlength="64" placeholder="Géré par Prométhée / sb-airframe" readonly>
-              <small>Le type de calcul est résolu côté Prométhée depuis sb-airframe afin de préserver l’identité réelle de l’appareil.</small>
-              <small>Un Internal ID force un airframe SimBrief précis (Fenix, PMDG, profil personnel…).</small>
-            </label>
-            <label>ATC Callsign<input name="callsign" maxlength="16" placeholder="AUTO · ITF143"></label>
-            <label>SELCAL<input name="selcal" maxlength="16" placeholder="AUTO · AB-CD"></label>
-            <label>Passagers<input name="pax" type="number" min="0" max="999" step="1" placeholder="AUTO"></label>
+        <label>Cost Index<input name="civalue" maxlength="16" placeholder="AUTO · 15"></label>
+        <label>Mode croisière<input name="cruise" maxlength="16" placeholder="AUTO · CI"></label>
+        <label>SID / STAR
+          <select name="find_sidstar"><option value="">AUTO</option><option value="R">RNAV</option><option value="C">Conventionnel</option></select>
+        </label>
+        <label>Step climbs
+          <select name="stepclimbs"><option value="">AUTO</option><option value="1">Activés</option><option value="0">Désactivés</option></select>
+        </label>
 
-            <label>Unités
-              <select name="units"><option value="">AUTO (kg)</option><option value="KGS">Kilogrammes</option><option value="LBS">Livres</option></select>
-            </label>
-            <label>Format OFP
-              <select name="planformat">
-                <option value="">AUTO (LIDO)</option><option value="LIDO">LIDO</option><option value="AFR">Air France</option>
-                <option value="AFR2017">Air France 2017</option><option value="BAW">British Airways</option>
-                <option value="DLH">Lufthansa</option><option value="KLM">KLM</option><option value="UAL">United</option>
-              </select>
-            </label>
-            <label>Cartes
-              <select name="maps"><option value="">AUTO (détaillées)</option><option value="DETAIL">Détaillées</option><option value="SIMPLE">Simples</option><option value="NONE">Aucune</option></select>
-            </label>
-            <label>Navlog détaillé
-              <select name="navlog"><option value="">AUTO (oui)</option><option value="1">Oui</option><option value="0">Non</option></select>
-            </label>
+        <label>Contingency fuel
+          <select name="contpct"><option value="">AUTO</option><option value="auto">SimBrief AUTO</option><option value="easa">EASA</option><option value="0.03">3 %</option><option value="0.05">5 %</option><option value="0.1">10 %</option><option value="5">5 min</option><option value="10">10 min</option><option value="15">15 min</option></select>
+        </label>
+        <label>Reserve fuel
+          <select name="resvrule"><option value="">AUTO</option><option value="auto">SimBrief AUTO</option><option value="15">15 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">60 min</option><option value="90">90 min</option></select>
+        </label>
+        <label>Taxi out (min)<input name="taxiout" type="number" min="0" max="180" step="1" placeholder="AUTO"></label>
+        <label>Taxi in (min)<input name="taxiin" type="number" min="0" max="180" step="1" placeholder="AUTO"></label>
 
-            <label>Cost Index<input name="civalue" maxlength="16" placeholder="AUTO · 15"></label>
-            <label>Mode croisière<input name="cruise" maxlength="16" placeholder="AUTO · CI"></label>
-            <label>SID / STAR
-              <select name="find_sidstar"><option value="">AUTO</option><option value="R">RNAV</option><option value="C">Conventionnel</option></select>
-            </label>
-            <label>Step climbs
-              <select name="stepclimbs"><option value="">AUTO</option><option value="1">Activés</option><option value="0">Désactivés</option></select>
-            </label>
+        <label>Piste départ<input name="deprwy" maxlength="4" placeholder="AUTO · 25"></label>
+        <label>Piste arrivée<input name="arrrwy" maxlength="4" placeholder="AUTO · 33"></label>
+        <label>Runway analysis
+          <select name="tlr"><option value="">AUTO</option><option value="1">Activée</option><option value="0">Désactivée</option></select>
+        </label>
+        <label>ETOPS
+          <select name="etops"><option value="">AUTO</option><option value="1">Activé</option><option value="0">Désactivé</option></select>
+        </label>
 
-            <label>Contingency fuel
-              <select name="contpct"><option value="">AUTO</option><option value="auto">SimBrief AUTO</option><option value="easa">EASA</option><option value="0.03">3 %</option><option value="0.05">5 %</option><option value="0.1">10 %</option><option value="5">5 min</option><option value="10">10 min</option><option value="15">15 min</option></select>
-            </label>
-            <label>Reserve fuel
-              <select name="resvrule"><option value="">AUTO</option><option value="auto">SimBrief AUTO</option><option value="15">15 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">60 min</option><option value="90">90 min</option></select>
-            </label>
-            <label>Taxi out (min)<input name="taxiout" type="number" min="0" max="180" step="1" placeholder="AUTO"></label>
-            <label>Taxi in (min)<input name="taxiin" type="number" min="0" max="180" step="1" placeholder="AUTO"></label>
+        <label>NOTAM
+          <select name="notams"><option value="">AUTO</option><option value="1">Inclus</option><option value="0">Exclus</option></select>
+        </label>
+        <label>FIR NOTAM
+          <select name="firnot"><option value="">AUTO</option><option value="1">Inclus</option><option value="0">Exclus</option></select>
+        </label>
+        <label class="notes-field">Remarks dispatch<textarea name="manualrmk" maxlength="2000" rows="3" placeholder="Remarques envoyées à SimBrief uniquement"></textarea></label>
+      </div>
+    </details>
 
-            <label>Piste départ<input name="deprwy" maxlength="4" placeholder="AUTO · 25"></label>
-            <label>Piste arrivée<input name="arrrwy" maxlength="4" placeholder="AUTO · 33"></label>
-            <label>Runway analysis
-              <select name="tlr"><option value="">AUTO</option><option value="1">Activée</option><option value="0">Désactivée</option></select>
-            </label>
-            <label>ETOPS
-              <select name="etops"><option value="">AUTO</option><option value="1">Activé</option><option value="0">Désactivé</option></select>
-            </label>
-
-            <label>NOTAM
-              <select name="notams"><option value="">AUTO</option><option value="1">Inclus</option><option value="0">Exclus</option></select>
-            </label>
-            <label>FIR NOTAM
-              <select name="firnot"><option value="">AUTO</option><option value="1">Inclus</option><option value="0">Exclus</option></select>
-            </label>
-            <label class="notes-field">Remarks dispatch<textarea name="manualrmk" maxlength="2000" rows="3" placeholder="Remarques envoyées à SimBrief uniquement"></textarea></label>
-          </div>
-        </details>
-
-        <div class="draft-actions">
-          <button id="resetDraftBtn" type="button">Réinitialiser</button>
-          <button class="primary">Finaliser la préparation</button>
-        </div>
-      </form>
-      <p id="pirepMessage" class="message" hidden role="status"></p>
-    </section>
-    <section id="record" class="panel" role="tabpanel" aria-labelledby="tab-record">
-      <div class="workspace-title"><div><span class="kicker">FLIGHT OPERATIONS</span><h2>Enregistrement ACARS</h2></div><strong id="flightSafetyState" class="ready-state">STANDBY</strong></div>
-      <section id="recoveryCenter" class="recovery-center" hidden aria-live="assertive">
-        <div class="recovery-heading">
-          <div><span class="kicker">RECOVERY CENTER</span><h2>Vol interrompu détecté</h2><p id="recoverySummary">Hermès a retrouvé un vol enregistré localement.</p></div>
-          <strong id="recoveryPhase" class="ready-state">RECOVERY</strong>
-        </div>
-        <div class="recovery-metrics">
-          <div><span>PIREP</span><strong id="recoveryPirep">—</strong></div>
-          <div><span>Phase</span><strong id="recoveryPhaseValue">—</strong></div>
-          <div><span>Distance</span><strong id="recoveryDistance">—</strong></div>
-          <div><span>Temps de vol</span><strong id="recoveryAirborne">—</strong></div>
-          <div><span>Messages en attente</span><strong id="recoveryPending">0</strong></div>
-        </div>
-        <p id="recoveryHint" class="hint">Connectez-vous à votre compte Air Inter et reconnectez le simulateur pour reprendre exactement ce vol.</p>
-        <div class="actions recovery-actions">
-          <button id="recoveryResumeBtn" class="primary" type="button">Reprendre le vol</button>
-          <button id="recoveryReviewBtn" type="button">Consulter</button>
-          <button id="recoveryAbandonBtn" class="danger" type="button">Abandonner ce vol</button>
-        </div>
-        <div id="recoveryReview" class="recovery-review" hidden>
-          <h3>État local sauvegardé</h3>
-          <div id="recoveryTimeline" class="timeline"></div>
-        </div>
-        <p id="recoveryMessage" class="message" hidden role="status"></p>
-      </section>
-      <div id="preflightChecks" class="preflight-checks" aria-label="Contrôles avant départ"></div>
-      <section id="aircraftCapabilities" class="capability-panel" hidden>
-        <div class="capability-heading">
-          <div><span class="kicker">AIRCRAFT DATA PROFILE</span><h3 id="capabilityAircraft">Appareil détecté</h3><p id="capabilityAdapter" class="hint"></p></div>
-          <div class="capability-counts" aria-label="Résumé des capacités">
-            <span class="supported"><b id="capabilitySupported">0</b> supported</span>
-            <span class="unknown"><b id="capabilityUnknown">0</b> unknown</span>
-            <span class="unsupported"><b id="capabilityUnsupported">0</b> unsupported</span>
-          </div>
-        </div>
-        <div id="capabilityMatrix" class="capability-matrix"></div>
-      </section>
-      <div class="cards"><div><span>Phase</span><strong id="phase">—</strong></div><div><span>Altitude</span><strong id="altitude">—</strong></div><div><span>GS</span><strong id="groundSpeed">—</strong></div><div><span>Carburant</span><strong id="fuel">—</strong></div><div><span>Distance</span><strong id="distance">—</strong></div><div><span>Temps de vol</span><strong id="airborne">—</strong></div><div><span>Synchronisation</span><strong id="pending">0</strong></div></div>
-      <p id="warning" class="hint"></p><div class="actions"><button id="startBtn" class="primary">Démarrer l’enregistrement</button><button id="pauseBtn">Pause</button><button id="resumeBtn">Reprendre</button><button id="syncBtn">Synchroniser</button><button id="fileBtn">Revoir & déposer le PIREP</button><button id="abortPirepBtn" class="danger" type="button" hidden>Abandonner le PIREP</button></div><p id="recordMessage" class="message" hidden></p>
-    </section>
-    <section id="map" class="panel" role="tabpanel" aria-labelledby="tab-map">
-      <div class="workspace-title flight-map-heading">
-        <div><span class="kicker">LIVE TELEMETRY</span><h2>Suivi du vol</h2><p id="flightMapRoute" class="hint">La carte se mettra à jour dès le premier point ACARS.</p></div>
-        <strong id="flightMapState" class="ready-state">STANDBY</strong>
+    <div class="draft-actions">
+      <button id="resetDraftBtn" type="button">Réinitialiser</button>
+      <button class="primary">Finaliser la préparation</button>
+    </div>
+  </form>
+  <p id="pirepMessage" class="message" hidden role="status"></p>
+</section>
+<section id="record" class="panel" role="tabpanel" aria-labelledby="tab-record">
+  <div class="workspace-title"><div><span class="kicker">FLIGHT OPERATIONS</span><h2>Enregistrement ACARS</h2></div><strong id="flightSafetyState" class="ready-state">STANDBY</strong></div>
+  <section id="recoveryCenter" class="recovery-center" hidden aria-live="assertive">
+    <div class="recovery-heading">
+      <div><span class="kicker">RECOVERY CENTER</span><h2>Vol interrompu détecté</h2><p id="recoverySummary">Hermès a retrouvé un vol enregistré localement.</p></div>
+      <strong id="recoveryPhase" class="ready-state">RECOVERY</strong>
+    </div>
+    <div class="recovery-metrics">
+      <div><span>PIREP</span><strong id="recoveryPirep">—</strong></div>
+      <div><span>Phase</span><strong id="recoveryPhaseValue">—</strong></div>
+      <div><span>Distance</span><strong id="recoveryDistance">—</strong></div>
+      <div><span>Temps de vol</span><strong id="recoveryAirborne">—</strong></div>
+      <div><span>Messages en attente</span><strong id="recoveryPending">0</strong></div>
+    </div>
+    <p id="recoveryHint" class="hint">Connectez-vous à votre compte Air Inter et reconnectez le simulateur pour reprendre exactement ce vol.</p>
+    <div class="actions recovery-actions">
+      <button id="recoveryResumeBtn" class="primary" type="button">Reprendre le vol</button>
+      <button id="recoveryReviewBtn" type="button">Consulter</button>
+      <button id="recoveryAbandonBtn" class="danger" type="button">Abandonner ce vol</button>
+    </div>
+    <div id="recoveryReview" class="recovery-review" hidden>
+      <h3>État local sauvegardé</h3>
+      <div id="recoveryTimeline" class="timeline"></div>
+    </div>
+    <p id="recoveryMessage" class="message" hidden role="status"></p>
+  </section>
+  <div id="preflightChecks" class="preflight-checks" aria-label="Contrôles avant départ"></div>
+  <section id="aircraftCapabilities" class="capability-panel" hidden>
+    <div class="capability-heading">
+      <div><span class="kicker">AIRCRAFT DATA PROFILE</span><h3 id="capabilityAircraft">Appareil détecté</h3><p id="capabilityAdapter" class="hint"></p></div>
+      <div class="capability-counts" aria-label="Résumé des capacités">
+        <span class="supported"><b id="capabilitySupported">0</b> supported</span>
+        <span class="unknown"><b id="capabilityUnknown">0</b> unknown</span>
+        <span class="unsupported"><b id="capabilityUnsupported">0</b> unsupported</span>
       </div>
-      <div id="flightMap" class="flight-map" aria-label="Carte du trajet enregistré. Flèches pour déplacer, plus ou moins pour zoomer, Origine pour cadrer le vol." tabindex="0">
-        <div id="flightMapTiles" class="flight-map-tiles" aria-hidden="true"></div>
-        <canvas id="flightMapOverlay" class="flight-map-overlay" aria-hidden="true"></canvas>
-        <div id="flightMapAircraft" class="flight-map-aircraft" aria-label="Position actuelle de l’avion" hidden><span>✈</span></div>
-        <div id="flightMapEmpty" class="flight-map-empty">En attente de la télémétrie…</div>
-        <div class="flight-map-controls" aria-label="Contrôles de la carte">
-          <button id="mapZoomInBtn" type="button" title="Zoom avant" aria-label="Zoom avant">+</button>
-          <span id="flightMapZoom">Z5</span>
-          <button id="mapZoomOutBtn" type="button" title="Zoom arrière" aria-label="Zoom arrière">−</button>
-          <button id="mapFollowBtn" type="button" class="active" aria-pressed="true">Suivi auto ✓</button>
-          <button id="mapFitBtn" type="button">Cadrer le vol</button>
-        </div>
-        <a class="flight-map-attribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a>
-      </div>
-      <div class="flight-map-legend" aria-label="Légende de la carte"><span><i class="planned"></i> Route prévue</span><span><i class="actual"></i> Route réellement volée</span></div>
-      <div class="flight-map-meta">
-        <div><span>Vol</span><strong id="flightMapFlight">—</strong></div>
-        <div><span>Position</span><strong id="flightMapPosition">—</strong></div>
-        <div><span>Altitude</span><strong id="flightMapAltitude">—</strong></div>
-        <div><span>GS</span><strong id="flightMapSpeed">—</strong></div>
-        <div><span>Progression</span><strong id="flightMapProgress">—</strong></div>
-        <div><span>Temps restant</span><strong id="flightMapEta">—</strong></div>
-      </div>
-      <div id="timeline" class="timeline"><p class="empty">En attente d’un vol.</p></div>
-    </section>
-    <section id="journal" class="panel" role="tabpanel" aria-labelledby="tab-journal">
-      <div class="workspace-title">
-        <div><span class="kicker">LOGBOOK · ACARS</span><h2>Journal de bord</h2><p class="hint">Le vol en cours et les derniers vols Hermès conservés localement sur ce poste.</p></div>
-        <button id="journalRefreshBtn" type="button">Actualiser</button>
-      </div>
-      <section class="journal-current">
-        <div class="journal-heading">
-          <div><span class="kicker">VOL EN COURS</span><h3>Événements opérationnels</h3></div>
-          <span id="journalCurrentMeta" class="hint">Aucun vol en cours</span>
-        </div>
-        <div id="journalEntries" class="timeline"><p class="empty">En attente d’un vol.</p></div>
-      </section>
-      <section class="journal-history-section">
-        <div class="journal-heading">
-          <div><span class="kicker">HISTORIQUE LOCAL</span><h3>Derniers vols enregistrés</h3></div>
-          <span id="journalHistoryMeta" class="hint">Chargement…</span>
-        </div>
-        <div id="journalHistory" class="journal-history"><p class="empty">Aucun vol terminé enregistré sur ce poste.</p></div>
-      </section>
-      <p id="journalMessage" class="message" hidden role="status"></p>
-    </section>
-    <section id="datalink" class="panel" role="tabpanel" aria-labelledby="tab-datalink">
-      <div class="workspace-title">
-        <div><span class="kicker">AIR INTER DATALINK</span><h2>OPS / Cockpit</h2><p class="hint">Messages opérationnels liés à l'opération sélectionnée. Envois, lecture et ACK sont conservés localement en cas de coupure.</p></div>
-        <strong id="datalinkState" class="ready-state">STANDBY</strong>
-      </div>
-      <div class="datalink-toolbar">
-        <div><span>Opération</span><strong id="datalinkOperation">—</strong></div>
-        <div><span>Dernière synchro</span><strong id="datalinkLastSync">—</strong></div>
-        <div><span>File locale</span><strong id="datalinkPending">0</strong></div>
-        <button id="datalinkRefreshBtn" type="button">Synchroniser</button>
-      </div>
-      <div id="datalinkMessages" class="datalink-messages"><p class="empty">Sélectionnez une opération Air Inter.</p></div>
-      <form id="datalinkForm" class="datalink-compose">
-        <div class="datalink-compose-meta">
-          <label><span>Type</span><select name="category"><option value="CREW">Crew</option><option value="DISPATCH">Dispatch</option><option value="WEATHER">Weather</option><option value="OPS">Ops</option></select></label>
-          <label><span>Priorité</span><select name="priority"><option value="ROUTINE">Routine</option><option value="ADVISORY">Advisory</option><option value="IMPORTANT">Important</option><option value="URGENT">Urgent</option></select></label>
-          <label class="inline-check"><input type="checkbox" name="requires_ack" value="true"> Demander un ACK</label>
-        </div>
-        <label><span>Message</span><textarea name="body" maxlength="2000" rows="4" placeholder="Message à Air Inter OPS…" required></textarea></label>
-        <input type="hidden" name="reply_to" value="">
-        <div class="actions"><button class="primary" type="submit">Envoyer</button><button id="datalinkCancelReplyBtn" type="button" hidden>Annuler la réponse</button></div>
-      </form>
-      <p id="datalinkMessage" class="message" hidden role="status"></p>
-    </section>
-    <section id="network" class="panel" role="tabpanel" aria-labelledby="tab-network">
-      <div class="workspace-title">
-        <div><span class="kicker">AIR INTER NETWORK</span><h2>Équipages connectés</h2><p class="hint">Présence opérationnelle Hermès. Un équipage passe automatiquement hors ligne si son heartbeat disparaît.</p></div>
-        <strong id="networkState" class="ready-state">STANDBY</strong>
-      </div>
-      <div class="cards">
-        <div><span>Équipages en ligne</span><strong id="networkCount">0</strong></div>
-        <div><span>Mon opération</span><strong id="networkOperation">—</strong></div>
-        <div><span>Dernière mise à jour</span><strong id="networkUpdated">—</strong></div>
-      </div>
-      <div id="networkCrews" class="observation-list"><p class="empty">Aucun équipage Hermès détecté.</p></div>
-      <p id="networkMessage" class="message" hidden role="status"></p>
-    </section>
-    <section id="review" class="panel" role="tabpanel" aria-labelledby="tab-review">
-      <div class="workspace-title"><div><span class="kicker">FLIGHT DATA MONITORING</span><h2>Flight Review</h2><p class="hint">Synthèse factuelle du vol. Hermès observe ; Prométhée applique le barème VMSAcars officiel et conserve le score du PIREP.</p></div><strong id="reviewState" class="ready-state">EN VOL</strong></div>
-      <div class="review-operation-band">
-        <span class="kicker">OPÉRATION</span>
-        <strong id="reviewOperationIdentity">Opération en cours</strong>
-      </div>
-      <div class="review-compare" aria-label="Comparaison planifié et réalisé">
-        <article>
-          <span class="kicker">PLANIFIÉ</span>
-          <strong id="reviewPlannedRoute">AUTO</strong>
-          <small id="reviewPlannedMeta">Planification non disponible</small>
-        </article>
-        <article>
-          <span class="kicker">RÉALISÉ</span>
-          <strong id="reviewActualSummary">En attente du vol</strong>
-          <small id="reviewActualMeta">Les données réalisées apparaîtront pendant l’enregistrement.</small>
-        </article>
-      </div>
-      <div class="cards review-cards">
-        <div><span>Distance</span><strong id="reviewDistance">—</strong></div>
-        <div><span>Airborne</span><strong id="reviewAirborne">—</strong></div>
-        <div><span>Block</span><strong id="reviewBlock">—</strong></div>
-        <div><span>Fuel used</span><strong id="reviewFuel">—</strong></div>
-        <div><span>Landing rate</span><strong id="reviewLandingRate">—</strong></div>
-        <div><span>Max bank observé</span><strong id="reviewMaxBank">—</strong></div>
-        <div><span>Fuel ajouté</span><strong id="reviewFuelAdded">—</strong></div>
-        <div><span>Max sim rate</span><strong id="reviewSimRate">—</strong></div>
-        <div><span>Pauses simulateur</span><strong id="reviewPause">—</strong></div>
-      </div>
-      <div class="review-chart-grid" aria-label="Profils du vol">
-        <article class="review-chart-card">
-          <div class="review-chart-heading"><div><span class="kicker">PROFIL DE VOL</span><h3>Altitude</h3></div><small id="reviewAltitudeChartMeta">En attente de données</small></div>
-          <svg id="reviewAltitudeChart" class="review-chart review-chart--altitude" viewBox="0 0 640 180" preserveAspectRatio="none" role="img" aria-label="Profil d’altitude du vol"></svg>
-        </article>
-        <article class="review-chart-card">
-          <div class="review-chart-heading"><div><span class="kicker">ÉNERGIE</span><h3>Carburant</h3></div><small id="reviewFuelChartMeta">En attente de données</small></div>
-          <svg id="reviewFuelChart" class="review-chart review-chart--fuel" viewBox="0 0 640 180" preserveAspectRatio="none" role="img" aria-label="Évolution du carburant du vol"></svg>
-        </article>
-      </div>
-      <div class="review-event-panel" id="companyScorePanel">
-        <div><span class="kicker">BARÈME VMSACARS</span><h3>Score compagnie</h3><p id="reviewScoreMeta" class="hint">Le score est calculé par Prométhée à partir des règles VMSAcars actives.</p></div>
-        <div>
-          <strong id="reviewCompanyScore" class="ready-state">— / 100</strong>
-          <div id="reviewScoreBreakdown" class="observation-list"><p class="empty">Aucune pénalité calculée pour le moment.</p></div>
-        </div>
-      </div>
-      <div class="review-gates">
-        <article><span class="kicker">1000 FT AGL</span><strong id="review1000">NON OBSERVÉ</strong><p>Train, volets, VS et bank selon les données disponibles.</p></article>
-        <article><span class="kicker">500 FT AGL</span><strong id="review500">NON OBSERVÉ</strong><p>Contrôle générique, indépendant du score Air Inter.</p></article>
-        <article><span class="kicker">APPROCHE</span><strong id="reviewGoAround">0 remise de gaz</strong><p id="reviewBounce">0 rebond</p></article>
-      </div>
-      <div class="review-event-panel">
-        <div><span class="kicker">CHRONOLOGIE</span><h3>Événements importants</h3><p class="hint">Même timeline que le suivi en vol, présentée ici pour expliquer le déroulement avant le dépôt final.</p></div>
-        <div id="reviewTimeline" class="timeline review-timeline"></div>
-      </div>
-      <div class="review-columns">
-        <article><h3>Observations FDM</h3><div id="fdmObservations" class="observation-list"><p class="empty">Aucune observation pour le moment.</p></div></article>
-        <article><h3>Anomalies / règles compagnie</h3><div id="reviewIssues" class="observation-list"><p class="empty">Aucune anomalie détectée.</p></div></article>
-      </div>
-      <label class="review-comment">
-        <span>Commentaire pilote <small>facultatif · transmis avec le PIREP final</small></span>
-        <textarea id="reviewComment" rows="3" maxlength="2000" placeholder="Contexte opérationnel, remarque sur le vol ou information utile au dispatcher…"></textarea>
-      </label>
-      <div class="review-submit">
-        <p id="reviewHint" class="hint">Le dépôt du PIREP devient disponible après l'événement IN.</p>
-        <button id="submitReviewBtn" class="primary" type="button" disabled>Déposer le PIREP</button>
-      </div>
-      <p id="reviewMessage" class="message" hidden role="status"></p>
-    </section>
-    <section id="settings" class="panel" role="tabpanel" aria-labelledby="tab-settings"><h2>Paramètres ACARS</h2><p class="hint">Les règles compagnie et la cadence live sont reçues de Prométhée ; ces réglages restent locaux et n’exécutent aucun code distant.</p>
-      <form id="settingsForm" class="login-form">
-        <label><span>Détection automatique</span><select name="autoDetection"><option value="true">Activée</option><option value="false">Désactivée</option></select></label>
-        <label><span>Simulateur principal</span><select name="preferredSimulator"><option value="msfs2024">MSFS 2024</option><option value="msfs2020">MSFS 2020</option><option value="fsx">FSX / Steam</option><option value="p3d">Prepar3D</option><option value="fs2004">FS2004</option><option value="xplane">X-Plane 11 / 12</option></select></label>
-        <label><span>Forcer le simulateur (diagnostic)</span><select name="forcedSimulator"><option value="">Aucun — automatique</option><option value="msfs">MSFS 2020 / 2024 — SimConnect</option><option value="fs2004">FS2004 — FSUIPC3</option><option value="fsx">FSX / Steam — FSUIPC4</option><option value="p3d">Prepar3D — FSUIPC4/6</option><option value="xplane">X-Plane 11 / 12 — UDP expérimental</option></select></label>
-        <label><span>Heure du journal</span><select name="timeFormat"><option value="local">Locale</option><option value="utc">UTC</option></select></label>
-        <label><span>Notifications locales</span><select name="notifications"><option value="true">Activées</option><option value="false">Désactivées</option></select></label>
-        <label><span>Alias Navigraph / SimBrief</span><input id="simbriefUsername" name="simbriefUsername" autocomplete="off" placeholder="Alias Navigraph"></label>
-        <label><span>Pilot ID SimBrief</span><input id="simbriefPilotId" name="simbriefPilotId" inputmode="numeric" maxlength="7" placeholder="ID numérique"></label>
-        <label><span>VATSIM CID</span><input id="vatsimCid" name="vatsimCid" inputmode="numeric" maxlength="10" placeholder="Votre CID VATSIM"></label>
-        <label><span>IVAO VID</span><input id="ivaoVid" name="ivaoVid" inputmode="numeric" maxlength="12" placeholder="Votre VID IVAO"></label>
-        <label><span>Réseau préféré</span><select name="preferredNetwork"><option value="">Aucun</option><option value="vatsim">VATSIM</option><option value="ivao">IVAO</option></select></label>
-        <button class="primary">Enregistrer les réglages</button>
-      </form>
-      <div class="settings-sections">
-        <article><span class="kicker">COMPAGNIE</span><h3>Politique Prométhée</h3><p class="hint">Cadence live, règles de vol, versions minimales et dépôt PIREP sont imposés par Air Inter et affichés en lecture seule.</p></article>
-        <article class="settings-addons"><span class="kicker">MES ADD-ONS</span><h3>Variantes d’appareils</h3><p class="hint">Cochez les add-ons que vous possédez. Hermès les proposera en priorité pour les types compatibles.</p><div id="aircraftVariantLibrary" class="observation-list"><p class="empty">Connectez-vous pour charger votre bibliothèque.</p></div><button type="button" id="saveAircraftVariantsBtn">Enregistrer mes add-ons</button><p id="aircraftVariantLibraryMessage" class="hint"></p></article>
-        <article class="settings-addons"><span class="kicker">BOUTIQUE · HERMÈS</span><h3>Mes contenus débloqués</h3><p class="hint">Les contenus achetés dans Prométhée sont liés à votre compte pilote. Un cadenas indique un contenu non possédé.</p><div class="hermes-shop-settings"><label>Pack sons<select id="hermesSoundPack"><option value="default">Standard Air Inter</option><option value="acars-retro" data-premium-key="sound.acars-retro" disabled>🔒 ACARS rétro</option></select></label><label>Skin EFB<select id="hermesEfbSkin"><option value="default">Standard</option><option value="airinter-historique" data-premium-key="efb.airinter-historique" disabled>🔒 Air Inter historique</option></select></label></div><div id="hermesEntitlementLibrary" class="observation-list"><p class="empty">Connectez-vous pour charger vos contenus.</p></div></article>
-        <article><span class="kicker">INSTALLATION</span><h3>Compatibilité & version</h3><p class="hint">MSFS 2020/2024 via SimConnect · FS2004/FSX/P3D via FSUIPC · X-Plane 11/12 via UDP expérimental.</p><button type="button" id="checkUpdateBtn">Rechercher une mise à jour</button><p id="updateMessage" class="hint"></p></article>
-        <article><span class="kicker">IDENTITÉ AIR INTER</span><h3>Argos</h3><p class="hint">Connexion SSO active via OAuth 2.0 / OpenID Connect + PKCE. Hermès ne reçoit jamais votre mot de passe Argos ; la connexion Prométhée locale reste uniquement un secours.</p></article>
-      </div>
-      <p id="remotePolicy" class="message" hidden></p><p id="settingsMessage" class="message" hidden></p>
-    </section>
-  </main><script>
+    </div>
+    <div id="capabilityMatrix" class="capability-matrix"></div>
+  </section>
+  <div class="cards"><div><span>Phase</span><strong id="phase">—</strong></div><div><span>Altitude</span><strong id="altitude">—</strong></div><div><span>GS</span><strong id="groundSpeed">—</strong></div><div><span>Carburant</span><strong id="fuel">—</strong></div><div><span>Distance</span><strong id="distance">—</strong></div><div><span>Temps de vol</span><strong id="airborne">—</strong></div><div><span>Synchronisation</span><strong id="pending">0</strong></div></div>
+  <p id="warning" class="hint"></p><div class="actions"><button id="startBtn" class="primary">Démarrer l’enregistrement</button><button id="pauseBtn">Pause</button><button id="resumeBtn">Reprendre</button><button id="syncBtn">Synchroniser</button><button id="fileBtn">Revoir & déposer le PIREP</button><button id="abortPirepBtn" class="danger" type="button" hidden>Abandonner le PIREP</button></div><p id="recordMessage" class="message" hidden></p>
+</section>
+<section id="map" class="panel" role="tabpanel" aria-labelledby="tab-map">
+  <div class="workspace-title flight-map-heading">
+    <div><span class="kicker">LIVE TELEMETRY</span><h2>Suivi du vol</h2><p id="flightMapRoute" class="hint">La carte se mettra à jour dès le premier point ACARS.</p></div>
+    <strong id="flightMapState" class="ready-state">STANDBY</strong>
+  </div>
+  <div id="flightMap" class="flight-map" aria-label="Carte du trajet enregistré. Flèches pour déplacer, plus ou moins pour zoomer, Origine pour cadrer le vol." tabindex="0">
+    <div id="flightMapTiles" class="flight-map-tiles" aria-hidden="true"></div>
+    <canvas id="flightMapOverlay" class="flight-map-overlay" aria-hidden="true"></canvas>
+    <div id="flightMapAircraft" class="flight-map-aircraft" aria-label="Position actuelle de l’avion" hidden><span>✈</span></div>
+    <div id="flightMapEmpty" class="flight-map-empty">En attente de la télémétrie…</div>
+    <div class="flight-map-controls" aria-label="Contrôles de la carte">
+      <button id="mapZoomInBtn" type="button" title="Zoom avant" aria-label="Zoom avant">+</button>
+      <span id="flightMapZoom">Z5</span>
+      <button id="mapZoomOutBtn" type="button" title="Zoom arrière" aria-label="Zoom arrière">−</button>
+      <button id="mapFollowBtn" type="button" class="active" aria-pressed="true">Suivi auto ✓</button>
+      <button id="mapFitBtn" type="button">Cadrer le vol</button>
+    </div>
+    <a class="flight-map-attribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</a>
+  </div>
+  <div class="flight-map-legend" aria-label="Légende de la carte"><span><i class="planned"></i> Route prévue</span><span><i class="actual"></i> Route réellement volée</span></div>
+  <div class="flight-map-meta">
+    <div><span>Vol</span><strong id="flightMapFlight">—</strong></div>
+    <div><span>Position</span><strong id="flightMapPosition">—</strong></div>
+    <div><span>Altitude</span><strong id="flightMapAltitude">—</strong></div>
+    <div><span>GS</span><strong id="flightMapSpeed">—</strong></div>
+    <div><span>Progression</span><strong id="flightMapProgress">—</strong></div>
+    <div><span>Temps restant</span><strong id="flightMapEta">—</strong></div>
+  </div>
+  <div id="timeline" class="timeline"><p class="empty">En attente d’un vol.</p></div>
+</section>
+<section id="journal" class="panel" role="tabpanel" aria-labelledby="tab-journal">
+  <div class="workspace-title">
+    <div><span class="kicker">LOGBOOK · ACARS</span><h2>Journal de bord</h2><p class="hint">Le vol en cours et les derniers vols Hermès conservés localement sur ce poste.</p></div>
+    <button id="journalRefreshBtn" type="button">Actualiser</button>
+  </div>
+  <section class="journal-current">
+    <div class="journal-heading">
+      <div><span class="kicker">VOL EN COURS</span><h3>Événements opérationnels</h3></div>
+      <span id="journalCurrentMeta" class="hint">Aucun vol en cours</span>
+    </div>
+    <div id="journalEntries" class="timeline"><p class="empty">En attente d’un vol.</p></div>
+  </section>
+  <section class="journal-history-section">
+    <div class="journal-heading">
+      <div><span class="kicker">HISTORIQUE LOCAL</span><h3>Derniers vols enregistrés</h3></div>
+      <span id="journalHistoryMeta" class="hint">Chargement…</span>
+    </div>
+    <div id="journalHistory" class="journal-history"><p class="empty">Aucun vol terminé enregistré sur ce poste.</p></div>
+  </section>
+  <p id="journalMessage" class="message" hidden role="status"></p>
+</section>
+<section id="datalink" class="panel" role="tabpanel" aria-labelledby="tab-datalink">
+  <div class="workspace-title">
+    <div><span class="kicker">AIR INTER DATALINK</span><h2>OPS / Cockpit</h2><p class="hint">Messages opérationnels liés à l'opération sélectionnée. Envois, lecture et ACK sont conservés localement en cas de coupure.</p></div>
+    <strong id="datalinkState" class="ready-state">STANDBY</strong>
+  </div>
+  <div class="datalink-toolbar">
+    <div><span>Opération</span><strong id="datalinkOperation">—</strong></div>
+    <div><span>Dernière synchro</span><strong id="datalinkLastSync">—</strong></div>
+    <div><span>File locale</span><strong id="datalinkPending">0</strong></div>
+    <button id="datalinkRefreshBtn" type="button">Synchroniser</button>
+  </div>
+  <div id="datalinkMessages" class="datalink-messages"><p class="empty">Sélectionnez une opération Air Inter.</p></div>
+  <form id="datalinkForm" class="datalink-compose">
+    <div class="datalink-compose-meta">
+      <label><span>Type</span><select name="category"><option value="CREW">Crew</option><option value="DISPATCH">Dispatch</option><option value="WEATHER">Weather</option><option value="OPS">Ops</option></select></label>
+      <label><span>Priorité</span><select name="priority"><option value="ROUTINE">Routine</option><option value="ADVISORY">Advisory</option><option value="IMPORTANT">Important</option><option value="URGENT">Urgent</option></select></label>
+      <label class="inline-check"><input type="checkbox" name="requires_ack" value="true"> Demander un ACK</label>
+    </div>
+    <label><span>Message</span><textarea name="body" maxlength="2000" rows="4" placeholder="Message à Air Inter OPS…" required></textarea></label>
+    <input type="hidden" name="reply_to" value="">
+    <div class="actions"><button class="primary" type="submit">Envoyer</button><button id="datalinkCancelReplyBtn" type="button" hidden>Annuler la réponse</button></div>
+  </form>
+  <p id="datalinkMessage" class="message" hidden role="status"></p>
+</section>
+<section id="network" class="panel" role="tabpanel" aria-labelledby="tab-network">
+  <div class="workspace-title">
+    <div><span class="kicker">AIR INTER NETWORK</span><h2>Équipages connectés</h2><p class="hint">Présence opérationnelle Hermès. Un équipage passe automatiquement hors ligne si son heartbeat disparaît.</p></div>
+    <strong id="networkState" class="ready-state">STANDBY</strong>
+  </div>
+  <div class="cards">
+    <div><span>Équipages en ligne</span><strong id="networkCount">0</strong></div>
+    <div><span>Mon opération</span><strong id="networkOperation">—</strong></div>
+    <div><span>Dernière mise à jour</span><strong id="networkUpdated">—</strong></div>
+  </div>
+  <div id="networkCrews" class="observation-list"><p class="empty">Aucun équipage Hermès détecté.</p></div>
+  <p id="networkMessage" class="message" hidden role="status"></p>
+</section>
+<section id="review" class="panel" role="tabpanel" aria-labelledby="tab-review">
+  <div class="workspace-title"><div><span class="kicker">FLIGHT DATA MONITORING</span><h2>Flight Review</h2><p class="hint">Synthèse factuelle du vol. Hermès observe ; Prométhée applique le barème VMSAcars officiel et conserve le score du PIREP.</p></div><strong id="reviewState" class="ready-state">EN VOL</strong></div>
+  <div class="review-operation-band">
+    <span class="kicker">OPÉRATION</span>
+    <strong id="reviewOperationIdentity">Opération en cours</strong>
+  </div>
+  <div class="review-compare" aria-label="Comparaison planifié et réalisé">
+    <article>
+      <span class="kicker">PLANIFIÉ</span>
+      <strong id="reviewPlannedRoute">AUTO</strong>
+      <small id="reviewPlannedMeta">Planification non disponible</small>
+    </article>
+    <article>
+      <span class="kicker">RÉALISÉ</span>
+      <strong id="reviewActualSummary">En attente du vol</strong>
+      <small id="reviewActualMeta">Les données réalisées apparaîtront pendant l’enregistrement.</small>
+    </article>
+  </div>
+  <div class="cards review-cards">
+    <div><span>Distance</span><strong id="reviewDistance">—</strong></div>
+    <div><span>Airborne</span><strong id="reviewAirborne">—</strong></div>
+    <div><span>Block</span><strong id="reviewBlock">—</strong></div>
+    <div><span>Fuel used</span><strong id="reviewFuel">—</strong></div>
+    <div><span>Landing rate</span><strong id="reviewLandingRate">—</strong></div>
+    <div><span>Max bank observé</span><strong id="reviewMaxBank">—</strong></div>
+    <div><span>Fuel ajouté</span><strong id="reviewFuelAdded">—</strong></div>
+    <div><span>Max sim rate</span><strong id="reviewSimRate">—</strong></div>
+    <div><span>Pauses simulateur</span><strong id="reviewPause">—</strong></div>
+  </div>
+  <div class="review-chart-grid" aria-label="Profils du vol">
+    <article class="review-chart-card">
+      <div class="review-chart-heading"><div><span class="kicker">PROFIL DE VOL</span><h3>Altitude</h3></div><small id="reviewAltitudeChartMeta">En attente de données</small></div>
+      <svg id="reviewAltitudeChart" class="review-chart review-chart--altitude" viewBox="0 0 640 180" preserveAspectRatio="none" role="img" aria-label="Profil d’altitude du vol"></svg>
+    </article>
+    <article class="review-chart-card">
+      <div class="review-chart-heading"><div><span class="kicker">ÉNERGIE</span><h3>Carburant</h3></div><small id="reviewFuelChartMeta">En attente de données</small></div>
+      <svg id="reviewFuelChart" class="review-chart review-chart--fuel" viewBox="0 0 640 180" preserveAspectRatio="none" role="img" aria-label="Évolution du carburant du vol"></svg>
+    </article>
+  </div>
+  <div class="review-event-panel" id="companyScorePanel">
+    <div><span class="kicker">BARÈME VMSACARS</span><h3>Score compagnie</h3><p id="reviewScoreMeta" class="hint">Le score est calculé par Prométhée à partir des règles VMSAcars actives.</p></div>
+    <div>
+      <strong id="reviewCompanyScore" class="ready-state">— / 100</strong>
+      <div id="reviewScoreBreakdown" class="observation-list"><p class="empty">Aucune pénalité calculée pour le moment.</p></div>
+    </div>
+  </div>
+  <div class="review-gates">
+    <article><span class="kicker">1000 FT AGL</span><strong id="review1000">NON OBSERVÉ</strong><p>Train, volets, VS et bank selon les données disponibles.</p></article>
+    <article><span class="kicker">500 FT AGL</span><strong id="review500">NON OBSERVÉ</strong><p>Contrôle générique, indépendant du score Air Inter.</p></article>
+    <article><span class="kicker">APPROCHE</span><strong id="reviewGoAround">0 remise de gaz</strong><p id="reviewBounce">0 rebond</p></article>
+  </div>
+  <div class="review-event-panel">
+    <div><span class="kicker">CHRONOLOGIE</span><h3>Événements importants</h3><p class="hint">Même timeline que le suivi en vol, présentée ici pour expliquer le déroulement avant le dépôt final.</p></div>
+    <div id="reviewTimeline" class="timeline review-timeline"></div>
+  </div>
+  <div class="review-columns">
+    <article><h3>Observations FDM</h3><div id="fdmObservations" class="observation-list"><p class="empty">Aucune observation pour le moment.</p></div></article>
+    <article><h3>Anomalies / règles compagnie</h3><div id="reviewIssues" class="observation-list"><p class="empty">Aucune anomalie détectée.</p></div></article>
+  </div>
+  <label class="review-comment">
+    <span>Commentaire pilote <small>facultatif · transmis avec le PIREP final</small></span>
+    <textarea id="reviewComment" rows="3" maxlength="2000" placeholder="Contexte opérationnel, remarque sur le vol ou information utile au dispatcher…"></textarea>
+  </label>
+  <div class="review-submit">
+    <p id="reviewHint" class="hint">Le dépôt du PIREP devient disponible après l'événement IN.</p>
+    <button id="submitReviewBtn" class="primary" type="button" disabled>Déposer le PIREP</button>
+  </div>
+  <p id="reviewMessage" class="message" hidden role="status"></p>
+</section>
+<section id="settings" class="panel" role="tabpanel" aria-labelledby="tab-settings"><h2>Paramètres ACARS</h2><p class="hint">Les règles compagnie et la cadence live sont reçues de Prométhée ; ces réglages restent locaux et n’exécutent aucun code distant.</p>
+  <form id="settingsForm" class="login-form">
+    <label><span>Détection automatique</span><select name="autoDetection"><option value="true">Activée</option><option value="false">Désactivée</option></select></label>
+    <label><span>Simulateur principal</span><select name="preferredSimulator"><option value="msfs2024">MSFS 2024</option><option value="msfs2020">MSFS 2020</option><option value="fsx">FSX / Steam</option><option value="p3d">Prepar3D</option><option value="fs2004">FS2004</option><option value="xplane">X-Plane 11 / 12</option></select></label>
+    <label><span>Forcer le simulateur (diagnostic)</span><select name="forcedSimulator"><option value="">Aucun — automatique</option><option value="msfs">MSFS 2020 / 2024 — SimConnect</option><option value="fs2004">FS2004 — FSUIPC3</option><option value="fsx">FSX / Steam — FSUIPC4</option><option value="p3d">Prepar3D — FSUIPC4/6</option><option value="xplane">X-Plane 11 / 12 — UDP expérimental</option></select></label>
+    <label><span>Heure du journal</span><select name="timeFormat"><option value="local">Locale</option><option value="utc">UTC</option></select></label>
+    <label><span>Notifications locales</span><select name="notifications"><option value="true">Activées</option><option value="false">Désactivées</option></select></label>
+    <label><span>Alias Navigraph / SimBrief</span><input id="simbriefUsername" name="simbriefUsername" autocomplete="off" placeholder="Alias Navigraph"></label>
+    <label><span>Pilot ID SimBrief</span><input id="simbriefPilotId" name="simbriefPilotId" inputmode="numeric" maxlength="7" placeholder="ID numérique"></label>
+    <label><span>VATSIM CID</span><input id="vatsimCid" name="vatsimCid" inputmode="numeric" maxlength="10" placeholder="Votre CID VATSIM"></label>
+    <label><span>IVAO VID</span><input id="ivaoVid" name="ivaoVid" inputmode="numeric" maxlength="12" placeholder="Votre VID IVAO"></label>
+    <label><span>Réseau préféré</span><select name="preferredNetwork"><option value="">Aucun</option><option value="vatsim">VATSIM</option><option value="ivao">IVAO</option></select></label>
+    <button class="primary">Enregistrer les réglages</button>
+  </form>
+  <div class="settings-sections">
+    <article><span class="kicker">COMPAGNIE</span><h3>Politique Prométhée</h3><p class="hint">Cadence live, règles de vol, versions minimales et dépôt PIREP sont imposés par Air Inter et affichés en lecture seule.</p></article>
+    <article class="settings-addons"><span class="kicker">MES ADD-ONS</span><h3>Variantes d’appareils</h3><p class="hint">Cochez les add-ons que vous possédez. Hermès les proposera en priorité pour les types compatibles.</p><div id="aircraftVariantLibrary" class="observation-list"><p class="empty">Connectez-vous pour charger votre bibliothèque.</p></div><button type="button" id="saveAircraftVariantsBtn">Enregistrer mes add-ons</button><p id="aircraftVariantLibraryMessage" class="hint"></p></article>
+    <article class="settings-addons"><span class="kicker">BOUTIQUE · HERMÈS</span><h3>Mes contenus débloqués</h3><p class="hint">Les contenus achetés dans Prométhée sont liés à votre compte pilote. Un cadenas indique un contenu non possédé.</p><div class="hermes-shop-settings"><label>Pack sons<select id="hermesSoundPack"><option value="default">Standard Air Inter</option><option value="acars-retro" data-premium-key="sound.acars-retro" disabled>🔒 ACARS rétro</option></select></label><label>Skin EFB<select id="hermesEfbSkin"><option value="default">Standard</option><option value="airinter-historique" data-premium-key="efb.airinter-historique" disabled>🔒 Air Inter historique</option></select></label></div><div id="hermesEntitlementLibrary" class="observation-list"><p class="empty">Connectez-vous pour charger vos contenus.</p></div></article>
+    <article><span class="kicker">INSTALLATION</span><h3>Compatibilité & version</h3><p class="hint">MSFS 2020/2024 via SimConnect · FS2004/FSX/P3D via FSUIPC · X-Plane 11/12 via UDP expérimental.</p><button type="button" id="checkUpdateBtn">Rechercher une mise à jour</button><p id="updateMessage" class="hint"></p></article>
+    <article><span class="kicker">IDENTITÉ AIR INTER</span><h3>Argos</h3><p class="hint">Connexion SSO active via OAuth 2.0 / OpenID Connect + PKCE. Hermès ne reçoit jamais votre mot de passe Argos ; la connexion Prométhée locale reste uniquement un secours.</p></article>
+  </div>
+  <p id="remotePolicy" class="message" hidden></p><p id="settingsMessage" class="message" hidden></p>
+</section>
+</main><script>
 window.__hermesBootErrors = [];
 window.addEventListener('error', event => {
-  const detail = { message: event.message || 'erreur inconnue', error: event.error || event.message || 'erreur inconnue' };
-  window.__hermesBootErrors.push(detail.error);
-  window.dispatchEvent(new CustomEvent('hermes:ui-error', { detail }));
-  const message = document.getElementById('loginMessage');
-  if (!message) return;
-  message.hidden = false;
-  message.classList.add('error');
-  message.textContent = 'Interface Hermès en erreur : ' + detail.message;
+const detail = { message: event.message || 'erreur inconnue', error: event.error || event.message || 'erreur inconnue' };
+window.__hermesBootErrors.push(detail.error);
+window.dispatchEvent(new CustomEvent('hermes:ui-error', { detail }));
+const message = document.getElementById('loginMessage');
+if (!message) return;
+message.hidden = false;
+message.classList.add('error');
+message.textContent = 'Interface Hermès en erreur : ' + detail.message;
 });
 </script>
 <script src="/i18n.js"></script>
 <script>
 window.loadHermesMinitel = (() => {
-  let promise;
-  const styles = [
-    '/minitel/minitel-runtime.css?rev=20261005-m9',
-    '/minitel/minitel-shell.css?rev=20261005-m9',
-    '/hermes-minitel.css?rev=20261005-m9'
-  ];
-  const scripts = [
-    '/minitel/runtime.js?rev=20261005-m9',
-    '/minitel/renderer.js?rev=20261005-m9',
-    '/minitel/shell.js?rev=20261005-m9',
-    '/hermes-minitel-core.js?rev=20261005-m9',
-    '/hermes-minitel.js?rev=20261005-m9'
-  ];
-  const loadStyle = href => new Promise((resolve, reject) => {
-    const existing = document.querySelector('link[data-hermes-minitel-style="' + href + '"]');
-    if (existing?.dataset.loaded === 'true') return resolve();
-    const link = existing || document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = href;
-    link.dataset.hermesMinitelStyle = href;
-    link.addEventListener('load', () => { link.dataset.loaded = 'true'; resolve(); }, { once: true });
-    link.addEventListener('error', () => reject(new Error('Impossible de charger ' + href)), { once: true });
-    if (!existing) document.head.append(link);
-  });
-  const loadScript = src => new Promise((resolve, reject) => {
-    const existing = document.querySelector('script[data-hermes-minitel-src="' + src + '"]');
-    if (existing?.dataset.loaded === 'true') return resolve();
-    const script = existing || document.createElement('script');
-    script.dataset.hermesMinitelSrc = src;
-    script.src = src;
-    script.async = false;
-    script.addEventListener('load', () => { script.dataset.loaded = 'true'; resolve(); }, { once: true });
-    script.addEventListener('error', () => reject(new Error('Impossible de charger ' + src)), { once: true });
-    if (!existing) document.head.append(script);
-  });
-  return () => promise ||= Promise.all(styles.map(loadStyle))
-    .then(() => scripts.reduce((chain, src) => chain.then(() => loadScript(src)), Promise.resolve()));
+let promise;
+const styles = [
+'/minitel/minitel-runtime.css?rev=20261005-m9',
+'/minitel/minitel-shell.css?rev=20261005-m9',
+'/hermes-minitel.css?rev=20261005-m9'
+];
+const scripts = [
+'/minitel/runtime.js?rev=20261005-m9',
+'/minitel/renderer.js?rev=20261005-m9',
+'/minitel/shell.js?rev=20261005-m9',
+'/hermes-minitel-core.js?rev=20261005-m9',
+'/hermes-minitel.js?rev=20261005-m9'
+];
+const loadStyle = href => new Promise((resolve, reject) => {
+const existing = document.querySelector('link[data-hermes-minitel-style="' + href + '"]');
+if (existing?.dataset.loaded === 'true') return resolve();
+const link = existing || document.createElement('link');
+link.rel = 'stylesheet';
+link.href = href;
+link.dataset.hermesMinitelStyle = href;
+link.addEventListener('load', () => { link.dataset.loaded = 'true'; resolve(); }, { once: true });
+link.addEventListener('error', () => reject(new Error('Impossible de charger ' + href)), { once: true });
+if (!existing) document.head.append(link);
+});
+const loadScript = src => new Promise((resolve, reject) => {
+const existing = document.querySelector('script[data-hermes-minitel-src="' + src + '"]');
+if (existing?.dataset.loaded === 'true') return resolve();
+const script = existing || document.createElement('script');
+script.dataset.hermesMinitelSrc = src;
+script.src = src;
+script.async = false;
+script.addEventListener('load', () => { script.dataset.loaded = 'true'; resolve(); }, { once: true });
+script.addEventListener('error', () => reject(new Error('Impossible de charger ' + src)), { once: true });
+if (!existing) document.head.append(script);
+});
+return () => promise ||= Promise.all(styles.map(loadStyle))
+.then(() => scripts.reduce((chain, src) => chain.then(() => loadScript(src)), Promise.resolve()));
 })();
 try {
-  if ((localStorage.hermesEra || localStorage.prometheeEra || 'modern') === 'minitel') window.loadHermesMinitel();
+if ((localStorage.hermesEra || localStorage.prometheeEra || 'modern') === 'minitel') window.loadHermesMinitel();
 } catch {}
 </script>
 <script src="/hermes-map.js?rev=20261003-architecture-phase4"></script>
-  <script src="/hermes-review.js?rev=20261003-architecture-phase4"></script>
-  <script src="/hermes-weather.js?rev=20261005-audit-lot11"></script>
-  <script src="/hermes-operations.js?rev=20261005-modularization-phase2"></script>
-  <script src="/hermes-communications.js?rev=20261005-modularization-phase2"></script>
-  <script src="/hermes-workflow.js?rev=20261005-modularization-phase2"></script>
-  <script src="/hermes-planning.js?rev=20261005-modularization-phase2"></script>
-  <script src="/hermes-recovery.js?rev=20261005-modularization-phase2"></script>
-  <script src="/hermes-identity.js?rev=20261005-audit-lot12"></script>
-  <script src="/app.js?rev=20261005-audit-lot12"></script>
+<script src="/hermes-review.js?rev=20261003-architecture-phase4"></script>
+<script src="/hermes-weather.js?rev=20261005-audit-lot11"></script>
+<script src="/hermes-operations.js?rev=20261005-modularization-phase2"></script>
+<script src="/hermes-communications.js?rev=20261005-modularization-phase2"></script>
+<script src="/hermes-workflow.js?rev=20261005-modularization-phase2"></script>
+<script src="/hermes-planning.js?rev=20261005-modularization-phase2"></script>
+<script src="/hermes-recovery.js?rev=20261005-modularization-phase2"></script>
+<script src="/hermes-identity.js?rev=20261005-audit-lot12"></script>
+<script src="/app.js?rev=20261005-audit-lot12"></script>
 </body></html>
