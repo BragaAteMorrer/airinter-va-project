@@ -119,6 +119,8 @@ public sealed class PrometheeWindow : Window
     private async Task<object> Route(string path, JsonElement? body)
     {
         var uri = new Uri("https://promethee.local" + path); var route = uri.AbsolutePath;
+        if (route == "/api/open-pirep-replay")
+            return OpenPirepReplay(body);
         if (route == "/api/efb/context")
             return efb.UpdateContext(body);
         if (route == "/api/network")
@@ -331,6 +333,24 @@ public sealed class PrometheeWindow : Window
         } catch (Exception exception) {
             return new { ok = false, updateAvailable = false, currentVersion = UpdateService.CurrentVersion, error = exception.Message };
         }
+    }
+
+    private object OpenPirepReplay(JsonElement? body)
+    {
+        if (!client.Connected)
+            throw new InvalidOperationException("Connectez-vous à Argos pour accéder au replay du PIREP.");
+        if (!body.HasValue || body.Value.ValueKind != JsonValueKind.Object
+            || !body.Value.TryGetProperty("pirepId", out var value)
+            || value.ValueKind != JsonValueKind.String)
+            throw new InvalidOperationException("Identifiant PIREP manquant.");
+        var id = (value.GetString() ?? "").Trim();
+        if (id.Length is < 1 or > 96 || !System.Text.RegularExpressions.Regex.IsMatch(id, @"^[a-zA-Z0-9_-]+$"))
+            throw new InvalidOperationException("Identifiant PIREP invalide.");
+        // Fixed trusted host and an escaped report id prevent arbitrary URL launches.
+        // The server enforces its own authenticated PIREP access.
+        var url = "https://promethee.airinter-va.org/replay/" + Uri.EscapeDataString(id);
+        Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        return new { ok = true, pirepId = id };
     }
 
     private object OpenExternal(JsonElement? body)
