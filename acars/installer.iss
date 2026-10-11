@@ -5,6 +5,9 @@
 #ifndef MyAppVersion
   #define MyAppVersion "dev"
 #endif
+#ifndef MyAppNumericVersion
+  #define MyAppNumericVersion "1.0.0.0"
+#endif
 #define MyAppExeName "Promethee.Acars.exe"
 
 [Setup]
@@ -31,7 +34,7 @@ CloseApplications=yes
 RestartApplications=no
 UninstallDisplayName={#MyAppName}
 UninstallDisplayIcon={app}\{#MyAppExeName}
-VersionInfoVersion={#MyAppVersion}
+VersionInfoVersion={#MyAppNumericVersion}
 VersionInfoCompany={#MyAppPublisher}
 VersionInfoDescription=Client ACARS officiel de Prométhée
 VersionInfoProductName={#MyAppName}
