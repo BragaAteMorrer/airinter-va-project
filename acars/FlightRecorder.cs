@@ -82,21 +82,31 @@ public sealed class FlightRecorder
         var historyFile = Path.Combine(folder, "history.json");
         try { if (File.Exists(historyFile)) History = JsonSerializer.Deserialize<List<FlightSummary>>(File.ReadAllText(historyFile)) ?? []; }
         catch (JsonException) { Warning = "L'historique local est illisible."; }
+        // Restore the latest valid durable checkpoint. A torn write or a corrupt
+        // primary file must never silently discard an earlier recoverable flight.
         var file = Path.Combine(folder, "state.json");
-        if (File.Exists(file)) {
+        var backup = Path.Combine(folder, "state.backup.json");
+        var temporary = Path.Combine(folder, "state.tmp");
+        foreach (var candidate in new[] { file, backup, temporary }) {
+            if (!File.Exists(candidate)) continue;
             try {
-                var saved = JsonSerializer.Deserialize<Saved>(File.ReadAllText(file));
-                Flight = saved?.Flight; Pending = saved?.Pending ?? []; PendingEvents = saved?.PendingEvents ?? [];
-                PendingFacts = saved?.PendingFacts ?? [];
-                Track = saved?.Track ?? [];
-                Profile = saved?.Profile ?? [];
+                var saved = JsonSerializer.Deserialize<Saved>(File.ReadAllText(candidate))
+                    ?? throw new JsonException("Empty recovery checkpoint.");
+                Flight = saved.Flight;
+                Pending = saved.Pending ?? [];
+                PendingEvents = saved.PendingEvents ?? [];
+                PendingFacts = saved.PendingFacts ?? [];
+                Track = saved.Track ?? [];
+                Profile = saved.Profile ?? [];
                 if (Flight is not null) {
                     Flight = Flight with { Recording = false };
                     recoveryRequired = true;
                 }
+                if (candidate != file)
+                    Warning = "Sauvegarde principale endommagée : un point de reprise de secours a été restauré. Vérifiez les événements avant de poursuivre.";
+                break;
             } catch (JsonException) {
-                // A damaged local cache must not prevent the pilot from opening ACARS.
-                Warning = "Le cache local est illisible. Commencez un nouveau vol après avoir vérifié le PIREP.";
+                Warning = "Une sauvegarde ACARS est illisible. Tentative de récupération d’un point précédent.";
             }
         }
     }
@@ -119,11 +129,25 @@ public sealed class FlightRecorder
     }
     private void Save()
     {
+        var destination = Path.Combine(folder, "state.json");
+        var backup = Path.Combine(folder, "state.backup.json");
         var temp = Path.Combine(folder, "state.tmp");
         using (var file = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None)) {
-            JsonSerializer.Serialize(file, new Saved(Flight, Pending, PendingEvents, Track, PendingFacts, Profile)); file.Flush(true);
+            JsonSerializer.Serialize(file, new Saved(Flight, Pending, PendingEvents, Track, PendingFacts, Profile));
+            file.Flush(true);
         }
-        File.Move(temp, Path.Combine(folder, "state.json"), true);
+        // ReplaceFile maintains the previous complete checkpoint as a backup
+        // on Windows. Never overwrite the backup with a damaged primary file.
+        if (File.Exists(destination)) {
+            try {
+                using var old = JsonDocument.Parse(File.ReadAllText(destination));
+                File.Replace(temp, destination, backup);
+            } catch (JsonException) {
+                File.Move(temp, destination, true);
+            }
+        } else {
+            File.Move(temp, destination);
+        }
     }
 
     public void Start(string server, string id, Sample sample, string? operationId = null) =>
