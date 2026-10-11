@@ -1,15 +1,81 @@
 @extends('promethee::layout')
-@section('title','Relecture de vol')
+@section('title', 'Replay de vol · Hermès')
 @section('content')
-<div class="ops-header compact"><div><span class="eyebrow">RETOUR D’EXPÉRIENCE</span><h1>{{ $pirep->ident }}</h1><p>{{ $pirep->dpt_airport_id }} → {{ $pirep->arr_airport_id }} · {{ $pirep->user?->name }}</p></div><span class="tag">Score {{ $score['score'] }}/100</span></div>
-<section class="control-strip"><article><span>Échantillons</span><strong>{{ $samples->count() }}</strong><small>Trace enregistrée</small></article><article><span>Atterrissage</span><strong>{{ $pirep->landing_rate ? number_format($pirep->landing_rate,0,',',' ') : '—' }}</strong><small>ft/min</small></article><article><span>Survitesse</span><strong>{{ $analysis['overspeed'] === null ? 'n/a' : ($analysis['overspeed'] ? 'Oui' : 'Non') }}</strong><small>{{ $analysis['speed_events'] }} événement(s)</small></article><article><span>Approche</span><strong>{{ count($analysis['approaches']) }}</strong><small>Checkpoint(s) évalué(s)</small></article></section>
-<section class="panel"><div class="panel-heading"><div><span class="eyebrow">TRACE ET CURSEUR</span><h2>Comparaison des routes</h2><div class="replay-route-legend" aria-label="Légende des routes"><span><i class="actual"></i> Route effectuée par le pilote</span><span><i class="planned"></i> Route prévue du PIREP</span></div></div><input id="replay-range" aria-label="Position dans le vol" type="range" min="0" max="{{ max(0,$samples->count()-1) }}" value="0" {{ $samples->isEmpty() ? 'disabled' : '' }}></div><div id="replay-map" class="ops-leaflet-map"></div><p id="replay-detail" class="mono muted"></p></section>
-<div class="two-columns"><section class="panel"><div class="panel-heading"><div><span class="eyebrow">ÉVÉNEMENTS DÉTECTÉS</span><h2>Phases de vol</h2></div></div>@forelse($score['events'] as $event)<article class="event"><time>{{ \Carbon\Carbon::parse($event['at'])->setTimezone('Europe/Paris')->format('H:i:s') }}</time><h3>{{ $event['type'] }}</h3><p>{{ $event['detail'] }}</p></article>@empty<p class="empty">Aucune phase ne peut être confirmée : la télémétrie est incomplète.</p>@endforelse</section><section class="panel"><div class="panel-heading"><div><span class="eyebrow">SCORE EXPLICABLE</span><h2>Qualité du vol</h2></div></div>@forelse($score['items'] as $item)<article class="event"><h3>{{ $item['label'] }} · {{ $item['score'] }}/{{ $item['max'] }}</h3><p>{{ $item['detail'] }}</p></article>@empty<p class="empty">Aucun indicateur ne peut être calculé sans données correspondantes.</p>@endforelse</section></div>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<style>
-.replay-route-legend{display:flex;flex-wrap:wrap;gap:.65rem 1rem;margin-top:.45rem;font-size:.75rem;color:#66798c}.replay-route-legend span{display:inline-flex;align-items:center;gap:.4rem}.replay-route-legend i{display:inline-block;width:28px;border-top:4px solid;border-radius:999px}.replay-route-legend i.actual{border-color:#155eef}.replay-route-legend i.planned{border-color:#f4c430;border-top-style:dashed}
-</style>
-<script>
-(()=>{const samples=@json($samples),planned=@json($plannedPath ?? collect()),mapNode=document.querySelector('#replay-map'),detail=document.querySelector('#replay-detail'),range=document.querySelector('#replay-range');if(!window.L){mapNode.textContent='La bibliothèque cartographique est indisponible.';return;}const valid=samples.filter(s=>Number.isFinite(Number(s.lat))&&Number.isFinite(Number(s.lon)));const actualTrace=valid.map(s=>[Number(s.lat),Number(s.lon)]);const plannedTrace=(Array.isArray(planned)?planned:[]).filter(p=>Array.isArray(p)&&Number.isFinite(Number(p[0]))&&Number.isFinite(Number(p[1]))).map(p=>[Number(p[0]),Number(p[1])]);const map=L.map(mapNode,{scrollWheelZoom:true,minZoom:2,maxZoom:14});L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);if(actualTrace.length){L.polyline(actualTrace,{color:'#155eef',weight:4,opacity:.82}).bindTooltip('Route effectuée par le pilote').addTo(map);}if(plannedTrace.length){L.polyline(plannedTrace,{color:'#f4c430',weight:4,opacity:.95,dashArray:'10 8'}).bindTooltip('Route prévue du PIREP').addTo(map);}const boundsPoints=[...actualTrace,...plannedTrace];if(boundsPoints.length>1){map.fitBounds(boundsPoints,{padding:[35,35],maxZoom:9});}else if(boundsPoints.length){map.setView(boundsPoints[0],7);}else{map.setView([46.6,2.5],5);mapNode.insertAdjacentHTML('beforeend','<p class="empty">Aucune coordonnée n’est disponible pour comparer les routes.</p>');}let aircraft=null;if(actualTrace.length){aircraft=L.marker(actualTrace[0],{icon:L.divIcon({className:'aircraft-marker',html:'✈',iconSize:[24,24]})}).addTo(map);}const draw=()=>{if(!samples.length){detail.textContent=plannedTrace.length?'Route prévue affichée en jaune · aucune télémétrie pilote disponible.':'Aucune télémétrie disponible.';return;}const s=samples[Number(range.value)]||samples[0];if(aircraft&&Number.isFinite(Number(s.lat))&&Number.isFinite(Number(s.lon)))aircraft.setLatLng([Number(s.lat),Number(s.lon)]);detail.textContent=`${s.recorded_at} · ${Number(s.altitude_msl||0).toFixed(0)} ft · IAS ${Number(s.ias||0).toFixed(0)} kt · VS ${Number(s.vs||0).toFixed(0)} ft/min · carburant ${Number(s.fuel||0).toFixed(0)}`;};if(range)range.addEventListener('input',draw);draw();})();
-</script>
+<div class="ops-header compact">
+  <div>
+    <span class="eyebrow">HERMÈS · REPLAY SYNCHRONISÉ AVEC LE PIREP</span>
+    <h1>{{ $pirep->ident }}</h1>
+    <p>{{ $pirep->dpt_airport_id }} → {{ $pirep->arr_airport_id }} · {{ $pirep->user?->name }}</p>
+  </div>
+  <div class="toolbar">
+    <a class="button outline" href="{{ route('promethee.pireps.show', $pirep->id) }}">← Voir le PIREP</a>
+    <span class="tag">Score {{ $score['score'] ?? '—' }}/100</span>
+  </div>
+</div>
+<section class="control-strip">
+  <article><span>Télémétrie</span><strong>{{ $samples->count() }}</strong><small>Échantillons archivés</small></article>
+  <article><span>Événements</span><strong>{{ $journal->count() }}</strong><small>Journal ACARS, SOP et PIREP</small></article>
+  <article><span>Atterrissage</span><strong>{{ $pirep->landing_rate === null ? '—' : number_format($pirep->landing_rate, 0, ',', ' ') }}</strong><small>ft/min</small></article>
+  <article><span>Approches</span><strong>{{ count($analysis['approaches'] ?? []) }}</strong><small>Points de contrôle</small></article>
+</section>
+<div data-replay class="pirep-replay">
+  <section class="panel replay-flight-map">
+    <div class="panel-heading">
+      <div>
+        <span class="eyebrow">TRAJECTOIRE</span>
+        <h2>Replay géographique</h2>
+        <div class="replay-legend"><span><i class="actual"></i> Trace Hermès</span><span><i class="planned"></i> Trajet PIREP prévu</span></div>
+      </div>
+      <span id="replay-time" class="replay-clock">—</span>
+    </div>
+    <div id="replay-map" class="ops-leaflet-map" role="img" aria-label="Route parcourue et route prévue"></div>
+    <div class="replay-transport" aria-label="Commandes de relecture">
+      <button id="replay-back" type="button" aria-label="Échantillon précédent">◀◀</button>
+      <button id="replay-play" type="button" aria-pressed="false">▶ Lecture</button>
+      <button id="replay-next" type="button" aria-label="Échantillon suivant">▶▶</button>
+      <label>Vitesse
+        <select id="replay-speed" aria-label="Vitesse de relecture">
+          <option value="1">x1 réel</option><option value="10">x10</option>
+          <option value="60" selected>x60</option><option value="240">x240</option>
+          <option value="600">x600</option>
+        </select>
+      </label>
+      <span id="replay-elapsed" class="replay-elapsed">—</span>
+    </div>
+    <label class="replay-range-label" for="replay-range">Position dans le vol</label>
+    <input id="replay-range" type="range" min="0" max="{{ max(0, $samples->count()-1) }}" value="0" aria-label="Déplacer le curseur de vol">
+    <p id="replay-detail" class="replay-detail" role="status" aria-live="off">En attente de données…</p>
+  </section>
+  <div class="replay-main-grid">
+    <section class="panel replay-chart-panel">
+      <div class="panel-heading"><div><span class="eyebrow">PROFIL VERTICAL</span><h2>Altitude (ft)</h2></div></div>
+      <svg id="replay-altitude" class="replay-chart" aria-label="Altitude synchronisée au curseur" role="img"></svg>
+      <div class="panel-heading"><div><span class="eyebrow">VITESSES</span><h2>IAS et GS (kt)</h2></div></div>
+      <svg id="replay-speed" class="replay-chart" aria-label="Vitesses synchronisées au curseur" role="img"></svg>
+      <div class="panel-heading"><div><span class="eyebrow">CARBURANT</span><h2>Carburant restant (lb)</h2></div></div>
+      <svg id="replay-fuel" class="replay-chart" aria-label="Carburant synchronisé au curseur" role="img"></svg>
+      <p class="replay-note">Les graphiques sont basés uniquement sur la télémétrie archivée. Les périodes sans échantillon ne sont pas reconstituées.</p>
+    </section>
+    <section class="panel replay-timeline-panel">
+      <div class="panel-heading"><div><span class="eyebrow">JOURNAL CHRONOLOGIQUE</span><h2>Événements Hermès / PIREP</h2></div></div>
+      <p class="replay-note">Sélectionner un événement déplace le curseur sur sa date et synchronise carte et profils.</p>
+      <div id="replay-events" class="replay-events" aria-label="Chronologie des événements"></div>
+    </section>
+  </div>
+  <section class="panel">
+    <div class="panel-heading"><div><span class="eyebrow">NOTATION</span><h2>Événements et score du PIREP</h2></div></div>
+    <div class="replay-score-grid">
+      @forelse(($score['items'] ?? []) as $item)
+        <article class="replay-score"><strong>{{ $item['label'] ?? 'Indicateur' }} · {{ $item['score'] ?? '—' }}/{{ $item['max'] ?? '—' }}</strong><p>{{ $item['detail'] ?? '' }}</p></article>
+      @empty
+        <p class="empty">Aucun indicateur de notation calculable.</p>
+      @endforelse
+    </div>
+  </section>
+</div>
+<script type="application/json" id="replay-data">@json(['samples'=>$samples,'planned'=>$plannedPath,'journal'=>$journal])</script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="{{ asset('promethee-assets/pirep-replay.css') }}">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{{ asset('promethee-assets/pirep-replay.js') }}"></script>
 @endsection
