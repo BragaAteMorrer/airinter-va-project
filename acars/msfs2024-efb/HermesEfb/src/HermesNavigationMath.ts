@@ -26,3 +26,18 @@ export function crossTrackNm(position:GeoPoint,a:GeoPoint,b:GeoPoint):number|nul
  };
  return Math.asin(Math.max(-1,Math.min(1,Math.sin(d13)*Math.sin(bearing(a,position)-bearing(a,b)))))*3440.065;
 }
+
+export function nearestRouteOffsetNm(position:GeoPoint,points:GeoPoint[]):number|null{
+ if(!validPoint(position)||points.length<2||points.length>400||!points.every(validPoint))return null;
+ let nearest=Infinity;
+ for(let i=1;i<points.length;i++){
+  const start=points[i-1],end=points[i],segment=greatCircleNm(start,end);
+  if(segment<.05)continue;
+  const da=greatCircleNm(position,start),db=greatCircleNm(position,end);
+  // Only accept the perpendicular when its projection lies on the finite leg.
+  const along=(da*da+segment*segment-db*db)/(2*segment);
+  const d=along>=0&&along<=segment?Math.abs(crossTrackNm(position,start,end)??Infinity):Math.min(da,db);
+  nearest=Math.min(nearest,d);
+ }
+ return Number.isFinite(nearest)?nearest:null;
+}
