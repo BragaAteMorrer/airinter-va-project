@@ -9,7 +9,14 @@ $zip = "$release.zip"
 if (Test-Path -LiteralPath $release) { Remove-Item -LiteralPath $release -Recurse -Force }
 if (Test-Path -LiteralPath $zip) { Remove-Item -LiteralPath $zip -Force }
 New-Item -ItemType Directory -Path $release -Force | Out-Null
-dotnet publish $project -f net8.0-windows -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeAllContentForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -p:Version=$Version -p:AssemblyVersion=$Version -p:FileVersion=$Version -p:InformationalVersion=$Version -o $release
+# .NET AssemblyVersion/FileVersion require numeric components; SemVer prerelease
+# labels remain in Version and InformationalVersion for package identity.
+$numericVersion = if ($Version -match '^(\\d+)\\.(\\d+)\\.(\\d+)') {
+  "$($Matches[1]).$($Matches[2]).$($Matches[3]).0"
+} else {
+  '0.0.0.0'
+}
+dotnet publish $project -f net8.0-windows -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeAllContentForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -p:Version=$Version -p:AssemblyVersion=$numericVersion -p:FileVersion=$numericVersion -p:InformationalVersion=$Version -o $release
 if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath (Join-Path $release 'Promethee.Acars.exe'))) {
   throw 'Build ACARS échoué — distribution non créée.'
 }
