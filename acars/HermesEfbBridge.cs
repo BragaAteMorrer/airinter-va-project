@@ -33,6 +33,7 @@ public sealed record HermesEfbContext(
     string? OfpSource,
     string? DispatchStatus,
     JsonElement? Weather,
+    JsonElement? DestinationPoint,
     DateTimeOffset UpdatedAt);
 
 /// <summary>
@@ -95,6 +96,7 @@ public sealed class HermesEfbBridge : IDisposable
                 Text(value, "ofp_source", 48),
                 Upper(value, "dispatch_status", 48),
                 Object(value, "weather", 32768),
+                Object(value, "destination_point", 1024),
                 DateTimeOffset.UtcNow);
 
             return Diagnostics();
