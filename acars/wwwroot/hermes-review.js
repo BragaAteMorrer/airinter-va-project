@@ -139,11 +139,12 @@ function renderObservations(selector, entries, emptyText) {
     const explanation = document.createElement('div');
     explanation.className = 'fdm-explanation';
     const descriptions = {
-      TAXI_SPEED: 'Vitesse de roulage détectée par le simulateur. Vérifiez la phase enregistrée : une accélération au décollage ne doit pas être comptée comme du roulage.',
+      TAXI_SPEED_MAX: 'Vitesse de roulage détectée par le simulateur. Vérifiez la phase enregistrée : une accélération au décollage ne doit pas être comptée comme du roulage.',
       SPEED_UNDER_10K: 'IAS relevée sous 10 000 ft. La règle Hermès prévoit un seuil supérieur à 255 kt pendant au moins 10 secondes.',
-      APPROACH_DESCENT_RATE: 'Taux de descente observé pendant l’approche stabilisée. La règle utilise une fenêtre temporelle pour éviter les alertes instantanées.',
+      APPROACH_DESCENT_RATE_UNSTABLE: 'Taux de descente observé pendant l’approche stabilisée. La règle utilise une fenêtre temporelle pour éviter les alertes instantanées.',
       EXCESSIVE_BANK: 'Inclinaison de l’appareil observée, avec détection d’entrée et sortie de dépassement.',
-      LOAD_FACTOR: 'Facteur de charge observé ; les seuils de maintenance peuvent être distincts des seuils de notation.',
+      LOAD_FACTOR_EXCEEDED: 'Facteur de charge observé ; les seuils de maintenance peuvent être distincts des seuils de notation.',
+      LOAD_FACTOR_MAINTENANCE: 'Dépassement des limites de charge menant potentiellement à une inspection technique de l’appareil.',
       FUEL_ADDED: 'Variation de carburant détectée. Un ravitaillement à l’arrêt ne doit pas être assimilé à une anomalie de vol.'
     };
     const rule = descriptions[String(code).toUpperCase()] || 'Observation enregistrée à partir de la télémétrie du simulateur. Les données absentes ne doivent pas être estimées.';
