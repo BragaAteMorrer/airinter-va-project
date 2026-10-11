@@ -546,6 +546,33 @@ for (const file of inlineStyleFreeViews) {
     `${file} must use shared CSS primitives instead of inline style attributes.`);
 }
 
+// The replay must ship as executable files rather than a decorative view.
+for (const file of [
+  'public/promethee-assets/pirep-replay.js',
+  '../acars/wwwroot/hermes-replay-link.js',
+]) {
+  try {
+    require('child_process').execFileSync(process.execPath, ['--check', path.join(root, file)]);
+  } catch (error) {
+    fail('Replay JavaScript syntax invalid: ' + file + ' (' + String(error.stderr || error.message).trim() + ')');
+  }
+}
+const replayView = read('modules/Promethee/Resources/views/replay.blade.php');
+const replayScript = read('public/promethee-assets/pirep-replay.js');
+expect(['replay-map','replay-range','replay-altitude','replay-speed',
+  'replay-fuel','replay-events','replay-play'].every(id => replayView.includes('id="' + id + '"'))
+  && replayView.includes('id="replay-data"')
+  && replayView.includes('promethee.pireps.show'),
+  'Hermès replay must retain map, telemetry plots, controls, event navigation and PIREP link.');
+expect(replayScript.includes('requestAnimationFrame')
+  && replayScript.includes('replay-rate')
+  && replayScript.includes('chooseTime(')
+  && replayScript.includes('journal'),
+  'Hermès replay must synchronize timestamps, playback and ACARS journal.');
+expect(read('../acars/wwwroot/index.html').includes('openPirepReplayBtn')
+  && read('../acars/WebDesktop.cs').includes('/api/open-pirep-replay'),
+  'Hermès Flight Review must be linked to the canonical Prométhée PIREP replay.');
+
 if (failures.length) {
   console.error('\nFrontend quality gate failed:');
   failures.forEach(item => console.error('- ' + item));
