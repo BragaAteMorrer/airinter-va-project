@@ -10,6 +10,7 @@ on:
   push:
     branches:
       - 'release/hermes-*'
+      - 'build/hermes-*'
     tags:
       - 'hermes-v*'
 
@@ -40,6 +41,8 @@ jobs:
         run: |
           if ('${{ github.event_name }}' -eq 'workflow_dispatch') {
             $version = '${{ inputs.version }}'.Trim()
+          } elseif ('${{ github.ref }}' -like 'refs/heads/build/hermes-*') {
+            $version = ('${{ github.ref_name }}' -replace '^build/hermes-', '').Trim()
           } elseif ('${{ github.ref }}' -like 'refs/heads/release/hermes-*') {
             $version = ('${{ github.ref_name }}' -replace '^release/hermes-', '').Trim()
           } else {
