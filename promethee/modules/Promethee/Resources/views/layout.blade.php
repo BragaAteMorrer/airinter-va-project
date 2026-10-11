@@ -276,7 +276,7 @@ window.prometheeI18n = @json($prometheeI18n);
 <time id="utc-clock">UTC</time></header>
 <main id="main" tabindex="-1">
 @if(session('success'))<div class="notice success" role="status" aria-live="polite">{{ session('success') }}</div>@endif
-@if($errors->any())<div class="notice error" role="alert" aria-live="assertive"><strong>{{ __('promethee.input_error') }}</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
+@if(isset($errors) && $errors->any())<div class="notice error" role="alert" aria-live="assertive"><strong>{{ __('promethee.input_error') }}</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
 @yield('content')
 </main>
 <footer class="footer"><span>AIR INTER · PROMÉTHÉE</span><span>{{ __('promethee.airline_simulation') }} · {{ date('Y') }}</span><span class="tricolor"><i></i><i></i><i></i></span></footer>
