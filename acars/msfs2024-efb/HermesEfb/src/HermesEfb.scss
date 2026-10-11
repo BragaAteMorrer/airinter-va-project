@@ -183,3 +183,21 @@ $muted: #687986;
     .ofp-strip > div { border-bottom: 1px solid rgba(255,255,255,.18); }
   }
 }
+
+.airinter-hermes-efb {
+  .efb-connect-help {
+    max-width: 960px; margin: 0 auto 14px; padding: 12px 16px;
+    background: #fff5df; border-left: 4px solid #b8770a;
+    color: #543b0b; font-size: 13px; line-height: 1.5;
+  }
+  .efb-live-strip {
+    max-width: 960px; margin: 14px auto 0; padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 7px;
+    color: #fff; background: #102d47;
+    strong { font-size: 12px; letter-spacing: .04em; }
+    span { font: 12px/1.5 Consolas, monospace; overflow-wrap: anywhere; }
+  }
+  .efb-header { flex-wrap: wrap; }
+  .metric-grid { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+  .flight-hero strong { white-space: normal; overflow-wrap: anywhere; }
+}

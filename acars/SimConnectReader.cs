@@ -101,10 +101,9 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
                 TrySubscribeSystemEvent(PauseEventId, "Pause_EX1");
                 TrySubscribeSystemEvent(SimStopEventId, "SimStop");
                 TrySubscribeSystemEvent(SimStartEventId, "SimStart");
-                // CommBus is intentionally opt-in while the native MSFS 2024 bridge
-                // is being flight-tested. Hermès must never expose every pilot to a
-                // fresh unmanaged SimConnect surface that is unrelated to core ACARS
-                // telemetry. Set HERMES_MSFS2024_COMMBUS=1 only for controlled EFB tests.
+                // Enable the EFB bridge when the MSFS 2024 SDK exports are present.
+                // Keep HERMES_MSFS2024_COMMBUS=0 as an emergency kill-switch
+                // for pilots diagnosing simulator instability.
                 if (ExperimentalCommBusEnabled) TryEnableCommBus();
                 else CommBusAvailable = false;
                 Status="MSFS détecté";
@@ -189,9 +188,9 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
         get
         {
             var value = Environment.GetEnvironmentVariable(CommBusOptInEnvironmentVariable);
-            return string.Equals(value, "1", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase);
+            return !string.Equals(value, "0", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(value, "false", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(value, "no", StringComparison.OrdinalIgnoreCase);
         }
     }
 
