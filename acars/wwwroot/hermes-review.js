@@ -135,7 +135,35 @@ function renderObservations(selector, entries, emptyText) {
     title.textContent = message || code;
     const detail = document.createElement('small');
     detail.textContent = value == null ? severity.toUpperCase() : (Number(value).toFixed(Number.isInteger(Number(value)) ? 0 : 1) + ' ' + unit).trim();
-    item.append(meta, title, detail);
+    const status = entry.status ?? entry.Status;
+    const explanation = document.createElement('div');
+    explanation.className = 'fdm-explanation';
+    const descriptions = {
+      TAXI_SPEED: 'Vitesse de roulage détectée par le simulateur. Vérifiez la phase enregistrée : une accélération au décollage ne doit pas être comptée comme du roulage.',
+      SPEED_UNDER_10K: 'IAS relevée sous 10 000 ft. La règle Hermès prévoit un seuil supérieur à 255 kt pendant au moins 10 secondes.',
+      APPROACH_DESCENT_RATE: 'Taux de descente observé pendant l’approche stabilisée. La règle utilise une fenêtre temporelle pour éviter les alertes instantanées.',
+      EXCESSIVE_BANK: 'Inclinaison de l’appareil observée, avec détection d’entrée et sortie de dépassement.',
+      LOAD_FACTOR: 'Facteur de charge observé ; les seuils de maintenance peuvent être distincts des seuils de notation.',
+      FUEL_ADDED: 'Variation de carburant détectée. Un ravitaillement à l’arrêt ne doit pas être assimilé à une anomalie de vol.'
+    };
+    const rule = descriptions[String(code).toUpperCase()] || 'Observation enregistrée à partir de la télémétrie du simulateur. Les données absentes ne doivent pas être estimées.';
+    explanation.textContent = 'Pourquoi ? ' + rule;
+    const available = [
+      phase ? 'Phase : ' + phase : null,
+      occurredAt ? 'Horodatage : ' + new Date(occurredAt).toLocaleString('fr-FR', { timeZone: localSettings.timeFormat === 'utc' ? 'UTC' : undefined }) : null,
+      value == null ? null : 'Mesure : ' + detail.textContent,
+      status ? 'Évaluation : ' + status : null
+    ].filter(Boolean);
+    const evidence = document.createElement('small');
+    evidence.textContent = available.join(' · ');
+    const score = document.createElement('small');
+    score.className = 'fdm-score-disclaimer';
+    score.textContent = 'Pénalité : consulter la décision SOP/PIREP dans Prométhée. Ce relevé décrit le fait mesuré, pas la décision de notation.';
+    const expand = document.createElement('details');
+    const summary = document.createElement('summary');
+    summary.textContent = 'Comprendre cette observation';
+    expand.append(summary, explanation, evidence, score);
+    item.append(meta, title, detail, expand);
     node.append(item);
   });
 }
