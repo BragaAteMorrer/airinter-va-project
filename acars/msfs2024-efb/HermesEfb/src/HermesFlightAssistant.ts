@@ -1,3 +1,4 @@
+import './HermesFlightAssistant.scss';
 /** Read-only advisory assistant. No flight-control, ATC or FDM commands. */
 export interface AssistantSnapshot {
  context?: {departure?:string|null;arrival?:string|null;alternate?:string|null;route?:string|null;flightLevel?:number|null;blockFuel?:number|null}|null;
