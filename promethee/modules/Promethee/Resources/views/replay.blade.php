@@ -34,7 +34,7 @@
       <button id="replay-play" type="button" aria-pressed="false">▶ Lecture</button>
       <button id="replay-next" type="button" aria-label="Échantillon suivant">▶▶</button>
       <label>Vitesse
-        <select id="replay-speed" aria-label="Vitesse de relecture">
+        <select id="replay-rate" aria-label="Vitesse de relecture">
           <option value="1">x1 réel</option><option value="10">x10</option>
           <option value="60" selected>x60</option><option value="240">x240</option>
           <option value="600">x600</option>
