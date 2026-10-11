@@ -12,6 +12,7 @@ TVNode,
 import { FSComponent, VNode } from "@microsoft/msfs-sdk";
 
 import "./HermesEfb.scss";
+import { HermesFlightAssistant } from "./HermesFlightAssistant";
 
 declare const BASE_URL: string;
 
@@ -160,6 +161,8 @@ private readonly syncTime = FSComponent.createRef<HTMLSpanElement>();
 private readonly connectionHelp = FSComponent.createRef<HTMLDivElement>();
 private readonly telemetryDetails = FSComponent.createRef<HTMLSpanElement>();
 private readonly liveIndicators = FSComponent.createRef<HTMLSpanElement>();
+private readonly assistantHost = FSComponent.createRef<HTMLDivElement>();
+private assistant?: HermesFlightAssistant;
 
 private listener?: CommBusListener;
 private timer?: number;
@@ -169,6 +172,7 @@ private requestSequence = 0;
 
 public onAfterRender(node: VNode): void {
 super.onAfterRender(node);
+this.assistant = new HermesFlightAssistant(this.assistantHost.instance);
 this.connectBridge();
 this.startPolling();
 }
@@ -212,11 +216,12 @@ this.stopPolling();
 this.requestState();
 this.timer = window.setInterval(() => {
 if (this.lastStateAt && Date.now() - this.lastStateAt > 6500) {
-  this.set(this.bridgeState, "Liaison Hermès interrompue");
-  this.showConnectionHelp("Aucune télémétrie récente. Vérifiez Hermès desktop et sa connexion à MSFS 2024.");
+this.set(this.bridgeState, "Liaison Hermès interrompue");
+this.assistant?.checkStale();
+this.showConnectionHelp("Aucune télémétrie récente. Vérifiez Hermès desktop et sa connexion à MSFS 2024.");
 } else if (!this.lastStateAt && this.pendingRequestAt && Date.now() - this.pendingRequestAt > 6500) {
-  this.set(this.bridgeState, "Aucune réponse de Hermès");
-  this.showConnectionHelp("CommBus sans réponse. Lancez Hermès, connectez le simulateur et contrôlez Diagnostics > efb.commBusAvailable.");
+this.set(this.bridgeState, "Aucune réponse de Hermès");
+this.showConnectionHelp("CommBus sans réponse. Lancez Hermès, connectez le simulateur et contrôlez Diagnostics > efb.commBusAvailable.");
 }
 this.requestState();
 }, 1500);
@@ -268,6 +273,7 @@ const live = state.flight || {};
 
 this.lastStateAt = Date.now();
 this.pendingRequestAt = 0;
+this.assistant?.update(envelope);
 this.showConnectionHelp(state.hermesConnected
 ? (!context.operationId && !context.flightIdent ? "Hermès est joignable, mais aucune opération n’est préparée. Chargez un vol depuis Hermès desktop." : "")
 : "Bridge actif, mais Hermès n’a pas de session de vol connectée.");
@@ -354,8 +360,8 @@ const wind = station.metar?.wind || {};
 const direction = wind.variable
 ? "VRB"
 : (wind.direction === null || wind.direction === undefined
-    ? "—"
-    : String(Math.round(wind.direction)).padStart(3, "0") + "°");
+  ? "—"
+  : String(Math.round(wind.direction)).padStart(3, "0") + "°");
 const speed = wind.speed_kt === null || wind.speed_kt === undefined
 ? ""
 : "/" + Math.round(wind.speed_kt) + (wind.gust_kt ? "G" + Math.round(wind.gust_kt) : "") + "KT";
@@ -366,80 +372,82 @@ return `${station.icao || "—"} · ${station.metar?.category || "N/D"} · ${dir
 public render(): VNode {
 return (
 <div class="airinter-hermes-efb">
-  <header class="efb-header">
-    <div>
-      <span class="eyebrow">AIR INTER · HERMÈS</span>
-      <h1>Opération de vol</h1>
-    </div>
-    <div class="bridge-status">
-      <strong ref={this.bridgeState}>Connexion Hermès…</strong>
-      <small>MAJ <span ref={this.syncTime}>—</span></small>
-    </div>
-  </header>
+<header class="efb-header">
+  <div>
+    <span class="eyebrow">AIR INTER · HERMÈS</span>
+    <h1>Opération de vol</h1>
+  </div>
+  <div class="bridge-status">
+    <strong ref={this.bridgeState}>Connexion Hermès…</strong>
+    <small>MAJ <span ref={this.syncTime}>—</span></small>
+  </div>
+</header>
 
-  <div class="efb-warning" ref={this.warning} hidden></div>
-  <div class="efb-connect-help" ref={this.connectionHelp}>En attente d’une réponse de Hermès…</div>
+<div class="efb-warning" ref={this.warning} hidden></div>
+<div class="efb-connect-help" ref={this.connectionHelp}>En attente d’une réponse de Hermès…</div>
 
-  <section class="flight-hero">
-    <div>
-      <span class="label">VOL</span>
-      <strong ref={this.operation}>Aucune opération</strong>
-    </div>
-    <div>
-      <span class="label">ROUTE</span>
-      <strong ref={this.route}>—</strong>
-    </div>
-    <div>
-      <span class="label">APPAREIL</span>
-      <strong ref={this.aircraft}>—</strong>
-    </div>
-  </section>
+<section class="flight-hero">
+  <div>
+    <span class="label">VOL</span>
+    <strong ref={this.operation}>Aucune opération</strong>
+  </div>
+  <div>
+    <span class="label">ROUTE</span>
+    <strong ref={this.route}>—</strong>
+  </div>
+  <div>
+    <span class="label">APPAREIL</span>
+    <strong ref={this.aircraft}>—</strong>
+  </div>
+</section>
 
-  <section class="efb-live-strip"><strong ref={this.liveIndicators}>CONNEXION EN ATTENTE</strong><span ref={this.telemetryDetails}>IAS — · GS — · VS — · HDG — · AGL —</span></section>
+<section class="efb-live-strip"><strong ref={this.liveIndicators}>CONNEXION EN ATTENTE</strong><span ref={this.telemetryDetails}>IAS — · GS — · VS — · HDG — · AGL —</span></section>
 
-  <section class="metric-grid">
-    <article><span>PHASE</span><strong ref={this.phase}>STANDBY</strong></article>
-    <article><span>DISPATCH</span><strong ref={this.dispatch}>—</strong></article>
-    <article><span>ALTITUDE</span><strong ref={this.altitude}>—</strong></article>
-    <article><span>VITESSE SOL</span><strong ref={this.speed}>—</strong></article>
-    <article><span>CARBURANT ACTUEL</span><strong ref={this.fuel}>—</strong></article>
-    <article><span>MASSE</span><strong ref={this.grossWeight}>—</strong></article>
-    <article><span>DISTANCE</span><strong ref={this.travelled}>—</strong></article>
-    <article><span>TEMPS EN VOL</span><strong ref={this.airborne}>—</strong></article>
-    <article><span>SYNC EN ATTENTE</span><strong ref={this.pending}>0</strong></article>
-  </section>
+<div ref={this.assistantHost} class="efb-assistant-host"></div>
 
-  <section class="briefing-panel">
-    <div class="briefing-title">
-      <div><span class="eyebrow">OFP / SIMBRIEF</span><strong ref={this.ofpSource}>—</strong></div>
-      <p ref={this.ofpRoute}>Aucune route OFP chargée.</p>
-    </div>
-    <div class="ofp-strip">
-      <div><span>PAX</span><strong ref={this.pax}>—</strong></div>
-      <div><span>NIVEAU</span><strong ref={this.flightLevel}>—</strong></div>
-      <div><span>CI</span><strong ref={this.costIndex}>—</strong></div>
-      <div><span>BLOCK FUEL</span><strong ref={this.blockFuel}>—</strong></div>
-      <div><span>EET</span><strong ref={this.eet}>—</strong></div>
-    </div>
-  </section>
+<section class="metric-grid">
+  <article><span>PHASE</span><strong ref={this.phase}>STANDBY</strong></article>
+  <article><span>DISPATCH</span><strong ref={this.dispatch}>—</strong></article>
+  <article><span>ALTITUDE</span><strong ref={this.altitude}>—</strong></article>
+  <article><span>VITESSE SOL</span><strong ref={this.speed}>—</strong></article>
+  <article><span>CARBURANT ACTUEL</span><strong ref={this.fuel}>—</strong></article>
+  <article><span>MASSE</span><strong ref={this.grossWeight}>—</strong></article>
+  <article><span>DISTANCE</span><strong ref={this.travelled}>—</strong></article>
+  <article><span>TEMPS EN VOL</span><strong ref={this.airborne}>—</strong></article>
+  <article><span>SYNC EN ATTENTE</span><strong ref={this.pending}>0</strong></article>
+</section>
 
-  <section class="weather-panel">
-    <div class="weather-title">
-      <div><span class="eyebrow">WEATHER / OPS</span><strong ref={this.wxState}>Météo non chargée</strong></div>
-      <span ref={this.wxSigmet}>SIGMET indisponibles</span>
-    </div>
-    <div class="weather-grid">
-      <article><span>DÉPART</span><strong ref={this.wxDeparture}>—</strong></article>
-      <article><span>DESTINATION</span><strong ref={this.wxArrival}>—</strong></article>
-      <article><span>DÉGAGEMENT</span><strong ref={this.wxAlternate}>—</strong></article>
-    </div>
-    <p>METAR/TAF via Prométhée · piste indicative selon le vent · l’ATIS et les instructions ATC restent prioritaires.</p>
-  </section>
+<section class="briefing-panel">
+  <div class="briefing-title">
+    <div><span class="eyebrow">OFP / SIMBRIEF</span><strong ref={this.ofpSource}>—</strong></div>
+    <p ref={this.ofpRoute}>Aucune route OFP chargée.</p>
+  </div>
+  <div class="ofp-strip">
+    <div><span>PAX</span><strong ref={this.pax}>—</strong></div>
+    <div><span>NIVEAU</span><strong ref={this.flightLevel}>—</strong></div>
+    <div><span>CI</span><strong ref={this.costIndex}>—</strong></div>
+    <div><span>BLOCK FUEL</span><strong ref={this.blockFuel}>—</strong></div>
+    <div><span>EET</span><strong ref={this.eet}>—</strong></div>
+  </div>
+</section>
 
-  <footer>
-    <span>Lecture seule · les actions PIREP restent dans Hermès</span>
-    <button onClick={() => { this.pendingRequestAt = 0; this.requestState(); }}>Actualiser les données</button>
-  </footer>
+<section class="weather-panel">
+  <div class="weather-title">
+    <div><span class="eyebrow">WEATHER / OPS</span><strong ref={this.wxState}>Météo non chargée</strong></div>
+    <span ref={this.wxSigmet}>SIGMET indisponibles</span>
+  </div>
+  <div class="weather-grid">
+    <article><span>DÉPART</span><strong ref={this.wxDeparture}>—</strong></article>
+    <article><span>DESTINATION</span><strong ref={this.wxArrival}>—</strong></article>
+    <article><span>DÉGAGEMENT</span><strong ref={this.wxAlternate}>—</strong></article>
+  </div>
+  <p>METAR/TAF via Prométhée · piste indicative selon le vent · l’ATIS et les instructions ATC restent prioritaires.</p>
+</section>
+
+<footer>
+  <span>Lecture seule · les actions PIREP restent dans Hermès</span>
+  <button onClick={() => { this.pendingRequestAt = 0; this.requestState(); }}>Actualiser les données</button>
+</footer>
 </div>
 );
 }
