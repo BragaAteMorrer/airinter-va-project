@@ -409,3 +409,39 @@ jobs:
           name: minitel-m7-release-report
           path: TestResults/minitel-m7/
           if-no-files-found: error
+
+  hermes-replay-windows-package:
+    name: Hermès Windows installer + EFB package
+    if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'feature/hermes-')
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Install .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Install Node.js for EFB
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup --yes --no-progress
+      - name: Compile Hermès Windows and MSFS 2024 EFB
+        shell: pwsh
+        run: ./acars/build-installer.ps1 -Version '1.0.18-dev.1' -IncludeMsfs2024Efb
+      - name: Upload development installer and EFB
+        uses: actions/upload-artifact@v4
+        with:
+          name: Hermes-ACARS-1.0.18-dev.1
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            dist/Hermes-ACARS-Setup-1.0.18-dev.1.exe
+            dist/Hermes-ACARS-Setup-1.0.18-dev.1.exe.sha256
+            dist/Promethee-ACARS-win-x64-1.0.18-dev.1.zip
+            dist/Promethee-ACARS-win-x64-1.0.18-dev.1.zip.sha256
+            dist/AirInter-Hermes-EFB-MSFS2024-1.0.18-dev.1.zip
+            dist/AirInter-Hermes-EFB-MSFS2024-1.0.18-dev.1.zip.sha256

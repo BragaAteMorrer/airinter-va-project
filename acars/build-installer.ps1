@@ -33,7 +33,12 @@ if (-not $iscc) {
   throw "Inno Setup 6 est requis - installez-le avec Chocolatey (choco install innosetup)."
 }
 
-$isccArgs = @("/DMyAppVersion=$Version")
+$numericVersion = if ($Version -match '^(\d+)\.(\d+)\.(\d+)') {
+  "$($Matches[1]).$($Matches[2]).$($Matches[3]).0"
+} else {
+  throw "Version de distribution invalide : $Version"
+}
+$isccArgs = @("/DMyAppVersion=$Version", "/DMyAppNumericVersion=$numericVersion")
 if ($IncludeMsfs2024Efb) { $isccArgs += '/DIncludeMsfs2024Efb=1' }
 $isccArgs += (Join-Path $PSScriptRoot 'installer.iss')
 & $iscc @isccArgs
