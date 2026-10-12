@@ -29,7 +29,7 @@
   const validCoordinate = s => numeric(s?.lat) !== null && numeric(s?.lon) !== null && Math.abs(Number(s.lat)) <= 90 && Math.abs(Number(s.lon)) <= 180;
   const trace = samples.filter(validCoordinate).map(s => [Number(s.lat), Number(s.lon)]);
   const plannedTrace = (Array.isArray(planned) ? planned : []).filter(p => Array.isArray(p) && numeric(p[0]) !== null && numeric(p[1]) !== null).map(p => [Number(p[0]), Number(p[1])]);
-  let map = null, marker = null, travelled = null, playing = false, frame = null, lastTick = null, selected = 0;
+  let map = null, marker = null, travelled = null, playing = false, frame = null, lastTick = null, virtualTime = null, selected = 0;
   if (window.L) {
     map = L.map(mapNode, {scrollWheelZoom:true,minZoom:2,maxZoom:14});
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
@@ -90,18 +90,19 @@
   function tick(now) {
     if(!playing)return;
     if(lastTick!==null && samples.length) {
-      const current=time(samples[selected]),next=time(samples[selected+1]);
-      const elapsed=(now-lastTick)*Number(speed.value);
-      if(Number.isFinite(current)&&Number.isFinite(next)&&next>current) {
-        if(elapsed>=next-current)seek(selected+1);
-      } else seek(selected+1);
+      virtualTime += (now-lastTick)*Number(speed.value);
+      let next=time(samples[selected+1]);
+      while(selected<samples.length-1 && (!Number.isFinite(next) || next<=virtualTime)) {
+        seek(selected+1);
+        next=time(samples[selected+1]);
+      }
     }
     lastTick=now;
     if(selected>=samples.length-1){stop();return;}
     frame=requestAnimationFrame(tick);
   }
-  playButton.addEventListener('click',()=>{if(playing){stop();return;}if(selected>=samples.length-1)seek(0);playing=true;playButton.textContent='⏸ Pause';frame=requestAnimationFrame(tick);});
-  range.addEventListener('input',()=>{seek(Number(range.value));lastTick=null;});
+  playButton.addEventListener('click',()=>{if(playing){stop();return;}if(selected>=samples.length-1)seek(0);playing=true;virtualTime=time(samples[selected]);playButton.textContent='⏸ Pause';frame=requestAnimationFrame(tick);});
+  range.addEventListener('input',()=>{seek(Number(range.value));virtualTime=time(samples[selected]);lastTick=null;});
   if(samples.length)seek(0);else{playButton.disabled=true;clock.textContent='Aucune télémétrie';detail.textContent='Le replay sera disponible lorsque Hermès aura synchronisé ses échantillons.';}
 })();
 </script>
