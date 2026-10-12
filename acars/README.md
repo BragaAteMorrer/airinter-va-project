@@ -327,3 +327,32 @@ Free code signing is intended to be provided by SignPath.io, certificate by Sign
 
 Hermès communicates with the Prométhée/phpVMS server explicitly configured for the virtual airline and with services explicitly requested by the pilot as part of the flight workflow (for example SimBrief). Authentication secrets are not included in diagnostic exports. Flight state and unsent telemetry are persisted locally for recovery and synchronization.
 
+
+### Diagnostic CTD MSFS 2024 (profil conservateur)
+
+Lorsqu'un pilote subit des crashs de **MSFS** avec Hermès, tester avant
+l'ouverture d'Hermès les variables d'environnement ci-dessous :
+
+```powershell
+$env:HERMES_MSFS2024_COMMBUS = "0"
+$env:HERMES_SIMCONNECT_LOW_IMPACT = "1"
+# Démarrer l'exécutable Hermès depuis la même session PowerShell.
+```
+
+Le pont EFB CommBus expérimental est **désactivé par défaut** dans cette branche.
+Pour l'activer explicitement, définir `HERMES_MSFS2024_COMMBUS=1` et relancer Hermès.
+Le profil LOW_IMPACT conserve les variables suivies, mais ne demande les données
+principales qu'une fois toutes les deux secondes et les métadonnées avion
+qu'environ une fois toutes les dix secondes, plutôt qu'une fois par seconde.
+La granularité des événements SOP peut en être affectée ; c'est un outil de
+**diagnostic**, non une preuve de correction du CTD ni le profil recommandé
+pour une validation de score de vol.
+
+Pour isoler le package EFB, retirer provisoirement
+`Community2024/airinter-hermes-efb` après avoir sauvegardé son emplacement,
+puis relancer MSFS. La désactivation du CommBus côté EXE ne désinstalle pas
+le package EFB chargé dans MSFS.
+
+Récupérer `%APPDATA%\\Microsoft Flight Simulator 2024\\AsoboReport-Crash.txt`
+immédiatement après un CTD, avant de relancer le simulateur.
+
