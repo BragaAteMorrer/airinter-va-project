@@ -172,6 +172,9 @@ private timer?: number;
 private lastStateAt = 0;
 private pendingRequestAt = 0;
 private requestSequence = 0;
+private requestInFlight = false;
+private readonly requestTimeoutMs = 8000;
+private readonly pollIntervalMs = 3000;
 
 public onAfterRender(node: VNode): void {
 super.onAfterRender(node);
@@ -229,23 +232,26 @@ this.set(this.bridgeState, "Aucune réponse de Hermès");
 this.showConnectionHelp("CommBus sans réponse. Vérifiez Hermès et efb.commBusAvailable.");
 }
 this.requestState();
-}, 1500);
+}, this.pollIntervalMs);
 }
 
 private stopPolling(): void {
 if (this.timer !== undefined) window.clearInterval(this.timer);
 this.timer = undefined;
+this.requestInFlight = false;
 }
 
 private requestState(): void {
 if (!this.listener) return;
-if (this.pendingRequestAt && Date.now() - this.pendingRequestAt < 1400) return;
+if (this.requestInFlight && Date.now() - this.pendingRequestAt < this.requestTimeoutMs) return;
+this.requestInFlight = true;
 this.pendingRequestAt = Date.now();
 const requestId = `efb-${Date.now()}-${++this.requestSequence}`;
 void this.listener.callSimConnect(
 REQUEST_EVENT,
 JSON.stringify({ version: 1, action: "state", requestId })
 ).catch(() => {
+this.requestInFlight = false;
 this.set(this.bridgeState, "Hermès non joignable");
 this.showConnectionHelp("CommBus refusé. Vérifiez SimConnect et redémarrez Hermès.");
 });
@@ -278,6 +284,7 @@ const live = state.flight || {};
 
 this.lastStateAt = Date.now();
 this.pendingRequestAt = 0;
+this.requestInFlight = false;
 this.workspace?.fresh();
 this.workspace?.update(envelope);
 this.assistant?.update(envelope);
