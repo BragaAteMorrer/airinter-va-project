@@ -39,6 +39,7 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
     private const uint EfbRequestEventId = 2001;
     private const uint CommBusBroadcastJs = 1 << 0;
     private const string CommBusOptInEnvironmentVariable = "HERMES_MSFS2024_COMMBUS";
+    private const string LowImpactEnvironmentVariable = "HERMES_SIMCONNECT_LOW_IMPACT";
 
     private IntPtr handle; private readonly Dispatch callback;
     private string? aircraftTitle;
@@ -81,6 +82,11 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
         callback=Receive; var dll=Environment.GetEnvironmentVariable("PROMETHEE_SIMCONNECT_DLL");
         if (!string.IsNullOrWhiteSpace(dll) && System.IO.File.Exists(dll)) NativeLibrary.SetDllImportResolver(typeof(SimConnectReader).Assembly, (name,assembly,path) => name=="SimConnect.dll" ? NativeLibrary.Load(Path.GetFullPath(dll)) : IntPtr.Zero);
     }
+    // Optional diagnostic profile. Retains all telemetry fields while cutting
+    // native dispatch frequency and avoiding redundant per-second metadata reads.
+    private static bool LowImpactEnabled =>
+        string.Equals(Environment.GetEnvironmentVariable(LowImpactEnvironmentVariable), "1", StringComparison.OrdinalIgnoreCase);
+
     public void Poll()
     {
         try {
@@ -94,10 +100,10 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
                 Marshal.ThrowExceptionForHR(SimConnect_AddToDataDefinition(handle,TitleDefinitionId,"TITLE","NULL",SimConnectDataTypeString256,0,uint.MaxValue));
                 Marshal.ThrowExceptionForHR(SimConnect_AddToDataDefinition(handle,ModelDefinitionId,"ATC MODEL","NULL",SimConnectDataTypeString128,0,uint.MaxValue));
                 Marshal.ThrowExceptionForHR(SimConnect_AddToDataDefinition(handle,TypeDefinitionId,"ATC TYPE","NULL",SimConnectDataTypeString128,0,uint.MaxValue));
-                Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,MainRequestId,MainDefinitionId,0,SimConnectPeriodSecond,0,0,0,0));
-                Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,TitleRequestId,TitleDefinitionId,0,SimConnectPeriodSecond,0,0,0,0));
-                Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,ModelRequestId,ModelDefinitionId,0,SimConnectPeriodSecond,0,0,0,0));
-                Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,TypeRequestId,TypeDefinitionId,0,SimConnectPeriodSecond,0,0,0,0));
+                Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,MainRequestId,MainDefinitionId,0,SimConnectPeriodSecond,0,0,LowImpactEnabled ? 1 : 0,0));
+                Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,TitleRequestId,TitleDefinitionId,0,SimConnectPeriodSecond,0,0,LowImpactEnabled ? 9 : 0,0));
+                Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,ModelRequestId,ModelDefinitionId,0,SimConnectPeriodSecond,0,0,LowImpactEnabled ? 9 : 0,0));
+                Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,TypeRequestId,TypeDefinitionId,0,SimConnectPeriodSecond,0,0,LowImpactEnabled ? 9 : 0,0));
                 TrySubscribeSystemEvent(PauseEventId, "Pause_EX1");
                 TrySubscribeSystemEvent(SimStopEventId, "SimStop");
                 TrySubscribeSystemEvent(SimStartEventId, "SimStart");
