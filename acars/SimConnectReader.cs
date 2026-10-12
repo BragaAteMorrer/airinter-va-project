@@ -38,6 +38,9 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
     private const int RecvIdCommBus = 44;
     private const uint EfbRequestEventId = 2001;
     private const uint CommBusBroadcastJs = 1 << 0;
+    private const int MaxCommBusPacketBytes = 16 * 1024;
+    private const int MaxCommBusMessageChars = 64 * 1024;
+    private const uint MaxCommBusFragments = 32;
     private const string CommBusOptInEnvironmentVariable = "HERMES_MSFS2024_COMMBUS";
 
     private IntPtr handle; private readonly Dispatch callback;
@@ -213,13 +216,19 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
     {
         // SIMCONNECT_RECV (12 bytes) + LIST_TEMPLATE (16 bytes) +
         // uEventID (4 bytes), followed by the variable payload.
-        if (length <= 32) return;
+        // Treat SDK/native buffers as untrusted. Reject malformed fragment
+        // metadata before allocation or any more marshaling.
+        if (length <= 32 || length > MaxCommBusPacketBytes) return;
         var entryNumber = (uint)Marshal.ReadInt32(data, 20);
         var outOf = (uint)Marshal.ReadInt32(data, 24);
         var eventId = (uint)Marshal.ReadInt32(data, 28);
         if (eventId != EfbRequestEventId) return;
+        if (outOf == 0 || outOf > MaxCommBusFragments || entryNumber >= outOf) {
+            commBusBuffers.Remove(eventId);
+            return;
+        }
 
-        var payloadLength = checked((int)length - 32);
+        var payloadLength = (int)length - 32;
         if (payloadLength <= 0) return;
         var bytes = new byte[payloadLength];
         Marshal.Copy(IntPtr.Add(data, 32), bytes, 0, payloadLength);
@@ -227,6 +236,7 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
         var payload = Encoding.UTF8.GetString(bytes, 0, zero >= 0 ? zero : bytes.Length);
 
         if (outOf <= 1) {
+            commBusBuffers.Remove(eventId);
             LastCommBusRequestAt = DateTimeOffset.UtcNow;
             CommBusMessageReceived?.Invoke(payload);
             return;
@@ -235,6 +245,10 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
         if (!commBusBuffers.TryGetValue(eventId, out var buffer)) {
             buffer = new StringBuilder();
             commBusBuffers[eventId] = buffer;
+        }
+        if (buffer.Length + payload.Length > MaxCommBusMessageChars) {
+            commBusBuffers.Remove(eventId);
+            return;
         }
         buffer.Append(payload);
         if (entryNumber + 1 < outOf) return;
@@ -247,6 +261,7 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
     public bool TrySendCommBus(string eventName, string payload)
     {
         if (!CommBusAvailable || handle == IntPtr.Zero || string.IsNullOrWhiteSpace(eventName)) return false;
+        if (Encoding.UTF8.GetByteCount(payload) + 1 > MaxCommBusPacketBytes - 32) return false;
         try {
             var bytes = (uint)(Encoding.UTF8.GetByteCount(payload) + 1);
             var result = SimConnect_CallCommBusEvent(handle, eventName, CommBusBroadcastJs, bytes, payload);
