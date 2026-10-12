@@ -4,6 +4,7 @@ namespace Modules\Promethee\Http;
 
 use App\Contracts\Controller;
 use App\Models\Aircraft;
+use App\Models\Airport;
 use App\Models\Bid;
 use App\Models\Flight;
 use App\Models\Subfleet;
@@ -804,8 +805,8 @@ class OperationsV1Controller extends Controller
     {
         // Serialize all prefile attempts for one bid. Without a row lock, two
         // concurrent retries can both observe no PIREP and create duplicates.
-        return DB::transaction(function () use ($reference, $request) {
         $bid = $this->bid($reference, $request);
+        return DB::transaction(function () use ($bid, $request) {
         $bid = Bid::query()->whereKey($bid->id)->lockForUpdate()->firstOrFail();
         $existing = $this->operationPirep($bid);
         if ($existing) {
@@ -1186,6 +1187,14 @@ class OperationsV1Controller extends Controller
                 'flight_number' => $flight?->flight_number,
                 'departure' => $flight?->dpt_airport_id,
                 'arrival' => $flight?->arr_airport_id,
+                'destination_point' => $flight && $flight->arr_airport_id
+                    ? (function () use ($flight) {
+                        $airport = Airport::query()->find($flight->arr_airport_id);
+                        return $airport && is_numeric($airport->lat) && is_numeric($airport->lon)
+                            ? ['lat' => (float) $airport->lat, 'lon' => (float) $airport->lon, 'elevation_ft' => is_numeric($airport->elevation) ? (float) $airport->elevation : null]
+                            : null;
+                    })()
+                    : null,
                 'alternate' => $flight?->alt_airport_id,
                 'route' => $flight?->route,
                 'level' => $flight?->level,

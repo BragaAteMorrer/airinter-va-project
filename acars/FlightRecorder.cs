@@ -41,6 +41,7 @@ public sealed class FlightRecorder
     private Sample? previous;
     private AircraftSnapshot? previousSnapshot;
     private DateTimeOffset? lastQueuedAt;
+    private DateTimeOffset? lastCaptureWallClock;
     private readonly FlightTrackingEngine tracking = new();
     private readonly FlightDataMonitor fdm = new();
     private bool recoveryRequired;
@@ -174,6 +175,7 @@ public sealed class FlightRecorder
             };
             previous = sample;
             previousSnapshot = snapshot;
+            lastCaptureWallClock = DateTimeOffset.UtcNow;
             Pending = [];
             PendingEvents = [];
             PendingFacts = [];
@@ -203,6 +205,7 @@ public sealed class FlightRecorder
         Flight = Flight with { Recording = true };
         previous = null;
         previousSnapshot = null;
+        lastCaptureWallClock = null;
         Save();
     }}
     private static bool SameServer(string left, string right)
@@ -244,7 +247,11 @@ public sealed class FlightRecorder
         // A long sensor outage is not a continuous phase of flight. Reset
         // transient detectors before evaluating the next fresh sample, while
         // retaining previously recorded observations and the current phase.
-        if (previous is not null && (s.RecordedAt - previous.RecordedAt).TotalSeconds > 10) {
+        var receivedAt = DateTimeOffset.UtcNow;
+        var realOutage = lastCaptureWallClock.HasValue &&
+            (receivedAt - lastCaptureWallClock.Value).TotalSeconds > 20;
+        lastCaptureWallClock = receivedAt;
+        if (realOutage && previous is not null && (s.RecordedAt - previous.RecordedAt).TotalSeconds > 10) {
             var gapSeconds = (s.RecordedAt - previous.RecordedAt).TotalSeconds;
             tracking.Restore(FlightTrackingEngine.ParsePhase(Flight.Phase),
                 Flight.Journal.Any(x => x.Name == "ON"));
