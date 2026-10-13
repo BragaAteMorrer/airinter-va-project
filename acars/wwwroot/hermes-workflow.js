@@ -404,6 +404,9 @@ function updateWorkflow() {
   }
   // A local flight may be recording or paused: neither state may create
   // a second recording. Only Resume or Recovery Center can continue it.
+  const activeLocalFlight = lastStatus?.flight || lastStatus?.Flight || null;
+  const localRecording = Boolean(activeLocalFlight?.recording ?? activeLocalFlight?.Recording);
+  const localRecovery = Boolean(lastStatus?.recoveryAvailable);
 
   const startButton = $('#startBtn');
   if (startButton) {
@@ -422,9 +425,6 @@ function updateWorkflow() {
               : ''));
   }
 
-  const activeLocalFlight = lastStatus?.flight || lastStatus?.Flight || null;
-  const localRecording = Boolean(activeLocalFlight?.recording ?? activeLocalFlight?.Recording);
-  const localRecovery = Boolean(lastStatus?.recoveryAvailable);
   const pauseButton = $('#pauseBtn');
   const resumeButton = $('#resumeBtn');
   const abortPirepButton = $('#abortPirepBtn');
