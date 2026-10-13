@@ -402,13 +402,18 @@ function updateWorkflow() {
     node.classList.toggle('ready', ready || awaitingFiling || status === 'IN_PROGRESS');
     node.title = workflow.next_action?.label || '';
   }
+  // A local flight may be recording or paused: neither state may create
+  // a second recording. Only Resume or Recovery Center can continue it.
+
   const startButton = $('#startBtn');
   if (startButton) {
-    startButton.disabled = !canAttemptStart;
+    startButton.disabled = !canAttemptStart || Boolean(activeLocalFlight) || localRecovery || startButton.dataset.startPending === 'true';
     startButton.textContent = serverDispatch?.status === 'IN_PROGRESS'
       ? 'Reprendre l’enregistrement'
       : (ready ? 'Démarrer l’enregistrement' : 'Vérifier et démarrer');
-    startButton.title = awaitingFiling
+    startButton.title = activeLocalFlight
+      ? (localRecording ? 'Enregistrement déjà en cours.' : 'Enregistrement en pause : utilisez « Reprendre une pause ».')
+      : awaitingFiling
       ? 'Le vol est arrivé. Déposez maintenant le PIREP final depuis Flight Review.'
       : (terminal
           ? 'Cette opération est terminée et ne peut pas être redémarrée.'
