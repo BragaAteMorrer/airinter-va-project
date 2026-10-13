@@ -110,6 +110,9 @@ function renderReviewCharts(review) {
 function renderObservations(selector, entries, emptyText) {
   const node = $(selector);
   if (!node) return;
+  // Preserve disclosure state across telemetry-driven review refreshes.
+  const expandedKeys = new Set(Array.from(node.querySelectorAll('details[data-observation-key][open]'),
+    details => details.dataset.observationKey));
   node.replaceChildren();
   if (!entries?.length) {
     const empty = document.createElement('p');
@@ -118,7 +121,8 @@ function renderObservations(selector, entries, emptyText) {
     node.append(empty);
     return;
   }
-  entries.forEach(entry => {
+  entries.forEach((entry, index) => {
+    const observationKey = JSON.stringify([entry.occurredAt ?? entry.OccurredAt ?? '', entry.code ?? entry.Code ?? 'OBS', index]);
     const item = document.createElement('article');
     const severity = String(entry.severity ?? entry.Severity ?? 'info').toLowerCase();
     item.className = 'observation ' + severity;
@@ -161,6 +165,8 @@ function renderObservations(selector, entries, emptyText) {
     score.className = 'fdm-score-disclaimer';
     score.textContent = 'Pénalité : consulter la décision SOP/PIREP dans Prométhée. Ce relevé décrit le fait mesuré, pas la décision de notation.';
     const expand = document.createElement('details');
+    expand.dataset.observationKey = observationKey;
+    expand.open = expandedKeys.has(observationKey);
     const summary = document.createElement('summary');
     summary.textContent = 'Comprendre cette observation';
     expand.append(summary, explanation, evidence, score);
