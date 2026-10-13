@@ -46,7 +46,17 @@ public sealed class PrometheeWindow : Window
         Title = "Hermès ACARS — Air Inter";
         Icon = BitmapFrame.Create(new Uri("pack://application:,,,/assets/hermes.ico", UriKind.Absolute));
         Width=1280; Height=840; MinWidth=900; MinHeight=620; WindowStartupLocation=WindowStartupLocation.CenterScreen; WindowState=WindowState.Maximized; Content=web;
-        Loaded += async (_, _) => { await StartAsync(); await CheckForUpdatesAsync(); }; Closed += (_, _) => { efb.Dispose(); sim.Dispose(); };
+        Loaded += async (_, _) => { await StartAsync(); await CheckForUpdatesAsync(); };
+        Closing += (_, e) => {
+            var flight = recorder.Flight;
+            if (flight is null) return;
+            var message = flight.Phase == "IN"
+                ? "Le PIREP " + flight.PirepId + " n'a pas été déposé. Il restera sauvegardé localement pour reprise au prochain lancement.\\n\\nFermer quand même Hermès ?"
+                : "Le vol " + flight.PirepId + " est toujours en cours. Son état sera sauvegardé localement pour récupération.\\n\\nFermer quand même Hermès ?";
+            if (MessageBox.Show(this, message, "Hermès — PIREP non déposé", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) != MessageBoxResult.Yes)
+                e.Cancel = true;
+        };
+        Closed += (_, _) => { efb.Dispose(); sim.Dispose(); };
         var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(1) }; timer.Tick += async (_, _) => await Tick(); timer.Start();
     }
     private async Task StartAsync()
@@ -151,7 +161,7 @@ public sealed class PrometheeWindow : Window
 
         return route switch {
             "/api/status" => Status(), "/api/about" => About(), "/api/login" => await Login(body), "/api/login/argos" => await LoginWithArgos(), "/api/logout" => await Logout(),
-            "/api/start" => Start(body), "/api/pause" => Pause(), "/api/resume" => Resume(),
+            "/api/start" => Start(body), "/api/pause" => Pause(), "/api/prepare-file" => PrepareFile(), "/api/resume" => Resume(),
             "/api/recovery" => Recovery(), "/api/recovery/resume" => ResumeRecovery(), "/api/recovery/abandon" => await AbandonPirep(true), "/api/abandon-pirep" => await AbandonPirep(false),
             "/api/sync" => new { sent=await telemetry.SyncNow() }, "/api/report" => Report(), "/api/review" => recorder.GetReview() ?? throw new InvalidOperationException("Aucun vol en cours."), "/api/capabilities" => sim.AircraftCapabilities ?? throw new InvalidOperationException("Aucun profil de capacités avion disponible."), "/api/file" => await File(body),
             "/api/history" => recorder.History, "/api/diagnostics" => Diagnostics(), "/api/update/check" => await CheckUpdateStatusAsync(), "/api/open-external" => OpenExternal(body),
@@ -543,6 +553,16 @@ public sealed class PrometheeWindow : Window
         return new { ok = true, archived = true, remoteDeleted = true, pirepId };
     }
 
+    private object PrepareFile()
+    {
+        var flight = recorder.Flight ?? throw new InvalidOperationException("Aucun vol en cours.");
+        if (flight.Phase != "IN")
+            throw new InvalidOperationException("Le dépôt n'est possible qu'après l'événement IN au parking.");
+        // Persist the finalized telemetry state even if MSFS or Hermès closes
+        // before the pilot presses the final submit button.
+        recorder.Pause();
+        return new { ok = true, pirepId = flight.PirepId, pendingFiling = true };
+    }
     private object Report() => recorder.GetReview() ?? throw new InvalidOperationException("Aucun vol en cours.");
     private async Task<object> File(JsonElement? body)
     {
@@ -592,11 +612,9 @@ public sealed class PrometheeWindow : Window
             recorder.Complete();
             return new { ok=true, review };
         } catch {
-            // If the server filing itself failed, resume local recording so the
-            // pilot is never stranded in a hidden paused state and may retry.
-            if (!serverFiled && recorder.Flight is not null && recorder.Flight.Recording == false) {
-                try { recorder.Resume(client.Server); } catch { }
-            }
+            // Leave the IN flight safely paused and persisted if filing failed.
+            // The pilot can retry submitting without recording spurious taxi/
+            // simulator-shutdown samples after arrival.
             throw;
         }
     }
