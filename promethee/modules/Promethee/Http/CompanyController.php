@@ -356,7 +356,28 @@ public function maintenance(Request $r) {
                 })
             : collect();
 
-        return $this->page('maintenance', compact('maintenance', 'upcomingMaintenance', 'warningHours', 'warningCycles', 'engineWarnings'));
+        // Read the installed engines for the aircraft already visible in both tables.
+        // This includes healthy engines, not only those in the warning window.
+        $visibleAircraftIds = $maintenance->getCollection()->pluck('aircraft_id')
+            ->merge($upcomingMaintenance->pluck('aircraft_id'))->unique()->values();
+        $enginePotentialByAircraft = collect();
+        if ($visibleAircraftIds->isNotEmpty() && Schema::hasTable('promethee_aircraft_engines') && Schema::hasTable('promethee_engines')) {
+            $enginePotentialByAircraft = DB::table('promethee_aircraft_engines as installation')
+                ->join('promethee_engines as engine', 'engine.id', '=', 'installation.engine_id')
+                ->whereIn('installation.aircraft_id', $visibleAircraftIds)
+                ->select(['installation.aircraft_id', 'installation.position', 'engine.serial_number',
+                    'engine.tbo_hours', 'engine.hours_since_overhaul', 'engine.tbo_cycles', 'engine.cycles_since_overhaul'])
+                ->orderBy('installation.position')->get()
+                ->map(function ($engine) {
+                    $engine->remaining_hours = $engine->tbo_hours !== null
+                        ? round((float) $engine->tbo_hours - (float) $engine->hours_since_overhaul, 1) : null;
+                    $engine->remaining_cycles = $engine->tbo_cycles !== null
+                        ? (int) $engine->tbo_cycles - (int) $engine->cycles_since_overhaul : null;
+                    return $engine;
+                })->groupBy('aircraft_id');
+        }
+
+        return $this->page('maintenance', compact('maintenance', 'upcomingMaintenance', 'warningHours', 'warningCycles', 'engineWarnings', 'enginePotentialByAircraft'));
     }
 
 public function aircraftDetail(Request $r, string $registration) {

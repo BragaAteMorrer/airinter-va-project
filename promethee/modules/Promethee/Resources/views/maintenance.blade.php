@@ -42,7 +42,7 @@
             <thead>
                 <tr>
                     <th>Appareil</th><th>Compagnie</th><th>État</th><th>Intervention</th><th>Site technique</th>
-                    <th>Temps A restant</th><th>Temps B restant</th><th>Temps C restant</th><th>Cycles A</th><th>Cycles B</th><th>Cycles C</th>
+                    <th>Temps A restant</th><th>Temps B restant</th><th>Temps C restant</th><th>Temps restant moteurs</th><th>Cycles A</th><th>Cycles B</th><th>Cycles C</th>
                 </tr>
             </thead>
             <tbody>
@@ -70,10 +70,17 @@
                             @endif
                         </td>
                         <td>{{ is_numeric($item->rem_ta) ? number_format($item->rem_ta / 60, 1, ',', ' ') . ' h' : '—' }}</td><td>{{ is_numeric($item->rem_tb) ? number_format($item->rem_tb / 60, 1, ',', ' ') . ' h' : '—' }}</td><td>{{ is_numeric($item->rem_tc) ? number_format($item->rem_tc / 60, 1, ',', ' ') . ' h' : '—' }}</td>
+                        <td>
+                            @forelse($enginePotentialByAircraft->get($item->aircraft_id, collect()) as $engine)
+                                <div><strong>M{{ $engine->position }}</strong> : {{ $engine->remaining_hours !== null ? number_format($engine->remaining_hours, 1, ',', ' ') . ' h' : '—' }}<small> · {{ $engine->remaining_cycles !== null ? number_format($engine->remaining_cycles) . ' cycles' : '—' }}</small></div>
+                            @empty
+                                —
+                            @endforelse
+                        </td>
                         <td>{{ $item->rem_ca ?? '—' }}</td><td>{{ $item->rem_cb ?? '—' }}</td><td>{{ $item->rem_cc ?? '—' }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="11">Aucune opération de maintenance ni échéance proche.</td></tr>
+                    <tr><td colspan="12">Aucune opération de maintenance ni échéance proche.</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -89,7 +96,7 @@
     </div>
     <div class="table-wrap">
         <table>
-            <thead><tr><th>Appareil</th><th>Compagnie</th><th>Position / capacité</th><th>Heures A/B/C restantes</th><th>Cycles A/B/C restants</th></tr></thead>
+            <thead><tr><th>Appareil</th><th>Compagnie</th><th>Position / capacité</th><th>Heures A/B/C restantes</th><th>Temps restant moteurs</th><th>Cycles A/B/C restants</th></tr></thead>
             <tbody>
                 @forelse($upcomingMaintenance as $item)
                     <tr>
@@ -111,10 +118,17 @@
                             @endif
                         </td>
                         <td>{{ is_numeric($item->rem_ta) ? number_format($item->rem_ta / 60, 1, ',', ' ') : '—' }} / {{ is_numeric($item->rem_tb) ? number_format($item->rem_tb / 60, 1, ',', ' ') : '—' }} / {{ is_numeric($item->rem_tc) ? number_format($item->rem_tc / 60, 1, ',', ' ') : '—' }} h</td>
+                        <td>
+                            @forelse($enginePotentialByAircraft->get($item->aircraft_id, collect()) as $engine)
+                                <div><strong>M{{ $engine->position }}</strong> : {{ $engine->remaining_hours !== null ? number_format($engine->remaining_hours, 1, ',', ' ') . ' h' : '—' }}<small> · {{ $engine->remaining_cycles !== null ? number_format($engine->remaining_cycles) . ' cycles' : '—' }}</small></div>
+                            @empty
+                                —
+                            @endforelse
+                        </td>
                         <td>{{ $item->rem_ca ?? '—' }} / {{ $item->rem_cb ?? '—' }} / {{ $item->rem_cc ?? '—' }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="5">Aucun appareil dans la fenêtre d’alerte configurée.</td></tr>
+                    <tr><td colspan="6">Aucun appareil dans la fenêtre d’alerte configurée.</td></tr>
                 @endforelse
             </tbody>
         </table>
