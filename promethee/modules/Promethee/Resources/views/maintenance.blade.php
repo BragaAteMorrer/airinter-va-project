@@ -42,7 +42,7 @@
             <thead>
                 <tr>
                     <th>Appareil</th><th>Compagnie</th><th>État</th><th>Intervention</th><th>Site technique</th>
-                    <th>Temps A restant</th><th>Temps B restant</th><th>Temps C restant</th><th>Temps restant moteurs</th><th>Cycles A</th><th>Cycles B</th><th>Cycles C</th>
+                    <th>Temps A restant</th><th>Temps B restant</th><th>Temps C restant</th><th>Temps restant moteurs</th><th>Cycles A</th><th>Cycles B</th><th>Cycles C</th>@ability('admin','admin-access')<th>Action</th>@endability
                 </tr>
             </thead>
             <tbody>
@@ -78,9 +78,26 @@
                             @endforelse
                         </td>
                         <td>{{ $item->rem_ca ?? '—' }}</td><td>{{ $item->rem_cb ?? '—' }}</td><td>{{ $item->rem_cc ?? '—' }}</td>
+                        @ability('admin','admin-access')
+                        <td>
+                            @if(\Illuminate\Support\Facades\Route::has('admin.promethee.maintenance.airframe.start') && empty($item->act_note) && $availableChecks->isNotEmpty())
+                                <form method="post" action="{{ route('admin.promethee.maintenance.airframe.start', $item->aircraft_id) }}" class="inline-form" onsubmit="return confirm('Démarrer la maintenance de {{ $item->registration }} et immobiliser cet appareil ?');">
+                                    @csrf
+                                    <select name="check" aria-label="Type de maintenance de {{ $item->registration }}" required>
+                                        @foreach($availableChecks->keys() as $check)
+                                            <option value="{{ strtolower($check) }}">{{ $check }} Check</option>
+                                        @endforeach
+                                    </select>
+                                    <button type="submit">Démarrer</button>
+                                </form>
+                            @else
+                                <small>{{ !empty($item->act_note) ? 'Intervention en cours' : 'Aucun check disponible ici' }}</small>
+                            @endif
+                        </td>
+                        @endability
                     </tr>
                 @empty
-                    <tr><td colspan="12">Aucune opération de maintenance ni échéance proche.</td></tr>
+                    <tr><td colspan="13">Aucune opération de maintenance ni échéance proche.</td></tr>
                 @endforelse
             </tbody>
         </table>
