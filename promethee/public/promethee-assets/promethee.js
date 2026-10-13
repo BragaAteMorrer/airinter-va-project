@@ -1,7 +1,7 @@
 (() => {
   const i18n = window.prometheeI18n || {};
   const dateLocale = i18n.dateLocale || i18n.locale || 'fr-FR';
-  const allowed = ['modern','2000','minitel'];
+  const allowed = ['modern','2000']; // Minitel remains under development and is hidden from public selection.
   const appearances = ['light','dark'];
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let revealTimeout;
@@ -87,7 +87,7 @@
       && sessionStorage.getItem('promethee-minitel-session-disabled') === '1';
     if (minitelSessionFallback) initial = 'modern';
   } catch {}
-  setEra(initial, !minitelSessionFallback);
+  setEra(initial, true); // Migrates previously selected Minitel sessions to the modern theme.
   if (document.documentElement.dataset.era === 'minitel') {
     window.ensurePrometheeMinitelRuntime?.().catch(error => {
       console.error('[Prométhée Minitel] runtime loading failed', error);
