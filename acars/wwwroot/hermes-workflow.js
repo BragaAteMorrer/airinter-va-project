@@ -402,13 +402,21 @@ function updateWorkflow() {
     node.classList.toggle('ready', ready || awaitingFiling || status === 'IN_PROGRESS');
     node.title = workflow.next_action?.label || '';
   }
+  // A local flight may be recording or paused: neither state may create
+  // a second recording. Only Resume or Recovery Center can continue it.
+  const activeLocalFlight = lastStatus?.flight || lastStatus?.Flight || null;
+  const localRecording = Boolean(activeLocalFlight?.recording ?? activeLocalFlight?.Recording);
+  const localRecovery = Boolean(lastStatus?.recoveryAvailable);
+
   const startButton = $('#startBtn');
   if (startButton) {
-    startButton.disabled = !canAttemptStart;
+    startButton.disabled = !canAttemptStart || Boolean(activeLocalFlight) || localRecovery || startButton.dataset.startPending === 'true';
     startButton.textContent = serverDispatch?.status === 'IN_PROGRESS'
       ? 'Reprendre l’enregistrement'
       : (ready ? 'Démarrer l’enregistrement' : 'Vérifier et démarrer');
-    startButton.title = awaitingFiling
+    startButton.title = activeLocalFlight
+      ? (localRecording ? 'Enregistrement déjà en cours.' : 'Enregistrement en pause : utilisez « Reprendre une pause ».')
+      : awaitingFiling
       ? 'Le vol est arrivé. Déposez maintenant le PIREP final depuis Flight Review.'
       : (terminal
           ? 'Cette opération est terminée et ne peut pas être redémarrée.'
@@ -417,9 +425,6 @@ function updateWorkflow() {
               : ''));
   }
 
-  const activeLocalFlight = lastStatus?.flight || lastStatus?.Flight || null;
-  const localRecording = Boolean(activeLocalFlight?.recording ?? activeLocalFlight?.Recording);
-  const localRecovery = Boolean(lastStatus?.recoveryAvailable);
   const pauseButton = $('#pauseBtn');
   const resumeButton = $('#resumeBtn');
   const abortPirepButton = $('#abortPirepBtn');

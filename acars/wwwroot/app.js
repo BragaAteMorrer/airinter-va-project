@@ -994,16 +994,33 @@ async function action(path, success) {
   }
 }
 $('#startBtn').onclick = async () => {
+  const button = $('#startBtn');
+  if (button.disabled || button.dataset.startPending === 'true') return;
+  // Reject repeat starts even if the UI has not yet received its next status tick.
+  if (lastStatus?.flight || lastStatus?.Flight || lastStatus?.recoveryAvailable) {
+    updateWorkflow();
+    return;
+  }
+  button.dataset.startPending = 'true';
+  button.disabled = true;
   try {
     const dispatch = await assertDispatchCanStart();
-    await action(
-      '/api/start',
-      dispatch?.resumable
-        ? 'Vol Prométhée repris et Hermès rattaché au PIREP existant.'
-        : 'Enregistrement démarré.'
-    );
+    await call('/api/start', {
+      pirepId,
+      operationId: selectedOperation?.operation_id || selectedOperation?.id || null
+    });
+    showMessage('#recordMessage', dispatch?.resumable
+      ? 'Vol Prométhée repris et Hermès rattaché au PIREP existant.'
+      : 'Enregistrement démarré.');
+    await refreshStatus();
   } catch (error) {
     showMessage('#recordMessage', friendlyError(error), true);
+    // Reconcile the server state, including a start that succeeded but whose
+    // network response was lost, before making Start available again.
+    try { await refreshStatus(); } catch {}
+  } finally {
+    delete button.dataset.startPending;
+    updateWorkflow();
   }
 };
 $('#pauseBtn').onclick = () => action('/api/pause', 'Enregistrement en pause.');
@@ -1038,6 +1055,16 @@ $('#abortPirepBtn').onclick = async () => {
     + 'Prométhée supprimera cette tentative et sa télémétrie. Hermès archivera son état local avant nettoyage. '
     + 'Cette action est irréversible.'
   )) return;
+  const explicitConsent = prompt(
+    'CONFIRMATION DÉFINITIVE\\n\\n'
+    + 'Pour supprimer le PIREP ' + currentPirepId
+    + ', saisissez ABANDONNER en majuscules :',
+    ''
+  );
+  if (explicitConsent !== 'ABANDONNER') {
+    showMessage('#recordMessage', 'Abandon annulé : confirmation non validée.');
+    return;
+  }
 
   const button = $('#abortPirepBtn');
   if (button) button.disabled = true;
