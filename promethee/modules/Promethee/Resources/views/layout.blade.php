@@ -5,7 +5,7 @@
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <title>@yield('title', __('promethee.operations_centre')) · Prométhée · Air Inter</title>
 <link rel="icon" type="image/png" href="{{ asset('promethee-assets/favicon.png') }}">
-<script>(() => { try { const era=localStorage.getItem('promethee-era'), appearance=localStorage.getItem('promethee-appearance'), minitelSessionDisabled=sessionStorage.getItem('promethee-minitel-session-disabled')==='1'; const selectedEra=['modern','2000','minitel'].includes(era)?era:'modern'; document.documentElement.dataset.era=(selectedEra==='minitel'&&minitelSessionDisabled)?'modern':selectedEra; document.documentElement.dataset.appearance=['light','dark'].includes(appearance)?appearance:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'); } catch (_) {} })();</script>
+<script>(() => { try { const era=localStorage.getItem('promethee-era'), appearance=localStorage.getItem('promethee-appearance'), minitelSessionDisabled=sessionStorage.getItem('promethee-minitel-session-disabled')==='1'; const selectedEra=['modern','2000'].includes(era)?era:'modern'; document.documentElement.dataset.era=selectedEra; if(era==='minitel') localStorage.setItem('promethee-era','modern'); document.documentElement.dataset.appearance=['light','dark'].includes(appearance)?appearance:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'); } catch (_) {} })();</script>
 <link rel="stylesheet" href="{{ asset('promethee-assets/promethee.css') }}">
 <link rel="stylesheet" href="{{ asset('promethee-assets/promethee-v2.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-v2.css')) }}">
 <link rel="stylesheet" href="{{ asset('promethee-assets/promethee-distinction.css') }}">
@@ -270,7 +270,7 @@ window.prometheeI18n = @json($prometheeI18n);
 <header class="topbar"><span class="breadcrumb">AIR INTER <span>/</span> PROMÉTHÉE <span>/</span> @yield('title','EXPLOITATION')</span>
 <div class="topbar-controls" aria-label="{{ __('promethee.display') }}">
 <label class="theme-control"><span class="theme-control-label">{{ __('promethee.language') }}</span><select aria-label="{{ __('promethee.language') }}" onchange="if(this.value) window.location=this.value">@foreach(config('languages') as $code=>$language)<option value="{{ route('promethee.language',$code) }}" @selected(app()->getLocale() === $code)>{{ $language['display'] }}</option>@endforeach</select></label>
-<label class="theme-control"><span class="theme-control-label">{{ __('promethee.display') }}</span><select id="era" aria-label="{{ __('promethee.display_style') }}"><option value="modern">{{ __('promethee.modern') }}</option><option value="2000">{{ __('promethee.year_2000') }}</option><option value="minitel">{{ __('promethee.minitel') }}</option></select></label>
+<label class="theme-control"><span class="theme-control-label">{{ __('promethee.display') }}</span><select id="era" aria-label="{{ __('promethee.display_style') }}"><option value="modern">{{ __('promethee.modern') }}</option><option value="2000">{{ __('promethee.year_2000') }}</option></select></label>
 <label class="theme-control appearance-control"><span class="theme-control-label">{{ __('promethee.appearance') }}</span><select id="appearance" aria-label="{{ __('promethee.appearance_style') }}"><option value="light">{{ __('promethee.appearance_light') }}</option><option value="dark">{{ __('promethee.appearance_dark') }}</option></select></label>
 </div>
 <time id="utc-clock">UTC</time></header>
