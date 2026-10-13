@@ -378,7 +378,7 @@ public function maintenance(Request $r) {
                         ? 1 + (crc32($engine->aircraft_id . ':' . $engine->position) % 9)
                         : 0;
                     $engine->display_remaining_hours = $engine->remaining_hours !== null
-                        ? round($engine->remaining_hours - $engine->estimated_offset_hours, 1) : null;
+                        ? round($engine->remaining_hours + $engine->estimated_offset_hours, 1) : null;
                     return $engine;
                 })->groupBy('aircraft_id');
         }
