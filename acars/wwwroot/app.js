@@ -1040,9 +1040,32 @@ $('#resumeBtn').onclick = () => {
   return action('/api/resume', 'Enregistrement repris.');
 };
 $('#syncBtn').onclick = () => action('/api/sync', 'Données synchronisées.');
-$('#fileBtn').onclick = () => {
-  document.querySelector('[data-tab="review"]')?.click();
-  renderReview(lastStatus?.review || lastStatus?.Review || lastFiledReview);
+$('#fileBtn').onclick = async () => {
+  const button = $('#fileBtn');
+  if (button.disabled) return;
+  const flight = lastStatus?.flight || lastStatus?.Flight;
+  if (flight && String(flight.phase || flight.Phase || '').toUpperCase() !== 'IN') {
+    showMessage('#recordMessage', 'Attendez la phase IN au parking avant de préparer le dépôt.', true);
+    return;
+  }
+  if (!flight) {
+    document.querySelector('[data-tab="review"]')?.click();
+    renderReview(lastStatus?.review || lastStatus?.Review || lastFiledReview);
+    return;
+  }
+  if (!confirm('Préparer le dépôt du PIREP ?\\n\\nLa télémétrie sera arrêtée et votre vol sauvegardé localement. Vous devrez ensuite cliquer sur « Déposer le PIREP » et attendre la confirmation de Prométhée avant de fermer Hermès.')) return;
+  button.disabled = true;
+  try {
+    await call('/api/prepare-file', {});
+    await refreshStatus();
+    document.querySelector('[data-tab="review"]')?.click();
+    renderReview(lastStatus?.review || lastStatus?.Review || lastFiledReview);
+    showMessage('#reviewMessage', 'Télémétrie arrêtée et vol sauvegardé. ATTENTION : le PIREP n’est pas encore déposé ! Cliquez sur « Déposer le PIREP » et attendez la confirmation.');
+  } catch (error) {
+    showMessage('#recordMessage', friendlyError(error), true);
+  } finally {
+    button.disabled = false;
+  }
 };
 
 $('#abortPirepBtn').onclick = async () => {
