@@ -39,6 +39,7 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
     private const uint EfbRequestEventId = 2001;
     private const uint CommBusBroadcastJs = 1 << 0;
     private const string CommBusOptInEnvironmentVariable = "HERMES_MSFS2024_COMMBUS";
+    private const string LowImpactEnvironmentVariable = "HERMES_SIMCONNECT_LOW_IMPACT";
 
     private IntPtr handle; private readonly Dispatch callback;
     private string? aircraftTitle;
@@ -81,6 +82,11 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
         callback=Receive; var dll=Environment.GetEnvironmentVariable("PROMETHEE_SIMCONNECT_DLL");
         if (!string.IsNullOrWhiteSpace(dll) && System.IO.File.Exists(dll)) NativeLibrary.SetDllImportResolver(typeof(SimConnectReader).Assembly, (name,assembly,path) => name=="SimConnect.dll" ? NativeLibrary.Load(Path.GetFullPath(dll)) : IntPtr.Zero);
     }
+    // Optional diagnostic profile. Retains all telemetry fields while cutting
+    // native dispatch frequency and avoiding redundant per-second metadata reads.
+    private static bool LowImpactEnabled =>
+        string.Equals(Environment.GetEnvironmentVariable(LowImpactEnvironmentVariable), "1", StringComparison.OrdinalIgnoreCase);
+
     public void Poll()
     {
         try {
@@ -94,16 +100,16 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
                 Marshal.ThrowExceptionForHR(SimConnect_AddToDataDefinition(handle,TitleDefinitionId,"TITLE","NULL",SimConnectDataTypeString256,0,uint.MaxValue));
                 Marshal.ThrowExceptionForHR(SimConnect_AddToDataDefinition(handle,ModelDefinitionId,"ATC MODEL","NULL",SimConnectDataTypeString128,0,uint.MaxValue));
                 Marshal.ThrowExceptionForHR(SimConnect_AddToDataDefinition(handle,TypeDefinitionId,"ATC TYPE","NULL",SimConnectDataTypeString128,0,uint.MaxValue));
-                Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,MainRequestId,MainDefinitionId,0,SimConnectPeriodSecond,0,0,0,0));
-                Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,TitleRequestId,TitleDefinitionId,0,SimConnectPeriodSecond,0,0,0,0));
-                Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,ModelRequestId,ModelDefinitionId,0,SimConnectPeriodSecond,0,0,0,0));
-                Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,TypeRequestId,TypeDefinitionId,0,SimConnectPeriodSecond,0,0,0,0));
+                Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,MainRequestId,MainDefinitionId,0,SimConnectPeriodSecond,0,0,LowImpactEnabled ? 1 : 0,0));
+                Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,TitleRequestId,TitleDefinitionId,0,SimConnectPeriodSecond,0,0,LowImpactEnabled ? 9 : 0,0));
+                Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,ModelRequestId,ModelDefinitionId,0,SimConnectPeriodSecond,0,0,LowImpactEnabled ? 9 : 0,0));
+                Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,TypeRequestId,TypeDefinitionId,0,SimConnectPeriodSecond,0,0,LowImpactEnabled ? 9 : 0,0));
                 TrySubscribeSystemEvent(PauseEventId, "Pause_EX1");
                 TrySubscribeSystemEvent(SimStopEventId, "SimStop");
                 TrySubscribeSystemEvent(SimStartEventId, "SimStart");
                 // Enable the EFB bridge when the MSFS 2024 SDK exports are present.
-                // Keep HERMES_MSFS2024_COMMBUS=0 as an emergency kill-switch
-                // for pilots diagnosing simulator instability.
+                // The experimental bridge is opt-in (HERMES_MSFS2024_COMMBUS=1)
+                // while we isolate reported MSFS 2024 CTDs.
                 if (ExperimentalCommBusEnabled) TryEnableCommBus();
                 else CommBusAvailable = false;
                 Status="MSFS détecté";
@@ -188,9 +194,12 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
         get
         {
             var value = Environment.GetEnvironmentVariable(CommBusOptInEnvironmentVariable);
-            return !string.Equals(value, "0", StringComparison.OrdinalIgnoreCase)
-                && !string.Equals(value, "false", StringComparison.OrdinalIgnoreCase)
-                && !string.Equals(value, "no", StringComparison.OrdinalIgnoreCase);
+            // Opt in explicitly: the native MSFS 2024 CommBus bridge must not
+            // be activated on every pilot's simulator without stability testing.
+            // HERMES_MSFS2024_COMMBUS=1 restores EFB communication when desired.
+            return string.Equals(value, "1", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase);
         }
     }
 
