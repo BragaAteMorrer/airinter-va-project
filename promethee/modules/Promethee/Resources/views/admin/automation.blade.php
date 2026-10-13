@@ -3,6 +3,45 @@
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('promethee-assets/promethee-admin-workspaces.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-admin-workspaces.css')) }}">
+<style>
+/* Keep the automation rule editor readable at desktop and mobile widths. */
+.admin-workspace-page .rule-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  width: 100%;
+}
+.admin-workspace-page .rule-form > *,
+.admin-workspace-page .rule-builder,
+.admin-workspace-page .rule-rows,
+.admin-workspace-page .rule-row { min-width: 0; max-width: 100%; }
+.admin-workspace-page .rule-form > label:first-of-type,
+.admin-workspace-page .rule-builder > label:first-child { width: 100%; max-width: 680px; }
+.admin-workspace-page .rule-row {
+  display: grid;
+  grid-template-columns: minmax(210px, 1fr) minmax(260px, 1.5fr) auto;
+  gap: 12px;
+  align-items: end;
+  width: 100%;
+}
+.admin-workspace-page .rule-row > label { min-width: 0; width: 100%; }
+.admin-workspace-page .rule-row > label[hidden] { display: none !important; }
+.admin-workspace-page .rule-row input,
+.admin-workspace-page .rule-row select,
+.admin-workspace-page .rule-builder > label select,
+.admin-workspace-page .rule-form > label:first-of-type select {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.admin-workspace-page .rule-row [data-remove-criterion] { white-space: nowrap; }
+@media (max-width: 760px) {
+  .admin-workspace-page .rule-row { grid-template-columns: minmax(0, 1fr); }
+  .admin-workspace-page .rule-row [data-remove-criterion] { justify-self: start; }
+}
+</style>
 @endpush
 
 @section('content')
