@@ -349,7 +349,7 @@ function renderReview(review) {
   renderObservations('#reviewIssues', reviewValue(current,'issues','Issues') || [], 'Aucune anomalie détectée.');
 
   const button = $('#submitReviewBtn');
-  if (button) button.disabled = !ready || filed;
+  if (button) button.disabled = !ready || filed || button.dataset.filing === 'true';
   const comment = $('#reviewComment');
   if (comment) comment.disabled = filed;
   setText($('#reviewHint'), ready
@@ -359,7 +359,13 @@ function renderReview(review) {
 
   function initializeReviewActions() {
     $('#submitReviewBtn').onclick = async () => {
+      const button = $('#submitReviewBtn');
+      if (button.disabled || button.dataset.filing === 'true') return;
+      if (!confirm('Confirmer le dépôt définitif de ce PIREP auprès de Prométhée ?\\n\\nNe fermez pas Hermès avant le message de confirmation.')) return;
+      button.dataset.filing = 'true';
+      button.disabled = true;
       try {
+        showMessage('#reviewMessage', 'Dépôt et synchronisation finale en cours : gardez Hermès ouvert.');
         const notes = $('#reviewComment')?.value?.trim() || '';
         const result = await call('/api/file', { notes });
         lastFiledReview = result.review || result.Review || lastStatus?.review || lastStatus?.Review || null;
@@ -369,7 +375,10 @@ function renderReview(review) {
         serverCompanyScoreKey = null;
         await refreshCompanyScore(true);
       } catch (error) {
-        showMessage('#reviewMessage', friendlyError(error), true);
+        showMessage('#reviewMessage', friendlyError(error, 'PIREP non confirmé : le vol reste sauvegardé localement. Réessayez le dépôt.', 'Dépôt PIREP'), true);
+      } finally {
+        delete button.dataset.filing;
+        renderReview(lastStatus?.review || lastStatus?.Review || lastFiledReview);
       }
     };
   }
