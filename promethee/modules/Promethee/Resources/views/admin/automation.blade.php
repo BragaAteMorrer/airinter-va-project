@@ -4,6 +4,45 @@
 @push('styles')
 <link rel="stylesheet" href="{{ asset('promethee-assets/promethee-admin-workspaces.css') }}?v={{ filemtime(public_path('promethee-assets/promethee-admin-workspaces.css')) }}">
 <style>
+/* Larger progression hero on the modern automation workspace only. */
+@media (min-width: 761px) {
+  .admin-workspace-page > .ops-header.compact {
+    min-height: 320px;
+    padding: 56px 52px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+  .admin-workspace-page > .ops-header.compact > div {
+    min-width: 0;
+    max-width: 760px;
+  }
+  .admin-workspace-page > .ops-header.compact h1 {
+    font-size: clamp(2.8rem, 3.6vw, 4.2rem);
+    line-height: 1.08;
+  }
+  .admin-workspace-page > .ops-header.compact p {
+    max-width: 760px;
+    font-size: 1.05rem;
+    line-height: 1.55;
+  }
+  .admin-workspace-page > .ops-header.compact > .tag {
+    flex-shrink: 0;
+  }
+}
+@media (max-width: 760px) {
+  .admin-workspace-page > .ops-header.compact {
+    height: auto;
+    min-height: 0;
+    padding: 28px 22px;
+  }
+  .admin-workspace-page > .ops-header.compact h1 {
+    font-size: clamp(2rem, 8vw, 2.8rem);
+    line-height: 1.12;
+  }
+}
 /* Keep the automation rule editor readable at desktop and mobile widths. */
 .admin-workspace-page .rule-form {
   display: grid;
