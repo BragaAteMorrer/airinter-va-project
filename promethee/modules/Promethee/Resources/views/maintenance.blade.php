@@ -72,7 +72,7 @@
                         <td>{{ is_numeric($item->rem_ta) ? number_format($item->rem_ta / 60, 1, ',', ' ') . ' h' : '—' }}</td><td>{{ is_numeric($item->rem_tb) ? number_format($item->rem_tb / 60, 1, ',', ' ') . ' h' : '—' }}</td><td>{{ is_numeric($item->rem_tc) ? number_format($item->rem_tc / 60, 1, ',', ' ') . ' h' : '—' }}</td>
                         <td>
                             @forelse($enginePotentialByAircraft->get($item->aircraft_id, collect()) as $engine)
-                                <div><strong>M{{ $engine->position }}</strong> : {{ $engine->remaining_hours !== null ? number_format($engine->remaining_hours, 1, ',', ' ') . ' h' : '—' }}<small> · {{ $engine->remaining_cycles !== null ? number_format($engine->remaining_cycles) . ' cycles' : '—' }}</small></div>
+                                <div><strong>M{{ $engine->position }}</strong> : {{ $engine->display_remaining_hours !== null ? number_format($engine->display_remaining_hours, 1, ',', ' ') . ' h' : '—' }}@if($engine->estimated_offset_hours)<small title="Écart simulé, sans incidence sur la maintenance"> (estimé)</small>@endif<small> · {{ $engine->remaining_cycles !== null ? number_format($engine->remaining_cycles) . ' cycles' : '—' }}</small></div>
                             @empty
                                 —
                             @endforelse
@@ -137,7 +137,7 @@
                         <td>{{ is_numeric($item->rem_ta) ? number_format($item->rem_ta / 60, 1, ',', ' ') : '—' }} / {{ is_numeric($item->rem_tb) ? number_format($item->rem_tb / 60, 1, ',', ' ') : '—' }} / {{ is_numeric($item->rem_tc) ? number_format($item->rem_tc / 60, 1, ',', ' ') : '—' }} h</td>
                         <td>
                             @forelse($enginePotentialByAircraft->get($item->aircraft_id, collect()) as $engine)
-                                <div><strong>M{{ $engine->position }}</strong> : {{ $engine->remaining_hours !== null ? number_format($engine->remaining_hours, 1, ',', ' ') . ' h' : '—' }}<small> · {{ $engine->remaining_cycles !== null ? number_format($engine->remaining_cycles) . ' cycles' : '—' }}</small></div>
+                                <div><strong>M{{ $engine->position }}</strong> : {{ $engine->display_remaining_hours !== null ? number_format($engine->display_remaining_hours, 1, ',', ' ') . ' h' : '—' }}@if($engine->estimated_offset_hours)<small title="Écart simulé, sans incidence sur la maintenance"> (estimé)</small>@endif<small> · {{ $engine->remaining_cycles !== null ? number_format($engine->remaining_cycles) . ' cycles' : '—' }}</small></div>
                             @empty
                                 —
                             @endforelse

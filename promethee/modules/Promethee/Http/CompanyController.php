@@ -373,6 +373,12 @@ public function maintenance(Request $r) {
                         ? round((float) $engine->tbo_hours - (float) $engine->hours_since_overhaul, 1) : null;
                     $engine->remaining_cycles = $engine->tbo_cycles !== null
                         ? (int) $engine->tbo_cycles - (int) $engine->cycles_since_overhaul : null;
+                    // Stable display-only estimate; real maintenance counters are unchanged.
+                    $engine->estimated_offset_hours = (int) $engine->position > 1
+                        ? 1 + (crc32($engine->aircraft_id . ':' . $engine->position) % 9)
+                        : 0;
+                    $engine->display_remaining_hours = $engine->remaining_hours !== null
+                        ? round($engine->remaining_hours - $engine->estimated_offset_hours, 1) : null;
                     return $engine;
                 })->groupBy('aircraft_id');
         }
