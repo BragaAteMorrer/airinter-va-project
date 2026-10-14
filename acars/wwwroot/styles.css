@@ -852,7 +852,8 @@ body.auth-locked .display-settings{display:none}
 .status-chip{border-radius:4px;background:#f8fafb}
 .workspace-title{padding-bottom:13px;border-bottom:1px solid var(--line)}
 .workflow{border-radius:7px;box-shadow:none;overflow:hidden}
-.workflow>div{min-height:64px;padding:12px 14px}
+/* Keep the step-number gutter: the visual override must preserve the workflow text inset. */
+.workflow>div{min-height:64px;padding:12px 14px 12px 48px}
 .workflow span{border-radius:4px}
 .next-action{margin:14px 0 18px;padding:13px 15px;border-radius:7px;border-left:4px solid var(--blue);background:#f8fafb}
 .next-action strong{font-size:1.05rem}
