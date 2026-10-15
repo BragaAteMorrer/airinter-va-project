@@ -354,6 +354,7 @@
 
     async function refreshDetail(showLoading=true) {
         if (!state.selected) return;
+        const operationId = state.selected;
         if (showLoading) {
             empty.hidden = true;
             workspace.hidden = false;
@@ -361,13 +362,19 @@
         }
 
         try {
-            const response = await fetch(operationBase + '/' + encodeURIComponent(state.selected), {headers:{Accept:'application/json'}});
+            const response = await fetch(operationBase + '/' + encodeURIComponent(operationId), {headers:{Accept:'application/json'}});
             if (!response.ok) throw new Error('HTTP ' + response.status);
             const payload = await response.json();
+            // A background refresh must not replace an in-progress Datalink draft.
+            // Update only the conversation; keep the compose form, focus and selection intact.
+            if (state.selected !== operationId) return;
             state.detail = payload.data;
             renderOperationHeader();
             renderSelectedTrack();
-            renderTab();
+            const messageList = !showLoading && state.tab === 'messages'
+                ? document.querySelector('#dispatch-message-list') : null;
+            if (messageList) messageList.innerHTML = renderMessageList();
+            else renderTab();
         } catch (error) {
             content.innerHTML = '<div class="notice error">Impossible de charger cette opération.</div>';
         }
@@ -580,11 +587,14 @@
         '</form>';
     }
 
-    function renderMessages() {
+    function renderMessageList() {
         const messages = state.detail?.messages?.messages || [];
-        return (canDispatchActions ? composeBox() : '<div class="notice">Datalink en lecture seule. L’envoi OPS est réservé aux Captain et grades supérieurs ainsi qu’aux administrateurs.</div>') + '<div class="dispatch-message-list">' +
-            (messages.length ? messages.slice().reverse().map(renderMessage).join('') : '<div class="dispatch-empty-inline">Aucun échange Datalink.</div>') +
-        '</div>';
+        return messages.length ? messages.slice().reverse().map(renderMessage).join('') : '<div class="dispatch-empty-inline">Aucun échange Datalink.</div>';
+    }
+
+    function renderMessages() {
+        return (canDispatchActions ? composeBox() : '<div class="notice">Datalink en lecture seule. L’envoi OPS est réservé aux Captain et grades supérieurs ainsi qu’aux administrateurs.</div>') +
+            '<div class="dispatch-message-list" id="dispatch-message-list">' + renderMessageList() + '</div>';
     }
 
     function renderTimeline() {
