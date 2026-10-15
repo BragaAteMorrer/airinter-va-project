@@ -205,6 +205,17 @@
     <pre id="icaoFlightPlanPreview" class="network-fpl-preview" hidden></pre>
     <p id="networkPrefileMessage" class="message" hidden role="status"></p>
   </section>
+  <dialog id="ofpNetworkDialog" aria-labelledby="ofpNetworkTitle" style="max-width:520px;width:calc(100% - 32px);border:1px solid #64748b;border-radius:14px;padding:24px;color:inherit;background:var(--panel-bg,#192536);box-shadow:0 14px 55px #0009;">
+    <h3 id="ofpNetworkTitle">OFP récupéré — comment souhaitez-vous voler ?</h3>
+    <p>Choisissez un réseau pour préparer son FPL, ou poursuivez en solo. Le dépôt réseau est facultatif.</p>
+    <div class="tools" style="display:flex;flex-wrap:wrap;gap:8px;margin:16px 0;">
+      <button type="button" id="ofpChooseVatsim">VATSIM</button>
+      <button type="button" id="ofpChooseIvao">IVAO</button>
+      <button type="button" id="ofpChooseSolo" class="primary">Vol solo / hors ligne</button>
+    </div>
+    <p id="ofpNetworkFeedback" class="message" role="status" hidden></p>
+    <button type="button" id="ofpContinueRecording">Continuer vers Recording</button>
+  </dialog>
   <form id="prefileForm" class="grid flight-draft" hidden>
     <div class="draft-heading">
       <div><span class="kicker">BROUILLON OPÉRATIONNEL</span><h3>Personnaliser le vol</h3></div>
@@ -517,6 +528,8 @@
     <label><span>Pilot ID SimBrief</span><input id="simbriefPilotId" name="simbriefPilotId" inputmode="numeric" maxlength="7" placeholder="ID numérique"></label>
     <label><span>VATSIM CID</span><input id="vatsimCid" name="vatsimCid" inputmode="numeric" maxlength="10" placeholder="Votre CID VATSIM"></label>
     <label><span>IVAO VID</span><input id="ivaoVid" name="ivaoVid" inputmode="numeric" maxlength="12" placeholder="Votre VID IVAO"></label>
+    <label><span>Indicatif radio souhaité</span><select name="radioCallsign"><option value="AIRINTER">AIRINTER (historique)</option><option value="CUSTOM">Personnalisé / autre</option></select></label>
+    <p class="hint">L’indicatif radio AIRINTER est distinct de l’identifiant de vol ICAO ITF utilisé sur VATSIM/IVAO. Le réseau peut afficher un opérateur différent pour ITF.</p>
     <label><span>Réseau préféré</span><select name="preferredNetwork"><option value="">Aucun</option><option value="vatsim">VATSIM</option><option value="ivao">IVAO</option></select></label>
     <button class="primary">Enregistrer les réglages</button>
   </form>
