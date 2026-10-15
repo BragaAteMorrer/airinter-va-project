@@ -563,3 +563,37 @@ body[data-era="minitel-ambre"] .rail,body[data-era="minitel-ambre"] .panel{backg
 body[data-era="minitel-ambre"] button,body[data-era="minitel-ambre"] input,body[data-era="minitel-ambre"] select,body[data-era="minitel-ambre"] textarea{border-radius:0}
 body[data-era="minitel-ambre"]{font-family:"Minitel",ui-monospace,Consolas,monospace}
 body[data-efb-skin="airinter-historique"] .operational-weather,body[data-efb-skin="airinter-historique"] .flight-draft{border-left:4px solid var(--red)}
+
+
+/* OFP network selection: follow the current Hermès era and day/night palette. */
+#ofpNetworkDialog{
+  box-sizing:border-box;
+  width:min(520px,calc(100% - 32px));
+  max-width:520px;
+  max-height:calc(100dvh - 40px);
+  overflow:auto;
+  padding:26px;
+  border:1px solid var(--line);
+  border-radius:var(--radius,8px);
+  background:var(--paper);
+  color:var(--ink);
+  box-shadow:0 18px 55px rgb(8 25 42 / 24%);
+  font:inherit;
+}
+#ofpNetworkDialog::backdrop{background:rgb(7 20 34 / 60%);backdrop-filter:blur(3px)}
+#ofpNetworkDialog h3{margin:0 0 10px;color:var(--ink);font-size:1.15rem;line-height:1.35}
+#ofpNetworkDialog>p:not(.message){color:var(--muted);line-height:1.55;margin:0}
+#ofpNetworkDialog .ofp-network-choices{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 18px}
+#ofpNetworkDialog button{min-height:42px;padding:10px 15px;font:inherit;font-weight:700;cursor:pointer}
+#ofpNetworkDialog .ofp-network-choices button{flex:1 1 auto}
+#ofpNetworkDialog #ofpContinueRecording{width:100%;margin-top:12px}
+#ofpNetworkDialog .message{margin:12px 0;background:color-mix(in srgb,var(--ok) 9%,var(--paper));color:var(--ink);border:1px solid color-mix(in srgb,var(--ok) 34%,var(--line));line-height:1.5}
+#ofpNetworkDialog button:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+body[data-appearance="dark"] #ofpNetworkDialog{
+  background:var(--paper);color:var(--ink);border-color:var(--line);
+  box-shadow:0 22px 60px rgb(0 0 0 / 55%);
+}
+body[data-appearance="dark"] #ofpNetworkDialog h3{color:var(--ink)}
+body[data-appearance="dark"] #ofpNetworkDialog>p:not(.message){color:var(--muted)}
+body[data-era="2000"] #ofpNetworkDialog{border-radius:0;box-shadow:6px 6px 0 rgb(10 35 60 / 20%)}
+@media(max-width:480px){#ofpNetworkDialog{padding:18px}#ofpNetworkDialog .ofp-network-choices button{flex:1 1 100%}}
