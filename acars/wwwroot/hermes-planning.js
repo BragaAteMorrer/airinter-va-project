@@ -213,7 +213,8 @@ async function applyBriefing(briefing, sourceLabel) {
       : String(importedCostIndex).trim(),
     estimated_time_enroute: Number(briefing.estimated_time_enroute || 0) || null,
     route_points: Array.isArray(briefing.route_points) ? briefing.route_points : [],
-    network_prefiles: briefing.network_prefiles || null
+    network_prefiles: briefing.network_prefiles || null,
+    resolved: briefing.resolved || null
   };
   if (briefing.block_fuel) form.elements.block_fuel.value = Math.round(briefing.block_fuel);
   if (briefing.route) form.elements.route.value = briefing.route;
