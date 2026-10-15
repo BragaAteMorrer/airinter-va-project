@@ -205,10 +205,10 @@
     <pre id="icaoFlightPlanPreview" class="network-fpl-preview" hidden></pre>
     <p id="networkPrefileMessage" class="message" hidden role="status"></p>
   </section>
-  <dialog id="ofpNetworkDialog" aria-labelledby="ofpNetworkTitle" style="max-width:520px;width:calc(100% - 32px);border:1px solid #64748b;border-radius:14px;padding:24px;color:inherit;background:var(--panel-bg,#192536);box-shadow:0 14px 55px #0009;">
+  <dialog id="ofpNetworkDialog" class="ofp-network-dialog" aria-labelledby="ofpNetworkTitle">
     <h3 id="ofpNetworkTitle">OFP récupéré — comment souhaitez-vous voler ?</h3>
     <p>Choisissez un réseau pour préparer son FPL, ou poursuivez en solo. Le dépôt réseau est facultatif.</p>
-    <div class="tools" style="display:flex;flex-wrap:wrap;gap:8px;margin:16px 0;">
+    <div class="tools ofp-network-choices">
       <button type="button" id="ofpChooseVatsim">VATSIM</button>
       <button type="button" id="ofpChooseIvao">IVAO</button>
       <button type="button" id="ofpChooseSolo" class="primary">Vol solo / hors ligne</button>
