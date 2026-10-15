@@ -48,6 +48,18 @@ Order allow,deny
 Deny from all
 Satisfy all
 </Files>
+# Defense in depth: block accidental publication of credentials and backups.
+# Keep GuppY routing and public assets unchanged.
+<IfModule mod_rewrite.c>
+RewriteRule (^|/)\.(?:git|svn|hg)(?:/|$) - [F,NC]
+RewriteRule (^|/)(?:\.env(?:\..*)?|\.user\.ini|composer\.(?:json|lock)|auth\.json|phpunit\.xml|web\.config)$ - [F,NC]
+RewriteRule \.(?:sql|sqlite3?|bak|backup|old|orig|swp|log|pem|key|p12|pfx)$ - [F,NC]
+</IfModule>
+<IfModule mod_headers.c>
+Header always set X-Content-Type-Options "nosniff"
+Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
 ErrorDocument 400 /error.php?err=400
 ErrorDocument 403 /error.php?err=403
 ErrorDocument 404 /error.php?err=404
