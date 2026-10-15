@@ -214,7 +214,7 @@ class AcarsSimBriefController extends Controller
             'simbrief_profile' => $resolved['aircraft']['simbrief_profile'] ?? null,
             'passengers' => $this->ofpPassengerCount($ofp),
             'requested_passengers' => isset($resolved['parameters']['pax']) ? (int) $resolved['parameters']['pax'] : null,
-            'network_prefiles' => $this->networkPrefiles($ofp),
+            'network_prefiles' => $this->networkPrefiles($ofp, $resolved['airline']['name'] ?? ''),
             'route_points' => $this->routePoints($ofp),
             'resolved' => $this->resolver->publicView($resolved),
         ]);
@@ -299,7 +299,7 @@ class AcarsSimBriefController extends Controller
             'block_fuel' => (float) $xml->fuel->plan_ramp,
             'estimated_time_enroute' => (int) $xml->times->est_time_enroute,
             'briefing_url' => route('api.flights.briefing', ['id' => $simbrief->id]),
-            'network_prefiles' => $this->networkPrefiles($xml),
+            'network_prefiles' => $this->networkPrefiles($xml, $resolved['airline']['name'] ?? ''),
             'route_points' => $this->routePoints($xml),
             'aircraft_type' => $resolved['aircraft']['icao'],
             'simbrief_calculation_type' => (string) $xml->aircraft->icaocode,
@@ -376,7 +376,7 @@ class AcarsSimBriefController extends Controller
         return $points;
     }
 
-    private function networkPrefiles(\SimpleXMLElement $xml): array
+    private function networkPrefiles(\SimpleXMLElement $xml, string $airlineName = ''): array
     {
         $atc = $xml->atc;
         $aircraft = $xml->aircraft;
@@ -399,6 +399,28 @@ class AcarsSimBriefController extends Controller
         };
 
         $raw = trim((string) $atc->flightplan_text);
+        // The ICAO airline identification (item 7) stays unchanged. Add the
+        // operator's spoken radiotelephony designator only to item 18 RMK/.
+        // Resolve from the booked airline, not a pilot's global AIRINTER setting.
+        $name = strtoupper(preg_replace('/[^A-Z0-9]+/', ' ', iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $airlineName) ?: $airlineName));
+        $radio = null;
+        if (preg_match('/\\bINTER\\s*CARGO\\b|\\bINTERCARGO\\b/', $name)) {
+            $radio = 'INTERCARGO';
+        } elseif (preg_match('/\\bAIR\\s*CHARTER\\b/', $name)) {
+            $radio = 'AIR CHARTER';
+        } elseif (preg_match('/\\bAIR\\s*INTER\\b/', $name)) {
+            $radio = 'AIRINTER';
+        }
+        if ($radio !== null && $raw !== '') {
+            // Remove a previous operator designator to keep one consistent RMK
+            // even if SimBrief generated a different one.
+            $raw = preg_replace('/\\b(?:AIRINTER|INTERCARGO|AIR CHARTER)\\b\\s*/i', '', $raw);
+            if (preg_match('/\\bRMK\\//i', $raw)) {
+                $raw = preg_replace('/\\bRMK\\//i', 'RMK/'.$radio.' ', $raw, 1);
+            } else {
+                $raw = rtrim($raw). ' RMK/'.$radio;
+            }
+        }
         $fuelEnduranceSeconds = max(0, (int) ($xml->times->endurance ?? 0));
         $fuelEndurance = $fuelEnduranceSeconds > 0
             ? $secondsToHhmm($fuelEnduranceSeconds)
