@@ -96,3 +96,6 @@ public_html/data/config/config.inc
 
 # Plugin CKEditor avec dépôt Git embarqué
 /public_html/inc/ckeditor/plugins/nbsp/
+
+# GuppY live credentials and generated configuration: server-managed only
+/public_html/data/config/config.inc
