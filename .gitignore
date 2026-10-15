@@ -99,3 +99,14 @@ public_html/data/config/config.inc
 
 # GuppY live credentials and generated configuration: server-managed only
 /public_html/data/config/config.inc
+
+# Private GuppY runtime data: NEVER add new instances to Git.
+# Existing tracked files are NOT removed by .gitignore; remediation is separate.
+/public_html/data/config/
+/public_html/data/dbdocs/
+/public_html/data/error/
+/public_html/data/security/
+/public_html/data/stats/
+/public_html/data/tmp/
+/public_html/data/users/
+/public_html/save/
