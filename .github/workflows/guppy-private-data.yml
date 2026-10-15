@@ -36,7 +36,7 @@ jobs:
           fi
           additions="$(git diff --name-only --diff-filter=A -z "$base" "$HEAD_SHA" | python3 -c '
 import sys
-paths = (p.decode("utf-8", "surrogateescape") for p in sys.stdin.buffer.read().split(b"\\0") if p)
+paths = (p.decode("utf-8", "surrogateescape") for p in sys.stdin.buffer.read().split(bytes([0])) if p)
 private = ("config", "dbdocs", "error", "security", "stats", "tmp", "users")
 for p in paths:
     bits = p.split("/")
