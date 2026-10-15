@@ -242,7 +242,8 @@ async function applyBriefing(briefing, sourceLabel) {
   updateWorkflow();
 
   showMessage('#simbriefState', 'OFP importé depuis ' + sourceLabel + '. Enregistrement automatique de la préparation opérationnelle…');
-  if (!pirepId) await prefilePreparedOperation({ navigate: true, automatic: true });
+  if (!pirepId) await prefilePreparedOperation({ navigate: false, automatic: true });
+  window.dispatchEvent(new CustomEvent('hermes:ofp-ready-for-network', { detail: { hasPrefiles: Boolean(flightPlan?.network_prefiles) } }));
   drawMap(flightMapState.lastTrack, lastStatus?.latest || {});
 }
 
