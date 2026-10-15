@@ -92,6 +92,7 @@ coverage.*
 /public_html/**/.env
 /public_html/**/.htpasswd
 /public_html/data/log/
+public_html/data/config/config.inc
 
 # Plugin CKEditor avec dépôt Git embarqué
 /public_html/inc/ckeditor/plugins/nbsp/
