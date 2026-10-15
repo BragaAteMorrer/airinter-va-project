@@ -641,7 +641,13 @@ if (prepareOfpBtn) prepareOfpBtn.onclick = () => {
 
 // Network choice is optional: no FPL submission may start flight tracking.
 const ofpDialog = $('#ofpNetworkDialog');
-const selectedRadioCallsign = () => localSettings.radioCallsign === 'AIRINTER' ? 'AIRINTER' : 'indicatif standard du vol';
+const selectedRadioCallsign = () => {
+  const airline = String(flightPlan?.resolved?.airline?.name || selectedOperation?.airline?.name || '').toUpperCase();
+  if (/INTER\\s*CARGO/.test(airline)) return 'INTERCARGO';
+  if (/AIR\\s*CHARTER/.test(airline)) return 'AIR CHARTER';
+  if (/AIR\\s*INTER/.test(airline)) return 'AIRINTER';
+  return 'indicatif de la compagnie (à vérifier dans le FPL)';
+};
 let chosenOfpNetwork = null;
 const showRecordingAfterOfp = () => {
   if (ofpDialog?.open) ofpDialog.close();
