@@ -203,7 +203,7 @@ function setAuthenticated(value) {
 setAuthenticated(false);
 
 const settingsForm = $('#settingsForm');
-const defaultSettings = { autoDetection: 'true', forcedSimulator: '', preferredSimulator: 'msfs2024', timeFormat: 'local', notifications: 'true', simbriefUsername: '', simbriefPilotId: '', vatsimCid: '', ivaoVid: '', preferredNetwork: '', flightPlanMode: 'account' };
+const defaultSettings = { autoDetection: 'true', forcedSimulator: '', preferredSimulator: 'msfs2024', timeFormat: 'local', notifications: 'true', simbriefUsername: '', simbriefPilotId: '', vatsimCid: '', ivaoVid: '', preferredNetwork: '', flightPlanMode: 'account', radioCallsign: 'AIRINTER' };
 let savedSettings = {};
 try { savedSettings = JSON.parse(localStorage.prometheeAcarsSettings || '{}'); } catch {}
 let localSettings = { ...defaultSettings, ...savedSettings };
@@ -639,6 +639,38 @@ if (prepareOfpBtn) prepareOfpBtn.onclick = () => {
   else $('#planFile')?.click();
 };
 
+// Network choice is optional: no FPL submission may start flight tracking.
+const ofpDialog = $('#ofpNetworkDialog');
+const selectedRadioCallsign = () => localSettings.radioCallsign === 'AIRINTER' ? 'AIRINTER' : 'indicatif standard du vol';
+let chosenOfpNetwork = null;
+const showRecordingAfterOfp = () => {
+  if (ofpDialog?.open) ofpDialog.close();
+  document.querySelector('[data-tab="record"]')?.click();
+};
+const openOfpNetworkChoice = () => {
+  if (!ofpDialog) return showRecordingAfterOfp();
+  chosenOfpNetwork = null;
+  showMessage('#ofpNetworkFeedback', 'Indicatif radio choisi : ' + selectedRadioCallsign() + '. Il ne remplace pas l’identifiant de connexion au réseau.');
+  $('#ofpChooseVatsim').disabled = !flightPlan?.network_prefiles?.vatsim?.url;
+  $('#ofpChooseIvao').disabled = !flightPlan?.network_prefiles?.ivao?.url;
+  if (ofpDialog.open) return;
+  if (typeof ofpDialog.showModal === 'function') ofpDialog.showModal();
+  else showRecordingAfterOfp();
+};
+window.addEventListener('hermes:ofp-ready-for-network', openOfpNetworkChoice);
+$('#ofpContinueRecording')?.addEventListener('click', showRecordingAfterOfp);
+$('#ofpChooseSolo')?.addEventListener('click', showRecordingAfterOfp);
+[['vatsim', 'ofpChooseVatsim', 'vatsimPrefileBtn'], ['ivao', 'ofpChooseIvao', 'ivaoPrefileBtn']].forEach(([network, id, target]) => {
+  $('#' + id)?.addEventListener('click', async () => {
+    chosenOfpNetwork = network;
+    // Keep the existing export logic centralized in My Operations.
+    $('#' + target)?.click();
+    showMessage('#ofpNetworkFeedback', network === 'ivao'
+      ? 'IVAO ouvert. Importez le FPL ICAO copié dans le formulaire puis validez sur IVAO. Hermès ne peut pas confirmer un dépôt distant.'
+      : 'VATSIM ouvert. Vérifiez le plan et validez-le sur myVATSIM avant de continuer.');
+  });
+});
+
 $('#vatsimPrefileBtn').onclick = async () => {
   const prefile = flightPlan?.network_prefiles?.vatsim;
   if (!prefile?.url) return showMessage('#networkPrefileMessage', 'Importez d’abord un OFP SimBrief.', true);
@@ -662,7 +694,17 @@ $('#ivaoPrefileBtn').onclick = async () => {
         copied = true;
       } catch {}
     }
-    await call('/api/open-external', { url: prefile.url });
+    if (!copied && icaoPlan) {
+      const textarea = document.createElement('textarea');
+      textarea.value = icaoPlan;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.append(textarea);
+      textarea.select();
+      try { copied = document.execCommand('copy'); } catch {}
+      textarea.remove();
+    }
+    await call('/api/open-external', { url: 'https://fpl.ivao.aero/' });
     showMessage(
       '#networkPrefileMessage',
       copied
