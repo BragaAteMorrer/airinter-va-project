@@ -25,29 +25,30 @@ jobs:
         run: |
           set -euo pipefail
           if [[ -z "$BASE_SHA" || "$BASE_SHA" =~ ^0+$ ]]; then
-            echo "::error::Cannot determine diff base; refusing to skip private-data audit."
+            echo "::error::Missing base revision; refusing to skip audit."
             exit 1
           fi
-          # PRs use a merge-base; push events use their exact previous revision.
           if [[ "$EVENT_NAME" == "pull_request" ]]; then
             base="$(git merge-base "$BASE_SHA" "$HEAD_SHA")"
           else
             base="$BASE_SHA"
           fi
-          additions="$(git diff --name-only --diff-filter=A -z "$base" "$HEAD_SHA" | python3 -c '
-import sys
-paths = (p.decode("utf-8", "surrogateescape") for p in sys.stdin.buffer.read().split(bytes([0])) if p)
-private = ("config", "dbdocs", "error", "security", "stats", "tmp", "users")
-for p in paths:
-    bits = p.split("/")
-    if len(bits) >= 3 and bits[:2] == ["public_html", "save"]:
-        print(p)
-    elif len(bits) >= 4 and bits[:2] == ["public_html", "data"] and bits[2] in private and bits[-1] != ".htaccess":
-        print(p)
-' )"
-          if [[ -n "$additions" ]]; then
-            echo "::error::New GuppY runtime data must never be committed:"
-            printf '%s\n' "$additions"
+          violation=0
+          while IFS= read -r -d '' path; do
+            case "$path" in
+              public_html/save/*)
+                echo "::error file=$path::Private GuppY data must not be added"
+                violation=1
+                ;;
+              public_html/data/config/*|public_html/data/dbdocs/*|public_html/data/error/*|public_html/data/security/*|public_html/data/stats/*|public_html/data/tmp/*|public_html/data/users/*)
+                if [[ "$path" != */.htaccess ]]; then
+                  echo "::error file=$path::Private GuppY data must not be added"
+                  violation=1
+                fi
+                ;;
+            esac
+          done < <(git diff --name-only --diff-filter=A -z "$base" "$HEAD_SHA")
+          if (( violation )); then
             exit 1
           fi
           echo "No newly added GuppY private runtime files."
