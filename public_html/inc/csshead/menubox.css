@@ -1,0 +1,41 @@
+/*
+    styles recommandés pour les menus dynamique #1 et #4
+
+*/
+.mbtype1 .categ, .mbtype4 .categ
+{
+    font-weight: bold;
+    font-style: italic;
+    cursor: default;
+}
+
+.mbtype1 .link, .mbtype4 .link
+{
+    cursor: pointer;
+}
+.mbtype1 select, .mbtype4 select
+{
+    width: 95%;
+}
+
+.mbtype1 .current, .mbtype4 .current
+{
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.mbtype2 .categ, .mbtype3 .categ,
+.mbtype2 .link, .mbtype3 .link
+{
+    cursor:pointer;
+}
+
+.mbtype0 img, .mbtype1 img, .mbtype2 img, .mbtype3 img, .mbtype4 img
+{
+    border-style: none;
+}
+
+.ta-center
+{
+    text-align: center;
+}

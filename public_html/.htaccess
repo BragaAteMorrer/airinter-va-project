@@ -1,0 +1,54 @@
+AddDefaultCharset UTF-8
+#### Modif faite le 3 décembre 2023 Redirection http vers https
+RewriteEngine On
+RewriteCond %{HTTPS} off [OR]
+RewriteCond %{HTTP_HOST} !^www\. [NC]
+RewriteCond %{HTTP_HOST} ^(?:www\.)?(.+)$ [NC]
+RewriteRule ^.*$ https://www.%1%{REQUEST_URI} [L,NE,R=301]
+<IfModule mod_headers.c>
+Header set X-XSS-Protection "1; mode=block"
+</IfModule>
+### Blocage Iframes externes
+ Header set X-Frame-Options SAMEORIGIN
+### Accès au seul fichier index.php, les autres sont interdits
+DirectoryIndex index.php
+<IfDefine !Free>
+ ### Interdire les .php/
+ RewriteEngine On
+ RewriteCond %{REQUEST_URI} ^/(.*).php/
+ RewriteRule (.*) - [F]
+ ### Filtre contre  XSS, Redirections HTTP, base64_encode, Variable PHP GLOBALS via URL
+ ### Modifier VARIABLE _REQUEST via URL, Test de faille PHP, Injection SQL simple
+ RewriteEngine On
+ RewriteCond %{REQUEST_METHOD} (GET|POST) [NC]
+ RewriteCond %{QUERY_STRING} ^(.*)(%3C|<)/?script(.*)$ [NC,OR]
+ RewriteCond %{QUERY_STRING} ^(.*)(%3D|=)?javascript(%3A|:)(.*)$ [NC,OR]
+ RewriteCond %{QUERY_STRING} ^(.*)document\.location\.href(.*)$ [OR]
+ RewriteCond %{QUERY_STRING} ^.*(%24&x).* [NC,OR]
+ RewriteCond %{QUERY_STRING} ^.*(127\.0).* [NC,OR]
+ RewriteCond %{QUERY_STRING} ^(.*)(%3D|=)(https?|ftp|mosConfig)(%3A|:)//(.*)$ [NC,OR]
+ ### Desactive les méthodes de requêtes TRACE TRACK DELETE
+ RewriteEngine On
+ RewriteCond %{REQUEST_METHOD} ^(TRACE|DELETE|TRACK) [NC]
+ RewriteRule ^.* - [F]
+</IfDefine>
+OPTIONS -Indexes
+<Files ~ "^\.ht">
+ Order allow,deny
+ Deny from all
+ Satisfy All
+</Files>
+### Interdire les autres types de fichier index
+<Files ~ "^(index)\.(p?s?x?htm?|txt|aspx?|cfml?|cgi|pl|php[3-9]|jsp|xml)$">
+order allow,deny
+deny from all
+</Files>
+<Files ~ "\.(inc|dtb)$">
+Order allow,deny
+Deny from all
+Satisfy all
+</Files>
+ErrorDocument 400 /error.php?err=400
+ErrorDocument 403 /error.php?err=403
+ErrorDocument 404 /error.php?err=404
+ErrorDocument 500 /error.php?err=500

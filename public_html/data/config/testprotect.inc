@@ -1,0 +1,3 @@
+<?php
+$testprotect = stripslashes('Success');
+?>

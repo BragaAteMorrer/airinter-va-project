@@ -1,0 +1,219 @@
+<?php
+/*******************************************************************************
+ *   UniteGallery Admin Language Strings
+ *******************************************************************************
+ *   GuppY PHP Script - version 6.0
+ *   CeCILL Copyright (C) 2004-2020 by Laurent Duveau
+ *   Initiated by Laurent Duveau and Nicolas Alves
+ *   Web site = https://www.freeguppy.org/
+ *   e-mail   = guppy@freeguppy.org
+ *   V6 developed by Lud Bienaimé
+ *      with the participation of the GuppY Team
+ *******************************************************************************
+ *   Latest Changes :
+ * v6.00.00 (December 15, 2020) : initial release
+ ******************************************************************************/
+
+if (stristr($_SERVER['SCRIPT_NAME'], 'fr-ugadmin.inc')) {
+    header('location:../index.php');
+    die();
+}
+
+$charset = 'UTF-8';
+
+$ugadmin[1] = 'Tuiles-Colonnes';
+$ugadmin[2] = 'Tuiles-Justifiées';
+$ugadmin[3] = 'Tuiles-Mélangées';
+$ugadmin[4] = 'Tuiles-Grille';
+$ugadmin[5] = 'Carrousel';
+$ugadmin[6] = 'Thème-Défaut';
+$ugadmin[7] = 'Thème-Compact';
+$ugadmin[8] = 'Thème-Grille';
+$ugadmin[9] = 'Thème-Diaporama';
+$ugadmin[10] = 'Thème-Vidéos';
+$ugadmin[11] = 'Options de galerie';
+$ugadmin[12] = 'Options des tuiles';
+$ugadmin[13] = 'Options de conception des tuiles';
+$ugadmin[14] = 'Options du panneau de texte des tuiles';
+$ugadmin[15] = 'Options lightbox';
+$ugadmin[16] = 'Construction du thème';
+$ugadmin[17] = 'Options principales';
+$ugadmin[18] = 'Options de navigation';
+$ugadmin[19] = 'Options du carrousel';
+$ugadmin[20] = 'Options du thème';
+$ugadmin[21] = 'Options du diaporama';
+$ugadmin[22] = 'Options des miniatures';
+$ugadmin[23] = 'Options du panneau des miniatures';
+$ugadmin[24] = 'Options du panneau de grille';
+$ugadmin[25] = 'Largeur de galerie';
+$ugadmin[26] = 'Hauteur de galerie';
+$ugadmin[27] = 'Largeur de galerie minimum';
+$ugadmin[28] = 'Hauteur de galerie minimum';
+$ugadmin[29] = 'Lecture automatique du diaporama';
+$ugadmin[30] = 'Intervalle de lecture du diaporama';
+$ugadmin[31] = 'Couleur de fond de galerie';
+$ugadmin[32] = 'Largeur des colonne de tuiles';
+$ugadmin[33] = 'Alignement des tuiles';
+$ugadmin[34] = 'Espacement des tuiles entre colonnes';
+$ugadmin[35] = 'Espacement des tuiles entre colonnes sur mobile';
+$ugadmin[36] = 'Largeur exacte des tuiles';
+$ugadmin[37] = 'Tuiles espace intérieur compris';
+$ugadmin[38] = 'Colonnes de tuiles minimum';
+$ugadmin[39] = 'Largeur optimale des tuiles mélangées';
+$ugadmin[40] = 'Colonnes de tuiles maximum';
+$ugadmin[41] = 'Bordure des tuiles activée';
+$ugadmin[42] = 'Largeur de bordure des tuiles';
+$ugadmin[43] = 'Couleur de bordure des tuiles';
+$ugadmin[44] = 'Rayon des coins arrondis des tuiles';
+$ugadmin[45] = 'Afficher ce thème';
+$ugadmin[46] = 'Contour des tuiles activé';
+$ugadmin[47] = 'Couleur du contour des tuiles';
+$ugadmin[48] = 'Ombre de la tuile activée';
+$ugadmin[49] = 'Couleur de l\'ombre de la tuile';
+$ugadmin[50] = 'Actions sur les tuiles activées';
+$ugadmin[51] = 'Tuile en tant que lien externe';
+$ugadmin[52] = 'Action du lien dans une nouvelle page';
+$ugadmin[53] = 'Superposition de couleur au survol activée';
+$ugadmin[54] = 'Opacité de la couleur superposée';
+$ugadmin[55] = 'Couleur pour la superposition de la tuile';
+$ugadmin[56] = 'Icônes d\'activation des tuiles';
+$ugadmin[57] = 'Icône d\'affichage de la tuile';
+$ugadmin[58] = 'Espacement des icônes de la tuile';
+$ugadmin[59] = 'Activation d\'effet d\'image sur la tuile';
+$ugadmin[60] = 'Type d\'effet d\'image sur la tuile';
+$ugadmin[61] = 'Effet inverse d\'image sur la tuile';
+$ugadmin[62] = 'Panneau de texte de la tuile activé';
+$ugadmin[63] = 'Panneau de texte toujours affiché';
+$ugadmin[64] = 'Type d\'apparition du panneau de texte';
+$ugadmin[65] = 'Position du panneau de texte';
+$ugadmin[66] = 'Opacité du panneau de texte';
+$ugadmin[67] = 'Couleur de fond du panneau de texte';
+$ugadmin[68] = 'Type de présentation de lightbox';
+$ugadmin[69] = 'Position des flèches lightbox';
+$ugadmin[70] = 'Flèches intérieures toujours affichées';
+$ugadmin[71] = 'Bordure d\'image lightbox activée';
+$ugadmin[72] = 'Largeur de la bordure d\'image lightbox';
+$ugadmin[73] = 'Couleur de la bordure d\'image lightbox';
+$ugadmin[74] = 'Rayon de la bordure d\'image lightbox';
+$ugadmin[75] = 'Hauteur de la ligne de base justifiée';
+$ugadmin[76] = 'Espacement entre les tuiles justifiées';
+$ugadmin[77] = 'Transition des tuiles activée';
+$ugadmin[78] = 'Largeur des tuiles';
+$ugadmin[79] = 'Hauteur des tuiles';
+$ugadmin[80] = 'Bordure intérieure de la grille';
+$ugadmin[81] = 'Espace entre les colonnes de tuiles';
+$ugadmin[82] = 'Espace entre les lignes de tuiles';
+$ugadmin[83] = 'Nombre de lignes de tuiles';
+$ugadmin[84] = 'Type de navigation du thème';
+$ugadmin[85] = 'Marge haute des bulles de navigation';
+$ugadmin[86] = 'Couleur des bulles de navigation';
+$ugadmin[87] = 'Espace entre les bulles de navigation';
+$ugadmin[88] = 'Marge haute des flèches de navigation';
+$ugadmin[89] = 'Espacement des flèches de navigation';
+$ugadmin[90] = 'Alignement du caroussel';
+$ugadmin[91] = 'Noir&Blanc';
+$ugadmin[92] = 'Flou';
+$ugadmin[93] = 'Sépia';
+$ugadmin[94] = 'Glissant';
+$ugadmin[95] = 'Fondu';
+$ugadmin[96] = 'Intérieur Bas';
+$ugadmin[97] = 'Intérieur Haut';
+$ugadmin[98] = 'Intérieur Centre';
+$ugadmin[99] = 'Large';
+$ugadmin[100] = 'Compact';
+$ugadmin[101] = 'Sur les côtés';
+$ugadmin[102] = 'A l\'intérieur';
+$ugadmin[103] = 'Bulles';
+$ugadmin[104] = 'Flèches';
+$ugadmin[105] = 'Gris';
+$ugadmin[106] = 'Bleu';
+$ugadmin[107] = 'Marron';
+$ugadmin[108] = 'Vert';
+$ugadmin[109] = 'Rouge';
+$ugadmin[110] = 'Ajustement';
+$ugadmin[111] = 'Réduction';
+$ugadmin[112] = 'Remplissage';
+$ugadmin[113] = 'Noir';
+$ugadmin[114] = 'Blanc';
+$ugadmin[115] = 'Galette';
+$ugadmin[116] = 'Galette 2';
+$ugadmin[117] = 'Barre';
+$ugadmin[118] = 'Barre de défilement';
+$ugadmin[119] = 'Avance élément';
+$ugadmin[120] = 'Bordures';
+$ugadmin[121] = 'Grille';
+$ugadmin[122] = 'Droite - Miniature';
+$ugadmin[123] = 'Droite - Titre seulement';
+$ugadmin[124] = 'Droite - Pas de vignette';
+$ugadmin[125] = 'Espacement des tuiles';
+$ugadmin[126] = 'Nombre de tuiles à déplacer';
+$ugadmin[127] = 'Caroussel automatique';
+$ugadmin[128] = 'Temporisation du caroussel automatique';
+$ugadmin[129] = 'Direction du caroussel automatique';
+$ugadmin[130] = 'Afficher les éléments de navigation';
+$ugadmin[131] = 'Position des éléments de navigation';
+$ugadmin[132] = 'Espace entre caroussel et navigation';
+$ugadmin[133] = 'Bouton mode plein écran activé';
+$ugadmin[134] = 'Bouton marche/arrêt du diaporama activé';
+$ugadmin[135] = 'Bouton cache/montre les panneaux activé';
+$ugadmin[136] = 'Panneau de texte activé';
+$ugadmin[137] = 'Alignement du texte';
+$ugadmin[138] = 'Cacher le panneau sous la largeur';
+$ugadmin[139] = '0 pour illimité';
+$ugadmin[140] = 'Mode d\'ajustement des diapos';
+$ugadmin[141] = 'Mode de transition du diaporama';
+$ugadmin[142] = 'Vitesse de transition des diapos';
+$ugadmin[143] = 'Type de chargeur du diaporama';
+$ugadmin[144] = 'Couleur du chargeur du diaporama';
+$ugadmin[145] = 'Flèches du diaporama activées';
+$ugadmin[146] = 'Indicateur de progression activé';
+$ugadmin[147] = 'Type d\'indicateur de progression';
+$ugadmin[148] = 'Alignement horizontal de l\'indicateur';
+$ugadmin[149] = 'Alignement vertical de l\'indicateur';
+$ugadmin[150] = 'Couleur de l\'indicateur de progression';
+$ugadmin[151] = 'Opacité de l\'indicateur de progression';
+$ugadmin[152] = 'Activation du zoom des photos';
+$ugadmin[153] = 'Commandes du diaporama toujours activées';
+$ugadmin[154] = 'Commandes du diaporama activées au toucher';
+$ugadmin[155] = 'Activation du panneau des textes';
+$ugadmin[156] = 'Activation du titre du panneau texte';
+$ugadmin[157] = 'Alignement vertical du texte du panneau';
+$ugadmin[158] = 'Vitesse de transition du mode fondu ';
+$ugadmin[159] = 'Largeur des miniatures';
+$ugadmin[160] = 'Hauteur des miniatures';
+$ugadmin[161] = 'Largeur fixe des miniatures';
+$ugadmin[162] = 'Effet de bordure des miniatures';
+$ugadmin[163] = 'Largeur de la bordure des miniatures';
+$ugadmin[164] = 'Couleur de la bordure des miniatures';
+$ugadmin[165] = 'Largeur de la bordure au-dessus des miniatures';
+$ugadmin[166] = 'Couleur de la bordure au-dessus des miniatures';
+$ugadmin[167] = 'Largeur de la sélection des miniatures';
+$ugadmin[168] = 'Couleur de la sélection des miniatures';
+$ugadmin[169] = 'Rayon des coins arrondis des miniatures';
+$ugadmin[170] = 'Effet de couleur au survol de la miniature';
+$ugadmin[171] = 'Couleur de l\'effet au survol de la miniature';
+$ugadmin[172] = 'Opacité de la couleur de survol de la miniature';
+$ugadmin[173] = 'Boutons du panneau des miniatures activé';
+$ugadmin[174] = 'Espacement des boutons du panneau des miniatures';
+$ugadmin[175] = 'Rôle des boutons du panneau des miniatures';
+$ugadmin[176] = 'Alignement de la grille des miniatures';
+$ugadmin[177] = 'Couleur de fond de la grille des miniatures';
+$ugadmin[178] = 'Alignement des miniatures du panneau';
+$ugadmin[179] = 'Position du panneau des miniatures';
+$ugadmin[180] = 'Cacher le panneau sous la largeur inférieure';
+$ugadmin[181] = 'Déplacement vertical de la grille des miniatures';
+$ugadmin[182] = 'Alignement vertical des flèches';
+$ugadmin[183] = 'Alignement horizontal des flèches';
+$ugadmin[184] = 'Direction du déplacement des miniatures';
+$ugadmin[185] = 'Nombre de colonnes de miniatures';
+$ugadmin[186] = 'Espacement des colonnes de miniatures';
+$ugadmin[187] = 'Espacement des lignes de miniatures';
+$ugadmin[188] = 'Habillage du thème';
+$ugadmin[189] = 'Temps avant désactivation du panneau droit';
+$ugadmin[190] = 'Activation des bulles de navigation';
+$ugadmin[191] = 'Décalage vertical des bulles de navigation';
+$ugadmin[192] = 'Type de vidéo :';
+$ugadmin[193] = 'Adresse pour le lien externe :';
+$ugadmin[194] = 'Code ou adresse de la vidéo :';
+$ugadmin[195] = 'Valeurs par défaut';
+?>

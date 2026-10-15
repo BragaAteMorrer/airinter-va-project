@@ -1,0 +1,25 @@
+<?php
+$type = 'ag';
+$fileid = '5943';
+$status = 'd';
+$creadate = '202512061719-';
+$moddate = '202512061719';
+$author = stripslashes('IT001Alex');
+$email = stripslashes('it001alex@airinter-va.org');
+$fielda1 = stripslashes('202512080000');
+$fielda2 = stripslashes('-23:59');
+$fieldb1 = stripslashes('122025');
+$fieldb2 = stripslashes('');
+$fieldc1 = stripslashes('<p>Vol spécial Noël<br />
+PARIS LFPO - ROVANIEMI EFRO<br />
+Vol aller : ITF2412<br />
+Vol retour : ITF2512<br />
+Plus d\'information onglet \"Animations\" puis \"Vol spécial Noël\"</p>
+');
+$fieldc2 = stripslashes('');
+$fieldd1 = stripslashes('');
+$fieldd2 = stripslashes('');
+$fieldweb = stripslashes('');
+$fieldmail = stripslashes('0');
+$fieldmod = stripslashes('');
+?>

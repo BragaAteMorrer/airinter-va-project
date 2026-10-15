@@ -1,0 +1,23 @@
+.fadm-off1, .fadm-off2, .fadm-on1, .fadm-on2, .fadm-save1, 
+.fadm-save2, .fadm-sup1, .fadm-sup2, .fadm-supa1, .fadm-supi1, 
+.fadm-save, .fadm-off, .fadm-on, .fadm-sup {
+    display: inline-block;
+    background-image: url(admfiles.png);
+    background-repeat: no-repeat;
+    overflow: hidden;
+}
+ 
+.fadm-off1 { background-position: -2px -0px; width: 25px; height: 14px; }
+.fadm-off2 { background-position: -2px -16px; width: 25px; height: 14px; }
+.fadm-on1 { background-position: -2px -32px; width: 25px; height: 14px; }
+.fadm-on2 { background-position: -2px -48px; width: 25px; height: 14px; }
+.fadm-save1 { background-position: -2px -64px; width: 25px; height: 14px; }
+.fadm-save2 { background-position: -2px -80px; width: 25px; height: 14px; }
+.fadm-sup1 { background-position: -2px -96px; width: 25px; height: 14px; }
+.fadm-sup2 { background-position: -2px -112px; width: 25px; height: 14px; }
+.fadm-supa1 { background-position: -2px -128px; width: 25px; height: 14px; }
+.fadm-supi1 { background-position: -2px -144px; width: 25px; height: 14px; }
+.fadm-save { background-position: -2px -160px; width: 17px; height: 14px; }
+.fadm-off { background-position: -2px -176px; width: 14px; height: 14px; }
+.fadm-on { background-position: -2px -192px; width: 14px; height: 14px; }
+.fadm-sup { background-position: -2px -208px; width: 14px; height: 14px; }

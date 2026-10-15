@@ -1,0 +1,23 @@
+.gen-gylogo, .gen-maintenance, .gen-gycecill-e, .gen-gycecill-f, .gen-attention, 
+.gen-gypower, .gen-css3, .gen-html5, .gen-config, .gen-gyslogo, 
+.gen-gytlogo, .gen-cfgaccueil, .gen-cfgboites
+{
+    display: inline-block;
+    background-image: url(general.png);
+    background-repeat: no-repeat;
+    overflow: hidden;
+}
+ 
+.gen-gylogo { background-position: -2px -0px; width: 170px; height: 145px; }
+.gen-maintenance { background-position: -2px -147px; width: 128px; height: 128px; }
+.gen-gycecill-e { background-position: -2px -277px; width: 112px; height: 14px; }
+.gen-gycecill-f { background-position: -2px -293px; width: 112px; height: 14px; }
+.gen-attention { background-position: -2px -309px; width: 100px; height: 88px; }
+.gen-gypower { background-position: -2px -399px; width: 100px; height: 14px; }
+.gen-css3 { background-position: -2px -415px; width: 80px; height: 23px; }
+.gen-html5 { background-position: -84px -415px; width: 80px; height: 23px; }
+.gen-config { background-position: -116px -277px; width: 48px; height: 48px; }
+.gen-gyslogo { background-position: -104px -327px; width: 48px; height: 41px; }
+.gen-gytlogo { background-position: -132px -147px; width: 31px; height: 26px; }
+.gen-cfgaccueil { background-position: -132px -175px; width: 14px; height: 14px; }
+.gen-cfgboites { background-position: -148px -175px; width: 14px; height: 14px; }

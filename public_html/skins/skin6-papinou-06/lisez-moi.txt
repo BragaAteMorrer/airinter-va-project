@@ -1,0 +1,38 @@
+*************************************************
+   Skins Papinou pour GuppY 6.00.xx
+   CeCILL Copyright (C) 2020 by Papinou
+   Adresse du site = https://www.papinou.fr/
+   E-mail = papinou@papinou.fr
+*************************************************
+
+Pour installer la skin :
+=======================
+Je vous conseille d'installer cette skin avec la fonction Installer de GuppY 6, rendez vous en Admin/Administration Générale puis Installer.
+Vous suivez les instructions pour l'installation, vous sélectionnez le fichier skin6-papinou-xx.zip, vous le chargez et un clic pour installer.
+C'est le plus simple !!!
+
+Si votre hébergeur ne permet pas l'utilisation de la fonction Installer,
+vous devez décompresser le dossier skin6-papinou-xx.zip avec l'aide de 7-zip ou un autre utilitaire.
+Par FTP vous ouvrez le répertoire de votre GuppY et vous uploadez le dossier de votre skin sur votre espace en ligne.
+
+Puis dans Admin/configurations/Config thèmes vous sélectionnez votre skin vos thèmes et vous enregistrez la config.
+A Configuration skin, vous sélectionnez votre skin, enfin vous sélectionnez config boites pour configurez vos boites.
+
+Vous enregistrez et retour à l'accueil de votre site, et un ou plusieurs appuis sur Ctrl+F5 pour rafraichir la page sans passer par le cache.
+C'est tout, votre nouvelle skin est installée.
+
+N'oubliez pas les chmods selon votre hébergeur: confskin.inc et style.css doivent être en 666 .
+Vous devez utiliser config look pour modifier le fichier style.css de la skin et ajouter vos personnalisations dans le fichier styleplus.css.
+
+Le plus simple est peut être de poster sur mon forum rubrique Skins Papinou avec des questions précises
+ainsi que l'url de votre site pour me permettre de vous répondre de façon précise.
+
+
+IMPORTANT :
+==========
+Toutes mes skins sont mises à disposition sous Licence Libre CeCILL, le copyright et
+les liens vers mon site et Licence CeCILL ne peuvent en aucun cas être supprimés ou modifiés.
+
+Je vous souhaite une bonne continuation et beaucoup de réussite pour votre site avec GuppY.
+Cordialement
+Papinou

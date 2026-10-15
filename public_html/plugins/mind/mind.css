@@ -1,0 +1,10 @@
+/*  ---------  CSS for mind plugin  ----------- */
+
+.mind1 { color: red; font-family: Verdana; }
+.mind2 { color: blue; font-family: Windings; }
+.mind3 {
+  font-size: 2em;
+  color: blue;
+  background-color: yellow;
+  font-policy: wingding;
+}

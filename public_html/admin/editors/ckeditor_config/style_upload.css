@@ -1,0 +1,213 @@
+/*******************************************************************************
+ *   Plugin CKEditor réalisé par Djchouix sous GNU Lesser General Public License
+ *   Web site = http://lebrikabrak.free.fr/
+ *   e-mail   = lebrikabrak@free.fr
+ *******************************************************************************
+ *   GuppY PHP Script - version 6.0
+ *   CeCILL Copyright (C) 2004-2020 by Laurent Duveau
+ *   Initiated by Laurent Duveau and Nicolas Alves
+ *   Web site = http://www.freeguppy.org/
+ *   e-mail   = guppy@freeguppy.org
+ *   V5 developed by Lud Bienaimé
+ *      with the participation of the GuppY Team
+ *******************************************************************************
+ *   Latest Changes :
+ * v6.00.00 (December 15, 2020) : initial release
+ ******************************************************************************/
+
+body {
+ font-size: 16px;
+ font-family: "Times New Roman" , Arial, sans-serif;
+ color: #000000; 
+ background-color: #EFEFEF;
+ margin:1px;
+ padding-top:15px;
+ padding-right:10px;
+ padding-left:10px;
+}
+
+div.help {
+text-align:center;
+display:none;
+border:1px solid #E3E3C7;
+background-color:#FFFFFF;
+color:#000000;
+width:auto;
+margin:10px;
+font-weight:normal;
+padding:5px 0px;
+}
+
+div.corpsFileScroll {
+ margin-right:auto;
+ margin-left:auto;
+ max-width:630px;
+ height:291px;
+ border:1px solid #C7C78F;
+ overflow:auto;
+}
+
+div.corpsFilenoScroll {
+ margin-right:auto;
+ margin-left:auto;
+ max-width:630px;
+ height:291px;
+ border:1px solid #C7C78F;
+ color: #000000;
+ background-color: #FFFFFF;
+}
+
+div.labelupload {
+ text-align:center;
+ font-weight:bold;
+ vertical-align:middle;
+}
+
+div.upload {
+ text-align:center;
+ font-weight:bold;
+ vertical-align:middle;
+ margin-top:10px;  
+ margin-bottom:10px;
+}
+
+input.bouton {
+margin-left:10px;
+font-size: 12px;
+font-family: Arial, Helvetica, sans-serif;
+}
+ 
+a {
+ color: #000000;
+ background-color: transparent;
+ text-decoration: none;
+ cursor:pointer;
+}
+
+a:hover {
+ color: #FF0000;
+ text-decoration: underline;
+ background-color: transparent;
+ cursor:pointer;
+}
+
+/* style général du tableau */
+table {
+ font-size: 12px;
+ font-family: Arial, Helvetica, sans-serif;
+ font-weight:normal;
+ color: #000000;
+ background-color: #FFFFFF;
+}
+
+div.corpsFilenoScroll table {
+ max-width:630px;
+} 
+
+div.corpsFileScroll table {
+ width:100% !important;
+ max-width:613px;
+}
+
+td {
+ padding:5px;
+ text-align:center;
+}
+
+/*  style des titres du tableau (ligne 1 du tableau)  */
+tr.forum {
+ background-color: #7F7F7F;
+ color: #FFFFFF;
+ text-align: center;
+ font-weight: bold;
+}
+td#forumName {
+ border:1px solid #FFFFFF;
+}
+
+td#forumSize {
+ border-top:1px solid #FFFFFF;
+ border-bottom:1px solid #FFFFFF;
+}
+
+td#forumAction {
+ border:1px solid #FFFFFF;
+}
+
+/*  style des lignes et des cellules du corps du tableau   */
+tr.quest {
+}
+
+tr.rep {
+}
+
+td.fileName {
+ text-align:left;
+ border-left:1px solid #FFFFFF;
+ border-bottom:1px solid #FFFFFF;
+}
+
+td.fileSize {
+ border-bottom:1px solid #FFFFFF;
+}
+
+td.fileAction {
+ border-right:1px solid #FFFFFF;
+ border-bottom:1px solid #FFFFFF;
+}
+
+/* style des images */
+img {
+ vertical-align:middle;
+ margin-right:10px;
+ margin-bottom:2px;
+}
+/* style des images dans le tableau */
+img.imgName{
+ vertical-align:middle;
+ margin-right:10px;
+ cursor:pointer;
+}
+
+a.imgName:hover{
+ text-decoration:none;
+}
+
+img.imgAction {
+vertical-align:middle;
+cursor:pointer;
+border:2px solid #FFFFFF;
+margin-right:0px;
+}
+
+img.imgAction2 {
+vertical-align:middle;
+cursor:pointer;
+margin-left:5px;
+margin-right:5px;
+border:2px solid #FFFFFF;
+}
+
+/*  style lors du survol de la souris sur l'élément */
+tr#trsurvol {
+ background-color: #EFEFEF;
+ color: #000000;
+}
+
+tr#trsurvol img.imgAction {
+ border:2px solid #E3E3C7;
+ background-color: #E3E3C7;
+ color: #000000;
+}
+
+tr#trsurvol img.imgAction2 {
+ border:2px solid #E3E3C7;
+ background-color: #E3E3C7;
+ color: #000000;
+}
+
+tr#trsurvol img#imgsurvol {
+ border:2px solid #FF1010;
+ background-color: #E3E3C7;
+ color: #000000;
+}

@@ -1,0 +1,113 @@
+/*  ---------  CSS for Bootstrap 4 generated for no_skin  ----------- */
+
+/***********
+* Onglets */
+.tab-content div.container {
+    padding-top: 0px;
+    max-width: 100%;
+    text-align: left;
+    border: 1px solid #000000;
+    border-radius: 0px;
+    background-color: #F2F2F2;
+}
+ul.nav-tabs {
+    padding-bottom: 0px;
+    width: 100%;
+    border-bottom: 0;
+}
+.nav-tabs .nav-link.active {
+    background-color: #C0C0C0;
+    font-weight: bold;
+    color: #FFFFFF;
+    border: 1px solid #000000;    
+    border-bottom-width: 0;
+    border-radius: 0px;
+}
+.nav-tabs .nav-link:hover {
+    background-color: transparent important;
+    color: #FFFFFF !important;
+    border: 1px solid #000000;
+    border-bottom-width: 0;
+    border-radius: 0px;
+}
+.nav-tabs .nav-link {
+    font: 1.6rem Arial, Helvetica, sans-serif;
+    margin-bottom: 1px;
+    background-color: transparent;
+    color: #000000 !important;
+}
+/**********************
+* Accordéon vertical */
+.card .card-header.collapsed.card-link {
+    color: #000000 !important;
+    background-color: transparent;
+    border: 1px solid #000000;
+    border-radius: 0px;
+}
+.card .card-header.card-link {
+    color: #FFFFFF;
+    font-weight: bold;
+    background-color: #00BEF2;
+    border: 1px solid #000000;
+    border-radius: 0px;
+}
+.card .collapse.show {
+    background-color: transparent;
+    color: inherit;
+    border: 1px solid #000000;
+    border-radius: 0px;
+}
+.card .card-body {
+    font-size: 13px;
+}
+/****************
+ * Fenêtre modale */
+.modal-content {
+    background-color: #F3F3F3;
+    color: 0.6;
+    border: 12px solid #000000;
+    border-radius: 8px;
+}
+/**************
+* Info bulle */
+.popover {
+    color: #404040;
+    background-color: #F3F3F3;
+    border-radius: 6px;
+}
+.popover-header {
+    color: #FFFFFF;
+    background-color: #00BEF2;
+    font: normal 1.6rem Arial, Helvetica, sans-serif;
+}
+.popover-body {
+    color: #404040;
+    background-color: #F3F3F3;
+    font: normal 1.6rem Arial, Helvetica, sans-serif;
+    border-radius: 0 0 6px 6px;
+}
+/***********
+* Boutons */
+.btn-lg, .btn-md {
+    font-size: 1.5rem;
+}
+.btn-info {
+	color: #404040;
+	background-color: #C0C0C0;
+	border-color: #C0C0C0;
+    border-style: solid;
+}
+.btn-info:hover {
+    color: #FFFFFF;
+    background-color: #999999;
+	border-color: #999999;
+    border-style: solid;
+}
+.btn.btn-outline-secondary {
+    background-color: #FFFFFF;
+}
+/***************
+* Formulaires */
+.form-control, .form-control-lg {
+    font-size: inherit;
+}

@@ -1,0 +1,3 @@
+<?php
+$imgavatars = 34;
+?>

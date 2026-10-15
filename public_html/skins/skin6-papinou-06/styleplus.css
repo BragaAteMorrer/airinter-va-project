@@ -1,0 +1,29 @@
+/*  ---------  CSS generated for skin6-papinou-06 ----------- */
+
+body { letter-spacing: 0.1em !important; }
+.T0entrow0 { background-color: #1084D9;}
+.T0entrow3 { padding: 0 0 5px; background-color: #C3C6CB; }
+.T0entrow6 { display: none; }
+.smlogo { margin: 1.5rem 2.2rem 1.5rem -2px !important;padding: 2rem 0.5rem !important; }
+div.quote span.labelcita { display: none; }
+#MainContent { margin: 0 auto 50px;}
+.navbar.ddl .dropdown-menu > div, .navbar.ddl .dropdown-menu > div p { font-size: 1.8rem; }
+.tbl.DDL69 { background-color: transparent; }
+.navbar.ddl.DDL69 { max-width: 760px;margin: auto; }
+.navbar.ddh.DDH74 { max-width: 640px;margin: auto; }
+.tbl.DDH74 { background-color: transparent; }
+.DDH74 ul.dropdown-menu { width: 262px; }
+.nav-item.dropdown.DDH74 { margin: 0 !important; }
+.tbl.DDV90 { background-color: transparent; }
+.navbar.ddv { background-color: #C0C0C0 !important;padding:1.5rem 0 !important; }
+.dropdown-menu { color: #FFF !important; background-color: #EEE !important;padding: 5px !important; }
+.titrebox, .titre {font-variant: small-caps; }
+.frlnkcategW { margin: 0 0 18px 18px;}
+.bord2 { border: 1px dotted #C0C0C0; }
+.lisubrubr { line-height: 3rem;background-color: #EEE !important; }
+#BottomBoxes { margin: 50px auto 0; }
+.B0entrow1  { padding: 10px !important; } 
+@media screen and (min-width: 768px) and (max-width: 1080px){
+.B0entrow2 .col-md-3 { -ms-flex: 0 0 50%; flex: 0 0 50%; max-width: 100%; } }
+#BottomBoxes .titre, #BottomBoxes .tbl, #BottomBoxes .titrebox, 
+#BottomBoxes .tblbox { padding: 5px 10px !important; }

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>https://www.airinter-va.org/smurls.xml</loc>
+    <lastmod>2026-10-07</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://www.airinter-va.org/smart.xml</loc>
+    <lastmod>2026-10-07</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://www.airinter-va.org/smnews.xml</loc>
+    <lastmod>2026-08-15</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://www.airinter-va.org/smphoto.xml</loc>
+    <lastmod>2025-12-08</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://www.airinter-va.org/smfaq.xml</loc>
+    <lastmod>2025-12-03</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://www.airinter-va.org/smforum.xml</loc>
+    <lastmod>2026-08-15</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://www.airinter-va.org/smagenda.xml</loc>
+    <lastmod>2026-09-06</lastmod>
+  </sitemap>
+</sitemapindex>

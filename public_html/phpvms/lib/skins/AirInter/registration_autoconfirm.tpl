@@ -1,0 +1,2 @@
+<h3> Confirmation de l&#39;inscription</h3>
+<p>Merci de nous rejoindre! Votre inscription est termin&eacute;e! Vous pouvez vous connecter en utilisant votre identifiant pilote (<?php echo PilotData::GetPilotCode($pilot->code, $pilot->pilotid);?>), et votre mot de passe.</p>

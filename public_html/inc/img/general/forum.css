@@ -1,0 +1,25 @@
+.frm-rank1, .frm-rank2, .frm-rank3, .frm-rank4, .frm-rank5, .frm-rep-lock, 
+.frm-reponse, .frm-moveto, .frm-msg_a, .frm-msg_c, .frm-msg_n, 
+.frm-msg_t, .frm-lock, .frm-lockup, .frm-unlock
+{
+    display:inline-block;
+    overflow:hidden;
+    background-repeat: no-repeat;
+    background-image: url('forum.png');
+}
+ 
+.frm-rank1 { background-position: -2px -0px; width: 55px; height: 10px; }
+.frm-rank2 { background-position: -2px -12px; width: 55px; height: 10px; }
+.frm-rank3 { background-position: -2px -24px; width: 55px; height: 10px; }
+.frm-rank4 { background-position: -2px -36px; width: 55px; height: 10px; }
+.frm-rank5 { background-position: -2px -48px; width: 55px; height: 10px; }
+.frm-rep-lock { background-position: -2px -60px; width: 24px; height: 24px; }
+.frm-reponse { background-position: -28px -60px; width: 24px; height: 24px; }
+.frm-moveto { background-position: -2px -86px; width: 16px; height: 16px; }
+.frm-msg_a { background-position: -20px -86px; width: 16px; height: 16px; }
+.frm-msg_c { background-position: -38px -86px; width: 16px; height: 16px; }
+.frm-msg_n { background-position: -2px -104px; width: 16px; height: 16px; }
+.frm-msg_t { background-position: -20px -104px; width: 16px; height: 16px; }
+.frm-lock { background-position: -38px -104px; width: 13px; height: 14px; }
+.frm-lockup { background-position: -38px -120px; width: 13px; height: 14px; }
+.frm-unlock { background-position: -2px -122px; width: 12px; height: 13px; }

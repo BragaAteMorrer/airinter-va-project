@@ -1,0 +1,577 @@
+GuppY v4.6.19 databases layout
+===========================
+
+    CeCILL Copyright (C) 2004-2012 by Laurent Duveau
+    Initiated by Laurent Duveau and Nicolas Alves
+      Site Web site = http://www.freeguppy.org/
+      e-mail = guppy@freeguppy.org
+
+
+
+nextid.dtb
+==========
+num (integer)
+
+nextidbk.dtb (backup of nextid.dtb)
+===================================
+num (integer)
+
+
+docid.dtb
+=========
+Type  Doc Type           FileID  Status
+------------------------------------------
+ar    Article               n      s
+ag    Agenda                n      s
+ba    Banner                n      s
+bl    Blog                  n      s
+bs    Blog RSS link         n      s
+ci    Citation              n      s
+dn    Download              n      s
+ed    Editorial             n      s
+fa    FAQ                   n      s
+ft    Page Footer           n      s
+fr    Forum                 n      s
+f1    Freebox #1            n      s
+f2    Freebox #2            n      s
+f3    Freebox #3            n      s
+f4    Freebox #4            n      s
+gb    Guestbook             n      s
+li    Links                 n      s
+ne    News                  n      s
+nl    Newsletter            n      s
+ph    Photo                 n      s
+ra    Art. Reaction         n      s
+re    Recommandation        n      s
+rb    Commentaires blog     n      s
+rs    RSS link              n      s
+ru    Forum rules           n      s
+sn    Social networkk       n      s
+sp    Special               n      s
+
+n = integer
+s = status :    a = active
+                d = deleted
+                i = inactive
+
+poll : managed in a dedicated database
+
+
+doc[ID].inc
+===========
+Type
+FileID
+Status
+Date Création
+Date Modification
+Author
+email
+fielda1
+    => art           : catégorie lang1
+    => agenda        : date (sans heure) dans le format choisi
+    => blog          : catégorie lang1
+    => banner        : image de la bannière
+    => dnload        : catégorie lang1
+    => faq           : catégorie lang1
+    => footer        : {null}
+    => forum         : n (Thread #n)
+    => freebox       : {null}
+    => guestbk       : n (Note #n)
+    => homepg        : {null}
+    => links         : catégorie lang1
+    => news          : catégorie lang1
+    => newslet       : {null}
+    => photo         : {null}
+    => react         : n (Note #n)
+    => reblog        : n (Note #n)
+    => reco          : {null}
+    => RSS           : Nom du site RSS lang1
+    => BSS           : Nom du site RSS lang1
+    => special       : {null}
+    => think         : {null}
+    => socnet        : (null)
+fielda2
+    => art           : catégorie lang2
+    => agenda        : heure début - heure fin
+    => blog          : catégorie lang2
+    => banner        : {null}
+    => dnload        : catégorie lang2
+    => faq           : catégorie lang2
+    => footer        : {null}
+    => forum         : n (Answer #n) ou "0" si nouveau Thread
+    => freebox       : {null}
+    => guestbk       : {null}
+    => homepg        : {null}
+    => links         : catégorie lang2
+    => news          : catégorie lang2
+    => newslet       : {null}
+    => photo         : catégorie lang2
+    => react         : ID Article de la réaction
+    => reblog        : ID Article du commentaire
+    => reco          : {null}
+    => RSS           : Nom du site RSS lang2
+    => BSS           : Nom du site RSS lang2
+    => special       : {null}
+    => think         : {null}
+    => socnet        : (null)
+fieldb1
+    => art           : titre lang1
+    => agenda        : MMAAAA mois année
+    => blog          : titre lang1
+    => banner        : site pointée par la bannière
+    => dnload        : Nom fichier lang1
+    => faq           : question lang1
+    => footer        : {null}
+    => forum         : titre si nouveau Thread ou {null} si réponse à un Thread existant
+    => freebox       : titre lang1
+    => guestbk       : url Auteur
+    => homepg        : {null}
+    => links         : Nom site lang1
+    => news          : titre site lang1
+    => newslet       : titre lang1
+    => photo         : nom photo lang1
+    => react         : {null}
+    => reblog        : {null}
+    => reco          : e-mail ami
+    => RSS           : url RSS lang1
+    => BSS           : url RSS lang1
+    => special       : {null}
+    => think         : auteur lang1
+    => socnet        : titre réseau
+fieldb2
+    => art           : titre lang2
+    => agenda        : {null}
+    => blog          : titre lang2
+    => banner        : {null}
+    => dnload        : Nom fichier lang2
+    => faq           : question lang2
+    => footer        : {null}
+    => forum         : ID catégorie forum si Forum ou {null} si réponse à un Thread existant
+    => freebox       : titre lang2
+    => guestbk       : {null}
+    => homepg        : {null}
+    => links         : Nom site lang2
+    => news          : titre site lang2
+    => newslet       : titre lang2
+    => photo         : nom photo lang2
+    => react         : {null}
+    => reblog        : {null}
+    => reco          : {null}
+    => RSS           : url RSS lang2
+    => BSS           : url RSS lang2
+    => special       : {null}
+    => think         : auteur lang2
+    => socnet        : (null)
+fieldc1
+    => art           : texte lang1
+    => agenda        : texte lang1
+    => blog          : texte lang1
+    => banner        : {null}
+    => dnload        : description lang1
+    => faq           : réponse lang1
+    => footer        : texte lang1
+    => forum         : texte
+    => freebox       : texte lang1
+    => guestbk       : texte
+    => homepg        : texte lang1
+    => links         : description lang1
+    => news          : texte lang1
+    => newslet       : texte lang1
+    => photo         : description photo lang1
+    => react         : texte
+    => reblog        : texte
+    => reco          : texte
+    => RSS           : {null}
+    => BSS           : {null}
+    => special       : texte lang1
+    => think         : citation lang1
+    => socnet        : fenêtre affichage
+fieldc2
+    => art           : texte lang2
+    => agenda        : texte lang2
+    => blog          : texte lang2
+    => banner        : {null}
+    => dnload        : description lang2
+    => faq           : réponse lang2
+    => footer        : texte lang2
+    => forum         : {null}
+    => freebox       : texte lang2
+    => guestbk       : {null}
+    => homepg        : texte lang2
+    => links         : description lang2
+    => news          : texte lang2
+    => newslet       : texte lang2
+    => photo         : description photo lang2
+    => react         : {null}
+    => reblog        : {null}
+    => reco          : texte
+    => RSS           : {null}
+    => BSS           : {null}
+    => special       : texte lang2
+    => think         : citation lang2
+    => socnet        : icône réseau social
+fieldd1
+    => art           : left or right Articles box
+    => agenda        : {null}
+    => blog          : on si user n'accepte pas la publication de son @ e-mail
+    => banner        : {null}
+    => dnload        : file URL lang1
+    => faq           : {null}
+    => footer        : {null}
+    => forum         : on si user n'accepte pas la publication de son @ e-mail
+    => freebox       : {null}
+    => guestbk       : on si user n'accepte pas la publication de son @ e-mail
+    => homepg        : {null}
+    => links         : URL lang1
+    => news          : on si user n'accepte pas la publication de son @ e-mail
+    => newslet       : {null}
+    => photo         : image de la photo
+    => react         : on si user n'accepte pas la publication de son @ e-mail
+    => reblog        : on si user n'accepte pas la publication de son @ e-mail
+    => reco          : {null}
+    => RSS           : {null}
+    => BSS           : {null}
+    => special       : {null}
+    => think         : {null}
+    => socnet        : adresse réseau social
+fieldd2
+    => art           : icone article
+    => agenda        : {null}
+    => blog          : icone blog
+    => banner        : {null}
+    => dnload        : file URL lang2
+    => faq           : {null}
+    => footer        : {null}
+    => forum         : cpt
+    => freebox       : {null}
+    => guestbk       : {null}
+    => homepg        : {null}
+    => links         : URL lang2
+    => news          : icone news
+    => newslet       : {null}
+    => photo         : {null}
+    => react         : {null}
+    => reblog        : {null}
+    => reco          : {null}
+    => RSS           : {null}
+    => BSS           : {null}
+    => special       : {null}
+    => think         : {null}
+    => socnet        : code fourni
+fieldweb
+    => download      : licence ou null
+    => forum         : website
+    => dnload        : licence
+fieldmail
+    => forum         : email
+fieldmod
+    => art           : groupe privé
+    => blog          : groupe privé
+    => download      : groupe privé
+    => faq           : groupe privé
+    => forum         : état du thread (clos, up ou top #auteur #date)
+    => freebox       : groupe privé
+    => links         : groupe privé
+    => news          : groupe privé
+    => photo         : groupe privé
+    => react         : groupe privé
+    => reblog        : groupe privé
+    => special       : groupe privé
+    => socnet        : groupe privé
+
+
+doc[ID].dtb
+===========
+num (integer)
+
+
+fr.dtb (forum)
+==============
+date @ heure de la dernière réponse (ou modif)
+numéro de thread
+id de début du thread
+auteur
+e-mail auteur
+titre
+date @ heure de création du thread
+nombre de réponses
+auteur de la dernière réponse
+e-mail auteur de la dernière réponse
+affiche/cache e-mail auteur
+affiche/cache e-mail auteur de la dernière réponse
+ID catégorie forum
+
+
+frth.dtb (forum threads)
+========================
+date @ heure du thread (ou de sa modif)
+numéro de thread
+numéro de réponse ou "0" si nouveau thread
+id du thread
+auteur
+e-mail auteur
+titre
+affiche/cache e-mail auteur
+ID catégorie forum
+e-mail
+date @ heure d'origine du thread (si modif)
+
+
+frcat.dtb (forum categories)
+============================
+ID catégorie forum
+nom catégorie lang1
+nom catégorie lang2
+Sujet catégorie lang1
+sujet catégorie lang2
+
+
+frcount.dtb (forum last thread number)
+======================================
+num
+
+
+ag.dtb (agenda)
+===============
+date lang1
+heure début - heure fin
+date lang2
+.
+FileID
+.
+groupe privé
+
+ar.dtb (articles)
+=================
+catégorie lang1
+catégorie lang2
+titre lang1
+titre lang2
+FileID
+Box Position
+groupe privé
+
+
+ra.dtb (reactions to articles)
+==============================
+FileID
+ArticleID
+Groupe privé
+
+rs.dtb (RSS article links)
+==========================
+Nom RSS lang1
+Nom RSS lang2
+URL RSS lang1
+URL RSS lang2
+FileID
+
+
+bl.dtb (blog)
+=============
+catégorie lang1
+catégorie lang2
+titre lang1
+titre lang2
+FileID
+date create
+groupe privé
+
+
+bs.dtb (RSS blog links)
+==============
+Nom RSS lang1
+Nom RSS lang2
+URL RSS lang1
+URL RSS lang2
+FileID
+
+
+rb.dtb (comments on blog)
+=========================
+FileID
+ArticleID
+groupe privé
+
+
+dn.dtb (downloads)
+==================
+catégorie lang1
+catégorie lang2
+nom lang1
+nom lang2
+FileID
+.
+groupe privé
+
+
+fa.dtb (faq)
+==================
+catégorie lang1
+catégorie lang2
+nom lang1
+nom lang2
+FileID
+.
+groupe privé
+
+f1 f2 f3 f4.inc (boîtes libres)
+===============================
+titre lang1
+titre lang2
+texte lang1
+texte lang2
+groupe privé
+
+
+ph.dtb (photo)
+==============
+catégorie lang1
+catégorie lang2
+titre lang1
+titre lang2
+FileID
+.
+groupe privé
+
+
+sn.dtb (social networks)
+========================
+.
+.
+titre
+.
+FileID
+date create
+groupe privé
+
+
+admins.dtb (collaborators; Administrator, Writer, Moderator)
+===========================
+pseudo || fonction || drtuser23 (rights to modify threads)
+
+
+log[c].dtb
+==========
+où : c = h for current hour
+         d for today
+         l for last month
+         m for current month
+         y for this year
+         p for previous year
+
+n (integer = current hour, today, current or last month, this year or previous year)
+articles || blog || download || faq || forum || guestbook || index || links || news || photos || poll || search || stats
+lang1 || lang2
+Netscape || MSIE || Mozilla || DA || Opera || iCab || Konqueror || Robot || Other
+Windows || Mac || Linux || FreeBSD || SunOS || IRIX || BeOS || OS/2 || AIX || Other
+n || .. || n (integer = nb read pages : 1 if current hour, 24 hours if today, 31 days if current month, 12 months if this year or previous year)
+n || .. || n (integer = nb visitors : 1 if current hour, 24 hours if today, 31 days if current month, 12 months if this year or previous year)
+1 (stop bit)
+
+
+ipstats.dtb
+===========
+@ip || date heure || user
+
+
+ippoll.dtb
+==========
+@ip || date heure
+
+
+poll.dtb
+========
+titre lang1       || titre lang2
+réponse n°1 lang1 || réponse n°1 lang 2 || nb votes
+.
+.
+réponse n°n lang1 || réponse n°n lang 2 || nb votes
+
+avec : 1 <= n <= 10
+
+
+sp.inc (boîte spécial)
+======================
+texte lang1
+texte lang2
+groupe privé
+
+
+stats.dtb
+=========
+num (integer)
+
+
+counter.dtb
+===========
+num (integer)
+
+
+news.dat
+========
+news #n title in the site's main language
+news #n content in the site's main language
+news #n URL link in the site's main language
+news #n title in the site's alternative language
+news #n content in the site's alternative language
+news #n URL link in the site's alternative language
+
+
+User Cookie
+===========
+language
+pseudo
+email
+boxes (right and left or left only)
+prefered reading language
+show when online (yes or no)
+forum signature
+UID
+avatar
+website
+skin theme
+editor
+
+
+nwlist.dtb, nwlist.tmp
+==========
+pseudo
+email
+language
+date(H)+15 mn (nwlist.tmp only)
+
+Logbook.dtb
+===========
+Date Création
+IP Address
+Referer URL
+Host Name
+Browser code
+
+
+frarch.dtb
+==========
+Date
+
+
+plugin.dtb
+==========
+Plugin Name
+
+
+usermsg/[pseudo].dtb
+====================
+Code secret
+Connecté => num (inutilisé)
+Déconnecté => num (unused)||lang||pseudo||email||boxes||readlang||show email||signature||UID||avatar||site||skin||editor
+To||Date||Message to||new/lu||send||||||
+From||Date||Message from||new/lu||||||||avatar
+To||Date|Message to ||new/lu|| /Send||Message from||date from||avatar
+
+
+countmsg/[pseudo].dtb
+=====================
+num
+
+

@@ -1,0 +1,10 @@
+
+# URL rewriting
+# this section applies URL rewriting and must be placed at the end
+Options +FollowSymlinks
+RewriteEngine On
+#RewriteBase /
+RewriteCond %{ENV:REDIRECT_STATUS} 200
+RewriteRule .* - [S=200]
+RewriteCond %{ENV:REDIRECT_STATUS} 200
+RewriteRule .* - [S=200]

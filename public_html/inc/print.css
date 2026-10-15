@@ -1,0 +1,22 @@
+/***********************************************
+ * Feuille de style dédiée à l'aperçu avant impression
+ ***********************************************
+ * Elle permet de n'afficher que la partie principale de la page
+ ***********************************************/
+
+@media print {
+    body { background: transparent !important; }
+    #header,
+    #TopBoxes,
+    #LeftBoxes,
+    #AboveBoxes,
+    #UnderBoxes,
+    #RightBoxes,
+    #BottomBoxes,
+    #footer,
+    #BlogTopBoxes,
+    #BlogLeftBoxes,
+    #BlogRightBoxes,
+    #slide1, #slide3, #paranav, #returnOnTop { display : none; }    
+    #slide2 { background: transparent !important; }
+}

@@ -1,0 +1,219 @@
+<?php
+/*******************************************************************************
+ *   UniteGallery Admin Language Strings
+ *******************************************************************************
+ *   GuppY PHP Script - version 6.0
+ *   CeCILL Copyright (C) 2004-2020 by Laurent Duveau
+ *   Initiated by Laurent Duveau and Nicolas Alves
+ *   Web site = https://www.freeguppy.org/
+ *   e-mail   = guppy@freeguppy.org
+ *   V6 developed by Lud Bienaimé
+ *      with the participation of the GuppY Team
+ *******************************************************************************
+ *   Latest Changes :
+ * v6.00.00 (December 15, 2020) : initial release
+ ******************************************************************************/
+
+if (stristr($_SERVER['SCRIPT_NAME'], 'en-ugadmin.inc')) {
+    header('location:../index.php');
+    die();
+}
+
+$charset = 'UTF-8';
+
+$ugadmin[1] = 'Tiles-Columns';
+$ugadmin[2] = 'Tiles-Justified';
+$ugadmin[3] = 'Tiles-Nested';
+$ugadmin[4] = 'Tiles-Grid';
+$ugadmin[5] = 'Carousel';
+$ugadmin[6] = 'Default-Theme';
+$ugadmin[7] = 'Compact-Theme';
+$ugadmin[8] = 'Grid-Theme';
+$ugadmin[9] = 'Slider';
+$ugadmin[10] = 'Video-Gallery';
+$ugadmin[11] = 'Gallery options';
+$ugadmin[12] = 'Tile options';
+$ugadmin[13] = 'Tile design options';
+$ugadmin[14] = 'Tile text panel options';
+$ugadmin[15] = 'Lightbox options';
+$ugadmin[16] = 'Building the theme';
+$ugadmin[17] = 'Main options';
+$ugadmin[18] = 'Navigation options';
+$ugadmin[19] = 'Carousel options';
+$ugadmin[20] = 'Theme options';
+$ugadmin[21] = 'Slideshow options';
+$ugadmin[22] = 'Thumbnails options';
+$ugadmin[23] = 'Thumbnails panel options';
+$ugadmin[24] = 'Grid panel options';
+$ugadmin[25] = 'Gallery width';
+$ugadmin[26] = 'Gallery height';
+$ugadmin[27] = 'Minimum gallery width';
+$ugadmin[28] = 'Minimum gallery height';
+$ugadmin[29] = 'Slideshow autoplay';
+$ugadmin[30] = 'Play interval of the slideshow';
+$ugadmin[31] = 'Couleur de fond de galerie';
+$ugadmin[32] = 'Width of tile columns';
+$ugadmin[33] = 'Tile alignment';
+$ugadmin[34] = 'Tile spacing between columns';
+$ugadmin[35] = 'Tile spacing between columns on mobile';
+$ugadmin[36] = 'Exact width of the tiles';
+$ugadmin[37] = 'Tiles interior space included';
+$ugadmin[38] = 'Minimum tile columns';
+$ugadmin[39] = 'Optimum width of mixed tiles';
+$ugadmin[40] = 'Maximum tile columns';
+$ugadmin[41] = 'Tile border activated';
+$ugadmin[42] = 'Tile border width';
+$ugadmin[43] = 'Tile border color';
+$ugadmin[44] = 'Radius of rounded tile corners';
+$ugadmin[45] = 'View this theme';
+$ugadmin[46] = 'Tile contour activated';
+$ugadmin[47] = 'Tile contour color';
+$ugadmin[48] = 'Shadow of the activated tile';
+$ugadmin[49] = 'Color of the shadow of the tile';
+$ugadmin[50] = 'Actions on activated tiles';
+$ugadmin[51] = 'Tile as external link';
+$ugadmin[52] = 'Link action in a new page';
+$ugadmin[53] = 'Color overlay on active flyover';
+$ugadmin[54] = 'Superposed color opacity';
+$ugadmin[55] = 'Color for tile superposition';
+$ugadmin[56] = 'Tile activation icons';
+$ugadmin[57] = 'Tile display icon';
+$ugadmin[58] = 'Tile icon spacing';
+$ugadmin[59] = 'Activation of image effect on the tile';
+$ugadmin[60] = 'Type of image effect on the tile';
+$ugadmin[61] = 'Picture inverse effect on the tile';
+$ugadmin[62] = 'Tile text panel enabled';
+$ugadmin[63] = 'Text panel always displayed';
+$ugadmin[64] = 'Type of text panel appearance';
+$ugadmin[65] = 'Position of the text panel';
+$ugadmin[66] = 'Text panel opacity';
+$ugadmin[67] = 'Text panel background color';
+$ugadmin[68] = 'Type of lightbox presentation';
+$ugadmin[69] = 'Position of the lightbox arrows';
+$ugadmin[70] = 'Inside arrows always displayed';
+$ugadmin[71] = 'Lightbox image border enabled';
+$ugadmin[72] = 'Width of the lightbox image border';
+$ugadmin[73] = 'Color of the lightbox image border';
+$ugadmin[74] = 'Radius of the lightbox image border';
+$ugadmin[75] = 'Baseline height justified';
+$ugadmin[76] = 'Spacing between justified tiles';
+$ugadmin[77] = 'Tile transition enabled';
+$ugadmin[78] = 'Tile width';
+$ugadmin[79] = 'Tile height';
+$ugadmin[80] = 'Inner border of the grid';
+$ugadmin[81] = 'Spacing between tile columns';
+$ugadmin[82] = 'Spacing between tile lines';
+$ugadmin[83] = 'Number of tile lines';
+$ugadmin[84] = 'Theme navigation type';
+$ugadmin[85] = 'High margin of navigation bullets';
+$ugadmin[86] = 'Color of navigation bullets';
+$ugadmin[87] = 'Space between navigation bullets';
+$ugadmin[88] = 'Navigation arrows high margin';
+$ugadmin[89] = 'Navigation arrows spacing';
+$ugadmin[90] = 'Carousel alignment';
+$ugadmin[91] = 'Black&White';
+$ugadmin[92] = 'Blur';
+$ugadmin[93] = 'Sepia';
+$ugadmin[94] = 'Slide';
+$ugadmin[95] = 'Fade';
+$ugadmin[96] = 'Inside Bottom';
+$ugadmin[97] = 'Inside Top';
+$ugadmin[98] = 'Inside Middle';
+$ugadmin[99] = 'Wide';
+$ugadmin[100] = 'Compact';
+$ugadmin[101] = 'On sides';
+$ugadmin[102] = 'Inside';
+$ugadmin[103] = 'Bullets';
+$ugadmin[104] = 'Arrows';
+$ugadmin[105] = 'Gray';
+$ugadmin[106] = 'Blue';
+$ugadmin[107] = 'Brown';
+$ugadmin[108] = 'Green';
+$ugadmin[109] = 'Red';
+$ugadmin[110] = 'Fit';
+$ugadmin[111] = 'Down';
+$ugadmin[112] = 'Fill';
+$ugadmin[113] = 'Black';
+$ugadmin[114] = 'White';
+$ugadmin[115] = 'Pie';
+$ugadmin[116] = 'Pie 2';
+$ugadmin[117] = 'Bar';
+$ugadmin[118] = 'Scroll bar';
+$ugadmin[119] = 'Advance element';
+$ugadmin[120] = 'Borders';
+$ugadmin[121] = 'Grid';
+$ugadmin[122] = 'Right - Thumbnail';
+$ugadmin[123] = 'Right - Title Only';
+$ugadmin[124] = 'Droite - No thumbnail';
+$ugadmin[125] = 'Tile spacing';
+$ugadmin[126] = 'Number of tiles to be moved';
+$ugadmin[127] = 'Automatic carousel';
+$ugadmin[128] = 'Automatic carousel timer';
+$ugadmin[129] = 'Automatic carousel steering';
+$ugadmin[130] = 'Display navigation items';
+$ugadmin[131] = 'Position of navigation items';
+$ugadmin[132] = 'Space between caroussel and navigation';
+$ugadmin[133] = 'Full screen mode button enabled';
+$ugadmin[134] = 'Slide show on/off button enabled';
+$ugadmin[135] = 'Panel hide/show button enabled';
+$ugadmin[136] = 'Text panel enabled';
+$ugadmin[137] = 'Text alignment';
+$ugadmin[138] = 'Hide panel under width';
+$ugadmin[139] = '0 for unlimited';
+$ugadmin[140] = 'Slide adjustment mode';
+$ugadmin[141] = 'Slideshow transition mode';
+$ugadmin[142] = 'Slide transition speed';
+$ugadmin[143] = 'Slideshow charger type';
+$ugadmin[144] = 'Slideshow charger color';
+$ugadmin[145] = 'Slideshow arrows enabled';
+$ugadmin[146] = 'Progress indicator enabled';
+$ugadmin[147] = 'Progress indicator type';
+$ugadmin[148] = 'Horizontal alignment of the indicator';
+$ugadmin[149] = 'Vertical alignment of the indicator';
+$ugadmin[150] = 'Color of progress indicator';
+$ugadmin[151] = 'Opacity of progress indicator';
+$ugadmin[152] = 'Enabling the zoom of photos';
+$ugadmin[153] = 'Slideshow controls still enabled';
+$ugadmin[154] = 'Slideshow controls activated by touch';
+$ugadmin[155] = 'Enabling the text panel';
+$ugadmin[156] = 'Enabling text panel title';
+$ugadmin[157] = 'Vertical alignment of panel text';
+$ugadmin[158] = 'Fade mode transition speed ';
+$ugadmin[159] = 'Thumbnail width';
+$ugadmin[160] = 'Thumbnail height';
+$ugadmin[161] = 'Fixed width of the thumbnails';
+$ugadmin[162] = 'Border effect of thumbnails';
+$ugadmin[163] = 'Width of thumbnail border';
+$ugadmin[164] = 'Color of thumbnail border';
+$ugadmin[165] = 'Border width above thumbnails';
+$ugadmin[166] = 'Color of the border above the thumbnails';
+$ugadmin[167] = 'Width of thumbnail selection';
+$ugadmin[168] = 'Colour of the thumbnail selection';
+$ugadmin[169] = 'Radius of rounded corners of thumbnails';
+$ugadmin[170] = 'Color effect on the thumbnail flyover';
+$ugadmin[171] = 'Color effect when flying over the thumbnail';
+$ugadmin[172] = 'Color opacity when flying over the thumbnail';
+$ugadmin[173] = 'Thumbnail panel buttons enabled';
+$ugadmin[174] = 'Thumbnail panel button spacing';
+$ugadmin[175] = 'Role of thumbnail panel buttons';
+$ugadmin[176] = 'Thumbnail grid alignment';
+$ugadmin[177] = 'Background color of grid of thumbnail';
+$ugadmin[178] = 'Panel thumbnail alignment';
+$ugadmin[179] = 'Panel thumbnail position';
+$ugadmin[180] = 'Hide the panel under the width of less than';
+$ugadmin[181] = 'Vertical moving of the grid of thumbnails';
+$ugadmin[182] = 'Vertical alignment of arrows';
+$ugadmin[183] = 'Horizontal alignment of arrows';
+$ugadmin[184] = 'Direction of movement of the thumbnails';
+$ugadmin[185] = 'Number of thumbnail columns';
+$ugadmin[186] = 'Thumbnail column spacing';
+$ugadmin[187] = 'Thumbnail line spacing';
+$ugadmin[188] = 'Design of the theme';
+$ugadmin[189] = 'Time to disable right panel';
+$ugadmin[190] = 'Activating navigation bullets';
+$ugadmin[191] = 'Vertical offset of navigation bullets';
+$ugadmin[192] = 'Video type :';
+$ugadmin[193] = 'External link address :';
+$ugadmin[194] = 'Video code or address :';
+$ugadmin[195] = 'Default values';
+?>

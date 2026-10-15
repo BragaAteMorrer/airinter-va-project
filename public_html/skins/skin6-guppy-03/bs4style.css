@@ -1,0 +1,123 @@
+/*  ---------  CSS for Bootstrap 4 generated for skin6-guppy-03  ----------- */
+
+/***********
+* Onglets */
+.tab-content div.container {
+    padding-top: 0px;
+    max-width: 100%;
+    text-align: left;
+    border: 1px solid #73C2FB;
+    border-radius: 0px;
+    background-color: #FFFFFF;
+}
+ul.nav-tabs {
+    padding-bottom: 0px;
+    width: 100%;
+    border-bottom: 0;
+}
+.nav-tabs .nav-link.active {
+    background-color: #B4EBFA;
+    font-weight: bold;
+    color: #03224C;
+    border: 1px solid #73C2FB;    
+    border-bottom-width: 0;
+    border-radius: 0px;
+}
+.nav-tabs .nav-link:hover {
+    background-color: #73C2FB important;
+    color: #FFFFFF !important;
+    border: 1px solid #73C2FB;
+    border-bottom-width: 0;
+    border-radius: 0px;
+}
+.nav-tabs .nav-link {
+    font: 1.6rem Verdana, "Bitstream Vera Sans", sans-serif;
+    margin-bottom: 1px;
+    background-color: #FFFFFF;
+    color: #000000 !important;
+}
+/**********************
+* Accordéon vertical */
+.card .card-header.collapsed.card-link {
+    color: #FFFFFF !important;
+    background-color: #03224C;
+    border: 1px solid #73C2FB;
+    border-radius: 0px;
+}
+.card .card-header.card-link {
+    color: #FFFFFF;
+    font-weight: bold;
+    background-color: #73C2FB;
+    border: 1px solid #73C2FB;
+    border-radius: 0px;
+}
+.card .collapse.show {
+    background-color: #FFFFFF;
+    color: inherit;
+    border: 1px solid #73C2FB;
+    border-radius: 0px;
+}
+.card .card-body {
+    font-size: 13px;
+}
+/****************
+ * Fenêtre modale */
+.modal-content {
+    background-color: #FFFFFF;
+    color: #000000;
+    border: 5px solid #73C2FB;
+    border-radius: 10px;
+}
+/**************
+* Info bulle */
+.popover {
+    color: #000000;
+    background-color: #FFFFFF;
+    border-radius: 6px;
+}
+.popover-header {
+    color: #FFFFFF;
+    background-color: #73C2FB;
+    font: normal 1.6rem Verdana, "Bitstream Vera Sans", sans-serif;
+}
+.popover-body {
+    color: #000000;
+    background-color: #FFFFFF;
+    font: normal 1.6rem Verdana, "Bitstream Vera Sans", sans-serif;
+    border-radius: 0 0 6px 6px;
+}
+/***********
+* Boutons */
+.btn-lg, .btn-md {
+    font-size: 1.5rem;
+    border-radius: 0px;
+}
+.btn-info {
+	color: #000000;
+	background-color: #C0FFFF;
+	border-color: #C0FFFF;
+    border-style: solid;
+}
+.btn-info:hover {
+    color: #000000;
+    background-color: #B4EBFA;
+	border-color: #B4EBFA;
+    border-style: solid;
+}
+.btn.btn-outline-secondary {
+    background-color: #FFFFFF;
+}
+/***************
+* Formulaires */
+.form-control, .form-control-lg {
+    font-size: inherit;
+}
+.input-group-prepend .input-group-text {
+	border-radius: 0px;
+}
+.input-group-append .input-group-text {
+	border-radius: 0px;
+}
+span.input-group-text {
+    border: 1px solid #73C2FB;
+}

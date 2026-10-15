@@ -1,0 +1,10 @@
+/*  ---------  CSS to customize skin6-guppy-01 for secondary page agenda_info_contact  ----------- */
+
+.T5entrow0 { padding: 10px 0;background-color: #7F7F7F;}
+.T5entrow3 { padding: 10px 0; }
+.T5entrow4 { display: none; }
+.T5entrow6 { display: none; }
+.B5entrow1  { padding: 20px 40px !important; }
+@media screen and (min-width: 768px) and (max-width: 1080px) {
+.B5entrow2 .col-md-3 { -ms-flex: 0 0 50%; flex: 0 0 50%; max-width: 100%; }
+}

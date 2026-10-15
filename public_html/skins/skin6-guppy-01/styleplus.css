@@ -1,0 +1,23 @@
+/*  ---------  CSS generated for skin6-guppy-01 ----------- */
+
+body { letter-spacing: 0.1em !important; }
+.T0entrow0 { padding: 10px 0;background-color: #7F7F7F;}
+.T0entrow5 { padding: 10px 40px; }
+.T0entrow6 { display: none; }
+div.quote span.labelcita { display: none; }
+.tbl.DDL69 { background-color: transparent; }
+.navbar.ddl.DDL69 { max-width: 760px;margin: auto; }
+.tbl.DDH74 { background-color: transparent; }
+.DDH74 ul.dropdown-menu { width: 262px; }
+.nav-item.dropdown.DDH74 { margin: 0 !important; }
+.tbl.DDV90 { background-color: transparent; }
+.navbar.ddv { background-color: #C0C0C0 !important;padding:1.5rem 0 !important; }
+.dropdown-menu { color: #FFF !important; background-color: #F0F0F0 !important; }
+.titrebox, .titre {font-variant: small-caps;letter-spacing: 0.1em; }
+.lisubrubr { line-height: 3rem;background-color: #F0F0F0 !important; }
+.B0entrow1  { padding: 20px 40px !important; }
+@media screen and (min-width: 768px) and (max-width: 1080px){
+.B0entrow2 .col-md-3 { -ms-flex: 0 0 50%; flex: 0 0 50%; max-width: 100%; }
+} 
+#BottomBoxes .titre, #BottomBoxes .tbl, #BottomBoxes .titrebox, 
+#BottomBoxes .tblbox { padding: 20px 40px !important; }

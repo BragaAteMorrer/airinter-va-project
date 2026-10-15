@@ -1,0 +1,1 @@
+<?php $signforum = stripslashes("<p class=\"text-right thsign\">You can\'t soar with eagles when you are surrounded by turkeys!! </p>"); ?>

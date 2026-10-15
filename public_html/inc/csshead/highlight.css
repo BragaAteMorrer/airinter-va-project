@@ -1,0 +1,119 @@
+/*
+
+Original highlight.js style (c) Ivan Sagalaev <maniac@softwaremaniacs.org>
+Modified by Lud Bienaimé (Saxbar) for GuppY v5.02.00+
+
+*/
+
+.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 0.5em;
+  background: #f3f3f3; /*transparent;*/
+  white-space: pre-wrap;
+}
+
+/* Base color: saturation 0; */
+
+.hljs,
+.hljs-subst {
+  color: #444;
+}
+
+.hljs-comment {
+  color: #00bc2f;
+}
+
+.hljs-attr {
+  font-weight: bold;
+  color: #890b0f;
+}
+
+.hljs-keyword,
+.hljs-attribute,
+.hljs-meta-keyword,
+.hljs-doctag,
+.hljs-name {
+  font-weight: bold;
+  color: #7F7FFF;
+}
+
+.hljs-selector-tag,
+.hljs-selector-id,
+.hljs-selector-class {
+  font-weight: bold;
+  color: #ff26ff;
+}
+
+.hljs-string {
+  color: #ff26ff; /*#880000;*/
+}
+
+/* User color: hue: 0 */
+
+.hljs-number {
+  font-weight: bold;
+  color: #ff9000;
+}
+
+.hljs-type,
+.hljs-quote,
+.hljs-template-tag,
+.hljs-deletion {
+  color: #880000;
+}
+
+.hljs-title,
+.hljs-section {
+  font-weight: bold;
+  color: #880000;
+}
+
+.hljs-regexp,
+.hljs-symbol,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-link,
+.hljs-selector-attr,
+.hljs-selector-pseudo {
+  color: #BC6060;
+}
+
+/* Language color: hue: 90; */
+
+.hljs-literal {
+  font-weight: bold;
+  color: #78A960;
+}
+
+.hljs-built_in,
+.hljs-bullet,
+.hljs-code,
+.hljs-addition {
+  color: #397300;
+}
+
+.hljs-built_in {
+  font-weight: bold;
+  color: #ff9000;
+}
+
+/* Meta color: hue: 200 */
+
+.hljs-meta {
+  color: #FF0000; /*#1f7199;*/
+}
+
+.hljs-meta-string {
+  color: #4d99bf;
+}
+
+/* Misc effects */
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: bold;
+}

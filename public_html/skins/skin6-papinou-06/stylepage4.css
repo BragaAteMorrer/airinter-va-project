@@ -1,0 +1,12 @@
+/*  ---------  CSS to customize skin6-papinou-06 for secondary page forum_liens_lo  ----------- */
+
+.T4entrow0 { padding: 5px;background-color: #C3C6CB;}
+.T4entrow3 { padding: 0 0 5px; background-color: #C3C6CB; }
+.T4entrow4 { display: none; }
+.T4entrow6 { display: none; }
+div.rep.text-left.mx-1.thbodycontentW { border: 1px dotted #73C2FB; }
+div.col-md-3.rep.text-center { border: 1px dotted #73C2FB; }
+.B4entrow1 { padding: 20px 40px !important; }
+@media screen and (min-width: 768px) and (max-width: 1080px) {
+.B4entrow2 .col-md-3 { -ms-flex: 0 0 50%; flex: 0 0 50%; max-width: 100%; }
+}

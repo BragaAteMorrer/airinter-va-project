@@ -1,0 +1,95 @@
+/*******************************************************************************
+ *   Plugin CKEditor réalisé par Djchouix sous GNU Lesser General Public License
+ *   Web site = http://lebrikabrak.free.fr/
+ *   e-mail   = lebrikabrak@free.fr
+ *******************************************************************************
+ *   GuppY PHP Script - version 5.0
+ *   CeCILL Copyright (C) 2004-2013 by Laurent Duveau
+ *   Initiated by Laurent Duveau and Nicolas Alves
+ *   Web site = http://www.freeguppy.org/
+ *   e-mail   = guppy@freeguppy.org
+ *   V5 developed by Lud Bienaimé
+ *      with the participation of the GuppY Team
+ *******************************************************************************
+ *   Latest Changes :
+ * v6.00.00 (December 15, 2019) : initial release
+ ******************************************************************************/
+
+/*
+ * This is the default CSS file used by the editor area. It defines the
+ * initial font of the editor and background color.
+ *
+ * A user can configure the editor to use another CSS file. Just change
+ * the value of the FCKConfig.EditorAreaCSS key in the configuration
+ * file.
+ */
+ 
+/**
+ * The "body" styles should match your editor web site, mainly regarding
+ * background color and font family and size.
+ */
+
+body
+{
+	font-family: Arial, Verdana, sans-serif; /* police du texte */
+	font-size: 14px; /* taille du texte */
+	background-color: #ffffff; /* couleur de fond */
+	color: #000000; /* couleur du texte */
+	margin: 0px; /* marge externe   */
+    padding : 10px;
+}
+
+html
+{
+	/* #3658: [IE6] Editor document has horizontal scrollbar on long lines
+	To prevent this misbehavior, we show the scrollbar always */
+	_overflow-y: scroll
+}
+
+img:-moz-broken
+{
+	-moz-force-broken-image-icon : 1;
+	width : 24px;
+	height : 24px;
+}
+
+img, input, textarea
+{
+	cursor: default;
+}
+
+/*
+    The following are some sample styles used in the "Styles" toolbar command.
+    You should instead remove them, and include the styles used by the site
+    you are using the editor in.
+*/
+.Bold
+{
+	font-weight: bold;
+}
+
+.Title
+{
+	font-weight: bold;
+	font-size: 18px;
+	color: #cc3300;
+}
+
+.Code
+{
+	border: #8b4513 1px solid;
+	padding-right: 5px;
+	padding-left: 5px;
+	color: #000066;
+	font-family: 'Courier New' , Monospace;
+	background-color: #ff9933;
+}
+
+.surlign
+{
+	background-color: #FFFF33;
+    font-weight:bold;
+	color: #FF0000;
+	border:1px dashed #8b4513;
+	padding:1px 5px;
+}
