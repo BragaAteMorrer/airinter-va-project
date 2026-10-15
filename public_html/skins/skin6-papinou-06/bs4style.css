@@ -1,0 +1,147 @@
+/*  ---------  CSS for Bootstrap 4 generated for skin6-papinou-06  ----------- */
+
+/***********
+* Onglets */
+.tab-content div.container {
+    padding-top: 0px;
+    max-width: 100%;
+    text-align: left;
+    border: 1px solid #C0C0C0;
+    border-radius: 0px 0px 0px 0px;
+    background-color: #FFFFFF;
+}
+ul.nav-tabs {
+    padding-bottom: 0px;
+    width: 100%;
+    border-bottom: 0;
+}
+.nav-tabs .nav-link.active {
+    background-color: #C1D9F6;
+    font-weight: bold;
+    color: #000000;
+    border: 1px solid #C0C0C0;    
+    border-bottom-width: 0;
+    border-radius: 0px 0px 0px 0px;
+}
+.nav-tabs .nav-link:hover {
+    background-color: transparent !important;
+    color: inherit !important;
+    border: 1px solid #C0C0C0;
+    border-bottom-width: 0;
+    border-radius: 0px 0px 0px 0px;
+}
+.nav-tabs .nav-link {
+    font: 16px Arial, Helvetica, sans-serif;
+    margin-bottom: 1px;
+    background-color: #EEEEEE;
+    color: #000000 !important;
+}
+/**********************
+* Accordéon vertical */
+.card .card-header.collapsed.card-link {
+    color: #FFFFFF !important;
+    background-color: #C0C0C0;
+    border: 1px solid #FFFFFF;
+    border-radius: 0px;
+}
+.card .card-header.card-link {
+    color: #FFFFFF;
+    font-weight: bold;
+    background-color: #C1D9F6;
+    border: 1px solid #FFFFFF;
+    border-radius: 0px;
+}
+.card .collapse.show {
+    background-color: #E1E9F6;
+    color: inherit;
+    border: 1px solid #C0C0C0;
+    border-radius: 0px;
+}
+.card .card-body {
+    font-size: 13px;
+}
+/*******************
+ * Fenêtre modale  *
+ *******************/
+.close {
+	  float: right !important;
+	  font-size: 4rem !important;
+	  line-height: 1 !important;
+	  color: #000000 !important;
+	  text-shadow: 0 1px 0 #fff !important;
+	  opacity: .5 !important;
+}
+.modal-content {
+    background-color: #FFFFFF !important;
+    color: 0.7 !important;
+	border: 5px #C0C0C0 !important;
+    border-radius: 10px !important;
+}
+.modal-header {
+    background-color: transparent !important;
+    color: inherit !important;
+}
+.modal-body {
+    background-color: transparent !important;
+    color: inherit !important;
+}
+.modal-footer {
+    background-color: inherit !important;
+    color: inherit !important;
+}
+/**************
+* Info bulle */
+.popover {
+    color: #000000;
+    background-color: #FFFFFF;
+    border-radius: 6px;
+}
+.popover-header {
+    color: #FFFFFF;
+    background-color: #1084D9;
+    font: normal 16px "Trebuchet MS", Helvetica, sans-serif;
+}
+.popover-body {
+    color: #000000;
+    background-color: #FFFFFF;
+    font: normal 16px "Trebuchet MS", Helvetica, sans-serif;
+    border-radius: 0 0 6px 6px;
+}
+/***********
+* Boutons */
+.btn-lg, .btn-md {
+    font-size: 1.5rem;
+    border-radius: 0px;
+}
+.btn-info {
+	color: #000000;
+	background-color: #FFFFFF;
+	border-color: #FFFFFF;
+    border-style: solid;
+    font-size: 1.6rem;
+}
+.btn-info:hover {
+    color: #000000;
+    background-color: #E7E7E7;
+	border-color: #E7E7E7;
+    border-style: solid;
+}
+.btn.btn-outline-secondary {
+    background-color: #FFFFFF;
+}
+/***************
+* Formulaires */
+.form-control, .form-control-lg {
+    font-size: inherit;
+    border-radius: 4px !important;
+}
+.input-group-prepend .input-group-text {
+	border-radius: 0px;
+}
+.input-group-append .input-group-text {
+	border-radius: 0px;
+}
+span.input-group-text {
+    border: 1px solid #C0C0C0;
+    border-radius: 4px !important;
+}

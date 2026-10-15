@@ -1,0 +1,546 @@
+/*  ---------  Admin CSS  ----------- */
+
+html { /*  document */
+    font: 15px Arial, Helvetica, sans-serif;
+    color: #000000;
+    background: #7F7F7F;
+}
+body { /*  corps du document */
+    margin: 0;
+    font: 15px Arial, Helvetica, sans-serif;
+    color: #000000;
+    background-color: #7F7F7F;
+}
+/************
+ * Général */
+a { /* lien */
+    color: #000000;
+    background: inherit;
+    text-decoration: none;
+}
+a.titre { /* lien titres */
+    color: #000000;
+    background-color: inherit;
+    text-decoration: none;
+}
+a:hover { /* lien survolé */
+    color: #FF0000;
+    text-decoration: none;
+    font-weight: bold;
+    background-color: inherit;
+    position: relative;  top: 1px;  left: 1px;
+}
+p { /* paragraphe */
+    margin: 16px 0;
+    color: inherit;
+    background: inherit;
+}
+hr { /* ligne horizontale */
+    height: 1px;
+    border: 1px inset #000000;
+    width: 98%;
+}
+ul, ol, dl, dd, dt { /* listes */
+    padding: 0;
+    margin: 0;
+}
+img, object, embed, canvas, video, audio, picture {
+    border-style: none !important;
+    vertical-align: initial;
+    max-width: 100%;
+    height: auto;
+}
+.blink { animation: blink 1.2s infinite; }
+@keyframes blink {
+    0%   { opacity: 1; }
+    50%  { opacity: 0; }
+    100% { opacity: 1; }
+}
+/******************************************
+* Mise en page des blocks div principaux */
+#page{ /* all the page */
+    color: inherit;
+    background-color: #EFEFEF;
+    border-radius: 6px;
+    max-width: 1280px;
+    margin: auto;
+}
+#AdminBoxes { /* pages admin */
+    margin: 4px 0 8px 0;
+    color: inherit;
+    background-color: inherit;
+    border: 1px solid #000000;
+    border-radius: 6px;
+}
+/*****************
+ * Fil d"ariane */
+.ariane { /* bloc fil d"ariane */
+    text-align: left;
+    padding: 4px;
+    margin: 0px;
+}
+div.ariane span.arianeOn { /* adresses actives */
+    font-style: italic;
+    color: inherit;
+}
+div.ariane span.arianeOff { /* page courante */
+    font-style: italic;
+    color: #FF0000;
+}
+/******************************************
+ * Mise en page des blocks dans le corps */
+/* block lateral boxes */
+/* block central boxes */
+.titre, .titre a {
+    background-color: #7F7F7F;
+    border-width: 0;
+    border: 1px solid #7F7F7F;
+    border-radius: 6px;
+    padding: 5px;
+	margin: 0 4px;
+    white-space: nowrap;
+    font: bold 15px Arial, Helvetica, sans-serif;
+    color: #FFFFFF;
+    text-align: left;
+}
+.tbl {
+    border-width: 0;
+    border-width: 0;
+    font: 14px Arial, Helvetica, sans-serif;
+    color: #000000;
+    padding: 4px;
+    margin-bottom: 8px;
+    text-align:left;
+}
+.tblout {
+    background-color: #EFEFEF;
+}
+.tblover {
+    background-color: #EFEFEF;
+}
+div ul, ol { /* listes */
+    padding: 8px 0 8px 8px;
+    margin-left: 16px;
+}
+div li{
+    padding: 0;
+    margin-left: 12px;
+}
+/*************
+ * Calendar */
+.cal {
+    width: 100%;
+    text-align: center;
+    margin: auto;
+    border-collapse: separate;
+    border: 1px solid #D3D3D3;
+    border-radius: 6px;
+    border-spacing: 1px;
+    color: inherit;
+    background-color: #EAEAEA;
+}
+tr.cal { /* calendar nav bar */
+    font: 14px Arial, Helvetica, sans-serif;
+    color: #000000;
+    background-color: #EAEAEA;
+    text-align: center;
+}
+td.cals { /* week */
+    font: 14px Arial, Helvetica, sans-serif;
+    color: #000000;
+    background-color: #EAEAEA;
+
+    width: 14%;
+    text-align: center;
+}
+td.cal0 { /* empty cell*/
+    font: 14px Arial, Helvetica, sans-serif;
+    color: #000000;
+    background-color: #EAEAEA;
+    width: 14%;
+    text-align: center;
+}
+td.cal1 { /* days */
+    font: 14px Arial, Helvetica, sans-serif;
+    color: #000000;
+    background-color: #EAEAEA;
+    width: 14%;
+    text-align: center;
+}
+td.cal2 { /* today */
+    font: 14px Arial, Helvetica, sans-serif;
+    color: #000000;
+    background-color: #DEFFC1;
+    border: 1px solid #000000;
+    border-radius: 6px;
+    width: 14%;
+    text-align: center;
+}
+td.cal3 { /* sunday or special */
+    font: 14px Arial, Helvetica, sans-serif;
+    color: #000000;
+    background-color: #EAEAEA;
+    border: 1px solid #000000;
+    border-radius: 6px;
+    width: 14%;
+    text-align: center;
+}
+td.cal4 { /* today is sunday or special */
+    font: 14px Arial, Helvetica, sans-serif;
+    color: #000000;
+    background-color: #EAEAEA;
+    border: 1px solid #000000;
+    border-radius: 6px;
+    width: 14%;
+    text-align: center;
+}
+td.calevt { /* planner event */
+    font: bold 14px Arial, Helvetica, sans-serif;
+    color: #000000;
+    background-color: #C5D1A5;
+    text-decoration: underline;
+    text-align: center;
+    width: 14%;
+}
+/************************
+ * Formulaires (Forms) */
+form { /* formulaire */
+    margin: 3px 0;
+}
+fieldset { /* Encadrement des champs */
+    border: 1px solid #8F916A;
+    border-radius: 6px;
+    margin: 8px;
+    padding: 6px;
+}
+legend, .legend { /* légende des encadrements */
+    font: 14px Arial, Helvetica, sans-serif !important;
+    color: #000000 !important;
+    background-color: inherit !important;
+    font-weight: bold !important;
+    padding: 0 4px !important;
+    margin-left: 5% !important;
+    width: auto !important;
+}
+input.bouton, button { /* bouton */
+    cursor: pointer;
+    margin: 4px 0;
+    color: #000000;
+    border: 1px inset #000000;
+	border-radius: 4px;
+    background-color: #FFF;
+    font: 14px Arial, Helvetica, sans-serif;
+
+}
+input.texte { /* champ texte */
+    background-color: #FFF;
+    font: 14px Arial, Helvetica, sans-serif;
+    color: #000000;
+    border: 1px solid #000;
+    border-radius: 4px;
+    margin: 4px;
+	padding: 2px 6px;
+}
+select { /* champ select */
+    color: #000000;
+    background-color: #FFF;
+    font: 14px Arial, Helvetica, sans-serif;
+    border: 1px solid #000000;
+	border-radius: 4px 0 0 4px;
+    margin: 4px 0;
+}
+textarea { /* champ textarea */
+    color: #000000;
+    background-color: #FFF;
+    border: 1px solid #000000;
+    overflow: auto;
+    margin: 4px 0;
+}
+/*************************************
+ * block box central forum - tables */
+.forum, .forum a {
+    background-color: #7F7F7F;
+    padding: 5px 0;
+    font: bold 14px Arial, Helvetica, sans-serif;
+    color: #FFFFFF;
+    text-align: center;
+}
+.quest {
+    background-color: #FAF6FF;
+    padding: 5px;
+    font: 14px Arial, Helvetica, sans-serif;
+    color: #000000;
+    text-align: left;
+}
+.rep {
+    background-color: #EEE;
+    padding: 10px 5px 5px 5px;
+    font: 14px Arial, Helvetica, sans-serif;
+    color: #000000;
+    text-align: left;
+}
+.bord {
+    border: 1px solid #8F916A;
+    padding: 1px;
+}
+/**********************
+ * Editeur CKEditor */
+.Code {
+    border: 1px solid #8F916A;
+    padding-right: 5px;
+    padding-left: 5px;
+    color: #000000;
+    font: 14px Arial, Helvetica, sans-serif, Monospace;
+    background-color: #E3EDC7;
+}
+/************************
+ * Divers, inclassables */
+.top {
+    font: 0.8em Arial, Helvetica, sans-serif;
+    color: #000000;
+    background-color: inherit;
+    text-align: center;
+}
+.timer {
+    font: italic 0.9em Arial, Helvetica, sans-serif;
+    color: #000000;
+    background-color: inherit;
+    text-align: center;
+    padding: 8px;
+}
+.c-pointer, .clsCursor { cursor: pointer; }
+.c-help, .cursorHelp { cursor: help; }
+.notice {
+    color: red;
+    background-color: #FF9;
+    padding: 2px;
+}
+.errorInputText {
+    background-color: #FFE5E5;
+    font: 13px Arial, Helvetica, sans-serif;
+    color: #000099;
+    border: 1px solid #8F916A;
+    border-radius: 4px;
+    margin: 4px;
+	padding: 2px 6px;
+}
+.navbarLeftW { padding: 5px; }
+.imgPlus { padding-left: 5px; }
+.navbarRightW { padding: 5px; }
+.dispError {
+    max-width: 480px;
+    margin: auto;
+    background-color: #FFF;
+}
+.dispError2 {
+    color: #FFF;
+    background-color: #FF0000;
+    text-align: center;
+    font-size: 13pt;
+    font-weight: bold;
+    padding: 2px 0;
+}
+.w-98 { width: 98% !important; }
+.w-95 { width: 95% !important; }
+.w-90 { width: 90% !important; }
+.w-88 { width: 88% !important; }
+.w-85 { width: 85% !important; }
+.w-80 { width: 80% !important; }
+.w-78 { width: 78% !important; }
+.w-76 { width: 76% !important; }
+.w-70 { width: 70% !important; }
+.w-65 { width: 65% !important; }
+.w-60 { width: 60% !important; }
+.w-55 { width: 55% !important; }
+.w-48 { width: 48% !important; }
+.w-45 { width: 45% !important; }
+.w-40 { width: 40% !important; }
+.w-35 { width: 35% !important; }
+.w-30 { width: 30% !important; }
+.w-22 { width: 22% !important; }
+.w-20 { width: 20% !important; }
+.w-18 { width: 18% !important; }
+.w-15 { width: 15% !important; }
+.w-10 { width: 10% !important; }
+.w-5  { width: 5%  !important; }
+.fs-14 { font-size: 1.1rem !important; }
+/***************************
+ * Evaluation mot de passe */
+
+.alert-error {
+    color: #FFFFFF;
+    background-color: #FF0000;
+    border-color: #EED3D7;
+}
+.alert-success {
+    color: #000000;
+    background-color: #00FF00;
+    border-color: #D6E9C6;
+}
+.alert-info {
+    color: #FFFFFF;
+    background-color: #009DFF;
+    border-color: #BCE8F1;
+}
+.alert-danger {
+    color: #FFFFFF;
+    background-color:red;
+    border-color: #BCE8F1;
+}
+/**************
+ * Statistics */
+.tdstats { padding: 5px; }
+.vertbarStat { width: 2em; white-space: nowrap; }
+.horiztxtStat { width: 100px; margin: 10px; }
+.horizbarStat { white-space: nowrap; margin: 10px; }
+/********************
+ * Menus déroulants */
+@media screen and (min-width: 760px) {
+  .navbar.ddl {
+    display: flex;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    max-width: 100%;
+  }
+  .navbar.ddl .nav-item {
+    margin: 0;
+  }
+  .navbar.ddl .dropdown { position: static; }
+  .dropdown-toggle::after { display:none; }
+  .navbar.ddl .dropdown-menu {
+    width: 100%;
+    left: 0;
+    right: 0;
+    top: 35px;
+    display: block;
+    visibility: hidden;
+    opacity: 0;
+    transition: visibility 0s, opacity 0.4s linear;
+  }
+  .navbar.ddl .dropdown:hover .dropdown-menu, .navbar.ddl .dropdown .dropdown-menu:hover {
+    display: block;
+    visibility: visible;
+    opacity: 1;
+    transition: visibility 0s, opacity 0.4s linear;
+  }
+}
+.navbar.ddl .dropdown-menu { border: none; }
+.navbar.ddl .dropdown-menu div[class*="col"] {
+    margin-bottom: 1rem;
+}
+.navbar.ddl a.navbar-brand, .navbar.ddh a.navbar-brand, 
+.navbar ul.navbar-nav a.nav-link, .nav-link {
+    font: bold 1.1rem Nunito, sans-serif;
+    color: rgba(0,0,0, 1) !important;
+}
+.navbar.ddl a.navbar-brand:hover, .navbar ul.navbar-nav a.nav-link:hover,
+.navbar.ddl a.navbar-brand:focus, .navbar.ddh a.navbar-brand:hover, 
+.navbar ul.navbar-nav a.nav-link:focus {
+    background-color: rgba(3,203,63, 1) !important;
+    color: rgba(255,255,255, 1) !important;
+}
+.navbar.ddl, .navbar.ddl ul {
+	background-color: #FFF;
+	color: rgba(0,0,0, 1) !important;
+	max-width: 1000px;
+}
+.navbar.ddl ul.navbar.ddl .dropdown-menu {
+    margin-top: .75rem !important;
+    height: auto;
+    background-color: #E7E1EF;
+    border: 0;
+    border-radius: 0;
+}
+.navbar.ddl .dropdown-menu > div, .navbar.ddl .dropdown-menu > div p {
+    font-size: 1.2rem;
+    color: #000000;
+}
+.navbar .navbar-toggler, .navbar.ddl .navbar-toggler, .navbar.ddh .navbar-toggler {  /* bordure icône de la barre en mobile */
+    border-color: rgba(0,0,0, 0.9);
+    border-radius: 0.35rem;
+}
+.navbar.ddl .navbar-toggler-icon { /* couleur texte icône de la barre en mobile (stroke) */
+    background-image: url("data:image/svg+xml,%3csvg xmlns=\"http://www.w3.org/2000/svg\" width=\"30\" height=\"30\" viewBox=\"0 0 30 30\"%3e%3cpath stroke=\"rgba(0,0,0, 0.9)\" stroke-linecap=\"round\" stroke-miterlimit=\"10\" stroke-width=\"2\" d=\"M4 7h22M4 15h22M4 23h22\"/%3e%3c/svg%3e") !important;
+}
+.showblock { background-color:#FFF; border-radius: 6px; }
+ul.keyword {
+    list-style: none;
+    margin: 0; 
+    padding: 0;
+    position: relative;
+    float: left;
+}
+ul.keyword li {
+    margin: 0;
+    padding: 0 6px;
+    background-color: inherit;
+    color: #000;
+    list-style: none;
+    float: left;
+    background-color: #FFF;
+    border: 1px solid #000;
+    border-radius: 4px;
+}
+ul.keyword li:hover {
+    background-color: #FFF;
+    color: #000;
+    position: relative;
+    z-index: 599;
+    cursor: pointer;
+}
+ul.keyword ul {
+    width: 220px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    visibility: hidden;
+    position: absolute;
+    top: 0;
+    left: 95%;
+    z-index: 598;
+}
+ul.keyword-horizontal ul li *.dir {
+    padding-right: 20px;
+}
+ul.keyword a:hover {
+	color: #FF0000;
+	font-weight: normal;
+}
+ul.keyword li:hover > ul {
+    transition-property : visibility;
+    transition-delay : 200ms;
+    visibility: visible;
+    line-height: 1.8em;
+}
+ul.keyword div {
+    border: 1px solid #000;
+    border-radius: 4px;
+    background-color: #FFF;
+	z-index: 597;
+}
+.hover_img a { position:relative; }
+.hover_img a span { background: #FFF; position:absolute; left:120px; display:none; z-index:99; border: 1px solid #000; padding:10px; }
+.hover_img a:hover span { display:block; }
+.hover_img img { max-width: 468px; height: auto; color:#000}/*si pas d'image (noscreen) le texte du tag alt sera en noir*/
+.hover_img img::after  { content: url(inc/img/files/noscreen.jpg); } /*affichage de cette image si le lien n'est pas une image*/
+
+.overpop { cursor: help; }
+.overpop a i { color: inherit; }
+.inputuid { width: 220px; max-width: 100%; }
+
+.navbarLeftW i.cur, .navbarLeftM i.cur, 
+.navbarRightW i.cur, .navbarRightM i.cur { font-size: 1.5rem; margin-top: 5px; }
+.navbarLeftW i.curN, .navbarLeftM i.curN, 
+.navbarRightW i.curN, .navbarRightM i.curN { font-size: 1.5rem; margin-top: 5px; opacity: 0.5; }
+
+.text-transparent { color: transparent !important; }
+.bg-yellow { background-color: rgb(255, 255, 0) !important; }
+
+.part-left { text-align: left; }
+.part-right { text-align: right; }
+
+@media screen and (max-width: 760px), screen and (max-device-width: 760px) {
+  .fs-14 { font-size: 1rem !important; }
+  .part-left, .part-right { text-align: center !important; }
+  .colorpicker { left: auto !important; }
+}

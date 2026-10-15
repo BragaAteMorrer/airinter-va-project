@@ -1,0 +1,219 @@
+<?php
+/*******************************************************************************
+ *   UniteGallery Admin Language Strings
+ *******************************************************************************
+ *   GuppY PHP Script - version 6.0
+ *   CeCILL Copyright (C) 2004-2020 by Laurent Duveau
+ *   Initiated by Laurent Duveau and Nicolas Alves
+ *   Web site = https://www.freeguppy.org/
+ *   e-mail   = guppy@freeguppy.org
+ *   V6 developed by Lud Bienaimé
+ *      with the participation of the GuppY Team
+ *******************************************************************************
+ *   Latest Changes :
+ * v6.00.00 (December 15, 2020) : initial release
+ ******************************************************************************/
+
+if (stristr($_SERVER['SCRIPT_NAME'], 'eo-ugadmin.inc')) {
+    header('location:../index.php');
+    die();
+}
+
+$charset = 'UTF-8';
+
+$ugadmin[1] = 'Kaheloj-Kolumnoj';
+$ugadmin[2] = 'Kaheloj-ĝisrandigitaj';
+$ugadmin[3] = 'Kaheloj-Ingitaj';
+$ugadmin[4] = 'Kaheloj-Krado';
+$ugadmin[5] = 'Karuselo';
+$ugadmin[6] = 'Defaŭlta Temo';
+$ugadmin[7] = 'Kompakta Temo';
+$ugadmin[8] = 'Krada Temo';
+$ugadmin[9] = 'Lumbildoprezenta Temo';
+$ugadmin[10] = 'Filmeta Temo';
+$ugadmin[11] = 'Galeriaj opcioj';
+$ugadmin[12] = 'Kahelaj opcioj';
+$ugadmin[13] = 'Kaheldezajnopcioj';
+$ugadmin[14] = 'Kaheltekstpanelopcioj';
+$ugadmin[15] = 'Lightbox-opcioj';
+$ugadmin[16] = 'TemKonstruo';
+$ugadmin[17] = 'Ĉefaj opcioj';
+$ugadmin[18] = 'Navigaj opcioj';
+$ugadmin[19] = 'Karuselopcioj';
+$ugadmin[20] = 'Temopcioj';
+$ugadmin[21] = 'Lumbildoprezentoopcioj';
+$ugadmin[22] = 'Bildetopcioj';
+$ugadmin[23] = 'Bildetpanelopcioj';
+$ugadmin[24] = 'Kradpanelopcioj';
+$ugadmin[25] = 'Galerilarĝo';
+$ugadmin[26] = 'Galerialto';
+$ugadmin[27] = 'Minimuma galerilarĝo';
+$ugadmin[28] = 'Minimuma galerialto';
+$ugadmin[29] = 'Aŭtomata ludado de la lumbildoprezento';
+$ugadmin[30] = 'Intervalo inter la lumbildoj';
+$ugadmin[31] = 'Fonkoloro de galerio';
+$ugadmin[32] = 'Larĝo de kahelkolumnoj';
+$ugadmin[33] = 'Kahelvicigo';
+$ugadmin[34] = 'Kahelinterspaco inter kolumnoj';
+$ugadmin[35] = 'Kahelinterspaco inter kolumnoj sur poŝtelefono';
+$ugadmin[36] = 'Ekzakta larĝo de la kaheloj';
+$ugadmin[37] = 'Interna spaco de kaheloj inkluzivita';
+$ugadmin[38] = 'Minimumaj kahelkolumnoj';
+$ugadmin[39] = 'Optimuma larĝo de miksitaj kaheloj';
+$ugadmin[40] = 'Maksimumaj kahelkolumnoj';
+$ugadmin[41] = 'Kahelbordero aktivigita';
+$ugadmin[42] = 'Kahelborderlarĝo';
+$ugadmin[43] = 'Kahelborderkoloro';
+$ugadmin[44] = 'Radiuso de la rondformaj kahelanguloj';
+$ugadmin[45] = 'Montru tiun temon';
+$ugadmin[46] = 'Kahelkonturo aktivigita';
+$ugadmin[47] = 'Kahelkonturkoloro';
+$ugadmin[48] = 'Ombro de la aktivigita kahelo';
+$ugadmin[49] = 'Kahelombrokoloro';
+$ugadmin[50] = 'Agoj sur aktivigitaj kaheloj';
+$ugadmin[51] = 'Kahelo kiel ekstera ligilo';
+$ugadmin[52] = 'Ligilago en nova paĝo';
+$ugadmin[53] = 'Kolorsurmeto  aktivigita dum superflugado';
+$ugadmin[54] = 'Opakeco de la surmetita koloro';
+$ugadmin[55] = 'Koloro por la kahelsurmeto';
+$ugadmin[56] = 'Ikonoj por kahelaktivigo';
+$ugadmin[57] = 'Ikono por kahelvidigo';
+$ugadmin[58] = 'Interspaco de la kahelikonoj';
+$ugadmin[59] = 'Aktivigo de bildefiko sur la kahelo';
+$ugadmin[60] = 'Tipo de bildefiko sur la kahelo';
+$ugadmin[61] = 'Inversa bildefiko sur la kahelo';
+$ugadmin[62] = 'Kaheltekstpanelo ebligita';
+$ugadmin[63] = 'Tekstpanelo ĉiam vidigata';
+$ugadmin[64] = 'Aspektotipo de la tekstpanelo';
+$ugadmin[65] = 'Pozicio de la tekstpanelo';
+$ugadmin[66] = 'Opakeco de la tekstpanelo';
+$ugadmin[67] = 'Fonkoloro de la tekstpanelo';
+$ugadmin[68] = 'Prezentotipo de lightbox';
+$ugadmin[69] = 'Pozicio de la lightbox sagoj';
+$ugadmin[70] = 'Internaj sagoj ĉiam vidigataj';
+$ugadmin[71] = 'Lightbox Bildbordero ebligita';
+$ugadmin[72] = 'Larĝo de la lightbox bildbordero';
+$ugadmin[73] = 'Koloro de la lightbox bildbordero';
+$ugadmin[74] = 'Radiuso de lightbox bildbordero';
+$ugadmin[75] = 'Alto de la bazlinio alkadrigita';
+$ugadmin[76] = 'Interspacigo inter la alkadrigitaj kaheloj';
+$ugadmin[77] = 'Kaheltransiro ebligita';
+$ugadmin[78] = 'Kahellarĝo';
+$ugadmin[79] = 'Kahelalto';
+$ugadmin[80] = 'Interna bordero de la krado';
+$ugadmin[81] = 'Interspaco inter kahelkolumnoj';
+$ugadmin[82] = 'Interspaco inter kahellinioj';
+$ugadmin[83] = 'Nombro da kahellinioj';
+$ugadmin[84] = 'Navigadtipo de la temo';
+$ugadmin[85] = 'Alta marĝeno de navigaj vezikoj';
+$ugadmin[86] = 'Koloro de navigaj vezikoj';
+$ugadmin[87] = 'Spaco inter navigaj vezikoj';
+$ugadmin[88] = 'Alta marĝeno de navigaj sagoj';
+$ugadmin[89] = 'Interspaco de navigaj sagoj';
+$ugadmin[90] = 'Karuselvicigo';
+$ugadmin[91] = 'Nigra&Blanka';
+$ugadmin[92] = 'Malklara';
+$ugadmin[93] = 'Sepia';
+$ugadmin[94] = 'Glita';
+$ugadmin[95] = 'Dissolvo';
+$ugadmin[96] = 'Interno - Malsupro';
+$ugadmin[97] = 'Interno - Supro';
+$ugadmin[98] = 'Interno - Centro';
+$ugadmin[99] = 'Larĝa';
+$ugadmin[100] = 'Kompakta';
+$ugadmin[101] = 'Sur la flankoj';
+$ugadmin[102] = 'Interne';
+$ugadmin[103] = 'Vezikoj';
+$ugadmin[104] = 'Sagoj';
+$ugadmin[105] = 'Griza';
+$ugadmin[106] = 'Blua';
+$ugadmin[107] = 'Bruna';
+$ugadmin[108] = 'Verda';
+$ugadmin[109] = 'Ruĝa';
+$ugadmin[110] = 'Adapto';
+$ugadmin[111] = 'Redukto';
+$ugadmin[112] = 'Plenigo';
+$ugadmin[113] = 'Nigra';
+$ugadmin[114] = 'Blanka';
+$ugadmin[115] = 'Torto';
+$ugadmin[116] = 'Torto 2a';
+$ugadmin[117] = 'Breto';
+$ugadmin[118] = 'Rulumbreto';
+$ugadmin[119] = 'Progreso de elemento';
+$ugadmin[120] = 'Borderoj';
+$ugadmin[121] = 'Krado';
+$ugadmin[122] = 'Dekstre - Bildeto';
+$ugadmin[123] = 'Dekstre - Nur titolo';
+$ugadmin[124] = 'Dekstre - Ne bildeto';
+$ugadmin[125] = 'Kahelinterspaco';
+$ugadmin[126] = 'Nombro da movendaj kaheloj';
+$ugadmin[127] = 'Aŭtomata karuselo';
+$ugadmin[128] = 'Aŭtomata tempumo de la karuselo';
+$ugadmin[129] = 'Aŭtomata direkto de la karuselo';
+$ugadmin[130] = 'Montri navigajn elementojn';
+$ugadmin[131] = 'Pozicio de la navigaj elementoj';
+$ugadmin[132] = 'Spaco inter karuselo kaj navigado';
+$ugadmin[133] = 'Plenekrana reĝima butono ebligita';
+$ugadmin[134] = 'Lumbildprezenta ek for butono ebligita';
+$ugadmin[135] = 'Butono por kaŝi / montri panelojn ebligita';
+$ugadmin[136] = 'Tekstpanelo ebligita';
+$ugadmin[137] = 'Tekstvicigo';
+$ugadmin[138] = 'Kaŝi la panelon sub la larĝo';
+$ugadmin[139] = '0 por senlima';
+$ugadmin[140] = 'Ĝustiga reĝimo de la lumbildoj';
+$ugadmin[141] = 'Transira reĝimo de lumbildoprezento';
+$ugadmin[142] = 'Transira rapido de la lumbildoj';
+$ugadmin[143] = 'Ŝargiltipo de la lumbildprezento';
+$ugadmin[144] = 'Ŝargilkoloro de la lumbildprezento';
+$ugadmin[145] = 'Lumbildprezentosagoj ebligitaj';
+$ugadmin[146] = 'Progresindikilo ebligita';
+$ugadmin[147] = 'Tipo de progresindikilo';
+$ugadmin[148] = 'Horizontala vicigo de la indikilo';
+$ugadmin[149] = 'Vertikala vicigo de la indikilo';
+$ugadmin[150] = 'Koloro de la progresindikilo';
+$ugadmin[151] = 'Opakeco de la progresindikilo';
+$ugadmin[152] = 'Ebligo de la fotozomo';
+$ugadmin[153] = 'Komandoj de la lumbildprezento ĉiam aktivigitaj';
+$ugadmin[154] = 'Komandoj de la lumbildprezento aktivigataj per tuŝado';
+$ugadmin[155] = 'Aktivigo de la teksta panelo';
+$ugadmin[156] = 'Aktivigo de la titolo de la teksta panelo';
+$ugadmin[157] = 'Vertikala vicigo de la panela teksto';
+$ugadmin[158] = 'Transira rapido de la dissolva reĝimo';
+$ugadmin[159] = 'Larĝo de bildetoj';
+$ugadmin[160] = 'Alto de bildetoj';
+$ugadmin[161] = 'Fiksa larĝo de bildetoj';
+$ugadmin[162] = 'Borderefiko de bildetoj';
+$ugadmin[163] = 'Borderlarĝo de bildetoj';
+$ugadmin[164] = 'Borderkoloro de bildetoj';
+$ugadmin[165] = 'Borderlarĝo super bildetoj';
+$ugadmin[166] = 'Borderkoloro super bildetoj';
+$ugadmin[167] = 'Larĝo de selekto de bildetoj';
+$ugadmin[168] = 'Koloro de selekto de bildetoj';
+$ugadmin[169] = 'Radiuso de la rondformaj anguloj de bildetoj';
+$ugadmin[170] = 'Kolorefiko dum superflugo super la bildeto';
+$ugadmin[171] = 'Efikkoloro dum superflugo super la bildeto';
+$ugadmin[172] = 'Koloropakeco dum superflugo super la bildeto';
+$ugadmin[173] = 'Bildetpanelbutonoj ebligitaj';
+$ugadmin[174] = 'Interspaco de bildetpanelbutonoj';
+$ugadmin[175] = 'Rolo de bildetpanelbutonoj';
+$ugadmin[176] = 'Vicigo de la bildetkrado';
+$ugadmin[177] = 'Fonkoloro de la bildetkrado';
+$ugadmin[178] = 'Vicigo de panelbildetoj';
+$ugadmin[179] = 'Pozicio de la bildetpanelo';
+$ugadmin[180] = 'Kaŝi la panelon sub larĝo malpli granda ol';
+$ugadmin[181] = 'Vertikala movado de la bildetkrado';
+$ugadmin[182] = 'Vertikala vicigo de sagoj';
+$ugadmin[183] = 'Horizontala vicigo de sagoj';
+$ugadmin[184] = 'Direkto de bildetmoviĝo';
+$ugadmin[185] = 'Nombro da bildetkolumnoj';
+$ugadmin[186] = 'Interspaco de bildetkolumnoj';
+$ugadmin[187] = 'Interspaco de bildetlinioj';
+$ugadmin[188] = 'Temstilo';
+$ugadmin[189] = 'Tempo antaŭ malaktivigo de la dekstra panelo';
+$ugadmin[190] = 'Aktivigo de navigaj vezikoj';
+$ugadmin[191] = 'Vertikala deŝovo de navigaj vezikoj';
+$ugadmin[192] = 'Tipo de filmeto :';
+$ugadmin[193] = 'Adreso por la ekstera ligilo :';
+$ugadmin[194] = 'Kodo aŭ adreso de la filmeto :';
+$ugadmin[195] = 'Defaŭltaj valoroj';
+?>

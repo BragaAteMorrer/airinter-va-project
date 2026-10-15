@@ -1,0 +1,54 @@
+/*  ---------  Admin CSS Bootstrap 4  ----------- */
+
+.card-header.collapsed.card-link {
+    background-color: #DCD9E0;
+    color: #000;
+    margin-top: 2px;
+    border: 1px solid #67890B;
+    border-radius: 4px;
+    text-align: left;
+}
+.card-header.card-link {
+    background-color: #7F7F7F;
+    color: #FFF;
+    font-size: 14px;
+    text-align: left;
+}
+.collapse.show { background-color: #EFEFEF; font-size: 14px; }
+.card-body { font-size: 13px; }
+.popover {
+    color: #404040;
+    background-color: #FFFFFF;
+    border-radius: 6px;
+}
+.popover-header {
+    color: #000000;
+    background-color: #DCD9E0;
+    font: normal 14px Verdana, "Bitstream Vera Sans", sans-serif;
+}
+.popover-body {
+    color: #404040;
+    background-color: #FFFFFF;
+    font: normal 14px Verdana, "Bitstream Vera Sans", sans-serif;
+    border-radius: 0 0 6px 6px;
+}
+.btn-lg {
+    font-size: 1rem;
+    padding: .2rem .75rem;
+}
+.btn-info {
+    background-color: #FFF;
+    color: #000000;
+    border: 1px solid #FFF;
+	border-radius: 4px;
+}
+.btn-info:hover {
+    background-color: #e00000;
+    color: #FFF;
+    border: 1px solid #e00000;
+	border-radius: 4px;
+}
+.form-check-input {
+	margin-top: .1rem;
+	margin-left: 0;
+}

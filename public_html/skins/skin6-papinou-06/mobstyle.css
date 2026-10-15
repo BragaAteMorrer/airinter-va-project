@@ -1,0 +1,22 @@
+/*********************************** 
+ * déclarations générales mobiles *
+ ***********************************/
+ 
+@media screen and (max-width: 1079.98px) {
+  body { padding: 0 !important; }
+  #LeftBoxes, #BlogLeftBoxes { order: 2 !important; max-width: 100% !important; }
+  #CenterBoxes { order: 1 !important; max-width: 100% !important; }
+  #RightBoxes, #BlogRightBoxes { order: 3 !important; max-width: 100% !important; }  
+  #returnOnTop { display: none !important; }
+  .iconSocnetW { display:none; }
+  div.quote { display:none }
+  .tbl > p, .tbl > div { line-height: 3.2rem; }
+  .a-col { padding-left: 0 !important; padding-right: 0 !important; }
+  .tbluseravaW i { width: 48px !important; height: 48px !important; }
+  fieldset { margin: 0 !important; }
+  .nav-link .dropdown-toggle { padding:.5rem 1rem; }
+  #MainContent{ margin:10px 0 0;padding:10px 0!important;border:0!important; }
+  .B0entrow1 { padding:10px 2px!important;}
+  #BottomBoxes .tbl,#BottomBoxes .tblbox,#BottomBoxes .titre,#BottomBoxes .titrebox { padding:10px 2px!important; }
+/* Ajout possible à partir de cette ligne pour personnaliser */
+}

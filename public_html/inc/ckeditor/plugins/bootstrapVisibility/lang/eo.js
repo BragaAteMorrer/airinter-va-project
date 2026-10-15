@@ -1,0 +1,21 @@
+CKEDITOR.plugins.setLang('bootstrapVisibility', 'eo', {
+	respTabLabel: 'Adaptiĝema Videbleco',
+	classDetailsHtml: 'Por klarigo pri tio, kio estas la CSS-klasoj listigitaj supre, konsultu la dokumentaron de Bootstrap 3 ĉe:<br> <a href="http://getbootstrap.com/css/#responsive-utilities" target=" _blank">http://getbootstrap.com/css/#responsive-utilities</a>',
+	none: 'Nenio',
+	hidden_xs: 'kaŝita-xs',
+	hidden_sm: 'kaŝita-sm',
+	hidden_md: 'kaŝita-md',
+	hidden_lg: 'kaŝita-lg',
+	visible_xs_block: 'videbla-xs-bloko',
+	visible_sm_block: 'videbla-sm-bloko',
+	visible_md_block: 'videbla-md-bloko',
+	visible_lg_block: 'videbla-lg-bloko',
+	visible_xs_inline_block: 'videbla-xs-inline-bloko',
+	visible_sm_inline_block: 'videbla-sm-inline-bloko',
+	visible_md_inline_block: 'videbla-md-inline-bloko',
+	visible_lg_inline_block: 'videbla-lg-inline-bloko',
+	visible_xs_inline: 'videbla-xs-inline',
+	visible_sm_inline: 'videbla-sm-inline',
+	visible_md_inline: 'videbla-md-inline',
+	visible_lg_inline: 'videbla-lg-inline'
+});

@@ -1,0 +1,123 @@
+/*  ---------  CSS for Bootstrap 4 generated for skin6-guppy-01  ----------- */
+
+/***********
+* Onglets */
+.tab-content div.container {
+    padding-top: 0px;
+    max-width: 100%;
+    text-align: left;
+    border: 1px solid #808080;
+    border-radius: 0px 0px 0px 0px;
+    background-color: #FFFFFF;
+}
+ul.nav-tabs {
+    padding-bottom: 0px;
+    width: 100%;
+    border-bottom: 0;
+}
+.nav-tabs .nav-link.active {
+    background-color: #00BEF2;
+    font-weight: bold;
+    color: #FFFFFF;
+    border: 1px solid #7F7F7F;    
+    border-bottom-width: 0;
+    border-radius: 0px 0px 0px 0px;
+}
+.nav-tabs .nav-link:hover {
+    background-color: #B4EBFA important;
+    color: #404040 !important;
+    border: 1px solid #7F7F7F;
+    border-bottom-width: 0;
+    border-radius: 0px 0px 0px 0px;
+}
+.nav-tabs .nav-link {
+    font: 16px "Trebuchet MS", Helvetica, sans-serif;
+    margin-bottom: 1px;
+    background-color: #FEA347;
+    color: #404040 !important;
+}
+/**********************
+* Accordéon vertical */
+.card .card-header.collapsed.card-link {
+    color: #FFFFFF !important;
+    background-color: #804040;
+    border: 1px solid #FFFFFF;
+    border-radius: 0px 0px 0px 0px;
+}
+.card .card-header.card-link {
+    color: #FFFFFF;
+    font-weight: bold;
+    background-color: #00BEF2;
+    border: 1px solid #FFFFFF;
+    border-radius: 0px 0px 0px 0px;
+}
+.card .collapse.show {
+    background-color: #FFFFFF;
+    color: inherit;
+    border: 1px solid #FFFFFF;
+    border-radius: 0px 0px 0px 0px;
+}
+.card .card-body {
+    font-size: 13px;
+}
+/****************
+ * Fenêtre modale */
+.modal-content {
+    background-color: #FFFFFF;
+    color: 0.7;
+    border: 5px solid #804040;
+    border-radius: 10px;
+}
+/**************
+* Info bulle */
+.popover {
+    color: #404040;
+    background-color: #F3F3F3;
+    border-radius: 6px;
+}
+.popover-header {
+    color: #404040;
+    background-color: #FFFFFF;
+    font: normal 16px "Trebuchet MS", Helvetica, sans-serif;
+}
+.popover-body {
+    color: #404040;
+    background-color: #F3F3F3;
+    font: normal 16px "Trebuchet MS", Helvetica, sans-serif;
+    border-radius: 0 0 6px 6px;
+}
+/***********
+* Boutons */
+.btn-lg, .btn-md {
+    font-size: 1.5rem;
+    border-radius: 6px;
+}
+.btn-info {
+	color: #404040;
+	background-color: #FEA347;
+	border-color: #FEA347;
+    border-style: solid;
+}
+.btn-info:hover {
+    color: #404040;
+    background-color: #00FEF2;
+	border-color: #00FEF2;
+    border-style: solid;
+}
+.btn.btn-outline-secondary {
+    background-color: #FFFFFF;
+}
+/***************
+* Formulaires */
+.form-control, .form-control-lg {
+    font-size: inherit;
+}
+.input-group-prepend .input-group-text {
+	border-radius: 6px;
+}
+.input-group-append .input-group-text {
+	border-radius: 6px;
+}
+span.input-group-text {
+    border: 1px solid #C0C0C0;
+}

@@ -1,0 +1,20 @@
+CKEDITOR.plugins.setLang( 'html5video', 'eo', {
+    button: 'Enigu HTML5-videoludilon',
+    title: 'HTML5 video',
+    infoLabel: 'videaj informoj',
+    allowed: 'Permesitaj dosieraj etendoj: MP4, WebM, Ogv',
+    urlMissing: 'Mankas URL-fonto de video. Bonvolu plenigi ĝin.',
+    videoProperties: 'Video Propraĵoj',
+    upload: 'Elŝutu',
+    btnUpload: 'Sendu al servilo',
+    advanced: 'Altnivela',
+    autoplay: 'Ludu aŭtomate ?',
+    allowdownload: 'Elŝuto permesita?',
+    advisorytitle: 'Konsila titolo',
+    yes: 'Jes',
+    no: 'Ne',
+    loop: 'Buklo?',
+    responsive: 'Respondema?',
+    controls: 'kontroloj',
+    poster: 'Bilda Afiŝo'
+} );

@@ -1,0 +1,54 @@
+.brw-aim, .brw-googletalk, .brw-icq, .brw-jabber, .brw-msn, 
+.brw-skype, .brw-teamspeak, .brw-yahoo, .brw-avant, .brw-camino, 
+.brw-chrome, .brw-crazy, .brw-da, .brw-dillo, .brw-element, 
+.brw-epiphany, .brw-firebird, .brw-firefox, .brw-flock, .brw-galeon, 
+.brw-icab, .brw-iceweasel, .brw-k-meleon, .brw-kazehakase, .brw-konqueror, 
+.brw-lynx, .brw-maxthon, .brw-minefield, .brw-mozilla, .brw-msie, 
+.brw-netscape, .brw-opera, .brw-ps3, .brw-psp, .brw-robot, 
+.brw-safari, .brw-seamonkey, .brw-unknown, .brw-wget, .brw-wii {
+    display: inline-block;
+    background-image: url(browsers.png);
+    background-repeat: no-repeat;
+    overflow: hidden;
+}
+ 
+.brw-aim { background-position: -2px -0px; width: 18px; height: 16px; }
+.brw-googletalk { background-position: -2px -18px; width: 18px; height: 16px; }
+.brw-icq { background-position: -2px -36px; width: 18px; height: 16px; }
+.brw-jabber { background-position: -2px -54px; width: 18px; height: 18px; }
+.brw-msn { background-position: -2px -74px; width: 18px; height: 16px; }
+.brw-skype { background-position: -2px -92px; width: 18px; height: 16px; }
+.brw-teamspeak { background-position: -2px -110px; width: 18px; height: 16px; }
+.brw-yahoo { background-position: -2px -128px; width: 18px; height: 16px; }
+.brw-avant { background-position: -2px -146px; width: 16px; height: 16px; }
+.brw-camino { background-position: -2px -164px; width: 16px; height: 16px; }
+.brw-chrome { background-position: -2px -182px; width: 16px; height: 16px; }
+.brw-crazy { background-position: -2px -200px; width: 16px; height: 16px; }
+.brw-da { background-position: -2px -218px; width: 16px; height: 16px; }
+.brw-dillo { background-position: -2px -236px; width: 16px; height: 16px; }
+.brw-element { background-position: -2px -254px; width: 16px; height: 16px; }
+.brw-epiphany { background-position: -2px -272px; width: 16px; height: 16px; }
+.brw-firebird { background-position: -2px -290px; width: 16px; height: 16px; }
+.brw-firefox { background-position: -2px -308px; width: 16px; height: 16px; }
+.brw-flock { background-position: -2px -326px; width: 16px; height: 16px; }
+.brw-galeon { background-position: -2px -344px; width: 16px; height: 16px; }
+.brw-icab { background-position: -2px -362px; width: 16px; height: 16px; }
+.brw-iceweasel { background-position: -2px -380px; width: 16px; height: 16px; }
+.brw-k-meleon { background-position: -2px -398px; width: 16px; height: 16px; }
+.brw-kazehakase { background-position: -2px -416px; width: 16px; height: 16px; }
+.brw-konqueror { background-position: -2px -434px; width: 16px; height: 16px; }
+.brw-lynx { background-position: -2px -452px; width: 16px; height: 16px; }
+.brw-maxthon { background-position: -2px -470px; width: 16px; height: 16px; }
+.brw-minefield { background-position: -2px -488px; width: 16px; height: 16px; }
+.brw-mozilla { background-position: -2px -506px; width: 16px; height: 16px; }
+.brw-msie { background-position: -2px -524px; width: 16px; height: 16px; }
+.brw-netscape { background-position: -2px -542px; width: 16px; height: 16px; }
+.brw-opera { background-position: -2px -560px; width: 16px; height: 16px; }
+.brw-ps3 { background-position: -2px -578px; width: 16px; height: 16px; }
+.brw-psp { background-position: -2px -596px; width: 16px; height: 16px; }
+.brw-robot { background-position: -2px -614px; width: 16px; height: 16px; }
+.brw-safari { background-position: -2px -632px; width: 16px; height: 16px; }
+.brw-seamonkey { background-position: -2px -650px; width: 16px; height: 16px; }
+.brw-unknown { background-position: -2px -668px; width: 16px; height: 16px; }
+.brw-wget { background-position: -2px -686px; width: 16px; height: 16px; }
+.brw-wii { background-position: -2px -704px; width: 16px; height: 16px; }

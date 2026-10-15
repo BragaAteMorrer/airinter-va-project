@@ -1,0 +1,13 @@
+[infos]
+Nom='guppy60021'
+Description="Contient les corrections et ajouts de la version 6.00.21.
+Contain all fixes and addings from 6.00.21."
+Version='21/12/2024'
+Auteur='GuppY Team'
+
+[check]
+guppy_vmin='6.00.00'
+
+[script]
+include='renfilesantispam.inc'
+function='rename_antispam_files'

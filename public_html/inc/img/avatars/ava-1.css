@@ -1,0 +1,30 @@
+.ava-00, .ava-01, .ava-02, .ava-03, .ava-04, .ava-05, .ava-06, .ava-07, .ava-08, .ava-09, .ava-10, 
+.ava-11, .ava-12, .ava-13, .ava-14, .ava-15, .ava-16, .ava-17, .ava-18, .ava-19, .ava-20 
+{
+    display:inline-block;
+    overflow:hidden;
+    background-repeat: no-repeat;
+    background-image:url(ava-1.png);
+}
+
+.ava-00 {width: 64px; height: 64px; background-position: 0.446429% 1.04167%; background-size: 800.000%; }
+.ava-01 {width: 64px; height: 64px; background-position: 15.1786% 1.04167%; background-size: 800.000%; }
+.ava-02 {width: 64px; height: 64px; background-position: 29.9107% 1.04167%; background-size: 800.000%; }
+.ava-03 {width: 64px; height: 64px; background-position: 44.6429% 1.04167%; background-size: 800.000%; }
+.ava-04 {width: 64px; height: 64px; background-position: 59.3750% 1.04167%; background-size: 800.000%; }
+.ava-05 {width: 64px; height: 64px; background-position: 74.1071% 1.04167%; background-size: 800.000%; }
+.ava-06 {width: 64px; height: 64px; background-position: 88.8393% 1.04167%; background-size: 800.000%; }
+.ava-07 {width: 64px; height: 64px; background-position: 0.446429% 35.4167%; background-size: 800.000%; }
+.ava-08 {width: 64px; height: 64px; background-position: 15.1786% 35.4167%; background-size: 800.000%; }
+.ava-09 {width: 64px; height: 64px; background-position: 29.9107% 35.4167%; background-size: 800.000%; }
+.ava-10 {width: 64px; height: 64px; background-position: 44.6429% 35.4167%; background-size: 800.000%; }
+.ava-11 {width: 64px; height: 64px; background-position: 59.3750% 35.4167%; background-size: 800.000%; }
+.ava-12 {width: 64px; height: 64px; background-position: 74.1071% 35.4167%; background-size: 800.000%; }
+.ava-13 {width: 64px; height: 64px; background-position: 88.8393% 35.4167%; background-size: 800.000%; }
+.ava-14 {width: 64px; height: 64px; background-position: 0.446429% 69.7917%; background-size: 800.000%; }
+.ava-15 {width: 64px; height: 64px; background-position: 15.1786% 69.7917%; background-size: 800.000%; }
+.ava-16 {width: 64px; height: 64px; background-position: 29.9107% 69.7917%; background-size: 800.000%; }
+.ava-17 {width: 64px; height: 64px; background-position: 44.6429% 69.7917%; background-size: 800.000%; }
+.ava-18 {width: 64px; height: 64px; background-position: 59.3750% 69.7917%; background-size: 800.000%; }
+.ava-19 {width: 64px; height: 64px; background-position: 74.1071% 69.7917%; background-size: 800.000%; }
+.ava-20 {width: 64px; height: 64px; background-position: 88.8393% 69.7917%; background-size: 800.000%; }

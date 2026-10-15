@@ -79,3 +79,19 @@ acars/msfs2024-efb/**/node_modules/
 *.trx
 coverage/
 coverage.*
+
+# Air Inter VA — site historique GuppY
+/public_html/file/
+/public_html/img/
+
+# Configurations privées et anciennes installations
+/public_html/phpvms/core/local.config.php
+/public_html/phpvms/core/local.config.*.php
+/public_html/phpvms/installTEMPO/
+/public_html/**/.git/
+/public_html/**/.env
+/public_html/**/.htpasswd
+/public_html/data/log/
+
+# Plugin CKEditor avec dépôt Git embarqué
+/public_html/inc/ckeditor/plugins/nbsp/

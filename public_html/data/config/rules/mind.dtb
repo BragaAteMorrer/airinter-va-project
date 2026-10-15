@@ -1,0 +1,2 @@
+RewriteRule ^plugins/mind/([a-z]{2})-(mind1)-([0-9]+)$ plugins/mind/mind.php?lng=$1&guess=$3 [L]
+RewriteRule ^plugins/mind/([a-z]{2})-(mind1-0)$ plugins/mind/mind.php?lng=$1&guess=0 [L]

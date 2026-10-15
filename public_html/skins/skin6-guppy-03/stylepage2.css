@@ -1,0 +1,10 @@
+/*  ---------  CSS to customize skin6-guppy-03 for secondary page news_photos  ----------- */
+
+.T2entrow0 { padding: 10px 0;background-color: #0F056B;}
+.T2entrow3 { padding: 10px 25px;}
+.T2entrow4 { display: none; }
+.T2entrow6 { display: none; }
+.B2entrow1 { padding: 20px 40px !important; }
+@media screen and (min-width: 768px) and (max-width: 1080px) {
+.B2entrow2 .col-md-3 { -ms-flex: 0 0 50%; flex: 0 0 50%; max-width: 100%; }
+}

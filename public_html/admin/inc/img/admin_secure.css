@@ -1,0 +1,30 @@
+.adm-security, .adm-security1, .adm-security2, .adm-security3, .adm-security4, .adm-security5 {
+	width: 42px;
+    height: 36px;
+    background-image: url(secure.png);
+    background-repeat: no-repeat;
+	background-sizing: 100%;
+    display: inline-block;
+}
+
+.adm-security1 {
+
+    background-position: -5px -5px;
+}
+
+.adm-security2 {
+    background-position: -57px -5px;
+}
+
+.adm-security3 {
+    background-position: -109px -5px;
+}
+
+.adm-security4 {
+    background-position: -161px -5px;
+}
+
+.adm-security5 {
+    background-position: -213px -5px;
+}
+

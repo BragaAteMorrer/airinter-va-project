@@ -1,0 +1,67 @@
+.flg-lang, .flg-au, .flg-ca, .flg-com, .flg-dm, 
+.flg-edu, .flg-net, .flg-nz, .flg-org, .flg-sg, 
+.flg-uk, .flg-us, .flg-ar-jo, .flg-at, .flg-be, 
+.flg-bg, .flg-br, .flg-ch, .flg-cz, .flg-da, 
+.flg-de-at, .flg-de-ch, .flg-de, .flg-ee, .flg-en, 
+.flg-eo, .flg-es, .flg-fi, .flg-fr, .flg-he, 
+.flg-hr, .flg-id, .flg-in, .flg-ir, .flg-it, 
+.flg-jo, .flg-nl, .flg-no, .flg-oc, .flg-ocga, 
+.flg-pl, .flg-pt, .flg-ro, .flg-ru, .flg-sk, 
+.flg-sr, .flg-sw, .flg-tr, .flg-zh-cn, .flg-unknown
+{
+    display:inline-block;
+    overflow:hidden;
+    background-repeat: no-repeat;
+    background-image: url(flags.png);
+}
+ 
+.flg-lang { width: 47px; height: 31px; background-position: 0 0%; background-size: 100%; }
+.flg-au { width: 27px; height: 17px; background-position: 0 3.662597%; background-size: 174.074074%; }
+.flg-ca { width: 27px; height: 17px; background-position: 0 5.771365%; background-size: 174.074074%; }
+.flg-com { width: 27px; height: 17px; background-position: 0 7.880133%; background-size: 174.074074%; }
+.flg-dm { width: 27px; height: 17px; background-position: 0 9.988901%; background-size: 174.074074%; }
+.flg-edu { width: 27px; height: 17px; background-position: 0 12.097669%; background-size: 174.074074%; }
+.flg-net { width: 27px; height: 17px; background-position: 0 14.206437%; background-size: 174.074074%; }
+.flg-nz { width: 27px; height: 17px; background-position: 0 16.315205%; background-size: 174.074074%; }
+.flg-org { width: 27px; height: 17px; background-position: 0 18.423973%; background-size: 174.074074%; }
+.flg-sg { width: 27px; height: 17px; background-position: 0 20.509978%; background-size: 174.074074%; }
+.flg-uk { width: 27px; height: 17px; background-position: 0 22.530522%; background-size: 174.074074%; }
+.flg-us { width: 27px; height: 17px; background-position: 0 24.63929%; background-size: 174.074074%; }
+.flg-ar-jo { width: 24px; height: 15px; background-position: 0 26.688815%; background-size: 195.833333%; }
+.flg-at { width: 24px; height: 16px; background-position: 0 28.603104%; background-size: 195.833333%; }
+.flg-be { width: 24px; height: 16px; background-position: 0 30.59867%; background-size: 195.833333%; }
+.flg-bg { width: 24px; height: 16px; background-position: 0 32.522124%; background-size: 195.833333%; }
+.flg-br { width: 24px; height: 16px; background-position: 0 34.368071%; background-size: 195.833333%; }
+.flg-ch { width: 24px; height: 16px; background-position: 0 36.363636%; background-size: 195.833333%; }
+.flg-cz { width: 24px; height: 16px; background-position: 0 38.359202%; background-size: 195.833333%; }
+.flg-da { width: 24px; height: 16px; background-position: 0 40.354767%; background-size: 195.833333%; }
+.flg-de-at { width: 24px; height: 16px; background-position: 0 42.350333%; background-size: 195.833333%; }
+.flg-de-ch { width: 24px; height: 16px; background-position: 0 44.345898%; background-size: 195.833333%; }
+.flg-de { width: 24px; height: 16px; background-position: 0 46.341463%; background-size: 195.833333%; }
+.flg-ee { width: 24px; height: 16px; background-position: 0 48.337029%; background-size: 195.833333%; }
+.flg-en { width: 24px; height: 16px; background-position: 0 50.332594%; background-size: 195.833333%; }
+.flg-eo { width: 24px; height: 16px; background-position: 0 52.32816%; background-size: 195.833333%; }
+.flg-es { width: 24px; height: 16px; background-position: 0 54.323725%; background-size: 195.833333%; }
+.flg-fi { width: 24px; height: 16px; background-position: 0 56.31929%; background-size: 195.833333%; }
+.flg-fr { width: 24px; height: 16px; background-position: 0 58.314856%; background-size: 195.833333%; }
+.flg-he { width: 24px; height: 16px; background-position: 0 60.310421%; background-size: 195.833333%; }
+.flg-hr { width: 24px; height: 16px; background-position: 0 62.305987%; background-size: 195.833333%; }
+.flg-id { width: 24px; height: 16px; background-position: 0 64.301552%; background-size: 195.833333%; }
+.flg-in { width: 24px; height: 16px; background-position: 0 66.297118%; background-size: 195.833333%; }
+.flg-ir { width: 24px; height: 16px; background-position: 0 68.292683%; background-size: 195.833333%; }
+.flg-it { width: 24px; height: 16px; background-position: 0 70.288248%; background-size: 195.833333%; }
+.flg-jo { width: 24px; height: 16px; background-position: 0 72.203765%; background-size: 195.833333%; }
+.flg-nl { width: 24px; height: 16px; background-position: 0 74.168514%; background-size: 195.833333%; }
+.flg-no { width: 24px; height: 16px; background-position: 0 76.16408%; background-size: 195.833333%; }
+.flg-oc { width: 24px; height: 16px; background-position: 0 78.159645%; background-size: 195.833333%; }
+.flg-ocga { width: 24px; height: 16px; background-position: 0 80.333333%; background-size: 195.833333%; }
+.flg-pl { width: 24px; height: 16px; background-position: 0 82.372506%; background-size: 195.833333%; }
+.flg-pt { width: 24px; height: 16px; background-position: 0 84.368071%; background-size: 195.833333%; }
+.flg-ro { width: 24px; height: 16px; background-position: 0 86.363636%; background-size: 195.833333%; }
+.flg-ru { width: 24px; height: 16px; background-position: 0 88.359202%; background-size: 195.833333%; }
+.flg-sk { width: 24px; height: 16px; background-position: 0 90.254707%; background-size: 195.833333%; }
+.flg-sr { width: 24px; height: 16px; background-position: 0 92.239468%; background-size: 195.833333%; }
+.flg-sw { width: 24px; height: 16px; background-position: 0 94.235033%; background-size: 195.833333%; }
+.flg-tr { width: 24px; height: 16px; background-position: 0 96.230599%; background-size: 195.833333%; }
+.flg-zh-cn { width: 22px; height: 14px; background-position: 0 98.00885%; background-size: 213.636364%; }
+.flg-unknown { width: 16px; height: 16px; background-position: 0 100%; background-size: 293.75%; }

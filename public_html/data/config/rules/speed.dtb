@@ -1,0 +1,1 @@
+RewriteRule ^plugins/speed/([a-z]{2})-(speedcnt)$ plugins/speed/speed.php?lng=$1 [L]

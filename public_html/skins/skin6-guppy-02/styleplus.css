@@ -1,0 +1,28 @@
+/*  ---------  CSS generated for skin6-guppy-02 ----------- */
+
+body { letter-spacing: 0.1em !important; }
+.T0entrow0 {padding: 10px 0;background-color: #3D2B1F; }
+.T0entrow3 { padding: 10px 0;background-color: #A39167;}
+.T0entrow4 { margin:0 auto;text-align:center; }
+.T0entrow6 { display: none; }
+div.quote span.labelcita { display: none; }
+.tblbox.FB1T132 { background-color: #804040;}
+.navbar.ddl .dropdown-menu > div, .navbar.ddl .dropdown-menu > div p { font-size: 1.8rem; }
+.tbl.DDL69 { background-color: transparent; }
+.navbar.ddl.DDL69 { max-width: 760px;margin: auto; }
+.navbar.ddh.DDH74 { max-width: 640px;margin: auto; }
+.tbl.DDH74 { background-color: transparent; }
+.DDH74 ul.dropdown-menu { width: 262px; }
+.nav-item.dropdown.DDH74 { margin: 0 !important; }
+.tbl.DDV90 { background-color: transparent; }
+.navbar.ddv { background-color: #A39167 !important;padding:1.5rem 0 !important; }
+.dropdown-menu { color: #FFF !important; background-color: #DBD0B5 !important;padding:5px !important; }
+/* #MainContent { z-index: 9 !important; } */
+.titrebox, .titre {font-variant: small-caps; }
+.lisubrubr { line-height: 3rem;background-color: #F2F2F2 !important; }
+.B0entrow1 { padding: 20px 40px !important; }
+@media screen and (min-width: 768px) and (max-width: 1080px){
+.B0entrow2 .col-md-3 { -ms-flex: 0 0 50%; flex: 0 0 50%; max-width: 100%; }
+}
+#BottomBoxes .titre, #BottomBoxes .tbl, #BottomBoxes .titrebox, 
+#BottomBoxes .tblbox { padding: 20px 40px !important; }

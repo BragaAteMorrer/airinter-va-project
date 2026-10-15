@@ -1,0 +1,102 @@
+.adm-about, .adm-agenda, .adm-archive, .adm-article, .adm-banner, 
+.adm-blog, .adm-blogrss, .adm-blogrub, .adm-config1, .adm-config2, 
+.adm-config3, .adm-config4, .adm-config5, .adm-config6, .adm-config71, 
+.adm-config72, .adm-config74, .adm-config9, .adm-contact, .adm-counter1, 
+.adm-counter2, .adm-counter3, .adm-counter4, .adm-css, .adm-dbcheck, 
+.adm-doc, .adm-download, .adm-droits1, .adm-droits2, .adm-droits3, 
+.adm-eye1, .adm-eye2, .adm-faq, .adm-forum, .adm-forum1, 
+.adm-forum2, .adm-freebox, .adm-guestbook, .adm-help, .adm-import, 
+.adm-install, .adm-links, .adm-maintain, .adm-maintenance, .adm-members1, 
+.adm-members2, .adm-members3, .adm-members4, .adm-menu1, .adm-menu2, 
+.adm-menu3, .adm-menu4, .adm-menuico, .adm-news, .adm-newsletter1, 
+.adm-newsletter2, .adm-newsletter3, .adm-newsletter4, .adm-newsletter5, .adm-newsrss, 
+.adm-photo1, .adm-photo2, .adm-photo3, .adm-photo4, .adm-protect, 
+.adm-react, .adm-reblog, .adm-save, .adm-search, .adm-socnet1, 
+.adm-socnet2, .adm-stats1, .adm-stats2, .adm-stats3, .adm-think, 
+.adm-update, .adm-upload
+{
+    display: inline-block;
+    background: url(admin.png) no-repeat;
+    overflow: hidden;
+    text-indent: -9999px;
+    text-align: left;
+}
+ 
+.adm-about { background-position: -2px -0px; width: 42px; height: 36px; }
+.adm-agenda { background-position: -46px -0px; width: 42px; height: 36px; }
+.adm-archive { background-position: -90px -0px; width: 42px; height: 36px; }
+.adm-article { background-position: -134px -0px; width: 42px; height: 36px; }
+.adm-banner { background-position: -178px -0px; width: 42px; height: 36px; }
+.adm-blog { background-position: -222px -0px; width: 42px; height: 36px; }
+.adm-blogrss { background-position: -266px -0px; width: 42px; height: 36px; }
+.adm-blogrub { background-position: -310px -0px; width: 42px; height: 36px; }
+.adm-config1 { background-position: -2px -38px; width: 42px; height: 36px; }
+.adm-config2 { background-position: -46px -38px; width: 42px; height: 36px; }
+.adm-config3 { background-position: -90px -38px; width: 42px; height: 36px; }
+.adm-config4 { background-position: -134px -38px; width: 42px; height: 36px; }
+.adm-config5 { background-position: -178px -38px; width: 42px; height: 36px; }
+.adm-config6 { background-position: -222px -38px; width: 42px; height: 36px; }
+.adm-config71 { background-position: -266px -38px; width: 42px; height: 36px; }
+.adm-config72 { background-position: -310px -38px; width: 42px; height: 36px; }
+.adm-config74 { background-position: -2px -76px; width: 42px; height: 36px; }
+.adm-config9 { background-position: -46px -76px; width: 42px; height: 36px; }
+.adm-contact { background-position: -90px -76px; width: 42px; height: 36px; }
+.adm-counter1 { background-position: -134px -76px; width: 42px; height: 36px; }
+.adm-counter2 { background-position: -178px -76px; width: 42px; height: 36px; }
+.adm-counter3 { background-position: -222px -76px; width: 42px; height: 36px; }
+.adm-counter4 { background-position: -266px -76px; width: 42px; height: 36px; }
+.adm-css { background-position: -310px -76px; width: 42px; height: 36px; }
+.adm-dbcheck { background-position: -2px -114px; width: 42px; height: 36px; }
+.adm-doc { background-position: -46px -114px; width: 42px; height: 36px; }
+.adm-download { background-position: -90px -114px; width: 42px; height: 36px; }
+.adm-droits1 { background-position: -134px -114px; width: 42px; height: 36px; }
+.adm-droits2 { background-position: -178px -114px; width: 42px; height: 36px; }
+.adm-droits3 { background-position: -222px -114px; width: 42px; height: 36px; }
+.adm-eye1 { background-position: -266px -114px; width: 42px; height: 36px; }
+.adm-eye2 { background-position: -310px -114px; width: 42px; height: 42px; }
+.adm-faq { background-position: -2px -152px; width: 42px; height: 36px; }
+.adm-forum { background-position: -46px -152px; width: 42px; height: 42px; }
+.adm-forum1 { background-position: -90px -152px; width: 42px; height: 42px; }
+.adm-forum2 { background-position: -134px -152px; width: 42px; height: 36px; }
+.adm-freebox { background-position: -178px -152px; width: 42px; height: 36px; }
+.adm-guestbook { background-position: -222px -152px; width: 42px; height: 36px; }
+.adm-help { background-position: -266px -152px; width: 42px; height: 36px; }
+.adm-import { background-position: -310px -158px; width: 42px; height: 36px; }
+.adm-install { background-position: -2px -190px; width: 42px; height: 36px; }
+.adm-links { background-position: -134px -190px; width: 42px; height: 36px; }
+.adm-maintain { background-position: -178px -190px; width: 42px; height: 36px; }
+.adm-maintenance { background-position: -222px -190px; width: 42px; height: 36px; }
+.adm-members1 { background-position: -266px -190px; width: 42px; height: 36px; }
+.adm-members2 { background-position: -46px -196px; width: 42px; height: 36px; }
+.adm-members3 { background-position: -310px -196px; width: 42px; height: 42px; }
+.adm-members4 { background-position: -90px -196px; width: 42px; height: 42px; }
+.adm-menu1 { background-position: -2px -228px; width: 42px; height: 36px; }
+.adm-menu2 { background-position: -134px -228px; width: 42px; height: 36px; }
+.adm-menu3 { background-position: -178px -228px; width: 42px; height: 36px; }
+.adm-menu4 { background-position: -222px -228px; width: 42px; height: 36px; }
+.adm-menuico { background-position: -266px -228px; width: 42px; height: 36px; }
+.adm-news { background-position: -46px -234px; width: 42px; height: 36px; }
+.adm-newsletter1 { background-position: -310px -240px; width: 42px; height: 36px; }
+.adm-newsletter2 { background-position: -90px -240px; width: 42px; height: 36px; }
+.adm-newsletter3 { background-position: -2px -266px; width: 42px; height: 36px; }
+.adm-newsletter4 { background-position: -134px -266px; width: 42px; height: 36px; }
+.adm-newsletter5 { background-position: -178px -266px; width: 42px; height: 36px; }
+.adm-newsrss { background-position: -222px -266px; width: 42px; height: 36px; }
+.adm-photo1 { background-position: -266px -266px; width: 42px; height: 36px; }
+.adm-photo2 { background-position: -46px -272px; width: 42px; height: 36px; }
+.adm-photo3 { background-position: -310px -278px; width: 42px; height: 36px; }
+.adm-photo4 { background-position: -90px -278px; width: 42px; height: 36px; }
+.adm-protect { background-position: -2px -304px; width: 42px; height: 36px; }
+.adm-react { background-position: -134px -304px; width: 42px; height: 36px; }
+.adm-reblog { background-position: -178px -304px; width: 42px; height: 36px; }
+.adm-save { background-position: -222px -304px; width: 42px; height: 36px; }
+.adm-search { background-position: -266px -304px; width: 42px; height: 36px; }
+.adm-socnet1 { background-position: -46px -310px; width: 42px; height: 36px; }
+.adm-socnet2 { background-position: -310px -316px; width: 42px; height: 36px; }
+.adm-stats1 { background-position: -90px -316px; width: 42px; height: 36px; }
+.adm-stats2 { background-position: -2px -342px; width: 42px; height: 36px; }
+.adm-stats3 { background-position: -134px -342px; width: 42px; height: 36px; }
+.adm-think { background-position: -178px -342px; width: 42px; height: 36px; }
+.adm-update { background-position: -222px -342px; width: 42px; height: 36px; }
+.adm-upload { background-position: -266px -342px; width: 42px; height: 36px; }
+

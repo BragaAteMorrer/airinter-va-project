@@ -1,0 +1,12 @@
+/*  ---------  CSS to customize skin6-guppy-02 for secondary page forum_liens_lo  ----------- */
+
+.T4entrow0 { padding: 10px 0;background-color: #3D2B1F; }
+.T4entrow3 { padding: 10px 0;background-color: #A39167; }
+.T4entrow4 { display: none; }
+.T4entrow6 { display: none; }
+div.rep.text-left.mx-1.thbodycontentW { border: 1px dotted #A39167; }
+div.col-md-3.rep.text-center { border: 1px dotted #A39167; }
+.B4entrow1  { padding: 20px 40px !important; } 
+@media screen and (min-width: 768px) and (max-width: 1080px) {
+.B4entrow2 .col-md-3 { -ms-flex: 0 0 50%; flex: 0 0 50%; max-width: 100%; }
+}
