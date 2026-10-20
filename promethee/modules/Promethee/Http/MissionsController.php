@@ -98,7 +98,7 @@ public function adminMissions() {
         return $this->page('admin-missions', [
             'missions'=>DB::table('promethee_missions')->orderByDesc('created_at')->get(),
             'circuits'=>DB::table('promethee_circuits')->orderByDesc('created_at')->get()->map(function($circuit){ $circuit->legs=DB::table('promethee_circuit_legs')->where('circuit_id',$circuit->id)->orderBy('position')->get(); return $circuit; }),
-            'flights'=>Flight::where('active',true)->where('visible',true)->orderBy('route_code')->orderBy('flight_number')->limit(200)->get(['id','route_code','flight_number','dpt_airport_id','arr_airport_id']),
+            'flights'=>Flight::where('active',true)->where('visible',true)->orderBy('route_code')->orderBy('flight_number')->limit(3000)->get(['id','route_code','flight_number','dpt_airport_id','arr_airport_id']),
         ]);
     }
 

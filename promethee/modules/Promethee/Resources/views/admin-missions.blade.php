@@ -110,6 +110,15 @@
             <label>Début<input type="date" name="starts_on"></label>
             <label>Fin<input type="date" name="ends_on"></label>
             <label class="full">Description<textarea name="description" rows="3"></textarea></label>
+            <label class="full">Choisir un vol du réseau (ajout automatique d'une étape)
+              <select data-circuit-flight-picker aria-label="Vol à ajouter au circuit">
+                <option value="">— Choisir un vol —</option>
+                @foreach($flights as $flight)
+                  <option value="{{ $flight->id }}" data-departure="{{ $flight->dpt_airport_id }}" data-arrival="{{ $flight->arr_airport_id }}">{{ trim(($flight->route_code ?: '').($flight->flight_number ?: '')) }} · {{ $flight->dpt_airport_id }} → {{ $flight->arr_airport_id }}</option>
+                @endforeach
+              </select>
+            </label>
+            <button type="button" class="button outline" data-circuit-add-flight>Ajouter ce vol au circuit</button>
             <label class="full">Étapes (ICAO départ, ICAO arrivée, ID de vol facultatif)
               <textarea name="legs_text" id="legs-text" rows="7" required placeholder="LFPO, LFML, identifiant-vol-1&#10;LFML, LFKJ, identifiant-vol-2"></textarea>
             </label>
@@ -189,6 +198,17 @@
 @push('scripts')
 <script>
 document.querySelectorAll('[data-circuit-form]').forEach(form => {
+  const picker = form.querySelector('[data-circuit-flight-picker]');
+  form.querySelector('[data-circuit-add-flight]')?.addEventListener('click', () => {
+    const chosen = picker?.selectedOptions[0];
+    if (!chosen?.value) return;
+    const textarea = form.querySelector('#legs-text');
+    const leg = [chosen.dataset.departure, chosen.dataset.arrival, chosen.value].join(', ');
+    textarea.value = [textarea.value.trim(), leg].filter(Boolean).join('\n');
+    picker.selectedIndex = 0;
+    textarea.focus();
+  });
+
   form.addEventListener('submit', () => {
     const textarea = form.querySelector('#legs-text');
     if (!textarea) return;
