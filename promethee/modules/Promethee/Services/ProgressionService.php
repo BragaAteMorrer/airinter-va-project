@@ -108,6 +108,10 @@ class ProgressionService
                 }
             } while ($awardedThisPass > 0 && $pendingBadgeRules->isNotEmpty());
 
+            // Awards explicitly associated with missions and circuits are
+            // granted by the same progression engine after accepted PIREPs.
+            $awards += $this->grantCompletionAwards($user, $origin);
+
             // Highest eligible rank wins. This makes overlapping rules
             // deterministic and prevents a lower rule from undoing a promotion.
             foreach ($rankRules as $rule) {
@@ -224,6 +228,54 @@ class ProgressionService
         $start = $leg->starts_on ?? $leg->created_at ?? null;
         if ($start) $query->where('submitted_at', '>=', $start);
         return $query;
+    }
+
+    private function grantCompletionAwards(User $user, string $origin): int
+    {
+        $granted = 0;
+        foreach ([
+            ['table' => 'promethee_missions', 'type' => 'mission'],
+            ['table' => 'promethee_circuits', 'type' => 'circuit'],
+        ] as $source) {
+            if (!Schema::hasTable($source['table']) || !Schema::hasColumn($source['table'], 'award_id')) {
+                continue;
+            }
+            $items = DB::table($source['table'])->whereNotNull('award_id')->get(['id', 'award_id']);
+            foreach ($items as $item) {
+                $eligible = $source['type'] === 'mission'
+                    ? $this->missionCompleted($user, (int) $item->id)
+                    : $this->circuitCompleted($user, (int) $item->id);
+                if (!$eligible) {
+                    continue;
+                }
+                // Award uniqueness is per pilot/badge, including other progression rules.
+                $existing = UserAward::where('user_id', $user->id)
+                    ->where('award_id', $item->award_id)->exists();
+                if ($existing) {
+                    continue;
+                }
+                $created = UserAward::firstOrCreate([
+                    'user_id' => $user->id,
+                    'award_id' => $item->award_id,
+                ]);
+                if (!$created->wasRecentlyCreated) {
+                    continue;
+                }
+                DB::table('promethee_progression_history')->insert([
+                    'user_id' => $user->id,
+                    'kind' => 'badge',
+                    'subject_id' => (string) $item->award_id,
+                    'before_value' => null,
+                    'after_value' => (string) $item->award_id,
+                    'origin' => $origin,
+                    'reason' => ucfirst($source['type']).' #'.$item->id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                $granted++;
+            }
+        }
+        return $granted;
     }
 
     private function visitedAirports(User $user): int
