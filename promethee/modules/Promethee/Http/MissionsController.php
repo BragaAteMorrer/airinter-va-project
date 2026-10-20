@@ -104,8 +104,8 @@ public function adminMissions() {
     }
 
 public function saveMission(Request $r) {
-        $data=$r->validate(['title'=>'required|string|max:160','description'=>'nullable|string|max:5000','dpt_airport_id'=>'nullable|string|max:8','arr_airport_id'=>'nullable|string|max:8','flight_id'=>'nullable|string|max:36','award_id'=>'nullable|integer|exists:awards,id','starts_on'=>'nullable|date','ends_on'=>'nullable|date|after_or_equal:starts_on','active'=>'nullable|boolean']);
-        $payload = ['title'=>$data['title'],'description'=>$data['description'] ?? null,'dpt_airport_id'=>strtoupper($data['dpt_airport_id'] ?? '') ?: null,'arr_airport_id'=>strtoupper($data['arr_airport_id'] ?? '') ?: null,'flight_id'=>$data['flight_id'] ?? null,'award_id'=>$data['award_id'] ?? null,'starts_on'=>$data['starts_on'] ?? null,'ends_on'=>$data['ends_on'] ?? null,'active'=>$r->boolean('active'),'updated_at'=>now()];
+        $data=$r->validate(['title'=>'required|string|max:160','description'=>'nullable|string|max:5000','dpt_airport_id'=>'nullable|string|max:8','arr_airport_id'=>'nullable|string|max:8','flight_id'=>'nullable|string|max:36','award_id'=>'nullable|integer|exists:awards,id','extra_pay'=>'nullable|numeric|min:0|max:1000000','starts_on'=>'nullable|date','ends_on'=>'nullable|date|after_or_equal:starts_on','active'=>'nullable|boolean']);
+        $payload = ['title'=>$data['title'],'description'=>$data['description'] ?? null,'dpt_airport_id'=>strtoupper($data['dpt_airport_id'] ?? '') ?: null,'arr_airport_id'=>strtoupper($data['arr_airport_id'] ?? '') ?: null,'flight_id'=>$data['flight_id'] ?? null,'award_id'=>$data['award_id'] ?? null,'extra_pay'=>$data['extra_pay'] ?? 0,'starts_on'=>$data['starts_on'] ?? null,'ends_on'=>$data['ends_on'] ?? null,'active'=>$r->boolean('active'),'updated_at'=>now()];
         if ($r->filled('mission_id')) {
             $validatedId = $r->validate(['mission_id' => 'required|integer|min:1'])['mission_id'];
             $updated = DB::table('promethee_missions')->where('id', $validatedId)->update($payload);
@@ -119,7 +119,7 @@ public function saveMission(Request $r) {
 public function deleteMission(int $id) { DB::table('promethee_missions')->where('id',$id)->delete(); return back()->with('success','Mission supprimée.'); }
 
 public function saveCircuit(Request $r) {
-        $data=$r->validate(['title'=>'required|string|max:160','description'=>'nullable|string|max:5000','award_id'=>'nullable|integer|exists:awards,id','starts_on'=>'nullable|date','ends_on'=>'nullable|date|after_or_equal:starts_on','active'=>'nullable|boolean','legs'=>'required|array|min:1|max:30','legs.*.departure'=>'required|string|max:8','legs.*.arrival'=>'required|string|max:8','legs.*.flight_id'=>'nullable|string|max:36']);
+        $data=$r->validate(['title'=>'required|string|max:160','description'=>'nullable|string|max:5000','award_id'=>'nullable|integer|exists:awards,id','extra_pay'=>'nullable|numeric|min:0|max:1000000','starts_on'=>'nullable|date','ends_on'=>'nullable|date|after_or_equal:starts_on','active'=>'nullable|boolean','legs'=>'required|array|min:1|max:30','legs.*.departure'=>'required|string|max:8','legs.*.arrival'=>'required|string|max:8','legs.*.flight_id'=>'nullable|string|max:36']);
         foreach ($data['legs'] as $position => $leg) {
             if (empty($leg['flight_id'])) {
                 continue;
@@ -133,7 +133,7 @@ public function saveCircuit(Request $r) {
                 ]);
             }
         }
-        $id=DB::table('promethee_circuits')->insertGetId(['created_by'=>$r->user()->id,'title'=>$data['title'],'description'=>$data['description'] ?? null,'award_id'=>$data['award_id'] ?? null,'starts_on'=>$data['starts_on'] ?? null,'ends_on'=>$data['ends_on'] ?? null,'active'=>$r->boolean('active'),'created_at'=>now(),'updated_at'=>now()]);
+        $id=DB::table('promethee_circuits')->insertGetId(['created_by'=>$r->user()->id,'title'=>$data['title'],'description'=>$data['description'] ?? null,'award_id'=>$data['award_id'] ?? null,'extra_pay'=>$data['extra_pay'] ?? 0,'starts_on'=>$data['starts_on'] ?? null,'ends_on'=>$data['ends_on'] ?? null,'active'=>$r->boolean('active'),'created_at'=>now(),'updated_at'=>now()]);
         foreach($data['legs'] as $position=>$leg) DB::table('promethee_circuit_legs')->insert(['circuit_id'=>$id,'position'=>$position+1,'dpt_airport_id'=>strtoupper($leg['departure']),'arr_airport_id'=>strtoupper($leg['arrival']),'flight_id'=>$leg['flight_id'] ?? null,'created_at'=>now(),'updated_at'=>now()]);
         return back()->with('success','Circuit publié.');
     }

@@ -95,6 +95,10 @@
               @endforeach
               </select>
             </label>
+<label>Prime supplémentaire (montant fixe)
+              <input type="number" name="extra_pay" min="0" max="1000000" step="0.01" value="0">
+              <small>Versement seulement après validation complète ; laisser 0 pour aucune prime.</small>
+            </label>
             <label class="full">Description<textarea name="description" rows="4"></textarea></label>
             <label><input type="checkbox" name="active" value="1" checked> Active</label>
             <button>Publier la mission</button>
@@ -122,6 +126,10 @@
                 <option value="{{ $award->id }}">{{ $award->name }}</option>
               @endforeach
               </select>
+            </label>
+<label>Prime supplémentaire (montant fixe)
+              <input type="number" name="extra_pay" min="0" max="1000000" step="0.01" value="0">
+              <small>Versement seulement après validation complète ; laisser 0 pour aucune prime.</small>
             </label>
             <label class="full">Description<textarea name="description" rows="3"></textarea></label>
             <label class="full">Choisir un vol du réseau (ajout automatique d'une étape)
@@ -196,6 +204,7 @@
               @endforeach
               </select>
             </label>
+              <label>Prime supplémentaire (montant fixe)<input type="number" name="extra_pay" min="0" max="1000000" step="0.01" value="{{ $mission->extra_pay ?? 0 }}"></label>
               <label class="full">Description<textarea name="description" rows="4">{{ $mission->description }}</textarea></label>
               <label><input type="checkbox" name="active" value="1" @checked($mission->active)> Active</label>
               <button type="submit">Enregistrer les modifications</button>
