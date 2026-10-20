@@ -10,6 +10,7 @@ use App\Services\FinanceService;
 use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class RegionalOperationsEventListener
@@ -33,6 +34,10 @@ class RegionalOperationsEventListener
                     ->where('mission.aircraft_id', $pirep->aircraft_id)
                     ->where('mission.dpt_airport_id', $pirep->dpt_airport_id)
                     ->where('mission.arr_airport_id', $pirep->arr_airport_id)
+                    ->where(function ($query) use ($pirep) {
+                        $query->whereNull('mission.flight_id')
+                            ->orWhere('mission.flight_id', $pirep->flight_id);
+                    })
                     ->select([
                         'booking.id as booking_id',
                         'booking.mission_id',
@@ -107,6 +112,10 @@ class RegionalOperationsEventListener
                 ]);
             });
         } catch (Throwable $exception) {
+            Log::error('Repatriation bonus payment failed', [
+                'pirep_id' => $event->pirep->id,
+                'error' => $exception->getMessage(),
+            ]);
             report($exception);
         }
     }
