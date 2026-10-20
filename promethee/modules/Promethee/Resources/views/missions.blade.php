@@ -15,7 +15,8 @@
 
 <nav class="pilot-hub-nav" aria-label="Navigation missions">
   <a href="#my-missions">Mes missions <span>{{ $myMissions->count() }}</span></a>
-  <a href="#missions">Missions disponibles <span>{{ $otherMissions->count() }}</span></a>
+  <a href="#rapatriements">Rapatriements <span>{{ $otherMissions->where("mission_type", "repatriation")->count() }}</span></a>
+  <a href="#missions">Missions <span>{{ $otherMissions->where("mission_type", "!=", "repatriation")->count() }}</span></a>
   <a href="#circuits">Circuits <span>{{ $circuits->count() }}</span></a>
 </nav>
 
@@ -54,8 +55,9 @@
 </section>
 
 
+<div id="rapatriements"></div>
 <section class="panel" id="missions">
-  <div class="panel-heading"><div><span class="eyebrow">MISSIONS</span><h2>Disponibles et en cours</h2><p>Les missions déjà réservées pour vous sont retirées de cette liste et affichées dans “Mes missions”.</p></div><span class="tag">{{ $otherMissions->count() }}</span></div>
+  <div class="panel-heading"><div><span class="eyebrow">MISSIONS</span><h2>Disponibles et en cours</h2><p>Choisissez une mission ou un rapatriement disponible. Les missions déjà réservées figurent dans « Mes missions ».</p></div><span class="tag">{{ $otherMissions->count() }}</span></div>
   <div class="flight-cards">
     @forelse($otherMissions as $mission)
       <article class="panel line-card">
