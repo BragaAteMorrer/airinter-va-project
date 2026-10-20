@@ -6,6 +6,8 @@ use App\Models\Pirep;
 use App\Models\Rank;
 use App\Models\User;
 use App\Models\UserAward;
+use App\Services\FinanceService;
+use App\Support\Money;
 use App\Models\Enums\PirepState;
 use App\Models\Enums\UserState;
 use Illuminate\Support\Facades\DB;
@@ -111,6 +113,7 @@ class ProgressionService
             // Awards explicitly associated with missions and circuits are
             // granted by the same progression engine after accepted PIREPs.
             $awards += $this->grantCompletionAwards($user, $origin);
+            $this->payCompletionBonuses($user);
 
             // Highest eligible rank wins. This makes overlapping rules
             // deterministic and prevents a lower rule from undoing a promotion.
@@ -276,6 +279,54 @@ class ProgressionService
             }
         }
         return $granted;
+    }
+
+    /**
+     * Posts each fixed completion bonus once, including after retries of the
+     * PIREP accepted event. Repatriations retain their existing ×2 processor.
+     */
+    private function payCompletionBonuses(User $user): void
+    {
+        if (!Schema::hasTable('promethee_completion_bonus_payments')) return;
+
+        foreach ([
+            ['table' => 'promethee_missions', 'type' => 'mission'],
+            ['table' => 'promethee_circuits', 'type' => 'circuit'],
+        ] as $source) {
+            if (!Schema::hasTable($source['table']) || !Schema::hasColumn($source['table'], 'extra_pay')) continue;
+            $query = DB::table($source['table'])->where('extra_pay', '>', 0);
+            if ($source['type'] === 'mission' && Schema::hasColumn($source['table'], 'mission_type')) {
+                $query->where(function ($q) {
+                    $q->whereNull('mission_type')->orWhere('mission_type', '!=', 'repatriation');
+                });
+            }
+            foreach ($query->get() as $item) {
+                $completed = $source['type'] === 'mission'
+                    ? $this->missionCompleted($user, (int) $item->id)
+                    : $this->circuitCompleted($user, (int) $item->id);
+                if (!$completed) continue;
+
+                DB::transaction(function () use ($user, $source, $item) {
+                    $inserted = DB::table('promethee_completion_bonus_payments')->insertOrIgnore([
+                        'user_id' => $user->id, 'subject_type' => $source['type'],
+                        'subject_id' => $item->id, 'amount' => (int) round((float) $item->extra_pay * 100),
+                        'created_at' => now(), 'updated_at' => now(),
+                    ]);
+                    if (!$inserted) return;
+
+                    $freshUser = User::with(['journal', 'airline.journal'])->findOrFail($user->id);
+                    $pilotJournal = $freshUser->journal ?: $freshUser->initJournal();
+                    $airline = $freshUser->airline;
+                    if (!$airline) throw new \RuntimeException('Pilot has no airline for mission bonus');
+                    $airlineJournal = $airline->journal ?: $airline->initJournal(setting('units.currency', 'USD'));
+                    $amount = new Money((int) round((float) $item->extra_pay * 100));
+                    $memo = ucfirst($source['type']).' #'.$item->id.' completion bonus';
+                    $finance = app(FinanceService::class);
+                    $finance->debitFromJournal($airlineJournal, $amount, $freshUser, $memo, 'Mission Bonus', 'completion_bonus');
+                    $finance->creditToJournal($pilotJournal, $amount, $freshUser, $memo, 'Mission Bonus', 'completion_bonus');
+                });
+            }
+        }
     }
 
     private function visitedAirports(User $user): int
