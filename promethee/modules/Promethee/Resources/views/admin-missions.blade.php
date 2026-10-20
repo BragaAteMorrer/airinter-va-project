@@ -88,6 +88,13 @@
             <label>Arrivée<input name="arr_airport_id" maxlength="8"></label>
             <label>Début<input type="date" name="starts_on"></label>
             <label>Fin (facultatif, vide = permanente)<input type="date" name="ends_on"></label>
+            <label>Badge attribué après validation
+              <select name="award_id"><option value="">Aucun badge</option>
+              @foreach($awards as $award)
+                <option value="{{ $award->id }}">{{ $award->name }}</option>
+              @endforeach
+              </select>
+            </label>
             <label class="full">Description<textarea name="description" rows="4"></textarea></label>
             <label><input type="checkbox" name="active" value="1" checked> Active</label>
             <button>Publier la mission</button>
@@ -109,6 +116,13 @@
             <label>Titre<input name="title" required maxlength="160"></label>
             <label>Début<input type="date" name="starts_on"></label>
             <label>Fin<input type="date" name="ends_on"></label>
+            <label>Badge attribué après validation
+              <select name="award_id"><option value="">Aucun badge</option>
+              @foreach($awards as $award)
+                <option value="{{ $award->id }}">{{ $award->name }}</option>
+              @endforeach
+              </select>
+            </label>
             <label class="full">Description<textarea name="description" rows="3"></textarea></label>
             <label class="full">Choisir un vol du réseau (ajout automatique d'une étape)
               <select data-circuit-flight-picker aria-label="Vol à ajouter au circuit">
@@ -175,6 +189,13 @@
               <label>Numéro de vol (identifiant)<input name="flight_id" value="{{ $mission->flight_id }}" maxlength="36"></label>
               <label>Début (facultatif)<input type="date" name="starts_on" value="{{ $mission->starts_on ? substr($mission->starts_on, 0, 10) : '' }}"></label>
               <label>Fin (vide = mission permanente)<input type="date" name="ends_on" value="{{ $mission->ends_on ? substr($mission->ends_on, 0, 10) : '' }}"></label>
+              <label>Badge attribué après validation
+              <select name="award_id"><option value="">Aucun badge</option>
+              @foreach($awards as $award)
+                <option value="{{ $award->id }}" @selected((int) $mission->award_id === (int) $award->id)>{{ $award->name }}</option>
+              @endforeach
+              </select>
+            </label>
               <label class="full">Description<textarea name="description" rows="4">{{ $mission->description }}</textarea></label>
               <label><input type="checkbox" name="active" value="1" @checked($mission->active)> Active</label>
               <button type="submit">Enregistrer les modifications</button>
