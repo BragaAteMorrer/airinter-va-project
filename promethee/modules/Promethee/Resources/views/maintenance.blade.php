@@ -41,7 +41,7 @@
         <table>
             <thead>
                 <tr>
-                    <th>Appareil</th><th>Compagnie</th><th>État</th><th>Intervention</th><th>Site technique</th>
+                    <th>Appareil</th><th>Compagnie</th><th>État</th><th>Intervention</th><th>Localisation actuelle / site technique</th>
                     <th>Temps A restant</th><th>Temps B restant</th><th>Temps C restant</th><th>Temps restant moteurs</th><th>Cycles A</th><th>Cycles B</th><th>Cycles C</th>@ability('admin','admin-access')<th>Action</th>@endability
                 </tr>
             </thead>
@@ -69,10 +69,10 @@
                                 <span class="tag">TRANSFERT TECHNIQUE REQUIS</span>
                             @endif
                         </td>
-                        <td>{{ is_numeric($item->rem_ta) ? number_format($item->rem_ta / 60, 1, ',', ' ') . ' h' : '—' }}</td><td>{{ is_numeric($item->rem_tb) ? number_format($item->rem_tb / 60, 1, ',', ' ') . ' h' : '—' }}</td><td>{{ is_numeric($item->rem_tc) ? number_format($item->rem_tc / 60, 1, ',', ' ') . ' h' : '—' }}</td>
+                        <td>{{ is_numeric($item->rem_ta) ? number_format(round($item->rem_ta / 60), 0, ',', ' ') . ' h' : '—' }}</td><td>{{ is_numeric($item->rem_tb) ? number_format(round($item->rem_tb / 60), 0, ',', ' ') . ' h' : '—' }}</td><td>{{ is_numeric($item->rem_tc) ? number_format(round($item->rem_tc / 60), 0, ',', ' ') . ' h' : '—' }}</td>
                         <td>
                             @forelse($enginePotentialByAircraft->get($item->aircraft_id, collect()) as $engine)
-                                <div><strong>M{{ $engine->position }}</strong> : {{ $engine->display_remaining_hours !== null ? number_format($engine->display_remaining_hours, 1, ',', ' ') . ' h' : '—' }}<small> · {{ $engine->remaining_cycles !== null ? number_format($engine->remaining_cycles) . ' cycles' : '—' }}</small></div>
+                                <div><strong>M{{ $engine->position }}</strong> : {{ $engine->display_remaining_hours !== null ? number_format(round($engine->display_remaining_hours), 0, ',', ' ') . ' h' : '—' }}<small> · {{ $engine->remaining_cycles !== null ? number_format($engine->remaining_cycles) . ' cycles' : '—' }}</small></div>
                             @empty
                                 —
                             @endforelse
@@ -134,10 +134,10 @@
                                 · aucune capacité A/B/C
                             @endif
                         </td>
-                        <td>{{ is_numeric($item->rem_ta) ? number_format($item->rem_ta / 60, 1, ',', ' ') : '—' }} / {{ is_numeric($item->rem_tb) ? number_format($item->rem_tb / 60, 1, ',', ' ') : '—' }} / {{ is_numeric($item->rem_tc) ? number_format($item->rem_tc / 60, 1, ',', ' ') : '—' }} h</td>
+                        <td>{{ is_numeric($item->rem_ta) ? number_format(round($item->rem_ta / 60), 0, ',', ' ') : '—' }} / {{ is_numeric($item->rem_tb) ? number_format(round($item->rem_tb / 60), 0, ',', ' ') : '—' }} / {{ is_numeric($item->rem_tc) ? number_format(round($item->rem_tc / 60), 0, ',', ' ') : '—' }} h</td>
                         <td>
                             @forelse($enginePotentialByAircraft->get($item->aircraft_id, collect()) as $engine)
-                                <div><strong>M{{ $engine->position }}</strong> : {{ $engine->display_remaining_hours !== null ? number_format($engine->display_remaining_hours, 1, ',', ' ') . ' h' : '—' }}<small> · {{ $engine->remaining_cycles !== null ? number_format($engine->remaining_cycles) . ' cycles' : '—' }}</small></div>
+                                <div><strong>M{{ $engine->position }}</strong> : {{ $engine->display_remaining_hours !== null ? number_format(round($engine->display_remaining_hours), 0, ',', ' ') . ' h' : '—' }}<small> · {{ $engine->remaining_cycles !== null ? number_format($engine->remaining_cycles) . ' cycles' : '—' }}</small></div>
                             @empty
                                 —
                             @endforelse
@@ -166,8 +166,8 @@
                         <td><a href="{{ route('promethee.aircraft.show', $engine->registration) }}"><strong>{{ $engine->registration }}</strong></a> · {{ $engine->airline_icao ?: '—' }}</td>
                         <td>{{ $engine->engine_type }}<br><small>{{ $engine->serial_number }}</small></td>
                         <td>M{{ $engine->position }} · {{ $engine->airport_id ?: '—' }}</td>
-                        <td>{{ number_format($engine->hours_since_overhaul, 1, ',', ' ') }} h / {{ number_format($engine->cycles_since_overhaul) }} cycles</td>
-                        <td>{{ $engine->remaining_hours !== null ? number_format($engine->remaining_hours, 1, ',', ' ') . ' h' : '—' }} / {{ $engine->remaining_cycles !== null ? number_format($engine->remaining_cycles) . ' cycles' : '—' }}</td>
+                        <td>{{ number_format(round($engine->hours_since_overhaul), 0, ',', ' ') }} h / {{ number_format($engine->cycles_since_overhaul) }} cycles</td>
+                        <td>{{ $engine->remaining_hours !== null ? number_format(round($engine->remaining_hours), 0, ',', ' ') . ' h' : '—' }} / {{ $engine->remaining_cycles !== null ? number_format($engine->remaining_cycles) . ' cycles' : '—' }}</td>
                         <td><span class="tag">{{ $engine->status === 'due' ? 'TBO ATTEINT' : 'À PLANIFIER' }}</span></td>
                     </tr>
                 @empty
