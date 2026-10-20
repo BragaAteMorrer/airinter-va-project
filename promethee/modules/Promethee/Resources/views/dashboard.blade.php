@@ -84,7 +84,7 @@
         ['city'=>'Lisbonne', 'zone'=>'Europe/Lisbon', 'flag'=>'pt'],
         ['city'=>'Charlotte', 'zone'=>'America/New_York', 'flag'=>'us'],
         ['city'=>'Londres', 'zone'=>'Europe/London', 'flag'=>'gb'],
-        ['city'=>'Berlin', 'zone'=>'Europe/Berlin', 'flag'=>'de'],
+        ['city'=>'Prague', 'zone'=>'Europe/Prague', 'flag'=>'cz'],
         ['city'=>'Antalya', 'zone'=>'Europe/Istanbul', 'flag'=>'tr'],
         ['city'=>'Tokyo', 'zone'=>'Asia/Tokyo', 'flag'=>'jp'],
     ])
