@@ -246,7 +246,7 @@
             <small>
               {{ $state->active_started_at ? \Carbon\Carbon::parse($state->active_started_at)->locale('fr')->isoFormat('DD/MM HH:mm') : '—' }}
               →
-              {{ $state->active_due_at ? \Carbon\Carbon::parse($state->active_due_at)->locale('fr')->isoFormat('DD/MM HH:mm') : '—' }}
+              {{ $state->active_due_at ? \Carbon\Carbon::parse($state->active_due_at)->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') : 'Fin non planifiée' }}
             </small>
           @elseif($state->active_legacy_check)
             <strong>{{ $state->active_legacy_check }}</strong><br>
