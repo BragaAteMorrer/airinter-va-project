@@ -101,7 +101,7 @@
             <div>
               <span class="eyebrow">NOUVEAU CIRCUIT</span>
               <h2 data-detail-focus>Étapes</h2>
-              <p>Chaque ligne représente une étape du circuit au format départ, arrivée.</p>
+              <p>Chaque ligne représente une étape : ICAO départ, ICAO arrivée, identifiant du vol (facultatif).</p>
             </div>
           </div>
           <form method="post" action="{{ route('admin.promethee.circuits.save') }}" class="form-grid" data-circuit-form>
@@ -110,8 +110,8 @@
             <label>Début<input type="date" name="starts_on"></label>
             <label>Fin<input type="date" name="ends_on"></label>
             <label class="full">Description<textarea name="description" rows="3"></textarea></label>
-            <label class="full">Étapes (une par ligne : ICAO départ, ICAO arrivée)
-              <textarea name="legs_text" id="legs-text" rows="7" required placeholder="LFPO, LFML&#10;LFML, LFKJ"></textarea>
+            <label class="full">Étapes (ICAO départ, ICAO arrivée, ID de vol facultatif)
+              <textarea name="legs_text" id="legs-text" rows="7" required placeholder="LFPO, LFML, identifiant-vol-1&#10;LFML, LFKJ, identifiant-vol-2"></textarea>
             </label>
             <label><input type="checkbox" name="active" value="1" checked> Actif</label>
             <button>Publier le circuit</button>
@@ -193,8 +193,8 @@ document.querySelectorAll('[data-circuit-form]').forEach(form => {
     const textarea = form.querySelector('#legs-text');
     if (!textarea) return;
     textarea.value.trim().split(/\n+/).forEach((line, index) => {
-      const [departure, arrival] = line.split(',').map(value => value.trim());
-      for (const [key, value] of [['departure', departure], ['arrival', arrival]]) {
+      const [departure, arrival, flightId] = line.split(',').map(value => value.trim());
+      for (const [key, value] of [['departure', departure], ['arrival', arrival], ['flight_id', flightId]]) {
         const input = document.createElement('input');
         input.type = 'hidden';
         input.name = `legs[${index}][${key}]`;
