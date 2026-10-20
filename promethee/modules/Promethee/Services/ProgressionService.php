@@ -9,6 +9,7 @@ use App\Models\UserAward;
 use App\Models\Enums\PirepState;
 use App\Models\Enums\UserState;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /** Evaluates Prométhée's configurable awards and rank policies. */
 class ProgressionService
@@ -180,6 +181,8 @@ class ProgressionService
                 ->whereHas('aircraft', fn ($aircraft) => $aircraft->where('icao', strtoupper((string) ($criterion['text'] ?? ''))))
                 ->exists(),
             'event_completed' => Pirep::where('user_id', $user->id)->where('state', PirepState::ACCEPTED)->where('event_id', (int) $value)->exists(),
+            'mission_completed' => $this->missionCompleted($user, (int) $value),
+            'circuit_completed' => $this->circuitCompleted($user, (int) $value),
             'night_flights' => Pirep::where('user_id', $user->id)
                 ->where('state', PirepState::ACCEPTED)
                 ->whereNotNull('block_off_time')
@@ -187,6 +190,40 @@ class ProgressionService
                 ->count() >= $value,
             default => false,
         };
+    }
+
+    private function missionCompleted(User $user, int $missionId): bool
+    {
+        if ($missionId < 1 || !Schema::hasTable('promethee_missions')) return false;
+        $mission = DB::table('promethee_missions')->where('id', $missionId)->first();
+        return $mission && $this->matchingAcceptedPireps($user, $mission)->exists();
+    }
+
+    private function circuitCompleted(User $user, int $circuitId): bool
+    {
+        if ($circuitId < 1 || !Schema::hasTable('promethee_circuits')
+            || !Schema::hasTable('promethee_circuit_legs')) return false;
+        $circuit = DB::table('promethee_circuits')->where('id', $circuitId)->first();
+        if (!$circuit) return false;
+        $legs = DB::table('promethee_circuit_legs')->where('circuit_id', $circuitId)->get();
+        if ($legs->isEmpty()) return false;
+        foreach ($legs as $leg) {
+            $leg->created_at = $circuit->created_at;
+            $leg->starts_on = $circuit->starts_on;
+            if (!$this->matchingAcceptedPireps($user, $leg)->exists()) return false;
+        }
+        return true;
+    }
+
+    private function matchingAcceptedPireps(User $user, object $leg): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = Pirep::where('user_id', $user->id)->where('state', PirepState::ACCEPTED);
+        if (!empty($leg->flight_id)) $query->where('flight_id', $leg->flight_id);
+        if (!empty($leg->dpt_airport_id)) $query->where('dpt_airport_id', $leg->dpt_airport_id);
+        if (!empty($leg->arr_airport_id)) $query->where('arr_airport_id', $leg->arr_airport_id);
+        $start = $leg->starts_on ?? $leg->created_at ?? null;
+        if ($start) $query->where('submitted_at', '>=', $start);
+        return $query;
     }
 
     private function visitedAirports(User $user): int
