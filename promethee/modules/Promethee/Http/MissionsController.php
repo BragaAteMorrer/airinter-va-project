@@ -97,7 +97,14 @@ public function adminMissions() {
 
 public function saveMission(Request $r) {
         $data=$r->validate(['title'=>'required|string|max:160','description'=>'nullable|string|max:5000','dpt_airport_id'=>'nullable|string|max:8','arr_airport_id'=>'nullable|string|max:8','flight_id'=>'nullable|string|max:36','starts_on'=>'nullable|date','ends_on'=>'nullable|date|after_or_equal:starts_on','active'=>'nullable|boolean']);
-        DB::table('promethee_missions')->insert(['created_by'=>$r->user()->id,'title'=>$data['title'],'description'=>$data['description'] ?? null,'dpt_airport_id'=>strtoupper($data['dpt_airport_id'] ?? '') ?: null,'arr_airport_id'=>strtoupper($data['arr_airport_id'] ?? '') ?: null,'flight_id'=>$data['flight_id'] ?? null,'starts_on'=>$data['starts_on'] ?? null,'ends_on'=>$data['ends_on'] ?? null,'active'=>$r->boolean('active'),'created_at'=>now(),'updated_at'=>now()]);
+        $payload = ['title'=>$data['title'],'description'=>$data['description'] ?? null,'dpt_airport_id'=>strtoupper($data['dpt_airport_id'] ?? '') ?: null,'arr_airport_id'=>strtoupper($data['arr_airport_id'] ?? '') ?: null,'flight_id'=>$data['flight_id'] ?? null,'starts_on'=>$data['starts_on'] ?? null,'ends_on'=>$data['ends_on'] ?? null,'active'=>$r->boolean('active'),'updated_at'=>now()];
+        if ($r->filled('mission_id')) {
+            $validatedId = $r->validate(['mission_id' => 'required|integer|min:1'])['mission_id'];
+            $updated = DB::table('promethee_missions')->where('id', $validatedId)->update($payload);
+            abort_unless($updated || DB::table('promethee_missions')->where('id', $validatedId)->exists(), 404);
+            return back()->with('success', 'Mission modifiée.');
+        }
+        DB::table('promethee_missions')->insert($payload + ['created_by'=>$r->user()->id,'created_at'=>now()]);
         return back()->with('success','Mission publiée.');
     }
 
