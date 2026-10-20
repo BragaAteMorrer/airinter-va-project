@@ -87,7 +87,7 @@
             <label>Départ<input name="dpt_airport_id" maxlength="8"></label>
             <label>Arrivée<input name="arr_airport_id" maxlength="8"></label>
             <label>Début<input type="date" name="starts_on"></label>
-            <label>Fin<input type="date" name="ends_on"></label>
+            <label>Fin (facultatif, vide = permanente)<input type="date" name="ends_on"></label>
             <label class="full">Description<textarea name="description" rows="4"></textarea></label>
             <label><input type="checkbox" name="active" value="1" checked> Active</label>
             <button>Publier la mission</button>
@@ -156,6 +156,20 @@
                 <p>{{ $mission->description }}</p>
               </div>
             @endif
+
+            <form method="post" action="{{ route('admin.promethee.missions.save') }}" class="form-grid admin-workspace-spaced">
+              @csrf
+              <input type="hidden" name="mission_id" value="{{ $mission->id }}">
+              <label>Titre<input name="title" value="{{ $mission->title }}" maxlength="160" required></label>
+              <label>Départ<input name="dpt_airport_id" value="{{ $mission->dpt_airport_id }}" maxlength="8"></label>
+              <label>Arrivée<input name="arr_airport_id" value="{{ $mission->arr_airport_id }}" maxlength="8"></label>
+              <label>Numéro de vol (identifiant)<input name="flight_id" value="{{ $mission->flight_id }}" maxlength="36"></label>
+              <label>Début (facultatif)<input type="date" name="starts_on" value="{{ $mission->starts_on ? substr($mission->starts_on, 0, 10) : '' }}"></label>
+              <label>Fin (vide = mission permanente)<input type="date" name="ends_on" value="{{ $mission->ends_on ? substr($mission->ends_on, 0, 10) : '' }}"></label>
+              <label class="full">Description<textarea name="description" rows="4">{{ $mission->description }}</textarea></label>
+              <label><input type="checkbox" name="active" value="1" @checked($mission->active)> Active</label>
+              <button type="submit">Enregistrer les modifications</button>
+            </form>
 
             <div class="admin-workspace-form-action admin-workspace-spaced">
               <form method="post" action="{{ route('admin.promethee.missions.delete',$mission->id) }}" onsubmit="return confirm('Supprimer cette mission ?');">
