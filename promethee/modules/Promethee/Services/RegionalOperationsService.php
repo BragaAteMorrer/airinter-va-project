@@ -3,6 +3,9 @@
 namespace Modules\Promethee\Services;
 
 use App\Models\Aircraft;
+use App\Models\Flight;
+use App\Models\Bid;
+use App\Services\BidService;
 use App\Models\Airport;
 use App\Models\User;
 use App\Services\AirportService;
@@ -17,6 +20,7 @@ class RegionalOperationsService
     public function __construct(
         private readonly UserService $userService,
         private readonly FleetBaseQuotaService $baseQuotas,
+        private readonly BidService $bidService,
     ) {}
 
     public function settings(): array
@@ -211,6 +215,27 @@ class RegionalOperationsService
                 403,
                 'Votre grade ou qualification ne vous autorise pas à piloter cet appareil ('.($aircraft->subfleet?->name ?: $aircraft->icao).').'
             );
+
+            // A repatriation must be a real phpVMS bid so it appears in
+            // the pilot's bookings and can be discovered by Hermès.
+            $flight = $mission->flight_id
+                ? Flight::whereKey($mission->flight_id)->where('active', true)->where('visible', true)->first()
+                : Flight::where('dpt_airport_id', $mission->dpt_airport_id)
+                    ->where('arr_airport_id', $mission->arr_airport_id)
+                    ->where('active', true)->where('visible', true)
+                    ->orderBy('flight_number')->first();
+            abort_unless($flight
+                && $flight->dpt_airport_id === $mission->dpt_airport_id
+                && $flight->arr_airport_id === $mission->arr_airport_id,
+                422, 'Aucun vol actif ne correspond à ce rapatriement.');
+            abort_if(Bid::where('flight_id', $flight->id)->exists(),
+                409, 'Le vol correspondant est déjà réservé.');
+            abort_if(Bid::where('aircraft_id', $aircraft->id)->exists(),
+                409, 'Cet appareil est déjà réservé.');
+            // Reserve before the jumpseat debit: a failed bid must never charge the pilot.
+            $this->bidService->addBid($flight, $freshUser, $aircraft);
+            DB::table('promethee_missions')->where('id', $mission->id)
+                ->update(['flight_id' => $flight->id, 'updated_at' => now()]);
 
             // Authorization must happen before any jumpseat debit: a pilot who
             // cannot fly the imposed aircraft must never be charged to reach it.
