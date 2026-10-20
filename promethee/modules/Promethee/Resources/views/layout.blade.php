@@ -143,7 +143,7 @@ window.prometheeI18n = @json($prometheeI18n);
                 <span class="pilot-identity">
                     <strong>{{ $sidebarPilot->name }}</strong>
                     <small>{{ $sidebarPilot->pilot_id ?: 'ITF---' }}</small>
-                    <em>{{ $sidebarPilot->rank?->name ?? 'Pilote Air Inter' }}@if($sidebarPilot->home_airport_id) · {{ $sidebarPilot->home_airport_id }}@endif</em>
+                    <em>{{ $sidebarPilot->rank?->name ?? 'Pilote Air Inter' }} · Position : {{ $sidebarPilot->curr_airport_id ?: ($sidebarPilot->home_airport_id ?: 'inconnue') }}@if($sidebarPilot->home_airport_id && $sidebarPilot->curr_airport_id && $sidebarPilot->curr_airport_id !== $sidebarPilot->home_airport_id) · Base : {{ $sidebarPilot->home_airport_id }}@endif</em>
                 </span>
                 <b class="pilot-open">↗</b>
             </a>
@@ -267,7 +267,7 @@ window.prometheeI18n = @json($prometheeI18n);
 </nav>
 </aside>
 <div class="workspace">
-<header class="topbar"><span class="breadcrumb">AIR INTER <span>/</span> PROMÉTHÉE <span>/</span> @yield('title','EXPLOITATION')</span>
+<header class="topbar"><nav class="breadcrumb" aria-label="Fil d'Ariane"><a href="{{ url('/') }}">AIR INTER</a> <span>/</span> <a href="{{ route('promethee.dashboard') }}">PROMÉTHÉE</a> <span>/</span> <span aria-current="page">@yield('title','EXPLOITATION')</span></nav>
 <div class="topbar-controls" aria-label="{{ __('promethee.display') }}">
 <label class="theme-control"><span class="theme-control-label">{{ __('promethee.language') }}</span><select aria-label="{{ __('promethee.language') }}" onchange="if(this.value) window.location=this.value">@foreach(config('languages') as $code=>$language)<option value="{{ route('promethee.language',$code) }}" @selected(app()->getLocale() === $code)>{{ $language['display'] }}</option>@endforeach</select></label>
 <label class="theme-control"><span class="theme-control-label">{{ __('promethee.display') }}</span><select id="era" aria-label="{{ __('promethee.display_style') }}"><option value="modern">{{ __('promethee.modern') }}</option><option value="2000">{{ __('promethee.year_2000') }}</option></select></label>
