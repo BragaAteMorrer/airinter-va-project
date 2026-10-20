@@ -74,12 +74,19 @@ public function cancelMissionReservation(int $id, Request $r) {
 
         abort_unless($booking, 404, 'Aucune réservation active pour cette mission.');
 
-        DB::table('promethee_mission_bookings')
-            ->where('id', $booking->id)
-            ->update([
-                'status' => 'cancelled',
-                'updated_at' => now(),
-            ]);
+        DB::transaction(function () use ($booking, $id, $r) {
+            $mission = DB::table('promethee_missions')->where('id', $id)->lockForUpdate()->first();
+            abort_unless($mission, 404);
+            if ($mission->flight_id) {
+                $bid = Bid::where('user_id', $r->user()->id)
+                    ->where('flight_id', $mission->flight_id)->first();
+                if ($bid) {
+                    app(\App\Services\BidService::class)->removeBid($bid->flight, $r->user());
+                }
+            }
+            DB::table('promethee_mission_bookings')->where('id', $booking->id)
+                ->update(['status' => 'cancelled', 'updated_at' => now()]);
+        });
 
         return back()->with(
             'success',
