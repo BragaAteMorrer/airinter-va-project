@@ -1,3 +1,18 @@
+# Air Inter VA maintenance switch: delete maintenance.on to reopen.
+# Use HTTP 503 for all public routes (including direct PHP entry points).
+# ErrorDocument serves a standalone, dependency-free HTML page.
+ErrorDocument 503 /maintenance.html
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteCond %{DOCUMENT_ROOT}/maintenance.on -f
+RewriteCond %{REQUEST_URI} !^/maintenance\.html$ [NC]
+RewriteRule ^ - [R=503,L]
+</IfModule>
+<IfModule mod_headers.c>
+Header always set Cache-Control "no-store, max-age=0" "expr=%{REQUEST_STATUS} == 503"
+Header always set Retry-After "3600" "expr=%{REQUEST_STATUS} == 503"
+</IfModule>
+
 AddDefaultCharset UTF-8
 #### Modif faite le 3 décembre 2023 Redirection http vers https
 RewriteEngine On
