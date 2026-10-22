@@ -60,12 +60,18 @@ function renderJournalHistory(entries) {
     const header = document.createElement('header');
     const identity = document.createElement('div');
     const title = document.createElement('strong');
-    title.textContent = String(pirep);
+    const departure = historyValue(entry, 'departure', 'Departure');
+    const arrival = historyValue(entry, 'arrival', 'Arrival');
+    const model = historyValue(entry, 'aircraftModel', 'AircraftModel');
+    const registration = historyValue(entry, 'aircraftRegistration', 'AircraftRegistration');
+    const flightNumber = historyValue(entry, 'flightNumber', 'FlightNumber');
+    title.textContent = [flightNumber, departure && arrival ? departure + ' → ' + arrival : '', model, registration].filter(Boolean).join(' · ') || String(pirep);
     const date = document.createElement('span');
     date.textContent = completedAt
       ? new Date(completedAt).toLocaleString('fr-FR', { timeZone: localSettings.timeFormat === 'utc' ? 'UTC' : undefined })
       : 'Date inconnue';
     identity.append(title, date);
+    if (title.textContent !== String(pirep)) { const ref = document.createElement('small'); ref.textContent = 'PIREP : ' + pirep; identity.append(ref); }
 
     const landing = document.createElement('em');
     landing.textContent = landingRate == null ? 'LANDING —' : Math.round(Number(landingRate)) + ' ft/min';
