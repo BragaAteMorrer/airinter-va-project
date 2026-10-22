@@ -284,6 +284,18 @@ function updatePreflight(status, state, ready) {
   const detectedAdapter = capabilityReport.adapterId || capabilityReport.AdapterId || null;
   const acceptedAdapters = Array.isArray(selectedVariant?.adapter_ids) ? selectedVariant.adapter_ids : [];
   const variantMatch = acceptedAdapters.length === 0 ? null : (detectedAdapter ? acceptedAdapters.includes(detectedAdapter) : null);
+  // Fenix systems can be custom-simulated: an FSUIPC parking-brake reading
+  // is a reported simulator value, not proof that the cockpit lever moved.
+  // Do not turn a false value into true or bypass the start safety gate.
+  const fenixViaFsuipc = String(detectedAdapter || '').startsWith('fenix-')
+    && String(capabilityReport.connectorId || capabilityReport.ConnectorId || '').toLowerCase().includes('fsuipc');
+  const brakeDetail = parkingBrake === null
+    ? 'information indisponible'
+    : parkingBrake === true
+      ? 'serré (télémétrie)'
+      : fenixViaFsuipc
+        ? 'desserré selon FSUIPC · vérifier le levier dans le cockpit et la synchronisation FSUIPC7'
+        : 'desserré (télémétrie)';
 
   const checks = [
     ['VOL', state.operation, state.operation ? 'opération sélectionnée' : 'à sélectionner', 'blocking'],
@@ -301,7 +313,7 @@ function updatePreflight(status, state, ready) {
                 + ' · comparaison informative')
             : (selectedVariant.label + ' · add-on sélectionné · identité simulateur informative')), 'informational'],
     ['AU SOL', onGround === null ? null : onGround === true, onGround === null ? 'information indisponible' : (onGround ? 'confirmé' : 'avion en vol'), 'blocking'],
-    ['FREIN DE PARC', parkingBrake === null ? null : parkingBrake === true, parkingBrake === null ? 'information indisponible' : (parkingBrake ? 'serré' : 'desserré'), 'verify'],
+    ['FREIN DE PARC', parkingBrake === null ? null : parkingBrake === true, brakeDetail, 'verify'],
     ['MOTEURS', enginesStopped, enginesStopped === null ? 'information indisponible' : (enginesStopped ? 'arrêtés' : 'en fonctionnement'), 'verify']
   ];
 
