@@ -150,7 +150,7 @@ function showActionTooltip(button, message) {
 function requireAircraftForSimBrief(button) {
   if (selectedAircraft?.id && $('#prefileForm')?.elements?.aircraft_id?.value) return true;
   showActionTooltip(button, 'Sélectionnez d’abord un type puis une immatriculation. Hermès doit connaître l’appareil précis avant d’envoyer ou récupérer un OFP SimBrief.');
-  $('#aircraftTypeId')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  $('#quickAircraftSelection')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   setTimeout(() => $('#aircraftTypeId')?.focus(), 250);
   return false;
 }
@@ -228,7 +228,7 @@ function updateNextAction(state, ready) {
     setText(title, 'Affectez un appareil');
     setText(text, 'Hermès n’affiche que les appareils autorisés et disponibles pour cette opération.');
     setText(button, 'Choisir l’appareil');
-    action = () => { $('#aircraftTypeId')?.focus(); $('#aircraftTypeId')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+    action = () => { $('#quickAircraftSelection')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); $('#aircraftTypeId')?.focus({ preventScroll: true }); };
   } else if (!state.ofp) {
     const mode = localSettings.flightPlanMode || 'account';
     const hasSimBriefIdentity = Boolean($('#simbriefUsername')?.value.trim() || $('#simbriefPilotId')?.value.trim());
