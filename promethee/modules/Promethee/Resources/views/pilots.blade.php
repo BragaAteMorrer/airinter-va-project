@@ -13,7 +13,7 @@
 @if($status !== 'heaven')
 <section class="community-library panel"><div class="panel-heading"><div><span class="eyebrow">RESSOURCES PARTAGÉES</span><h2>Documents de la communauté</h2></div><a class="button outline" href="{{ route('promethee.downloads.category','documents') }}">Voir la bibliothèque</a></div><p>Procédures, sécurité des vols et ressources utiles, présentées pour être consultées simplement avant le départ.</p><div class="document-card-grid">@forelse($communityDocuments as $file)<article class="document-card"><span class="file-mark">DOC</span><div><strong>{{ $file->name }}</strong><p>{{ $file->description ?: 'Document de référence Air Inter.' }}</p></div><a href="{{ route('promethee.downloads.download',$file->id) }}" aria-label="Ouvrir {{ $file->name }}">Ouvrir →</a></article>@empty<p class="empty">Les documents publiés par l’administration apparaîtront ici.</p>@endforelse</div></section>
 @endif
-<div class="pilot-grid @if($status === 'heaven') memorial-grid @endif">@forelse($pilots as $pilot)<article class="panel pilot-card @if($status === 'heaven') memorial-card @endif">@if($pilot->memorial_portrait_url)<img class="{{ $status === 'heaven' ? 'memorial-portrait' : 'pilot-directory-avatar' }}" src="{{ $pilot->memorial_portrait_url }}" alt="Portrait de {{ $pilot->name }}">@else<img class="pilot-directory-avatar" src="{{ $pilot->avatar?->url ?: $pilot->gravatar(128) }}" alt="Avatar de {{ $pilot->name }}">@endif<span class="eyebrow">{{ $pilot->ident }}</span><h2>{{ $pilot->name }}</h2><p>{{ $pilot->rank?->name ?? ($status === 'heaven' ? 'Heaven' : 'Sans grade') }}</p>@if($status === 'heaven')<p class="memorial-tribute">{{ $pilot->memorial_tribute ?: 'Hommage à venir.' }}</p>@else<div class="pilot-numbers"><span><b>{{ $pilot->flights }}</b> vols</span><span><b>{{ round(($pilot->flight_time ?? 0)/60) }}</b> heures</span></div><a href="{{ route('promethee.pilots.show',$pilot->id) }}">Fiche Prométhée →</a>@endif
+<div class="pilot-grid @if($status === 'heaven') memorial-grid @endif">@forelse($pilots as $pilot)<article class="panel pilot-card @if($status === 'heaven') memorial-card @endif" data-pilot-id="{{ (int) $pilot->id }}">@if($pilot->memorial_portrait_url)<img class="{{ $status === 'heaven' ? 'memorial-portrait' : 'pilot-directory-avatar' }}" src="{{ $pilot->memorial_portrait_url }}" alt="Portrait de {{ $pilot->name }}">@else<img class="pilot-directory-avatar" src="{{ $pilot->avatar?->url ?: $pilot->gravatar(128) }}" alt="Avatar de {{ $pilot->name }}">@endif@if($status === 'actif')<span class="pilot-flight-status" data-pilot-flight role="status" title="Vol Hermès en cours avec télémétrie récente" @unless($inFlightPilots[(int) $pilot->id] ?? false) hidden @endunless><span class="pilot-flight-status-dot" aria-hidden="true"></span>En vol</span>@endif<span class="eyebrow">{{ $pilot->ident }}</span><h2>{{ $pilot->name }}</h2><p>{{ $pilot->rank?->name ?? ($status === 'heaven' ? 'Heaven' : 'Sans grade') }}</p>@if($status === 'heaven')<p class="memorial-tribute">{{ $pilot->memorial_tribute ?: 'Hommage à venir.' }}</p>@else<div class="pilot-numbers"><span><b>{{ $pilot->flights }}</b> vols</span><span><b>{{ round(($pilot->flight_time ?? 0)/60) }}</b> heures</span></div><a href="{{ route('promethee.pilots.show',$pilot->id) }}">Fiche Prométhée →</a>@endif
 @if($canManage)<details class="memorial-admin"><summary>Administrer cette fiche</summary><form class="member-form memorial-form" method="post" enctype="multipart/form-data" action="{{ route('admin.promethee.pilots.save',$pilot->id) }}">@csrf<label>Classement<select name="status"><option value="actif" @selected($pilot->member_status==='actif')>Actif</option><option value="ancien" @selected($pilot->member_status==='ancien')>Ancien</option><option value="heaven" @selected($pilot->member_status==='heaven')>En mémoire · Heaven</option></select></label><label>Portrait / avatar (URL)<input name="memorial_portrait_url" type="url" value="{{ $pilot->memorial_portrait_url }}" placeholder="https://…"><small>Utilisé comme avatar administrateur, y compris pour un pilote actif.</small></label><label>ou portrait à envoyer<input name="memorial_portrait" type="file" accept="image/jpeg,image/png,image/webp"><small>JPEG, PNG ou WebP, 4 Mo maximum.</small></label><label class="full">Hommage de l’administration<textarea name="memorial_tribute" rows="5" placeholder="Son parcours, ses contributions, le souvenir que vous souhaitez partager…">{{ $pilot->memorial_tribute }}</textarea></label><button>Enregistrer</button></form></details>@endif</article>@empty
 <div class="panel empty community-empty-state">
     @if(request('q') || request('airline_id') || request('rank_id'))
@@ -33,5 +33,38 @@
 </div>
 @endforelse</div>
 {{ $pilots->links('pagination::bootstrap-4') }}
+
+@if($status === 'actif')
+<script>
+(()=>{
+    const cards = Array.from(document.querySelectorAll('.pilot-card[data-pilot-id]'));
+    if (!cards.length) return;
+    const refresh = async () => {
+        try {
+            const response = await fetch(@json(route('promethee.pilots.live-status')), {
+                headers: { Accept: 'application/json' },
+                credentials: 'same-origin',
+                cache: 'no-store',
+            });
+            if (!response.ok) throw new Error('Flight status unavailable');
+            const payload = await response.json();
+            const active = new Set((payload.in_flight || []).map(String));
+            cards.forEach(card => {
+                const badge = card.querySelector('[data-pilot-flight]');
+                if (badge) badge.hidden = !active.has(card.dataset.pilotId);
+            });
+        } catch (_) {
+            // Unknown after a failed refresh: never leave an old green status visible.
+            cards.forEach(card => {
+                const badge = card.querySelector('[data-pilot-flight]');
+                if (badge) badge.hidden = true;
+            });
+        }
+    };
+    setInterval(() => { if (!document.hidden) refresh(); }, 30000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+})();
+</script>
+@endif
 
 @endsection

@@ -17,7 +17,7 @@ use App\Services\UserService;
 use App\Support\Money;
 use App\Support\Countries;
 use Modules\Promethee\Models\RealSimulatorCertification;
-use Modules\Promethee\Services\{AirframeMaintenanceService,BrandingService,BulletinService,CompanyAccessService,DemandProfileService,EconomyFareResolver,EconomyService,EngineMaintenanceService,FleetRotationService,FlightOpsService,LegacyPirepScoringService,OperationalWeatherService,PilotPirepDeletionService,PirepJournalService,RegionalOperationsService,SafetyAnalyzer};
+use Modules\Promethee\Services\{AirframeMaintenanceService,BrandingService,BulletinService,CompanyAccessService,DemandProfileService,EconomyFareResolver,EconomyService,EngineMaintenanceService,FleetRotationService,FlightOpsService,LegacyPirepScoringService,OperationalWeatherService,PilotPirepDeletionService,PirepJournalService,PilotLiveNetworkStatusService,RegionalOperationsService,SafetyAnalyzer};
 
 class PortalController extends PrometheeWebController
 {
@@ -474,9 +474,11 @@ public function catalogue(Request $r, string $type = 'flights') {
     return $this->page('catalogue',['type'=>$type,'items'=>$items,'countries'=>$countries,'regions'=>$regions,'airlines'=>Airline::where('active',true)->orderBy('name')->get(['id','name']),'flightTypes'=>Flight::where('active',true)->distinct()->orderBy('flight_type')->pluck('flight_type')]);
 }
 public function live(Request $r) { return $this->page('live'); }
-public function liveData(Request $r, FlightOpsService $ops) {
+public function liveData(Request $r, FlightOpsService $ops, PilotLiveNetworkStatusService $liveStatus) {
     $pireps = Pirep::whereIn('state', [PirepState::IN_PROGRESS, PirepState::PAUSED])
         ->with(['user', 'aircraft'])->orderByDesc('updated_at')->limit(50)->get();
+
+    $networkStatuses = $liveStatus->forUsers($pireps->pluck('user'));
 
     $telemetry = DB::table('promethee_telemetry')
         ->whereIn('pirep_id', $pireps->pluck('id'))
@@ -487,7 +489,7 @@ public function liveData(Request $r, FlightOpsService $ops) {
     return response()->json([
         'updated_at' => now()->toIso8601String(),
         'poll_after_seconds' => 5,
-        'flights' => $pireps->map(function ($p) use ($ops, $telemetry) {
+        'flights' => $pireps->map(function ($p) use ($ops, $telemetry, $networkStatuses) {
             $samples = collect($telemetry->get($p->id, []))->map(function ($sample) {
                 $payload = json_decode($sample->payload, true) ?: [];
                 $payload['recorded_at'] = (string) $sample->recorded_at;
@@ -528,6 +530,7 @@ public function liveData(Request $r, FlightOpsService $ops) {
                 'operation_id' => $operationMatch[1] ?? null,
                 'ident' => $p->ident,
                 'pilot' => $p->user?->name,
+                'networks' => $networkStatuses[(int) $p->user_id] ?? null,
                 'aircraft' => $p->aircraft?->registration,
                 'departure' => $p->dpt_airport_id,
                 'arrival' => $p->arr_airport_id,
@@ -775,7 +778,7 @@ public function requestTransfer(Request $r, FinanceService $finance) { $data=$r-
 
 
 
-public function pilots(Request $r) {
+public function pilots(Request $r, PilotLiveNetworkStatusService $liveStatus) {
     $r->validate(['status'=>'nullable|in:actif,ancien,heaven','q'=>'nullable|string|max:80','airline_id'=>'nullable|integer|exists:airlines,id','rank_id'=>'nullable|integer|exists:ranks,id']);
     $status=$r->query('status','actif');
     $q=User::query()->with(['rank','airline']);
@@ -799,10 +802,16 @@ public function pilots(Request $r) {
     });
     return $this->page('pilots',[
         'pilots'=>$pilots,
+        'inFlightPilots'=>$liveStatus->inFlightPilotIds(),
         'status'=>$status,
         'airlines'=>Airline::orderBy('name')->get(['id','name','icao']),
         'ranks'=>Rank::orderBy('hours')->orderBy('name')->get(['id','name']),
         'communityDocuments'=>app(\Modules\Promethee\Services\DownloadCatalogueService::class)->groups()->get('documents',collect())->take(3),
+    ]);
+}
+public function pilotFlightStatuses(PilotLiveNetworkStatusService $liveStatus) {
+    return response()->json([
+        'in_flight' => array_map('intval', array_keys($liveStatus->inFlightPilotIds())),
     ]);
 }
 public function pilot(int $id) {

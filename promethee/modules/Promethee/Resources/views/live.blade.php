@@ -3,7 +3,7 @@
 @section('content')
 <div class="ops-header compact"><div><span class="eyebrow">OCC · LIVE OPERATIONS</span><h1>La ligne en temps réel.</h1><p>Opération, phase Hermès, appareil, jalons OUT/OFF/ON/IN et fraîcheur du signal.</p></div><span class="tag" id="live-updated">Connexion au flux ACARS…</span></div>
 <section class="panel"><div id="live-map" class="ops-leaflet-map" aria-live="polite"></div><p class="muted">Molette et glisser-déposer pour explorer la carte. Les estimations sont indicatives.</p></section>
-<section class="panel table-wrap"><table><thead><tr><th>Opération</th><th>Vol / appareil</th><th>Phase</th><th>Ligne</th><th>Altitude</th><th>IAS / GS</th><th>OUT · OFF · ON · IN</th><th>Signal</th></tr></thead><tbody id="live-rows"><tr><td colspan="8">Connexion au flux ACARS…</td></tr></tbody></table></section>
+<section class="panel table-wrap"><table><thead><tr><th>Opération</th><th>Vol / appareil</th><th>Phase</th><th>Ligne</th><th>Altitude</th><th>IAS / GS</th><th>OUT · OFF · ON · IN</th><th>Signal</th><th>Réseaux</th></tr></thead><tbody id="live-rows"><tr><td colspan="9">Connexion au flux ACARS…</td></tr></tbody></table></section>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 (()=>{
@@ -19,6 +19,13 @@
   let fittedOnce=false;
 
   const safe=v=>String(v??'—').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const safeAttr=v=>safe(v).replace(/\"/g,'&quot;').replace(/'/g,'&#39;');
+  const networkBadge=(label,state)=>{
+    const online=state?.verified===true&&state?.online===true;
+    const message=online?label+' connecté'+(state.callsign?' · '+state.callsign:''):
+      state?.verified===true?label+' non connecté':label+' · statut non vérifiable';
+    return '<span class="live-network-badge'+(online?' is-online':'')+'" role="status" title="'+safeAttr(message)+'" aria-label="'+safeAttr(message)+'"><span class="live-network-dot" aria-hidden="true"></span>'+label+'</span>';
+  };
   const tm=v=>v?new Date(v).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'—';
   const validPoint=p=>Array.isArray(p)&&p.length>=2&&Number.isFinite(Number(p[0]))&&Number.isFinite(Number(p[1]));
 
@@ -48,8 +55,8 @@
       }
 
       const m=f.milestones||{};
-      return `<tr><td><code>${safe(f.operation_id)}</code></td><td><strong>${safe(f.ident)}</strong><br><span class="muted">${safe(f.aircraft)} · ${safe(f.pilot)}</span></td><td><strong>${safe(f.phase||f.state)}</strong></td><td>${safe(f.departure)} → ${safe(f.arrival)}</td><td>${f.altitude?Math.round(f.altitude)+' ft':'—'}</td><td>${f.ias?Math.round(f.ias)+' kt':'—'} / ${f.gs?Math.round(f.gs)+' kt':'—'}</td><td>OUT ${tm(m.out)} · OFF ${tm(m.off)}<br>ON ${tm(m.on)} · IN ${tm(m.in)}</td><td><strong>${safe(f.signal)}</strong><br><span class="muted">${safe(alert)}</span></td></tr>`;
-    }).join(''):'<tr><td colspan="8">Aucun vol ACARS en cours.</td></tr>';
+      return `<tr><td><code>${safe(f.operation_id)}</code></td><td><strong>${safe(f.ident)}</strong><br><span class="muted">${safe(f.aircraft)} · ${safe(f.pilot)}</span></td><td><strong>${safe(f.phase||f.state)}</strong></td><td>${safe(f.departure)} → ${safe(f.arrival)}</td><td>${f.altitude?Math.round(f.altitude)+' ft':'—'}</td><td>${f.ias?Math.round(f.ias)+' kt':'—'} / ${f.gs?Math.round(f.gs)+' kt':'—'}</td><td>OUT ${tm(m.out)} · OFF ${tm(m.off)}<br>ON ${tm(m.on)} · IN ${tm(m.in)}</td><td><strong>${safe(f.signal)}</strong><br><span class="muted">${safe(alert)}</span></td><td><div class="live-network-list">${networkBadge('VATSIM',f.networks?.vatsim)}${networkBadge('IVAO',f.networks?.ivao)}</div></td></tr>`;
+    }).join(''):'<tr><td colspan="9">Aucun vol ACARS en cours.</td></tr>';
 
     if(selectedFlight)drawTrack(selectedFlight);
     else if(selectedFlightId!==null){selectedFlightId=null;selectedTrackLayer.clearLayers();}
@@ -69,7 +76,7 @@
       render(data.flights||[]);
     }catch{
       updated.textContent='Flux indisponible';
-      rowsNode.innerHTML='<tr><td colspan="8">Flux momentanément indisponible.</td></tr>';
+      rowsNode.innerHTML='<tr><td colspan="9">Flux momentanément indisponible.</td></tr>';
     }
   };
 

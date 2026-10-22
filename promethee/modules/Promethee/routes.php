@@ -131,6 +131,7 @@ Route::middleware(['web','auth'])->name('promethee.')->group(function () {
     Route::get('/calendar', [CalendarController::class,'calendar'])->name('calendar');
     Route::post('/calendar/{id}/rsvp', [CalendarController::class,'rsvpEvent'])->name('calendar.rsvp');
     Route::get('/pilots', [PortalController::class,'pilots'])->name('pilots');
+    Route::get('/pilots/live-status', [PortalController::class,'pilotFlightStatuses'])->name('pilots.live-status');
     Route::get('/pilots/{id}', [PortalController::class,'pilot'])->name('pilots.show');
     Route::get('/safety', [PortalController::class,'safety'])->name('safety');
     Route::get('/safety/export', [PortalController::class,'export'])->name('export');
