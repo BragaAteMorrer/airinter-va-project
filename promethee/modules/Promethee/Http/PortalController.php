@@ -865,8 +865,18 @@ public function pilot(int $id) {
             ->get();
     }
 
+    // Last accepted PIREP is the last confirmed flight, not a profile edit.
+    $lastAcceptedFlightAt = Pirep::where('user_id', $pilot->id)
+        ->where('state', PirepState::ACCEPTED)
+        ->whereNotNull('submitted_at')
+        ->max('submitted_at');
+    $idleDays = $lastAcceptedFlightAt
+        ? (int) \Carbon\Carbon::parse($lastAcceptedFlightAt)->startOfDay()->diffInDays(now()->startOfDay())
+        : null;
+
     return $this->page('profile',[
         'pilot'=>$pilot,
+        'idleDays'=>$idleDays,
         'wallet'=>$wallet,
         'pireps'=>$pireps,
         'routes'=>$routes,
