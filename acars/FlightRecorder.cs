@@ -7,7 +7,9 @@ public record FlightState(string Server, string PirepId, DateTimeOffset Started,
     string Phase = "OUT", DateTimeOffset? BlockOff = null, DateTimeOffset? Takeoff = null,
     DateTimeOffset? Landing = null, DateTimeOffset? BlockOn = null, double Distance = 0,
     double FuelUsed = 0, double AirborneSeconds = 0, double? LandingRate = null, bool Recording = true, string? OperationId = null,
-    double PausedSeconds = 0)
+    double PausedSeconds = 0,
+    string? Departure = null, string? Arrival = null, string? AircraftModel = null,
+    string? AircraftRegistration = null, string? FlightNumber = null)
 {
     public List<FlightIssue> Issues { get; init; } = [];
     public List<FdmObservation> Observations { get; init; } = [];
@@ -24,7 +26,9 @@ public record AcarsRules(double TaxiSpeed = 35, double HardLandingRate = 600);
 public record TrackPoint(DateTimeOffset RecordedAt, double Lat, double Lon, double Altitude);
 public record FlightSummary(string PirepId, DateTimeOffset CompletedAt, double Distance, int AirborneMinutes,
     int BlockMinutes, double FuelUsed, double? LandingRate, IReadOnlyList<FlightIssue> Issues,
-    IReadOnlyList<FdmObservation>? Observations = null);
+    IReadOnlyList<FdmObservation>? Observations = null,
+    string? Departure = null, string? Arrival = null, string? AircraftModel = null,
+    string? AircraftRegistration = null, string? FlightNumber = null);
 public record FlightRecoveryInfo(
     string PirepId, string? OperationId, string Server, string Phase, DateTimeOffset Started,
     DateTimeOffset? LastTrackAt, double Distance, int AirborneMinutes, double FuelUsed,
@@ -154,14 +158,18 @@ public sealed class FlightRecorder
     public void Start(string server, string id, Sample sample, string? operationId = null) =>
         StartCore(server, id, sample, sample.ToSnapshot(), operationId);
 
-    public void Start(string server, string id, AircraftSnapshot snapshot, string? operationId = null)
+    public void Start(string server, string id, AircraftSnapshot snapshot, string? operationId = null,
+        string? departure = null, string? arrival = null, string? aircraftModel = null,
+        string? aircraftRegistration = null, string? flightNumber = null)
     {
         if (!TryToLegacySample(snapshot, out var sample))
             throw new InvalidOperationException("Le connecteur ne fournit pas les données minimales de navigation pour démarrer le vol.");
-        StartCore(server, id, sample, snapshot, operationId);
+        StartCore(server, id, sample, snapshot, operationId, departure, arrival, aircraftModel, aircraftRegistration, flightNumber);
     }
 
-    private void StartCore(string server, string id, Sample sample, AircraftSnapshot snapshot, string? operationId)
+    private void StartCore(string server, string id, Sample sample, AircraftSnapshot snapshot, string? operationId,
+        string? departure = null, string? arrival = null, string? aircraftModel = null,
+        string? aircraftRegistration = null, string? flightNumber = null)
     {
         lock (Gate) {
             if (Flight is not null) throw new InvalidOperationException("Terminez le rapport en cours avant un nouveau départ.");
@@ -169,7 +177,9 @@ public sealed class FlightRecorder
             if (snapshot.OnGround != true) throw new InvalidOperationException("L'ACARS doit être démarré au sol, avant le départ du poste.");
             tracking.Arm(FlightPhase.Boarding);
             fdm.Reset();
-            Flight = new(server, id, sample.RecordedAt, sample.Fuel, Phase: "BOARDING", OperationId: operationId)
+            Flight = new(server, id, sample.RecordedAt, sample.Fuel, Phase: "BOARDING", OperationId: operationId,
+                Departure: departure, Arrival: arrival, AircraftModel: aircraftModel,
+                AircraftRegistration: aircraftRegistration, FlightNumber: flightNumber)
             {
                 Timeline = [new(sample.RecordedAt, "BOARDING")]
             };
@@ -346,7 +356,8 @@ public sealed class FlightRecorder
             throw new InvalidOperationException("Des messages ACARS ou faits SOP restent à synchroniser.");
         flight = Flight!;
         var block = flight.BlockOn is null || flight.BlockOff is null ? 0 : (int)Math.Round((flight.BlockOn.Value - flight.BlockOff.Value).TotalMinutes);
-        History.Insert(0, new(flight.PirepId, DateTimeOffset.UtcNow, Math.Round(flight.Distance, 2), (int)Math.Round(flight.AirborneSeconds / 60), block, Math.Round(flight.FuelUsed), flight.LandingRate, flight.Issues, flight.Observations));
+        History.Insert(0, new(flight.PirepId, DateTimeOffset.UtcNow, Math.Round(flight.Distance, 2), (int)Math.Round(flight.AirborneSeconds / 60), block, Math.Round(flight.FuelUsed), flight.LandingRate, flight.Issues, flight.Observations,
+            flight.Departure, flight.Arrival, flight.AircraftModel, flight.AircraftRegistration, flight.FlightNumber));
         if (History.Count > 25) History.RemoveRange(25, History.Count - 25);
         SaveHistory(); Flight = null; previous = null; previousSnapshot = null; Track = []; Profile = []; recoveryRequired = false; Save();
     }}
