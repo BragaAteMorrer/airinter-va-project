@@ -81,6 +81,9 @@
           <span class="tag">{{ $mission->dpt_airport_id ?: 'Libre' }} → {{ $mission->arr_airport_id ?: 'Libre' }}</span>
         </div>
 
+        @if($mission->image_url)
+          <img src="{{ $mission->image_url }}" alt="Illustration : {{ $mission->title }}" loading="lazy" decoding="async" style="display:block;width:100%;max-height:280px;object-fit:cover;border-radius:12px;margin:12px 0">
+        @endif
         <p>{{ $mission->description }}</p>
 
         @if($mission->mission_type === 'repatriation')
