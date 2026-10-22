@@ -710,7 +710,8 @@ $('#ivaoPrefileBtn').onclick = async () => {
       try { copied = document.execCommand('copy'); } catch {}
       textarea.remove();
     }
-    await call('/api/open-external', { url: 'https://fpl.ivao.aero/' });
+    const ivaoUrl = (() => { try { const u = new URL(prefile.url); return u.protocol === 'https:' && u.hostname === 'fpl.ivao.aero' ? u.href : 'https://fpl.ivao.aero/'; } catch { return 'https://fpl.ivao.aero/'; } })();
+    await call('/api/open-external', { url: ivaoUrl });
     showMessage(
       '#networkPrefileMessage',
       copied
@@ -1055,7 +1056,12 @@ $('#startBtn').onclick = async () => {
     const dispatch = await assertDispatchCanStart();
     await call('/api/start', {
       pirepId,
-      operationId: selectedOperation?.operation_id || selectedOperation?.id || null
+      operationId: selectedOperation?.operation_id || selectedOperation?.id || null,
+      departure: normalizeFlight(selectedOperation?.flight || selectedOperation || {}).departure || null,
+      arrival: normalizeFlight(selectedOperation?.flight || selectedOperation || {}).arrival || null,
+      aircraftModel: selectedAircraft?.type_label || selectedAircraft?.model || selectedAircraft?.subfleet || null,
+      aircraftRegistration: selectedAircraft?.registration || null,
+      flightNumber: normalizeFlight(selectedOperation?.flight || selectedOperation || {}).ident || null
     });
     showMessage('#recordMessage', dispatch?.resumable
       ? 'Vol Prométhée repris et Hermès rattaché au PIREP existant.'

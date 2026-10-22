@@ -496,7 +496,9 @@ public sealed class PrometheeWindow : Window
             }
         }
 
-        recorder.Start(client.Server, pirepId, snapshot, operationId);
+        string? Metadata(string name) => value.TryGetProperty(name, out var field) && field.ValueKind == JsonValueKind.String ? field.GetString()?.Trim() : null;
+        recorder.Start(client.Server, pirepId, snapshot, operationId,
+            Metadata("departure"), Metadata("arrival"), Metadata("aircraftModel"), Metadata("aircraftRegistration"), Metadata("flightNumber"));
         return new { ok=true, operationId, resumed=false };
     }
     private object Pause() { recorder.Pause(); return new {ok=true}; }

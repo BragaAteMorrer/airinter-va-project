@@ -622,6 +622,7 @@ async function selectOperation(operation) {
   const typeSelect = $('#aircraftTypeId');
   const aircraftSelect = $('#aircraftId');
   aircraftEligibility = null;
+  $('#quickAircraftSelection').hidden = false;
 
   typeSelect.replaceChildren();
   const loadingType = document.createElement('option');
