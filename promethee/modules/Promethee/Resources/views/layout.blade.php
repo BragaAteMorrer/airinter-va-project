@@ -143,7 +143,7 @@ window.prometheeI18n = @json($prometheeI18n);
                 <span class="pilot-identity">
                     <strong>{{ $sidebarPilot->name }}</strong>
                     <small>{{ $sidebarPilot->pilot_id ?: 'ITF---' }}</small>
-                    <em>{{ $sidebarPilot->rank?->name ?? 'Pilote Air Inter' }} · Position : {{ $sidebarPilot->curr_airport_id ?: ($sidebarPilot->home_airport_id ?: 'inconnue') }}@if($sidebarPilot->home_airport_id && $sidebarPilot->curr_airport_id && $sidebarPilot->curr_airport_id !== $sidebarPilot->home_airport_id) · Base : {{ $sidebarPilot->home_airport_id }}@endif</em>
+                    <span class="pilot-header-position" title="Localisation actuelle du pilote"><span aria-hidden="true">✈</span> <strong>{{ $sidebarPilot->curr_airport_id ?: ($sidebarPilot->home_airport_id ?: '—') }}</strong></span>
                 </span>
                 <b class="pilot-open">↗</b>
             </a>
