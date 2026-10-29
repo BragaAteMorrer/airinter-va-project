@@ -257,16 +257,7 @@ class RegionalOperationsService
             }
 
 
-            $ferry = app(AirframeEmergencyFerryService::class);
-            $technical = $mission->aircraft_id
-                ? $ferry->state((int) $mission->aircraft_id)
-                : null;
-            $isTechnicalFerry = $technical
-                && (int) ($technical->ferry_mission_id ?? 0) === (int) $mission->id;
-            if ($isTechnicalFerry) {
-                abort_unless($ferry->isAuthorized((int) $mission->aircraft_id, (string) $mission->flight_id),
-                    409, 'Dépannage d’urgence non terminé ou autorisation de convoyage expirée.');
-            }
+
 
             $alreadyReserved = DB::table('promethee_mission_bookings')
                 ->where('mission_id', $mission->id)
