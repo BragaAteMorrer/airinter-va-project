@@ -11,6 +11,8 @@
     'admin.promethee.maintenance.airframe-settings.save',
     'admin.promethee.maintenance.airframe.start',
     'admin.promethee.maintenance.airframe.safety-hold.release',
+    'admin.promethee.maintenance.airframe.emergency-ferry',
+    'admin.promethee.maintenance.airframe.emergency-ferry.finalize',
     'admin.promethee.maintenance.engine-profiles.save',
     'admin.promethee.maintenance.engines.create',
     'admin.promethee.maintenance.engines.overhaul',
@@ -201,7 +203,13 @@
         <td><strong>{{ $state->registration }}</strong><br><small>{{ $state->airline_icao ?: '—' }} · {{ $state->subfleet_name ?: $state->subfleet_type }}</small></td>
         <td>{{ $state->airport_id ?: '—' }}</td>
         <td>
-          @if($state->safety_hold_at)
+          @if(($state->ferry_status ?? null) === 'authorized')
+            <span class="tag">CONVOYAGE TECHNIQUE AUTORISÉ</span><br>
+            <small>{{ $state->ferry_origin_airport_id }} → {{ $state->ferry_destination_airport_id }} · avion immobilisé hors mission</small>
+          @elseif(($state->ferry_status ?? null) === 'arrived')
+            <span class="tag">EN BASE TECHNIQUE · RÉPARATION OBLIGATOIRE</span><br>
+            <small>{{ $state->ferry_destination_airport_id }} · ne pas remettre en ligne avant inspection</small>
+          @elseif($state->safety_hold_at)
             <span class="tag">IMMOBILISÉ FDM</span><br>
             <small>{{ $state->safety_hold_reason }}</small>
           @elseif($state->maintenance_state === 'maintenance')
@@ -235,7 +243,14 @@
           </td>
         @endforeach
         <td>
-          @if($state->safety_hold_at)
+          @if(($state->ferry_status ?? null) === 'authorized')
+            <strong>Dépannage d’urgence / ferry privé</strong><br>
+            <small>Prêt le {{ \Carbon\Carbon::parse($state->ferry_ready_at)->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') }}
+            · mission n°{{ $state->ferry_mission_id }}</small>
+          @elseif(($state->ferry_status ?? null) === 'arrived')
+            <strong>Inspection technique définitive</strong><br>
+            <small>Arrivé le {{ \Carbon\Carbon::parse($state->ferry_arrived_at)->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') }}</small>
+          @elseif($state->safety_hold_at)
             <strong>Inspection FDM obligatoire</strong><br>
             <small>{{ \Carbon\Carbon::parse($state->safety_hold_at)->locale('fr')->isoFormat('DD/MM HH:mm') }} · PIREP {{ $state->safety_hold_pirep_id ?: '—' }}</small>
             @if($state->active_check)
@@ -273,12 +288,39 @@
           @endif
         </td>
         <td>
-          @if($state->safety_hold_at)
+          @if(($state->ferry_status ?? null) === 'arrived')
+            <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.airframe.emergency-ferry.finalize', $state->aircraft_id) : '#' }}" class="inline-form" onsubmit="return confirm('Confirmer la réparation définitive et la remise en service ?');">
+              @csrf
+              <input name="notes" minlength="12" maxlength="1000" required placeholder="Rapport de réparation définitive" aria-label="Compte-rendu réparation définitive">
+              <button type="submit" @disabled(!$maintenanceActionsReady)>Clôturer le convoyage</button>
+            </form>
+          @elseif(($state->ferry_status ?? null) === 'authorized')
+            <small>Mission privée n°{{ $state->ferry_mission_id }} · aucun vol commercial autorisé.</small>
+          @elseif($state->safety_hold_at || str_contains(strtolower((string) ($state->active_legacy_check ?? '')), 'hard landing'))
+            @if($technicalFerryBases && !in_array($state->airport_id, $technicalFerryBases, true))
+            <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.airframe.emergency-ferry', $state->aircraft_id) : '#' }}" class="inline-form" onsubmit="return confirm('Inspection provisoire validée ? Autoriser un seul vol sans passagers vers la base choisie ?');">
+              @csrf
+              <select name="destination" aria-label="Base technique de destination" required>
+                <option value="">Base technique…</option>
+                @foreach($technicalFerryBases as $base)
+                  @if($base !== $state->airport_id)
+                    <option value="{{ $base }}">{{ $base }}</option>
+                  @endif
+                @endforeach
+              </select>
+              <input type="number" name="repair_hours" value="4" min="1" max="48" required style="width:5rem" aria-label="Durée du dépannage en heures" title="Durée de dépannage en heures">
+              <input name="notes" minlength="12" maxlength="1000" placeholder="Inspection provisoire / verdict technique" required aria-label="Compte-rendu inspection">
+              <button type="submit" @disabled(!$maintenanceActionsReady)>Dépannage + convoyage</button>
+            </form>
+            @endif
+            @if($state->safety_hold_at)
+            @endif
             <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.airframe.safety-hold.release', $state->aircraft_id) : '#' }}" class="inline-form" onsubmit="return confirm('Confirmer que l’inspection technique est terminée et lever l’immobilisation FDM ?');">
               @csrf
               <input name="notes" maxlength="1000" placeholder="Compte-rendu inspection (optionnel)">
               <button type="submit" @disabled(!$maintenanceActionsReady)>Lever l’immobilisation</button>
             </form>
+            @endif
           @endif
           @if($state->active_check && $state->active_can_finalize)
             <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.airframe.complete', $state->aircraft_id) : '#' }}" class="inline-form" onsubmit="return confirm('Vérifier et clôturer le check échu de {{ $state->registration }} ? Une immobilisation FDM éventuelle restera active.');">
@@ -286,7 +328,7 @@
               <button type="submit" @disabled(!$maintenanceActionsReady)>Clôturer la visite échue</button>
             </form>
           @endif
-          @if(!$state->active_check && !$state->active_legacy_check)
+          @if(!$state->active_check && !$state->active_legacy_check && ($state->ferry_status ?? null) !== 'authorized')
             <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.airframe.start', $state->aircraft_id) : '#' }}" class="inline-form" onsubmit="return confirm('Immobiliser cet appareil pour le check sélectionné ?');">
               @csrf
               <select name="check" required>
@@ -326,7 +368,10 @@
           @endif
         </td>
         <td>
-          @if($event->event_type === 'safety_hold') Immobilisation sécurité
+          @if($event->event_type === 'ferry_authorized') Dépannage / convoyage autorisé
+          @elseif($event->event_type === 'ferry_arrived') Convoyage terminé
+          @elseif($event->event_type === 'ferry_released') Réparation définitive
+          @elseif($event->event_type === 'safety_hold') Immobilisation sécurité
           @elseif($event->event_type === 'safety_release') Remise en service
           @elseif($event->event_type === 'started') Début
           @else Terminé
