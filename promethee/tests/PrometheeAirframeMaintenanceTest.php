@@ -8,6 +8,7 @@ use App\Models\Pirep;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Modules\Promethee\Services\AirframeMaintenanceService;
+use Modules\DisposableSpecial\Services\DS_MaintenanceServices;
 
 final class PrometheeAirframeMaintenanceTest extends TestCase
 {
@@ -313,4 +314,100 @@ final class PrometheeAirframeMaintenanceTest extends TestCase
         $this->assertTrue($priorities->has((int) $aircraft->id));
         $this->assertSame('a', $priorities->get((int) $aircraft->id)->check);
     }
+
+    public function test_expired_check_shows_countdown_and_preserves_fdm_hold(): void
+    {
+        $fleet = $this->createSubfleetWithAircraft(1, 'LFPO');
+        $aircraft = $fleet['aircraft']->first();
+        $aircraft->update(['status' => AircraftStatus::MAINTENANCE, 'state' => AircraftState::PARKED]);
+        $service = app(AirframeMaintenanceService::class);
+        $service->syncFleet();
+
+        DB::table('promethee_airframe_maintenance')->where('aircraft_id', $aircraft->id)->update([
+            'active_check' => 'a',
+            'active_started_at' => now()->subHours(4),
+            'active_due_at' => now()->subHours(2),
+            'safety_hold_at' => now()->subHour(),
+            'safety_hold_reason' => 'Inspection FDM requise',
+            'updated_at' => now(),
+        ]);
+
+        $state = $service->fleetStatus()->firstWhere('aircraft_id', $aircraft->id);
+        $this->assertTrue($state->active_is_overdue);
+        $this->assertTrue($state->active_can_finalize);
+        $this->assertSame(0, $state->active_remaining_minutes);
+        $this->assertSame(100.0, $state->active_progress_percent);
+
+        $this->assertTrue($service->completeCheck((int) $aircraft->id));
+        $this->assertSame(AircraftStatus::MAINTENANCE, $aircraft->fresh()->status);
+        $this->assertNotNull(DB::table('promethee_airframe_maintenance')->where('aircraft_id', $aircraft->id)->value('safety_hold_at'));
+    }
+
+    public function test_future_and_undated_checks_cannot_be_clotured(): void
+    {
+        $fleet = $this->createSubfleetWithAircraft(1, 'LFPO');
+        $aircraft = $fleet['aircraft']->first();
+        $service = app(AirframeMaintenanceService::class);
+        $service->syncFleet();
+        $query = DB::table('promethee_airframe_maintenance')->where('aircraft_id', $aircraft->id);
+        $query->update([
+            'active_check' => 'b',
+            'active_started_at' => now(),
+            'active_due_at' => now()->addHours(3),
+            'updated_at' => now(),
+        ]);
+
+        $state = $service->fleetStatus()->firstWhere('aircraft_id', $aircraft->id);
+        $this->assertFalse($state->active_can_finalize);
+        $this->assertGreaterThan(0, $state->active_remaining_minutes);
+        $this->assertFalse($service->completeCheck((int) $aircraft->id));
+
+        $query->update(['active_due_at' => null, 'updated_at' => now()]);
+        $state = $service->fleetStatus()->firstWhere('aircraft_id', $aircraft->id);
+        $this->assertTrue($state->active_requires_attention);
+        $this->assertFalse($state->active_can_finalize);
+        $this->assertFalse($service->completeCheck((int) $aircraft->id));
+    }
+
+    public function test_legacy_cron_cannot_release_a_promethee_check(): void
+    {
+        if (!Schema::hasTable('disposable_maintenance')) {
+            $this->markTestSkipped('Legacy maintenance is unavailable.');
+        }
+
+        $fleet = $this->createSubfleetWithAircraft(1, 'LFPO');
+        $aircraft = $fleet['aircraft']->first();
+        $aircraft->update(['status' => AircraftStatus::MAINTENANCE, 'state' => AircraftState::PARKED]);
+        $service = app(AirframeMaintenanceService::class);
+        $service->syncFleet();
+
+        DB::table('promethee_airframe_maintenance')->where('aircraft_id', $aircraft->id)->update([
+            'active_check' => 'a',
+            'active_started_at' => now()->subHours(2),
+            'active_due_at' => now()->subHour(),
+            'updated_at' => now(),
+        ]);
+        DB::table('disposable_maintenance')->updateOrInsert(
+            ['aircraft_id' => $aircraft->id],
+            [
+                'curr_state' => 100,
+                'time_a' => 0, 'time_b' => 0, 'time_c' => 0,
+                'cycle_a' => 0, 'cycle_b' => 0, 'cycle_c' => 0,
+                'act_note' => 'A Check',
+                'act_start' => now()->subHours(2),
+                'act_end' => now()->subHour(),
+                'op_type' => 'PROMETHEE',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
+
+        app(DS_MaintenanceServices::class)->ProcessMaintenance();
+        $this->assertSame(AircraftStatus::MAINTENANCE, $aircraft->fresh()->status);
+        $this->assertSame('A Check', DB::table('disposable_maintenance')->where('aircraft_id', $aircraft->id)->value('act_note'));
+
+        $this->assertSame(1, $service->releaseCompletedChecks());
+        $this->assertSame(AircraftStatus::ACTIVE, $aircraft->fresh()->status);
+    }
+
 }

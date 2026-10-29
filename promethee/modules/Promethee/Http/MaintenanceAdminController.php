@@ -158,6 +158,15 @@ public function releaseAirframeSafetyHold(int $aircraft, Request $r, AirframeMai
         return back()->with('success','Immobilisation FDM levée après inspection technique.');
     }
 
+public function completeAirframeCheck(int $aircraft, Request $r, AirframeMaintenanceService $airframeService) {
+        // No force-complete: only a valid, elapsed planned deadline may be finalized.
+        if (!$airframeService->completeCheck($aircraft, false, (int) $r->user()->id)) {
+            return back()->withErrors(['airframe'=>'La visite n’est pas arrivée à échéance, son échéance est absente ou une autre opération technique est active.']);
+        }
+
+        return back()->with('success','Check cellule échu clôturé. Les éventuelles immobilisations FDM restent en vigueur.');
+    }
+
 public function startAirframeCheck(int $aircraft, Request $r, AirframeMaintenanceService $airframeService) {
         $data = $r->validate(['check'=>'required|in:a,b,c']);
         try {
