@@ -102,6 +102,7 @@ Route::middleware(['web','auth'])->name('promethee.')->group(function () {
     Route::get('/downloads/categories/{category}', [DownloadsController::class,'downloadCategoryPage'])->where('category','acars|fleet|airports|documents')->name('downloads.category');
     Route::get('/downloads/{file}', [DownloadsController::class,'download'])->name('downloads.download');
     Route::get('/missions', [MissionsController::class,'missions'])->name('missions');
+    Route::get('/missions/{id}/confirm', [MissionsController::class,'confirmMissionReservation'])->name('missions.confirm');
     Route::post('/missions/{id}/reserve', [MissionsController::class,'reserveMission'])->name('missions.reserve');
     Route::delete('/missions/{id}/reservation', [MissionsController::class,'cancelMissionReservation'])->name('missions.cancel');
     Route::get('/assignments', [PortalController::class,'assignments'])->name('assignments');
