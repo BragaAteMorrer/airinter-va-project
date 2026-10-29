@@ -24,6 +24,8 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
     private const uint ModelRequestId = 3;
     private const uint TypeDefinitionId = 4;
     private const uint TypeRequestId = 4;
+    private const uint FenixDefinitionId = 5;
+    private const uint FenixRequestId = 5;
     private const uint SimConnectDataTypeString128 = 8;
     private const uint SimConnectDataTypeString256 = 9;
     private const uint SimConnectPeriodSecond = 4;
@@ -48,6 +50,9 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
     private string? aircraftTitle;
     private string? aircraftModel;
     private string? aircraftType;
+    private DateTimeOffset? fenixValuesAt;
+    private bool? fenixParkingBrake;
+    private bool? wheelChocks;
     private double? previousThrottle1;
     private double? previousThrottle2;
     private uint pauseFlags;
@@ -107,6 +112,7 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
                 Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,TitleRequestId,TitleDefinitionId,0,SimConnectPeriodSecond,0,0,LowImpactEnabled ? 9u : 0u,0u));
                 Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,ModelRequestId,ModelDefinitionId,0,SimConnectPeriodSecond,0,0,LowImpactEnabled ? 9u : 0u,0u));
                 Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(handle,TypeRequestId,TypeDefinitionId,0,SimConnectPeriodSecond,0,0,LowImpactEnabled ? 9u : 0u,0u));
+                TryRequestFenixGroundVariables();
                 TrySubscribeSystemEvent(PauseEventId, "Pause_EX1");
                 TrySubscribeSystemEvent(SimStopEventId, "SimStop");
                 TrySubscribeSystemEvent(SimStartEventId, "SimStart");
@@ -133,7 +139,11 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
         if(id!=RecvIdSimObjectData)return;
         var requestId=Marshal.ReadInt32(data,12);
         if(requestId==TitleRequestId){
-            aircraftTitle=ReadFixedString(data,length,256);
+            var newTitle=ReadFixedString(data,length,256);
+            if(!string.Equals(aircraftTitle,newTitle,StringComparison.Ordinal)) {
+                fenixValuesAt=null; fenixParkingBrake=null; wheelChocks=null;
+            }
+            aircraftTitle=newTitle;
             return;
         }
         if(requestId==ModelRequestId){
@@ -142,6 +152,16 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
         }
         if(requestId==TypeRequestId){
             aircraftType=ReadFixedString(data,length,128);
+            return;
+        }
+        if(requestId==FenixRequestId) {
+            if(length>=40+2*8) {
+                var v=new double[2];
+                Marshal.Copy(IntPtr.Add(data,40),v,0,v.Length);
+                fenixParkingBrake=ReadBooleanLVar(v[0]);
+                wheelChocks=ReadBooleanLVar(v[1]);
+                fenixValuesAt=DateTimeOffset.UtcNow;
+            }
             return;
         }
         if(requestId!=MainRequestId||length<40+definitions.Length*8)return;
@@ -182,7 +202,15 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
             AutothrottleArmed=v[14] != 0,
             AircraftTitle=aircraftTitle,
             AircraftIcao=LooksLikeIcao(aircraftModel) ? aircraftModel : null,
-            AircraftModel=aircraftType ?? aircraftModel
+            AircraftModel=aircraftType ?? aircraftModel,
+            // The optional SimConnect LVars have their own request. Never reuse
+            // a stale value after aircraft change or telemetry interruption.
+            FenixParkingBrake=AircraftGroundSafety.IsFenixIdentity(aircraftTitle,aircraftModel,aircraftType)
+                && fenixValuesAt is { } at && DateTimeOffset.UtcNow-at<=TimeSpan.FromSeconds(5)
+                ? fenixParkingBrake : null,
+            WheelChocks=AircraftGroundSafety.IsFenixIdentity(aircraftTitle,aircraftModel,aircraftType)
+                && fenixValuesAt is { } atChocks && DateTimeOffset.UtcNow-atChocks<=TimeSpan.FromSeconds(5)
+                ? wheelChocks : null
         };
         Status=LatestSnapshot.Paused == true
             ? "Connecté à MSFS — simulation en pause"
@@ -332,6 +360,25 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
         if (kinds.Count == 0 && simVarPaused) kinds.Add("PAUSE");
         return kinds.Count == 0 ? null : string.Join("+", kinds);
     }
+    // Supported by MSFS 2020 SU12+ and MSFS 2024: read-only L:vars
+    // on the existing SimConnect session. Failure must not break core telemetry.
+    private void TryRequestFenixGroundVariables()
+    {
+        try {
+            Marshal.ThrowExceptionForHR(SimConnect_AddToDataDefinition(
+                handle,FenixDefinitionId,"L:S_MIP_PARKING_BRAKE","number",4,0,uint.MaxValue));
+            Marshal.ThrowExceptionForHR(SimConnect_AddToDataDefinition(
+                handle,FenixDefinitionId,"L:B_CONFIG_CHOCKS","number",4,0,uint.MaxValue));
+            Marshal.ThrowExceptionForHR(SimConnect_RequestDataOnSimObject(
+                handle,FenixRequestId,FenixDefinitionId,0,SimConnectPeriodSecond,0,0,0,0));
+        } catch (Exception ex) {
+            System.Diagnostics.Trace.WriteLine($"Fenix optional SimConnect LVars unavailable: {ex}");
+        }
+    }
+
+    private static bool? ReadBooleanLVar(double value) =>
+        double.IsFinite(value) && value is >= 0 and <= 1 ? value >= 0.5 : null;
+
     private void TrySubscribeSystemEvent(uint eventId, string eventName)
     {
         try {
@@ -359,6 +406,7 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
     private void Close(){
         if(handle!=IntPtr.Zero){SimConnect_Close(handle);handle=IntPtr.Zero;}
         Latest=null;LatestSnapshot=null;aircraftTitle=null;aircraftModel=null;aircraftType=null;
+        fenixValuesAt=null;fenixParkingBrake=null;wheelChocks=null;
         previousThrottle1=null;previousThrottle2=null;pauseFlags=0;simStopped=false;simVarPaused=false;
         CommBusAvailable=false;LastCommBusRequestAt=null;commBusBuffers.Clear();
     } public void Dispose()=>Close();
