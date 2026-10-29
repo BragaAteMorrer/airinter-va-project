@@ -175,16 +175,40 @@ internal sealed class FsuipcNativeSession : IFsuipcSession
         try {
             if (!MSFSVariableServices.IsRunning) return (null, null);
             var lvars = MSFSVariableServices.LVars;
-            var brake = lvars.FirstOrDefault(v => string.Equals(
-                v.Name, "S_MIP_PARKING_BRAKE", StringComparison.OrdinalIgnoreCase));
-            var chocks = lvars.FirstOrDefault(v => string.Equals(
-                v.Name, "B_CONFIG_CHOCKS", StringComparison.OrdinalIgnoreCase));
-            return (brake is null ? null : FenixBoolean(brake.Value),
-                    chocks is null ? null : FenixBoolean(chocks.Value));
+            return (ReadFenixLVar(lvars, "S_MIP_PARKING_BRAKE"),
+                    ReadFenixLVar(lvars, "B_CONFIG_CHOCKS"));
         } catch (Exception ex) {
             System.Diagnostics.Trace.WriteLine($"Fenix FSUIPC WASM LVar read unavailable: {ex}");
             return (null, null);
         }
+    }
+
+    // FSUIPC LVarCollection is not an IEnumerable<FsLVar> on all client
+    // versions. Resolve its string indexer (or enumerator) without assuming
+    // a generic LINQ surface. Missing variables must remain unknown.
+    private static bool? ReadFenixLVar(object collection, string name)
+    {
+        var type = collection.GetType();
+        object? variable = null;
+        var indexer = type.GetProperties().FirstOrDefault(property =>
+            property.GetIndexParameters() is { Length: 1 } parameters
+            && parameters[0].ParameterType == typeof(string));
+        if (indexer is not null) {
+            try { variable = indexer.GetValue(collection, [name]); }
+            catch (Exception) { /* Unknown name: try enumeration instead. */ }
+        }
+        if (variable is null && collection is System.Collections.IEnumerable items) {
+            foreach (var candidate in items) {
+                var candidateName = candidate?.GetType().GetProperty("Name")?.GetValue(candidate) as string;
+                if (!string.Equals(candidateName?.TrimStart('L', ':'), name, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                variable = candidate;
+                break;
+            }
+        }
+        if (variable is null) return null;
+        var raw = variable.GetType().GetProperty("Value")?.GetValue(variable);
+        return raw is double value ? FenixBoolean(value) : null;
     }
 
     private static bool? FenixBoolean(double value) =>
