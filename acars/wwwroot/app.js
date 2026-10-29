@@ -1016,22 +1016,16 @@ $('#simbriefBtn').onclick = async event => {
   }
 };
 
-$('#planFile').onchange = async event => {
-  const file = event.target.files[0];
-  if (!file) return;
-  await file.text();
-  // The local plan is displayed for the pilot only. phpVMS receives the
-  // normalized route/OFP fields, never an arbitrary local file payload.
-  flightPlan = {};
-  renderNetworkPrefiles(null);
-  $('#planBox').textContent = `${file.name} chargé localement (${Math.round(file.size / 1024)} Ko).`;
-};
-$('#clearPlanBtn').onclick = () => {
-  flightPlan = null;
-  $('#planFile').value = '';
-  $('#planBox').textContent = 'Aucun plan chargé.';
-  showMessage('#simbriefState', 'Sélectionnez un vol et un appareil.');
-};
+// The local plan module is the sole owner of file import and removal.
+// Fail closed if its script cannot load; never pretend an unparsed file is an OFP.
+window.addEventListener('load', () => {
+  if (window.HermesLocalPlanUi) return;
+  const input = $('#planFile');
+  const clearButton = $('#clearPlanBtn');
+  if (input) input.disabled = true;
+  if (clearButton) clearButton.disabled = true;
+  showMessage('#simbriefState', 'Lecteur de plans locaux indisponible. Rechargez Hermès pour importer un fichier.', true);
+});
 
 
 
