@@ -145,6 +145,32 @@ final class PrometheeEmergencyFerryTest extends TestCase
         $this->assertSame(AircraftStatus::MAINTENANCE, $aircraft->fresh()->status);
     }
 
+    public function test_completed_cell_check_cannot_clear_legacy_ferry_grounding(): void
+    {
+        [$aircraft, $maintenance] = $this->heldAircraft();
+
+        // Legacy-only hard landing recovery: no current FDM hold, but ferry
+        // has arrived and cannot be cleared by completing an A check alone.
+        DB::table('promethee_airframe_maintenance')->where('aircraft_id', $aircraft->id)
+            ->update([
+                'safety_hold_at' => null,
+                'ferry_status' => 'arrived',
+                'ferry_destination_airport_id' => 'LFPG',
+                'active_check' => 'a',
+                'active_started_at' => now()->subHours(3),
+                'active_due_at' => now()->subMinute(),
+            ]);
+        $aircraft->update([
+            'airport_id' => 'LFPG',
+            'status' => AircraftStatus::MAINTENANCE,
+        ]);
+
+        $this->assertTrue($maintenance->completeCheck((int) $aircraft->id));
+        $this->assertSame(AircraftStatus::MAINTENANCE, $aircraft->fresh()->status);
+        $this->assertSame('arrived', DB::table('promethee_airframe_maintenance')
+            ->where('aircraft_id', $aircraft->id)->value('ferry_status'));
+    }
+
     public function test_rejected_or_deleted_ferry_report_never_releases_aircraft(): void
     {
         [$aircraft, , $service] = $this->heldAircraft();
