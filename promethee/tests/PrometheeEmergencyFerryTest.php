@@ -4,6 +4,7 @@ namespace Tests;
 
 use App\Models\Enums\AircraftState;
 use App\Models\Enums\AircraftStatus;
+use App\Models\Enums\PirepState;
 use App\Models\Pirep;
 use Illuminate\Support\Facades\DB;
 use Modules\Promethee\Services\AirframeEmergencyFerryService;
@@ -88,6 +89,7 @@ final class PrometheeEmergencyFerryTest extends TestCase
             'dpt_airport_id' => 'LFMN',
             'arr_airport_id' => 'LFPG',
         ]);
+        $this->bookAndAcceptFerry($pirep, (int) $result['mission_id']);
         $this->assertTrue($service->complete($pirep));
         $this->assertFalse($service->complete($pirep));
         $this->assertSame(AircraftStatus::MAINTENANCE, $aircraft->fresh()->status);
@@ -131,6 +133,7 @@ final class PrometheeEmergencyFerryTest extends TestCase
             'dpt_airport_id' => 'LFMN',
             'arr_airport_id' => 'LFPO',
         ]);
+        $this->bookAndAcceptFerry($pirep, (int) $result['mission_id']);
         try {
             $service->complete($pirep);
             $this->fail('Wrong destination should be rejected.');
@@ -140,6 +143,72 @@ final class PrometheeEmergencyFerryTest extends TestCase
         $this->assertSame('authorized', $service->state((int) $aircraft->id)->ferry_status);
         $this->assertSame('LFMN', $aircraft->fresh()->airport_id);
         $this->assertSame(AircraftStatus::MAINTENANCE, $aircraft->fresh()->status);
+    }
+
+    public function test_rejected_or_deleted_ferry_report_never_releases_aircraft(): void
+    {
+        [$aircraft, , $service] = $this->heldAircraft();
+        $result = $service->authorize((int) $aircraft->id, 'LFPG', 1, null,
+            'Contrôle provisoire validé avant le convoyage vers la base technique.');
+        DB::table('promethee_airframe_maintenance')->where('aircraft_id', $aircraft->id)
+            ->update(['ferry_ready_at' => now()->subMinute()]);
+
+        $pirep = Pirep::factory()->create([
+            'aircraft_id' => $aircraft->id,
+            'flight_id' => $result['flight_id'],
+            'dpt_airport_id' => 'LFMN',
+            'arr_airport_id' => 'LFPG',
+        ]);
+        $this->bookAndAcceptFerry($pirep, (int) $result['mission_id']);
+        $this->assertTrue($service->complete($pirep));
+
+        // Simulate a later administrative rejection of the accepted flight.
+        DB::table('pireps')->where('id', $pirep->id)->update(['state' => PirepState::REJECTED]);
+        try {
+            $service->finalize((int) $aircraft->id, null,
+                'Fausse réparation après rejet du PIREP à ne pas accepter.');
+            $this->fail('The flight report is rejected.');
+        } catch (RuntimeException $exception) {
+            $this->assertStringContainsString('PIREP', $exception->getMessage());
+        }
+        $this->assertSame(AircraftStatus::MAINTENANCE, $aircraft->fresh()->status);
+        $this->assertSame('arrived', $service->state((int) $aircraft->id)->ferry_status);
+    }
+
+    public function test_accepted_ferry_without_a_reserved_pilot_is_rejected(): void
+    {
+        [$aircraft, , $service] = $this->heldAircraft();
+        $result = $service->authorize((int) $aircraft->id, 'LFPG', 1, null,
+            'Inspection provisoire effectuée avant le déplacement technique.');
+        $pirep = Pirep::factory()->create([
+            'aircraft_id' => $aircraft->id,
+            'flight_id' => $result['flight_id'],
+            'dpt_airport_id' => 'LFMN',
+            'arr_airport_id' => 'LFPG',
+        ]);
+        DB::table('pireps')->where('id', $pirep->id)
+            ->update(['state' => PirepState::ACCEPTED]);
+        $pirep->refresh();
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('réservation pilote introuvable');
+        $service->complete($pirep);
+    }
+
+    private function bookAndAcceptFerry(Pirep $pirep, int $missionId): void
+    {
+        DB::table('promethee_mission_bookings')->insert([
+            'mission_id' => $missionId,
+            'user_id' => $pirep->user_id,
+            'status' => 'reserved',
+            'reserved_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        // Don't fire phpVMS event listeners during this narrow service test.
+        DB::table('pireps')->where('id', $pirep->id)
+            ->update(['state' => PirepState::ACCEPTED]);
+        $pirep->refresh();
     }
 
     public function test_no_hold_or_wrong_destination_cannot_request_emergency_repair(): void
