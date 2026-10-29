@@ -283,8 +283,8 @@ class AirframeEmergencyFerryService
                 throw new RuntimeException('PIREP de convoyage incohérent : autorisation conservée et avion immobilisé.');
             }
             $arrival = strtoupper(trim((string) $pirep->arr_airport_id));
-            if (!preg_match('/^[A-Z]{4}$/', $arrival) || !\App\Models\Airport::query()->whereKey($arrival)->exists()) {
-                throw new RuntimeException('Aéroport de déroutement invalide : état de convoyage conservé pour intervention.');
+            if (!preg_match('/^[A-Z]{4}$/', $arrival)) {
+                throw new RuntimeException('Code ICAO de déroutement invalide : état de convoyage conservé pour intervention.');
             }
             $diverted = $arrival !== strtoupper((string) $state->ferry_destination_airport_id);
 
