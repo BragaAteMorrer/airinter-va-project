@@ -203,6 +203,22 @@ function setAuthenticated(value) {
 setAuthenticated(false);
 
 const settingsForm = $('#settingsForm');
+// Keep SimBrief setup accessible from the flight preparation screen.
+// Opening the settings tab before focusing avoids targeting an invisible input.
+function openSimBriefAccountSettings() {
+  const settingsTab = document.querySelector('[data-tab="settings"]');
+  if (!settingsTab || settingsTab.disabled) {
+    showMessage('#planMessage', 'Connectez-vous pour accéder aux paramètres SimBrief.', true);
+    return false;
+  }
+  settingsTab.click();
+  const username = $('#simbriefUsername');
+  username?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  username?.focus({ preventScroll: true });
+  return true;
+}
+$('#openSimbriefSettingsBtn')?.addEventListener('click', openSimBriefAccountSettings);
+
 const defaultSettings = { autoDetection: 'true', forcedSimulator: '', preferredSimulator: 'msfs2024', timeFormat: 'local', notifications: 'true', simbriefUsername: '', simbriefPilotId: '', vatsimCid: '', ivaoVid: '', preferredNetwork: '', flightPlanMode: 'account', radioCallsign: 'AIRINTER' };
 let savedSettings = {};
 try { savedSettings = JSON.parse(localStorage.prometheeAcarsSettings || '{}'); } catch {}
