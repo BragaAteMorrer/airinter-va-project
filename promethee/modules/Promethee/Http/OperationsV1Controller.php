@@ -898,7 +898,8 @@ class OperationsV1Controller extends Controller
                 'Convoyage technique : aucun passager n’est autorisé.');
             $passengers = 0;
         }
-        $pirepFares = $this->pirepFaresForPassengers($ofp, $passengers);
+        // Private positioning flights carry neither passengers nor commercial cargo.
+        $pirepFares = $ferryState ? [] : $this->pirepFaresForPassengers($ofp, $passengers);
 
         $pirep = $this->pirepSvc->prefile($request->user(), $attrs, [], $pirepFares);
 
