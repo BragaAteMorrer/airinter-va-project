@@ -315,6 +315,10 @@ jobs:
           php -l app/Notifications/Messages/InviteLink.php
           php -l modules/Promethee/Providers/PrometheeServiceProvider.php
           php -l modules/Promethee/Services/AirframeMaintenanceService.php
+          php -l modules/Promethee/Services/AirframeEmergencyFerryService.php
+          php -l modules/Promethee/Database/migrations/2026_10_29_000001_add_emergency_technical_ferry.php
+          php -l modules/Promethee/Listeners/RegionalOperationsEventListener.php
+          php -l tests/PrometheeEmergencyFerryTest.php
           php -l modules/Promethee/Services/FleetRotationService.php
           php -l modules/Promethee/Listeners/AirframeMaintenanceEventListener.php
           php -l modules/Promethee/Console/ProcessAirframeMaintenanceCommand.php
@@ -380,6 +384,8 @@ jobs:
         run: vendor/bin/phpunit tests/LegacyPirepScoringConfigurationTest.php
       - name: Run sb-airframe historical configuration tests
         run: vendor/bin/phpunit tests/AircraftConfigurationResolverTest.php
+      - name: Run emergency ferry maintenance tests
+        run: vendor/bin/phpunit tests/PrometheeEmergencyFerryTest.php
       - name: Run airframe maintenance and fleet rotation tests
         run: vendor/bin/phpunit tests/PrometheeAirframeMaintenanceTest.php
       - name: Run strict fleet base quota tests
