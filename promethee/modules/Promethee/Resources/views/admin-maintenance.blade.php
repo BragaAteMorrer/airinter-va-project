@@ -314,7 +314,6 @@
             </form>
             @endif
             @if($state->safety_hold_at)
-            @endif
             <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.airframe.safety-hold.release', $state->aircraft_id) : '#' }}" class="inline-form" onsubmit="return confirm('Confirmer que l’inspection technique est terminée et lever l’immobilisation FDM ?');">
               @csrf
               <input name="notes" maxlength="1000" placeholder="Compte-rendu inspection (optionnel)">
