@@ -34,6 +34,41 @@ final class HermesOperationLifecycleTest extends TestCase
         $this->updateSetting('bids.disable_flight_on_bid', '0');
     }
 
+    public function test_me_exposes_only_authenticated_pilot_network_ids_without_simbrief_guesswork(): void
+    {
+        $pilot = User::factory()->create([
+            'vatsim_id' => '1234567',
+            'ivao_id' => '987654',
+        ]);
+
+        $response = $this->get('/api/v1/me', [], $pilot)->assertOk();
+        $this->assertSame('1234567', $response->json('data.network_ids.vatsim_cid'));
+        $this->assertSame('987654', $response->json('data.network_ids.ivao_vid'));
+        $this->assertSame('1.2', $response->json('data.contract_version'));
+        $this->assertArrayNotHasKey('simbrief_pilot_id', $response->json('data'));
+        $this->assertArrayNotHasKey('email', $response->json('data'));
+
+        $another = User::factory()->create([
+            'vatsim_id' => '444222',
+            'ivao_id' => null,
+        ]);
+        $second = $this->get('/api/v1/me', [], $another)->assertOk();
+        $this->assertSame('444222', $second->json('data.network_ids.vatsim_cid'));
+        $this->assertNull($second->json('data.network_ids.ivao_vid'));
+    }
+
+    public function test_me_rejects_invalid_profile_network_ids(): void
+    {
+        $pilot = User::factory()->create([
+            'vatsim_id' => 'not-a-cid',
+            'ivao_id' => '  ',
+        ]);
+
+        $result = $this->get('/api/v1/me', [], $pilot)->assertOk();
+        $this->assertNull($result->json('data.network_ids.vatsim_cid'));
+        $this->assertNull($result->json('data.network_ids.ivao_vid'));
+    }
+
     public function test_01_reservation_is_never_completed(): void
     {
         $fx = $this->operationFixture(assignAircraft: false, createOfp: false);
