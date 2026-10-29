@@ -5,6 +5,7 @@ const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '../acars/wwwroot');
 const planning = fs.readFileSync(path.join(root, 'hermes-planning.js'), 'utf8');
+const workflow = fs.readFileSync(path.join(root, 'hermes-workflow.js'), 'utf8');
 const app = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
 const deferred = () => {
   let resolve;
@@ -44,6 +45,7 @@ const context = {
   }
 };
 vm.createContext(context);
+vm.runInContext(workflow, context);
 vm.runInContext(planning, context);
 const switchTo = (operation, aircraft) => {
   context.selectedOperation = { operation_id: operation };
