@@ -463,8 +463,10 @@ public sealed class PrometheeWindow : Window
         var snapshot = sim.LatestSnapshot ?? throw new InvalidOperationException("Le simulateur n’est pas encore connecté.");
         if (snapshot.OnGround != true)
             throw new InvalidOperationException("START FLIGHT refusé : l’avion doit être au sol.");
-        if (snapshot.ParkingBrake == false)
-            throw new InvalidOperationException("START FLIGHT refusé : serrez le frein de parc.");
+        if (snapshot.StandSecured != true)
+            throw new InvalidOperationException("START FLIGHT refusé : serrez le frein de parc ou, sur Fenix, installez les cales (télémétrie confirmée).");
+        if (snapshot.GroundSpeedKnots is not { } speed || speed >= 2)
+            throw new InvalidOperationException("START FLIGHT refusé : avion non immobilisé au parking.");
         if (snapshot.EnginesRunning?.Any(running => running) == true)
             throw new InvalidOperationException("START FLIGHT refusé : arrêtez les moteurs avant de commencer la préparation ACARS.");
         var value = body!.Value;
