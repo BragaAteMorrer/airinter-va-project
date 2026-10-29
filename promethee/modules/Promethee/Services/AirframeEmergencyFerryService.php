@@ -110,6 +110,20 @@ class AirframeEmergencyFerryService
                 throw new RuntimeException('Annulez les réservations existantes de cet appareil avant le convoyage.');
             }
 
+            // Legacy Hard Landing Checks can otherwise expire while a ferry is
+            // authorized, leaving no FDM hold to clear after technical repair.
+            // Preserve a genuine hold until the final inspection or a documented
+            // cancellation followed by an inspection on the original site.
+            if (!$state->safety_hold_at && $legacyIncident) {
+                DB::table('promethee_airframe_maintenance')->where('id', $state->id)->update([
+                    'safety_hold_reason' => 'Hard Landing Check historique : inspection technique obligatoire',
+                    'safety_hold_at' => now(),
+                    'safety_hold_pirep_id' => null,
+                    'safety_hold_previous_status' => AircraftStatus::ACTIVE,
+                    'updated_at' => now(),
+                ]);
+            }
+
             $origin = strtoupper((string) $aircraft->airport_id);
             if ($origin === '' || $origin === $destination) {
                 throw new RuntimeException('La base technique doit être différente de l’escale actuelle.');
@@ -168,6 +182,81 @@ class AirframeEmergencyFerryService
                 'Dépannage d’urgence : '.$repairHours.' h. Convoyage unique vers '.$destination.'. '.$notes, $userId);
             return ['flight_id' => $flight->id, 'mission_id' => $missionId, 'ready_at' => $ready];
         }, 3);
+    }
+
+    /**
+     * Cancel a provisional permit BEFORE any bid or PIREP exists.
+     * Never release the safety hold, the aircraft, or a completed ferry.
+     * The flight and the mission remain in the database for audit history.
+     */
+    public function cancel(int $aircraftId, ?int $userId, string $notes): void
+    {
+        $notes = trim($notes);
+        if (mb_strlen($notes) < 12) {
+            throw new RuntimeException('Le motif d’annulation doit contenir au moins 12 caractères.');
+        }
+
+        DB::transaction(function () use ($aircraftId, $userId, $notes) {
+            $state = DB::table('promethee_airframe_maintenance')
+                ->where('aircraft_id', $aircraftId)->lockForUpdate()->first();
+            if (!$state || ($state->ferry_status ?? null) !== 'authorized') {
+                throw new RuntimeException('Seul un convoyage autorisé et non terminé peut être annulé.');
+            }
+            $aircraft = Aircraft::query()->lockForUpdate()->findOrFail($aircraftId);
+            if ($aircraft->status !== AircraftStatus::MAINTENANCE
+                || $aircraft->state !== AircraftState::PARKED
+                || strtoupper((string) $aircraft->airport_id) !== strtoupper((string) $state->ferry_origin_airport_id)) {
+                throw new RuntimeException('La position ou l’état de l’appareil empêche l’annulation de ce convoyage.');
+            }
+
+            $flightId = (string) $state->ferry_flight_id;
+            $missionId = (int) $state->ferry_mission_id;
+            if (DB::table('bids')->where('flight_id', $flightId)->exists()
+                || DB::table('promethee_mission_bookings')->where('mission_id', $missionId)
+                    ->where('status', 'reserved')->exists()) {
+                throw new RuntimeException('La mission est réservée : le pilote doit d’abord abandonner sa réservation.');
+            }
+            if (DB::table('pireps')->where('flight_id', $flightId)->exists()) {
+                throw new RuntimeException('Un PIREP existe déjà pour ce vol : annulation manuelle interdite, inspection nécessaire.');
+            }
+
+            DB::table('promethee_missions')->where('id', $missionId)->update([
+                'active' => false, 'updated_at' => now(),
+            ]);
+            DB::table('flights')->where('id', $flightId)->update([
+                'active' => false, 'updated_at' => now(),
+            ]);
+            // The safety hold is intentionally retained, even for a legacy
+            // incident. A new permit may be issued after a fresh inspection.
+            DB::table('promethee_airframe_maintenance')->where('id', $state->id)->update([
+                'ferry_status' => null,
+                'ferry_origin_airport_id' => null,
+                'ferry_destination_airport_id' => null,
+                'ferry_flight_id' => null,
+                'ferry_mission_id' => null,
+                'ferry_authorized_at' => null,
+                'ferry_ready_at' => null,
+                'ferry_arrived_at' => null,
+                'ferry_notes' => null,
+                'updated_at' => now(),
+            ]);
+            $this->logEvent($aircraftId, (string) $aircraft->airport_id,
+                'ferry_cancelled',
+                'Convoyage technique annulé (mission '.$missionId.', vol '.$flightId.'). '.$notes,
+                $userId);
+        }, 3);
+    }
+
+    public function missionIsProtected(int $missionId): bool
+    {
+        if (!Schema::hasTable('promethee_airframe_maintenance')
+            || !Schema::hasColumn('promethee_airframe_maintenance', 'ferry_mission_id')) {
+            return false;
+        }
+
+        return DB::table('promethee_airframe_maintenance')
+            ->where('ferry_mission_id', $missionId)
+            ->whereIn('ferry_status', ['authorized', 'arrived'])->exists();
     }
 
     public function isFerryPirep(Pirep $pirep): bool
@@ -303,7 +392,7 @@ class AirframeEmergencyFerryService
 
         DB::table('promethee_airframe_maintenance_events')->insert([
             'aircraft_id' => $aircraftId,
-            'check_type' => 'g',
+            'check_type' => 'f',
             'event_type' => $type,
             'airport_id' => $airport,
             'minutes_before' => null,
