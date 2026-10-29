@@ -34,7 +34,9 @@ class DS_MaintenanceServices
             $active->act_start = null;
             $active->act_end = null;
 
-            if ($active->aircraft && $active->aircraft->status === AircraftStatus::MAINTENANCE && !($prometheeState->safety_hold_at ?? null)) {
+            if ($active->aircraft && $active->aircraft->status === AircraftStatus::MAINTENANCE
+                && !($prometheeState->safety_hold_at ?? null)
+                && !($prometheeState->ferry_status ?? null)) {
                 $active->aircraft->status = AircraftStatus::ACTIVE;
                 $active->aircraft->save();
             }
