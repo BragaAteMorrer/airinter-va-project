@@ -34,6 +34,32 @@ opérationnelle contrôlée**, non une levée d'immobilisation.
    La levée FDM est effectuée à ce moment-là, si toutes les conditions sont
    réunies. Les actions restent journalisées.
 
+## Déroutement en vol
+
+Lorsque le PIREP du convoyage est accepté mais porte un **aéroport réel
+d'arrivée différent** de la base technique prévue, Prométhée ne considère pas
+la mission initiale comme réussie. Il :
+
+- Enregistre l'aéroport déclaré dans le PIREP comme nouvelle position physique ;
+- Désactive le vol privé et la mission initiale, sans prime de rapatriement ;
+- Place le convoyage en état **DÉROUTÉ** et conserve l'appareil en MAINTENANCE ;
+- Journalise la route prévue et la position du déroutement.
+
+À partir de cette position, **deux scénarios** sont possibles :
+
+- **Escale non équipée** : nouvelle inspection provisoire, puis un **nouveau
+  convoyage privé unique** vers une base technique agréée. L'ancienne mission
+  reste désactivée et son événement de déroutement demeure dans l'historique.
+- **Base technique active B+C** : effectuer sur place les visites techniques
+  nécessaires et clôturer le dossier avec un compte-rendu définitif. La
+  validation exige toujours un PIREP accepté correspondant au vol effectivement
+  réalisé et à l'aéroport d'arrivée réel.
+
+Un PIREP avec origine incohérente ou aéroport inconnu reste bloqué pour
+intervention humaine. Le système ne devine pas la position réelle à partir du
+plan de vol SimBrief : **le PIREP accepté doit porter l'aéroport réel**, pas
+automatiquement la destination programmée.
+
 ## Annulation avant départ et changement de base
 
 L'administration peut désormais cliquer sur **Annuler le convoyage** dans
