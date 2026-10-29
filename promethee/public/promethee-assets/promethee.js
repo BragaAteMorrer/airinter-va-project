@@ -157,13 +157,20 @@
   // Blade elements, while each visible glyph becomes an independent palette.
   const flapAlphabet = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-.:/'%";
   const flapReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const flapNormalise = (value) => String(value || ' ')
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()
-    .split('').map((char) => flapAlphabet.includes(char) ? char : ' ').join('');
-  const canAnimateFlap = (value) => {
-    const normalised = String(value || ' ').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
-    return [...normalised].every((char) => flapAlphabet.includes(char));
-  };
+  // Real airports can include brackets, commas and typographic punctuation
+  // (e.g. "PAU/PYRENEES (UZEIN)"). Convert these separators to wheel-safe
+  // characters, while keeping the unsimplified label for assistive technology.
+  // Unsupported alphabets still use the readable Unicode fallback.
+  const flapNormalise = (value) => String(value ?? ' ')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .replace(/[\u2010-\u2015]/g, '-')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[(),;!?()[\]{}&+]/g, ' ')
+    .replace(/\s+/g, ' ');
+  const canAnimateFlap = (value) =>
+    [...flapNormalise(value)].every((char) => flapAlphabet.includes(char));
   const flapFit = (value, width) => flapNormalise(value).slice(0, width).padEnd(width, ' ');
   const flapMarkup = (char, className = '') => `<span class="flap-half ${className}"><span class="flap-face">${char === ' ' ? '&nbsp;' : char}</span></span>`;
 
