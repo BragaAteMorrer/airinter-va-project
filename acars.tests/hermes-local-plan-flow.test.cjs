@@ -16,6 +16,7 @@ function element(value = '') {
   };
 }
 const fileInput = element(), clear = element(), confirm = element(), preview = element();
+confirm.hidden = true;
 const route = element('DCT FROM PROGRAMME'), level = element('');
 const form = { elements: {
   aircraft_id: element('F-GABC'), alt_airport_id: element(''), route, level
@@ -57,7 +58,8 @@ context.window.HermesLocalPlan = {
 };
 context.form = form;
 vm.runInNewContext(importer, context);
-vm.runInNewContext(planning, context);
+const planningContext = { window: context.window, form };
+vm.runInNewContext(planning, planningContext);
 const ui = context.window.HermesLocalPlanUi;
 assert.ok(ui?.assertReady);
 
@@ -73,11 +75,11 @@ async function test() {
   assert.equal(confirm.hidden, false);
   assert.equal(confirm.disabled, false);
   assert.throws(() => ui.assertReady(), /Valider cette route/);
-  assert.throws(() => vm.runInNewContext('simBriefPlanningPayload(form)', context), /Valider cette route/);
+  assert.throws(() => vm.runInNewContext('simBriefPlanningPayload(form)', planningContext), /Valider cette route/);
   confirm.onclick();
   assert.equal(currentPlanMode, 'account');
   assert.equal(ui.assertReady(), true);
-  const payload = vm.runInNewContext('simBriefPlanningPayload(form)', context);
+  const payload = vm.runInNewContext('simBriefPlanningPayload(form)', planningContext);
   assert.equal(payload.route, 'LGL DCT DUB');
   assert.equal(confirm.disabled, true);
 
@@ -85,7 +87,7 @@ async function test() {
   assert.throws(() => ui.assertReady(), /Valider cette route/);
   assert.equal(confirm.disabled, false);
   confirm.onclick();
-  assert.equal(vm.runInNewContext('simBriefPlanningPayload(form)', context).route, 'LGL DCT SOMAX');
+  assert.equal(vm.runInNewContext('simBriefPlanningPayload(form)', planningContext).route, 'LGL DCT SOMAX');
 
   // Importing the actual OFP dismisses temporary FPL state without erasing
   // the route now belonging to the authoritative SimBrief briefing.
