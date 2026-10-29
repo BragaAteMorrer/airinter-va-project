@@ -1,12 +1,33 @@
 // Hermès modularization phase 2 — planning domain.
 // Classic script: preserves the existing shared runtime/global handler contract.
 
+let dispatchRequestSequence = 0;
+function captureFlightContext() {
+  return {
+    operation: String(selectedOperation?.operation_id || selectedOperation?.bid_id || selectedOperation?.id || ''),
+    aircraft: String($('#prefileForm')?.elements?.aircraft_id?.value || selectedAircraft?.id || '')
+  };
+}
+function sameFlightContext(expected) {
+  const current = captureFlightContext();
+  return Boolean(expected?.operation && expected.operation === current.operation
+    && expected.aircraft === current.aircraft);
+}
+function assertFlightContext(expected) {
+  if (!sameFlightContext(expected))
+    throw new Error('Le vol ou l’appareil a changé pendant cette requête. Reprenez la préparation sur le vol sélectionné.');
+}
 async function refreshDispatch() {
-  const operationRef = selectedOperation?.operation_id || selectedOperation?.id;
+  const expected = captureFlightContext();
+  const operationRef = expected.operation;
+  const sequence = ++dispatchRequestSequence;
   if (!operationRef) { serverDispatch = null; clearOperationalWeather(); return null; }
 
   const currentWeather = serverDispatch?.weather || null;
-  serverDispatch = unwrap(await call(`/api/v1/operations/${encodeURIComponent(operationRef)}/dispatch`));
+  const received = unwrap(await call(`/api/v1/operations/${encodeURIComponent(operationRef)}/dispatch`));
+  // Discard out-of-order and cross-operation/aircraft answers before any writes.
+  if (sequence !== dispatchRequestSequence || !sameFlightContext(expected)) return null;
+  serverDispatch = received;
   if (currentWeather) serverDispatch.weather = currentWeather;
 
   // A dispatch refresh is the canonical recovery path for Hermès. Hydrate all
@@ -141,7 +162,9 @@ function simBriefPlanningPayload(form) {
 }
 
 async function assertSimBriefReady(form, mode = 'company') {
+  const expected = captureFlightContext();
   const resolved = unwrap(await call(simbriefPath('readiness'), simBriefPlanningPayload(form)));
+  assertFlightContext(expected);
   const ready = mode === 'account'
     ? Boolean(resolved?.ready_account)
     : Boolean(resolved?.ready_company_api ?? resolved?.ready);
@@ -190,7 +213,8 @@ function renderNetworkPrefiles(prefiles) {
     : '');
 }
 
-async function applyBriefing(briefing, sourceLabel) {
+async function applyBriefing(briefing, sourceLabel, expected = captureFlightContext()) {
+  assertFlightContext(expected);
   // Once the actual OFP is imported, the provisional FPL preview is obsolete.
   window.HermesLocalPlanUi?.complete?.();
   const form = $('#prefileForm');
@@ -243,10 +267,12 @@ async function applyBriefing(briefing, sourceLabel) {
   // The imported OFP is authoritative for the client immediately. Refresh the
   // dispatch so step 03 cannot remain stuck on a stale server snapshot.
   try { await refreshDispatch(); } catch {}
+  assertFlightContext(expected);
   updateWorkflow();
 
   showMessage('#simbriefState', 'OFP importé depuis ' + sourceLabel + '. Enregistrement automatique de la préparation opérationnelle…');
   if (!pirepId && !(await prefilePreparedOperation({ navigate: false, automatic: true }))) return;
+  assertFlightContext(expected);
   window.dispatchEvent(new CustomEvent('hermes:ofp-ready-for-network', { detail: { hasPrefiles: Boolean(flightPlan?.network_prefiles) } }));
   drawMap(flightMapState.lastTrack, lastStatus?.latest || {});
 }
@@ -316,6 +342,7 @@ function setPlanMode(mode) {
 }
 
 async function prefilePreparedOperation({ navigate = true, automatic = false } = {}) {
+  const expected = captureFlightContext();
   const form = $('#prefileForm');
   const body = Object.fromEntries([...new FormData(form)].filter(([, value]) => value !== ''));
   if (!body.aircraft_id) {
@@ -335,6 +362,7 @@ async function prefilePreparedOperation({ navigate = true, automatic = false } =
     // Never regard a locally imported route (or a client source label) as an OFP.
     // Check Prométhée's authoritative operation state immediately before PREFILE.
     const verifiedDispatch = await refreshDispatch();
+    assertFlightContext(expected);
     if (verifiedDispatch?.server_checks?.ofp !== true)
       throw new Error('Aucun OFP SimBrief lié à cette opération. Générez ou récupérez l’OFP avant de préparer le PIREP.');
 
@@ -351,10 +379,12 @@ async function prefilePreparedOperation({ navigate = true, automatic = false } =
     if (!operationRef) throw new Error('Impossible de préparer le brouillon PIREP sans operation_id.');
 
     const result = unwrap(await call(`/api/v1/operations/${encodeURIComponent(operationRef)}/pirep`, operationPirepBody));
+    assertFlightContext(expected);
     pirepId = result.id || result.pirep_id || result.pirep?.id;
     if (!pirepId) throw new Error('Prométhée n’a pas retourné l’identifiant du PIREP.');
 
     await refreshDispatch();
+    assertFlightContext(expected);
     updateWorkflow();
     showMessage(
       '#pirepMessage',
@@ -368,6 +398,7 @@ async function prefilePreparedOperation({ navigate = true, automatic = false } =
     if (navigate) document.querySelector('[data-tab="record"]')?.click();
     return true;
   } catch (error) {
+    if (!sameFlightContext(expected)) return false;
     showMessage('#pirepMessage', friendlyError(error), true);
     if (automatic) showMessage('#simbriefState', 'OFP importé. Préparation du brouillon PIREP impossible : ' + friendlyError(error), true);
     return false;
