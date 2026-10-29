@@ -283,7 +283,8 @@
             </form>
           @elseif(($state->ferry_status ?? null) === 'authorized')
             <small>Mission privée n°{{ $state->ferry_mission_id }} · aucun vol commercial autorisé.</small>
-          @elseif(($state->safety_hold_at || str_contains(strtolower((string) ($state->active_legacy_check ?? '')), 'hard landing')) && $technicalFerryBases)
+          @elseif($state->safety_hold_at || str_contains(strtolower((string) ($state->active_legacy_check ?? '')), 'hard landing'))
+            @if($technicalFerryBases && !in_array($state->airport_id, $technicalFerryBases, true))
             <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.airframe.emergency-ferry', $state->aircraft_id) : '#' }}" class="inline-form" onsubmit="return confirm('Inspection provisoire validée ? Autoriser un seul vol sans passagers vers la base choisie ?');">
               @csrf
               <select name="destination" aria-label="Base technique de destination" required>
@@ -298,6 +299,7 @@
               <input name="notes" minlength="12" maxlength="1000" placeholder="Inspection provisoire / verdict technique" required aria-label="Compte-rendu inspection">
               <button type="submit" @disabled(!$maintenanceActionsReady)>Dépannage + convoyage</button>
             </form>
+            @endif
             @if($state->safety_hold_at)
             <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.airframe.safety-hold.release', $state->aircraft_id) : '#' }}" class="inline-form" onsubmit="return confirm('Confirmer que l’inspection technique est terminée et lever l’immobilisation FDM ?');">
               @csrf
