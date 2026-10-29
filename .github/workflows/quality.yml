@@ -55,6 +55,7 @@ jobs:
           node --check acars/msfs2024-efb/HermesEfb/build.js
           node -e "JSON.parse(require('fs').readFileSync('acars/msfs2024-efb/HermesEfb/package.json','utf8')); JSON.parse(require('fs').readFileSync('acars/msfs2024-efb/HermesEfb/tsconfig.json','utf8'));"
           node --check promethee/public/promethee-assets/promethee.js
+          node --test promethee/tools/check_split_flap_labels.test.cjs
           node --check promethee/public/promethee-assets/navigation-groups.js
           node promethee/tools/check_hermes_i18n.cjs
       - name: Build and typecheck MSFS 2024 Hermès EFB
