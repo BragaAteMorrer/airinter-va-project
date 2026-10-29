@@ -92,6 +92,14 @@ public function cancelMissionReservation(int $id, Request $r) {
             $mission = DB::table('promethee_missions')->where('id', $id)->lockForUpdate()->first();
             abort_unless($mission, 404);
             if ($mission->flight_id) {
+                $ferry = app(\Modules\Promethee\Services\AirframeEmergencyFerryService::class)
+                    ->privateFlightState((string) $mission->flight_id);
+                if ($ferry && (int) $ferry->ferry_mission_id === (int) $mission->id
+                    && $ferry->ferry_status === 'authorized') {
+                    abort_if(Pirep::where('flight_id', $mission->flight_id)
+                        ->where('user_id', $r->user()->id)->exists(), 409,
+                        'Un PIREP de convoyage est déjà lié à ce pilote. Annulez d’abord le PIREP ou faites intervenir l’administration.');
+                }
                 $bid = Bid::where('user_id', $r->user()->id)
                     ->where('flight_id', $mission->flight_id)->first();
                 if ($bid) {
@@ -122,6 +130,9 @@ public function saveMission(Request $r) {
         $payload = ['title'=>$data['title'],'description'=>$data['description'] ?? null,'image_url'=>$data['image_url'] ?? null,'dpt_airport_id'=>strtoupper($data['dpt_airport_id'] ?? '') ?: null,'arr_airport_id'=>strtoupper($data['arr_airport_id'] ?? '') ?: null,'flight_id'=>$data['flight_id'] ?? null,'award_id'=>$data['award_id'] ?? null,'extra_pay'=>$data['extra_pay'] ?? 0,'starts_on'=>$data['starts_on'] ?? null,'ends_on'=>$data['ends_on'] ?? null,'active'=>$r->boolean('active'),'updated_at'=>now()];
         if ($r->filled('mission_id')) {
             $validatedId = $r->validate(['mission_id' => 'required|integer|min:1'])['mission_id'];
+            abort_if(app(\Modules\Promethee\Services\AirframeEmergencyFerryService::class)
+                ->missionIsProtected((int) $validatedId), 409,
+                'Mission de convoyage technique verrouillée : utilisez l’écran de maintenance.');
             $updated = DB::table('promethee_missions')->where('id', $validatedId)->update($payload);
             abort_unless($updated || DB::table('promethee_missions')->where('id', $validatedId)->exists(), 404);
             return back()->with('success', 'Mission modifiée.');
@@ -130,7 +141,13 @@ public function saveMission(Request $r) {
         return back()->with('success','Mission publiée.');
     }
 
-public function deleteMission(int $id) { DB::table('promethee_missions')->where('id',$id)->delete(); return back()->with('success','Mission supprimée.'); }
+public function deleteMission(int $id) {
+        abort_if(app(\Modules\Promethee\Services\AirframeEmergencyFerryService::class)
+            ->missionIsProtected($id), 409,
+            'Mission de convoyage technique verrouillée : annulez le permis depuis la maintenance.');
+        DB::table('promethee_missions')->where('id', $id)->delete();
+        return back()->with('success', 'Mission supprimée.');
+    }
 
 public function saveCircuit(Request $r) {
         $data=$r->validate(['title'=>'required|string|max:160','description'=>'nullable|string|max:5000','award_id'=>'nullable|integer|exists:awards,id','extra_pay'=>'nullable|numeric|min:0|max:1000000','starts_on'=>'nullable|date','ends_on'=>'nullable|date|after_or_equal:starts_on','active'=>'nullable|boolean','legs'=>'required|array|min:1|max:30','legs.*.departure'=>'required|string|max:8','legs.*.arrival'=>'required|string|max:8','legs.*.flight_id'=>'nullable|string|max:36']);
