@@ -49,6 +49,7 @@ jobs:
           node --check acars/wwwroot/hermes-flight-setup.js
           node acars.tests/hermes-flight-setup.test.cjs
           node --check acars/wwwroot/hermes-operations.js
+          node acars.tests/hermes-operation-cards.test.cjs
           node --check acars/wwwroot/hermes-communications.js
           node --check acars/wwwroot/hermes-workflow.js
           node --check acars/wwwroot/hermes-planning.js
