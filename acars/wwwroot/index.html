@@ -82,16 +82,9 @@
     <button id="nextActionBtn" type="button" class="primary">Choisir un vol</button>
   </section>
 
-  <section id="quickAircraftSelection" class="flightplan-source" hidden aria-label="Choisir l’appareil">
-  <div class="draft-heading"><div><span class="kicker">AFFECTATION APPAREIL</span><h3>Choisir l’appareil</h3></div><p>Le choix est automatiquement repris dans la préparation du vol.</p></div>
-  <div class="grid flight-draft">
-    <label>Type d’appareil<select id="aircraftTypeId" form="prefileForm" required><option value="">Sélectionnez d'abord un vol</option></select></label>
-    <label>Appareil précis<select id="aircraftId" form="prefileForm" required disabled><option value="">Choisissez d’abord un type</option></select></label>
-  </div>
-  </section>
   <section class="operations-browser" aria-label="Sélection de l’opération">
     <div class="operations-browser-heading">
-      <div><span class="kicker">01 · OPÉRATION</span><h3>Choisir le vol</h3><p class="hint">Vos réservations d’abord. Le programme complet reste accessible sans mélanger les deux listes.</p></div>
+      <div><span class="kicker">01 · OPÉRATION</span><h3>Choisir le vol</h3><p class="hint">Réservations et programme accessibles séparément.</p></div>
       <div class="operations-mode-switch" role="tablist" aria-label="Source des opérations">
         <button id="showBidsBtn" type="button" class="active" role="tab" aria-selected="true">Mes réservations</button>
         <button id="showSearchBtn" type="button" role="tab" aria-selected="false">Rechercher un vol</button>
@@ -119,9 +112,32 @@
     </article>
     <div id="aircraftEligibility" class="eligibility" hidden></div>
   </section>
+  <section id="quickAircraftSelection" class="flightplan-source" hidden aria-label="Choisir l’appareil">
+  <div class="draft-heading"><div><span class="kicker">AFFECTATION APPAREIL</span><h3>Choisir l’appareil</h3></div><p>Réglages repris dans le briefing.</p></div>
+  <div class="grid flight-draft">
+    <label>Type d’appareil<select id="aircraftTypeId" form="prefileForm" required><option value="">Sélectionnez d'abord un vol</option></select></label>
+    <label>Appareil précis<select id="aircraftId" form="prefileForm" required disabled><option value="">Choisissez d’abord un type</option></select></label>
+    <label>Add-on simulateur
+      <select id="aircraftVariantId" disabled><option value="">Choisissez d’abord un appareil</option></select>
+      <span id="aircraftVariantPreview" class="variant-preview" hidden></span>
+      <small>L’appareil réel et sa configuration restent ceux de l’immatriculation.</small>
+    </label>
+    <label>Indicatif ATC / SimBrief
+      <input id="flightAtcCallsign" name="callsign" form="prefileForm" maxlength="16" autocomplete="off" placeholder="AUTO · numéro de vol">
+      <small>Identifiant de vol pour SimBrief, indépendant de l’indicatif parlé.</small>
+    </label>
+    <label>Indicatif radio parlé
+      <select id="flightRadioCallsign" aria-label="Indicatif radio parlé">
+        <option value="AIRINTER">AIRINTER (historique)</option>
+        <option value="STANDARD">Indicatif standard du vol</option>
+      </select>
+      <small>Ce choix ne change pas l’identifiant ICAO ni le FPL réseau.</small>
+    </label>
+  </div>
+  </section>
   <section class="flightplan-source operations-planning">
     <div class="draft-heading ofp-task-heading">
-      <div><span class="kicker">02 · BRIEFING</span><h3>Préparer l’OFP</h3><p>Hermès choisit la meilleure source disponible pour cette opération. Les sources restent modifiables pour les cas particuliers.</p></div>
+      <div><span class="kicker">02 · BRIEFING</span><h3>Préparer l’OFP</h3><p>Choisissez la source du plan de vol, selon vos besoins.</p></div>
       <div class="ofp-primary-actions"><button id="prepareOfpBtn" type="button" class="primary">Préparer l’OFP</button><span id="ofpSourceHint" class="hint">Source recommandée : détection en cours…</span></div>
     </div>
     <p class="hint source-choice-label"><strong>Changer de source</strong> · options avancées</p>
@@ -141,7 +157,7 @@
         <div><span class="kicker">COMPTE SIMBRIEF</span><h4>Préparer sur SimBrief puis récupérer l’OFP</h4></div>
         <span class="plan-mode-badge">Compte pilote</span>
       </div>
-      <p class="hint">Hermès envoie le vol, l’appareil, la variante et votre préparation vers votre compte SimBrief. Après génération sur SimBrief, Hermès récupère le dernier OFP lié à votre compte.</p>
+      <p class="hint">Préparez le vol dans SimBrief, puis récupérez l’OFP dans Hermès.</p>
       <div class="plan-mode-steps">
         <span><b>1</b> Envoyer la préparation</span>
         <span><b>2</b> Générer / ajuster sur SimBrief</span>
@@ -176,7 +192,7 @@
         <div><span class="kicker">PLAN LOCAL</span><h4>Importer un fichier de plan de vol</h4></div>
         <span class="plan-mode-badge">Fichier local</span>
       </div>
-      <p class="hint">Utilisez un fichier exporté localement lorsque vous ne souhaitez pas passer par votre compte ou l’API SimBrief.</p>
+      <p class="hint">Importez un FPL local sans passer par SimBrief.</p>
       <div class="tools plan-file-tools">
         <label>Plan de vol MSFS / XML<input id="planFile" type="file" accept=".pln,.xml"></label>
         <button id="clearPlanBtn" type="button">Effacer le plan</button>
@@ -226,18 +242,13 @@
   <form id="prefileForm" class="grid flight-draft" hidden>
     <div class="draft-heading">
       <div><span class="kicker">BROUILLON OPÉRATIONNEL</span><h3>Personnaliser le vol</h3></div>
-      <p>Les données du programme sont verrouillées. Vous pouvez adapter la préparation avant SimBrief ou l’enregistrement de la préparation.</p>
+      <p>Le programme est verrouillé. Ajustez la préparation avant SimBrief.</p>
     </div>
     <input name="flight_id" type="hidden">
     <input name="airline_id" type="hidden">
     <input name="flight_number" type="hidden">
     <input id="selectedAircraftId" name="aircraft_id" type="hidden">
     <p class="hint">Type et immatriculation sélectionnés dans « Choisir l’appareil » ci-dessus.</p>
-    <label>Add-on simulateur
-      <select id="aircraftVariantId" disabled><option value="">Choisissez d’abord un appareil</option></select>
-      <span id="aircraftVariantPreview" class="variant-preview" hidden></span>
-      <small>La variante réelle et la configuration Air Inter sont déterminées automatiquement par l’immatriculation.</small>
-    </label>
     <label>Départ<input name="dpt_airport_id" required readonly></label>
     <label>Arrivée<input name="arr_airport_id" required readonly></label>
     <label>Aéroport de dégagement<input name="alt_airport_id" placeholder="AUTO ou LIRN" maxlength="8"></label>
@@ -257,10 +268,9 @@
       <div class="grid simbrief-advanced-grid">
         <label>Profil / Internal ID
           <input name="simbrief_type" maxlength="64" placeholder="Géré par Prométhée / sb-airframe" readonly>
-          <small>Le type de calcul est résolu côté Prométhée depuis sb-airframe afin de préserver l’identité réelle de l’appareil.</small>
-          <small>Un Internal ID force un airframe SimBrief précis (Fenix, PMDG, profil personnel…).</small>
+          <small>Calcul déterminé par Prométhée à partir de sb-airframe.</small>
+          <small>Un Internal ID force un profil SimBrief précis.</small>
         </label>
-        <label>ATC Callsign<input name="callsign" maxlength="16" placeholder="AUTO · ITF143"></label>
         <label>SELCAL<input name="selcal" maxlength="16" placeholder="AUTO · AB-CD"></label>
         <label>Passagers<input name="pax" type="number" min="0" max="999" step="1" placeholder="AUTO"></label>
 
@@ -523,7 +533,7 @@
   </div>
   <p id="reviewMessage" class="message" hidden role="status"></p>
 </section>
-<section id="settings" class="panel" role="tabpanel" aria-labelledby="tab-settings"><h2>Paramètres ACARS</h2><p class="hint">Les règles compagnie et la cadence live sont reçues de Prométhée ; ces réglages restent locaux et n’exécutent aucun code distant.</p>
+<section id="settings" class="panel" role="tabpanel" aria-labelledby="tab-settings"><h2>Paramètres ACARS</h2><p class="hint">Les règles viennent de Prométhée. Les préférences restent locales.</p>
   <form id="settingsForm" class="login-form">
     <label><span>Détection automatique</span><select name="autoDetection"><option value="true">Activée</option><option value="false">Désactivée</option></select></label>
     <label><span>Simulateur principal</span><select name="preferredSimulator"><option value="msfs2024">MSFS 2024</option><option value="msfs2020">MSFS 2020</option><option value="fsx">FSX / Steam</option><option value="p3d">Prepar3D</option><option value="fs2004">FS2004</option><option value="xplane">X-Plane 11 / 12</option></select></label>
@@ -531,11 +541,12 @@
     <label><span>Heure du journal</span><select name="timeFormat"><option value="local">Locale</option><option value="utc">UTC</option></select></label>
     <label><span>Notifications locales</span><select name="notifications"><option value="true">Activées</option><option value="false">Désactivées</option></select></label>
     <label><span>Alias Navigraph / SimBrief</span><input id="simbriefUsername" name="simbriefUsername" autocomplete="off" placeholder="Alias Navigraph"></label>
-    <label><span>Pilot ID SimBrief</span><input id="simbriefPilotId" name="simbriefPilotId" inputmode="numeric" maxlength="7" placeholder="ID numérique"></label>
+    <label><span>Pilot ID SimBrief (facultatif)</span><input id="simbriefPilotId" name="simbriefPilotId" inputmode="numeric" maxlength="7" pattern="[0-9]{1,7}" placeholder="ID numérique"><small>L’alias Navigraph suffit pour préparer un OFP. <button id="simbriefPilotHelpBtn" type="button">Où trouver mon Pilot ID ?</button></small></label>
     <label><span>VATSIM CID</span><input id="vatsimCid" name="vatsimCid" inputmode="numeric" maxlength="10" placeholder="Votre CID VATSIM"></label>
     <label><span>IVAO VID</span><input id="ivaoVid" name="ivaoVid" inputmode="numeric" maxlength="12" placeholder="Votre VID IVAO"></label>
+    <p id="networkIdsInfo" class="hint" role="status">Connectez-vous pour récupérer vos identifiants réseau.</p><button id="importNetworkIdsBtn" type="button" disabled>Récupérer CID/VID depuis Prométhée</button>
     <label><span>Indicatif radio souhaité</span><select name="radioCallsign"><option value="AIRINTER">AIRINTER (historique)</option><option value="STANDARD">Indicatif radio standard du vol</option></select></label>
-    <p class="hint">Ce réglage est un aide-mémoire pour les échanges radio : AIRINTER est l’indicatif parlé historique, et non un identifiant de connexion au réseau. L’identifiant ICAO ITF reste inchangé. Le réseau peut afficher un opérateur différent pour ITF.</p>
+    <p class="hint">AIRINTER est un indicatif radio parlé : l’identifiant ICAO ITF reste inchangé.</p>
     <label><span>Réseau préféré</span><select name="preferredNetwork"><option value="">Aucun</option><option value="vatsim">VATSIM</option><option value="ivao">IVAO</option></select></label>
     <button class="primary">Enregistrer les réglages</button>
   </form>
@@ -614,6 +625,8 @@ if ((localStorage.hermesEra || localStorage.prometheeEra || 'modern') === 'minit
 <script src="/hermes-workflow.js?rev=20261005-modularization-phase2"></script>
 <script src="/hermes-planning.js?rev=20261005-modularization-phase2"></script>
 <script src="/hermes-recovery.js?rev=20261005-modularization-phase2"></script>
-<script src="/hermes-identity.js?rev=20261005-audit-lot12"></script>
-<script src="/app.js?rev=20261005-audit-lot12"></script>
+<script src="/hermes-account-sync.js?rev=20261029"></script>
+<script src="/hermes-identity.js?rev=20261029"></script>
+<script src="/hermes-flight-setup.js?rev=20261029-setup"></script>
+<script src="/app.js?rev=20261029-setup"></script>
 </body></html>

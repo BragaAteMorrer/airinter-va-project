@@ -273,6 +273,19 @@
           @else
             —
           @endif
+          @if($state->active_check || $state->active_legacy_check)
+            @if($state->active_requires_attention)
+              <br><small class="tag">ÉCHÉANCE MANQUANTE · vérification technique requise</small>
+            @elseif($state->active_is_overdue)
+              <br><small class="tag">ÉCHU depuis {{ number_format($state->active_overdue_minutes / 60, 1, ',', ' ') }} h · clôture à vérifier</small>
+            @else
+              <br><small><strong>Temps restant :</strong> {{ intdiv($state->active_remaining_minutes, 60) }} h {{ str_pad((string) ($state->active_remaining_minutes % 60), 2, '0', STR_PAD_LEFT) }} min</small>
+            @endif
+            @if($state->active_progress_percent !== null)
+              <br><progress value="{{ $state->active_progress_percent }}" max="100" style="width:100%;height:0.6rem;" aria-label="Progression de la visite de {{ $state->registration }}"></progress>
+              <br><small>{{ number_format($state->active_progress_percent, 0, ',', ' ') }} % du délai prévu écoulé</small>
+            @endif
+          @endif
         </td>
         <td>
           @if(($state->ferry_status ?? null) === 'arrived')
@@ -307,6 +320,12 @@
               <button type="submit" @disabled(!$maintenanceActionsReady)>Lever l’immobilisation</button>
             </form>
             @endif
+          @endif
+          @if($state->active_check && $state->active_can_finalize)
+            <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.airframe.complete', $state->aircraft_id) : '#' }}" class="inline-form" onsubmit="return confirm('Vérifier et clôturer le check échu de {{ $state->registration }} ? Une immobilisation FDM éventuelle restera active.');">
+              @csrf
+              <button type="submit" @disabled(!$maintenanceActionsReady)>Clôturer la visite échue</button>
+            </form>
           @endif
           @if(!$state->active_check && !$state->active_legacy_check && ($state->ferry_status ?? null) !== 'authorized')
             <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.airframe.start', $state->aircraft_id) : '#' }}" class="inline-form" onsubmit="return confirm('Immobiliser cet appareil pour le check sélectionné ?');">

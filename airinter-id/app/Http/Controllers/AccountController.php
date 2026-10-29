@@ -7,6 +7,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Laravel\Passport\Passport;
@@ -147,20 +149,35 @@ class AccountController extends Controller
             $user->email_verified_at = null;
         }
 
+        $oldAvatarPath = $user->avatar_path;
+        $newAvatarPath = null;
         if ($request->hasFile('avatar')) {
-            if (filled($user->avatar_path)) {
-                Storage::disk('public')->delete($user->avatar_path);
-            }
-
             $avatar = $request->file('avatar');
-            $user->avatar_path = $avatar->storeAs(
+            $newAvatarPath = $avatar->storeAs(
                 'avatars',
-                $user->subject.'.'.$avatar->extension(),
+                $user->subject.'-'.Str::random(16).'.'.$avatar->extension(),
                 'public'
             );
+            if (!is_string($newAvatarPath) || $newAvatarPath === '') {
+                throw ValidationException::withMessages([
+                    'avatar' => 'La photo n’a pas pu être enregistrée sur le serveur. Votre ancienne photo est conservée.',
+                ]);
+            }
+            $user->avatar_path = $newAvatarPath;
         }
 
-        $user->save();
+        try {
+            $user->save();
+        } catch (\Throwable $exception) {
+            if ($newAvatarPath !== null) {
+                Storage::disk('public')->delete($newAvatarPath);
+            }
+            throw $exception;
+        }
+
+        if ($newAvatarPath !== null && filled($oldAvatarPath) && $oldAvatarPath !== $newAvatarPath) {
+            Storage::disk('public')->delete($oldAvatarPath);
+        }
 
         if ($emailChanged) {
             SecurityEvent::create([

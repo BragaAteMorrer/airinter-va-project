@@ -51,7 +51,9 @@ button.primary:hover{background:#095494}
 .operation-cancel:hover{border-color:#dc7e86;background:#fff0f1;transform:none}
 .operation-cancel:disabled{opacity:.55;cursor:wait}
 .operation:hover,.operation.selected{border-color:#68aee1;box-shadow:none;transform:none}
-.operation.selected{outline:0;border-left:4px solid var(--blue);background:#f5f9fc}
+.operation.selected,.operation.selected:hover{outline:0;border-color:var(--ok);border-left:5px solid var(--ok);background:#eef8f2;opacity:1;cursor:default}
+.operation.selected em{background:#d8efdf;color:#195c3d}
+.operation:disabled:not(.selected){opacity:.64;cursor:progress}
 .operation em{justify-self:start;padding:3px 7px;border-radius:999px;background:#e9f3fb;color:#286b9d;font-size:9px;font-style:normal;font-weight:900;letter-spacing:.8px}
 .operation strong{font-size:20px;color:var(--navy);letter-spacing:-.3px}.operation span{color:#27465f;font-weight:800}.operation small,.empty{color:var(--muted)}
 .prefile{display:flex;align-items:center;gap:16px;margin-top:18px;padding:14px 16px;border:1px solid #c9dce9;border-left:4px solid var(--blue);border-radius:7px;background:#f8fafb}
@@ -933,3 +935,6 @@ select option:disabled{color:#8b939b}
 .observation .fdm-explanation { margin:9px 0; line-height:1.5; }
 .observation details small { display:block; line-height:1.5; margin-top:5px; }
 .observation .fdm-score-disclaimer { color:#657585; font-style:italic; }
+
+body[data-appearance="dark"] .operation.selected,body[data-appearance="dark"] .operation.selected:hover{background:#102c25;border-color:#4dbb83}
+body[data-appearance="dark"] .operation.selected em{background:#1d4634;color:#c8f2d8}

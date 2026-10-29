@@ -102,6 +102,7 @@ Route::middleware(['web','auth'])->name('promethee.')->group(function () {
     Route::get('/downloads/categories/{category}', [DownloadsController::class,'downloadCategoryPage'])->where('category','acars|fleet|airports|documents')->name('downloads.category');
     Route::get('/downloads/{file}', [DownloadsController::class,'download'])->name('downloads.download');
     Route::get('/missions', [MissionsController::class,'missions'])->name('missions');
+    Route::get('/missions/{id}/confirm', [MissionsController::class,'confirmMissionReservation'])->name('missions.confirm');
     Route::post('/missions/{id}/reserve', [MissionsController::class,'reserveMission'])->name('missions.reserve');
     Route::delete('/missions/{id}/reservation', [MissionsController::class,'cancelMissionReservation'])->name('missions.cancel');
     Route::get('/assignments', [PortalController::class,'assignments'])->name('assignments');
@@ -279,6 +280,7 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::get('/maintenance', [MaintenanceAdminController::class,'adminMaintenance'])->name('maintenance');
         Route::post('/maintenance/airframe-settings', [MaintenanceAdminController::class,'saveAirframeMaintenanceSettings'])->name('maintenance.airframe-settings.save');
         Route::post('/maintenance/airframe/{aircraft}/start', [MaintenanceAdminController::class,'startAirframeCheck'])->name('maintenance.airframe.start');
+        Route::post('/maintenance/airframe/{aircraft}/complete', [MaintenanceAdminController::class,'completeAirframeCheck'])->name('maintenance.airframe.complete');
         Route::post('/maintenance/airframe/{aircraft}/safety-hold/release', [MaintenanceAdminController::class,'releaseAirframeSafetyHold'])->name('maintenance.airframe.safety-hold.release');
         Route::post('/maintenance/airframe/{aircraft}/emergency-ferry', [MaintenanceAdminController::class,'authorizeEmergencyFerry'])->name('maintenance.airframe.emergency-ferry');
         Route::post('/maintenance/airframe/{aircraft}/emergency-ferry/finalize', [MaintenanceAdminController::class,'finalizeEmergencyFerry'])->name('maintenance.airframe.emergency-ferry.finalize');

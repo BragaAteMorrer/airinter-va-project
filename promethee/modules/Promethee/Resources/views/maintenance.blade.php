@@ -41,7 +41,7 @@
         <table>
             <thead>
                 <tr>
-                    <th>Appareil</th><th>Compagnie</th><th>État</th><th>Intervention</th><th>Localisation actuelle / site technique</th>
+                    <th>Appareil</th><th>Compagnie</th><th>État</th><th>Intervention</th><th>Fin de visite / temps restant</th><th>Localisation actuelle / site technique</th>
                     <th>Temps A restant</th><th>Temps B restant</th><th>Temps C restant</th><th>Temps restant moteurs</th><th>Cycles A</th><th>Cycles B</th><th>Cycles C</th>@ability('admin','admin-access')<th>Action</th>@endability
                 </tr>
             </thead>
@@ -52,6 +52,22 @@
                         <td>{{ $item->airline_icao ?: '—' }}@if($item->airline_name) · {{ $item->airline_name }}@endif</td>
                         <td><span class="tag">{{ number_format($item->curr_state, 0) }} %</span></td>
                         <td>{{ $item->act_note ?: 'À planifier' }}</td>
+                        <td>
+                            @if($item->act_note && $item->act_end)
+                                @php($due = \Carbon\Carbon::parse($item->act_end))
+                                <strong>{{ $due->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') }}</strong><br>
+                                @if($due->lessThanOrEqualTo(now()))
+                                    <span class="tag">ÉCHUE · clôture à vérifier</span>
+                                @else
+                                    @php($remaining = (int) ceil(now()->diffInSeconds($due) / 60))
+                                    <small>Reste {{ intdiv($remaining, 60) }} h {{ str_pad((string) ($remaining % 60), 2, '0', STR_PAD_LEFT) }} min</small>
+                                @endif
+                            @elseif($item->act_note)
+                                <small>Échéance non renseignée · contacter le service technique</small>
+                            @else
+                                —
+                            @endif
+                        </td>
                         <td>
                             <strong>{{ $item->airport_id ?: '—' }}</strong><br>
                             @php
@@ -97,7 +113,7 @@
                         @endability
                     </tr>
                 @empty
-                    <tr><td colspan="13">Aucune opération de maintenance ni échéance proche.</td></tr>
+                    <tr><td colspan="14">Aucune opération de maintenance ni échéance proche.</td></tr>
                 @endforelse
             </tbody>
         </table>

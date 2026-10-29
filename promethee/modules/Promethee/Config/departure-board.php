@@ -36,6 +36,7 @@ return [
         'LFBD' => 'BORDEAUX',
         'LFBO' => 'TOULOUSE',
         'LFMP' => 'PERPIGNAN',
+        'LFBP' => 'PAU PYRENEES',
         'LFQQ' => 'LILLE',
     ],
 ];

@@ -1,0 +1,38 @@
+name: Hermès CI (ACARS)
+
+on:
+  pull_request:
+    paths:
+      - 'acars/**'
+      - 'acars.tests/**'
+      - '.github/workflows/hermes-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: JavaScript syntax
+        shell: pwsh
+        run: |
+          node --check acars/wwwroot/hermes-workflow.js
+          node --check acars/wwwroot/app.js
+      - name: Restore and build desktop (with FSUIPC)
+        shell: pwsh
+        run: |
+          dotnet restore acars/Promethee.Acars.csproj
+          dotnet build acars/Promethee.Acars.csproj -f net8.0-windows -c Release --no-restore
+      - name: Unit tests
+        shell: pwsh
+        run: dotnet test acars.tests/Promethee.Acars.Tests.csproj -c Release

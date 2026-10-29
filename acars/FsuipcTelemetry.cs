@@ -40,7 +40,9 @@ public sealed record FsuipcTelemetryFrame(
     double? SimulationRate = null,
     bool? ThrustStable = null,
     string? AircraftIcao = null,
-    string? AircraftModel = null);
+    string? AircraftModel = null,
+    bool? FenixParkingBrake = null,
+    bool? WheelChocks = null);
 
 /// <summary>
 /// Small seam around the Windows-only FSUIPC client. It keeps the simulator
@@ -87,6 +89,8 @@ public static class FsuipcTelemetryMapper
         AircraftTitle: frame.AircraftTitle,
         AircraftIcao: frame.AircraftIcao,
         AircraftModel: frame.AircraftModel,
+        FenixParkingBrake: frame.FenixParkingBrake,
+        WheelChocks: frame.WheelChocks,
         PitchDegrees: frame.PitchDegrees,
         BankDegrees: frame.BankDegrees,
         GrossWeight: frame.GrossWeightPounds,

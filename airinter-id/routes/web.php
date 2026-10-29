@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\AccountActivityController;
 use App\Http\Controllers\AccountSecurityController;
 use App\Http\Controllers\Admin\SecurityAdminController;
@@ -17,6 +18,13 @@ use App\Http\Middleware\EnsureSecurityAdministrator;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
+
+Route::get('/avatars/{filename}', AvatarController::class)
+    ->where('filename', '[a-z0-9][a-z0-9-]*\\.(?:jpe?g|png|webp)')
+    ->name('argos.avatar');
+// Compatibility for previously published avatar links when public/storage is absent.
+Route::get('/storage/avatars/{filename}', AvatarController::class)
+    ->where('filename', '[a-z0-9][a-z0-9-]*\\.(?:jpe?g|png|webp)');
 
 Route::get('/.well-known/openid-configuration', [ProviderController::class, 'discovery'])->name('oidc.discovery');
 Route::get('/.well-known/oauth-authorization-server', [ProviderController::class, 'oauthMetadata'])->name('oauth.metadata');

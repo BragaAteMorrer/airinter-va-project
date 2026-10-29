@@ -34,6 +34,41 @@ final class HermesOperationLifecycleTest extends TestCase
         $this->updateSetting('bids.disable_flight_on_bid', '0');
     }
 
+    public function test_me_exposes_only_authenticated_pilot_network_ids_without_simbrief_guesswork(): void
+    {
+        $pilot = User::factory()->create([
+            'vatsim_id' => '1234567',
+            'ivao_id' => '987654',
+        ]);
+
+        $response = $this->get('/api/v1/me', [], $pilot)->assertOk();
+        $this->assertSame('1234567', $response->json('data.network_ids.vatsim_cid'));
+        $this->assertSame('987654', $response->json('data.network_ids.ivao_vid'));
+        $this->assertSame('1.2', $response->json('data.contract_version'));
+        $this->assertArrayNotHasKey('simbrief_pilot_id', $response->json('data'));
+        $this->assertArrayNotHasKey('email', $response->json('data'));
+
+        $another = User::factory()->create([
+            'vatsim_id' => '444222',
+            'ivao_id' => null,
+        ]);
+        $second = $this->get('/api/v1/me', [], $another)->assertOk();
+        $this->assertSame('444222', $second->json('data.network_ids.vatsim_cid'));
+        $this->assertNull($second->json('data.network_ids.ivao_vid'));
+    }
+
+    public function test_me_rejects_invalid_profile_network_ids(): void
+    {
+        $pilot = User::factory()->create([
+            'vatsim_id' => 'not-a-cid',
+            'ivao_id' => '  ',
+        ]);
+
+        $result = $this->get('/api/v1/me', [], $pilot)->assertOk();
+        $this->assertNull($result->json('data.network_ids.vatsim_cid'));
+        $this->assertNull($result->json('data.network_ids.ivao_vid'));
+    }
+
     public function test_01_reservation_is_never_completed(): void
     {
         $fx = $this->operationFixture(assignAircraft: false, createOfp: false);
@@ -51,6 +86,42 @@ final class HermesOperationLifecycleTest extends TestCase
         $this->assertSame('RESERVED', $dispatch['workflow_state']['state']);
         $this->assertSame('SELECT_AIRCRAFT', $dispatch['workflow_state']['next_action']['code']);
         $this->assertFalse((bool) $dispatch['workflow_state']['terminal']);
+    }
+
+    public function test_reservation_retry_returns_the_same_operation_instead_of_creating_another(): void
+    {
+        $fx = $this->operationFixture(assignAircraft: false, createOfp: false);
+        $uri = '/api/v1/flights/'.$fx['flight']->id.'/reserve';
+
+        $first = $this->post($uri, [], [], $fx['user'])->assertOk();
+        $second = $this->post($uri, [], [], $fx['user'])->assertOk();
+
+        $this->assertTrue((bool) $first->json('data.reservation_reused'));
+        $this->assertTrue((bool) $second->json('data.reservation_reused'));
+        $this->assertSame($fx['operation_id'], $first->json('data.operation_id'));
+        $this->assertSame($fx['operation_id'], $second->json('data.operation_id'));
+        $this->assertSame(1, Bid::query()
+            ->where('user_id', $fx['user']->id)
+            ->where('flight_id', $fx['flight']->id)
+            ->count());
+    }
+
+    public function test_first_hermes_reservation_is_created_then_reused_on_retry(): void
+    {
+        $fx = $this->operationFixture(assignAircraft: false, createOfp: false);
+        Bid::query()->whereKey($fx['bid']->id)->delete();
+        $uri = '/api/v1/flights/'.$fx['flight']->id.'/reserve';
+
+        $first = $this->post($uri, [], [], $fx['user'])->assertCreated();
+        $second = $this->post($uri, [], [], $fx['user'])->assertOk();
+
+        $this->assertFalse((bool) $first->json('data.reservation_reused'));
+        $this->assertTrue((bool) $second->json('data.reservation_reused'));
+        $this->assertSame($first->json('data.operation_id'), $second->json('data.operation_id'));
+        $this->assertSame(1, Bid::query()
+            ->where('user_id', $fx['user']->id)
+            ->where('flight_id', $fx['flight']->id)
+            ->count());
     }
 
     public function test_02_aircraft_selection_keeps_operation_active(): void

@@ -96,11 +96,8 @@ class User extends Authenticatable implements OAuthenticatable, MustVerifyEmailC
             return null;
         }
 
-        $url = Storage::disk('public')->url($this->avatar_path);
-
-        return str_starts_with($url, 'http://') || str_starts_with($url, 'https://')
-            ? $url
-            : url($url);
+        // Dynamic route works on shared hosts without a public/storage symlink.
+        return route('argos.avatar', ['filename' => basename($this->avatar_path)]);
     }
 
     public function canUseSso(): bool
