@@ -56,6 +56,8 @@ internal sealed class FsuipcNativeSession : IFsuipcSession
 
     private double? previousThrottle1;
     private double? previousThrottle2;
+    private bool fenixWasmAttempted;
+    private bool fenixWasmStarted;
 
     public bool IsOpen { get; private set; }
 
@@ -94,6 +96,9 @@ internal sealed class FsuipcNativeSession : IFsuipcSession
         var title = aircraftTitle.Value?.Trim('\0', ' ');
         var icao = FirstNonBlank(aircraftIcao.Value, atcModel.Value);
         var model = FirstNonBlank(atcType.Value, atcModel.Value);
+        bool? fenixBrake = null, wheelChocks = null;
+        if (AircraftGroundSafety.IsFenixIdentity(title, icao, model))
+            (fenixBrake, wheelChocks) = ReadOptionalFenixGroundState();
         var simRate = simulationRate.Value > 0 ? simulationRate.Value / 256d : (double?)null;
         var paused = (pauseIndicator.Value & 0x7) != 0;
         var throttleOne = throttle1.Value;
@@ -140,12 +145,60 @@ internal sealed class FsuipcNativeSession : IFsuipcSession
             SimulationRate: simRate,
             ThrustStable: thrustStable,
             AircraftIcao: icao,
-            AircraftModel: model);
+            AircraftModel: model,
+            FenixParkingBrake: fenixBrake,
+            WheelChocks: wheelChocks);
     }
+
+    // Optional fallback for pilots whose MSFS SimConnect transport is unavailable.
+    // Uses the existing FSUIPC7 WASM service, not a second telemetry connector.
+    // Opt-in avoids enabling a native WASM bridge on every pilot's simulator.
+    private (bool? Brake, bool? Chocks) ReadOptionalFenixGroundState()
+    {
+        if (!string.Equals(Environment.GetEnvironmentVariable("HERMES_FENIX_FSUIPC_LVARS"),
+                "1", StringComparison.OrdinalIgnoreCase))
+            return (null, null);
+
+        if (!fenixWasmAttempted) {
+            fenixWasmAttempted = true;
+            try {
+                MSFSVariableServices.Init();
+                MSFSVariableServices.Start();
+                fenixWasmStarted = true;
+            } catch (Exception ex) {
+                System.Diagnostics.Trace.WriteLine($"Fenix FSUIPC WASM initialization unavailable: {ex}");
+                return (null, null);
+            }
+        }
+
+        if (!fenixWasmStarted) return (null, null);
+        try {
+            if (!MSFSVariableServices.IsRunning) return (null, null);
+            var lvars = MSFSVariableServices.LVars;
+            var brake = lvars.FirstOrDefault(v => string.Equals(
+                v.Name, "S_MIP_PARKING_BRAKE", StringComparison.OrdinalIgnoreCase));
+            var chocks = lvars.FirstOrDefault(v => string.Equals(
+                v.Name, "B_CONFIG_CHOCKS", StringComparison.OrdinalIgnoreCase));
+            return (brake is null ? null : FenixBoolean(brake.Value),
+                    chocks is null ? null : FenixBoolean(chocks.Value));
+        } catch (Exception ex) {
+            System.Diagnostics.Trace.WriteLine($"Fenix FSUIPC WASM LVar read unavailable: {ex}");
+            return (null, null);
+        }
+    }
+
+    private static bool? FenixBoolean(double value) =>
+        double.IsFinite(value) && value is >= 0 and <= 1 ? value >= 0.5 : null;
 
     public void Close()
     {
         if (!IsOpen) return;
+        if (fenixWasmStarted) {
+            try { MSFSVariableServices.Stop(); }
+            catch (Exception ex) { System.Diagnostics.Trace.WriteLine($"Fenix WASM stop failed: {ex}"); }
+            fenixWasmStarted = false;
+        }
+        fenixWasmAttempted = false;
         try { FSUIPCConnection.Close(); }
         finally {
             IsOpen = false;
