@@ -58,7 +58,7 @@ class RecurringFinanceService extends Service
             $obj = $expense->getReferencedObject();
         }
 
-        if (empty($obj)) {
+        if (empty($obj) && in_array($klass, ['Airport', 'Subfleet', 'Aircraft'], true)) {
             return [null, null];
         }
 
@@ -88,6 +88,7 @@ class RecurringFinanceService extends Service
     public function processExpenses(string $type = ExpenseType::DAILY): void
     {
         $expenses = Expense::where(['type' => $type])->get();
+        $frequency = $type;
 
         $tag = 'expense_recurring';
         if ($type === ExpenseType::DAILY) {
@@ -114,14 +115,20 @@ class RecurringFinanceService extends Service
                 ];
 
                 $ref = explode('\\', $expense->ref_model);
-                $type = end($ref);
+                $referenceType = end($ref);
 
-                $found = JournalTransaction::where($w)
-                    ->whereDate('post_date', '=', Carbon::now('UTC')->toDateString())
-                    ->count(['id']);
+                $period = Carbon::now('UTC');
+                $existing = JournalTransaction::where($w);
+                if ($frequency === ExpenseType::MONTHLY) {
+                    $existing->whereYear('post_date', $period->year)
+                        ->whereMonth('post_date', $period->month);
+                } else {
+                    $existing->whereDate('post_date', $period->toDateString());
+                }
+                $found = $existing->count(['id']);
 
                 if ($found > 0) {
-                    Log::info('Expense "'.$expense->name.'" already charged for today, skipping');
+                    Log::info('Expense "'.$expense->name.'" already charged for this period, skipping');
 
                     continue;
                 }
@@ -132,11 +139,11 @@ class RecurringFinanceService extends Service
                 }
 
                 // Determine if this object actually belongs to this airline or not
-                if ($type === 'Subfleet' || $type === 'Aircraft') {
+                if ($referenceType === 'Subfleet' || $referenceType === 'Aircraft') {
                     $ref_model = $expense->ref_model()->with('airline')->first();
                     if ($ref_model?->airline?->id !== $journal->morphed_id) {
                         Log::info(
-                            $type.' id '.$expense->ref_model_id.' does not belong to airline id '.$expense->airline_id.', skipping expense "'.$expense->name.'"'
+                            $referenceType.' id '.$expense->ref_model_id.' does not belong to airline id '.$expense->airline_id.', skipping expense "'.$expense->name.'"'
                         );
 
                         continue;
