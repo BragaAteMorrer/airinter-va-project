@@ -203,8 +203,6 @@ function setAuthenticated(value) {
 setAuthenticated(false);
 
 const settingsForm = $('#settingsForm');
-// Keep SimBrief setup accessible from the flight preparation screen.
-// Opening the settings tab before focusing avoids targeting an invisible input.
 function openSimBriefAccountSettings() {
   const settingsTab = document.querySelector('[data-tab="settings"]');
   if (!settingsTab || settingsTab.disabled) {
@@ -656,7 +654,6 @@ if (prepareOfpBtn) prepareOfpBtn.onclick = () => {
   else $('#planFile')?.click();
 };
 
-// Network choice is optional: no FPL submission may start flight tracking.
 const ofpDialog = $('#ofpNetworkDialog');
 const selectedRadioCallsign = () => window.HermesFlightSetup?.radioCallsign(selectedOperation, flightPlan)
   || 'indicatif radio à confirmer';
@@ -681,7 +678,6 @@ $('#ofpChooseSolo')?.addEventListener('click', showRecordingAfterOfp);
 [['vatsim', 'ofpChooseVatsim', 'vatsimPrefileBtn'], ['ivao', 'ofpChooseIvao', 'ivaoPrefileBtn']].forEach(([network, id, target]) => {
   $('#' + id)?.addEventListener('click', async () => {
     chosenOfpNetwork = network;
-    // Keep the existing export logic centralized in My Operations.
     $('#' + target)?.click();
     showMessage('#ofpNetworkFeedback', network === 'ivao'
       ? 'IVAO ouvert. Importez le FPL ICAO copié dans le formulaire puis validez sur IVAO. Hermès ne peut pas confirmer un dépôt distant.'
@@ -863,8 +859,6 @@ $('#aircraftId').onchange = async event => {
     populateAircraftInstances(typeSelect?.value || selectedAircraft.type_key || '', selectedAircraft.id);
 
     await refreshDispatch();
-    // The aircraft assignment changes the applicable add-on/SimBrief profile.
-    // Refresh immediately instead of leaving a stale or empty variant selector.
     await refreshAircraftVariants();
     showMessage(
       '#pirepMessage',
