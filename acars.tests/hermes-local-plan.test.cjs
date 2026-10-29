@@ -37,7 +37,7 @@ class DOMParser {
       if (token.startsWith('<?') || token.startsWith('<!--')) continue;
       if (token.startsWith('</')) { stack.pop(); continue; }
       if (token.startsWith('<')) {
-        const match = /^<([a-zA-Z0-9.:-]+)([^>]*)>/.exec(token);
+        const match = /^<([a-zA-Z0-9_.:-]+)([^>]*)>/.exec(token);
         if (!match) throw new Error('Malformed fixture XML');
         const attrs = {};
         for (const pair of match[2].matchAll(/([a-zA-Z-]+)="([^"]*)"/g))
