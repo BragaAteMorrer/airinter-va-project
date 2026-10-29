@@ -34,6 +34,26 @@ opérationnelle contrôlée**, non une levée d'immobilisation.
    La levée FDM est effectuée à ce moment-là, si toutes les conditions sont
    réunies. Les actions restent journalisées.
 
+## Annulation avant départ et changement de base
+
+L'administration peut désormais cliquer sur **Annuler le convoyage** dans
+*Maintenance cellule* avec un motif écrit (12 caractères minimum). Cette action
+est possible **avant réservation et avant tout PIREP** : elle désactive le vol
+privé et sa mission, conserve un événement d'audit et **ne lève jamais
+l'immobilisation**. Une nouvelle inspection peut ensuite créer une nouvelle
+mission vers une autre base.
+
+Si le pilote a déjà réservé la mission, il doit d'abord annuler sa réservation
+depuis *Missions*. Un PIREP déjà associé au vol bloque l'annulation du permis,
+car son état doit être traité explicitement. Un convoyage déjà arrivé ne peut
+pas être annulé : il nécessite la réparation finale et la clôture technique.
+
+Les missions de ferry encore autorisées ou arrivées sont verrouillées contre
+la modification et la suppression depuis l'administration générale des missions.
+Pour les incidents provenant uniquement de `Hard Landing Check` historique,
+Prométhée crée aussi une immobilisation de sécurité persistante, afin que
+l'expiration du check historique ne déverrouille pas l'appareil.
+
 ## Cas bloquants
 
 - Absence de safety hold FDM et de hard landing historique ;

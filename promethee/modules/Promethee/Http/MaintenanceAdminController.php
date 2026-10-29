@@ -167,6 +167,21 @@ public function authorizeEmergencyFerry(
             ' vers '.strtoupper($data['destination']).'. Appareil toujours immobilisé pour les vols commerciaux.');
     }
 
+public function cancelEmergencyFerry(
+    int $aircraft,
+    Request $r,
+    \Modules\Promethee\Services\AirframeEmergencyFerryService $ferry
+) {
+        $data = $r->validate(['notes' => 'required|string|min:12|max:1000']);
+        try {
+            $ferry->cancel($aircraft, (int) $r->user()->id, $data['notes']);
+        } catch (\RuntimeException $exception) {
+            return back()->withErrors(['airframe' => $exception->getMessage()]);
+        }
+        return back()->with('success',
+            'Convoyage annulé, mission et vol privé désactivés. L’appareil reste immobilisé pour inspection.');
+    }
+
 public function finalizeEmergencyFerry(
     int $aircraft,
     Request $r,

@@ -13,6 +13,7 @@
     'admin.promethee.maintenance.airframe.safety-hold.release',
     'admin.promethee.maintenance.airframe.emergency-ferry',
     'admin.promethee.maintenance.airframe.emergency-ferry.finalize',
+    'admin.promethee.maintenance.airframe.emergency-ferry.cancel',
     'admin.promethee.maintenance.engine-profiles.save',
     'admin.promethee.maintenance.engines.create',
     'admin.promethee.maintenance.engines.overhaul',
@@ -296,6 +297,12 @@
             </form>
           @elseif(($state->ferry_status ?? null) === 'authorized')
             <small>Mission privée n°{{ $state->ferry_mission_id }} · aucun vol commercial autorisé.</small>
+            <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.airframe.emergency-ferry.cancel', $state->aircraft_id) : '#' }}" class="inline-form" onsubmit="return confirm('Annuler ce convoyage technique ? L’avion restera immobilisé. La mission et le vol privé seront désactivés.');">
+              @csrf
+              <input name="notes" minlength="12" maxlength="1000" required placeholder="Motif d’annulation technique" aria-label="Motif d’annulation du convoyage">
+              <button type="submit" @disabled(!$maintenanceActionsReady)>Annuler le convoyage</button>
+              <small>Avant réservation et PIREP uniquement ; le pilote doit d’abord annuler sa réservation.</small>
+            </form>
           @elseif($state->safety_hold_at || str_contains(strtolower((string) ($state->active_legacy_check ?? '')), 'hard landing'))
             @if($technicalFerryBases && !in_array($state->airport_id, $technicalFerryBases, true))
             <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.airframe.emergency-ferry', $state->aircraft_id) : '#' }}" class="inline-form" onsubmit="return confirm('Inspection provisoire validée ? Autoriser un seul vol sans passagers vers la base choisie ?');">
@@ -361,7 +368,8 @@
         <td>{{ \Carbon\Carbon::parse($event->occurred_at)->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') }}</td>
         <td><strong>{{ $event->registration }}</strong></td>
         <td>
-          @if($event->check_type === 'g') FDM / facteur de charge
+          @if($event->check_type === 'f') Convoyage technique
+          @elseif($event->check_type === 'g') FDM / facteur de charge
           @elseif($event->check_type === 'r') FDM / sortie de piste
           @else {{ strtoupper($event->check_type).' Check' }}
           @endif
@@ -369,6 +377,7 @@
         <td>
           @if($event->event_type === 'ferry_authorized') Dépannage / convoyage autorisé
           @elseif($event->event_type === 'ferry_arrived') Convoyage terminé
+          @elseif($event->event_type === 'ferry_cancelled') Autorisation annulée
           @elseif($event->event_type === 'ferry_released') Réparation définitive
           @elseif($event->event_type === 'safety_hold') Immobilisation sécurité
           @elseif($event->event_type === 'safety_release') Remise en service

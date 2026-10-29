@@ -5,6 +5,9 @@ on:
     paths:
       - 'promethee/modules/Promethee/Services/AirframeEmergencyFerryService.php'
       - 'promethee/modules/Promethee/Services/AirframeMaintenanceService.php'
+      - 'promethee/modules/Promethee/Http/MaintenanceAdminController.php'
+      - 'promethee/modules/Promethee/Http/MissionsController.php'
+      - 'promethee/modules/Promethee/routes.php'
       - 'promethee/modules/Promethee/Http/OperationsV1Controller.php'
       - 'promethee/modules/DisposableSpecial/Services/DS_MaintenanceServices.php'
       - 'promethee/modules/Promethee/Listeners/RegionalOperationsEventListener.php'
@@ -42,6 +45,9 @@ jobs:
         run: |
           php -l modules/Promethee/Services/AirframeEmergencyFerryService.php
           php -l modules/Promethee/Services/AirframeMaintenanceService.php
+          php -l modules/Promethee/Http/MaintenanceAdminController.php
+          php -l modules/Promethee/Http/MissionsController.php
+          php -l modules/Promethee/routes.php
           php -l modules/Promethee/Http/OperationsV1Controller.php
           php -l modules/DisposableSpecial/Services/DS_MaintenanceServices.php
           php -l modules/Promethee/Services/RegionalOperationsService.php
