@@ -123,6 +123,7 @@
     if (!lastImport) return;
     lastImport.confirmed = false;
     refreshConfirmation();
+    scheduleEfbContextSync();
   });
 
   if (confirmButton) confirmButton.onclick = () => {
@@ -135,9 +136,13 @@
     lastImport.confirmed = true;
     lastImport.confirmedRoute = value;
     refreshConfirmation();
-    showMessage('#simbriefState', 'Route vérifiée pour ce vol. Passez à SimBrief : la route sera transmise lors de la génération.');
+    const preview = $('#planBox');
+    if (preview) preview.textContent = preview.textContent.replace(
+      /^Route (?:proposée|validée) : .*$/m, 'Route validée : ' + value);
+    scheduleEfbContextSync();
     const mode = recommendedPlanMode();
     setPlanMode(mode);
+    showMessage('#simbriefState', 'Route vérifiée et transmise à la prochaine préparation SimBrief. Générez puis importez l’OFP avant le PIREP.');
   };
 
   clearButton.onclick = () => {
