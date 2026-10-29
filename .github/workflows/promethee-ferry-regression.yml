@@ -1,0 +1,55 @@
+name: Prométhée emergency ferry regression
+
+on:
+  pull_request:
+    paths:
+      - 'promethee/modules/Promethee/Services/AirframeEmergencyFerryService.php'
+      - 'promethee/modules/Promethee/Services/AirframeMaintenanceService.php'
+      - 'promethee/modules/Promethee/Http/OperationsV1Controller.php'
+      - 'promethee/modules/DisposableSpecial/Services/DS_MaintenanceServices.php'
+      - 'promethee/modules/Promethee/Listeners/RegionalOperationsEventListener.php'
+      - 'promethee/modules/Promethee/Services/RegionalOperationsService.php'
+      - 'promethee/tests/PrometheeEmergencyFerryTest.php'
+      - '.github/workflows/promethee-ferry-regression.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ferry-tests:
+    name: Emergency ferry PHP and PHPUnit
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: promethee
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: memory
+      CACHE_DRIVER: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+      MAIL_MAILER: array
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          extensions: json, mbstring, simplexml, bcmath, pdo, pdo_sqlite, intl, zip
+      - name: Validate changed PHP syntax
+        run: |
+          php -l modules/Promethee/Services/AirframeEmergencyFerryService.php
+          php -l modules/Promethee/Services/AirframeMaintenanceService.php
+          php -l modules/Promethee/Http/OperationsV1Controller.php
+          php -l modules/DisposableSpecial/Services/DS_MaintenanceServices.php
+          php -l modules/Promethee/Services/RegionalOperationsService.php
+          php -l modules/Promethee/Listeners/RegionalOperationsEventListener.php
+          php -l tests/PrometheeEmergencyFerryTest.php
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Run emergency ferry regression independently
+        run: vendor/bin/phpunit tests/PrometheeEmergencyFerryTest.php
+      - name: Run maintenance regression independently
+        run: vendor/bin/phpunit tests/PrometheeAirframeMaintenanceTest.php

@@ -1224,6 +1224,21 @@ class OperationsV1Controller extends Controller
             );
         }
 
+        // A maintenance ferry is not a commercial rotation. Show zero load
+        // from the first Hermès screen, not only when filing the PIREP.
+        $ferryState = $flight
+            ? app(\Modules\Promethee\Services\AirframeEmergencyFerryService::class)
+                ->privateFlightState((string) $flight->id)
+            : null;
+        $isFerry = $ferryState !== null
+            && $aircraft !== null
+            && (int) $ferryState->aircraft_id === (int) $aircraft->id
+            && in_array($ferryState->ferry_status, ['authorized', 'arrived'], true);
+        if ($isFerry && $demand) {
+            $demand['passengers'] = 0;
+            $demand['load_factor_percent'] = 0;
+        }
+
         return [
             'id' => $this->operationIdentity->id($bid),
             'operation_id' => $this->operationIdentity->id($bid),
@@ -1286,8 +1301,9 @@ class OperationsV1Controller extends Controller
             'operating_rules' => [
                 'passenger_weight_kg' => config('acars.passenger_weight_kg'),
                 'checked_baggage_kg' => config('acars.checked_baggage_kg'),
-                'load_factor_percent' => $demand['load_factor_percent'] ?? $loadFactor,
-                'passengers' => $demand['passengers'] ?? null,
+                'load_factor_percent' => $isFerry ? 0 : ($demand['load_factor_percent'] ?? $loadFactor),
+                'passengers' => $isFerry ? 0 : ($demand['passengers'] ?? null),
+                'technical_ferry' => $isFerry,
                 'capacity' => $demand['capacity'] ?? null,
                 'pricing_band' => $flight ? $this->demandProfile->bandForFlight($flight) : null,
                 'fuel_policy' => 'trip + 5% + alternate + expected holding + 45 minutes reserve',

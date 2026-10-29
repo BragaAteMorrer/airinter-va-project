@@ -773,7 +773,9 @@ class AirframeMaintenanceService
                 'updated_at' => now(),
             ]);
 
-            if (!($state->safety_hold_at ?? null) && $aircraft->status === AircraftStatus::MAINTENANCE) {
+            if (!($state->safety_hold_at ?? null)
+                && !($state->ferry_status ?? null)
+                && $aircraft->status === AircraftStatus::MAINTENANCE) {
                 $aircraft->update(['status' => AircraftStatus::ACTIVE]);
             }
 
