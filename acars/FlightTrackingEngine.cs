@@ -69,6 +69,13 @@ public sealed class FlightTrackingEngine
 
         if (previous is null) {
             previous = current;
+            // The first fresh sample is the beginning of a stationary block-on
+            // interval after restoring TAXI_IN, not a sample to discard.
+            if (Phase == FlightPhase.TaxiIn
+                && current.OnGround == true
+                && current.StandSecured == true
+                && current.GroundSpeedKnots is { } initialSpeed && initialSpeed < 2)
+                parkedSince = current.RecordedAt;
             if (Phase == FlightPhase.Landing && current.OnGround == true && !landingConfirmed) {
                 touchdownCandidate = current;
                 touchdownCandidateSince = current.RecordedAt;
