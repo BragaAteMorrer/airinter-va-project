@@ -185,9 +185,40 @@ class RegionalOperationsService
         });
     }
 
-    public function reserveRepatriationMission(int $missionId, User $user, FinanceService $finance): void
+    /**
+     * Compute the same jumpseat charge for confirmation and final booking.
+     * No account or pilot location is changed by this preview.
+     */
+    public function quoteRepatriationMission(object $mission, User $user): array
     {
-        DB::transaction(function () use ($missionId, $user, $finance) {
+        $currentAirportId = $user->curr_airport_id ?: $user->home_airport_id;
+        abort_unless($currentAirportId, 422, 'Position du pilote inconnue : impossible de calculer le jumpseat.');
+        $needsJumpseat = $currentAirportId !== $mission->dpt_airport_id;
+        $amount = new Money(0);
+
+        if ($needsJumpseat) {
+            $origin = Airport::findOrFail($currentAirportId);
+            $destination = Airport::findOrFail($mission->dpt_airport_id);
+            $distance = app(AirportService::class)
+                ->calculateDistance($origin->id, $destination->id)->toUnit('nmi', 2);
+            $basePrice = (float) (DB::table('promethee_settings')
+                ->where('key', 'jumpseat.base_price')->value('value') ?: 0.13);
+            $discount = (float) setting('dbasic.jumpseat_discount', 0);
+            $ratio = $discount > 0 && $discount < 100 ? 1 - ($discount / 100) : 1;
+            $amount = Money::createFromAmount(round($basePrice * $distance * $ratio, 2));
+        }
+
+        return [
+            'origin_airport_id' => $currentAirportId,
+            'destination_airport_id' => $mission->dpt_airport_id,
+            'needs_jumpseat' => $needsJumpseat,
+            'jumpseat_amount' => $amount,
+        ];
+    }
+
+    public function reserveRepatriationMission(int $missionId, User $user, FinanceService $finance, array $confirmedQuote): void
+    {
+        DB::transaction(function () use ($missionId, $user, $finance, $confirmedQuote) {
             $mission = DB::table('promethee_missions')
                 ->where('id', $missionId)
                 ->where('mission_type', 'repatriation')
@@ -204,7 +235,16 @@ class RegionalOperationsService
 
             abort_if($alreadyReserved, 409, 'Cette mission de rapatriement est déjà réservée.');
 
-            $freshUser = User::with(['journal', 'airline.journal', 'rank'])->findOrFail($user->id);
+            // Serialise bookings of different missions by the same pilot.
+            $freshUser = User::query()->lockForUpdate()->findOrFail($user->id);
+            $freshUser->load(['journal', 'airline.journal', 'rank']);
+            $otherActiveMission = DB::table('promethee_mission_bookings as booking')
+                ->join('promethee_missions as mission', 'mission.id', '=', 'booking.mission_id')
+                ->where('booking.user_id', $freshUser->id)
+                ->where('booking.status', 'reserved')
+                ->where('mission.mission_type', 'repatriation')
+                ->exists();
+            abort_if($otherActiveMission, 409, 'Vous avez déjà une mission de rapatriement active. Terminez-la ou abandonnez-la avant d’en réserver une autre.');
             $aircraft = $mission->aircraft_id
                 ? Aircraft::with('subfleet')->find($mission->aircraft_id)
                 : null;
@@ -240,17 +280,20 @@ class RegionalOperationsService
             // Authorization must happen before any jumpseat debit: a pilot who
             // cannot fly the imposed aircraft must never be charged to reach it.
             $journal = $freshUser->journal ?: $freshUser->initJournal();
-            $currentAirportId = $freshUser->curr_airport_id ?: $freshUser->home_airport_id;
-            $jumpseatAmount = new Money(0);
+            $quote = $this->quoteRepatriationMission($mission, $freshUser);
+            $jumpseatAmount = $quote['jumpseat_amount'];
 
-            if ($currentAirportId !== $mission->dpt_airport_id) {
-                $origin = Airport::findOrFail($currentAirportId);
+            // Recalculate after acquiring the pilot lock. Prevent silently
+            // charging a different fare or moving from a different position.
+            abort_if(
+                (string) ($confirmedQuote['origin_airport_id'] ?? '') !== (string) $quote['origin_airport_id']
+                || (string) ($confirmedQuote['jumpseat_amount_minor'] ?? '') !== (string) $jumpseatAmount->getAmount(),
+                409,
+                'Votre position ou le tarif du jumpseat a changé. Vérifiez le nouveau récapitulatif avant de confirmer.'
+            );
+
+            if ($quote['needs_jumpseat']) {
                 $destination = Airport::findOrFail($mission->dpt_airport_id);
-                $distance = app(AirportService::class)->calculateDistance($origin->id, $destination->id)->toUnit('nmi', 2);
-                $basePrice = (float) (DB::table('promethee_settings')->where('key', 'jumpseat.base_price')->value('value') ?: 0.13);
-                $discount = (float) setting('dbasic.jumpseat_discount', 0);
-                $ratio = $discount > 0 && $discount < 100 ? 1 - ($discount / 100) : 1;
-                $jumpseatAmount = Money::createFromAmount(round($basePrice * $distance * $ratio, 2));
 
                 abort_if(
                     (int) $journal->getBalance()->getAmount() < (int) $jumpseatAmount->getAmount(),
