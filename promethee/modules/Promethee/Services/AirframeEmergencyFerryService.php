@@ -211,6 +211,59 @@ class AirframeEmergencyFerryService
         }, 3);
     }
 
+    /**
+     * Final release requires the aircraft to have actually reached its
+     * technical destination and its remaining local checks to be complete.
+     * An emergency ferry never clears an incident just because it arrived.
+     */
+    public function finalize(int $aircraftId, ?int $userId, string $notes): void
+    {
+        $notes = trim($notes);
+        if (mb_strlen($notes) < 12) {
+            throw new RuntimeException('La réparation définitive exige un compte-rendu (12 caractères minimum).');
+        }
+
+        DB::transaction(function () use ($aircraftId, $userId, $notes) {
+            $state = DB::table('promethee_airframe_maintenance')
+                ->where('aircraft_id', $aircraftId)->lockForUpdate()->first();
+            $aircraft = Aircraft::query()->lockForUpdate()->findOrFail($aircraftId);
+            if (!$state || ($state->ferry_status ?? null) !== 'arrived'
+                || strtoupper((string) $aircraft->airport_id) !== strtoupper((string) $state->ferry_destination_airport_id)) {
+                throw new RuntimeException('La réparation définitive exige le convoyage terminé sur la base désignée.');
+            }
+
+            $legacyActive = Schema::hasTable('disposable_maintenance')
+                && DB::table('disposable_maintenance')->where('aircraft_id', $aircraftId)
+                    ->whereNotNull('act_note')->exists();
+            if ($state->active_check || $legacyActive) {
+                throw new RuntimeException('Attendez la fin des checks cellule en cours avant de remettre cet avion en service.');
+            }
+
+            DB::table('promethee_airframe_maintenance')->where('id', $state->id)->update([
+                'ferry_status' => null,
+                'ferry_origin_airport_id' => null,
+                'ferry_destination_airport_id' => null,
+                'ferry_flight_id' => null,
+                'ferry_mission_id' => null,
+                'ferry_authorized_at' => null,
+                'ferry_ready_at' => null,
+                'ferry_arrived_at' => null,
+                'ferry_notes' => null,
+                'updated_at' => now(),
+            ]);
+
+            if ($state->safety_hold_at) {
+                if (!app(AirframeMaintenanceService::class)->releaseSafetyHold($aircraftId, $userId, $notes)) {
+                    throw new RuntimeException('Échec de la levée de l’immobilisation FDM.');
+                }
+            } else {
+                $aircraft->update(['status' => AircraftStatus::ACTIVE]);
+            }
+            $this->logEvent($aircraftId, (string) $aircraft->airport_id, 'ferry_released',
+                'Inspection et réparation définitives terminées. '.$notes, $userId);
+        }, 3);
+    }
+
     private function logEvent(int $aircraftId, string $airport, string $type, string $notes, ?int $userId): void
     {
         if (!Schema::hasTable('promethee_airframe_maintenance_events')) return;
