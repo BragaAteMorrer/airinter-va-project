@@ -140,7 +140,7 @@
       <div><span class="kicker">02 · BRIEFING</span><h3>Préparer l’OFP</h3><p>Choisissez la source du plan de vol, selon vos besoins.</p></div>
       <div class="ofp-primary-actions"><button id="prepareOfpBtn" type="button" class="primary">Préparer l’OFP</button><span id="ofpSourceHint" class="hint">Source recommandée : détection en cours…</span></div>
     </div>
-    <p class="hint source-choice-label"><strong>Changer de source</strong> · options avancées</p>
+    <p class="hint source-choice-label"><strong>Autre source</strong> · options avancées</p>
     <div class="source-tabs" role="tablist" aria-label="Sources avancées du plan de vol">
       <button type="button" data-plan-mode="account" class="active" role="tab" aria-selected="true" aria-controls="planPanelAccount">Compte SimBrief</button>
       <button type="button" data-plan-mode="api" role="tab" aria-selected="false" aria-controls="planPanelApi">API SimBrief</button>
@@ -177,7 +177,7 @@
         <div><span class="kicker">API SIMBRIEF</span><h4>Génération intégrée compagnie</h4></div>
         <span class="plan-mode-badge">Prométhée</span>
       </div>
-      <p class="hint">Prométhée prépare la requête avec la clé API compagnie. Hermès ouvre le générateur SimBrief puis récupère automatiquement l’OFP lorsque la génération est terminée.</p>
+      <p class="hint">La clé API compagnie reste sur Prométhée. Hermès récupère l’OFP généré.</p>
       <div class="plan-mode-steps">
         <span><b>1</b> Générer avec les données Air Inter</span>
         <span><b>2</b> Finaliser dans SimBrief</span>
@@ -194,10 +194,10 @@
       </div>
       <p class="hint">Importez un FPL local sans passer par SimBrief.</p>
       <div class="tools plan-file-tools">
-        <label>Fichier FPL (X-Plane, MSFS, Garmin, SimBrief)<input id="planFile" type="file" accept=".fms,.pln,.fpl,.xml"></label>
+        <label>Plan FPL (.fms, .pln, .fpl, .xml)<input id="planFile" type="file" accept=".fms,.pln,.fpl,.xml"></label>
         <button id="clearPlanBtn" type="button">Effacer le plan</button>
       </div>
-      <p class="hint">Import local de route uniquement : un OFP SimBrief reste nécessaire pour créer le PIREP. Vérifiez la route et les procédures avant génération.</p>
+      <p class="hint">Route uniquement : un OFP SimBrief reste nécessaire au PIREP. Vérifiez le trajet.</p>
       <pre id="planBox" hidden>Aucun plan chargé.</pre>
     </div>
 
@@ -220,7 +220,7 @@
   <section id="networkPrefilePanel" class="flightplan-source" hidden>
     <div class="draft-heading">
       <div><span class="kicker">RÉSEAUX ATC</span><h3>Pré-déposer le plan de vol</h3></div>
-      <p>Hermès utilise le plan ICAO généré par SimBrief. vPilot et Altitude récupéreront ensuite le plan depuis leur réseau respectif.</p>
+      <p>FPL ICAO généré par SimBrief, récupérable via vPilot ou Altitude.</p>
     </div>
     <div class="tools">
       <button id="vatsimPrefileBtn" type="button">Pré-déposer sur VATSIM</button>
@@ -242,7 +242,7 @@
   </dialog>
   <form id="prefileForm" class="grid flight-draft" hidden>
     <div class="draft-heading">
-      <div><span class="kicker">BROUILLON OPÉRATIONNEL</span><h3>Personnaliser le vol</h3></div>
+      <div><span class="kicker">BROUILLON OPÉRATIONNEL</span><h3>Ajuster le vol</h3></div>
       <p>Le programme est verrouillé ; ajustez la préparation.</p>
     </div>
     <input name="flight_id" type="hidden">
