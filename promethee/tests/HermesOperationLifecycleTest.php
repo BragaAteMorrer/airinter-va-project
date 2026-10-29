@@ -96,13 +96,20 @@ final class HermesOperationLifecycleTest extends TestCase
 
         // Once the OFP is genuinely attached to the same pilot/flight/aircraft,
         // the unchanged existing prefile path must still work.
-        SimBrief::factory()->create([
+        $ofp = SimBrief::factory()->create([
             'user_id' => $fx['user']->id,
             'flight_id' => $fx['flight']->id,
             'aircraft_id' => $fx['aircraft']->id,
             'pirep_id' => null,
-            'ofp_xml' => $this->minimalSimBriefXml(),
+            'ofp_xml' => '',
         ]);
+        $this->assertFalse((bool) $this->dispatch($fx)['server_checks']['ofp']);
+        $this->post($uri, [
+            'route' => 'LGL UN859 DUB',
+            'simbrief_source' => 'simbrief',
+        ], [], $fx['user'])->assertStatus(409);
+
+        $ofp->update(['ofp_xml' => $this->minimalSimBriefXml()]);
 
         $response = $this->post($uri, [
             'route' => 'LGL UN859 DUB',
