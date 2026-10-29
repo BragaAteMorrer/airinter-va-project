@@ -376,6 +376,9 @@ class AirframeMaintenanceService
             $aircraft = Aircraft::query()->lockForUpdate()->find($aircraftId);
 
             if (!$state || !$aircraft || !$state->safety_hold_at) return false;
+            if ($state->ferry_status ?? null) {
+                throw new RuntimeException('Convoyage technique en cours : utilisez la clôture de réparation définitive.');
+            }
 
             $previousReason = (string) ($state->safety_hold_reason ?? '');
             $previousStatus = (string) ($state->safety_hold_previous_status ?? AircraftStatus::ACTIVE);
@@ -523,7 +526,7 @@ class AirframeMaintenanceService
         $threshold = max(0, min(100, 100 - $biasPercent));
 
         return $this->fleetStatus()
-            ->filter(fn ($row) => !$row->active_check && !$row->active_legacy_check && !($row->safety_hold_at ?? null))
+            ->filter(fn ($row) => !$row->active_check && !$row->active_legacy_check && !($row->safety_hold_at ?? null) && !($row->ferry_status ?? null))
             ->mapWithKeys(function ($row) use ($threshold) {
                 foreach (['c', 'b', 'a'] as $check) {
                     $status = $row->checks[$check];
@@ -569,6 +572,9 @@ class AirframeMaintenanceService
             $state = DB::table('promethee_airframe_maintenance')->where('aircraft_id', $aircraftId)->lockForUpdate()->first();
             if (!$state) {
                 throw new RuntimeException('État de maintenance cellule introuvable.');
+            }
+            if (($state->ferry_status ?? null) === 'authorized') {
+                throw new RuntimeException('Convoyage technique en cours : maintenance A/B/C impossible avant le retour en base.');
             }
             if ($state->active_check) {
                 throw new RuntimeException('Un check cellule est déjà en cours sur cet appareil.');
