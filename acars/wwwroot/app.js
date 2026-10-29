@@ -362,6 +362,7 @@ if (language) language.onchange = () => applyLanguage(language.value);
 Object.entries(localSettings).forEach(([key, value]) => {
   if (settingsForm.elements[key]) settingsForm.elements[key].value = value;
 });
+window.HermesFlightSetup?.initialize(localSettings);
 settingsForm.onsubmit = async event => {
   event.preventDefault();
   localSettings = { ...defaultSettings, ...localSettings, ...Object.fromEntries(new FormData(settingsForm)) };
@@ -657,13 +658,8 @@ if (prepareOfpBtn) prepareOfpBtn.onclick = () => {
 
 // Network choice is optional: no FPL submission may start flight tracking.
 const ofpDialog = $('#ofpNetworkDialog');
-const selectedRadioCallsign = () => {
-  const airline = String(flightPlan?.resolved?.airline?.name || selectedOperation?.airline?.name || '').toUpperCase();
-  if (/INTER\\s*CARGO/.test(airline)) return 'INTERCARGO';
-  if (/AIR\\s*CHARTER/.test(airline)) return 'AIR CHARTER';
-  if (/AIR\\s*INTER/.test(airline)) return 'AIRINTER';
-  return 'indicatif de la compagnie (à vérifier dans le FPL)';
-};
+const selectedRadioCallsign = () => window.HermesFlightSetup?.radioCallsign(selectedOperation, flightPlan)
+  || 'indicatif radio à confirmer';
 let chosenOfpNetwork = null;
 const showRecordingAfterOfp = () => {
   if (ofpDialog?.open) ofpDialog.close();
