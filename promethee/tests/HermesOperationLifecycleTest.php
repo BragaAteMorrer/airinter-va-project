@@ -53,6 +53,42 @@ final class HermesOperationLifecycleTest extends TestCase
         $this->assertFalse((bool) $dispatch['workflow_state']['terminal']);
     }
 
+    public function test_reservation_retry_returns_the_same_operation_instead_of_creating_another(): void
+    {
+        $fx = $this->operationFixture(assignAircraft: false, createOfp: false);
+        $uri = '/api/v1/flights/'.$fx['flight']->id.'/reserve';
+
+        $first = $this->post($uri, [], [], $fx['user'])->assertOk();
+        $second = $this->post($uri, [], [], $fx['user'])->assertOk();
+
+        $this->assertTrue((bool) $first->json('data.reservation_reused'));
+        $this->assertTrue((bool) $second->json('data.reservation_reused'));
+        $this->assertSame($fx['operation_id'], $first->json('data.operation_id'));
+        $this->assertSame($fx['operation_id'], $second->json('data.operation_id'));
+        $this->assertSame(1, Bid::query()
+            ->where('user_id', $fx['user']->id)
+            ->where('flight_id', $fx['flight']->id)
+            ->count());
+    }
+
+    public function test_first_hermes_reservation_is_created_then_reused_on_retry(): void
+    {
+        $fx = $this->operationFixture(assignAircraft: false, createOfp: false);
+        Bid::query()->whereKey($fx['bid']->id)->delete();
+        $uri = '/api/v1/flights/'.$fx['flight']->id.'/reserve';
+
+        $first = $this->post($uri, [], [], $fx['user'])->assertCreated();
+        $second = $this->post($uri, [], [], $fx['user'])->assertOk();
+
+        $this->assertFalse((bool) $first->json('data.reservation_reused'));
+        $this->assertTrue((bool) $second->json('data.reservation_reused'));
+        $this->assertSame($first->json('data.operation_id'), $second->json('data.operation_id'));
+        $this->assertSame(1, Bid::query()
+            ->where('user_id', $fx['user']->id)
+            ->where('flight_id', $fx['flight']->id)
+            ->count());
+    }
+
     public function test_02_aircraft_selection_keeps_operation_active(): void
     {
         $fx = $this->operationFixture(assignAircraft: false, createOfp: false);
