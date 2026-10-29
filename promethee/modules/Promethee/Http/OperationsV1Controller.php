@@ -274,7 +274,16 @@ class OperationsV1Controller extends Controller
             'id' => $user->id,
             'ident' => $user->ident,
             'name' => trim(($user->name_private ?? $user->name ?? '')),
-            'contract_version' => '1.1',
+            'contract_version' => '1.2',
+            // Only expose the current authenticated pilot's network IDs.
+            // phpVMS does not store a SimBrief numeric Pilot ID here; do not
+            // mistake its own pilot_id for an unrelated Navigraph identity.
+            'network_ids' => [
+                'vatsim_cid' => preg_match('/^\\d{1,10}$/', trim((string) ($user->vatsim_id ?? '')))
+                    ? trim((string) $user->vatsim_id) : null,
+                'ivao_vid' => preg_match('/^\\d{1,12}$/', trim((string) ($user->ivao_id ?? '')))
+                    ? trim((string) $user->ivao_id) : null,
+            ],
             'auth' => [
                 'provider' => (string) ($auth['provider'] ?? 'api_key'),
                 'sso' => (bool) ($auth['sso'] ?? false),
