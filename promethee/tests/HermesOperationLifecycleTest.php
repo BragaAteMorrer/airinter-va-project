@@ -50,7 +50,7 @@ final class HermesOperationLifecycleTest extends TestCase
 
         $another = User::factory()->create([
             'vatsim_id' => '444222',
-            'ivao_id' => null,
+            'ivao_id' => '',
         ]);
         $second = $this->get('/api/v1/me', [], $another)->assertOk();
         $this->assertSame('444222', $second->json('data.network_ids.vatsim_cid'));
@@ -112,7 +112,9 @@ final class HermesOperationLifecycleTest extends TestCase
         $pirep = Pirep::findOrFail($response->json('data.pirep_id'));
         $this->assertSame('LGL UN859 DUB', $pirep->route);
         $this->assertSame(340, (int) $pirep->level);
-        $this->assertNotNull($pirep->simbrief_id);
+        // The authoritative operation resolver follows the SimBrief row
+        // even when phpVMS stores its linkage on the OFP rather than PIREP.
+        $this->assertTrue((bool) $this->dispatch($fx)['server_checks']['ofp']);
     }
 
     public function test_01_reservation_is_never_completed(): void
