@@ -38,7 +38,7 @@
 </aside>
 <main>
 <header>
-  <div><p class="kicker" data-i18n="header.direction">DIRECTION DE L’EXPLOITATION AÉRIENNE</p><h1>Hermès</h1><p class="header-subtitle" data-i18n="header.subtitle">Le client ACARS officiel d’Air Inter VA.</p></div>
+  <div><p class="kicker" data-i18n="header.direction">DIRECTION DE L’EXPLOITATION AÉRIENNE</p><h1>Hermès</h1><p class="header-subtitle" data-i18n="header.subtitle">ACARS Air Inter VA.</p></div>
   <div class="header-status">
     <div class="pilot-state"><span id="serverState">Identité pilote à venir</span><span id="identityProvider" class="identity-provider" hidden></span><button id="argosAccountBtn" class="identity-account-link" type="button" hidden>Compte Air Inter</button><button id="logoutBtn" class="identity-account-link" type="button" hidden>Déconnexion</button><span id="simState">Simulateur non détecté</span></div>
     <div class="ops-status" aria-label="État opérationnel Hermès">
@@ -51,11 +51,11 @@
 </header>
 <details id="errorCenter" class="error-center" hidden>
   <summary><span><b>ATTENTION</b> Centre d’erreurs Hermès</span><span id="errorCenterCount" class="nav-badge">0</span></summary>
-  <div class="error-center-toolbar"><p>Résumé humain, impact sur le vol et action recommandée. Les détails techniques restent repliés.</p><button id="errorCenterClearBtn" type="button">Effacer</button></div>
+  <div class="error-center-toolbar"><p>Impact et action recommandée ; détails repliés.</p><button id="errorCenterClearBtn" type="button">Effacer</button></div>
   <div id="errorCenterList" class="error-center-list"></div>
 </details>
 <section id="connect" class="panel active auth-panel" role="tabpanel" aria-labelledby="tab-connect">
-  <div class="auth-mark"><span>AIR INTER VA</span><strong data-i18n="auth.crew">Accès équipage</strong></div><h2 data-i18n="auth.title">Connexion pilote</h2><p class="hint" data-i18n="auth.hint">Identifiez-vous avec votre compte pilote Air Inter pour préparer et suivre votre vol.</p>
+  <div class="auth-mark"><span>AIR INTER VA</span><strong data-i18n="auth.crew">Accès équipage</strong></div><h2 data-i18n="auth.title">Connexion pilote</h2><p class="hint" data-i18n="auth.hint">Connectez-vous pour préparer et suivre votre vol.</p>
   <div class="login-form">
     <button id="argosLoginBtn" class="primary" type="button">Se connecter avec Argos</button>
     <p class="hint">La connexion s’ouvre dans votre navigateur. Hermès utilise OAuth 2.0 / OpenID Connect avec PKCE et ne reçoit jamais votre mot de passe Argos.</p>
@@ -205,7 +205,7 @@
   </section>
   <section id="operationalWeather" class="flightplan-source operational-weather" hidden aria-labelledby="operationalWeatherTitle">
     <div class="draft-heading weather-ops-heading">
-      <div><span class="kicker">WEATHER / OPS</span><h3 id="operationalWeatherTitle">Météo opérationnelle</h3><p>Départ, destination, dégagement, SIGMET et piste probable selon le vent observé.</p></div>
+      <div><span class="kicker">WEATHER / OPS</span><h3 id="operationalWeatherTitle">Météo opérationnelle</h3><p>Météo, SIGMET et pistes probables.</p></div>
       <div class="weather-ops-actions"><strong id="weatherOpsState" class="ready-state">STANDBY</strong><button id="weatherRefreshBtn" type="button">Actualiser</button></div>
     </div>
     <div class="cards weather-ops-summary">
@@ -430,7 +430,7 @@
 </section>
 <section id="datalink" class="panel" role="tabpanel" aria-labelledby="tab-datalink">
   <div class="workspace-title">
-    <div><span class="kicker">AIR INTER DATALINK</span><h2>OPS / Cockpit</h2><p class="hint">Messages opérationnels liés à l'opération sélectionnée. Envois, lecture et ACK sont conservés localement en cas de coupure.</p></div>
+    <div><span class="kicker">AIR INTER DATALINK</span><h2>OPS / Cockpit</h2><p class="hint">Messages du vol conservés en cas de coupure.</p></div>
     <strong id="datalinkState" class="ready-state">STANDBY</strong>
   </div>
   <div class="datalink-toolbar">
@@ -454,7 +454,7 @@
 </section>
 <section id="network" class="panel" role="tabpanel" aria-labelledby="tab-network">
   <div class="workspace-title">
-    <div><span class="kicker">AIR INTER NETWORK</span><h2>Équipages connectés</h2><p class="hint">Présence opérationnelle Hermès. Un équipage passe automatiquement hors ligne si son heartbeat disparaît.</p></div>
+    <div><span class="kicker">AIR INTER NETWORK</span><h2>Équipages connectés</h2><p class="hint">Équipages actifs ; hors ligne sans heartbeat.</p></div>
     <strong id="networkState" class="ready-state">STANDBY</strong>
   </div>
   <div class="cards">
@@ -517,7 +517,7 @@
     <article><span class="kicker">APPROCHE</span><strong id="reviewGoAround">0 remise de gaz</strong><p id="reviewBounce">0 rebond</p></article>
   </div>
   <div class="review-event-panel">
-    <div><span class="kicker">CHRONOLOGIE</span><h3>Événements importants</h3><p class="hint">Même timeline que le suivi en vol, présentée ici pour expliquer le déroulement avant le dépôt final.</p></div>
+    <div><span class="kicker">CHRONOLOGIE</span><h3>Événements importants</h3><p class="hint">Chronologie du vol avant dépôt.</p></div>
     <div id="reviewTimeline" class="timeline review-timeline"></div>
   </div>
   <div class="review-columns">
@@ -551,11 +551,11 @@
     <button class="primary">Enregistrer les réglages</button>
   </form>
   <div class="settings-sections">
-    <article><span class="kicker">COMPAGNIE</span><h3>Politique Prométhée</h3><p class="hint">Cadence live, règles de vol, versions minimales et dépôt PIREP sont imposés par Air Inter et affichés en lecture seule.</p></article>
-    <article class="settings-addons"><span class="kicker">MES ADD-ONS</span><h3>Variantes d’appareils</h3><p class="hint">Cochez les add-ons que vous possédez. Hermès les proposera en priorité pour les types compatibles.</p><div id="aircraftVariantLibrary" class="observation-list"><p class="empty">Connectez-vous pour charger votre bibliothèque.</p></div><button type="button" id="saveAircraftVariantsBtn">Enregistrer mes add-ons</button><p id="aircraftVariantLibraryMessage" class="hint"></p></article>
-    <article class="settings-addons"><span class="kicker">BOUTIQUE · HERMÈS</span><h3>Mes contenus débloqués</h3><p class="hint">Les contenus achetés dans Prométhée sont liés à votre compte pilote. Un cadenas indique un contenu non possédé.</p><div class="hermes-shop-settings"><label>Pack sons<select id="hermesSoundPack"><option value="default">Standard Air Inter</option><option value="acars-retro" data-premium-key="sound.acars-retro" disabled>🔒 ACARS rétro</option></select></label><label>Skin EFB<select id="hermesEfbSkin"><option value="default">Standard</option><option value="airinter-historique" data-premium-key="efb.airinter-historique" disabled>🔒 Air Inter historique</option></select></label></div><div id="hermesEntitlementLibrary" class="observation-list"><p class="empty">Connectez-vous pour charger vos contenus.</p></div></article>
+    <article><span class="kicker">COMPAGNIE</span><h3>Politique Prométhée</h3><p class="hint">Règles et cadence imposées par Air Inter (lecture seule).</p></article>
+    <article class="settings-addons"><span class="kicker">MES ADD-ONS</span><h3>Variantes d’appareils</h3><p class="hint">Vos add-ons seront proposés en priorité.</p><div id="aircraftVariantLibrary" class="observation-list"><p class="empty">Connectez-vous pour charger votre bibliothèque.</p></div><button type="button" id="saveAircraftVariantsBtn">Enregistrer mes add-ons</button><p id="aircraftVariantLibraryMessage" class="hint"></p></article>
+    <article class="settings-addons"><span class="kicker">BOUTIQUE · HERMÈS</span><h3>Mes contenus débloqués</h3><p class="hint">Vos achats Prométhée sont associés au compte pilote. 🔒 : non possédé.</p><div class="hermes-shop-settings"><label>Pack sons<select id="hermesSoundPack"><option value="default">Standard Air Inter</option><option value="acars-retro" data-premium-key="sound.acars-retro" disabled>🔒 ACARS rétro</option></select></label><label>Skin EFB<select id="hermesEfbSkin"><option value="default">Standard</option><option value="airinter-historique" data-premium-key="efb.airinter-historique" disabled>🔒 Air Inter historique</option></select></label></div><div id="hermesEntitlementLibrary" class="observation-list"><p class="empty">Connectez-vous pour charger vos contenus.</p></div></article>
     <article><span class="kicker">INSTALLATION</span><h3>Compatibilité & version</h3><p class="hint">MSFS 2020/2024 via SimConnect · FS2004/FSX/P3D via FSUIPC · X-Plane 11/12 via UDP expérimental.</p><button type="button" id="checkUpdateBtn">Rechercher une mise à jour</button><p id="updateMessage" class="hint"></p></article>
-    <article><span class="kicker">IDENTITÉ AIR INTER</span><h3>Argos</h3><p class="hint">Connexion SSO active via OAuth 2.0 / OpenID Connect + PKCE. Hermès ne reçoit jamais votre mot de passe Argos ; la connexion Prométhée locale reste uniquement un secours.</p></article>
+    <article><span class="kicker">IDENTITÉ AIR INTER</span><h3>Argos</h3><p class="hint">Connexion Argos SSO via OAuth 2.0 / PKCE, sans mot de passe dans Hermès. Prométhée sert de secours.</p></article>
   </div>
   <p id="remotePolicy" class="message" hidden></p><p id="settingsMessage" class="message" hidden></p>
 </section>
