@@ -50,7 +50,7 @@ final class HermesOperationLifecycleTest extends TestCase
 
         $another = User::factory()->create([
             'vatsim_id' => '444222',
-            'ivao_id' => null,
+            'ivao_id' => '',
         ]);
         $second = $this->get('/api/v1/me', [], $another)->assertOk();
         $this->assertSame('444222', $second->json('data.network_ids.vatsim_cid'));
