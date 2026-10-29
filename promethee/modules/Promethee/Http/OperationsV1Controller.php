@@ -890,7 +890,10 @@ class OperationsV1Controller extends Controller
             'passengers' => 'nullable|integer|min:0|max:1000',
             'simbrief_source' => 'nullable|string|in:simbrief_account,simbrief_api,simbrief',
         ]);
-        abort_if(!$ofp && empty($plan['simbrief_source']), 409, 'Préparez ou importez l’OFP SimBrief avant le PIREP.');
+        // A client-provided label is never proof of a SimBrief OFP.
+        // The OFP must already be resolved for this authenticated operation;
+        // otherwise a forged simbrief_source could prefile a ready-looking PIREP.
+        abort_if(!$ofp, 409, 'Préparez ou importez un véritable OFP SimBrief lié à cette opération avant le PIREP.');
 
         $flight = $bid->flight;
         $operationId = $this->operationIdentity->id($bid);
