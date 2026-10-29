@@ -46,6 +46,8 @@ const context = {
 };
 vm.createContext(context);
 vm.runInContext(workflow, context);
+// Keep the integration harness focused on context isolation, not DOM rendering.
+context.updateWorkflow = () => {};
 vm.runInContext(planning, context);
 const switchTo = (operation, aircraft) => {
   context.selectedOperation = { operation_id: operation };
