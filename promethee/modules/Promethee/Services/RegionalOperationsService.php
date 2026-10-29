@@ -238,6 +238,8 @@ class RegionalOperationsService
                 : null;
 
             abort_unless($aircraft, 422, 'L’appareil affecté à cette mission est introuvable.');
+            abort_if($aircraft->status === \App\Models\Enums\AircraftStatus::MAINTENANCE && !$isTechnicalFerry,
+                409, 'Appareil immobilisé pour maintenance : seule une mission technique spécialement autorisée est permise.');
             abort_unless(
                 $this->userService->aircraftAllowed($freshUser, $aircraft->id),
                 403,
