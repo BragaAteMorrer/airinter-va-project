@@ -44,6 +44,8 @@ public function adminMaintenance(AirframeMaintenanceService $airframeService) {
             'due' => $airframeStates->where('maintenance_state', 'due')->count(),
             'maintenance' => $airframeStates->where('maintenance_state', 'maintenance')->count(),
         ];
+        $technicalFerryBases = app(\Modules\Promethee\Services\AirframeEmergencyFerryService::class)->technicalBases();
+
         $airframeEvents = DB::table('promethee_airframe_maintenance_events as event')
             ->join('aircraft', 'aircraft.id', '=', 'event.aircraft_id')
             ->select('event.*', 'aircraft.registration')
@@ -114,7 +116,7 @@ public function adminMaintenance(AirframeMaintenanceService $airframeService) {
 
         return $this->page('admin-maintenance', compact(
             'profiles','subfleets','aircraft','engineUnits','engineSites','engineEvents','engineSummary',
-            'airframeSettings','airframeStates','airframeSummary','airframeEvents','itvaEngineCategories'
+            'airframeSettings','airframeStates','airframeSummary','airframeEvents','itvaEngineCategories', 'technicalFerryBases'
         ));
     }
 
@@ -137,6 +139,47 @@ public function saveAirframeMaintenanceSettings(Request $r, AirframeMaintenanceS
         return back()->with('success','Référentiel A/B/C synchronisé avec les fiches appareils.');
     }
 
+
+public function authorizeEmergencyFerry(
+    int $aircraft,
+    Request $r,
+    \Modules\Promethee\Services\AirframeEmergencyFerryService $ferry
+) {
+        $data = $r->validate([
+            'destination' => 'required|string|size:4',
+            'repair_hours' => 'required|integer|min:1|max:48',
+            'notes' => 'required|string|min:12|max:1000',
+        ]);
+        try {
+            $result = $ferry->authorize(
+                $aircraft,
+                $data['destination'],
+                (int) $data['repair_hours'],
+                (int) $r->user()->id,
+                $data['notes']
+            );
+        } catch (\RuntimeException $exception) {
+            return back()->withErrors(['airframe' => $exception->getMessage()]);
+        }
+
+        return back()->with('success',
+            'Dépannage d’urgence enregistré. Mission de convoyage n°'.$result['mission_id'].
+            ' vers '.strtoupper($data['destination']).'. Appareil toujours immobilisé pour les vols commerciaux.');
+    }
+
+public function finalizeEmergencyFerry(
+    int $aircraft,
+    Request $r,
+    \Modules\Promethee\Services\AirframeEmergencyFerryService $ferry
+) {
+        $data = $r->validate(['notes' => 'required|string|min:12|max:1000']);
+        try {
+            $ferry->finalize($aircraft, (int) $r->user()->id, $data['notes']);
+        } catch (\RuntimeException $exception) {
+            return back()->withErrors(['airframe' => $exception->getMessage()]);
+        }
+        return back()->with('success', 'Réparation définitive validée et immobilisation technique clôturée.');
+    }
 
 public function releaseAirframeSafetyHold(int $aircraft, Request $r, AirframeMaintenanceService $airframeService) {
         $data = $r->validate(['notes'=>'nullable|string|max:1000']);
