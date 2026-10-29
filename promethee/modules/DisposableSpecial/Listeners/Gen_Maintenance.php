@@ -209,7 +209,17 @@ class Gen_Maintenance extends Listener
         $maint->act_end = null;
         $maint->op_type = 'REJECTED';
         // Check and Fix Aircraft Status
-        if ($aircraft->status === AircraftStatus::MAINTENANCE) {
+        $groundedByPromethee = \Illuminate\Support\Facades\Schema::hasTable('promethee_airframe_maintenance')
+            && \Illuminate\Support\Facades\Schema::hasColumn('promethee_airframe_maintenance', 'safety_hold_at')
+            && \Illuminate\Support\Facades\DB::table('promethee_airframe_maintenance')
+                ->where('aircraft_id', $aircraft->id)
+                ->where(function ($query) {
+                    $query->whereNotNull('safety_hold_at');
+                    if (\Illuminate\Support\Facades\Schema::hasColumn('promethee_airframe_maintenance', 'ferry_status')) {
+                        $query->orWhereNotNull('ferry_status');
+                    }
+                })->exists();
+        if ($aircraft->status === AircraftStatus::MAINTENANCE && !$groundedByPromethee) {
             $aircraft->status = AircraftStatus::ACTIVE;
             Log::info('Disposable Special | '.$aircraft->registration.' (ID:'.$aircraft->id.') Released back to service');
             $aircraft->save();
