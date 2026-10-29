@@ -279,6 +279,7 @@ Route::middleware(['web','auth','ability:admin,admin-access'])->prefix('admin/pr
         Route::get('/maintenance', [MaintenanceAdminController::class,'adminMaintenance'])->name('maintenance');
         Route::post('/maintenance/airframe-settings', [MaintenanceAdminController::class,'saveAirframeMaintenanceSettings'])->name('maintenance.airframe-settings.save');
         Route::post('/maintenance/airframe/{aircraft}/start', [MaintenanceAdminController::class,'startAirframeCheck'])->name('maintenance.airframe.start');
+        Route::post('/maintenance/airframe/{aircraft}/complete', [MaintenanceAdminController::class,'completeAirframeCheck'])->name('maintenance.airframe.complete');
         Route::post('/maintenance/airframe/{aircraft}/safety-hold/release', [MaintenanceAdminController::class,'releaseAirframeSafetyHold'])->name('maintenance.airframe.safety-hold.release');
         Route::post('/maintenance/sync', [EngineMaintenanceAdminController::class,'syncFleet'])->name('maintenance.sync');
         Route::post('/maintenance/engine-profiles', [EngineMaintenanceAdminController::class,'saveProfile'])->name('maintenance.engine-profiles.save');
