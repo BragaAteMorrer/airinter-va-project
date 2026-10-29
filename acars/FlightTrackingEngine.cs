@@ -137,7 +137,7 @@ public sealed class FlightTrackingEngine
         var gs = current.GroundSpeedKnots ?? 0;
 
         if (Phase is FlightPhase.Boarding or FlightPhase.AcarsReady
-            && current.ParkingBrake == false
+            && AircraftGroundSafety.IsSecured(current) == false
             && gs > .5)
         {
             events.Add(new("OUT", current.RecordedAt, current));
@@ -299,8 +299,8 @@ public sealed class FlightTrackingEngine
     {
         if (Phase == FlightPhase.TaxiIn
             && current.OnGround == true
-            && current.ParkingBrake == true
-            && (current.GroundSpeedKnots ?? 0) < 2)
+            && current.StandSecured == true
+            && current.GroundSpeedKnots is { } speed && speed < 2)
         {
             parkedSince ??= current.RecordedAt;
             if (current.RecordedAt - parkedSince >= BlockOnConfirmation)

@@ -273,6 +273,9 @@ function updatePreflight(status, state, ready) {
   const latest = status?.latest || {};
   const onGround = snapshotValue(latest, 'onGround', 'OnGround');
   const parkingBrake = snapshotValue(latest, 'parkingBrake', 'ParkingBrake');
+  const fenixBrake = snapshotValue(latest, 'fenixParkingBrake', 'FenixParkingBrake');
+  const chocks = snapshotValue(latest, 'wheelChocks', 'WheelChocks');
+  const standSecured = snapshotValue(latest, 'standSecured', 'StandSecured');
   const engines = snapshotValue(latest, 'enginesRunning', 'EnginesRunning');
   const enginesKnown = Array.isArray(engines) && engines.length > 0;
   const enginesStopped = enginesKnown ? !engines.some(Boolean) : null;
@@ -283,18 +286,18 @@ function updatePreflight(status, state, ready) {
   const detectedAdapter = capabilityReport.adapterId || capabilityReport.AdapterId || null;
   const acceptedAdapters = Array.isArray(selectedVariant?.adapter_ids) ? selectedVariant.adapter_ids : [];
   const variantMatch = acceptedAdapters.length === 0 ? null : (detectedAdapter ? acceptedAdapters.includes(detectedAdapter) : null);
-  // Fenix systems can be custom-simulated: an FSUIPC parking-brake reading
-  // is a reported simulator value, not proof that the cockpit lever moved.
-  // Do not turn a false value into true or bypass the start safety gate.
-  const fenixViaFsuipc = String(detectedAdapter || '').startsWith('fenix-')
-    && String(capabilityReport.connectorId || capabilityReport.ConnectorId || '').toLowerCase().includes('fsuipc');
-  const brakeDetail = parkingBrake === null
-    ? 'information indisponible'
-    : parkingBrake === true
-      ? 'serré (télémétrie)'
-      : fenixViaFsuipc
-        ? 'desserré selon FSUIPC · vérifier le levier dans le cockpit et la synchronisation FSUIPC7'
-        : 'desserré (télémétrie)';
+  // Chocks secure the stand; they do not alter the actual parking brake.
+  const fenix = String(detectedAdapter || '').startsWith('fenix-');
+  const readable = (value, positive, negative) =>
+    value === null ? 'indisponible' : value === true ? positive : negative;
+  const connectorId = String(capabilityReport.connectorId || capabilityReport.ConnectorId || '').toLowerCase();
+  const brakeDetail = fenix
+    ? ('standard : ' + readable(parkingBrake, 'serré', 'desserré')
+       + ' · Fenix : ' + readable(fenixBrake, 'serré', 'desserré')
+       + ' · cales : ' + readable(chocks, 'installées', 'retirées')
+       + (connectorId.includes('fsuipc') && fenixBrake === null && chocks === null
+           ? ' · FSUIPC : lecture LVars facultative non disponible' : ''))
+    : readable(parkingBrake, 'serré', 'desserré');
 
   const checks = [
     ['VOL', state.operation, state.operation ? 'opération sélectionnée' : 'à sélectionner', 'blocking'],
@@ -312,7 +315,7 @@ function updatePreflight(status, state, ready) {
                 + ' · comparaison informative')
             : (selectedVariant.label + ' · add-on sélectionné · identité simulateur informative')), 'informational'],
     ['AU SOL', onGround === null ? null : onGround === true, onGround === null ? 'information indisponible' : (onGround ? 'confirmé' : 'avion en vol'), 'blocking'],
-    ['FREIN DE PARC', parkingBrake === null ? null : parkingBrake === true, brakeDetail, 'verify'],
+    ['STATIONNEMENT', standSecured === true ? true : standSecured === false ? false : null, brakeDetail, 'verify'],
     ['MOTEURS', enginesStopped, enginesStopped === null ? 'information indisponible' : (enginesStopped ? 'arrêtés' : 'en fonctionnement'), 'verify']
   ];
 
@@ -352,10 +355,12 @@ function updateWorkflow() {
   });
   const latest = lastStatus?.latest || {};
   const onGround = snapshotValue(latest, 'onGround', 'OnGround');
-  const parkingBrake = snapshotValue(latest, 'parkingBrake', 'ParkingBrake');
+  const standSecured = snapshotValue(latest, 'standSecured', 'StandSecured');
+  const groundSpeed = snapshotValue(latest, 'groundSpeedKnots', 'GroundSpeedKnots');
   const engines = snapshotValue(latest, 'enginesRunning', 'EnginesRunning');
   const enginesStoppedOrUnknown = !Array.isArray(engines) || engines.length === 0 || !engines.some(Boolean);
-  const preflightSafe = onGround === true && parkingBrake !== false && enginesStoppedOrUnknown;
+  const preflightSafe = onGround === true && standSecured === true
+    && typeof groundSpeed === 'number' && groundSpeed < 2 && enginesStoppedOrUnknown;
   const acceptedAdapters = Array.isArray(selectedVariant?.adapter_ids) ? selectedVariant.adapter_ids : [];
   const capabilityReport = lastStatus?.aircraftCapabilities || lastStatus?.AircraftCapabilities || {};
   const detectedAdapter = capabilityReport.adapterId || capabilityReport.AdapterId || null;

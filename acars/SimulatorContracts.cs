@@ -86,7 +86,14 @@ public sealed record AircraftSnapshot(
     double? GForce = null,
     bool? OverspeedWarning = null,
     bool? StallWarning = null,
-    IReadOnlyList<double>? ThrustReverserPercent = null);
+    IReadOnlyList<double>? ThrustReverserPercent = null,
+    bool? FenixParkingBrake = null,
+    bool? WheelChocks = null)
+{
+    // Ground security is not the same as the physical parking-brake state.
+    public bool? StandSecured => AircraftGroundSafety.IsSecured(this);
+}
+
 
 /// <summary>
 /// Boundary between the ACARS core and simulator-specific code. Connectors must
