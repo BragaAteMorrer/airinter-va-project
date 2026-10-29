@@ -14,6 +14,7 @@ use App\Services\UserService;
 use App\Support\Money;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class RegionalOperationsService
 {
@@ -51,22 +52,18 @@ class RegionalOperationsService
         $assignments = DB::table('promethee_aircraft_bases')->get()->keyBy('aircraft_id');
         $aircraft = Aircraft::query()->get(['id', 'registration', 'airport_id', 'hub_id', 'landing_time', 'status']);
         $grounded = collect();
-        if (DB::getSchemaBuilder()->hasTable('promethee_airframe_maintenance')
-            && DB::getSchemaBuilder()->hasColumn('promethee_airframe_maintenance', 'safety_hold_at')) {
+        if (Schema::hasTable('promethee_airframe_maintenance')
+            && Schema::hasColumn('promethee_airframe_maintenance', 'safety_hold_at')) {
             $grounded = DB::table('promethee_airframe_maintenance')
                 ->where(function ($q) {
                     $q->whereNotNull('safety_hold_at');
-                    if (DB::getSchemaBuilder()->hasColumn('promethee_airframe_maintenance', 'ferry_status')) {
+                    if (Schema::hasColumn('promethee_airframe_maintenance', 'ferry_status')) {
                         $q->orWhereNotNull('ferry_status');
                     }
                 })->pluck('aircraft_id')->flip();
         }
 
         foreach ($aircraft as $plane) {
-            // Never teleport a grounded aircraft. A technical ferry is a real
-            // flight and must be tracked through its PIREP instead.
-            if ($plane->status === \App\Models\Enums\AircraftStatus::MAINTENANCE
-                || $grounded->has($plane->id)) continue;
             $assignment = $assignments->get($plane->id);
             if (!$assignment) {
                 DB::table('promethee_aircraft_bases')->insert([
@@ -78,6 +75,11 @@ class RegionalOperationsService
                 ]);
                 $assignment = DB::table('promethee_aircraft_bases')->where('aircraft_id', $plane->id)->first();
             }
+
+            // Preserve the base assignment but never teleport a grounded plane.
+            // A technical ferry must be completed by a real accepted PIREP.
+            if ($plane->status === \App\Models\Enums\AircraftStatus::MAINTENANCE
+                || $grounded->has($plane->id)) continue;
 
             $base = strtoupper((string) $assignment->base_airport_id);
             $current = strtoupper((string) $plane->airport_id);
