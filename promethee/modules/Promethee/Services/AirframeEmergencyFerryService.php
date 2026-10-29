@@ -8,6 +8,7 @@ use App\Models\Enums\AircraftStatus;
 use App\Models\Enums\FlightType;
 use App\Models\Flight;
 use App\Models\Pirep;
+use App\Models\Enums\PirepState;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use RuntimeException;
@@ -185,9 +186,22 @@ class AirframeEmergencyFerryService
                 ->where('aircraft_id', $pirep->aircraft_id)->lockForUpdate()->first();
             if (!$state || $state->ferry_status !== 'authorized'
                 || (string) $state->ferry_flight_id !== (string) $pirep->flight_id
+                || (int) $pirep->state !== PirepState::ACCEPTED
                 || strtoupper((string) $pirep->dpt_airport_id) !== strtoupper((string) $state->ferry_origin_airport_id)
                 || strtoupper((string) $pirep->arr_airport_id) !== strtoupper((string) $state->ferry_destination_airport_id)) {
                 throw new RuntimeException('PIREP de convoyage incohérent : autorisation conservée et avion immobilisé.');
+            }
+
+            // A scheduled route alone does not prove that a designated pilot
+            // actually completed the technical movement. Require the active
+            // booking and an explicitly accepted PIREP for this very flight.
+            $reserved = DB::table('promethee_mission_bookings')
+                ->where('mission_id', $state->ferry_mission_id)
+                ->where('user_id', $pirep->user_id)
+                ->where('status', 'reserved')
+                ->lockForUpdate()->exists();
+            if (!$reserved) {
+                throw new RuntimeException('Convoyage non validé : réservation pilote introuvable ou déjà clôturée.');
             }
 
             $aircraft = Aircraft::query()->lockForUpdate()->findOrFail($pirep->aircraft_id);
@@ -242,6 +256,20 @@ class AirframeEmergencyFerryService
                     ->whereNotNull('act_note')->exists();
             if ($state->active_check || $legacyActive) {
                 throw new RuntimeException('Attendez la fin des checks cellule en cours avant de remettre cet avion en service.');
+            }
+
+            // Acceptance can later be revoked (PIREP rejected/deleted). A
+            // matching *current* accepted flight report is mandatory even if
+            // the historical ferry status says it reached its technical base.
+            $accepted = Pirep::query()
+                ->where('aircraft_id', $aircraftId)
+                ->where('flight_id', $state->ferry_flight_id)
+                ->where('dpt_airport_id', $state->ferry_origin_airport_id)
+                ->where('arr_airport_id', $state->ferry_destination_airport_id)
+                ->where('state', PirepState::ACCEPTED)
+                ->exists();
+            if (!$accepted) {
+                throw new RuntimeException('Le PIREP de convoyage est absent, rejeté ou annulé : remise en service interdite.');
             }
 
             DB::table('promethee_airframe_maintenance')->where('id', $state->id)->update([
