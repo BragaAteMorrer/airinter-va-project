@@ -1,0 +1,55 @@
+name: Prométhée — convoyage technique
+
+on:
+  pull_request:
+    paths:
+      - 'promethee/modules/Promethee/**'
+      - 'promethee/modules/DisposableSpecial/**'
+      - 'promethee/tests/PrometheeEmergencyFerryTest.php'
+      - '.github/workflows/promethee-emergency-ferry.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  emergency-ferry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: promethee
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: memory
+      CACHE_DRIVER: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+      MAIL_MAILER: array
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          extensions: json, mbstring, simplexml, bcmath, pdo, pdo_sqlite, intl, zip
+      - name: PHP syntax
+        shell: bash
+        run: |
+          php -l modules/Promethee/Services/AirframeEmergencyFerryService.php
+          php -l modules/Promethee/Services/AirframeMaintenanceService.php
+          php -l modules/Promethee/Services/RegionalOperationsService.php
+          php -l modules/Promethee/Http/MaintenanceAdminController.php
+          php -l modules/Promethee/Http/OperationsV1Controller.php
+          php -l modules/Promethee/Listeners/RegionalOperationsEventListener.php
+          php -l modules/Promethee/Database/migrations/2026_10_29_000001_add_emergency_technical_ferry.php
+          php -l modules/Promethee/routes.php
+          php -l tests/PrometheeEmergencyFerryTest.php
+          php -l modules/DisposableSpecial/Http/Controllers/DS_MaintenanceController.php
+          php -l modules/DisposableSpecial/Listeners/Gen_Maintenance.php
+      - name: Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Emergency ferry regression
+        run: vendor/bin/phpunit tests/PrometheeEmergencyFerryTest.php
+      - name: Existing maintenance regression
+        run: vendor/bin/phpunit tests/PrometheeAirframeMaintenanceTest.php
