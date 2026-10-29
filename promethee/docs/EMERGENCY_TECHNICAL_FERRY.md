@@ -55,8 +55,9 @@ la mission initiale comme réussie. Il :
   validation exige toujours un PIREP accepté correspondant au vol effectivement
   réalisé et à l'aéroport d'arrivée réel.
 
-Un PIREP avec origine incohérente ou aéroport inconnu reste bloqué pour
-intervention humaine. Le système ne devine pas la position réelle à partir du
+Un PIREP avec origine incohérente ou code ICAO d'arrivée malformé reste
+bloqué pour intervention humaine. L'aéroport peut ne pas encore disposer d'une
+fiche dans la base locale phpVMS. Le système ne devine pas la position réelle à partir du
 plan de vol SimBrief : **le PIREP accepté doit porter l'aéroport réel**, pas
 automatiquement la destination programmée.
 
