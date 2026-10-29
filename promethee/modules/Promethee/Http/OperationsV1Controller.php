@@ -893,7 +893,7 @@ class OperationsV1Controller extends Controller
         // A client-provided label is never proof of a SimBrief OFP.
         // The OFP must already be resolved for this authenticated operation;
         // otherwise a forged simbrief_source could prefile a ready-looking PIREP.
-        abort_if(!$ofp, 409, 'Préparez ou importez un véritable OFP SimBrief lié à cette opération avant le PIREP.');
+        abort_if(!$ofp || blank($ofp->ofp_xml), 409, 'Préparez ou importez un véritable OFP SimBrief lié à cette opération avant le PIREP.');
 
         $flight = $bid->flight;
         $operationId = $this->operationIdentity->id($bid);
@@ -1371,7 +1371,7 @@ class OperationsV1Controller extends Controller
                 && (!setting('pireps.only_aircraft_at_dpt_airport')
                     || strtoupper((string) $aircraft->airport_id) === strtoupper((string) $flight?->dpt_airport_id))
             ));
-        $ofpReady = $ofp !== null;
+        $ofpReady = $ofp !== null && filled($ofp->ofp_xml);
         $pirepReady = $pirep !== null && $this->pirepLifecycle->isActiveDraft($pirep);
 
         return [
