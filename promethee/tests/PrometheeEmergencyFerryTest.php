@@ -7,6 +7,8 @@ use App\Models\Enums\AircraftStatus;
 use App\Models\Enums\PirepState;
 use App\Models\Pirep;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Modules\DisposableSpecial\Services\DS_MaintenanceServices;
 use Modules\Promethee\Services\AirframeEmergencyFerryService;
 use Modules\Promethee\Services\AirframeMaintenanceService;
 use RuntimeException;
@@ -143,6 +145,34 @@ final class PrometheeEmergencyFerryTest extends TestCase
         $this->assertSame('authorized', $service->state((int) $aircraft->id)->ferry_status);
         $this->assertSame('LFMN', $aircraft->fresh()->airport_id);
         $this->assertSame(AircraftStatus::MAINTENANCE, $aircraft->fresh()->status);
+    }
+
+    public function test_legacy_maintenance_cron_cannot_release_authorized_ferry(): void
+    {
+        if (!Schema::hasTable('disposable_maintenance')) {
+            $this->markTestSkipped('Legacy maintenance is unavailable.');
+        }
+        [$aircraft] = $this->heldAircraft();
+        DB::table('promethee_airframe_maintenance')->where('aircraft_id', $aircraft->id)
+            ->update(['safety_hold_at' => null, 'ferry_status' => 'authorized']);
+        DB::table('disposable_maintenance')->updateOrInsert(
+            ['aircraft_id' => $aircraft->id],
+            [
+                'curr_state' => 100,
+                'time_a' => 0, 'time_b' => 0, 'time_c' => 0,
+                'cycle_a' => 0, 'cycle_b' => 0, 'cycle_c' => 0,
+                'act_note' => 'Hard Landing Check',
+                'act_start' => now()->subHours(2),
+                'act_end' => now()->subHour(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
+
+        app(DS_MaintenanceServices::class)->ProcessMaintenance();
+        $this->assertSame(AircraftStatus::MAINTENANCE, $aircraft->fresh()->status);
+        $this->assertNull(DB::table('disposable_maintenance')
+            ->where('aircraft_id', $aircraft->id)->value('act_note'));
     }
 
     public function test_completed_cell_check_cannot_clear_legacy_ferry_grounding(): void
