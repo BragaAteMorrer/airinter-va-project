@@ -50,6 +50,9 @@ jobs:
           node --check acars/wwwroot/hermes-communications.js
           node --check acars/wwwroot/hermes-workflow.js
           node --check acars/wwwroot/hermes-planning.js
+          node --check acars/wwwroot/hermes-local-plan.js
+          node --check acars/wwwroot/hermes-local-plan-ui.js
+          node acars.tests/hermes-local-plan.test.cjs
           node --check acars/wwwroot/hermes-recovery.js
           node --check acars/wwwroot/app.js
           node --check acars/msfs2024-efb/HermesEfb/build.js
