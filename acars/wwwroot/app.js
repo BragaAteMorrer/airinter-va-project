@@ -1028,6 +1028,7 @@ $('#simbriefBtn').onclick = async event => {
   }
 };
 
+// The local plan module is the sole owner of file import and removal.
 window.addEventListener('load', () => {
   if (window.HermesLocalPlanUi) return;
   const input = $('#planFile');
