@@ -77,6 +77,21 @@ public sealed class AircraftGroundSafetyTests
     }
 
     [Fact]
+    public void Fenix_chocks_restart_block_on_timer_after_movement()
+    {
+        var engine = new FlightTrackingEngine();
+        engine.Restore(FlightPhase.TaxiIn);
+        var t = DateTimeOffset.UtcNow;
+        var parked = Snapshot("Fenix Simulations A320 CFM", false, chocks: true);
+        engine.Process(parked with { RecordedAt = t });
+        engine.Process(parked with { SampleId = Guid.NewGuid(), RecordedAt = t.AddSeconds(8), GroundSpeedKnots = 4 });
+        var early = engine.Process(parked with { SampleId = Guid.NewGuid(), RecordedAt = t.AddSeconds(16) });
+        Assert.DoesNotContain(early.Events, x => x.Type == "IN");
+        var confirmed = engine.Process(parked with { SampleId = Guid.NewGuid(), RecordedAt = t.AddSeconds(31) });
+        Assert.Contains(confirmed.Events, x => x.Type == "IN");
+    }
+
+    [Fact]
     public void Fenix_chocks_do_not_confirm_IN_when_moving()
     {
         var engine = new FlightTrackingEngine();
