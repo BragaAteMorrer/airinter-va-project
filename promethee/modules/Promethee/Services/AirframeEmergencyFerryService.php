@@ -88,9 +88,12 @@ class AirframeEmergencyFerryService
             $state = DB::table('promethee_airframe_maintenance')
                 ->where('aircraft_id', $aircraftId)->lockForUpdate()->first();
 
-            if ($state->ferry_status ?? null) {
+            if (($state->ferry_status ?? null) && $state->ferry_status !== 'diverted') {
                 throw new RuntimeException('Un convoyage technique est déjà ouvert pour cet appareil.');
             }
+            // After an accepted diversion the previous technical mission has
+            // ended. A fresh inspection can authorize a NEW flight from the
+            // actual airport, without releasing the aircraft to regular OPS.
             if ($aircraft->status !== AircraftStatus::MAINTENANCE
                 || $aircraft->state !== AircraftState::PARKED) {
                 throw new RuntimeException('L’appareil doit être immobilisé et au parking.');
@@ -256,7 +259,7 @@ class AirframeEmergencyFerryService
 
         return DB::table('promethee_airframe_maintenance')
             ->where('ferry_mission_id', $missionId)
-            ->whereIn('ferry_status', ['authorized', 'arrived'])->exists();
+            ->whereIn('ferry_status', ['authorized', 'arrived', 'diverted'])->exists();
     }
 
     public function isFerryPirep(Pirep $pirep): bool
@@ -276,10 +279,14 @@ class AirframeEmergencyFerryService
             if (!$state || $state->ferry_status !== 'authorized'
                 || (string) $state->ferry_flight_id !== (string) $pirep->flight_id
                 || (int) $pirep->state !== PirepState::ACCEPTED
-                || strtoupper((string) $pirep->dpt_airport_id) !== strtoupper((string) $state->ferry_origin_airport_id)
-                || strtoupper((string) $pirep->arr_airport_id) !== strtoupper((string) $state->ferry_destination_airport_id)) {
+                || strtoupper((string) $pirep->dpt_airport_id) !== strtoupper((string) $state->ferry_origin_airport_id)) {
                 throw new RuntimeException('PIREP de convoyage incohérent : autorisation conservée et avion immobilisé.');
             }
+            $arrival = strtoupper(trim((string) $pirep->arr_airport_id));
+            if (!preg_match('/^[A-Z]{4}$/', $arrival)) {
+                throw new RuntimeException('Code ICAO de déroutement invalide : état de convoyage conservé pour intervention.');
+            }
+            $diverted = $arrival !== strtoupper((string) $state->ferry_destination_airport_id);
 
             // A scheduled route alone does not prove that a designated pilot
             // actually completed the technical movement. Require the active
@@ -296,11 +303,11 @@ class AirframeEmergencyFerryService
             $aircraft = Aircraft::query()->lockForUpdate()->findOrFail($pirep->aircraft_id);
             $aircraft->update([
                 'status' => AircraftStatus::MAINTENANCE,
-                'airport_id' => $state->ferry_destination_airport_id,
+                'airport_id' => $arrival,
                 'state' => AircraftState::PARKED,
             ]);
             DB::table('promethee_airframe_maintenance')->where('id', $state->id)->update([
-                'ferry_status' => 'arrived',
+                'ferry_status' => $diverted ? 'diverted' : 'arrived',
                 'ferry_arrived_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -311,10 +318,15 @@ class AirframeEmergencyFerryService
             DB::table('promethee_mission_bookings')
                 ->where('mission_id', $state->ferry_mission_id)->where('user_id', $pirep->user_id)
                 ->where('status', 'reserved')->update([
-                    'status' => 'completed', 'completed_at' => now(), 'updated_at' => now(),
+                    'status' => $diverted ? 'cancelled' : 'completed',
+                    'completed_at' => now(), 'updated_at' => now(),
                 ]);
-            $this->logEvent((int) $pirep->aircraft_id, $state->ferry_destination_airport_id,
-                'ferry_arrived', 'PIREP '.$pirep->id.' validé. Réparation définitive encore obligatoire.', null);
+            $this->logEvent((int) $pirep->aircraft_id, $arrival,
+                $diverted ? 'ferry_diverted' : 'ferry_arrived',
+                $diverted
+                    ? 'PIREP '.$pirep->id.' accepté mais dérouté vers '.$arrival.' au lieu de '.$state->ferry_destination_airport_id.'. Avion toujours immobilisé.'
+                    : 'PIREP '.$pirep->id.' validé. Réparation définitive encore obligatoire.',
+                null);
             return true;
         }, 3);
     }
@@ -335,9 +347,16 @@ class AirframeEmergencyFerryService
             $state = DB::table('promethee_airframe_maintenance')
                 ->where('aircraft_id', $aircraftId)->lockForUpdate()->first();
             $aircraft = Aircraft::query()->lockForUpdate()->findOrFail($aircraftId);
-            if (!$state || ($state->ferry_status ?? null) !== 'arrived'
-                || strtoupper((string) $aircraft->airport_id) !== strtoupper((string) $state->ferry_destination_airport_id)) {
-                throw new RuntimeException('La réparation définitive exige le convoyage terminé sur la base désignée.');
+            $actualAirport = strtoupper((string) $aircraft->airport_id);
+            $divertedToTechnicalBase = $state
+                && ($state->ferry_status ?? null) === 'diverted'
+                && in_array($actualAirport, $this->technicalBases(), true);
+            if (!$state || (
+                !(($state->ferry_status ?? null) === 'arrived'
+                    && $actualAirport === strtoupper((string) $state->ferry_destination_airport_id))
+                && !$divertedToTechnicalBase
+            )) {
+                throw new RuntimeException('La réparation définitive exige une arrivée dans une base technique.');
             }
 
             $legacyActive = Schema::hasTable('disposable_maintenance')
@@ -354,7 +373,7 @@ class AirframeEmergencyFerryService
                 ->where('aircraft_id', $aircraftId)
                 ->where('flight_id', $state->ferry_flight_id)
                 ->where('dpt_airport_id', $state->ferry_origin_airport_id)
-                ->where('arr_airport_id', $state->ferry_destination_airport_id)
+                ->where('arr_airport_id', $actualAirport)
                 ->where('state', PirepState::ACCEPTED)
                 ->exists();
             if (!$accepted) {

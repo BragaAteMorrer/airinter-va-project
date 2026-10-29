@@ -207,6 +207,9 @@
           @if(($state->ferry_status ?? null) === 'authorized')
             <span class="tag">CONVOYAGE TECHNIQUE AUTORISÉ</span><br>
             <small>{{ $state->ferry_origin_airport_id }} → {{ $state->ferry_destination_airport_id }} · avion immobilisé hors mission</small>
+          @elseif(($state->ferry_status ?? null) === 'diverted')
+            <span class="tag">CONVOYAGE DÉROUTÉ · IMMOBILISÉ</span><br>
+            <small>{{ $state->ferry_origin_airport_id }} → {{ $state->ferry_destination_airport_id }} · dérouté vers {{ $state->airport_id }}</small>
           @elseif(($state->ferry_status ?? null) === 'arrived')
             <span class="tag">EN BASE TECHNIQUE · RÉPARATION OBLIGATOIRE</span><br>
             <small>{{ $state->ferry_destination_airport_id }} · ne pas remettre en ligne avant inspection</small>
@@ -248,6 +251,9 @@
             <strong>Dépannage d’urgence / ferry privé</strong><br>
             <small>Prêt le {{ \Carbon\Carbon::parse($state->ferry_ready_at)->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') }}
             · mission n°{{ $state->ferry_mission_id }}</small>
+          @elseif(($state->ferry_status ?? null) === 'diverted')
+            <strong>Déroutement : nouvelle inspection obligatoire</strong><br>
+            <small>Position déclarée {{ $state->airport_id }} · destination initiale {{ $state->ferry_destination_airport_id }}</small>
           @elseif(($state->ferry_status ?? null) === 'arrived')
             <strong>Inspection technique définitive</strong><br>
             <small>Arrivé le {{ \Carbon\Carbon::parse($state->ferry_arrived_at)->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') }}</small>
@@ -289,7 +295,7 @@
           @endif
         </td>
         <td>
-          @if(($state->ferry_status ?? null) === 'arrived')
+          @if(($state->ferry_status ?? null) === 'arrived' || (($state->ferry_status ?? null) === 'diverted' && in_array($state->airport_id, $technicalFerryBases, true)))
             <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.airframe.emergency-ferry.finalize', $state->aircraft_id) : '#' }}" class="inline-form" onsubmit="return confirm('Confirmer la réparation définitive et la remise en service ?');">
               @csrf
               <input name="notes" minlength="12" maxlength="1000" required placeholder="Rapport de réparation définitive" aria-label="Compte-rendu réparation définitive">
@@ -303,7 +309,7 @@
               <button type="submit" @disabled(!$maintenanceActionsReady)>Annuler le convoyage</button>
               <small>Avant réservation et PIREP uniquement ; le pilote doit d’abord annuler sa réservation.</small>
             </form>
-          @elseif($state->safety_hold_at || str_contains(strtolower((string) ($state->active_legacy_check ?? '')), 'hard landing'))
+          @elseif(($state->ferry_status ?? null) === 'diverted' || $state->safety_hold_at || str_contains(strtolower((string) ($state->active_legacy_check ?? '')), 'hard landing'))
             @if($technicalFerryBases && !in_array($state->airport_id, $technicalFerryBases, true))
             <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.airframe.emergency-ferry', $state->aircraft_id) : '#' }}" class="inline-form" onsubmit="return confirm('Inspection provisoire validée ? Autoriser un seul vol sans passagers vers la base choisie ?');">
               @csrf
@@ -320,7 +326,7 @@
               <button type="submit" @disabled(!$maintenanceActionsReady)>Dépannage + convoyage</button>
             </form>
             @endif
-            @if($state->safety_hold_at)
+            @if($state->safety_hold_at && !($state->ferry_status ?? null))
             <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.airframe.safety-hold.release', $state->aircraft_id) : '#' }}" class="inline-form" onsubmit="return confirm('Confirmer que l’inspection technique est terminée et lever l’immobilisation FDM ?');">
               @csrf
               <input name="notes" maxlength="1000" placeholder="Compte-rendu inspection (optionnel)">
@@ -334,7 +340,9 @@
               <button type="submit" @disabled(!$maintenanceActionsReady)>Clôturer la visite échue</button>
             </form>
           @endif
-          @if(!$state->active_check && !$state->active_legacy_check && ($state->ferry_status ?? null) !== 'authorized')
+          @if(!$state->active_check && !$state->active_legacy_check
+              && ($state->ferry_status ?? null) !== 'authorized'
+              && (($state->ferry_status ?? null) !== 'diverted' || in_array($state->airport_id, $technicalFerryBases, true)))
             <form method="post" action="{{ $maintenanceActionsReady ? route('admin.promethee.maintenance.airframe.start', $state->aircraft_id) : '#' }}" class="inline-form" onsubmit="return confirm('Immobiliser cet appareil pour le check sélectionné ?');">
               @csrf
               <select name="check" required>
@@ -377,6 +385,7 @@
         <td>
           @if($event->event_type === 'ferry_authorized') Dépannage / convoyage autorisé
           @elseif($event->event_type === 'ferry_arrived') Convoyage terminé
+          @elseif($event->event_type === 'ferry_diverted') Déroutement et immobilisation
           @elseif($event->event_type === 'ferry_cancelled') Autorisation annulée
           @elseif($event->event_type === 'ferry_released') Réparation définitive
           @elseif($event->event_type === 'safety_hold') Immobilisation sécurité
