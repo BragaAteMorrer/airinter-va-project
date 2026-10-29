@@ -91,7 +91,7 @@
   </section>
   <section class="operations-browser" aria-label="Sélection de l’opération">
     <div class="operations-browser-heading">
-      <div><span class="kicker">01 · OPÉRATION</span><h3>Choisir le vol</h3><p class="hint">Vos réservations d’abord. Le programme complet reste accessible sans mélanger les deux listes.</p></div>
+      <div><span class="kicker">01 · OPÉRATION</span><h3>Choisir le vol</h3><p class="hint">Vos réservations ou le programme complet.</p></div>
       <div class="operations-mode-switch" role="tablist" aria-label="Source des opérations">
         <button id="showBidsBtn" type="button" class="active" role="tab" aria-selected="true">Mes réservations</button>
         <button id="showSearchBtn" type="button" role="tab" aria-selected="false">Rechercher un vol</button>
@@ -121,7 +121,7 @@
   </section>
   <section class="flightplan-source operations-planning">
     <div class="draft-heading ofp-task-heading">
-      <div><span class="kicker">02 · BRIEFING</span><h3>Préparer l’OFP</h3><p>Hermès choisit la meilleure source disponible pour cette opération. Les sources restent modifiables pour les cas particuliers.</p></div>
+      <div><span class="kicker">02 · BRIEFING</span><h3>Préparer l’OFP</h3><p>Choisissez votre source de plan de vol.</p></div>
       <div class="ofp-primary-actions"><button id="prepareOfpBtn" type="button" class="primary">Préparer l’OFP</button><span id="ofpSourceHint" class="hint">Source recommandée : détection en cours…</span></div>
     </div>
     <p class="hint source-choice-label"><strong>Changer de source</strong> · options avancées</p>
@@ -141,7 +141,7 @@
         <div><span class="kicker">COMPTE SIMBRIEF</span><h4>Préparer sur SimBrief puis récupérer l’OFP</h4></div>
         <span class="plan-mode-badge">Compte pilote</span>
       </div>
-      <p class="hint">Hermès envoie le vol, l’appareil, la variante et votre préparation vers votre compte SimBrief. Après génération sur SimBrief, Hermès récupère le dernier OFP lié à votre compte.</p>
+      <p class="hint">Générez votre OFP sur SimBrief, puis importez-le dans Hermès.</p>
       <div class="plan-mode-steps">
         <span><b>1</b> Envoyer la préparation</span>
         <span><b>2</b> Générer / ajuster sur SimBrief</span>
@@ -226,7 +226,7 @@
   <form id="prefileForm" class="grid flight-draft" hidden>
     <div class="draft-heading">
       <div><span class="kicker">BROUILLON OPÉRATIONNEL</span><h3>Personnaliser le vol</h3></div>
-      <p>Les données du programme sont verrouillées. Vous pouvez adapter la préparation avant SimBrief ou l’enregistrement de la préparation.</p>
+      <p>Données du programme verrouillées. Ajustez la préparation avant SimBrief.</p>
     </div>
     <input name="flight_id" type="hidden">
     <input name="airline_id" type="hidden">
@@ -236,7 +236,7 @@
     <label>Add-on simulateur
       <select id="aircraftVariantId" disabled><option value="">Choisissez d’abord un appareil</option></select>
       <span id="aircraftVariantPreview" class="variant-preview" hidden></span>
-      <small>La variante réelle et la configuration Air Inter sont déterminées automatiquement par l’immatriculation.</small>
+      <small>L’immatriculation détermine la configuration réelle.</small>
     </label>
     <label>Départ<input name="dpt_airport_id" required readonly></label>
     <label>Arrivée<input name="arr_airport_id" required readonly></label>
@@ -257,8 +257,8 @@
       <div class="grid simbrief-advanced-grid">
         <label>Profil / Internal ID
           <input name="simbrief_type" maxlength="64" placeholder="Géré par Prométhée / sb-airframe" readonly>
-          <small>Le type de calcul est résolu côté Prométhée depuis sb-airframe afin de préserver l’identité réelle de l’appareil.</small>
-          <small>Un Internal ID force un airframe SimBrief précis (Fenix, PMDG, profil personnel…).</small>
+          <small>Type de calcul résolu par Prométhée via sb-airframe.</small>
+          <small>Un Internal ID force un profil SimBrief précis.</small>
         </label>
         <label>ATC Callsign<input name="callsign" maxlength="16" placeholder="AUTO · ITF143"></label>
         <label>SELCAL<input name="selcal" maxlength="16" placeholder="AUTO · AB-CD"></label>
@@ -523,7 +523,7 @@
   </div>
   <p id="reviewMessage" class="message" hidden role="status"></p>
 </section>
-<section id="settings" class="panel" role="tabpanel" aria-labelledby="tab-settings"><h2>Paramètres ACARS</h2><p class="hint">Les règles compagnie et la cadence live sont reçues de Prométhée ; ces réglages restent locaux et n’exécutent aucun code distant.</p>
+<section id="settings" class="panel" role="tabpanel" aria-labelledby="tab-settings"><h2>Paramètres ACARS</h2><p class="hint">Règles reçues de Prométhée ; paramètres enregistrés localement.</p>
   <form id="settingsForm" class="login-form">
     <label><span>Détection automatique</span><select name="autoDetection"><option value="true">Activée</option><option value="false">Désactivée</option></select></label>
     <label><span>Simulateur principal</span><select name="preferredSimulator"><option value="msfs2024">MSFS 2024</option><option value="msfs2020">MSFS 2020</option><option value="fsx">FSX / Steam</option><option value="p3d">Prepar3D</option><option value="fs2004">FS2004</option><option value="xplane">X-Plane 11 / 12</option></select></label>
@@ -531,11 +531,12 @@
     <label><span>Heure du journal</span><select name="timeFormat"><option value="local">Locale</option><option value="utc">UTC</option></select></label>
     <label><span>Notifications locales</span><select name="notifications"><option value="true">Activées</option><option value="false">Désactivées</option></select></label>
     <label><span>Alias Navigraph / SimBrief</span><input id="simbriefUsername" name="simbriefUsername" autocomplete="off" placeholder="Alias Navigraph"></label>
-    <label><span>Pilot ID SimBrief</span><input id="simbriefPilotId" name="simbriefPilotId" inputmode="numeric" maxlength="7" placeholder="ID numérique"></label>
+    <label><span>Pilot ID SimBrief (facultatif)</span><input id="simbriefPilotId" name="simbriefPilotId" inputmode="numeric" maxlength="7" pattern="[0-9]{1,7}" placeholder="ID numérique"><small>L’alias Navigraph suffit pour importer un OFP.</small><button id="simbriefPilotHelpBtn" type="button" class="link-button">Où trouver mon Pilot ID ?</button></label>
     <label><span>VATSIM CID</span><input id="vatsimCid" name="vatsimCid" inputmode="numeric" maxlength="10" placeholder="Votre CID VATSIM"></label>
     <label><span>IVAO VID</span><input id="ivaoVid" name="ivaoVid" inputmode="numeric" maxlength="12" placeholder="Votre VID IVAO"></label>
+    <p id="networkIdsInfo" class="hint" role="status">Connectez-vous pour récupérer vos identifiants réseau.</p><button id="importNetworkIdsBtn" type="button" disabled>Récupérer CID/VID depuis Prométhée</button>
     <label><span>Indicatif radio souhaité</span><select name="radioCallsign"><option value="AIRINTER">AIRINTER (historique)</option><option value="STANDARD">Indicatif radio standard du vol</option></select></label>
-    <p class="hint">Ce réglage est un aide-mémoire pour les échanges radio : AIRINTER est l’indicatif parlé historique, et non un identifiant de connexion au réseau. L’identifiant ICAO ITF reste inchangé. Le réseau peut afficher un opérateur différent pour ITF.</p>
+    <p class="hint">AIRINTER est l’indicatif radio parlé ; ITF reste l’identifiant ICAO.</p>
     <label><span>Réseau préféré</span><select name="preferredNetwork"><option value="">Aucun</option><option value="vatsim">VATSIM</option><option value="ivao">IVAO</option></select></label>
     <button class="primary">Enregistrer les réglages</button>
   </form>
@@ -614,6 +615,7 @@ if ((localStorage.hermesEra || localStorage.prometheeEra || 'modern') === 'minit
 <script src="/hermes-workflow.js?rev=20261005-modularization-phase2"></script>
 <script src="/hermes-planning.js?rev=20261005-modularization-phase2"></script>
 <script src="/hermes-recovery.js?rev=20261005-modularization-phase2"></script>
-<script src="/hermes-identity.js?rev=20261005-audit-lot12"></script>
+<script src="/hermes-account-sync.js?rev=20261029"></script>
+<script src="/hermes-identity.js?rev=20261029"></script>
 <script src="/app.js?rev=20261005-audit-lot12"></script>
 </body></html>
