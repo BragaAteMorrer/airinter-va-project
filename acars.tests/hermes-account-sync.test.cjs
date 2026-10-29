@@ -60,6 +60,6 @@ assert.equal(elements['#importNetworkIdsBtn'].disabled, true);
   assert.ok(html.indexOf('hermes-account-sync.js') < html.indexOf('hermes-identity.js'));
   assert.match(html, /id="simbriefPilotHelpBtn" type="button"/);
   assert.match(html, /id="importNetworkIdsBtn" type="button"/);
-  assert.match(html, /Pilot ID SimBrief \\(facultatif\\)/);
+  assert.ok(html.includes('Pilot ID SimBrief (facultatif)'));
   console.log('Hermès account sync: pilots scoped, local overrides preserved and SimBrief help verified');
 })().catch(error => { console.error(error); process.exitCode = 1; });
