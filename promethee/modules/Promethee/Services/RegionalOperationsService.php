@@ -41,6 +41,38 @@ class RegionalOperationsService
         ];
     }
 
+    /**
+     * A read-only quote for the mission confirmation screen. The amount is
+     * rechecked under the booking transaction before any debit or jumpseat.
+     */
+    public function quoteRepatriationMission(object $mission, User $user): array
+    {
+        $origin = strtoupper((string) ($user->curr_airport_id ?: $user->home_airport_id));
+        $destination = strtoupper((string) $mission->dpt_airport_id);
+        $jumpseat = $origin !== $destination;
+        $amount = new Money(0);
+
+        if ($jumpseat) {
+            $departureAirport = Airport::findOrFail($origin);
+            $destinationAirport = Airport::findOrFail($destination);
+            $distance = app(AirportService::class)->calculateDistance(
+                $departureAirport->id, $destinationAirport->id
+            )->toUnit('nmi', 2);
+            $basePrice = (float) (DB::table('promethee_settings')
+                ->where('key', 'jumpseat.base_price')->value('value') ?: 0.13);
+            $discount = (float) setting('dbasic.jumpseat_discount', 0);
+            $ratio = $discount > 0 && $discount < 100 ? 1 - ($discount / 100) : 1;
+            $amount = Money::createFromAmount(round($basePrice * $distance * $ratio, 2));
+        }
+
+        return [
+            'origin_airport_id' => $origin,
+            'destination_airport_id' => $destination,
+            'needs_jumpseat' => $jumpseat,
+            'jumpseat_amount' => $amount,
+        ];
+    }
+
     public function sync(bool $forceMissions = false): array
     {
         $settings = $this->settings();
@@ -202,9 +234,9 @@ class RegionalOperationsService
         });
     }
 
-    public function reserveRepatriationMission(int $missionId, User $user, FinanceService $finance): void
+    public function reserveRepatriationMission(int $missionId, User $user, FinanceService $finance, ?array $confirmation = null): void
     {
-        DB::transaction(function () use ($missionId, $user, $finance) {
+        DB::transaction(function () use ($missionId, $user, $finance, $confirmation) {
             $mission = DB::table('promethee_missions')
                 ->where('id', $missionId)
                 ->where('mission_type', 'repatriation')
@@ -233,6 +265,15 @@ class RegionalOperationsService
             abort_if($alreadyReserved, 409, 'Cette mission de rapatriement est déjà réservée.');
 
             $freshUser = User::with(['journal', 'airline.journal', 'rank'])->findOrFail($user->id);
+            $quote = $this->quoteRepatriationMission($mission, $freshUser);
+            if ($confirmation !== null) {
+                abort_if(
+                    strtoupper((string) ($confirmation['origin_airport_id'] ?? '')) !== $quote['origin_airport_id']
+                    || (int) ($confirmation['jumpseat_amount_minor'] ?? -1) !== (int) $quote['jumpseat_amount']->getAmount(),
+                    409,
+                    'Le devis jumpseat a changé depuis la confirmation. Actualisez la mission.'
+                );
+            }
             $aircraft = $mission->aircraft_id
                 ? Aircraft::with('subfleet')->find($mission->aircraft_id)
                 : null;
