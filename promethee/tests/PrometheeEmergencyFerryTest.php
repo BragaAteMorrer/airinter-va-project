@@ -123,12 +123,11 @@ final class PrometheeEmergencyFerryTest extends TestCase
             'Une fausse réparation finale avant convoyage ne doit pas passer.');
     }
 
-    public function test_wrong_arrival_keeps_aircraft_immobilized(): void
+    public function test_diversion_closes_first_mission_and_keeps_plane_grounded(): void
     {
         [$aircraft, , $service] = $this->heldAircraft();
         $result = $service->authorize((int) $aircraft->id, 'LFPG', 1, null,
             'Contrôle de sécurité provisoire et autorisation de rapatriement.');
-
         $pirep = Pirep::factory()->create([
             'aircraft_id' => $aircraft->id,
             'flight_id' => $result['flight_id'],
@@ -136,15 +135,106 @@ final class PrometheeEmergencyFerryTest extends TestCase
             'arr_airport_id' => 'LFPO',
         ]);
         $this->bookAndAcceptFerry($pirep, (int) $result['mission_id']);
-        try {
-            $service->complete($pirep);
-            $this->fail('Wrong destination should be rejected.');
-        } catch (RuntimeException $exception) {
-            $this->assertStringContainsString('incohérent', $exception->getMessage());
-        }
-        $this->assertSame('authorized', $service->state((int) $aircraft->id)->ferry_status);
-        $this->assertSame('LFMN', $aircraft->fresh()->airport_id);
+
+        $this->assertTrue($service->complete($pirep));
+        $this->assertFalse($service->complete($pirep));
+        $this->assertSame('diverted', $service->state((int) $aircraft->id)->ferry_status);
+        $this->assertSame('LFPO', $aircraft->fresh()->airport_id);
         $this->assertSame(AircraftStatus::MAINTENANCE, $aircraft->fresh()->status);
+        $this->assertDatabaseHas('flights', ['id' => $result['flight_id'], 'active' => 0]);
+        $this->assertDatabaseHas('promethee_missions', ['id' => $result['mission_id'], 'active' => 0]);
+        $this->assertDatabaseHas('promethee_airframe_maintenance_events', [
+            'aircraft_id' => $aircraft->id,
+            'event_type' => 'ferry_diverted',
+            'airport_id' => 'LFPO',
+        ]);
+        $this->assertTrue($service->missionIsProtected((int) $result['mission_id']));
+    }
+
+    public function test_diversion_to_non_technical_airport_requires_new_ferry(): void
+    {
+        [$aircraft, , $service] = $this->heldAircraft();
+        $old = $service->authorize((int) $aircraft->id, 'LFPG', 1, null,
+            'Dépannage provisoire et transfert prévu vers la base technique.');
+        $pirep = Pirep::factory()->create([
+            'aircraft_id' => $aircraft->id,
+            'flight_id' => $old['flight_id'],
+            'dpt_airport_id' => 'LFMN',
+            'arr_airport_id' => 'LFMN',
+        ]);
+        $this->bookAndAcceptFerry($pirep, (int) $old['mission_id']);
+        $service->complete($pirep);
+        $this->assertSame('diverted', $service->state((int) $aircraft->id)->ferry_status);
+
+        try {
+            $service->finalize((int) $aircraft->id, null,
+                'Fausse remise en ligne depuis escale non technique.');
+            $this->fail('A non-technical diversion cannot release the aircraft.');
+        } catch (RuntimeException $exception) {
+            $this->assertStringContainsString('base technique', $exception->getMessage());
+        }
+
+        $next = $service->authorize((int) $aircraft->id, 'LFPG', 2, null,
+            'Nouvelle inspection après le déroutement et départ autorisé à vide.');
+        $this->assertNotSame($old['flight_id'], $next['flight_id']);
+        $this->assertSame('authorized', $service->state((int) $aircraft->id)->ferry_status);
+        $this->assertSame(AircraftStatus::MAINTENANCE, $aircraft->fresh()->status);
+    }
+
+    public function test_diversion_to_technical_base_can_be_repaired_on_site(): void
+    {
+        [$aircraft, , $service] = $this->heldAircraft();
+        DB::table('promethee_operational_bases')->updateOrInsert(
+            ['airport_id' => 'LFPO'],
+            [
+                'kind' => 'hub',
+                'is_hub' => true,
+                'is_regional_platform' => false,
+                'is_technical_stop' => false,
+                'check_a' => true,
+                'check_b' => true,
+                'check_c' => true,
+                'small_maintenance' => true,
+                'heavy_maintenance' => true,
+                'active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
+        $old = $service->authorize((int) $aircraft->id, 'LFPG', 1, null,
+            'Inspection favorable pour un retour à la base technique CDG.');
+        $pirep = Pirep::factory()->create([
+            'aircraft_id' => $aircraft->id,
+            'flight_id' => $old['flight_id'],
+            'dpt_airport_id' => 'LFMN',
+            'arr_airport_id' => 'LFPO',
+        ]);
+        $this->bookAndAcceptFerry($pirep, (int) $old['mission_id']);
+        $service->complete($pirep);
+        $this->assertSame('diverted', $service->state((int) $aircraft->id)->ferry_status);
+
+        $service->finalize((int) $aircraft->id, null,
+            'Inspection structurelle définitive sur base Orly, appareil remis en service.');
+        $this->assertSame(AircraftStatus::ACTIVE, $aircraft->fresh()->status);
+        $this->assertSame('LFPO', $aircraft->fresh()->airport_id);
+        $this->assertNull($service->state((int) $aircraft->id)->ferry_status);
+    }
+
+    public function test_diversion_cannot_be_created_from_wrong_departure(): void
+    {
+        [$aircraft, , $service] = $this->heldAircraft();
+        $old = $service->authorize((int) $aircraft->id, 'LFPG', 1, null,
+            'Inspection sécurité favorable avant le convoyage technique.');
+        $pirep = Pirep::factory()->create([
+            'aircraft_id' => $aircraft->id,
+            'flight_id' => $old['flight_id'],
+            'dpt_airport_id' => 'LFPO',
+            'arr_airport_id' => 'LFMN',
+        ]);
+        $this->bookAndAcceptFerry($pirep, (int) $old['mission_id']);
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('PIREP de convoyage incohérent');
+        $service->complete($pirep);
     }
 
     public function test_admin_can_cancel_before_departure_without_releasing_aircraft(): void
