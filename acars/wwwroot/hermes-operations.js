@@ -30,7 +30,6 @@ function displayFlightIdent(flight) {
   return ident || number || 'Vol Air Inter';
 }
 
-// Reservations and programme results share one authoritative flight selection.
 const reservedOperationsByFlight = new Map();
 let selectingOperation = false;
 
@@ -685,7 +684,6 @@ async function selectOperation(operation, { focusPreparation = false } = {}) {
   aircraftEligibility = null;
   $('#quickAircraftSelection').hidden = false;
   if (focusPreparation) {
-    // Show the next step before scrolling; hidden elements cannot be targets.
     requestAnimationFrame(() => $('#quickAircraftSelection')?.scrollIntoView({
       behavior: 'smooth', block: 'start'
     }));
