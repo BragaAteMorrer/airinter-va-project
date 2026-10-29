@@ -375,12 +375,8 @@ class AirframeMaintenanceService
             $aircraft = Aircraft::query()->lockForUpdate()->find($aircraftId);
 
             if (!$state || !$aircraft || !$state->safety_hold_at) return false;
-            if (($state->ferry_status ?? null) === 'authorized') {
-                throw new RuntimeException('Convoyage technique autorisé : impossible de lever l’immobilisation avant l’arrivée en base.');
-            }
-            if (($state->ferry_status ?? null) === 'arrived'
-                && strtoupper((string) $aircraft->airport_id) !== strtoupper((string) $state->ferry_destination_airport_id)) {
-                throw new RuntimeException('La réparation définitive doit avoir lieu sur la base technique désignée.');
+            if ($state->ferry_status ?? null) {
+                throw new RuntimeException('Convoyage technique en cours : utilisez la clôture de réparation définitive.');
             }
 
             $previousReason = (string) ($state->safety_hold_reason ?? '');
