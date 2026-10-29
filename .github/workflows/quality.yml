@@ -57,6 +57,7 @@ jobs:
           node acars.tests/hermes-local-plan.test.cjs
           node acars.tests/hermes-local-plan-flow.test.cjs
           node acars.tests/hermes-local-plan-single-owner.test.cjs
+          node acars.tests/hermes-async-operation-isolation.test.cjs
           node --check acars/wwwroot/hermes-recovery.js
           node --check acars/wwwroot/app.js
           node --check acars/msfs2024-efb/HermesEfb/build.js
