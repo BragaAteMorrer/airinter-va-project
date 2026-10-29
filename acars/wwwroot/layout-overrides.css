@@ -1,2 +1,10 @@
 /* Compatibility stylesheet intentionally kept for existing packaged clients.
    Canonical Hermès layout rules now live in styles.css. */
+
+/* Flight setup: the next step sits directly below the chosen operation. */
+#quickAircraftSelection .grid{grid-template-columns:repeat(3,minmax(0,1fr));align-items:start;gap:14px}
+#quickAircraftSelection .grid>label{display:grid;gap:7px;min-width:0;align-content:start}
+#quickAircraftSelection .grid>label small{display:block;font-size:11px;line-height:1.45;color:var(--muted)}
+#quickAircraftSelection .grid select,#quickAircraftSelection .grid input{width:100%;max-width:100%;min-width:0}
+@media(max-width:950px){#quickAircraftSelection .grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){#quickAircraftSelection .grid{grid-template-columns:1fr}}
