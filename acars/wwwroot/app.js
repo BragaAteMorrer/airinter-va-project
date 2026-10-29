@@ -733,6 +733,7 @@ $('#ivaoPrefileBtn').onclick = async () => {
 
 $('#simbriefAccountOpenBtn').onclick = async event => {
   if (!requireAircraftForSimBrief(event.currentTarget)) return;
+  const expected = captureFlightContext();
   const form = $('#prefileForm');
   const flightId = form.elements.flight_id.value;
   const aircraftId = form.elements.aircraft_id.value;
@@ -746,16 +747,19 @@ $('#simbriefAccountOpenBtn').onclick = async event => {
   try {
     showMessage('#simbriefState', 'Vérification des données Air Inter en BDD…');
     await assertSimBriefReady(form, 'account');
+    assertFlightContext(expected);
     showMessage('#simbriefState', 'Envoi de la préparation Air Inter vers SimBrief…');
     const payload = unwrap(await call(simbriefPath('redirect'), simBriefPlanningPayload(form)));
+    assertFlightContext(expected);
     linkedSimBrief = payload;
     renderSimBriefPreparationSummary(payload.resolved || null);
     const editButton = $('#simbriefAccountEditBtn');
     if (editButton) editButton.hidden = !payload.edit_url;
     await call('/api/open-external', { url: payload.url });
+    assertFlightContext(expected);
     showMessage('#simbriefState', 'SimBrief est ouvert avec les données Air Inter. Personnalisez puis générez l’OFP, revenez ensuite dans Hermès pour l’importer.');
   } catch (error) {
-    showMessage('#simbriefState', friendlyError(error), true);
+    if (sameFlightContext(expected)) showMessage('#simbriefState', friendlyError(error), true);
   }
 };
 
@@ -767,6 +771,7 @@ $('#simbriefAccountEditBtn').onclick = async () => {
 
 $('#simbriefAccountImportBtn').onclick = async event => {
   if (!requireAircraftForSimBrief(event.currentTarget)) return;
+  const expected = captureFlightContext();
   const form = $('#prefileForm');
   const flightId = form.elements.flight_id.value;
   const aircraftId = form.elements.aircraft_id.value;
@@ -784,12 +789,13 @@ $('#simbriefAccountImportBtn').onclick = async event => {
       username: username || null,
       pilot_id: pilotId || null
     }));
+    assertFlightContext(expected);
     linkedSimBrief = { ...(linkedSimBrief || {}), static_id: briefing.static_id, edit_url: briefing.edit_url };
     const editButton = $('#simbriefAccountEditBtn');
     if (editButton) editButton.hidden = !briefing.edit_url;
-    await applyBriefing(briefing, 'le vol SimBrief lié à cette opération');
+    await applyBriefing(briefing, 'le vol SimBrief lié à cette opération', expected);
   } catch (error) {
-    showMessage('#simbriefState', friendlyError(error), true);
+    if (sameFlightContext(expected)) showMessage('#simbriefState', friendlyError(error), true);
   }
 };
 
@@ -964,6 +970,7 @@ $('#resetDraftBtn').onclick = () => {
 
 $('#simbriefBtn').onclick = async event => {
   if (!requireAircraftForSimBrief(event.currentTarget)) return;
+  const expected = captureFlightContext();
   const form = $('#prefileForm');
   const flightId = form.elements.flight_id.value;
   const aircraftId = form.elements.aircraft_id.value;
@@ -971,8 +978,10 @@ $('#simbriefBtn').onclick = async event => {
   try {
     showMessage('#simbriefState', 'Vérification des données Air Inter en BDD…');
     await assertSimBriefReady(form, 'company');
+    assertFlightContext(expected);
     showMessage('#simbriefState', 'Préparation de la demande SimBrief…');
     const session = unwrap(await call(simbriefPath('session'), simBriefPlanningPayload(form)));
+    assertFlightContext(expected);
     if (!session.state) throw new Error('Prométhée n’a pas créé de session SimBrief valide.');
     const popup = window.open('about:blank', 'PrometheeSimBrief', 'width=900,height=720');
     if (!popup) throw new Error('Autorisez les fenêtres contextuelles pour ouvrir SimBrief.');
@@ -994,6 +1003,7 @@ $('#simbriefBtn').onclick = async event => {
     showMessage('#simbriefState', 'Générez l’OFP puis fermez la fenêtre SimBrief.');
 
     const waitForClose = setInterval(async () => {
+      if (!sameFlightContext(expected)) { clearInterval(waitForClose); return; }
       if (!popup.closed) return;
       clearInterval(waitForClose);
       showMessage('#simbriefState', 'Import de l’OFP dans Prométhée…');
@@ -1003,21 +1013,22 @@ $('#simbriefBtn').onclick = async event => {
             aircraft_id: aircraftId,
             state: session.state
           }));
-          await applyBriefing(briefing, 'l’API SimBrief');
+          assertFlightContext(expected);
+          await applyBriefing(briefing, 'l’API SimBrief', expected);
           return;
         } catch (error) {
+          if (!sameFlightContext(expected)) return;
           if (attempt === 5) return showMessage('#simbriefState', friendlyError(error), true);
           await new Promise(resolve => setTimeout(resolve, 1500));
         }
       }
     }, 500);
   } catch (error) {
-    showMessage('#simbriefState', friendlyError(error), true);
+    if (sameFlightContext(expected)) showMessage('#simbriefState', friendlyError(error), true);
   }
 };
 
 // The local plan module is the sole owner of file import and removal.
-// Fail closed if its script cannot load; never pretend an unparsed file is an OFP.
 window.addEventListener('load', () => {
   if (window.HermesLocalPlanUi) return;
   const input = $('#planFile');
@@ -1045,7 +1056,6 @@ async function action(path, success) {
 $('#startBtn').onclick = async () => {
   const button = $('#startBtn');
   if (button.disabled || button.dataset.startPending === 'true') return;
-  // Reject repeat starts even if the UI has not yet received its next status tick.
   if (lastStatus?.flight || lastStatus?.Flight || lastStatus?.recoveryAvailable) {
     updateWorkflow();
     return;
@@ -1069,8 +1079,6 @@ $('#startBtn').onclick = async () => {
     await refreshStatus();
   } catch (error) {
     showMessage('#recordMessage', friendlyError(error), true);
-    // Reconcile the server state, including a start that succeeded but whose
-    // network response was lost, before making Start available again.
     try { await refreshStatus(); } catch {}
   } finally {
     delete button.dataset.startPending;
@@ -1273,9 +1281,6 @@ $('#recoveryReviewBtn').onclick = async () => {
 
 $('#recoveryResumeBtn').onclick = async () => {
   try {
-    // Rehydrate the authoritative server operation BEFORE re-enabling local
-    // recording. A CTD/restart must never resume against a stale UI selection
-    // or silently lose the physical aircraft assigned to the active PIREP.
     await refreshOperations();
 
     const localFlight = lastStatus?.flight || lastStatus?.Flight || {};

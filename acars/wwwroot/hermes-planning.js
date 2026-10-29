@@ -1,47 +1,6 @@
 // Hermès modularization phase 2 — planning domain.
 // Classic script: preserves the existing shared runtime/global handler contract.
 
-async function refreshDispatch() {
-  const operationRef = selectedOperation?.operation_id || selectedOperation?.id;
-  if (!operationRef) { serverDispatch = null; clearOperationalWeather(); return null; }
-
-  const currentWeather = serverDispatch?.weather || null;
-  serverDispatch = unwrap(await call(`/api/v1/operations/${encodeURIComponent(operationRef)}/dispatch`));
-  if (currentWeather) serverDispatch.weather = currentWeather;
-
-  // A dispatch refresh is the canonical recovery path for Hermès. Hydrate all
-  // identifiers that may have been lost when the desktop app was restarted.
-  if (serverDispatch?.operation) {
-    selectedOperation = { ...(selectedOperation || {}), ...serverDispatch.operation };
-  }
-  const dispatchPirepId = serverDispatch?.pirep?.id
-    || serverDispatch?.pirep?.pirep_id
-    || serverDispatch?.operation?.pirep_id
-    || null;
-  if (dispatchPirepId) pirepId = dispatchPirepId;
-
-  if (serverDispatch?.operation?.aircraft?.id) {
-    selectedAircraft = serverDispatch.operation.aircraft;
-    const form = $('#prefileForm');
-    if (form?.elements?.aircraft_id) form.elements.aircraft_id.value = selectedAircraft.id;
-    renderOperationLoad(selectedAircraft);
-    syncAircraftSelectors(selectedAircraft);
-    selectedVariant = serverDispatch.operation?.simbrief?.variant || selectedVariant;
-    renderAircraftVariants(serverDispatch.operation?.simbrief || aircraftVariantState || { variants: [] });
-  }
-  const checks = serverDispatch?.server_checks || {};
-  readiness.operation = Boolean(checks.operation);
-  readiness.aircraft = Boolean(checks.aircraft);
-  readiness.ofp = Boolean(checks.ofp);
-  readiness.pirep = Boolean(checks.pirep);
-
-  const labels = { PREPARATION_REQUIRED: 'PRÉPARATION REQUISE', READY: 'PRÊT POUR HERMÈS', IN_PROGRESS: 'VOL EN COURS', AWAITING_FILING: 'ARRIVÉ · PIREP À DÉPOSER', COMPLETED: 'VOL TERMINÉ', CANCELLED: 'OPÉRATION ANNULÉE' };
-  setText($('#operationBrief'), `${labels[serverDispatch?.status] || serverDispatch?.status || 'DISPATCH'} · Dispatch Prométhée`);
-  updateWorkflow();
-  scheduleEfbContextSync();
-  return serverDispatch;
-}
-
 async function assertDispatchCanStart() {
   const dispatch = await refreshDispatch();
   const checks = dispatch?.server_checks || {};
@@ -141,7 +100,9 @@ function simBriefPlanningPayload(form) {
 }
 
 async function assertSimBriefReady(form, mode = 'company') {
+  const expected = captureFlightContext();
   const resolved = unwrap(await call(simbriefPath('readiness'), simBriefPlanningPayload(form)));
+  assertFlightContext(expected);
   const ready = mode === 'account'
     ? Boolean(resolved?.ready_account)
     : Boolean(resolved?.ready_company_api ?? resolved?.ready);
@@ -190,7 +151,8 @@ function renderNetworkPrefiles(prefiles) {
     : '');
 }
 
-async function applyBriefing(briefing, sourceLabel) {
+async function applyBriefing(briefing, sourceLabel, expected = captureFlightContext()) {
+  assertFlightContext(expected);
   // Once the actual OFP is imported, the provisional FPL preview is obsolete.
   window.HermesLocalPlanUi?.complete?.();
   const form = $('#prefileForm');
@@ -243,10 +205,12 @@ async function applyBriefing(briefing, sourceLabel) {
   // The imported OFP is authoritative for the client immediately. Refresh the
   // dispatch so step 03 cannot remain stuck on a stale server snapshot.
   try { await refreshDispatch(); } catch {}
+  assertFlightContext(expected);
   updateWorkflow();
 
   showMessage('#simbriefState', 'OFP importé depuis ' + sourceLabel + '. Enregistrement automatique de la préparation opérationnelle…');
   if (!pirepId && !(await prefilePreparedOperation({ navigate: false, automatic: true }))) return;
+  assertFlightContext(expected);
   window.dispatchEvent(new CustomEvent('hermes:ofp-ready-for-network', { detail: { hasPrefiles: Boolean(flightPlan?.network_prefiles) } }));
   drawMap(flightMapState.lastTrack, lastStatus?.latest || {});
 }
@@ -316,6 +280,7 @@ function setPlanMode(mode) {
 }
 
 async function prefilePreparedOperation({ navigate = true, automatic = false } = {}) {
+  const expected = captureFlightContext();
   const form = $('#prefileForm');
   const body = Object.fromEntries([...new FormData(form)].filter(([, value]) => value !== ''));
   if (!body.aircraft_id) {
@@ -335,6 +300,7 @@ async function prefilePreparedOperation({ navigate = true, automatic = false } =
     // Never regard a locally imported route (or a client source label) as an OFP.
     // Check Prométhée's authoritative operation state immediately before PREFILE.
     const verifiedDispatch = await refreshDispatch();
+    assertFlightContext(expected);
     if (verifiedDispatch?.server_checks?.ofp !== true)
       throw new Error('Aucun OFP SimBrief lié à cette opération. Générez ou récupérez l’OFP avant de préparer le PIREP.');
 
@@ -351,10 +317,12 @@ async function prefilePreparedOperation({ navigate = true, automatic = false } =
     if (!operationRef) throw new Error('Impossible de préparer le brouillon PIREP sans operation_id.');
 
     const result = unwrap(await call(`/api/v1/operations/${encodeURIComponent(operationRef)}/pirep`, operationPirepBody));
+    assertFlightContext(expected);
     pirepId = result.id || result.pirep_id || result.pirep?.id;
     if (!pirepId) throw new Error('Prométhée n’a pas retourné l’identifiant du PIREP.');
 
     await refreshDispatch();
+    assertFlightContext(expected);
     updateWorkflow();
     showMessage(
       '#pirepMessage',
@@ -368,6 +336,7 @@ async function prefilePreparedOperation({ navigate = true, automatic = false } =
     if (navigate) document.querySelector('[data-tab="record"]')?.click();
     return true;
   } catch (error) {
+    if (!sameFlightContext(expected)) return false;
     showMessage('#pirepMessage', friendlyError(error), true);
     if (automatic) showMessage('#simbriefState', 'OFP importé. Préparation du brouillon PIREP impossible : ' + friendlyError(error), true);
     return false;
