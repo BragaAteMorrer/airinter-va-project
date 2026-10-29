@@ -241,8 +241,7 @@ function updateNextAction(state, ready) {
     setText(button, mode === 'account' ? (hasSimBriefIdentity ? 'Envoyer vers SimBrief' : 'Ajouter mon alias') : (mode === 'api' ? 'Générer l’OFP' : 'Charger un plan'));
     action = () => {
       if (mode === 'account' && !hasSimBriefIdentity) {
-        $('#simbriefUsername')?.focus();
-        $('#simbriefUsername')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        openSimBriefAccountSettings();
       } else if (mode === 'account') $('#simbriefAccountOpenBtn')?.click();
       else if (mode === 'api') $('#simbriefBtn')?.click();
       else $('#planFile')?.click();
