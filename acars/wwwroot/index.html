@@ -541,9 +541,10 @@
     <label><span>Heure du journal</span><select name="timeFormat"><option value="local">Locale</option><option value="utc">UTC</option></select></label>
     <label><span>Notifications locales</span><select name="notifications"><option value="true">Activées</option><option value="false">Désactivées</option></select></label>
     <label><span>Alias Navigraph / SimBrief</span><input id="simbriefUsername" name="simbriefUsername" autocomplete="off" placeholder="Alias Navigraph"></label>
-    <label><span>Pilot ID SimBrief</span><input id="simbriefPilotId" name="simbriefPilotId" inputmode="numeric" maxlength="7" placeholder="ID numérique"></label>
+    <label><span>Pilot ID SimBrief (facultatif)</span><input id="simbriefPilotId" name="simbriefPilotId" inputmode="numeric" maxlength="7" pattern="[0-9]{1,7}" placeholder="ID numérique"><small>L’alias Navigraph suffit pour préparer un OFP. <button id="simbriefPilotHelpBtn" type="button">Où trouver mon Pilot ID ?</button></small></label>
     <label><span>VATSIM CID</span><input id="vatsimCid" name="vatsimCid" inputmode="numeric" maxlength="10" placeholder="Votre CID VATSIM"></label>
     <label><span>IVAO VID</span><input id="ivaoVid" name="ivaoVid" inputmode="numeric" maxlength="12" placeholder="Votre VID IVAO"></label>
+    <p id="networkIdsInfo" class="hint" role="status">Connectez-vous pour récupérer vos identifiants réseau.</p><button id="importNetworkIdsBtn" type="button" disabled>Récupérer CID/VID depuis Prométhée</button>
     <label><span>Indicatif radio souhaité</span><select name="radioCallsign"><option value="AIRINTER">AIRINTER (historique)</option><option value="STANDARD">Indicatif radio standard du vol</option></select></label>
     <p class="hint">AIRINTER est un indicatif radio parlé : l’identifiant ICAO ITF reste inchangé.</p>
     <label><span>Réseau préféré</span><select name="preferredNetwork"><option value="">Aucun</option><option value="vatsim">VATSIM</option><option value="ivao">IVAO</option></select></label>
@@ -624,7 +625,8 @@ if ((localStorage.hermesEra || localStorage.prometheeEra || 'modern') === 'minit
 <script src="/hermes-workflow.js?rev=20261005-modularization-phase2"></script>
 <script src="/hermes-planning.js?rev=20261005-modularization-phase2"></script>
 <script src="/hermes-recovery.js?rev=20261005-modularization-phase2"></script>
-<script src="/hermes-identity.js?rev=20261005-audit-lot12"></script>
+<script src="/hermes-account-sync.js?rev=20261029"></script>
+<script src="/hermes-identity.js?rev=20261029"></script>
 <script src="/hermes-flight-setup.js?rev=20261029-setup"></script>
 <script src="/app.js?rev=20261029-setup"></script>
 </body></html>
