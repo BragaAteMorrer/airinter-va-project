@@ -121,7 +121,17 @@ class DS_MaintenanceController extends Controller
             $maint->rem_ta = $maint->limits->time_a - $maint->time_a;
         }
 
-        $aircraft->status = AircraftStatus::ACTIVE;
+        $groundedByPromethee = \Illuminate\Support\Facades\Schema::hasTable('promethee_airframe_maintenance')
+            && \Illuminate\Support\Facades\Schema::hasColumn('promethee_airframe_maintenance', 'safety_hold_at')
+            && \Illuminate\Support\Facades\DB::table('promethee_airframe_maintenance')
+                ->where('aircraft_id', $aircraft->id)
+                ->where(function ($query) {
+                    $query->whereNotNull('safety_hold_at');
+                    if (\Illuminate\Support\Facades\Schema::hasColumn('promethee_airframe_maintenance', 'ferry_status')) {
+                        $query->orWhereNotNull('ferry_status');
+                    }
+                })->exists();
+        $aircraft->status = $groundedByPromethee ? AircraftStatus::MAINTENANCE : AircraftStatus::ACTIVE;
 
         if ($request->ops === 'manual') {
             $maint_expense = app(Expense_Maintenance::class);
