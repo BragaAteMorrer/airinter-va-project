@@ -156,10 +156,10 @@ public sealed class SimConnectReader : ISimulatorConnector, IHermesEfbTransport
         }
         if(requestId==FenixRequestId) {
             if(length>=40+2*8) {
-                var v=new double[2];
-                Marshal.Copy(IntPtr.Add(data,40),v,0,v.Length);
-                fenixParkingBrake=ReadBooleanLVar(v[0]);
-                wheelChocks=ReadBooleanLVar(v[1]);
+                var fenixRaw=new double[2];
+                Marshal.Copy(IntPtr.Add(data,40),fenixRaw,0,fenixRaw.Length);
+                fenixParkingBrake=ReadBooleanLVar(fenixRaw[0]);
+                wheelChocks=ReadBooleanLVar(fenixRaw[1]);
                 fenixValuesAt=DateTimeOffset.UtcNow;
             }
             return;
