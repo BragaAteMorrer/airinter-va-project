@@ -26,7 +26,8 @@ class AvatarDeliveryTest extends TestCase
             'state' => 'active',
         ]);
 
-        $this->get('/avatars/'.$filename)->assertOk()->assertSee('test-image-bytes');
+        $response = $this->get('/avatars/'.$filename)->assertOk();
+        $this->assertSame('test-image-bytes', $response->streamedContent());
         $this->get('/storage/avatars/'.$filename)->assertOk();
     }
 
