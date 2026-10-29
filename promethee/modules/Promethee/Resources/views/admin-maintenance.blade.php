@@ -282,7 +282,7 @@
               <br><small><strong>Temps restant :</strong> {{ intdiv($state->active_remaining_minutes, 60) }} h {{ str_pad((string) ($state->active_remaining_minutes % 60), 2, '0', STR_PAD_LEFT) }} min</small>
             @endif
             @if($state->active_progress_percent !== null)
-              <br><progress value="{{ $state->active_progress_percent }}" max="100" style="width:100%;height:0.6rem;" aria-label="Progression de la visite de {{ $state->registration }}"></progress>
+              <br><progress value="{{ $state->active_progress_percent }}" max="100" class="maintenance-progress" aria-label="Progression de la visite de {{ $state->registration }}"></progress>
               <br><small>{{ number_format($state->active_progress_percent, 0, ',', ' ') }} % du délai prévu écoulé</small>
             @endif
           @endif
@@ -308,7 +308,7 @@
                   @endif
                 @endforeach
               </select>
-              <input type="number" name="repair_hours" value="4" min="1" max="48" required style="width:5rem" aria-label="Durée du dépannage en heures" title="Durée de dépannage en heures">
+              <input type="number" name="repair_hours" value="4" min="1" max="48" required class="maintenance-repair-hours" aria-label="Durée du dépannage en heures" title="Durée de dépannage en heures">
               <input name="notes" minlength="12" maxlength="1000" placeholder="Inspection provisoire / verdict technique" required aria-label="Compte-rendu inspection">
               <button type="submit" @disabled(!$maintenanceActionsReady)>Dépannage + convoyage</button>
             </form>

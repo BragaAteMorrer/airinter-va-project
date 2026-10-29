@@ -66,3 +66,7 @@
 @media(max-width:1100px){.admin-filter-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.rank-admin-grid{grid-template-columns:1fr}.pilot-record-grid{grid-template-columns:1fr}.pilot-record-side{grid-template-columns:repeat(2,minmax(0,1fr))}.pilot-record-side .panel:last-child{grid-column:1/-1}}
 @media(max-width:760px){.admin-filter-grid{grid-template-columns:1fr}.admin-filter-grid label.wide{grid-column:auto}.admin-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.pilot-record-side{grid-template-columns:1fr}.pilot-record-side .panel:last-child{grid-column:auto}.admin-toggle-grid{grid-template-columns:1fr}.rank-card-head,.rank-card-footer{display:grid}.admin-form-footer>*{width:100%}}
 @media(max-width:460px){.admin-kpi-grid{grid-template-columns:1fr}}
+
+/* Technical maintenance controls */
+.maintenance-progress{width:100%;height:.6rem}
+.maintenance-repair-hours{width:5rem}
