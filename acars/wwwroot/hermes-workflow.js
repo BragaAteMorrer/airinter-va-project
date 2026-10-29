@@ -1,6 +1,65 @@
 // Hermès modularization phase 2 — workflow domain.
 // Classic script: preserves the existing shared runtime/global handler contract.
 
+let dispatchRequestSequence = 0;
+function captureFlightContext() {
+  return {
+    operation: String(selectedOperation?.operation_id || selectedOperation?.bid_id || selectedOperation?.id || ''),
+    aircraft: String($('#prefileForm')?.elements?.aircraft_id?.value || selectedAircraft?.id || '')
+  };
+}
+function sameFlightContext(expected) {
+  const current = captureFlightContext();
+  return Boolean(expected?.operation && expected.operation === current.operation
+    && expected.aircraft === current.aircraft);
+}
+function assertFlightContext(expected) {
+  if (!sameFlightContext(expected))
+    throw new Error('Le vol ou l’appareil a changé pendant cette requête. Reprenez la préparation sur le vol sélectionné.');
+}
+async function refreshDispatch() {
+  const expected = captureFlightContext();
+  const operationRef = expected.operation;
+  const sequence = ++dispatchRequestSequence;
+  if (!operationRef) { serverDispatch = null; clearOperationalWeather(); return null; }
+
+  const currentWeather = serverDispatch?.weather || null;
+  const received = unwrap(await call(`/api/v1/operations/${encodeURIComponent(operationRef)}/dispatch`));
+  if (sequence !== dispatchRequestSequence || !sameFlightContext(expected)) return null;
+  serverDispatch = received;
+  if (currentWeather) serverDispatch.weather = currentWeather;
+
+  if (serverDispatch?.operation) {
+    selectedOperation = { ...(selectedOperation || {}), ...serverDispatch.operation };
+  }
+  const dispatchPirepId = serverDispatch?.pirep?.id
+    || serverDispatch?.pirep?.pirep_id
+    || serverDispatch?.operation?.pirep_id
+    || null;
+  if (dispatchPirepId) pirepId = dispatchPirepId;
+
+  if (serverDispatch?.operation?.aircraft?.id) {
+    selectedAircraft = serverDispatch.operation.aircraft;
+    const form = $('#prefileForm');
+    if (form?.elements?.aircraft_id) form.elements.aircraft_id.value = selectedAircraft.id;
+    renderOperationLoad(selectedAircraft);
+    syncAircraftSelectors(selectedAircraft);
+    selectedVariant = serverDispatch.operation?.simbrief?.variant || selectedVariant;
+    renderAircraftVariants(serverDispatch.operation?.simbrief || aircraftVariantState || { variants: [] });
+  }
+  const checks = serverDispatch?.server_checks || {};
+  readiness.operation = Boolean(checks.operation);
+  readiness.aircraft = Boolean(checks.aircraft);
+  readiness.ofp = Boolean(checks.ofp);
+  readiness.pirep = Boolean(checks.pirep);
+
+  const labels = { PREPARATION_REQUIRED: 'PRÉPARATION REQUISE', READY: 'PRÊT POUR HERMÈS', IN_PROGRESS: 'VOL EN COURS', AWAITING_FILING: 'ARRIVÉ · PIREP À DÉPOSER', COMPLETED: 'VOL TERMINÉ', CANCELLED: 'OPÉRATION ANNULÉE' };
+  setText($('#operationBrief'), `${labels[serverDispatch?.status] || serverDispatch?.status || 'DISPATCH'} · Dispatch Prométhée`);
+  updateWorkflow();
+  scheduleEfbContextSync();
+  return serverDispatch;
+}
+
 function snapshotValue(snapshot, camel, pascal = camel) {
   return snapshot?.[camel] ?? snapshot?.[pascal] ?? null;
 }
