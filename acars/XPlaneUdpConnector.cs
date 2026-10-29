@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -5,16 +6,21 @@ using System.Text;
 namespace Promethee;
 
 /// <summary>
-/// X-Plane's documented local UDP DataRef (RREF) protocol. It only talks to
-/// loopback and requests read-only values; X-Plane must be running locally.
-/// Validation on XP11/XP12 remains required before this can be called supported.
+/// Read-only X-Plane 11/12 RREF transport over localhost UDP.
+/// Subscriptions have a fixed 413-byte wire format; replies may use either
+/// the modern "RREF," or older "RREF\0" five-byte prefix.
+/// Actual XP11/XP12 flight validation is still required.
 /// </summary>
 public sealed class XPlaneUdpConnector : ISimulatorConnector
 {
-    private const int XPlanePort = 49000;
-    private readonly UdpClient socket = new(0);
-    private readonly Dictionary<int, float> values = [];
-    private DateTimeOffset lastRequest;
+    private const int DefaultXPlanePort = 49000;
+    private const int RequestSize = 413; // 5-byte header, 2 int32 fields, char[400]
+    private static readonly TimeSpan FreshnessTimeout = TimeSpan.FromSeconds(15);
+    private static readonly TimeSpan SubscriptionRefresh = TimeSpan.FromSeconds(5);
+    private readonly int xPlanePort;
+    private UdpClient? socket;
+    private readonly Dictionary<int, (float Value, DateTimeOffset ReceivedAt)> values = [];
+    private DateTimeOffset lastRequest = DateTimeOffset.MinValue;
 
     public SimulatorDescriptor Descriptor { get; } = new(
         SimulatorKind.XPlane, "X-Plane (UDP DataRef)", "xplane-udp",
@@ -25,99 +31,176 @@ public sealed class XPlaneUdpConnector : ISimulatorConnector
     public AircraftSnapshot? LatestSnapshot { get; private set; }
     public event Action<AircraftSnapshot>? SnapshotReceived;
 
-    public XPlaneUdpConnector()
+    // Port injection allows deterministic loopback tests without requiring a running X-Plane.
+    public XPlaneUdpConnector(int xPlanePort = DefaultXPlanePort)
     {
-        socket.Client.ReceiveTimeout = 1;
-        socket.Client.Blocking = false;
+        if (xPlanePort is < 1 or > 65535) throw new ArgumentOutOfRangeException(nameof(xPlanePort));
+        this.xPlanePort = xPlanePort;
     }
 
     public void Poll()
     {
-        try {
-            if (DateTimeOffset.UtcNow - lastRequest > TimeSpan.FromSeconds(5)) RequestDataRefs();
-            while (socket.Available > 0) Receive();
-            if (LatestSnapshot is not null && DateTimeOffset.UtcNow - LatestSnapshot.RecordedAt > TimeSpan.FromSeconds(15)) {
-                ConnectionState = SimulatorConnectionState.NotDetected;
-                Status = "X-Plane non connecté";
+        try
+        {
+            EnsureSocket();
+            if (DateTimeOffset.UtcNow - lastRequest >= SubscriptionRefresh)
+                RequestDataRefs();
+            while (socket!.Available > 0)
+                Receive();
+
+            if (LatestSnapshot is { } latest
+                && DateTimeOffset.UtcNow - latest.RecordedAt > FreshnessTimeout)
+            {
+                // A partial / stopped RREF feed is not an active simulator connection.
+                values.Clear();
+                LatestSnapshot = null;
+                ConnectionState = SimulatorConnectionState.Connecting;
+                Status = "X-Plane : données expirées, reconnexion UDP…";
             }
-        } catch (SocketException) {
-            ConnectionState = SimulatorConnectionState.NotDetected;
-            Status = "X-Plane non connecté";
         }
+        catch (SocketException exception)
+        {
+            ResetTransport();
+            ConnectionState = SimulatorConnectionState.Faulted;
+            Status = "X-Plane : erreur UDP (" + exception.SocketErrorCode + "), nouvel essai…";
+        }
+        catch (ObjectDisposedException)
+        {
+            // The hub may dispose an inactive transport: recreate it on next Poll.
+            ResetTransport();
+        }
+    }
+
+    private void EnsureSocket()
+    {
+        if (socket is not null) return;
+        socket = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+        socket.Client.Blocking = false;
+        lastRequest = DateTimeOffset.MinValue;
     }
 
     private void RequestDataRefs()
     {
-        lastRequest = DateTimeOffset.UtcNow;
-        foreach (var (index, dataRef) in DataRefs) {
-            var name = Encoding.ASCII.GetBytes(dataRef + "\0");
-            var packet = new byte[13 + name.Length];
+        var destination = new IPEndPoint(IPAddress.Loopback, xPlanePort);
+        foreach (var (index, dataRef) in DataRefs)
+        {
+            var name = Encoding.ASCII.GetBytes(dataRef);
+            if (name.Length >= 400)
+                throw new InvalidOperationException("Nom DataRef X-Plane trop long.");
+
+            // Do not send 13 + name.Length: X-Plane requires the full char[400].
+            var packet = new byte[RequestSize];
             Encoding.ASCII.GetBytes("RREF\0").CopyTo(packet, 0);
-            BitConverter.GetBytes(5).CopyTo(packet, 5); // five reports per second
-            BitConverter.GetBytes(index).CopyTo(packet, 9);
+            BinaryPrimitives.WriteInt32LittleEndian(packet.AsSpan(5, 4), 5);
+            BinaryPrimitives.WriteInt32LittleEndian(packet.AsSpan(9, 4), index);
             name.CopyTo(packet, 13);
-            socket.Send(packet, packet.Length, new IPEndPoint(IPAddress.Loopback, XPlanePort));
+            socket!.Send(packet, packet.Length, destination);
         }
-        if (ConnectionState == SimulatorConnectionState.NotDetected) {
+
+        lastRequest = DateTimeOffset.UtcNow;
+        if (ConnectionState != SimulatorConnectionState.Connected)
+        {
             ConnectionState = SimulatorConnectionState.Connecting;
-            Status = "Connexion à X-Plane (UDP)…";
+            Status = "En attente de données X-Plane UDP (127.0.0.1:" + xPlanePort + ")…";
         }
     }
 
     private void Receive()
     {
         var source = new IPEndPoint(IPAddress.Loopback, 0);
-        var packet = socket.Receive(ref source);
-        if (!source.Address.Equals(IPAddress.Loopback) || packet.Length < 13 || Encoding.ASCII.GetString(packet, 0, 5) != "RREF\0") return;
-        for (var offset = 5; offset + 8 <= packet.Length; offset += 8)
-            values[BitConverter.ToInt32(packet, offset)] = BitConverter.ToSingle(packet, offset + 4);
+        var packet = socket!.Receive(ref source);
+        if (!source.Address.Equals(IPAddress.Loopback) || source.Port != xPlanePort
+            || packet.Length < 13 || (packet.Length - 5) % 8 != 0)
+            return;
 
-        if (!values.TryGetValue(Latitude, out var lat) || !values.TryGetValue(Longitude, out var lon)
-            || !values.TryGetValue(AltitudeMeters, out var altitude)) return;
+        // RREF replies from X-Plane 11/12 start with "RREF,"; older versions
+        // may send "RREF\0". The request header is always "RREF\0".
+        if (packet[0] != (byte)'R' || packet[1] != (byte)'R'
+            || packet[2] != (byte)'E' || packet[3] != (byte)'F'
+            || (packet[4] != (byte)',' && packet[4] != 0))
+            return;
+
+        var now = DateTimeOffset.UtcNow;
+        for (var offset = 5; offset + 8 <= packet.Length; offset += 8)
+        {
+            var index = BinaryPrimitives.ReadInt32LittleEndian(packet.AsSpan(offset, 4));
+            if (index < Latitude || index > Paused) continue;
+
+            var bits = BinaryPrimitives.ReadInt32LittleEndian(packet.AsSpan(offset + 4, 4));
+            var value = BitConverter.Int32BitsToSingle(bits);
+            // Unknown refs can report sentinel values; never turn them into
+            // valid positions, ground states or aircraft-system readings.
+            if (float.IsFinite(value) && value > -999000f)
+                values[index] = (value, now);
+            else
+                values.Remove(index);
+        }
+
+        if (GetOptional(Latitude, now) is not { } lat
+            || GetOptional(Longitude, now) is not { } lon
+            || GetOptional(AltitudeMeters, now) is not { } altitude
+            || lat is < -90 or > 90 || lon is < -180 or > 180)
+            return;
 
         var snapshot = new AircraftSnapshot(
-            Guid.NewGuid(), DateTimeOffset.UtcNow,
+            Guid.NewGuid(), now,
             Latitude: lat, Longitude: lon, AltitudeMslFeet: MetersToFeet(altitude),
-            AltitudeAglFeet: GetConverted(AglMeters, 3.280839895),
-            IndicatedAirspeedKnots: GetConverted(IasMps, 1.943844492),
-            GroundSpeedKnots: GetConverted(GroundSpeedMps, 1.943844492),
-            HeadingDegrees: GetOptional(HeadingDegrees),
-            VerticalSpeedFeetPerMinute: GetConverted(VerticalSpeedMps, 196.850394),
-            OnGround: GetBoolean(OnGround), ParkingBrake: GetBoolean(ParkingBrake),
-            FuelWeight: GetOptional(FuelKg), GearDown: GetBoolean(GearRatio, .95f),
-            FlapsPercent: GetConverted(FlapsRatio, 100),
-            Paused: GetBoolean(Paused),
-            PauseKind: GetBoolean(Paused) == true ? "PAUSE" : null);
+            AltitudeAglFeet: GetConverted(AglMeters, 3.280839895, now),
+            // X-Plane indicated_airspeed is already KIAS, not m/s.
+            IndicatedAirspeedKnots: GetOptional(IasKnots, now),
+            GroundSpeedKnots: GetConverted(GroundSpeedMps, 1.943844492, now),
+            HeadingDegrees: GetOptional(HeadingDegrees, now),
+            VerticalSpeedFeetPerMinute: GetConverted(VerticalSpeedMps, 196.850394, now),
+            OnGround: GetBoolean(OnGround, now),
+            ParkingBrake: GetBoolean(ParkingBrake, now),
+            FuelWeight: GetOptional(FuelKg, now),
+            GearDown: GetBoolean(GearRatio, now, .95f),
+            FlapsPercent: GetConverted(FlapsRatio, 100, now),
+            Paused: GetBoolean(Paused, now),
+            PauseKind: GetBoolean(Paused, now) == true ? "PAUSE" : null);
+
         LatestSnapshot = snapshot;
         ConnectionState = SimulatorConnectionState.Connected;
         Status = "Connecté à X-Plane (UDP expérimental)";
         SnapshotReceived?.Invoke(snapshot);
     }
 
-    // Missing DataRefs must stay UNKNOWN. Returning 0/false here would create
-    // fake ground, fuel, gear or flight-dynamics facts and can corrupt FDM.
-    private float? GetOptional(int index) =>
-        values.TryGetValue(index, out var value) && float.IsFinite(value) ? value : null;
+    // Missing or stale DataRefs stay null, never false/zero by assumption.
+    private float? GetOptional(int index, DateTimeOffset now) =>
+        values.TryGetValue(index, out var entry)
+        && now - entry.ReceivedAt <= FreshnessTimeout
+            ? entry.Value : null;
 
-    private double? GetConverted(int index, double factor)
+    private double? GetConverted(int index, double factor, DateTimeOffset now)
     {
-        var value = GetOptional(index);
+        var value = GetOptional(index, now);
         return value is null ? null : value.Value * factor;
     }
 
-    private bool? GetBoolean(int index, float threshold = .5f)
+    private bool? GetBoolean(int index, DateTimeOffset now, float threshold = .5f)
     {
-        var value = GetOptional(index);
+        var value = GetOptional(index, now);
         return value is null ? null : value.Value > threshold;
     }
 
-    public void Dispose() => socket.Dispose();
+    private void ResetTransport()
+    {
+        socket?.Dispose();
+        socket = null;
+        values.Clear();
+        lastRequest = DateTimeOffset.MinValue;
+        LatestSnapshot = null;
+        ConnectionState = SimulatorConnectionState.NotDetected;
+        Status = "X-Plane non connecté";
+    }
+
+    // The simulator hub also calls Dispose on standby connectors. Dispose
+    // releases the UDP socket but does not permanently disable future Polls.
+    public void Dispose() => ResetTransport();
 
     private static double MetersToFeet(float value) => value * 3.280839895;
-    private static double MetersPerSecondToKnots(float value) => value * 1.943844492;
-    private static double MetersPerSecondToFeetPerMinute(float value) => value * 196.850394;
 
-    private const int Latitude = 1, Longitude = 2, AltitudeMeters = 3, AglMeters = 4, IasMps = 5,
+    private const int Latitude = 1, Longitude = 2, AltitudeMeters = 3, AglMeters = 4, IasKnots = 5,
         GroundSpeedMps = 6, HeadingDegrees = 7, VerticalSpeedMps = 8, OnGround = 9, ParkingBrake = 10,
         FuelKg = 11, GearRatio = 12, FlapsRatio = 13, Paused = 14;
     private static readonly (int Index, string DataRef)[] DataRefs = [
@@ -125,7 +208,7 @@ public sealed class XPlaneUdpConnector : ISimulatorConnector
         (Longitude, "sim/flightmodel/position/longitude"),
         (AltitudeMeters, "sim/flightmodel/position/elevation"),
         (AglMeters, "sim/flightmodel/position/y_agl"),
-        (IasMps, "sim/flightmodel/position/indicated_airspeed"),
+        (IasKnots, "sim/flightmodel/position/indicated_airspeed"),
         (GroundSpeedMps, "sim/flightmodel/position/groundspeed"),
         (HeadingDegrees, "sim/flightmodel/position/true_psi"),
         (VerticalSpeedMps, "sim/flightmodel/position/vh_ind"),

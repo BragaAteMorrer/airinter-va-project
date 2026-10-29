@@ -72,7 +72,29 @@ un vol Hermès existant n'est pas recréé lors du retour de télémétrie.
 
 ## X-Plane
 
-`XPlaneUdpConnector` envoie uniquement des requêtes RREF à
-`127.0.0.1:49000` et n'écoute que les réponses loopback. Il ne contrôle jamais
-le simulateur. Le pilote doit autoriser les DataRefs UDP dans X-Plane ;
-l'absence de réponse laisse simplement le connecteur déconnecté.
+XPlaneUdpConnector utilise le protocole RREF en lecture seule sur
+127.0.0.1:49000 (machine locale uniquement). Les requêtes ont une taille
+fixe de 413 octets : en-tête RREF\0, fréquence et index little-endian, puis
+nom DataRef sur 400 octets. Les réponses RREF, (XP11/12) et RREF\0 (ancien)
+sont acceptées. L'IAS est déjà en nœuds ; la vitesse sol est en m/s et est
+convertie en nœuds. Une donnée manquante, invalide ou périmée reste inconnue.
+
+### Vérification de la liaison X-Plane
+
+1. Démarrer X-Plane 11 ou 12 **sur la même machine** qu'Hermès.
+2. Vérifier l'accès local UDP au port 49000 (y compris le pare-feu ou un
+   éventuel port personnalisé dans X-Plane). Pas de plugin tiers requis
+   pour le protocole RREF de base.
+3. Ouvrir les diagnostics Hermès : dans \`connectors\`, l'entrée \`xplane-udp\`
+   doit passer de Connecting à Connected, avec un \`lastSnapshotAt\` récent.
+4. Vérifier qu'une latitude, une longitude et une altitude **valides** sont
+   reçues. Si la connexion est établie mais que Prométhée affiche
+   \`NO_SIGNAL\`, contrôler ensuite l'opération active, l'enregistrement
+   ACARS, \`presenceLastHeartbeatAt\`, \`presenceError\`,
+   \`syncState\` et \`syncError\` : UDP n'est qu'une étape du flux.
+5. Après une coupure du simulateur, la liaison passe en reconnexion et
+   doit reprendre sans redémarrer Hermès, sans injecter d'anciennes positions.
+
+La liaison XP11/XP12 demeure expérimentale tant qu'aucun vol de validation
+réel n'a confirmé les DataRefs, le cycle complet OFP/PIREP et la remontée
+dans Prométhée.
