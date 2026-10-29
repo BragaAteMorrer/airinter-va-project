@@ -88,6 +88,7 @@ function normalizeFlightLevel(value) {
 }
 
 function simBriefPlanningPayload(form) {
+  window.HermesLocalPlanUi?.assertReady?.();
   const payload = {};
   const aircraftId = form.elements.aircraft_id.value;
   if (aircraftId) payload.aircraft_id = aircraftId;
@@ -190,6 +191,8 @@ function renderNetworkPrefiles(prefiles) {
 }
 
 async function applyBriefing(briefing, sourceLabel) {
+  // Once the actual OFP is imported, the provisional FPL preview is obsolete.
+  window.HermesLocalPlanUi?.complete?.();
   const form = $('#prefileForm');
   const flightLevel = normalizeFlightLevel(briefing.initial_altitude);
   const importedPax = briefing.passengers
@@ -252,11 +255,13 @@ function recommendedPlanMode() {
   const hasIdentity = Boolean($('#simbriefUsername')?.value.trim() || $('#simbriefPilotId')?.value.trim());
   if (hasIdentity) return 'account';
   if (selectedOperation?.simbrief?.company_api_available === true) return 'api';
-  return 'file';
+  // A local FPL cannot create the required OFP by itself.
+  return 'account';
 }
 
 function updateRecommendedPlanSource() {
-  const labels = { account:'Compte SimBrief · alias pilote détecté', api:'API SimBrief compagnie · source automatique', file:'Plan local · aucun compte/API disponible' };
+  const hasIdentity = Boolean($('#simbriefUsername')?.value.trim() || $('#simbriefPilotId')?.value.trim());
+  const labels = { account: hasIdentity ? 'Compte SimBrief · alias détecté' : 'Compte SimBrief · alias à renseigner', api:'API SimBrief compagnie · source automatique' };
   setText($('#ofpSourceHint'), 'Source recommandée : ' + labels[recommendedPlanMode()]);
 }
 
@@ -305,7 +310,7 @@ function setPlanMode(mode) {
   const labels = {
     account: 'Compte SimBrief : envoyez la préparation, générez l’OFP sur SimBrief puis récupérez-le dans Hermès.',
     api: 'API SimBrief : Prométhée prépare la génération et Hermès récupère automatiquement l’OFP terminé.',
-    file: 'Plan local : importez un fichier PLN/XML depuis votre ordinateur.'
+    file: 'Plan local : importez et validez un FMS/PLN/FPL/XML, puis générez l’OFP sur SimBrief.'
   };
   if (!flightPlan) showMessage('#simbriefState', labels[mode] || '');
 }
@@ -327,6 +332,12 @@ async function prefilePreparedOperation({ navigate = true, automatic = false } =
   Object.assign(body, flightPlan || {}, { source_name: 'Hermes ACARS' });
 
   try {
+    // Never regard a locally imported route (or a client source label) as an OFP.
+    // Check Prométhée's authoritative operation state immediately before PREFILE.
+    const verifiedDispatch = await refreshDispatch();
+    if (verifiedDispatch?.server_checks?.ofp !== true)
+      throw new Error('Aucun OFP SimBrief lié à cette opération. Générez ou récupérez l’OFP avant de préparer le PIREP.');
+
     const operationRef = selectedOperation?.operation_id || selectedOperation?.id;
     const operationPirepBody = operationRef ? {
       route: body.route || flightPlan?.route || undefined,
