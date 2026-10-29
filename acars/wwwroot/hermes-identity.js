@@ -7,6 +7,7 @@
 
   function clear() {
     accountUrl = null;
+    window.HermesAccountSync?.clear?.();
     const provider = $('#identityProvider');
     const account = $('#argosAccountBtn');
     const logout = $('#logoutBtn');
@@ -21,7 +22,8 @@
 
   function apply(value) {
     const root = unwrap(value) ?? {};
-    const user = root?.user ?? root ?? {};
+    const user = unwrap(root?.user ?? root) ?? {};
+    window.HermesAccountSync?.apply?.(user);
     const first = user.first_name || user.firstname || user.firstName || '';
     const last = user.last_name || user.lastname || user.lastName || '';
     const name = [first, last].filter(Boolean).join(' ') || user.name || user.name_private || '';
@@ -57,6 +59,7 @@
   }
 
   function initialize(call, registerError) {
+    window.HermesAccountSync?.initialize?.(call, registerError);
     const account = $('#argosAccountBtn');
     if (!account) return;
     account.onclick = async () => {
