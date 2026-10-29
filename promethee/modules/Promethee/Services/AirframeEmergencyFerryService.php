@@ -21,7 +21,9 @@ class AirframeEmergencyFerryService
 {
     public function technicalBases(): array
     {
-        if (!Schema::hasTable('promethee_operational_bases')) return [];
+        if (!Schema::hasTable('promethee_operational_bases')
+            || !Schema::hasColumn('promethee_operational_bases', 'check_b')
+            || !Schema::hasColumn('promethee_operational_bases', 'check_c')) return [];
 
         return DB::table('promethee_operational_bases')
             ->where('active', true)->where('check_b', true)->where('check_c', true)
@@ -110,6 +112,9 @@ class AirframeEmergencyFerryService
             $origin = strtoupper((string) $aircraft->airport_id);
             if ($origin === '' || $origin === $destination) {
                 throw new RuntimeException('La base technique doit être différente de l’escale actuelle.');
+            }
+            if (in_array($origin, $this->technicalBases(), true)) {
+                throw new RuntimeException('Cet aéroport dispose déjà des capacités nécessaires : effectuez la réparation sur place.');
             }
             $airlineId = (int) ($aircraft->subfleet?->airline_id ?? 0);
             if (!$airlineId) throw new RuntimeException('Compagnie de cet appareil introuvable.');
