@@ -326,6 +326,8 @@ class OperationsV1Controller extends Controller
         $flightAllowed = $flight->subfleets->pluck('id')->all();
 
         $operationId = $this->operationIdentity->id($bid);
+        $ferryService = app(\Modules\Promethee\Services\AirframeEmergencyFerryService::class);
+        $privateFerry = $ferryService->privateFlightState((string) $flight->id);
         $operationPirep = $this->operationPirep($bid);
         $lockedAircraftId = $this->lockedOperationAircraftId($bid, $operationPirep);
 
@@ -360,8 +362,14 @@ class OperationsV1Controller extends Controller
             $checks[] = $this->check('flight_subfleet', $lineAllowed, 'Compatible avec la ligne');
             if (!$lineAllowed) $reasons[] = $this->reason('FLIGHT_SUBFLEET_NOT_ALLOWED', 'Cette sous-flotte n’est pas autorisée sur ce vol.');
 
-            $active = $plane->status === AircraftStatus::ACTIVE;
-            $checks[] = $this->check('active', $active, 'Appareil actif');
+            $technicalFlightAssigned = $privateFerry
+                && (int) $privateFerry->aircraft_id === (int) $plane->id
+                && ($lockedToOperation || $ferryService->isAuthorized((int) $plane->id, (string) $flight->id));
+            if ($privateFerry && !$technicalFlightAssigned) {
+                $reasons[] = $this->reason('TECHNICAL_FERRY_RESTRICTED', 'Vol technique réservé à l’appareil autorisé.');
+            }
+            $active = $plane->status === AircraftStatus::ACTIVE || $technicalFlightAssigned;
+            $checks[] = $this->check('active', $active, 'Appareil actif ou convoyage technique autorisé');
             if (!$active) $reasons[] = $this->reason('INACTIVE', 'Cet appareil est hors service ou inactif.');
 
             // Once a PIREP exists for this operation, the assigned airframe is
@@ -880,6 +888,16 @@ class OperationsV1Controller extends Controller
         $passengers = array_key_exists('passengers', $plan)
             ? (int) $plan['passengers']
             : $this->simBriefPassengerCount($ofp);
+        $ferryService = app(\Modules\Promethee\Services\AirframeEmergencyFerryService::class);
+        $ferryState = $ferryService->privateFlightState((string) $flight->id);
+        if ($ferryState) {
+            abort_unless((int) $ferryState->aircraft_id === (int) $bid->aircraft_id
+                && $ferryService->isAuthorized((int) $bid->aircraft_id, (string) $flight->id),
+                409, 'Autorisation de convoyage indisponible ou appareil incorrect.');
+            abort_if($passengers !== null && $passengers !== 0, 409,
+                'Convoyage technique : aucun passager n’est autorisé.');
+            $passengers = 0;
+        }
         $pirepFares = $this->pirepFaresForPassengers($ofp, $passengers);
 
         $pirep = $this->pirepSvc->prefile($request->user(), $attrs, [], $pirepFares);
@@ -1306,8 +1324,13 @@ class OperationsV1Controller extends Controller
             && $pirep !== null
             && $this->pirepLifecycle->hasFlightEvidence($pirep);
 
+        $ferryService = app(\Modules\Promethee\Services\AirframeEmergencyFerryService::class);
+        $ferryState = $ferryService->privateFlightState((string) $flight?->id);
+        $ferryAuthorized = $aircraft && $ferryState
+            && (int) $ferryState->aircraft_id === (int) $aircraft->id
+            && ($flightInProgress || $ferryService->isAuthorized((int) $aircraft->id, (string) $flight->id));
         $aircraftReady = $aircraft !== null
-            && $aircraft->status === AircraftStatus::ACTIVE
+            && ($aircraft->status === AircraftStatus::ACTIVE || $ferryAuthorized)
             && ($pirep === null || !$pirep->aircraft_id || (string) $pirep->aircraft_id === (string) $aircraft->id)
             && ($flightInProgress || (
                 $aircraft->state === AircraftState::PARKED
