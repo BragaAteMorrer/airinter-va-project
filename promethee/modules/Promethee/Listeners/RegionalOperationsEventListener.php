@@ -23,6 +23,11 @@ class RegionalOperationsEventListener
 
         try {
             $pirep = $event->pirep->loadMissing(['user.journal', 'airline.journal', 'aircraft.subfleet', 'flight']);
+            $ferry = app(\Modules\Promethee\Services\AirframeEmergencyFerryService::class);
+            if ($ferry->isFerryPirep($pirep)) {
+                $ferry->complete($pirep);
+                return; // No repatriation bonus or silent hub reassignment for a technical ferry.
+            }
 
             DB::transaction(function () use ($pirep) {
                 $booking = DB::table('promethee_mission_bookings as booking')
