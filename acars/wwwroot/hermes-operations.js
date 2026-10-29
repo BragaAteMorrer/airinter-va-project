@@ -30,6 +30,37 @@ function displayFlightIdent(flight) {
   return ident || number || 'Vol Air Inter';
 }
 
+// Reservations and programme results share one authoritative flight selection.
+const reservedOperationsByFlight = new Map();
+let selectingOperation = false;
+
+function operationFlightKey(operation) {
+  const id = operation?.flight?.id ?? operation?.flight_id ?? operation?.id;
+  return id == null ? '' : String(id);
+}
+
+function sameSelectedOperation(operation) {
+  if (!selectedOperation || !operation) return false;
+  const currentId = selectedOperation.operation_id || selectedOperation.bid_id;
+  const candidateId = operation.operation_id || operation.bid_id;
+  if (currentId && candidateId) return String(currentId) === String(candidateId);
+  const flightId = operationFlightKey(operation);
+  return !!flightId && flightId === operationFlightKey(selectedOperation);
+}
+
+function updateOperationCardStates() {
+  $('.operation[data-flight-id]').forEach(button => {
+    const flightId = button.dataset.flightId;
+    const saved = reservedOperationsByFlight.get(flightId);
+    const active = !!selectedOperation && operationFlightKey(selectedOperation) === flightId;
+    button.classList.toggle('selected', active);
+    button.setAttribute('aria-pressed', String(active));
+    button.disabled = selectingOperation || active;
+    const badge = button.querySelector('em');
+    if (badge) badge.textContent = active ? 'SÉLECTIONNÉ' : saved || button.dataset.reserved === 'true' ? 'RÉSERVÉ' : 'PROGRAMME';
+  });
+}
+
 function operationCard(operation) {
   const flight = normalizeFlight(operation.flight || operation);
   const aircraft = operation.aircraft || {};
@@ -39,9 +70,8 @@ function operationCard(operation) {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'operation';
-  if (selectedOperation && (selectedOperation.bid_id || selectedOperation.flight?.id) === (operation.bid_id || operation.flight?.id)) {
-    button.classList.add('selected');
-  }
+  button.dataset.flightId = operationFlightKey(operation);
+  button.dataset.reserved = String(Boolean(operation.bid_id || operation.operation_id));
   const title = document.createElement('strong');
   const route = document.createElement('span');
   const detail = document.createElement('small');
@@ -49,9 +79,12 @@ function operationCard(operation) {
   setText(route, `${flight.departure || '?'} → ${flight.arrival || '?'}`);
   setText(detail, aircraft.type_label || aircraft.subfleet || aircraft.name || 'Type d’appareil à sélectionner');
   const badge = document.createElement('em');
-  badge.textContent = operation.bid_id ? 'RÉSERVÉ' : 'PROGRAMME';
+  badge.textContent = operation.bid_id || operation.operation_id || reservedOperationsByFlight.has(operationFlightKey(operation))
+    ? 'RÉSERVÉ' : 'PROGRAMME';
   button.append(badge, title, route, detail);
-  button.onclick = () => selectOperation({ ...operation, flight });
+  button.onclick = () => selectOperation({
+    ...(reservedOperationsByFlight.get(operationFlightKey(operation)) || operation), flight
+  }, { focusPreparation: true });
   wrapper.append(button);
 
   if (operation.bid_id || operation.operation_id) {
@@ -134,6 +167,13 @@ function renderOperations(value, source = 'reservations') {
   setText($('#operationsListMeta'), operations.length
     ? operations.length + ' opération' + (operations.length > 1 ? 's' : '') + (source === 'search' ? ' trouvée' + (operations.length > 1 ? 's' : '') : ' réservée' + (operations.length > 1 ? 's' : ''))
     : (source === 'search' ? 'Aucun vol ne correspond à cette recherche.' : 'Aucune réservation active.'));
+  if (source === 'reservations') {
+    reservedOperationsByFlight.clear();
+    operations.forEach(operation => {
+      const key = operationFlightKey(operation);
+      if (key) reservedOperationsByFlight.set(key, operation);
+    });
+  }
   if (!operations.length) {
     const empty = document.createElement('p');
     empty.className = 'empty';
@@ -144,6 +184,7 @@ function renderOperations(value, source = 'reservations') {
     return;
   }
   operations.forEach(operation => list.append(operationCard(operation)));
+  updateOperationCardStates();
 }
 
 async function refreshOperations() {
@@ -546,17 +587,33 @@ function renderOperationLoad(aircraft, briefing = flightPlan) {
   renderSimBriefPreparationSummary();
 }
 
-async function selectOperation(operation) {
-  if (!operation?.operation_id && !operation?.bid_id && operation?.id) {
-    try {
-      showMessage('#flightMessage', 'Réservation du vol dans Prométhée…');
-      operation = unwrap(await call('/api/v1/flights/' + encodeURIComponent(operation.id) + '/reserve', {}));
-      showMessage('#flightMessage', '');
-    } catch (error) {
-      showMessage('#flightMessage', 'Réservation impossible : ' + friendlyError(error), true);
-      return;
-    }
+async function selectOperation(operation, { focusPreparation = false } = {}) {
+  if (selectingOperation) return;
+  operation = reservedOperationsByFlight.get(operationFlightKey(operation)) || operation;
+  if (sameSelectedOperation(operation)) {
+    showMessage('#flightMessage', 'Ce vol est déjà sélectionné. Poursuivez la préparation ci-dessous.');
+    if (focusPreparation) $('#quickAircraftSelection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
   }
+
+  selectingOperation = true;
+  updateOperationCardStates();
+  try {
+    let newlyReserved = false;
+    if (!operation?.operation_id && !operation?.bid_id && operation?.id) {
+      try {
+        showMessage('#flightMessage', 'Réservation du vol dans Prométhée…');
+        operation = unwrap(await call('/api/v1/flights/' + encodeURIComponent(operation.id) + '/reserve', {}));
+        if (!operation?.operation_id && !operation?.bid_id)
+          throw new Error('Prométhée n’a pas confirmé la réservation.');
+        newlyReserved = !operation.reservation_reused;
+        const key = operationFlightKey(operation);
+        if (key) reservedOperationsByFlight.set(key, operation);
+      } catch (error) {
+        showMessage('#flightMessage', 'Réservation impossible : ' + friendlyError(error), true);
+        return;
+      }
+    }
 
   // Switching operations must be atomic from the UI point of view. Do not
   // render the new flight with the previous flight's terminal Dispatch/OFP
@@ -586,8 +643,7 @@ async function selectOperation(operation) {
   setTimeout(refreshDatalink, 0);
   setTimeout(refreshNetwork, 0);
   updateWorkflow();
-  $$('.operation').forEach(node => node.classList.remove('selected'));
-  if (document.activeElement?.classList?.contains('operation')) document.activeElement.classList.add('selected');
+  updateOperationCardStates();
   renderNetworkPrefiles(null);
   const flight = normalizeFlight(operation.flight || operation);
   const form = $('#prefileForm');
@@ -616,6 +672,12 @@ async function selectOperation(operation) {
     : `OFP à préparer · type ${simbrief.type || 'à confirmer'}`);
   $('#selectedOperation').hidden = false;
   form.hidden = false;
+  if (focusPreparation) {
+    showMessage('#flightMessage', displayFlightIdent(flight)
+      + (newlyReserved ? ' réservé et sélectionné.' : ' sélectionné.')
+      + ' Étape suivante : choisir l’appareil.');
+    $('#quickAircraftSelection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
   showMessage('#pirepMessage', '');
   serverDispatch = null;
 
@@ -681,4 +743,8 @@ async function selectOperation(operation) {
   catch (error) { showMessage('#pirepMessage', 'Dispatch indisponible : ' + friendlyError(error), true); }
   try { await refreshOperationalWeather(); }
   catch (error) { setText($('#weatherOpsState'), 'MÉTÉO INDISPONIBLE'); }
+  } finally {
+    selectingOperation = false;
+    updateOperationCardStates();
+  }
 }
