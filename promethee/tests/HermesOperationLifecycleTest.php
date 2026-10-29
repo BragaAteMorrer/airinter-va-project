@@ -69,6 +69,52 @@ final class HermesOperationLifecycleTest extends TestCase
         $this->assertNull($result->json('data.network_ids.ivao_vid'));
     }
 
+    public function test_local_route_does_not_allow_prefile_without_real_simbrief_ofp(): void
+    {
+        $fx = $this->operationFixture(assignAircraft: true, createOfp: false);
+        $uri = '/api/v1/operations/'.$fx['operation_id'].'/pirep';
+
+        // A local PLN/FMS route is useful to generate an OFP, but is not one.
+        $this->post($uri, [
+            'route' => 'LGL UN859 DUB',
+            'level' => 340,
+        ], [], $fx['user'])->assertStatus(409);
+
+        foreach (['simbrief_account', 'simbrief_api', 'simbrief'] as $source) {
+            // These request values must never replace server-side OFP evidence.
+            $this->post($uri, [
+                'route' => 'LGL UN859 DUB',
+                'level' => 340,
+                'simbrief_source' => $source,
+            ], [], $fx['user'])->assertStatus(409);
+        }
+
+        $this->assertDatabaseMissing('pireps', [
+            'source_name' => 'Hermes ACARS ['.$fx['operation_id'].']',
+        ]);
+        $this->assertFalse((bool) $this->dispatch($fx)['server_checks']['ofp']);
+
+        // Once the OFP is genuinely attached to the same pilot/flight/aircraft,
+        // the unchanged existing prefile path must still work.
+        SimBrief::factory()->create([
+            'user_id' => $fx['user']->id,
+            'flight_id' => $fx['flight']->id,
+            'aircraft_id' => $fx['aircraft']->id,
+            'pirep_id' => null,
+            'ofp_xml' => $this->minimalSimBriefXml(),
+        ]);
+
+        $response = $this->post($uri, [
+            'route' => 'LGL UN859 DUB',
+            'level' => 340,
+            'simbrief_source' => 'simbrief_account',
+        ], [], $fx['user'])->assertCreated();
+        $pirep = Pirep::findOrFail($response->json('data.pirep_id'));
+        $this->assertSame('LGL UN859 DUB', $pirep->route);
+        $this->assertSame(340, (int) $pirep->level);
+        $this->assertNotNull($pirep->simbrief_id);
+    }
+
     public function test_01_reservation_is_never_completed(): void
     {
         $fx = $this->operationFixture(assignAircraft: false, createOfp: false);
