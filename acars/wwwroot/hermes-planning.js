@@ -332,6 +332,12 @@ async function prefilePreparedOperation({ navigate = true, automatic = false } =
   Object.assign(body, flightPlan || {}, { source_name: 'Hermes ACARS' });
 
   try {
+    // Never regard a locally imported route (or a client source label) as an OFP.
+    // Check Prométhée's authoritative operation state immediately before PREFILE.
+    const verifiedDispatch = await refreshDispatch();
+    if (verifiedDispatch?.server_checks?.ofp !== true)
+      throw new Error('Aucun OFP SimBrief lié à cette opération. Générez ou récupérez l’OFP avant de préparer le PIREP.');
+
     const operationRef = selectedOperation?.operation_id || selectedOperation?.id;
     const operationPirepBody = operationRef ? {
       route: body.route || flightPlan?.route || undefined,
