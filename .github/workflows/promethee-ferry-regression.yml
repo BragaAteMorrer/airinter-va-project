@@ -6,6 +6,7 @@ on:
       - 'promethee/modules/Promethee/Services/AirframeEmergencyFerryService.php'
       - 'promethee/modules/Promethee/Services/AirframeMaintenanceService.php'
       - 'promethee/modules/Promethee/Http/OperationsV1Controller.php'
+      - 'promethee/modules/DisposableSpecial/Services/DS_MaintenanceServices.php'
       - 'promethee/modules/Promethee/Listeners/RegionalOperationsEventListener.php'
       - 'promethee/modules/Promethee/Services/RegionalOperationsService.php'
       - 'promethee/tests/PrometheeEmergencyFerryTest.php'
@@ -42,6 +43,7 @@ jobs:
           php -l modules/Promethee/Services/AirframeEmergencyFerryService.php
           php -l modules/Promethee/Services/AirframeMaintenanceService.php
           php -l modules/Promethee/Http/OperationsV1Controller.php
+          php -l modules/DisposableSpecial/Services/DS_MaintenanceServices.php
           php -l modules/Promethee/Services/RegionalOperationsService.php
           php -l modules/Promethee/Listeners/RegionalOperationsEventListener.php
           php -l tests/PrometheeEmergencyFerryTest.php
