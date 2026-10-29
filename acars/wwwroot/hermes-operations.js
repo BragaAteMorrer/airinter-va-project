@@ -112,6 +112,7 @@ async function cancelReservation(operation, flight, button) {
 
     const selectedId = selectedOperation?.operation_id || selectedOperation?.bid_id || selectedOperation?.id;
     if (String(selectedId || '') === String(operationId)) {
+      window.HermesLocalPlanUi?.reset?.();
       selectedOperation = null;
       selectedAircraft = null;
       selectedVariant = null;
@@ -629,6 +630,7 @@ async function selectOperation(operation, { focusPreparation = false } = {}) {
   readiness.ofp = false;
   readiness.pirep = false;
 
+  window.HermesLocalPlanUi?.reset?.();
   selectedOperation = operation;
   scheduleEfbContextSync();
   // Rehydrate an already-prefiled operation after a restart/reselection. The
