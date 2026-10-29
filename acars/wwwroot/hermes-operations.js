@@ -48,7 +48,7 @@ function sameSelectedOperation(operation) {
 }
 
 function updateOperationCardStates() {
-  $('.operation[data-flight-id]').forEach(button => {
+  $$('.operation[data-flight-id]').forEach(button => {
     const flightId = button.dataset.flightId;
     const saved = reservedOperationsByFlight.get(flightId);
     const active = !!selectedOperation && operationFlightKey(selectedOperation) === flightId;
