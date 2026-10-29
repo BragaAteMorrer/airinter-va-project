@@ -147,6 +147,114 @@ final class PrometheeEmergencyFerryTest extends TestCase
         $this->assertSame(AircraftStatus::MAINTENANCE, $aircraft->fresh()->status);
     }
 
+    public function test_admin_can_cancel_before_departure_without_releasing_aircraft(): void
+    {
+        [$aircraft, , $ferry] = $this->heldAircraft();
+        $first = $ferry->authorize((int) $aircraft->id, 'LFPG', 4, null,
+            'Inspection provisoire confirmée avant transport technique à vide.');
+        $this->assertTrue($ferry->missionIsProtected((int) $first['mission_id']));
+
+        $ferry->cancel((int) $aircraft->id, null,
+            'Dépannage provisoire suspendu, nouvelle inspection technique nécessaire.');
+
+        $this->assertSame(AircraftStatus::MAINTENANCE, $aircraft->fresh()->status);
+        $this->assertNotNull($ferry->state((int) $aircraft->id)->safety_hold_at);
+        $this->assertNull($ferry->state((int) $aircraft->id)->ferry_status);
+        $this->assertFalse($ferry->missionIsProtected((int) $first['mission_id']));
+        $this->assertDatabaseHas('flights', ['id' => $first['flight_id'], 'active' => 0]);
+        $this->assertDatabaseHas('promethee_missions', ['id' => $first['mission_id'], 'active' => 0]);
+        $this->assertDatabaseHas('promethee_airframe_maintenance_events', [
+            'aircraft_id' => $aircraft->id,
+            'event_type' => 'ferry_cancelled',
+            'check_type' => 'f',
+        ]);
+
+        $second = $ferry->authorize((int) $aircraft->id, 'LFPG', 2, null,
+            'Inspection renouvelée après annulation du premier permis technique.');
+        $this->assertNotSame($first['flight_id'], $second['flight_id']);
+        $this->assertTrue($ferry->missionIsProtected((int) $second['mission_id']));
+        $this->assertSame(AircraftStatus::MAINTENANCE, $aircraft->fresh()->status);
+    }
+
+    public function test_cancel_is_refused_if_pilot_has_booked_the_ferry(): void
+    {
+        [$aircraft, , $ferry] = $this->heldAircraft();
+        $permit = $ferry->authorize((int) $aircraft->id, 'LFPG', 1, null,
+            'Inspection satisfaisante avant déplacement technique vers la base.');
+        DB::table('promethee_mission_bookings')->insert([
+            'mission_id' => $permit['mission_id'],
+            'user_id' => $this->createUser()->id,
+            'status' => 'reserved',
+            'reserved_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        try {
+            $ferry->cancel((int) $aircraft->id, null,
+                'Tentative interdite pendant la réservation active du pilote.');
+            $this->fail('A booked ferry cannot be cancelled by administration.');
+        } catch (RuntimeException $exception) {
+            $this->assertStringContainsString('réservée', $exception->getMessage());
+        }
+        $this->assertSame('authorized', $ferry->state((int) $aircraft->id)->ferry_status);
+        $this->assertDatabaseHas('flights', ['id' => $permit['flight_id'], 'active' => 1]);
+    }
+
+    public function test_cancel_is_refused_after_a_ferry_pirep_was_created(): void
+    {
+        [$aircraft, , $ferry] = $this->heldAircraft();
+        $permit = $ferry->authorize((int) $aircraft->id, 'LFPG', 1, null,
+            'Contrôle structurel validé avant un unique vol technique.');
+        Pirep::factory()->create([
+            'aircraft_id' => $aircraft->id,
+            'flight_id' => $permit['flight_id'],
+        ]);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('PIREP existe déjà');
+        $ferry->cancel((int) $aircraft->id, null,
+            'Tentative interdite après création du rapport de convoyage.');
+    }
+
+    public function test_legacy_hard_landing_creates_persistent_safety_hold(): void
+    {
+        if (!Schema::hasTable('disposable_maintenance')) {
+            $this->markTestSkipped('Maintenance historique indisponible.');
+        }
+
+        [$aircraft, , $ferry] = $this->heldAircraft();
+        DB::table('promethee_airframe_maintenance')->where('aircraft_id', $aircraft->id)
+            ->update([
+                'safety_hold_at' => null,
+                'safety_hold_reason' => null,
+                'safety_hold_previous_status' => null,
+            ]);
+        DB::table('disposable_maintenance')->updateOrInsert(
+            ['aircraft_id' => $aircraft->id],
+            [
+                'curr_state' => 100,
+                'time_a' => 0, 'time_b' => 0, 'time_c' => 0,
+                'cycle_a' => 0, 'cycle_b' => 0, 'cycle_c' => 0,
+                'act_note' => 'Hard Landing Check',
+                'act_start' => now()->subHour(),
+                'act_end' => now()->addHour(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
+
+        $permit = $ferry->authorize((int) $aircraft->id, 'LFPG', 1, null,
+            'Inspection provisoire du train et autorisation de convoyage à vide.');
+        $this->assertNotNull($ferry->state((int) $aircraft->id)->safety_hold_at);
+        $this->assertSame('authorized', $ferry->state((int) $aircraft->id)->ferry_status);
+        $ferry->cancel((int) $aircraft->id, null,
+            'Dépannage interrompu pour nouvelle inspection de la structure.');
+        $this->assertNotNull($ferry->state((int) $aircraft->id)->safety_hold_at);
+        $this->assertSame(AircraftStatus::MAINTENANCE, $aircraft->fresh()->status);
+        $this->assertDatabaseHas('flights', ['id' => $permit['flight_id'], 'active' => 0]);
+    }
+
     public function test_legacy_maintenance_cron_cannot_release_authorized_ferry(): void
     {
         if (!Schema::hasTable('disposable_maintenance')) {
