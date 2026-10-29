@@ -44,6 +44,8 @@ jobs:
           node --check acars/wwwroot/hermes-review.js
           node --check acars/wwwroot/hermes-weather.js
           node --check acars/wwwroot/hermes-identity.js
+          node --check acars/wwwroot/hermes-flight-setup.js
+          node acars.tests/hermes-flight-setup.test.cjs
           node --check acars/wwwroot/hermes-operations.js
           node --check acars/wwwroot/hermes-communications.js
           node --check acars/wwwroot/hermes-workflow.js
