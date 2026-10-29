@@ -49,9 +49,24 @@ class RegionalOperationsService
         $cleared = 0;
 
         $assignments = DB::table('promethee_aircraft_bases')->get()->keyBy('aircraft_id');
-        $aircraft = Aircraft::query()->get(['id', 'registration', 'airport_id', 'hub_id', 'landing_time']);
+        $aircraft = Aircraft::query()->get(['id', 'registration', 'airport_id', 'hub_id', 'landing_time', 'status']);
+        $grounded = collect();
+        if (DB::getSchemaBuilder()->hasTable('promethee_airframe_maintenance')
+            && DB::getSchemaBuilder()->hasColumn('promethee_airframe_maintenance', 'safety_hold_at')) {
+            $grounded = DB::table('promethee_airframe_maintenance')
+                ->where(function ($q) {
+                    $q->whereNotNull('safety_hold_at');
+                    if (DB::getSchemaBuilder()->hasColumn('promethee_airframe_maintenance', 'ferry_status')) {
+                        $q->orWhereNotNull('ferry_status');
+                    }
+                })->pluck('aircraft_id')->flip();
+        }
 
         foreach ($aircraft as $plane) {
+            // Never teleport a grounded aircraft. A technical ferry is a real
+            // flight and must be tracked through its PIREP instead.
+            if ($plane->status === \App\Models\Enums\AircraftStatus::MAINTENANCE
+                || $grounded->has($plane->id)) continue;
             $assignment = $assignments->get($plane->id);
             if (!$assignment) {
                 DB::table('promethee_aircraft_bases')->insert([
@@ -197,6 +212,17 @@ class RegionalOperationsService
 
             abort_unless($mission, 404);
 
+            $ferry = app(AirframeEmergencyFerryService::class);
+            $technical = $mission->aircraft_id
+                ? $ferry->state((int) $mission->aircraft_id)
+                : null;
+            $isTechnicalFerry = $technical
+                && (int) ($technical->ferry_mission_id ?? 0) === (int) $mission->id;
+            if ($isTechnicalFerry) {
+                abort_unless($ferry->isAuthorized((int) $mission->aircraft_id, (string) $mission->flight_id),
+                    409, 'Dépannage d’urgence non terminé ou autorisation de convoyage expirée.');
+            }
+
             $alreadyReserved = DB::table('promethee_mission_bookings')
                 ->where('mission_id', $mission->id)
                 ->where('status', 'reserved')
@@ -219,7 +245,8 @@ class RegionalOperationsService
             // A repatriation must be a real phpVMS bid so it appears in
             // the pilot's bookings and can be discovered by Hermès.
             $flight = $mission->flight_id
-                ? Flight::whereKey($mission->flight_id)->where('active', true)->where('visible', true)->first()
+                ? Flight::whereKey($mission->flight_id)->where('active', true)
+                    ->when(!$isTechnicalFerry, fn ($query) => $query->where('visible', true))->first()
                 : Flight::where('dpt_airport_id', $mission->dpt_airport_id)
                     ->where('arr_airport_id', $mission->arr_airport_id)
                     ->where('active', true)->where('visible', true)
@@ -233,7 +260,11 @@ class RegionalOperationsService
             abort_if(Bid::where('aircraft_id', $aircraft->id)->exists(),
                 409, 'Cet appareil est déjà réservé.');
             // Reserve before the jumpseat debit: a failed bid must never charge the pilot.
-            $this->bidService->addBid($flight, $freshUser, $aircraft);
+            $bid = $this->bidService->addBid($flight, $freshUser, $aircraft);
+            if ($isTechnicalFerry && $bid && (int) $bid->aircraft_id !== (int) $aircraft->id) {
+                $bid->aircraft_id = $aircraft->id;
+                $bid->save();
+            }
             DB::table('promethee_missions')->where('id', $mission->id)
                 ->update(['flight_id' => $flight->id, 'updated_at' => now()]);
 
