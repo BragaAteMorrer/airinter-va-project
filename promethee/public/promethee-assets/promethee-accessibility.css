@@ -16,3 +16,12 @@ html[data-era="modern"][data-appearance="dark"] .pilot-hub-nav a{color:#f4f7fb}
 html[data-era="modern"][data-appearance="dark"] .pilot-hub-nav a:hover,
 html[data-era="modern"][data-appearance="dark"] .pilot-hub-nav a:focus-visible{color:#fff;background:#27475d}
 html[data-era="modern"][data-appearance="dark"] .pilot-hub-nav a span{color:#f4f7fb;background:#1b3b50;border-color:#627b8d}
+
+/* Keep unsupported Unicode airport names inside a mechanical-looking cell
+   instead of allowing unstyled text to overflow the timetable grid. */
+html:not([data-era="minitel-legacy"]) .departure-board .dispatch-flight .board-cell.split-flap-plain{
+  display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  padding:7px 5px;min-height:38px;box-sizing:border-box;background:#181918;
+  border:1px solid #080909;border-radius:2px;color:#f1eddf;
+  font:700 12px/22px "Arial Narrow",Arial,sans-serif;letter-spacing:.02em
+}
