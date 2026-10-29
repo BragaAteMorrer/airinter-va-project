@@ -676,7 +676,6 @@ async function selectOperation(operation, { focusPreparation = false } = {}) {
     showMessage('#flightMessage', displayFlightIdent(flight)
       + (newlyReserved ? ' réservé et sélectionné.' : ' sélectionné.')
       + ' Étape suivante : choisir l’appareil.');
-    $('#quickAircraftSelection')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
   showMessage('#pirepMessage', '');
   serverDispatch = null;
@@ -685,6 +684,12 @@ async function selectOperation(operation, { focusPreparation = false } = {}) {
   const aircraftSelect = $('#aircraftId');
   aircraftEligibility = null;
   $('#quickAircraftSelection').hidden = false;
+  if (focusPreparation) {
+    // Show the next step before scrolling; hidden elements cannot be targets.
+    requestAnimationFrame(() => $('#quickAircraftSelection')?.scrollIntoView({
+      behavior: 'smooth', block: 'start'
+    }));
+  }
 
   typeSelect.replaceChildren();
   const loadingType = document.createElement('option');
