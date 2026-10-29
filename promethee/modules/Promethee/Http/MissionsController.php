@@ -1,26 +1,15 @@
 <?php
 namespace Modules\Promethee\Http;
-use App\Models\{Aircraft,Airline,Airport,Bid,File,Flight,Pirep,SimBrief,User,Fare,Subfleet,Rank};
-use App\Models\Enums\{AircraftState,AircraftStatus,FareType,FlightType,PirepState,PirepStatus,UserState};
-use Carbon\CarbonImmutable;
+use App\Models\{Bid,Flight,Pirep};
+use App\Models\Enums\PirepState;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\File as Filesystem;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Schema;
-use App\Services\AirportService;
-use App\Services\FinanceService;
-use App\Services\FileService;
-use App\Services\UserService;
-use App\Support\Money;
-use App\Support\Countries;
-use Modules\Promethee\Services\{AirframeMaintenanceService,BrandingService,BulletinService,CompanyAccessService,DemandProfileService,EconomyFareResolver,EconomyService,EngineMaintenanceService,FleetRotationService,FlightOpsService,LegacyPirepScoringService,OperationalWeatherService,PilotPirepDeletionService,PirepJournalService,RegionalOperationsService,SafetyAnalyzer};
-
+use Modules\Promethee\Services\RegionalOperationsService;
 
 class MissionsController extends PrometheeWebController
 {
+    use MissionReservationActions;
+
 public function missions(Request $r, RegionalOperationsService $regionalOperations) {
         $regionalOperations->sync();
         $today = today('Europe/Paris')->toDateString(); $userId = $r->user()->id;
@@ -55,28 +44,6 @@ public function missions(Request $r, RegionalOperationsService $regionalOperatio
             ->where(fn($q)=>$q->whereNull('ends_on')->orWhere('ends_on','>=',$today))->orderBy('ends_on')->get()
             ->map(function ($circuit) use ($matches) { $circuit->legs=DB::table('promethee_circuit_legs')->where('circuit_id',$circuit->id)->orderBy('position')->get()->map(function($leg) use($matches){ $leg->completion=$matches($leg); return $leg; }); $circuit->completed=$circuit->legs->isNotEmpty() && $circuit->legs->every(fn($leg)=>$leg->completion); return $circuit; });
         return $this->page('missions', compact('missions','circuits'));
-    }
-
-public function confirmMissionReservation(int $id, Request $r, RegionalOperationsService $regionalOperations) {
-        $mission = DB::table('promethee_missions')
-            ->where('id', $id)->where('active', true)->where('mission_type', 'repatriation')->first();
-        abort_unless($mission, 404);
-        $quote = $regionalOperations->quoteRepatriationMission($mission, $r->user());
-
-        return $this->page('mission-confirm', compact('mission', 'quote'));
-    }
-
-public function reserveMission(int $id, Request $r, FinanceService $finance, RegionalOperationsService $regionalOperations) {
-        $mission = DB::table('promethee_missions')->where('id', $id)->where('active', true)->first();
-        abort_unless($mission, 404);
-        abort_unless($mission->mission_type === 'repatriation', 422, 'Cette mission ne nécessite pas de réservation.');
-        $confirmed = $r->validate([
-            'confirmed' => 'required|accepted',
-            'origin_airport_id' => 'required|string|max:8',
-            'jumpseat_amount_minor' => 'required|integer|min:0',
-        ]);
-        $regionalOperations->reserveRepatriationMission($id, $r->user(), $finance, $confirmed);
-        return back()->with('success', 'Mission de rapatriement réservée. Votre position pilote a été ajustée si un jumpseat était nécessaire.');
     }
 
 public function cancelMissionReservation(int $id, Request $r) {
