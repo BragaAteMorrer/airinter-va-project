@@ -224,20 +224,41 @@ class OperationsV1Controller extends Controller
             'Cette compagnie n’est pas encore accessible avec votre nombre d’heures de vol.'
         );
 
+        $user = $request->user();
+
+        // Double-clicks and overlapping requests must not create two bids.
+        // Lock the pilot row, not an absent bid row: an absent row cannot be
+        // locked by SELECT ... FOR UPDATE. This serializes Hermès reservations
+        // for the same pilot on MySQL without locking other pilots.
         try {
-            $bid = $bids->addBid($flight, $request->user());
+            [$bidId, $reused] = DB::transaction(function () use ($flight, $user, $bids) {
+                \App\Models\User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+                $existing = Bid::query()
+                    ->where('user_id', $user->id)
+                    ->where('flight_id', $flight->id)
+                    ->orderBy('id')
+                    ->first();
+
+                if ($existing) return [$existing->id, true];
+
+                $created = $bids->addBid($flight, $user);
+                return [$created->id, false];
+            });
         } catch (\Throwable $exception) {
-            abort(409, $exception->getMessage() ?: 'Cette réservation ne peut pas être créée.');
+            report($exception);
+            abort(409, 'Cette réservation ne peut pas être créée. Vérifiez vos réservations et réessayez.');
         }
 
         $bid = Bid::with(['flight.airline', 'flight.subfleets', 'aircraft.subfleet'])
-            ->where('id', $bid->id)
-            ->where('user_id', $request->user()->id)
+            ->where('id', $bidId)
+            ->where('user_id', $user->id)
             ->firstOrFail();
 
         return response()->json([
-            'data' => $this->operationDto($bid, 'msfs2020'),
-        ], 201);
+            'data' => array_merge($this->operationDto($bid, 'msfs2020'), [
+                'reservation_reused' => $reused,
+            ]),
+        ], $reused ? 200 : 201);
     }
 
     public function me(Request $request)
