@@ -5,3 +5,14 @@
 .notice[role="status"],.notice[role="alert"]{scroll-margin-top:80px}.departure-board-scroll:focus-visible{outline:3px solid var(--ds-focus,var(--ops-blue,#0d66b5));outline-offset:4px}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-delay:0ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;transition-delay:0ms!important}.split-flap-char,.split-flap-char *{animation:none!important;transition:none!important}.board-updated{animation:none!important}}
 @media(forced-colors:active){:where(a,button,input,select,textarea,summary,[tabindex]):focus-visible{outline:3px solid Highlight}.skip{background:Canvas;color:CanvasText;border-color:Highlight}.tag,.signal,.status-dot{forced-color-adjust:auto}}
+
+/* Mission tabs: explicit high-contrast colours in the default and dark appearances.
+   Do not rely on --muted, which can become too pale against the tabs surface. */
+html[data-era="modern"][data-appearance="light"] .pilot-hub-nav a{color:#18324b}
+html[data-era="modern"][data-appearance="light"] .pilot-hub-nav a:hover,
+html[data-era="modern"][data-appearance="light"] .pilot-hub-nav a:focus-visible{color:#104f86;background:#fff}
+html[data-era="modern"][data-appearance="dark"] .pilot-hub-nav{background:#132c3e;border-color:#627b8d}
+html[data-era="modern"][data-appearance="dark"] .pilot-hub-nav a{color:#f4f7fb}
+html[data-era="modern"][data-appearance="dark"] .pilot-hub-nav a:hover,
+html[data-era="modern"][data-appearance="dark"] .pilot-hub-nav a:focus-visible{color:#fff;background:#27475d}
+html[data-era="modern"][data-appearance="dark"] .pilot-hub-nav a span{color:#f4f7fb;background:#1b3b50;border-color:#627b8d}

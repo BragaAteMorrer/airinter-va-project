@@ -11,13 +11,14 @@
 @php
   $myMissions = $missions->filter(fn ($mission) => $mission->booking && $mission->booking->status === 'reserved');
   $otherMissions = $missions->reject(fn ($mission) => $mission->booking && $mission->booking->status === 'reserved');
+  $hasActiveRepatriation = $myMissions->contains(fn ($mission) => $mission->mission_type === 'repatriation');
 @endphp
 
 <nav class="pilot-hub-nav" aria-label="Navigation missions">
   <a href="#my-missions">Mes missions <span>{{ $myMissions->count() }}</span></a>
+  <a href="#circuits">Circuits <span>{{ $circuits->count() }}</span></a>
   <a href="#rapatriements">Rapatriements <span>{{ $otherMissions->where("mission_type", "repatriation")->count() }}</span></a>
   <a href="#missions">Missions <span>{{ $otherMissions->where("mission_type", "!=", "repatriation")->count() }}</span></a>
-  <a href="#circuits">Circuits <span>{{ $circuits->count() }}</span></a>
 </nav>
 
 <section class="panel mission-personal" id="my-missions">
@@ -54,6 +55,42 @@
   </div>
 </section>
 
+
+
+<section class="panel" id="circuits">
+  <div class="panel-heading"><div><span class="eyebrow">CIRCUITS</span><h2>Tours en plusieurs étapes</h2></div></div>
+  @forelse($circuits as $circuit)
+    <article class="panel">
+      <div class="panel-heading">
+        <div>
+          <span class="eyebrow">{{ $circuit->completed ? 'CIRCUIT TERMINÉ' : 'PROGRESSION' }}</span>
+          <h2>{{ $circuit->title }}</h2>
+          <p>{{ $circuit->description }}</p>
+        </div>
+        <span class="tag">{{ $circuit->legs->where('completion')->count() }}/{{ $circuit->legs->count() }}</span>
+      </div>
+      @if($circuit->ends_on)
+        <p><small>Fin du circuit : {{ $circuit->ends_on }}</small></p>
+      @endif
+      <div class="route-board">
+        @foreach($circuit->legs as $leg)
+          <article><b>{{ $leg->dpt_airport_id }}</b><i></i><b>{{ $leg->arr_airport_id }}</b><span>{{ $leg->completion ? 'Validée' : 'À voler' }}</span></article>
+        @endforeach
+      </div>
+      @php($nextLeg = $circuit->legs->first(fn ($leg) => !$leg->completion))
+      @if($nextLeg)
+        <p><strong>Prochaine étape :</strong> {{ $nextLeg->dpt_airport_id }} → {{ $nextLeg->arr_airport_id }}</p>
+        @if($nextLeg->flight_id)
+          <a class="button" href="{{ route('promethee.flights.show', $nextLeg->flight_id) }}">Voir et réserver le vol de cette étape</a>
+        @else
+          <a class="button" href="{{ route('promethee.flights', ['departure' => $nextLeg->dpt_airport_id, 'arrival' => $nextLeg->arr_airport_id]) }}">Trouver un vol {{ $nextLeg->dpt_airport_id }} → {{ $nextLeg->arr_airport_id }}</a>
+        @endif
+      @endif
+    </article>
+  @empty
+    <p class="empty">Aucun circuit actif.</p>
+  @endforelse
+</section>
 
 <div id="rapatriements"></div>
 <section class="panel" id="missions">
@@ -118,12 +155,12 @@
           @elseif(!$mission->aircraft_allowed)
             <span class="tag">GRADE INCOMPATIBLE</span>
             <small>Votre grade ou qualification ne permet pas de piloter ce type d’appareil.</small>
+          @elseif($hasActiveRepatriation)
+            <span class="tag">MISSION DÉJÀ ACTIVE</span>
+            <small>Terminez ou abandonnez votre rapatriement en cours avant une nouvelle réservation.</small>
           @else
-            <form method="post" action="{{ route('promethee.missions.reserve', $mission->id) }}">
-              @csrf
-              <button>Réserver la mission</button>
-              <small>Si nécessaire, votre jumpseat jusqu'à {{ $mission->dpt_airport_id }} sera débité automatiquement.</small>
-            </form>
+            <a class="button" href="{{ route('promethee.missions.confirm', $mission->id) }}">Voir le coût et confirmer</a>
+            <small>Aucun jumpseat ne sera débité sans confirmation du montant et de votre nouvelle position.</small>
           @endif
         @endif
 
@@ -135,26 +172,4 @@
   </div>
 </section>
 
-<section class="panel" id="circuits">
-  <div class="panel-heading"><div><span class="eyebrow">CIRCUITS</span><h2>Tours en plusieurs étapes</h2></div></div>
-  @forelse($circuits as $circuit)
-    <article class="panel">
-      <div class="panel-heading">
-        <div>
-          <span class="eyebrow">{{ $circuit->completed ? 'CIRCUIT TERMINÉ' : 'PROGRESSION' }}</span>
-          <h2>{{ $circuit->title }}</h2>
-          <p>{{ $circuit->description }}</p>
-        </div>
-        <span class="tag">{{ $circuit->legs->where('completion')->count() }}/{{ $circuit->legs->count() }}</span>
-      </div>
-      <div class="route-board">
-        @foreach($circuit->legs as $leg)
-          <article><b>{{ $leg->dpt_airport_id }}</b><i></i><b>{{ $leg->arr_airport_id }}</b><span>{{ $leg->completion ? 'Validée' : 'À voler' }}</span></article>
-        @endforeach
-      </div>
-    </article>
-  @empty
-    <p class="empty">Aucun circuit actif.</p>
-  @endforelse
-</section>
 @endsection
