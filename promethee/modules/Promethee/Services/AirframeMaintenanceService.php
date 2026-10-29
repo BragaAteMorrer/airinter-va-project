@@ -6,6 +6,7 @@ use App\Models\Aircraft;
 use App\Models\Enums\AircraftState;
 use App\Models\Enums\AircraftStatus;
 use App\Models\Pirep;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -687,7 +688,7 @@ class AirframeMaintenanceService
             if (!$state || !$aircraft || !$state->active_check) {
                 return false;
             }
-            if (!$force && $state->active_due_at && now()->lt($state->active_due_at)) {
+            if (!$force && (!$state->active_due_at || now()->lt($state->active_due_at))) {
                 return false;
             }
 
@@ -701,6 +702,10 @@ class AirframeMaintenanceService
             $legacy = Schema::hasTable('disposable_maintenance')
                 ? DB::table('disposable_maintenance')->where('aircraft_id', $aircraftId)->lockForUpdate()->first()
                 : null;
+            // Do not overwrite an active legacy operation belonging to another module.
+            if ($legacy && $legacy->act_note && ($legacy->op_type ?? null) !== 'PROMETHEE') {
+                return false;
+            }
             $minutesBefore = $legacy && is_numeric($legacy->{'time_'.$check} ?? null)
                 ? (int) $legacy->{'time_'.$check}
                 : (int) $state->{$minutesColumn};
@@ -856,6 +861,34 @@ class AirframeMaintenanceService
         $row->last_maintenance_at = $hasLegacyState ? ($row->legacy_last_time ?? null) : null;
         $row->active_legacy_check = $hasLegacyState ? ($row->legacy_act_note ?? null) : null;
         $row->maintenance_source = $hasLegacyState ? 'disposable_maintenance' : 'promethee_fallback';
+        // A/B/C potential (flight hours and cycles) is separate from visit duration.
+        // Use the legacy timestamps only for legacy-only visits.
+        $hasActiveCheck = (bool) ($row->active_check ?? null);
+        $activeName = $hasActiveCheck ? $row->active_check : $row->active_legacy_check;
+        $startValue = $hasActiveCheck ? ($row->active_started_at ?? null) : ($hasLegacyState ? ($row->legacy_act_start ?? null) : null);
+        $dueValue = $hasActiveCheck ? ($row->active_due_at ?? null) : ($hasLegacyState ? ($row->legacy_act_end ?? null) : null);
+        $startedAt = $startValue ? CarbonImmutable::parse($startValue) : null;
+        $dueAt = $dueValue ? CarbonImmutable::parse($dueValue) : null;
+        $now = CarbonImmutable::now();
+
+        $row->active_effective_due_at = $dueValue;
+        $row->active_remaining_minutes = $activeName && $dueAt
+            ? ($dueAt->greaterThan($now) ? (int) ceil($now->diffInSeconds($dueAt) / 60) : 0)
+            : null;
+        $row->active_is_overdue = (bool) ($activeName && $dueAt && $now->greaterThanOrEqualTo($dueAt));
+        $row->active_overdue_minutes = $row->active_is_overdue
+            ? (int) ceil($dueAt->diffInSeconds($now) / 60)
+            : 0;
+        $row->active_progress_percent = null;
+        if ($activeName && $startedAt && $dueAt) {
+            $plannedSeconds = max(1, $startedAt->diffInSeconds($dueAt));
+            $elapsedSeconds = $startedAt->diffInSeconds($now, false);
+            $row->active_progress_percent = $dueAt->lessThanOrEqualTo($startedAt)
+                ? 100.0
+                : round(min(100, max(0, ($elapsedSeconds / $plannedSeconds) * 100)), 1);
+        }
+        $row->active_can_finalize = (bool) ($hasActiveCheck && $row->active_is_overdue);
+        $row->active_requires_attention = (bool) ($activeName && !$dueAt);
         $row->next_check = $mostUrgent;
         $row->maintenance_state = ($row->active_check || ($row->safety_hold_at ?? null) || $row->active_legacy_check)
             ? 'maintenance'
