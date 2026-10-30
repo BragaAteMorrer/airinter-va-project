@@ -61,3 +61,24 @@
 @media (max-width:650px){
   .pilot-grid .pilot-flight-status{top:8px;right:8px}
 }
+
+/* Modern dark appearance: memorial surfaces must not retain light-mode backgrounds. */
+html[data-era="modern"][data-appearance="dark"] .memorial-intro{
+    background:linear-gradient(135deg,#13283a,#172e40);
+    border-color:#355169;
+    color:#e4edf5;
+}
+html[data-era="modern"][data-appearance="dark"] .memorial-intro .eyebrow{color:#a5bfd5}
+html[data-era="modern"][data-appearance="dark"] .memorial-intro h2{color:#edf4fa}
+html[data-era="modern"][data-appearance="dark"] .memorial-intro p{color:#c0d0df}
+html[data-era="modern"][data-appearance="dark"] .memorial-grid .memorial-card{
+    background:linear-gradient(180deg,#102333,#142a3c);
+    border:1px solid #345067;
+    border-top:3px solid #6385a1;
+    color:#e4edf5;
+}
+html[data-era="modern"][data-appearance="dark"] .memorial-card h2{color:#eef4fa}
+html[data-era="modern"][data-appearance="dark"] .memorial-card .memorial-tribute{color:#c1d0dd}
+html[data-era="modern"][data-appearance="dark"] .memorial-card .memorial-admin{border-top-color:#345067}
+html[data-era="modern"][data-appearance="dark"] .memorial-card .memorial-admin summary{color:#9ac7e5}
+html[data-era="modern"][data-appearance="dark"] .memorial-card .memorial-portrait{box-shadow:0 0 0 4px #294155}
