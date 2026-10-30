@@ -21,6 +21,8 @@ public sealed class XPlaneUdpConnector : ISimulatorConnector
     private UdpClient? socket;
     private readonly Dictionary<int, (float Value, DateTimeOffset ReceivedAt)> values = [];
     private DateTimeOffset lastRequest = DateTimeOffset.MinValue;
+    private DateTimeOffset waitingSince = DateTimeOffset.MinValue;
+    private DateTimeOffset? lastValidPacketAt;
 
     public SimulatorDescriptor Descriptor { get; } = new(
         SimulatorKind.XPlane, "X-Plane (UDP DataRef)", "xplane-udp",
@@ -47,6 +49,14 @@ public sealed class XPlaneUdpConnector : ISimulatorConnector
                 RequestDataRefs();
             while (socket!.Available > 0)
                 Receive();
+            if (ConnectionState != SimulatorConnectionState.Connected
+                && waitingSince != DateTimeOffset.MinValue
+                && DateTimeOffset.UtcNow - waitingSince > TimeSpan.FromSeconds(12))
+            {
+                Status = lastValidPacketAt is null
+                    ? $"X-Plane : aucune réponse RREF depuis 127.0.0.1:{xPlanePort}. Vérifiez que X-Plane est lancé et que son port UDP est {xPlanePort}."
+                    : "X-Plane : paquets RREF reçus, mais position incomplète. Vérifiez les DataRefs et la télémétrie.";
+            }
 
             if (LatestSnapshot is { } latest
                 && DateTimeOffset.UtcNow - latest.RecordedAt > FreshnessTimeout)
@@ -77,6 +87,8 @@ public sealed class XPlaneUdpConnector : ISimulatorConnector
         socket = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
         socket.Client.Blocking = false;
         lastRequest = DateTimeOffset.MinValue;
+        waitingSince = DateTimeOffset.UtcNow;
+        lastValidPacketAt = null;
     }
 
     private void RequestDataRefs()
@@ -121,6 +133,7 @@ public sealed class XPlaneUdpConnector : ISimulatorConnector
             return;
 
         var now = DateTimeOffset.UtcNow;
+        lastValidPacketAt = now;
         for (var offset = 5; offset + 8 <= packet.Length; offset += 8)
         {
             var index = BinaryPrimitives.ReadInt32LittleEndian(packet.AsSpan(offset, 4));
@@ -189,6 +202,8 @@ public sealed class XPlaneUdpConnector : ISimulatorConnector
         socket = null;
         values.Clear();
         lastRequest = DateTimeOffset.MinValue;
+        waitingSince = DateTimeOffset.MinValue;
+        lastValidPacketAt = null;
         LatestSnapshot = null;
         ConnectionState = SimulatorConnectionState.NotDetected;
         Status = "X-Plane non connecté";
