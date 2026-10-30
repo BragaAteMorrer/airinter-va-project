@@ -178,8 +178,17 @@ private readonly pollIntervalMs = 3000;
 
 public onAfterRender(node: VNode): void {
 super.onAfterRender(node);
-this.workspace = new HermesEfbWorkspace(this.tabsHost.instance.parentElement as HTMLElement, this.tabsHost.instance);
-this.assistant = new HermesFlightAssistant(this.assistantHost.instance);
+try {
+  this.workspace = new HermesEfbWorkspace(this.tabsHost.instance.parentElement as HTMLElement, this.tabsHost.instance);
+} catch (error) {
+  this.showConnectionHelp("L’espace de travail EFB n’a pas pu démarrer. Les informations de vol restent accessibles ci-dessous.");
+  console.error("[Hermes EFB] Workspace initialization failed", error);
+}
+try {
+  this.assistant = new HermesFlightAssistant(this.assistantHost.instance);
+} catch (error) {
+  console.error("[Hermes EFB] Assistant initialization failed", error);
+}
 this.connectBridge();
 this.startPolling();
 }
@@ -208,6 +217,11 @@ super.destroy();
 private connectBridge(): void {
 if (this.listener) return;
 try {
+if (typeof RegisterCommBusListener !== "function") {
+  this.set(this.bridgeState, "Mode hors ligne");
+  this.showConnectionHelp("Interface chargée, mais CommBus n’est pas disponible. Vérifiez l’installation MSFS 2024 et relancez le simulateur.");
+  return;
+}
 this.listener = RegisterCommBusListener(() => this.requestState());
 this.listener.on(STATE_EVENT, payload => this.receiveState(payload));
 this.set(this.bridgeState, "Connexion Hermès…");
@@ -220,6 +234,7 @@ this.showConnectionHelp("CommBus indisponible. Redémarrez MSFS 2024 après inst
 
 private startPolling(): void {
 this.stopPolling();
+this.connectBridge();
 this.requestState();
 this.timer = window.setInterval(() => {
 if (this.lastStateAt && Date.now() - this.lastStateAt > 6500) {
@@ -231,6 +246,7 @@ this.showConnectionHelp("Télémétrie périmée. Vérifiez Hermès et MSFS 2024
 this.set(this.bridgeState, "Aucune réponse de Hermès");
 this.showConnectionHelp("CommBus sans réponse. Vérifiez Hermès et efb.commBusAvailable.");
 }
+if (!this.listener) this.connectBridge();
 this.requestState();
 }, this.pollIntervalMs);
 }
@@ -480,8 +496,17 @@ public BootMode = AppBootMode.COLD;
 public SuspendMode = AppSuspendMode.SLEEP;
 
 public async install(_props: AppInstallProps): Promise<void> {
-await Efb.loadJs("/JS/Services/CommBus.js");
-await Efb.loadCss(`${BASE_URL}/HermesEfb.css?v=${Date.now()}`);
+// The EFB must render even when the native CommBus service is missing.
+try {
+  await Efb.loadCss(`${BASE_URL}/HermesEfb.css`);
+} catch (error) {
+  console.error("[Hermes EFB] Stylesheet failed to load", error);
+}
+try {
+  await Efb.loadJs("/JS/Services/CommBus.js");
+} catch (error) {
+  console.error("[Hermes EFB] CommBus unavailable; starting in offline mode", error);
+}
 }
 
 public get compatibleAircraftModels(): string[] | undefined {
