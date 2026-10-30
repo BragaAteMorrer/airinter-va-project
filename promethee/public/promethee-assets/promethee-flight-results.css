@@ -56,3 +56,22 @@ html[data-era="minitel"] .flight-results-heading{border-color:var(--minitel-gree
   .line-meta{grid-template-columns:1fr}
 }
 
+/* Flight cards: tone down saturated accents and bright outlines in dark mode. */
+html[data-era="modern"][data-appearance="dark"] .flight-cards .line-card{
+    background:linear-gradient(180deg,#102333,#132a3d);
+    border-color:#304b63;
+    color:#e3edf5;
+}
+html[data-era="modern"][data-appearance="dark"] .flight-cards .line-card::before{opacity:.66}
+html[data-era="modern"][data-appearance="dark"] .flight-cards .line-card h2 a{color:#93c8eb}
+html[data-era="modern"][data-appearance="dark"] .flight-cards .airport-pair{color:#e2edf5}
+html[data-era="modern"][data-appearance="dark"] .flight-cards .airport-pair i{border-color:#304b63;opacity:.65}
+html[data-era="modern"][data-appearance="dark"] .flight-cards .line-meta>div{
+    background:#142a3d;
+    border-color:#355067;
+}
+html[data-era="modern"][data-appearance="dark"] .flight-cards .flight-result-schedule small{
+    background:#20384b;
+    color:#c4d5e4;
+    border-color:#47637a;
+}
