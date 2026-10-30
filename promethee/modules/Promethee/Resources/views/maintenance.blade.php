@@ -46,7 +46,7 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($maintenance as $item)
+                @foreach($maintenance as $item)
                     <tr>
                         <td><a href="{{ route('promethee.aircraft.show', $item->registration) }}"><strong>{{ $item->registration }}</strong></a> · {{ $item->icao }}</td>
                         <td>{{ $item->airline_icao ?: '—' }}@if($item->airline_name) · {{ $item->airline_name }}@endif</td>
@@ -78,9 +78,7 @@
                                 ])->filter();
                             @endphp
                             @if($availableChecks->isNotEmpty())
-                                @foreach($availableChecks as $check => $enabled)
-                                    <span class="tag">{{ $check }}</span>
-                                @endforeach
+                                <span class="tag">{{ $availableChecks->keys()->implode(' / ') }}</span>
                             @else
                                 <span class="tag">TRANSFERT TECHNIQUE REQUIS</span>
                             @endif
@@ -123,9 +121,10 @@
                         </td>
                         @endif
                     </tr>
-                @empty
-                    <tr><td colspan="14">Aucune opération de maintenance ni échéance proche.</td></tr>
-                @endforelse
+                @endforeach
+                @if($maintenance->isEmpty())
+                    <tr><td colspan="{{ auth()->check() && auth()->user()->hasRole('admin') && auth()->user()->isAbleTo('admin-access') ? 14 : 13 }}">Aucune opération de maintenance ni échéance proche.</td></tr>
+                @endif
             </tbody>
         </table>
     </div>
