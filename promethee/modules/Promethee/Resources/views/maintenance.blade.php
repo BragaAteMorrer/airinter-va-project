@@ -96,11 +96,16 @@
                         <td>{{ $item->rem_ca ?? '—' }}</td><td>{{ $item->rem_cb ?? '—' }}</td><td>{{ $item->rem_cc ?? '—' }}</td>
                         @ability('admin','admin-access')
                         <td>
-                            @if(\Illuminate\Support\Facades\Route::has('admin.promethee.maintenance.airframe.start') && empty($item->act_note) && $availableChecks->isNotEmpty())
+                            @php
+                                $canStartMaintenance = \Illuminate\Support\Facades\Route::has('admin.promethee.maintenance.airframe.start')
+                                    && empty($item->act_note)
+                                    && $availableChecks->isNotEmpty();
+                            @endphp
+                            @if($canStartMaintenance)
                                 <form method="post" action="{{ route('admin.promethee.maintenance.airframe.start', $item->aircraft_id) }}" class="inline-form" onsubmit="return confirm('Démarrer la maintenance de {{ $item->registration }} et immobiliser cet appareil ?');">
                                     @csrf
                                     <select name="check" aria-label="Type de maintenance de {{ $item->registration }}" required>
-                                        @foreach($availableChecks->keys() as $check)
+                                        @foreach($availableChecks->keys()->all() as $check)
                                             <option value="{{ strtolower($check) }}">{{ $check }} Check</option>
                                         @endforeach
                                     </select>
