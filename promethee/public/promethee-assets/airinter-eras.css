@@ -527,3 +527,22 @@ html[data-era="2000"] .workspace-switch {
   html[data-era="modern"] .sidebar.is-menu-open .pilot-space-actions { justify-content:flex-start; }
   html[data-era="2000"] .workspace-switch { display:none; }
 }
+
+
+/* Accessibility baseline: day/night across historical eras, WCAG 2.2 AA target. */
+html[data-appearance="light"]{color-scheme:light;--a11y-field-bg:#fff;--a11y-field-text:#102c42;--a11y-field-border:#667e90;--a11y-placeholder:#52687b;--a11y-focus:#075b96}
+html[data-appearance="dark"]{color-scheme:dark;--a11y-field-bg:#172d40;--a11y-field-text:#f4f8fb;--a11y-field-border:#8ea5b8;--a11y-placeholder:#bdcddb;--a11y-focus:#ffd27a}
+html[data-appearance] :where(input:not([type="checkbox"]):not([type="radio"]),select,textarea){
+  background-color:var(--a11y-field-bg);color:var(--a11y-field-text);border:1px solid var(--a11y-field-border)
+}
+html[data-appearance] :where(input,textarea)::placeholder{color:var(--a11y-placeholder);opacity:1}
+html[data-appearance] select option{background:var(--a11y-field-bg);color:var(--a11y-field-text)}
+html[data-appearance] :where(button,a[href],input,select,textarea,summary,[role="button"],[role="tab"]):focus-visible{
+  outline:3px solid var(--a11y-focus)!important;outline-offset:3px
+}
+html[data-appearance] :where(.panel,.stat,td,th,.nav-menu,.message){overflow-wrap:anywhere}
+html[data-appearance] [aria-selected="true"],html[data-appearance] [aria-pressed="true"]{font-weight:700}
+@media(forced-colors:active){
+  html[data-appearance] :where(button,a[href],input,select,textarea,summary,[role="button"],[role="tab"]):focus-visible{outline:3px solid Highlight!important}
+  html[data-appearance] [aria-selected="true"]{outline:1px solid Highlight}
+}
