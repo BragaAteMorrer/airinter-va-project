@@ -259,16 +259,29 @@ async function searchFlights() {
   const departure = normalizedSearchValue('#departureSearch');
   const arrival = normalizedSearchValue('#arrivalSearch');
   const aircraftType = normalizedSearchValue('#aircraftTypeSearch');
+  const airline = normalizedSearchValue('#flightAirlineSearch').toUpperCase();
+  if (airline && !/^[A-Z0-9]{2,4}$/.test(airline)) return showMessage('#flightMessage', 'Code compagnie ICAO invalide.', true);
   // Keep the airline prefix (ITF, ACF, etc.) so Prométhée can scope the
   // search to the matching company. The API also accepts a bare number.
   if (number) params.set('flight_number', number);
   if (departure) params.set('dep_icao', departure);
   if (arrival) params.set('arr_icao', arrival);
   if (aircraftType) params.set('icao_type', aircraftType);
+  if (airline) params.set('airline_icao', airline);
   try {
     showMessage('#flightMessage', 'Recherche dans le programme…');
     setOperationsMode('search');
-    renderOperations(await call('/api/v1/flights' + (params.size ? '?' + params.toString() : '')), 'search');
+    const response = unwrap(await call('/api/v1/flights' + (params.size ? '?' + params.toString() : '')));
+    const results = Array.isArray(response) ? response : (response?.operations || response?.data || []);
+    // Defense in depth: some API versions ignore airline_icao. Never show
+    // another operator when the pilot explicitly selected a company.
+    const filtered = airline ? results.filter(item => {
+      const flight = item.flight || item;
+      const code = String(flight.airline?.icao || flight.airline_icao || item.airline?.icao || '').toUpperCase();
+      const ident = String(flight.ident || flight.flight_number || '').toUpperCase();
+      return code === airline || (!code && ident.startsWith(airline));
+    }) : results;
+    renderOperations(filtered, 'search');
     showMessage('#flightMessage', '');
   } catch (error) {
     showMessage('#flightMessage', friendlyError(error), true);
