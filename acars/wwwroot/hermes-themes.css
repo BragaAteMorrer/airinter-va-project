@@ -597,3 +597,70 @@ body[data-appearance="dark"] #ofpNetworkDialog h3{color:var(--ink)}
 body[data-appearance="dark"] #ofpNetworkDialog>p:not(.message){color:var(--muted)}
 body[data-era="2000"] #ofpNetworkDialog{border-radius:0;box-shadow:6px 6px 0 rgb(10 35 60 / 20%)}
 @media(max-width:480px){#ofpNetworkDialog{padding:18px}#ofpNetworkDialog .ofp-network-choices button{flex:1 1 100%}}
+
+
+/* WCAG 2.2 AA — shared day/night accessibility safeguards.
+   Explicit palette values prevent legacy era declarations from leaking across themes. */
+body[data-appearance="light"]{
+  color-scheme:light;
+  --a11y-focus:#075b96;
+  --a11y-field-bg:#fff;
+  --a11y-field-fg:#102c42;
+  --a11y-field-border:#607487;
+  --a11y-placeholder:#546679;
+}
+body[data-appearance="dark"]{
+  color-scheme:dark;
+  --a11y-focus:#ffd27a;
+  --a11y-field-bg:#172d40;
+  --a11y-field-fg:#f4f8fb;
+  --a11y-field-border:#8ea5b8;
+  --a11y-placeholder:#c0d0dc;
+}
+/* Give text inputs an explicit foreground/background even in older eras. */
+body[data-appearance] :where(input:not([type="checkbox"]):not([type="radio"]),select,textarea){
+  background:var(--a11y-field-bg);
+  color:var(--a11y-field-fg);
+  border:1px solid var(--a11y-field-border);
+}
+body[data-appearance] :where(input,textarea)::placeholder{
+  color:var(--a11y-placeholder);
+  opacity:1;
+}
+body[data-appearance] :where(input,select,textarea):disabled{
+  cursor:not-allowed;
+}
+/* Consistent visible focus across native controls and custom tab controls. */
+body[data-appearance] :where(a[href],button,input,select,textarea,summary,[role="button"],[role="tab"]):focus-visible{
+  outline:3px solid var(--a11y-focus) !important;
+  outline-offset:3px;
+}
+/* Do not rely on red/green or opacity alone for active selections. */
+body[data-appearance] :where(.tab,[role="tab"],.source-tabs button).active,
+body[data-appearance] [role="tab"][aria-selected="true"]{
+  font-weight:800;
+  text-decoration-thickness:2px;
+}
+body[data-appearance] :where(.tab,[role="tab"],.source-tabs button):not(:disabled){
+  min-height:40px;
+}
+/* Prevent overflow of long flight numbers, status messages and API errors. */
+body[data-appearance] :where(.message,.hint,.operation,.prefile,.source-panel,.flight-draft,.settings-sections article){
+  overflow-wrap:anywhere;
+}
+/* Native selects must keep readable pop-up options on either operating system. */
+body[data-appearance="light"] select option{background:#fff;color:#102c42}
+body[data-appearance="dark"] select option{background:#172d40;color:#f4f8fb}
+/* Modal remains readable regardless of browser dialog default styles. */
+body[data-appearance="light"] #ofpNetworkDialog{color-scheme:light;background:#fff;color:#102c42}
+body[data-appearance="dark"] #ofpNetworkDialog{color-scheme:dark;background:#0e1f2f;color:#f4f8fb;border-color:#8ea5b8}
+body[data-appearance="dark"] #ofpNetworkDialog :where(h3,p){color:inherit}
+/* High contrast mode should retain OS-selected system colors. */
+@media(forced-colors:active){
+  body[data-appearance] :where(a[href],button,input,select,textarea,summary,[role="button"],[role="tab"]):focus-visible{
+    outline:3px solid Highlight !important;
+  }
+  body[data-appearance] [role="tab"][aria-selected="true"]{
+    border:2px solid Highlight;
+  }
+}
