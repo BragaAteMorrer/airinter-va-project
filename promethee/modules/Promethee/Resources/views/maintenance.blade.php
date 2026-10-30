@@ -54,12 +54,16 @@
                         <td>{{ $item->act_note ?: 'À planifier' }}</td>
                         <td>
                             @if($item->act_note && $item->act_end)
-                                @php($due = \Carbon\Carbon::parse($item->act_end))
+                                @php
+                                    $due = \Carbon\Carbon::parse($item->act_end);
+                                @endphp
                                 <strong>{{ $due->locale('fr')->isoFormat('DD/MM/YYYY HH:mm') }}</strong><br>
                                 @if($due->lessThanOrEqualTo(now()))
                                     <span class="tag">ÉCHUE · clôture à vérifier</span>
                                 @else
-                                    @php($remaining = (int) ceil(now()->diffInSeconds($due) / 60))
+                                    @php
+                                        $remaining = (int) ceil(now()->diffInSeconds($due) / 60);
+                                    @endphp
                                     <small>Reste {{ intdiv($remaining, 60) }} h {{ str_pad((string) ($remaining % 60), 2, '0', STR_PAD_LEFT) }} min</small>
                                 @endif
                             @elseif($item->act_note)
