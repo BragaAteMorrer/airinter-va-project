@@ -42,7 +42,7 @@
             <thead>
                 <tr>
                     <th>Appareil</th><th>Compagnie</th><th>État</th><th>Intervention</th><th>Fin de visite / temps restant</th><th>Localisation actuelle / site technique</th>
-                    <th>Temps A restant</th><th>Temps B restant</th><th>Temps C restant</th><th>Temps restant moteurs</th><th>Cycles A</th><th>Cycles B</th><th>Cycles C</th>@ability('admin','admin-access')<th>Action</th>@endability
+                    <th>Temps A restant</th><th>Temps B restant</th><th>Temps C restant</th><th>Temps restant moteurs</th><th>Cycles A</th><th>Cycles B</th><th>Cycles C</th>@if(auth()->check() && auth()->user()->hasRole('admin') && auth()->user()->isAbleTo('admin-access'))<th>Action</th>@endif
                 </tr>
             </thead>
             <tbody>
@@ -94,7 +94,7 @@
                             @endforelse
                         </td>
                         <td>{{ $item->rem_ca ?? '—' }}</td><td>{{ $item->rem_cb ?? '—' }}</td><td>{{ $item->rem_cc ?? '—' }}</td>
-                        @ability('admin','admin-access')
+                        @if(auth()->check() && auth()->user()->hasRole('admin') && auth()->user()->isAbleTo('admin-access'))
                         <td>
                             @php
                                 $canStartMaintenance = \Illuminate\Support\Facades\Route::has('admin.promethee.maintenance.airframe.start')
@@ -121,7 +121,7 @@
                                 <small>{{ !empty($item->act_note) ? 'Intervention en cours' : 'Aucun check disponible ici' }}</small>
                             @endif
                         </td>
-                        @endability
+                        @endif
                     </tr>
                 @empty
                     <tr><td colspan="14">Aucune opération de maintenance ni échéance proche.</td></tr>
