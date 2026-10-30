@@ -105,9 +105,15 @@
                                 <form method="post" action="{{ route('admin.promethee.maintenance.airframe.start', $item->aircraft_id) }}" class="inline-form" onsubmit="return confirm('Démarrer la maintenance de {{ $item->registration }} et immobiliser cet appareil ?');">
                                     @csrf
                                     <select name="check" aria-label="Type de maintenance de {{ $item->registration }}" required>
-                                        @foreach($availableChecks->keys()->all() as $check)
-                                            <option value="{{ strtolower($check) }}">{{ $check }} Check</option>
-                                        @endforeach
+                                        @if($availableChecks->has('A'))
+                                            <option value="a">A Check</option>
+                                        @endif
+                                        @if($availableChecks->has('B'))
+                                            <option value="b">B Check</option>
+                                        @endif
+                                        @if($availableChecks->has('C'))
+                                            <option value="c">C Check</option>
+                                        @endif
                                     </select>
                                     <button type="submit">Démarrer</button>
                                 </form>
