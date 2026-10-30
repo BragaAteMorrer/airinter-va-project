@@ -131,6 +131,8 @@ public sealed class PrometheeWindow : Window
         var uri = new Uri("https://promethee.local" + path); var route = uri.AbsolutePath;
         if (route == "/api/efb/context")
             return efb.UpdateContext(body);
+        if (route == "/api/simbrief/resolve-pilot")
+            return await ResolveSimBriefPilotAsync(body);
         if (route == "/api/network")
             return await Network(uri);
         if (route == "/api/datalink")
@@ -167,6 +169,37 @@ public sealed class PrometheeWindow : Window
             "/api/history" => recorder.History, "/api/diagnostics" => Diagnostics(), "/api/update/check" => await CheckUpdateStatusAsync(), "/api/open-external" => OpenExternal(body),
             _ => throw new InvalidOperationException("Commande ACARS inconnue.") };
     }
+    private static readonly HttpClient SimBriefHttp = new() { Timeout = TimeSpan.FromSeconds(12) };
+
+    private static async Task<object> ResolveSimBriefPilotAsync(JsonElement? body)
+    {
+        if (!body.HasValue || body.Value.ValueKind != JsonValueKind.Object
+            || !body.Value.TryGetProperty("username", out var nameElement)
+            || nameElement.ValueKind != JsonValueKind.String)
+            throw new InvalidOperationException("Alias Navigraph / SimBrief manquant.");
+
+        var username = nameElement.GetString()?.Trim() ?? "";
+        if (username.Length is < 1 or > 80
+            || username.Any(c => !char.IsLetterOrDigit(c) && c is not '_' and not '-' and not '.'))
+            throw new InvalidOperationException("Alias Navigraph / SimBrief invalide.");
+
+        var url = "https://www.simbrief.com/api/xml.fetcher.php?username="
+            + Uri.EscapeDataString(username) + "&json=1";
+        using var response = await SimBriefHttp.GetAsync(url);
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException("SimBrief ne répond pas actuellement.");
+
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        if (!json.RootElement.TryGetProperty("params", out var parameters)
+            || !parameters.TryGetProperty("user_id", out var idElement))
+            throw new InvalidOperationException("Aucun OFP SimBrief trouvé pour cet alias. Saisissez le Pilot ID manuellement.");
+
+        var pilotId = idElement.ToString();
+        if (pilotId.Length is < 1 or > 12 || pilotId.Any(c => c < '0' || c > '9'))
+            throw new InvalidOperationException("Pilot ID SimBrief invalide.");
+        return new { pilot_id = pilotId };
+    }
+
     private async Task<object> CancelOperation(Uri uri)
     {
         var operationId = QueryParameter(uri, "operation");

@@ -633,6 +633,18 @@ async function refreshOperationalWeather() {
 $$('[data-plan-mode]').forEach(button => button.onclick = () => setPlanMode(button.dataset.planMode));
 $('#simbriefUsername').value = localSettings.simbriefUsername || '';
 $('#simbriefPilotId').value = localSettings.simbriefPilotId || '';
+async function resolveNavigraphPilotId() {
+  const username = $('#simbriefUsername')?.value.trim();
+  if (!username) return null;
+  const result = unwrap(await call('/api/simbrief/resolve-pilot', { username }));
+  const pilotId = String(result?.pilot_id || '');
+  if (!/^\d{1,12}$/.test(pilotId)) throw new Error('Pilot ID SimBrief invalide.');
+  if ($('#simbriefUsername')?.value.trim() !== username) return null;
+  $('#simbriefPilotId').value = pilotId;
+  localSettings.simbriefPilotId = pilotId;
+  localStorage.prometheeAcarsSettings = JSON.stringify(localSettings);
+  return pilotId;
+}
 ['simbriefUsername', 'simbriefPilotId'].forEach(key => {
   const node = $('#' + key);
   node.onchange = () => {
@@ -640,6 +652,19 @@ $('#simbriefPilotId').value = localSettings.simbriefPilotId || '';
     localStorage.prometheeAcarsSettings = JSON.stringify(localSettings);
     updateRecommendedPlanSource();
   };
+});
+$('#simbriefUsername')?.addEventListener('change', async () => {
+  const username = $('#simbriefUsername').value.trim();
+  if (!username) return;
+  $('#simbriefPilotId').value = '';
+  localSettings.simbriefPilotId = '';
+  localStorage.prometheeAcarsSettings = JSON.stringify(localSettings);
+  try {
+    const id = await resolveNavigraphPilotId();
+    if (id) showMessage('#simbriefState', 'Pilot ID SimBrief identifié automatiquement.');
+  } catch {
+    showMessage('#simbriefState', 'Identification automatique indisponible : vous pouvez renseigner le Pilot ID manuellement.', true);
+  }
 });
 setPlanMode(localSettings.flightPlanMode || 'account');
 updateRecommendedPlanSource();
