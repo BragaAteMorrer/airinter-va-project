@@ -23,3 +23,5 @@
         apply(current === 'system' ? 'light' : current === 'light' ? 'dark' : 'system');
     });
 })();
+
+// Argos security UX updates forthcoming.
