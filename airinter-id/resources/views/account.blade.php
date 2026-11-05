@@ -7,10 +7,22 @@
         <h1>{{ $user->display_name }}</h1>
         <p class="muted">Identité Air Inter · <span class="mono">{{ $user->subject }}</span></p>
     </div>
-    <div class="security-meter" aria-label="Niveau de sécurité {{ $securityScore }}%">
-        <div class="security-ring" style="--score:{{ $securityScore }}"><strong>{{ $securityScore }}</strong><span>/100</span></div>
-        <div><small>SÉCURITÉ DU COMPTE</small><strong>{{ $securityLevel }}</strong><span>{{ $user->two_factor_confirmed_at ? 'MFA actif' : 'MFA à activer' }}</span></div>
-    </div>
+    <details class="security-meter security-score-details">
+        <summary aria-label="Détails de sécurité du compte : {{ $securityScore }} sur 100">
+            <span class="security-ring" style="--score:{{ $securityScore }}"><strong>{{ $securityScore }}</strong><span>/100</span></span>
+            <span><small>SÉCURITÉ DU COMPTE</small><strong>{{ $securityLevel }}</strong><span>Voir le détail des points ▾</span></span>
+        </summary>
+        <div class="security-score-breakdown">
+            @foreach($securityCriteria as $criterion)
+                <p><span>{{ $criterion['complete'] ? '✓' : '○' }} {{ $criterion['label'] }}</span>
+                    <strong>{{ $criterion['complete'] ? '+' : '0 / ' }}{{ $criterion['points'] }} pts</strong>
+                    @if(!$criterion['complete'] && $criterion['action'])
+                        <a href="{{ $criterion['action'] }}">Améliorer</a>
+                    @endif
+                </p>
+            @endforeach
+        </div>
+    </details>
 </section>
 
 <nav class="account-tabs" aria-label="Sections du compte">
@@ -228,7 +240,8 @@
             <h3>Codes de secours</h3>
             <p>{{ $recoveryReadiness['recovery_codes'] ? 'Des codes de récupération sont disponibles.' : 'Générez des codes utilisables si votre second facteur est perdu.' }}</p>
             @if($recoveryReadiness['mfa'])
-                <a class="button secondary small" href="{{ route('account.mfa.recovery-codes') }}">Voir les codes</a>
+                <a class="button secondary small" href="{{ route('account.mfa') }}">Gérer / renouveler les codes</a>
+                <small>Pour votre sécurité, les codes existants ne peuvent pas être réaffichés : seuls leurs hachages sont conservés.</small>
             @endif
         </article>
 
@@ -281,7 +294,16 @@
                 <label>Langue
                     <select name="preferred_locale"><option value="fr" @selected($user->preferred_locale === 'fr')>Français</option><option value="en" @selected($user->preferred_locale === 'en')>English</option></select>
                 </label>
-                <label>Fuseau horaire<input name="timezone" value="{{ $user->timezone }}" required></label>
+                <label>Fuseau horaire (identifiant IANA)
+                    <input name="timezone" list="argos-timezones" value="{{ old('timezone', $user->timezone) }}" placeholder="Europe/Paris" autocomplete="off" required>
+                    <small>Pour la France, saisissez <strong>Europe/Paris</strong> : CET en hiver, CEST en été. Les abréviations CET et CEST sont également acceptées.</small>
+                    <datalist id="argos-timezones">
+                        <option value="Europe/Paris"><option value="Europe/Brussels"><option value="Europe/London">
+                        <option value="Europe/Lisbon"><option value="Europe/Madrid"><option value="Europe/Berlin">
+                        <option value="America/Toronto"><option value="America/Montreal"><option value="America/New_York">
+                        <option value="America/Vancouver"><option value="UTC">
+                    </datalist>
+                </label>
                 @error('timezone')<p class="error">{{ $message }}</p>@enderror
                 <button class="button primary">Enregistrer</button>
             </form>
