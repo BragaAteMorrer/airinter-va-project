@@ -62,6 +62,11 @@ final class PrometheeMissionReservationTest extends TestCase
             $this->fail('Second active repatriation booking must be refused.');
         } catch (HttpException $exception) {
             $this->assertSame(409, $exception->getStatusCode());
+            $this->assertStringContainsString(
+                'mission de rapatriement #'.$missionIds[0],
+                $exception->getMessage()
+            );
+            $this->assertStringContainsString('Mes missions', $exception->getMessage());
         }
 
         $this->assertSame(1, DB::table('promethee_mission_bookings')->where('user_id', $user->id)->count());

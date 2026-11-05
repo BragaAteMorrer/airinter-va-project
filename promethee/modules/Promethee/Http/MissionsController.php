@@ -23,9 +23,22 @@ public function missions(Request $r, RegionalOperationsService $regionalOperatio
             );
         };
         $missions = $regionalOperations->decorateMissionsForPilot(
-            DB::table('promethee_missions')->where('active',true)
-                ->where(fn($q)=>$q->whereNull('starts_on')->orWhere('starts_on','<=',$today))
-                ->where(fn($q)=>$q->whereNull('ends_on')->orWhere('ends_on','>=',$today))->orderBy('ends_on')->get(),
+            DB::table('promethee_missions')
+                // Always display a pilot's still-reserved missions, even when
+                // the mission was deactivated/expired. Otherwise the booking
+                // continues blocking new repatriations but cannot be cancelled
+                // from "Mes missions".
+                ->where(function ($query) use ($today, $userId) {
+                    $query->where(function ($available) use ($today) {
+                        $available->where('active', true)
+                            ->where(fn ($q) => $q->whereNull('starts_on')->orWhere('starts_on', '<=', $today))
+                            ->where(fn ($q) => $q->whereNull('ends_on')->orWhere('ends_on', '>=', $today));
+                    })->orWhereIn('id', DB::table('promethee_mission_bookings')
+                        ->select('mission_id')
+                        ->where('user_id', $userId)
+                        ->where('status', 'reserved'));
+                })
+                ->orderBy('ends_on')->get(),
             $r->user()
         )->map(function ($mission) use ($matches, $userId) {
             $mission->completion = $matches($mission);

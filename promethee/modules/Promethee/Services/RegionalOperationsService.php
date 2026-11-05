@@ -274,8 +274,13 @@ class RegionalOperationsService
                 ->where('booking.user_id', $freshUser->id)
                 ->where('booking.status', 'reserved')
                 ->where('mission.mission_type', 'repatriation')
-                ->exists();
-            abort_if($otherActiveMission, 409, 'Vous avez déjà une mission de rapatriement active. Terminez-la ou abandonnez-la avant d’en réserver une autre.');
+                ->select('mission.id', 'mission.dpt_airport_id', 'mission.arr_airport_id')
+                ->first();
+            abort_if($otherActiveMission, 409,
+                'Votre mission de rapatriement #'.($otherActiveMission->id ?? '?').' ('
+                .($otherActiveMission->dpt_airport_id ?? '?').' → '
+                .($otherActiveMission->arr_airport_id ?? '?')
+                .') est encore réservée. Ouvrez Mes missions pour la terminer ou l’abandonner avant une nouvelle réservation.');
             $aircraft = $mission->aircraft_id
                 ? Aircraft::with('subfleet')->find($mission->aircraft_id)
                 : null;
