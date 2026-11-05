@@ -28,7 +28,11 @@ Les valeurs absentes sont `null`, jamais considérées comme `true`.
   native sur tous les simulateurs, elle est **désactivée par défaut**.
   Définir `HERMES_FENIX_FSUIPC_LVARS=1` avant de lancer Hermès pour
   tester ce mode. En cas d'échec, les champs restent indisponibles et
-  le frein standard continue à fonctionner.
+  le frein standard continue à fonctionner. Hermès retente une initialisation
+  WASM échouée au plus toutes les 15 secondes. Si le service tourne mais
+  que les deux variables Fenix sont absentes, il demande une nouvelle
+  découverte des LVars au plus toutes les 30 secondes. Ces opérations
+  ne garantissent pas que la version installée du Fenix les expose.
 - Ne pas forcer SimConnect et FSUIPC à être tous deux actifs pour
   collecter la même télémétrie. La connexion principale reste celle
   choisie par `SimulatorConnectorHub`.
@@ -65,3 +69,27 @@ Les valeurs absentes sont `null`, jamais considérées comme `true`.
 Le bon fonctionnement des LVars avec la **V3** et la fraîcheur des
 données FSUIPC/WASM restent à valider sur une machine Windows avec MSFS.
 La compilation/test automatisé ne remplace pas ce contrôle réel.
+
+## Vérification sur MSFS 2024 avec FSUIPC7
+
+1. Charger le Fenix A319/A320/A321 jusqu'au cockpit et laisser finir
+   l'initialisation. Lancer ensuite FSUIPC7 et vérifier « Connected ».
+2. Dans FSUIPC7, ouvrir **Add-ons > WASM > List Lvars** ou
+   **Reload & List Lvars**. Rechercher exactement
+   `S_MIP_PARKING_BRAKE` et `B_CONFIG_CHOCKS`. Si elles n'apparaissent
+   pas ici, Hermès ne peut pas les deviner.
+3. Vérifier la présence du module WASM dans le bon dossier Community
+   MSFS 2024, et de `FSUIPC_WAPID.dll` accessible à Hermès (répertoire
+   de l'exécutable ou chemin PATH Windows).
+4. **Fermer Hermès**, puis le lancer avec la variable d'environnement
+   `HERMES_FENIX_FSUIPC_LVARS=1` déjà définie dans **le même processus
+   parent**. Un réglage dans un terminal séparé ne modifie pas un Hermès
+   déjà ouvert.
+5. Attendre au moins une trentaine de secondes, serrer/desserrer le frein
+   et poser/retirer les cales indépendamment. Vérifier les deux états
+   dans le prévol. S'ils restent « indisponible », récupérer les traces
+   Windows d'Hermès et la liste WASM des LVars.
+
+Ne pas remplacer une valeur absente par « frein serré » et ne pas
+court-circuiter les contrôles START/IN. Un connecteur FSUIPC7 marqué
+« Connected » n'implique pas que le pont WASM soit opérationnel.
