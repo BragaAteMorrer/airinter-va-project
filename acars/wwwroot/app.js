@@ -721,44 +721,50 @@ $('#vatsimPrefileBtn').onclick = async () => {
   }
 };
 
+// IVAO import uses an ICAO message, not an undocumented URL prefill API.
+function ivaoIcaoPlan() {
+  const plan = flightPlan?.network_prefiles?.icao_flightplan || '';
+  if (!/^\s*\(FPL-[A-Z0-9]{2,7}-/i.test(plan) || !plan.trim().endsWith(')')) {
+    throw new Error('Le texte ICAO FPL de cet OFP est absent ou incomplet. Régénérez ou réimportez SimBrief avant IVAO.');
+  }
+  return plan;
+}
+async function copyIvaoIcaoPlan() {
+  const icaoPlan = ivaoIcaoPlan();
+  if (navigator.clipboard?.writeText) {
+    try { await navigator.clipboard.writeText(icaoPlan); return true; } catch {}
+  }
+  const textarea = document.createElement('textarea');
+  textarea.value = icaoPlan;
+  textarea.style.position = 'fixed';
+  textarea.style.left = '-9999px';
+  document.body.append(textarea);
+  textarea.select();
+  let copied = false;
+  try { copied = document.execCommand('copy'); } catch {}
+  textarea.remove();
+  return copied;
+}
+$('#ivaoCopyFplBtn')?.addEventListener('click', async () => {
+  try {
+    const copied = await copyIvaoIcaoPlan();
+    showMessage('#networkPrefileMessage', copied
+      ? 'FPL ICAO copié. Importez-le dans votre formulaire IVAO, puis validez le dépôt.'
+      : 'Copie impossible. Sélectionnez le FPL ICAO affiché ci-dessus et copiez-le manuellement.', !copied);
+  } catch (error) { showMessage('#networkPrefileMessage', friendlyError(error), true); }
+});
 $('#ivaoPrefileBtn').onclick = async () => {
-  const prefile = flightPlan?.network_prefiles?.ivao;
-  const icaoPlan = flightPlan?.network_prefiles?.icao_flightplan || '';
-  if (!prefile?.url) return showMessage('#networkPrefileMessage', 'Importez d’abord un OFP SimBrief.', true);
-  // Never open IVAO as though a filing is prepared when the imported OFP
-  // did not actually contain a complete ICAO FPL.
-  if (!/^\s*\(FPL-[A-Z0-9]{2,7}-/i.test(icaoPlan) || !icaoPlan.trim().endsWith(')')) {
-    return showMessage('#networkPrefileMessage', 'Le texte ICAO FPL de cet OFP est absent ou incomplet. Régénérez ou réimportez SimBrief avant IVAO.', true);
+  if (!flightPlan?.network_prefiles?.ivao?.url) {
+    return showMessage('#networkPrefileMessage', 'Importez d’abord un OFP SimBrief.', true);
   }
   try {
-    let copied = false;
-    if (icaoPlan && navigator.clipboard?.writeText) {
-      try {
-        await navigator.clipboard.writeText(icaoPlan);
-        copied = true;
-      } catch {}
-    }
-    if (!copied && icaoPlan) {
-      const textarea = document.createElement('textarea');
-      textarea.value = icaoPlan;
-      textarea.style.position = 'fixed';
-      textarea.style.left = '-9999px';
-      document.body.append(textarea);
-      textarea.select();
-      try { copied = document.execCommand('copy'); } catch {}
-      textarea.remove();
-    }
-    // Older Prométhée responses still provide /home. Do not reopen the landing
-    // page: IVAO's documented FPL workflow starts at the creation form.
-    // There is no verified query-string prefill contract for this portal.
+    const copied = await copyIvaoIcaoPlan();
+    // Legacy API responses may still contain /home; always start at creation.
     const ivaoUrl = 'https://fpl.ivao.aero/flight-plans/create';
     await call('/api/open-external', { url: ivaoUrl });
-    showMessage(
-      '#networkPrefileMessage',
-      copied
-        ? 'IVAO Flight Plan System ouvert. Le plan ICAO a été copié dans le presse-papiers : collez-le dans le formulaire puis validez.'
-        : 'IVAO Flight Plan System ouvert. Reprenez le plan ICAO affiché ci-dessus puis validez-le sur IVAO.'
-    );
+    showMessage('#networkPrefileMessage', copied
+      ? 'Formulaire IVAO ouvert. FPL ICAO copié : importez-le puis confirmez le dépôt sur IVAO.'
+      : 'Formulaire IVAO ouvert. La copie a échoué : utilisez « Recopier le FPL IVAO » ou le FPL affiché dans Hermès.');
   } catch (error) {
     showMessage('#networkPrefileMessage', friendlyError(error), true);
   }
