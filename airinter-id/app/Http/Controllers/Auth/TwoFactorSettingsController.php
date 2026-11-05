@@ -9,16 +9,18 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
-use Illuminate\View\View;
+use Illuminate\Http\Response;
 
 class TwoFactorSettingsController extends Controller
 {
-    public function create(Request $request, TotpService $totp): View
+    public function create(Request $request, TotpService $totp): Response
     {
         $user = $request->user();
 
         if ($user->two_factor_confirmed_at) {
-            return view('auth.two-factor-settings', ['enabled' => true]);
+            return response()->view('auth.two-factor-settings', ['enabled' => true])
+                ->header('Cache-Control', 'no-store, private')
+                ->header('Referrer-Policy', 'no-referrer');
         }
 
         if (!$request->session()->has('mfa.setup_secret')) {
@@ -27,11 +29,12 @@ class TwoFactorSettingsController extends Controller
 
         $secret = (string) $request->session()->get('mfa.setup_secret');
 
-        return view('auth.two-factor-settings', [
+        return response()->view('auth.two-factor-settings', [
             'enabled' => false,
             'secret' => $secret,
             'provisioningUri' => $totp->provisioningUri('Argos · Air Inter', $user->email, $secret),
-        ]);
+        ])->header('Cache-Control', 'no-store, private')
+            ->header('Referrer-Policy', 'no-referrer');
     }
 
     public function confirm(
@@ -66,7 +69,7 @@ class TwoFactorSettingsController extends Controller
         return redirect()->route('account.mfa.recovery-codes');
     }
 
-    public function recoveryCodes(Request $request): View|RedirectResponse
+    public function recoveryCodes(Request $request): Response|RedirectResponse
     {
         $codes = $request->session()->pull('mfa.recovery_codes_plain');
 
@@ -74,7 +77,9 @@ class TwoFactorSettingsController extends Controller
             return redirect()->route('account');
         }
 
-        return view('auth.recovery-codes', ['codes' => $codes]);
+        return response()->view('auth.recovery-codes', ['codes' => $codes])
+            ->header('Cache-Control', 'no-store, private')
+            ->header('Referrer-Policy', 'no-referrer');
     }
 
     public function regenerate(
@@ -82,8 +87,9 @@ class TwoFactorSettingsController extends Controller
         TotpService $totp,
         AccountSecurityService $security,
     ): RedirectResponse {
-        $codes = $totp->recoveryCodes();
         $user = $request->user();
+        abort_unless($user->two_factor_confirmed_at, 403, 'Activez la double authentification avant de générer des codes de secours.');
+        $codes = $totp->recoveryCodes();
 
         $user->forceFill([
             'two_factor_recovery_codes' => array_map(
