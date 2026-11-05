@@ -62,11 +62,17 @@ class AccountController extends Controller
                 return $session;
             });
 
-        $securityScore = 25
-            + ($user->hasVerifiedEmail() ? 20 : 0)
-            + ($user->two_factor_confirmed_at ? 25 : 0)
-            + ($passkeys->isNotEmpty() ? 20 : 0)
-            + ($user->password_changed_at ? 10 : 0);
+        $securityCriteria = [
+            ['label' => 'Protection de base Argos', 'points' => 25, 'complete' => true, 'action' => null],
+            ['label' => 'Adresse e-mail vérifiée', 'points' => 20, 'complete' => $user->hasVerifiedEmail(), 'action' => '#recovery'],
+            ['label' => 'Double authentification activée', 'points' => 25, 'complete' => (bool) $user->two_factor_confirmed_at, 'action' => route('account.mfa')],
+            ['label' => 'Au moins une passkey enregistrée', 'points' => 20, 'complete' => $passkeys->isNotEmpty(), 'action' => '#security'],
+            ['label' => 'Mot de passe changé depuis la création du compte', 'points' => 10, 'complete' => (bool) $user->password_changed_at, 'action' => '#preferences'],
+        ];
+        $securityScore = array_sum(array_map(
+            static fn (array $criterion) => $criterion['complete'] ? $criterion['points'] : 0,
+            $securityCriteria
+        ));
 
         $securityLevel = match (true) {
             $securityScore >= 90 => 'Renforcée',
@@ -120,6 +126,7 @@ class AccountController extends Controller
             'securityEvents' => $securityEvents,
             'trustedDevices' => $trustedDevices,
             'securityScore' => min(100, $securityScore),
+            'securityCriteria' => $securityCriteria,
             'securityLevel' => $securityLevel,
             'recoveryReadiness' => $recoveryReadiness,
             'currentSessionId' => $request->session()->getId(),
@@ -198,6 +205,12 @@ class AccountController extends Controller
 
     public function updatePreferences(Request $request): RedirectResponse
     {
+        // CET/CEST are seasonal abbreviations, not stable IANA timezone IDs.
+        // Accept those legacy inputs but store the correct DST-aware identifier.
+        if (in_array(strtoupper(trim((string) $request->input('timezone'))), ['CET', 'CEST'], true)) {
+            $request->merge(['timezone' => 'Europe/Paris']);
+        }
+
         $data = $request->validate([
             'preferred_locale' => ['required', Rule::in(['fr', 'en'])],
             'timezone' => ['required', 'timezone'],
