@@ -349,13 +349,15 @@ function updatePreflight(status, state, ready) {
   const fenix = String(detectedAdapter || '').startsWith('fenix-');
   const readable = (value, positive, negative) =>
     value === null ? 'indisponible' : value === true ? positive : negative;
-  const connectorId = String(capabilityReport.connectorId || capabilityReport.ConnectorId || '').toLowerCase();
+  const connectorId = String(active?.id || capabilityReport.connectorId || capabilityReport.ConnectorId || '').toLowerCase();
+  const missingFenixLvars = fenixBrake === null && chocks === null;
   const brakeDetail = fenix
     ? ('standard : ' + readable(parkingBrake, 'serré', 'desserré')
        + ' · Fenix : ' + readable(fenixBrake, 'serré', 'desserré')
        + ' · cales : ' + readable(chocks, 'installées', 'retirées')
-       + (connectorId.includes('fsuipc') && fenixBrake === null && chocks === null
-           ? ' · FSUIPC : lecture LVars facultative non disponible' : ''))
+       + (missingFenixLvars ? (connectorId.includes('fsuipc')
+           ? ' · FSUIPC7 : LVars absentes (activer WASM + HERMES_FENIX_FSUIPC_LVARS=1)'
+           : ' · SimConnect : LVars Fenix non reçues (vérifier le connecteur et la version Fenix)') : ''))
     : readable(parkingBrake, 'serré', 'desserré');
 
   const checks = [

@@ -46,6 +46,32 @@ Les valeurs absentes sont `null`, jamais considérées comme `true`.
 - **Ne jamais** enregistrer une cale comme frein de parc serré.
   Le statut brut `ParkingBrake` conserve sa valeur réelle.
 
+## Si Hermès affiche « Fenix : indisponible · cales : indisponibles »
+
+Ce statut signifie que le connecteur n'a **pas confirmé** les valeurs des
+deux LVars Fenix. Il ne faut pas le remplacer artificiellement par « serré ».
+
+1. Dans Hermès, relever le **connecteur actif** : SimConnect ou FSUIPC7.
+2. Avec **SimConnect** : démarrer MSFS, charger entièrement le Fenix V3,
+   attendre la fin de son initialisation puis refaire le test frein/cales.
+   Vérifier que l'identité de l'avion est bien « Fenix A319/A320/A321 ».
+   Une variable non reçue ou une identité non reconnue reste indisponible.
+3. Avec **FSUIPC7** : la lecture des LVars est désactivée par défaut.
+   Installer et activer le module WASM FSUIPC7 dans le bon MSFS
+   (2020 ou 2024), vérifier l'accès à `FSUIPC_WAPID.dll`, puis définir
+   `HERMES_FENIX_FSUIPC_LVARS=1` **avant** de démarrer Hermès.
+   Un changement de variable d'environnement exige son redémarrage.
+4. Comparer le levier cockpit et les cales EFB en effectuant **OFF → ON**
+   séparément pour chaque état. Si les deux restent indisponibles,
+   collecter le connecteur, la version Fenix, le simulateur et les traces
+   de diagnostic : la compatibilité des LVars avec cette version reste à
+   vérifier sur une machine réelle.
+
+**Important :** le choix SimConnect et le secours FSUIPC7 ne doivent pas
+être lancés ensemble par défaut. Le texte « lecture FSUIPC facultative non
+disponible » n'est pas la preuve que FSUIPC7 est en panne ; le secours
+peut simplement être désactivé.
+
 ## Procédure de validation sur Fenix V3
 
 1. Noter le connecteur actif dans les diagnostics Hermès.
