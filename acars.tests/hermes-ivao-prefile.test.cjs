@@ -16,6 +16,8 @@ const handler = app.match(/\$\('#ivaoPrefileBtn'\)\.onclick\s*=\s*async \(\) => 
 assert.ok(handler, 'IVAO handler must exist');
 assert.ok(handler[1].includes("const ivaoUrl = '" + target + "'"), 'Legacy URLs must use the create form');
 assert.match(handler[1], /icao_flightplan/, 'Retain SimBrief ICAO FPL export');
+assert.match(handler[1], /Le texte ICAO FPL de cet OFP est absent ou incomplet/, 'Reject missing or incomplete OFP');
+assert.match(handler[1], /FPL-\[A-Z0-9\]/, 'Validate ICAO FPL identification before opening portal');
 assert.match(handler[1], /clipboard\.writeText\(icaoPlan\)/, 'Retain clipboard import path');
 assert.match(handler[1], /open-external/, 'Open IVAO via the existing secure native bridge');
 assert.doesNotMatch(handler[1], /fpl\.ivao\.aero\/home/);
