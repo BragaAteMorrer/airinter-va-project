@@ -727,7 +727,7 @@ $('#ivaoPrefileBtn').onclick = async () => {
   if (!prefile?.url) return showMessage('#networkPrefileMessage', 'Importez d’abord un OFP SimBrief.', true);
   // Never open IVAO as though a filing is prepared when the imported OFP
   // did not actually contain a complete ICAO FPL.
-  if (!/^\\s*\\(FPL-[A-Z0-9]{2,7}-/i.test(icaoPlan) || !icaoPlan.trim().endsWith(')')) {
+  if (!/^\s*\(FPL-[A-Z0-9]{2,7}-/i.test(icaoPlan) || !icaoPlan.trim().endsWith(')')) {
     return showMessage('#networkPrefileMessage', 'Le texte ICAO FPL de cet OFP est absent ou incomplet. Régénérez ou réimportez SimBrief avant IVAO.', true);
   }
   try {
