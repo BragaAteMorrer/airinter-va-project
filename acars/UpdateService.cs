@@ -45,14 +45,16 @@ internal static class UpdateService
             throw new InvalidOperationException("La mise à jour ne fournit pas de SHA-256 et ne peut pas être installée automatiquement.");
         var directory = Path.Combine(Path.GetTempPath(), "AirInter", "Hermes", "updates");
         Directory.CreateDirectory(directory);
-        var path = Path.Combine(directory, $"Hermes-ACARS-Setup-{release.Version}.exe");
+        // The release metadata is untrusted: never use a version string as a file-system path.
+        // A random local file name also prevents collisions with stale downloads.
+        var path = Path.Combine(directory, $"Hermes-ACARS-Setup-{Guid.NewGuid():N}.exe");
 
         using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
         using var response = await http.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct);
         response.EnsureSuccessStatusCode();
         var total = response.Content.Headers.ContentLength;
         await using (var source = await response.Content.ReadAsStreamAsync(ct))
-        await using (var target = File.Create(path)) {
+        await using (var target = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None)) {
             var buffer = new byte[81920]; long readTotal=0; int read;
             while ((read = await source.ReadAsync(buffer, ct)) > 0) {
                 await target.WriteAsync(buffer.AsMemory(0, read), ct); readTotal += read;
