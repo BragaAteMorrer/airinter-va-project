@@ -69,13 +69,35 @@ public sealed class PrometheeWindow : Window
         // PIREP lifecycle after an application update.
         await core.Profile.ClearBrowsingDataAsync(CoreWebView2BrowsingDataKinds.DiskCache);
 
-        core.Settings.AreDevToolsEnabled=false; core.Settings.AreDefaultContextMenusEnabled=false; core.WebMessageReceived += async (_, e) => await Handle(e.WebMessageAsJson);
+        core.Settings.AreDevToolsEnabled=false; core.Settings.AreDefaultContextMenusEnabled=false;
+        // The local virtual host is the only trusted sender of native commands.
+        // WebView2's WebMessageReceived does not enforce an origin policy for us.
+        core.NavigationStarting += (_, e) => {
+            if (!IsTrustedWebViewOrigin(e.Uri)) e.Cancel = true;
+        };
+        core.NewWindowRequested += (_, e) => { e.Handled = true; };
+        core.WebMessageReceived += async (_, e) => {
+            if (!IsTrustedWebViewOrigin(e.Source)) {
+                Trace.WriteLine("Hermès rejected WebView message from an untrusted origin.");
+                return;
+            }
+            await Handle(e.WebMessageAsJson);
+        };
         var assets = Path.Combine(AppContext.BaseDirectory,"wwwroot");
         if (!System.IO.File.Exists(Path.Combine(assets, "index.html"))) throw new InvalidOperationException("Ressources ACARS introuvables dans la publication.");
         core.SetVirtualHostNameToFolderMapping("promethee.local", assets, CoreWebView2HostResourceAccessKind.DenyCors);
         var assetRevision = typeof(WebDesktop).Assembly.GetName().Version?.ToString() ?? UpdateService.CurrentVersion;
         core.Navigate($"https://promethee.local/index.html?rev={Uri.EscapeDataString(assetRevision)}");
     }
+    private static bool IsTrustedWebViewOrigin(string? raw)
+    {
+        return Uri.TryCreate(raw, UriKind.Absolute, out var uri)
+            && uri.Scheme == Uri.UriSchemeHttps
+            && string.Equals(uri.Host, "promethee.local", StringComparison.OrdinalIgnoreCase)
+            && uri.IsDefaultPort
+            && string.IsNullOrEmpty(uri.UserInfo);
+    }
+
     private async Task CheckForUpdatesAsync()
     {
         try {
