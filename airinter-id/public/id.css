@@ -379,8 +379,8 @@ html :where([aria-selected="true"],[aria-current="page"],[aria-pressed="true"]){
 .security-score-details>summary::-webkit-details-marker{display:none}
 .security-score-details>summary:focus-visible{outline:3px solid var(--success);outline-offset:5px;border-radius:12px}
 .security-score-details>summary>span:last-child{display:grid;gap:5px}
-.security-score-breakdown{margin-top:12px;padding:12px;background:var(--paper);border-radius:12px;color:var(--text)}
+.security-score-breakdown{margin-top:12px;padding:12px;background:var(--paper);border-radius:12px;color:var(--ink)}
 .security-score-breakdown p{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:7px 0}
-.security-score-breakdown p>span{font-size:13px;color:var(--text)}
+.security-score-breakdown p>span{font-size:13px;color:var(--ink)}
 .security-score-breakdown p>strong{font-size:12px;white-space:nowrap}
 .security-score-breakdown a{font-size:12px;text-decoration:underline}
