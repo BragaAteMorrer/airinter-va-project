@@ -743,7 +743,10 @@ $('#ivaoPrefileBtn').onclick = async () => {
       try { copied = document.execCommand('copy'); } catch {}
       textarea.remove();
     }
-    const ivaoUrl = (() => { try { const u = new URL(prefile.url); return u.protocol === 'https:' && u.hostname === 'fpl.ivao.aero' ? u.href : 'https://fpl.ivao.aero/'; } catch { return 'https://fpl.ivao.aero/'; } })();
+    // Older Prométhée responses still provide /home. Do not reopen the landing
+    // page: IVAO's documented FPL workflow starts at the creation form.
+    // There is no verified query-string prefill contract for this portal.
+    const ivaoUrl = 'https://fpl.ivao.aero/flight-plans/create';
     await call('/api/open-external', { url: ivaoUrl });
     showMessage(
       '#networkPrefileMessage',

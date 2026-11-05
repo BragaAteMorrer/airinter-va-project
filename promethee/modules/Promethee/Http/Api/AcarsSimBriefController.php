@@ -457,7 +457,7 @@ class AcarsSimBriefController extends Controller
             ],
             'ivao' => [
                 'method' => 'GET',
-                'url' => 'https://fpl.ivao.aero/home',
+                'url' => 'https://fpl.ivao.aero/flight-plans/create',
                 'prefill_supported' => false,
                 'vid_required' => true,
             ],
