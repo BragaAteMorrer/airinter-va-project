@@ -56,8 +56,9 @@ internal sealed class FsuipcNativeSession : IFsuipcSession
 
     private double? previousThrottle1;
     private double? previousThrottle2;
-    private bool fenixWasmAttempted;
     private bool fenixWasmStarted;
+    private DateTimeOffset nextFenixWasmAttemptAt = DateTimeOffset.MinValue;
+    private DateTimeOffset nextFenixLVarReloadAt = DateTimeOffset.MinValue;
 
     public bool IsOpen { get; private set; }
 
@@ -159,15 +160,18 @@ internal sealed class FsuipcNativeSession : IFsuipcSession
                 "1", StringComparison.OrdinalIgnoreCase))
             return (null, null);
 
-        if (!fenixWasmAttempted) {
-            fenixWasmAttempted = true;
+        var now = DateTimeOffset.UtcNow;
+        // A missing WASM component or early MSFS startup must not disable this
+        // optional read until the pilot restarts Hermès. Retry at a low rate.
+        if (!fenixWasmStarted && now >= nextFenixWasmAttemptAt) {
+            nextFenixWasmAttemptAt = now.AddSeconds(15);
             try {
                 MSFSVariableServices.Init();
                 MSFSVariableServices.Start();
                 fenixWasmStarted = true;
+                nextFenixLVarReloadAt = now.AddSeconds(30);
             } catch (Exception ex) {
-                System.Diagnostics.Trace.WriteLine($"Fenix FSUIPC WASM initialization unavailable: {ex}");
-                return (null, null);
+                System.Diagnostics.Trace.WriteLine($"Fenix FSUIPC WASM start failed; retry in 15s: {ex}");
             }
         }
 
@@ -175,8 +179,18 @@ internal sealed class FsuipcNativeSession : IFsuipcSession
         try {
             if (!MSFSVariableServices.IsRunning) return (null, null);
             var lvars = MSFSVariableServices.LVars;
-            return (ReadFenixLVar(lvars, "S_MIP_PARKING_BRAKE"),
-                    ReadFenixLVar(lvars, "B_CONFIG_CHOCKS"));
+            var brake = ReadFenixLVar(lvars, "S_MIP_PARKING_BRAKE");
+            var chocks = ReadFenixLVar(lvars, "B_CONFIG_CHOCKS");
+
+            // The WASM scan can run before the Fenix finishes initializing.
+            // Reload only while BOTH expected variables are missing, and
+            // never more often than every 30 seconds (no hot polling).
+            if (brake is null && chocks is null && now >= nextFenixLVarReloadAt) {
+                nextFenixLVarReloadAt = now.AddSeconds(30);
+                MSFSVariableServices.Reload();
+                System.Diagnostics.Trace.WriteLine("Fenix FSUIPC WASM LVars missing; requested throttled rescan.");
+            }
+            return (brake, chocks);
         } catch (Exception ex) {
             System.Diagnostics.Trace.WriteLine($"Fenix FSUIPC WASM LVar read unavailable: {ex}");
             return (null, null);
@@ -222,7 +236,8 @@ internal sealed class FsuipcNativeSession : IFsuipcSession
             catch (Exception ex) { System.Diagnostics.Trace.WriteLine($"Fenix WASM stop failed: {ex}"); }
             fenixWasmStarted = false;
         }
-        fenixWasmAttempted = false;
+        nextFenixWasmAttemptAt = DateTimeOffset.MinValue;
+        nextFenixLVarReloadAt = DateTimeOffset.MinValue;
         try { FSUIPCConnection.Close(); }
         finally {
             IsOpen = false;
