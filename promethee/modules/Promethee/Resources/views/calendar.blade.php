@@ -35,10 +35,8 @@
         @foreach($days as $date)
             <div class="calendar-day {{ $date->month !== $start->month ? 'outside' : '' }} {{ $date->isToday() ? 'today' : '' }}">
                 <span>{{ $date->day }}</span>
-                @foreach($events as $event)
-                    @if(\Carbon\Carbon::parse($event->starts_at,'UTC')->setTimezone('Europe/Paris')->toDateString() === $date->toDateString())
-                        <a class="calendar-event" href="#event-{{ $event->id }}">{{ $event->title }}</a>
-                    @endif
+                @foreach($eventsByDay[$date->toDateString()] ?? [] as $event)
+                    <a class="calendar-event" href="{{ route('promethee.calendar',['month'=>\\Carbon\\Carbon::parse($event->starts_at,'UTC')->setTimezone('Europe/Paris')->format('Y-m')]) }}#event-{{ $event->id }}">{{ $event->title }}</a>
                 @endforeach
             </div>
         @endforeach
@@ -55,7 +53,7 @@
                 <p class="preserve">{{ $event->description }}</p>
                 <span class="tag">{{ $event->departure ?: 'Rendez-vous' }} {{ $event->arrival ? '→ '.$event->arrival : '' }}</span>
                 <p class="muted">{{ $event->rsvp_count }} pilote(s) inscrit(s){{ $event->my_rsvp ? ' · votre réponse : '.($event->my_rsvp === 'going' ? 'présent' : 'peut-être') : '' }}</p>
-                <form method="post" action="{{ route('promethee.calendar.rsvp',$event->id) }}" class="toolbar">@csrf<button name="status" value="going" class="outline">Je participe</button><button name="status" value="maybe" class="text-button">Peut-être</button></form>
+                <form method="post" action="{{ route('promethee.calendar.rsvp',$event->id) }}" class="toolbar">@csrf<button name="status" value="going" class="outline">Je participe</button><button name="status" value="maybe" class="text-button">Peut-être</button>@if($event->my_rsvp)<button name="status" value="none" class="text-button">Me désinscrire</button>@endif</form>
                 @if($canManage)
                     <div class="toolbar">
                         <a class="button outline" href="{{ route('promethee.calendar',['month'=>$month,'edit_event'=>$event->id]).'#calendar-editor' }}">Modifier</a>
