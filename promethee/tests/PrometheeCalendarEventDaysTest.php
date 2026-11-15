@@ -30,7 +30,7 @@ final class PrometheeCalendarEventDaysTest extends TestCase
     public function test_grid_is_clipped_to_42_days(): void
     {
         $event = (object) [
-            'starts_at' => '2026-11-01 00:00:00',
+            'starts_at' => '2026-10-25 00:00:00',
             'ends_at' => '2027-02-01 00:00:00',
         ];
         $days = CalendarEventDays::group([$event], CarbonImmutable::parse('2026-10-26', 'Europe/Paris'));
