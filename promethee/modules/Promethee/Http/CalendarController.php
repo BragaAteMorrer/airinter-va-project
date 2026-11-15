@@ -25,10 +25,23 @@ public function calendar(Request $r) {
         $month=$this->month($r);
         $start=CarbonImmutable::createFromFormat('!Y-m',$month,'Europe/Paris');
         $events=DB::table('promethee_events')->where('starts_at','<',$start->addMonth()->utc())
-            ->where('ends_at','>=',$start->utc())->orderBy('starts_at')->get();
-        $rsvps=DB::table('promethee_event_rsvps')->whereIn('event_id',$events->pluck('id'))->select('event_id',DB::raw('COUNT(*) as total'))->groupBy('event_id')->pluck('total','event_id');
+            ->where('ends_at','>',$start->utc())->orderBy('starts_at')->get();
+        $rsvps=DB::table('promethee_event_rsvps')->whereIn('event_id',$events->pluck('id'))->where('status','going')->select('event_id',DB::raw('COUNT(*) as total'))->groupBy('event_id')->pluck('total','event_id');
         $mine=DB::table('promethee_event_rsvps')->where('user_id',$r->user()->id)->whereIn('event_id',$events->pluck('id'))->pluck('status','event_id');
         $events=$events->map(function ($event) use ($rsvps,$mine) { $event->rsvp_count=$rsvps[$event->id]??0; $event->my_rsvp=$mine[$event->id]??null; return $event; });
+
+        $gridStart=$start->startOfWeek();
+        $gridEnd=$gridStart->addDays(42);
+        $calendarEvents=DB::table('promethee_events')->where('starts_at','<',$gridEnd->utc())
+            ->where('ends_at','>',$gridStart->utc())->orderBy('starts_at')->get();
+        $eventsByDay=[];
+        foreach ($calendarEvents as $event) {
+            $firstDay=CarbonImmutable::parse($event->starts_at,'UTC')->setTimezone('Europe/Paris')->startOfDay();
+            $lastDay=CarbonImmutable::parse($event->ends_at,'UTC')->subMicrosecond()->setTimezone('Europe/Paris')->startOfDay();
+            for ($day=$firstDay->max($gridStart); $day->lte($lastDay) && $day->lt($gridEnd); $day=$day->addDay()) {
+                $eventsByDay[$day->toDateString()][]=$event;
+            }
+        }
 
         $editingEvent = null;
         if (($r->user()?->ability('admin','admin-access') ?? false) && $r->filled('edit_event')) {
@@ -38,14 +51,28 @@ public function calendar(Request $r) {
         return $this->page('calendar',[
             'month'=>$month,'start'=>$start,
             'events'=>$events,
+            'eventsByDay'=>$eventsByDay,
             'editingEvent'=>$editingEvent,
         ]);
     }
 
 public function rsvpEvent(int $id, Request $r) {
         DB::table('promethee_events')->find($id) ?? abort(404);
-        $data=$r->validate(['status'=>'required|in:going,maybe']);
-        DB::table('promethee_event_rsvps')->updateOrInsert(['event_id'=>$id,'user_id'=>$r->user()->id],$data+['updated_at'=>now(),'created_at'=>now()]);
+        $data=$r->validate(['status'=>'required|in:going,maybe,none']);
+        $query=DB::table('promethee_event_rsvps')
+            ->where('event_id',$id)->where('user_id',$r->user()->id);
+        if ($data['status'] === 'none') {
+            $query->delete();
+            return back()->with('success','Participation annulée.');
+        }
+        if ($query->exists()) {
+            $query->update(['status'=>$data['status'],'updated_at'=>now()]);
+        } else {
+            DB::table('promethee_event_rsvps')->insert([
+                'event_id'=>$id,'user_id'=>$r->user()->id,'status'=>$data['status'],
+                'created_at'=>now(),'updated_at'=>now(),
+            ]);
+        }
         return back()->with('success','Participation enregistrée.');
     }
 
