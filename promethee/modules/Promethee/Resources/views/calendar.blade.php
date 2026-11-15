@@ -36,7 +36,7 @@
             <div class="calendar-day {{ $date->month !== $start->month ? 'outside' : '' }} {{ $date->isToday() ? 'today' : '' }}">
                 <span>{{ $date->day }}</span>
                 @foreach($eventsByDay[$date->toDateString()] ?? [] as $event)
-                    <a class="calendar-event" href="{{ route('promethee.calendar',['month'=>\\Carbon\\Carbon::parse($event->starts_at,'UTC')->setTimezone('Europe/Paris')->format('Y-m')]) }}#event-{{ $event->id }}">{{ $event->title }}</a>
+                    <a class="calendar-event" href="{{ route('promethee.calendar',['month'=>\Carbon\Carbon::parse($event->starts_at,'UTC')->setTimezone('Europe/Paris')->format('Y-m')]) }}#event-{{ $event->id }}">{{ $event->title }}</a>
                 @endforeach
             </div>
         @endforeach
