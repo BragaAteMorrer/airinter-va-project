@@ -34,14 +34,7 @@ public function calendar(Request $r) {
         $gridEnd=$gridStart->addDays(42);
         $calendarEvents=DB::table('promethee_events')->where('starts_at','<',$gridEnd->utc())
             ->where('ends_at','>',$gridStart->utc())->orderBy('starts_at')->get();
-        $eventsByDay=[];
-        foreach ($calendarEvents as $event) {
-            $firstDay=CarbonImmutable::parse($event->starts_at,'UTC')->setTimezone('Europe/Paris')->startOfDay();
-            $lastDay=CarbonImmutable::parse($event->ends_at,'UTC')->subMicrosecond()->setTimezone('Europe/Paris')->startOfDay();
-            for ($day=$firstDay->max($gridStart); $day->lte($lastDay) && $day->lt($gridEnd); $day=$day->addDay()) {
-                $eventsByDay[$day->toDateString()][]=$event;
-            }
-        }
+        $eventsByDay=\Modules\Promethee\Services\CalendarEventDays::group($calendarEvents,$gridStart);
 
         $editingEvent = null;
         if (($r->user()?->ability('admin','admin-access') ?? false) && $r->filled('edit_event')) {
