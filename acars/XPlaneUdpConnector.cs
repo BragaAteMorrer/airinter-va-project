@@ -14,10 +14,12 @@ namespace Promethee;
 public sealed class XPlaneUdpConnector : ISimulatorConnector
 {
     private const int DefaultXPlanePort = 49000;
+    private const int DefaultReplyPort = 49001;
     private const int RequestSize = 413; // 5-byte header, 2 int32 fields, char[400]
     private static readonly TimeSpan FreshnessTimeout = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan SubscriptionRefresh = TimeSpan.FromSeconds(5);
     private readonly int xPlanePort;
+    private readonly int replyPort;
     private UdpClient? socket;
     private readonly Dictionary<int, (float Value, DateTimeOffset ReceivedAt)> values = [];
     private DateTimeOffset lastRequest = DateTimeOffset.MinValue;
@@ -34,10 +36,12 @@ public sealed class XPlaneUdpConnector : ISimulatorConnector
     public event Action<AircraftSnapshot>? SnapshotReceived;
 
     // Port injection allows deterministic loopback tests without requiring a running X-Plane.
-    public XPlaneUdpConnector(int xPlanePort = DefaultXPlanePort)
+    public XPlaneUdpConnector(int xPlanePort = DefaultXPlanePort, int replyPort = DefaultReplyPort)
     {
         if (xPlanePort is < 1 or > 65535) throw new ArgumentOutOfRangeException(nameof(xPlanePort));
+        if (replyPort is < 1 or > 65535) throw new ArgumentOutOfRangeException(nameof(replyPort));
         this.xPlanePort = xPlanePort;
+        this.replyPort = replyPort;
     }
 
     public void Poll()
@@ -121,7 +125,7 @@ public sealed class XPlaneUdpConnector : ISimulatorConnector
     {
         var source = new IPEndPoint(IPAddress.Loopback, 0);
         var packet = socket!.Receive(ref source);
-        if (!source.Address.Equals(IPAddress.Loopback) || source.Port != xPlanePort
+        if (!IsExpectedReplySource(source, IPAddress.Loopback, xPlanePort, replyPort)
             || packet.Length < 13 || (packet.Length - 5) % 8 != 0)
             return;
 
@@ -177,6 +181,12 @@ public sealed class XPlaneUdpConnector : ISimulatorConnector
         Status = "Connecté à X-Plane (UDP expérimental)";
         SnapshotReceived?.Invoke(snapshot);
     }
+
+    // X-Plane may send RREF replies from its legacy SEND port (49001 by default),
+    // independently of the destination port used for subscriptions (49000).
+    internal static bool IsExpectedReplySource(IPEndPoint? sender, IPAddress expectedAddress, int requestPort, int replyPort) =>
+        sender is not null && sender.Address.Equals(expectedAddress)
+        && (sender.Port == requestPort || sender.Port == replyPort);
 
     // Missing or stale DataRefs stay null, never false/zero by assumption.
     private float? GetOptional(int index, DateTimeOffset now) =>

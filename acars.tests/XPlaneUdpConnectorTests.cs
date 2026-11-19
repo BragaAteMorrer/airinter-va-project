@@ -42,6 +42,54 @@ public sealed class XPlaneUdpConnectorTests
     }
 
     [Fact]
+    public void Accepts_RREF_from_independent_configured_reply_port()
+    {
+        using var server = StartLoopbackServer();
+        using var replySender = StartLoopbackServer();
+        var requestPort = ((IPEndPoint)server.Client.LocalEndPoint!).Port;
+        var replyPort = ((IPEndPoint)replySender.Client.LocalEndPoint!).Port;
+        Assert.NotEqual(requestPort, replyPort);
+        using var connector = new XPlaneUdpConnector(requestPort, replyPort);
+
+        connector.Poll();
+        var remote = ReadSubscriptions(server);
+        var reply = BuildReply("RREF,", (1, 48.7f), (2, 2.3f), (3, 1500f));
+        replySender.Send(reply, reply.Length, remote);
+        connector.Poll();
+
+        Assert.Equal(SimulatorConnectionState.Connected, connector.ConnectionState);
+        Assert.NotNull(connector.LatestSnapshot);
+    }
+
+    [Fact]
+    public void Rejects_RREF_from_unconfigured_source_port()
+    {
+        using var server = StartLoopbackServer();
+        using var expectedReply = StartLoopbackServer();
+        using var unknownSender = StartLoopbackServer();
+        var requestPort = ((IPEndPoint)server.Client.LocalEndPoint!).Port;
+        var replyPort = ((IPEndPoint)expectedReply.Client.LocalEndPoint!).Port;
+        using var connector = new XPlaneUdpConnector(requestPort, replyPort);
+
+        connector.Poll();
+        var remote = ReadSubscriptions(server);
+        var reply = BuildReply("RREF,", (1, 48.7f), (2, 2.3f), (3, 1500f));
+        unknownSender.Send(reply, reply.Length, remote);
+        connector.Poll();
+
+        Assert.Equal(SimulatorConnectionState.Connecting, connector.ConnectionState);
+        Assert.Null(connector.LatestSnapshot);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(65536)]
+    public void Rejects_invalid_configured_reply_port(int port)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new XPlaneUdpConnector(replyPort: port));
+    }
+
+    [Fact]
     public void Disposed_standby_connector_can_reopen_without_restarting_Hermes()
     {
         using var server = StartLoopbackServer();
